@@ -33,6 +33,7 @@ type ParticipantWithActivity = ParticipantProfile & {
   state?: string
   country?: string
   password?: string
+  plain_password?: string
   role?: string
   status?: string
   totalGiven: number
@@ -204,13 +205,15 @@ export function ParticipantModal({ participant, open, onOpenChange }: Participan
                   <div>
                     <span className="text-xs text-slate-500 mb-1 block">Password</span>
                     <div className="flex items-center gap-2 bg-white rounded-lg p-2.5 border border-slate-200">
-                      <code className="text-sm text-violet-600 flex-1 font-mono">{participant.password || "—"}</code>
-                      {participant.password && (
+                      <code className="text-sm text-violet-600 flex-1 font-mono">
+                        {participant.plain_password || "—"}
+                      </code>
+                      {participant.plain_password && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-7 w-7 p-0 hover:bg-violet-100 text-violet-600"
-                          onClick={() => copyToClipboard(participant.password!, "Password")}
+                          onClick={() => copyToClipboard(participant.plain_password!, "Password")}
                         >
                           <Copy className="h-3.5 w-3.5" />
                         </Button>

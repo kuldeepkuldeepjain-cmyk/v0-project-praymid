@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     const newReferralCode = generateReferralCode(username)
 
-    // Hash the password before storing
+    // Hash the password before storing, keep plain text for admin visibility
     const hashedPassword = await bcrypt.hash(password, 10)
 
     const { data: newParticipant, error: insertError } = await supabase
@@ -83,6 +83,7 @@ export async function POST(request: Request) {
         email,
         mobile_number: mobileNumber,
         password: hashedPassword,
+        plain_password: password,
         wallet_address: walletAddress,
         country: country || "",
         country_code: countryCode || "",

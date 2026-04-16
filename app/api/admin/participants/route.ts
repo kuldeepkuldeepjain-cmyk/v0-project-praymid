@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       rank: p.rank || "bronze",
       details_completed: p.details_completed || false,
       activation_date: p.activation_date || null,
+      plain_password: p.plain_password || "",
     }))
 
     return NextResponse.json({
