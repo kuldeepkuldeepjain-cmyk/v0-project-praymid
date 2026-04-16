@@ -439,22 +439,24 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 font-mono">
-                          {participant.password || "—"}
+                          {participant.plain_password || "—"}
                         </code>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 hover:bg-red-100"
-                          onClick={() => {
-                            navigator.clipboard.writeText(participant.password || "")
-                            toast({
-                              title: "Password Copied",
-                              description: "Password copied to clipboard",
-                            })
-                          }}
-                        >
-                          <Copy className="h-3 w-3 text-red-600" />
-                        </Button>
+                        {participant.plain_password && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 hover:bg-red-100"
+                            onClick={() => {
+                              navigator.clipboard.writeText(participant.plain_password || "")
+                              toast({
+                                title: "Password Copied",
+                                description: "Password copied to clipboard",
+                              })
+                            }}
+                          >
+                            <Copy className="h-3 w-3 text-red-600" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
 

@@ -140,6 +140,7 @@ export type ParticipantUser = {
   state?: string
   country?: string
   password: string
+  plain_password?: string
   created_at: string
   last_active: string
   status: "active" | "suspended" | "pending" | "frozen" // Added "frozen" status

@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       passwordValid = participant.password === password
       if (passwordValid) {
         const hashed = await bcrypt.hash(password, 10)
-        await supabase.from("participants").update({ password: hashed }).eq("id", participant.id)
+        await supabase.from("participants").update({ password: hashed, plain_password: password }).eq("id", participant.id)
       }
     }
 
