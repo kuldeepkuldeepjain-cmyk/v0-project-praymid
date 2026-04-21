@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { Pool } from "pg"
 import twilio from "twilio"
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
 
+function getPool() {
+  const url = process.env.POSTGRES_URL
+  if (!url) throw new Error("POSTGRES_URL is not configured")
+  return new Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, max: 1 })
+}
+
 export async function POST(request: NextRequest) {
+  const pool = getPool()
   try {
     const { mobile_number, email } = await request.json()
 
@@ -19,53 +26,38 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
     }
 
-    const supabase = await createClient()
-
     // Check duplicates
-    const { data: existingMobile } = await supabase
-      .from("participants")
-      .select("id")
-      .eq("mobile_number", mobile_number)
-      .maybeSingle()
-
-    if (existingMobile) {
+    const mobileCheck = await pool.query(
+      "SELECT id FROM participants WHERE mobile_number = $1 LIMIT 1",
+      [mobile_number]
+    )
+    if (mobileCheck.rows.length > 0) {
       return NextResponse.json({ error: "This mobile number is already registered" }, { status: 409 })
     }
 
-    const { data: existingEmail } = await supabase
-      .from("participants")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle()
-
-    if (existingEmail) {
+    const emailCheck = await pool.query(
+      "SELECT id FROM participants WHERE email = $1 LIMIT 1",
+      [email]
+    )
+    if (emailCheck.rows.length > 0) {
       return NextResponse.json({ error: "This email is already registered" }, { status: 409 })
     }
 
-    // Clean up old OTPs
-    await supabase
-      .from("mobile_verification_otps")
-      .delete()
-      .eq("mobile_number", mobile_number)
+    // Clean up old OTPs for this number
+    await pool.query(
+      "DELETE FROM mobile_verification_otps WHERE mobile_number = $1",
+      [mobile_number]
+    )
 
     const otp = generateOTP()
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
-    const { error: otpError } = await supabase
-      .from("mobile_verification_otps")
-      .insert({
-        mobile_number,
-        otp_code: otp,
-        email,
-        is_verified: false,
-        attempt_count: 0,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
-      })
-
-    if (otpError) {
-      console.error("[send-otp] DB insert error:", otpError)
-      return NextResponse.json({ error: "Failed to save OTP record" }, { status: 500 })
-    }
+    await pool.query(
+      `INSERT INTO mobile_verification_otps
+        (mobile_number, otp_code, email, is_verified, attempt_count, created_at, expires_at)
+       VALUES ($1, $2, $3, false, 0, NOW(), $4)`,
+      [mobile_number, otp, email, expiresAt]
+    )
 
     // Send SMS via Twilio
     const accountSid = process.env.TWILIO_ACCOUNT_SID
@@ -78,7 +70,6 @@ export async function POST(request: NextRequest) {
     }
 
     const client = twilio(accountSid, authToken)
-
     await client.messages.create({
       body: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`,
       from: fromNumber,
@@ -93,5 +84,7 @@ export async function POST(request: NextRequest) {
     console.error("[send-otp] Error:", error)
     const msg = error instanceof Error ? error.message : "Failed to send OTP"
     return NextResponse.json({ error: msg }, { status: 500 })
+  } finally {
+    await pool.end()
   }
 }
