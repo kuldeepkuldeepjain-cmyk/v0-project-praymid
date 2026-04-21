@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: updatePaymentError.message }, { status: 500 })
     }
 
-      // If approved, update participant's activation status and add $50 to account
+      // If approved, update participant's activation status and add $150 to account
     if (action === "approve") {
       // Get current balance
       const { data: participant, error: fetchError } = await supabase
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       }
 
       const currentBalance = participant?.account_balance || 0
-      const newBalance = Number(currentBalance) + 50
+      const newBalance = Number(currentBalance) + 150
       
       // Set next contribution date to 30 days from now
       const nextContributionDate = new Date()
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
           user_email: payment.participant_email,
           type: "success",
           title: "Activation Approved",
-          message: "Your contribution has been approved. $50 has been credited to your account. Next contribution available after 30 days.",
+          message: "Your contribution has been approved. $150 has been credited to your account. Next contribution available after 30 days.",
           read_status: false,
         })
       }

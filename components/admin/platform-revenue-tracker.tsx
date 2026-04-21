@@ -159,7 +159,7 @@ export function PlatformRevenueTracker() {
             </div>
             <div className="flex justify-between">
               <span>User Receives:</span>
-              <span className="text-green-400">$180</span>
+              <span className="text-green-400">$150</span>
             </div>
             <div className="flex justify-between">
               <span>User Pays Out:</span>

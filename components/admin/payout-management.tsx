@@ -162,7 +162,7 @@ export function PayoutManagement() {
       if (result.success) {
         toast({
           title: "Approved Successfully",
-          description: `Contribution approved — $180 credited. Payout #${selectedPayout.serial_number} marked as completed.`,
+          description: `Contribution approved — $150 credited. Payout #${selectedPayout.serial_number} marked as completed.`,
         })
         setShowProofDialog(false)
         setProofData(null)
@@ -918,7 +918,7 @@ export function PayoutManagement() {
               Contribution Proof — Payout #{selectedPayout?.serial_number}
             </DialogTitle>
             <DialogDescription className="text-slate-500">
-              Review the payment proof submitted by <strong>{selectedPayout?.participant_name || selectedPayout?.participant_email}</strong> and approve to credit $180 + complete this payout.
+              Review the payment proof submitted by <strong>{selectedPayout?.participant_name || selectedPayout?.participant_email}</strong> and approve to credit $150 + complete this payout.
             </DialogDescription>
           </DialogHeader>
 

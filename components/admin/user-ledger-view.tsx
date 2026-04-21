@@ -99,8 +99,8 @@ export function UserLedgerView() {
           .map((c: any) => ({
             id: c.id,
             type: "contribution",
-            amount: 180,
-            description: "Contribution approved — $180 credited",
+            amount: 150,
+            description: "Contribution approved — $150 credited",
             balance_before: 0,
             balance_after: 0,
             created_at: c.created_at,
