@@ -4,7 +4,13 @@ import { Pool } from "pg"
 function getPool() {
   const url = process.env.POSTGRES_URL
   if (!url) throw new Error("POSTGRES_URL is not configured")
-  return new Pool({ connectionString: url, ssl: { rejectUnauthorized: false }, max: 1 })
+  // Strip sslmode from the connection string so pg uses our explicit ssl config
+  const cleanUrl = url.replace(/[?&]sslmode=[^&]*/g, "").replace(/\?$/, "")
+  return new Pool({
+    connectionString: cleanUrl,
+    ssl: { rejectUnauthorized: false },
+    max: 1,
+  })
 }
 
 export async function POST(request: NextRequest) {
