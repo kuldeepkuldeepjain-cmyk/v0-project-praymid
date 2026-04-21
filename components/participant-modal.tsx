@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import {
   ExternalLink,
   Copy,
@@ -19,6 +21,9 @@ import {
   Shield,
   Activity,
   DollarSign,
+  Eye,
+  EyeOff,
+  KeyRound,
 } from "lucide-react"
 import type { ParticipantProfile } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
@@ -60,8 +65,38 @@ type ParticipantModalProps = {
 
 export function ParticipantModal({ participant, open, onOpenChange }: ParticipantModalProps) {
   const { toast } = useToast()
+  const [showPassword, setShowPassword] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [resetting, setResetting] = useState(false)
+  const [localPlainPassword, setLocalPlainPassword] = useState<string | null>(null)
 
   if (!participant) return null
+
+  const displayPassword = localPlainPassword !== null ? localPlainPassword : participant.plain_password
+
+  const handleResetPassword = async () => {
+    if (!newPassword.trim()) return
+    setResetting(true)
+    try {
+      const res = await fetch("/api/admin/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: participant.id, newPassword }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setLocalPlainPassword(newPassword)
+        setNewPassword("")
+        toast({ title: "Password Updated", description: `Password has been reset successfully.` })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to reset password", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Network error", variant: "destructive" })
+    } finally {
+      setResetting(false)
+    }
+  }
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text)
@@ -206,18 +241,52 @@ export function ParticipantModal({ participant, open, onOpenChange }: Participan
                     <span className="text-xs text-slate-500 mb-1 block">Password</span>
                     <div className="flex items-center gap-2 bg-white rounded-lg p-2.5 border border-slate-200">
                       <code className="text-sm text-violet-600 flex-1 font-mono">
-                        {participant.plain_password || "—"}
+                        {displayPassword
+                          ? showPassword
+                            ? displayPassword
+                            : "••••••••"
+                          : "Not set — use Reset below"}
                       </code>
-                      {participant.plain_password && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 hover:bg-violet-100 text-violet-600"
-                          onClick={() => copyToClipboard(participant.plain_password!, "Password")}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
+                      {displayPassword && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 hover:bg-violet-100 text-violet-600"
+                            onClick={() => setShowPassword((v) => !v)}
+                          >
+                            {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 hover:bg-violet-100 text-violet-600"
+                            onClick={() => copyToClipboard(displayPassword, "Password")}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
                       )}
+                    </div>
+                    {/* Reset password */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Input
+                        type="text"
+                        placeholder="Set new password..."
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="h-8 text-sm bg-white border-slate-300 flex-1"
+                        onKeyDown={(e) => e.key === "Enter" && handleResetPassword()}
+                      />
+                      <Button
+                        size="sm"
+                        className="h-8 px-3 bg-violet-600 hover:bg-violet-700 text-white text-xs gap-1"
+                        onClick={handleResetPassword}
+                        disabled={resetting || !newPassword.trim()}
+                      >
+                        <KeyRound className="h-3 w-3" />
+                        {resetting ? "Saving..." : "Reset"}
+                      </Button>
                     </div>
                   </div>
                 </div>
