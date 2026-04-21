@@ -972,7 +972,7 @@ export function PayoutManagement() {
                 <p className="text-green-700 font-medium">On approval:</p>
                 <ul className="text-green-600 text-xs mt-1 space-y-1 ml-3 list-disc">
                   <li>Contribution marked as <strong>approved</strong></li>
-                  <li><strong>$180</strong> credited to participant wallet</li>
+                  <li><strong>$150</strong> credited to participant wallet</li>
                   <li>Payout #{selectedPayout?.serial_number} marked as <strong>completed</strong></li>
                 </ul>
               </div>

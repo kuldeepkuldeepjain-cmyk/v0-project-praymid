@@ -32,7 +32,7 @@ const PLANS = [
     id: "platinum",
     label: "P2P Contribution",
     amount: 100,
-    reward: 180,
+    reward: 150,
     color: "violet",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",

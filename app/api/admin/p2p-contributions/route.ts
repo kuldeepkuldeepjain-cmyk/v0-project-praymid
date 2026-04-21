@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: action === "approve"
-        ? "Contribution approved. $180 credited to contributor."
+        ? "Contribution approved. $150 credited to contributor."
         : "Contribution rejected. Payout unlinked and made available again.",
     })
   } catch (err: any) {

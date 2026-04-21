@@ -122,7 +122,7 @@ export function ActivationPaymentsPanel() {
         toast({
           title: action === "approve" ? "Payment Approved" : "Payment Rejected",
           description: action === "approve"
-            ? "User account credited with $180"
+            ? "User account credited with $150"
             : data.message,
         })
         
@@ -555,7 +555,7 @@ export function ActivationPaymentsPanel() {
                   disabled={isProcessing || processingPaymentId === selectedPayment?.id}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {processingPaymentId === selectedPayment?.id ? "Approving..." : "Approve & Credit $180"}
+                  {processingPaymentId === selectedPayment?.id ? "Approving..." : "Approve & Credit $150"}
                 </Button>
               </>
             )}
