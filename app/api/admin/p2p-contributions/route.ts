@@ -66,10 +66,10 @@ export async function POST(request: NextRequest) {
 
       const currentBalance = Number(participant?.account_balance || 0)
       const currentEarnings = Number(participant?.total_earnings || 0)
-      // Reward is always 1.8× the contributed amount (works for all plans)
-      const creditAmount = Math.round(Number(contribution.amount) * 1.8 * 100) / 100
+      // Reward is always 0.5× the contributed amount (works for all plans)
+      const creditAmount = Math.round(Number(contribution.amount) * 0.5 * 100) / 100
 
-      // 2. Credit contributor +$180 and set next_contribution_date
+      // 2. Credit contributor +$50 and set next_contribution_date
       await supabase
         .from("participants")
         .update({
