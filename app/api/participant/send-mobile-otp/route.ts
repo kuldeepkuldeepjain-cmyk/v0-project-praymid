@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import twilio from "twilio"
 
-// Generate random 6-digit OTP
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
 }
@@ -11,78 +11,46 @@ export async function POST(request: NextRequest) {
     const { mobile_number, email } = await request.json()
 
     if (!mobile_number || !email) {
-      return NextResponse.json(
-        { error: "Mobile number and email are required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Mobile number and email are required" }, { status: 400 })
     }
 
-    // Validate mobile number format (basic validation)
-    const mobileRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
-    if (!mobileRegex.test(mobile_number.replace(/\s/g, ""))) {
-      return NextResponse.json(
-        { error: "Invalid mobile number format" },
-        { status: 400 }
-      )
-    }
-
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: "Invalid email format" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
     }
 
     const supabase = await createClient()
 
-    // Check if mobile number already exists in participants table
-    const { data: existingParticipant, error: checkMobileError } = await supabase
+    // Check duplicates
+    const { data: existingMobile } = await supabase
       .from("participants")
       .select("id")
       .eq("mobile_number", mobile_number)
       .maybeSingle()
 
-    if (existingParticipant) {
-      return NextResponse.json(
-        { error: "This mobile number is already registered" },
-        { status: 409 }
-      )
+    if (existingMobile) {
+      return NextResponse.json({ error: "This mobile number is already registered" }, { status: 409 })
     }
 
-    // Check if email already exists in participants table
-    const { data: existingEmail, error: checkEmailError } = await supabase
+    const { data: existingEmail } = await supabase
       .from("participants")
       .select("id")
       .eq("email", email)
       .maybeSingle()
 
     if (existingEmail) {
-      return NextResponse.json(
-        { error: "This email is already registered" },
-        { status: 409 }
-      )
+      return NextResponse.json({ error: "This email is already registered" }, { status: 409 })
     }
 
-    // Delete expired OTP records for this mobile
+    // Clean up old OTPs
     await supabase
       .from("mobile_verification_otps")
       .delete()
-      .lt("expires_at", new Date().toISOString())
       .eq("mobile_number", mobile_number)
 
-    // Generate OTP
     const otp = generateOTP()
 
-    // Delete any existing OTP records for this mobile number (expired or verified)
-    await supabase
-      .from("mobile_verification_otps")
-      .delete()
-      .eq("mobile_number", mobile_number)
-
-    // Now insert new OTP record
-    const { data: otpRecord, error: otpError } = await supabase
+    const { error: otpError } = await supabase
       .from("mobile_verification_otps")
       .insert({
         mobile_number,
@@ -93,68 +61,37 @@ export async function POST(request: NextRequest) {
         created_at: new Date().toISOString(),
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
       })
-      .select()
-      .maybeSingle()
 
     if (otpError) {
-      console.error("[v0] Error creating OTP record:", otpError)
+      console.error("[send-otp] DB insert error:", otpError)
       return NextResponse.json({ error: "Failed to save OTP record" }, { status: 500 })
     }
 
-    // Send OTP via otp.dev API (non-blocking - don't wait for response)
-    const otpApiKey = process.env.OTP_API_KEY
-    const otpSenderId = process.env.OTP_SENDER_ID
-    const otpTemplateId = process.env.OTP_TEMPLATE_ID
+    // Send SMS via Twilio
+    const accountSid = process.env.TWILIO_ACCOUNT_SID
+    const authToken = process.env.TWILIO_AUTH_TOKEN
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER
 
-    if (otpApiKey && otpSenderId && otpTemplateId) {
-      // Send SMS in background without blocking the response
-      fetch("https://api.otp.dev/v1/verifications", {
-        method: "POST",
-        headers: {
-          "X-OTP-Key": otpApiKey,
-          "accept": "application/json",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          data: {
-            channel: "sms",
-            sender: otpSenderId,
-            phone: mobile_number,
-            template: otpTemplateId,
-            code_length: 6,
-          },
-        }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            console.log("[v0] OTP sent successfully via otp.dev")
-          } else {
-            console.warn("[v0] OTP SMS delivery failed, but OTP stored in database")
-          }
-        })
-        .catch((error) => {
-          console.warn("[v0] OTP SMS service error, but OTP available for verification:", error)
-        })
-    } else {
-      console.warn("[v0] OTP service credentials not configured, OTP stored in database only")
+    if (!accountSid || !authToken || !fromNumber) {
+      console.error("[send-otp] Twilio credentials missing")
+      return NextResponse.json({ error: "SMS service not configured" }, { status: 500 })
     }
 
-    // Always return success so user can proceed with verification
-    // otp is returned so the UI can display it (no real SMS integration yet)
+    const client = twilio(accountSid, authToken)
+
+    await client.messages.create({
+      body: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`,
+      from: fromNumber,
+      to: mobile_number,
+    })
+
     return NextResponse.json(
-      {
-        success: true,
-        message: "OTP sent",
-        otp,
-        expiresIn: 600, // 10 minutes in seconds
-      },
+      { success: true, message: "OTP sent to your mobile number", expiresIn: 600 },
       { status: 200 }
     )
-  } catch (error) {
-    console.error("Error in send OTP:", error)
-    return NextResponse.json(
-      { error: "An error occurred" },
-      { status: 500 }
-    )
+  } catch (error: unknown) {
+    console.error("[send-otp] Error:", error)
+    const msg = error instanceof Error ? error.message : "Failed to send OTP"
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
