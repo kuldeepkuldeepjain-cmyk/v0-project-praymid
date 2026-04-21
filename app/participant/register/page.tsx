@@ -85,11 +85,6 @@ export default function ParticipantRegisterPage() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [mobileVerified, setMobileVerified] = useState(false)
-  const [verificationStep, setVerificationStep] = useState<"idle" | "sending" | "verifying" | "completed">("idle")
-  const [otpCode, setOtpCode] = useState("")
-  const [otpExpiresIn, setOtpExpiresIn] = useState(0)
-  const [generatedOtp, setGeneratedOtp] = useState("")
 
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
@@ -155,122 +150,8 @@ export default function ParticipantRegisterPage() {
     }
   }
 
-  const sendMobileOTP = async () => {
-    if (!formData.mobileNumber || formData.mobileNumber.length < 7) {
-      toast({
-        title: "Invalid Mobile Number",
-        description: "Please enter a valid mobile number",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setVerificationStep("sending")
-    try {
-      const fullMobileNumber = `${formData.countryCode}${formData.mobileNumber}`
-      const response = await fetch("/api/participant/send-mobile-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mobile_number: fullMobileNumber,
-          email: formData.email,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to send OTP")
-      }
-
-      setVerificationStep("verifying")
-      setOtpExpiresIn(600) // 10 minutes
-      setOtpCode("")
-      setGeneratedOtp(data.otp || "")
-
-      toast({
-        title: "OTP Generated!",
-        description: `Your OTP is ready. Please use the code shown on screen to verify your number.`,
-      })
-
-      // Countdown timer
-      const interval = setInterval(() => {
-        setOtpExpiresIn((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval)
-            setVerificationStep("idle")
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-    } catch (error) {
-      setVerificationStep("idle")
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to send OTP",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const verifyMobileOTP = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      toast({
-        title: "Invalid OTP",
-        description: "Please enter a 6-digit OTP",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setVerificationStep("verifying")
-    try {
-      const fullMobileNumber = `${formData.countryCode}${formData.mobileNumber}`
-      const response = await fetch("/api/participant/verify-mobile-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mobile_number: fullMobileNumber,
-          otp_code: otpCode,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || "OTP verification failed")
-      }
-
-      setMobileVerified(true)
-      setVerificationStep("completed")
-      setOtpCode("")
-
-      toast({
-        title: "Success!",
-        description: "Mobile number verified successfully",
-      })
-    } catch (error) {
-      setVerificationStep("verifying")
-      toast({
-        title: "Verification Failed",
-        description: error instanceof Error ? error.message : "OTP verification failed",
-        variant: "destructive",
-      })
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    if (!mobileVerified) {
-      toast({
-        title: "Mobile Verification Required",
-        description: "Please verify your mobile number before registering",
-        variant: "destructive",
-      })
-      return
-    }
 
     if (captchaInput.toUpperCase() !== captcha.answer) {
       toast({
@@ -575,7 +456,7 @@ export default function ParticipantRegisterPage() {
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#22d3ee] to-cyan-600 flex items-center justify-center">
                     <Phone className="h-3 w-3 text-white" />
                   </div>
-                  Mobile Number {mobileVerified && <span className="text-emerald-600 text-xs ml-1">✓ Verified</span>} *
+                  Mobile Number *
                 </Label>
                 <div className="flex gap-2">
                   <div className="w-[110px] h-12 px-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center gap-1.5">
@@ -589,8 +470,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="9876543210"
                       value={formData.mobileNumber}
                       onChange={(e) => handleChange("mobileNumber", e.target.value.replace(/\D/g, ""))}
-                      disabled={mobileVerified}
-                      className="h-12 bg-gradient-to-r from-white to-cyan-50/30 border-slate-200 focus:border-[#22d3ee] focus:ring-[#22d3ee]/20 transition-all hover:border-[#22d3ee]/50 focus:shadow-lg focus:shadow-[#22d3ee]/10 disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="h-12 bg-gradient-to-r from-white to-cyan-50/30 border-slate-200 focus:border-[#22d3ee] focus:ring-[#22d3ee]/20 transition-all hover:border-[#22d3ee]/50 focus:shadow-lg focus:shadow-[#22d3ee]/10"
                       maxLength={15}
                       required
                     />
@@ -598,78 +478,7 @@ export default function ParticipantRegisterPage() {
                   </div>
                 </div>
 
-                {/* OTP Verification Section */}
-                {!mobileVerified && (
-                  <div className="mt-3 p-4 rounded-lg bg-gradient-to-br from-blue-50 to-cyan-50 border-2 border-blue-200 space-y-3">
-                    {verificationStep === "idle" && (
-                      <Button
-                        type="button"
-                        onClick={sendMobileOTP}
-                        disabled={!formData.mobileNumber || verificationStep === "sending"}
-                        className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold"
-                      >
-                        {verificationStep === "sending" ? "Sending OTP..." : "Send OTP to Mobile"}
-                      </Button>
-                    )}
 
-                    {(verificationStep === "verifying" || verificationStep === "completed") && (
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm font-semibold text-slate-700 mb-2 block">
-                            Enter 6-Digit OTP
-                          </label>
-                          <div className="flex gap-3 items-center">
-                            <Input
-                              type="text"
-                              placeholder="000000"
-                              value={otpCode}
-                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                              maxLength={6}
-                              className="h-12 flex-1 font-mono text-center text-3xl tracking-widest font-bold border-2 border-blue-300 focus:border-blue-500 focus:ring-blue-500/20 transition-all"
-                              disabled={mobileVerified}
-                              autoFocus
-                            />
-                            <div className="flex flex-col items-center gap-1">
-                              <span className="text-xs font-semibold text-slate-600">Expires in</span>
-                              <span className="text-lg font-bold text-blue-600">
-                                {Math.floor(otpExpiresIn / 60)}:{String(otpExpiresIn % 60).padStart(2, "0")}
-                              </span>
-                            </div>
-                          </div>
-                          <p className="text-xs text-slate-600 mt-2 text-center">
-                            OTP sent to {formData.countryCode}{formData.mobileNumber}
-                          </p>
-                        </div>
-
-                        {/* OTP Display */}
-                        {generatedOtp && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-xs text-blue-600 text-center mb-1 font-medium uppercase tracking-wide">Your OTP</p>
-                            <p className="text-2xl font-bold text-blue-800 text-center tracking-widest">{generatedOtp}</p>
-                          </div>
-                        )}
-
-                        <Button
-                          type="button"
-                          onClick={verifyMobileOTP}
-                          disabled={otpCode.length !== 6 || mobileVerified}
-                          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold h-11"
-                        >
-                          {mobileVerified ? "✓ Mobile Verified" : "Verify OTP"}
-                        </Button>
-
-                        <Button
-                          type="button"
-                          onClick={sendMobileOTP}
-                          variant="outline"
-                          className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
-                        >
-                          Resend OTP
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
