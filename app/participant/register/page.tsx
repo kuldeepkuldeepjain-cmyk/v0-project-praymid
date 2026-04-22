@@ -191,14 +191,15 @@ export default function ParticipantRegisterPage() {
     }
   }
 
-  const verifyOTP = async () => {
-    if (otpCode.length !== 6) return
+  const verifyOTP = async (codeOverride?: string) => {
+    const code = codeOverride ?? otpCode
+    if (code.length !== 6) return
     try {
       const fullMobile = `${formData.countryCode}${formData.mobileNumber}`
       const res = await fetch("/api/participant/verify-mobile-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile_number: fullMobile, otp_code: otpCode }),
+        body: JSON.stringify({ mobile_number: fullMobile, otp_code: code }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Verification failed")
@@ -584,9 +585,20 @@ export default function ParticipantRegisterPage() {
                           OTP sent to {formData.countryCode}{formData.mobileNumber}
                         </p>
                         {previewOtp && (
-                          <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-center">
-                            <p className="text-xs text-amber-700 font-medium mb-1">Preview Mode — Your OTP</p>
+                          <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-center space-y-2">
+                            <p className="text-xs text-amber-700 font-medium">Preview Mode — Your OTP</p>
                             <p className="text-2xl font-bold text-amber-800 tracking-widest font-mono">{previewOtp}</p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold"
+                              onClick={() => {
+                                setOtpCode(previewOtp)
+                                verifyOTP(previewOtp)
+                              }}
+                            >
+                              Use this code &amp; verify
+                            </Button>
                           </div>
                         )}
                         <Button
