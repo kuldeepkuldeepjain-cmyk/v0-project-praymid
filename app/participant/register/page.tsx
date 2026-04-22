@@ -89,6 +89,7 @@ export default function ParticipantRegisterPage() {
   const [otpStep, setOtpStep] = useState<"idle" | "sending" | "verifying" | "done">("idle")
   const [otpCode, setOtpCode] = useState("")
   const [otpCountdown, setOtpCountdown] = useState(0)
+  const [previewOtp, setPreviewOtp] = useState<string | null>(null)
 
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
@@ -172,13 +173,18 @@ export default function ParticipantRegisterPage() {
       setOtpStep("verifying")
       setOtpCode("")
       setOtpCountdown(600)
+      // In preview mode the OTP is returned in the response
+      if (data.otp) setPreviewOtp(data.otp)
       const interval = setInterval(() => {
         setOtpCountdown((prev) => {
           if (prev <= 1) { clearInterval(interval); setOtpStep("idle"); return 0 }
           return prev - 1
         })
       }, 1000)
-      toast({ title: "OTP Sent!", description: "A 6-digit code has been sent to your mobile number" })
+      const desc = data.otp
+        ? `Preview mode — your OTP is shown on screen`
+        : "A 6-digit code has been sent to your mobile number"
+      toast({ title: "OTP Sent!", description: desc })
     } catch (err) {
       setOtpStep("idle")
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to send OTP", variant: "destructive" })
@@ -577,6 +583,12 @@ export default function ParticipantRegisterPage() {
                         <p className="text-xs text-slate-500 text-center">
                           OTP sent to {formData.countryCode}{formData.mobileNumber}
                         </p>
+                        {previewOtp && (
+                          <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-center">
+                            <p className="text-xs text-amber-700 font-medium mb-1">Preview Mode — Your OTP</p>
+                            <p className="text-2xl font-bold text-amber-800 tracking-widest font-mono">{previewOtp}</p>
+                          </div>
+                        )}
                         <Button
                           type="button"
                           onClick={verifyOTP}
