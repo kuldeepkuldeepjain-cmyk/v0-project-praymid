@@ -11,6 +11,7 @@ import { FlowChainLogo } from "@/components/flowchain-logo"
 import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, RefreshCcw, Gift, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { setParticipantAuth } from "@/lib/auth"
 
 function AnimatedStar({ top, left, delay, size }: { top: string; left: string; delay: number; size: number }) {
   return (
@@ -281,28 +282,35 @@ export default function ParticipantRegisterPage() {
       const data = await response.json()
 
       if (data.success) {
-        const participantData = {
+        // Set sessionStorage auth so isParticipantAuthenticated() returns true
+        const token = data.participantId || `preview-${Date.now()}`
+        setParticipantAuth(
+          token,
+          data.walletAddress || "",
+          data.email || formData.email,
+          data.username || formData.username,
+          data.full_name || `${formData.firstName} ${formData.lastName}`,
+          false,
+          data.created_at || new Date().toISOString(),
+          false,
+        )
+
+        // Also persist extended data to localStorage for dashboard
+        localStorage.setItem("participantData", JSON.stringify({
           id: data.participantId,
-          email: formData.email,
+          email: data.email || formData.email,
           username: data.username || formData.username,
-          wallet_address: data.walletAddress,
-          activation_fee_paid: false,
-          created_at: new Date().toISOString(),
-          is_frozen: false,
+          wallet_address: data.walletAddress || "",
           referral_code: data.referralCode || "",
-          wallet_balance: data.wallet_balance || 0,
-          contributed_amount: data.contributed_amount || 0,
-          participation_count: 0,
-          referral_count: 0,
-          referral_earnings: 0,
-          activation_deadline: data.activation_deadline,
-          bep20_address: "",
-        }
-
-        localStorage.setItem("participantData", JSON.stringify(participantData))
-        localStorage.setItem("participant_token", data.token)
-
-        console.log("[v0] Auth data stored in localStorage")
+          account_balance: 0,
+          bonus_balance: 0,
+          total_earnings: 0,
+          total_referrals: 0,
+          status: "active",
+          rank: "bronze",
+          is_active: true,
+          created_at: data.created_at || new Date().toISOString(),
+        }))
 
         toast({
           title: "Account Created!",

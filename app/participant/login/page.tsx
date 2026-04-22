@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { setParticipantAuth } from "@/lib/auth"
 
 function AnimatedStar({ top, left, delay, size }: { top: string; left: string; delay: number; size: number }) {
   return (
@@ -132,12 +133,19 @@ export default function ParticipantLoginPage() {
           status: data.status || "active",
         }
 
-        sessionStorage.setItem("participant_token", data.token)
-        sessionStorage.setItem("participant_wallet", data.walletAddress)
+        // Use setParticipantAuth so isParticipantAuthenticated() returns true
+        setParticipantAuth(
+          data.participantId || `user-${Date.now()}`,
+          data.walletAddress || data.bep20_address || "",
+          data.email,
+          data.username,
+          data.name || data.full_name,
+          data.activation_fee_paid || false,
+          data.created_at,
+          data.is_frozen || false,
+        )
 
         localStorage.setItem("participantData", JSON.stringify(participantData))
-
-        console.log("[v0] Login successful, stored data:", participantData)
 
         toast({
           title: "Welcome back!",

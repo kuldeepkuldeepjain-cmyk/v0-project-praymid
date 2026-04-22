@@ -90,7 +90,10 @@ export async function POST(request: Request) {
 
       // Update referrer count
       if (referralCode) {
-        await supabase.from("participants").update({ total_referrals: supabase.rpc as any }).eq("referral_code", referralCode.toUpperCase()).catch(() => {})
+        const { data: ref } = await supabase.from("participants").select("total_referrals").eq("referral_code", referralCode.toUpperCase()).maybeSingle().catch(() => ({ data: null }))
+        if (ref) {
+          await supabase.from("participants").update({ total_referrals: (ref.total_referrals || 0) + 1 }).eq("referral_code", referralCode.toUpperCase()).catch(() => {})
+        }
       }
 
       await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" })
