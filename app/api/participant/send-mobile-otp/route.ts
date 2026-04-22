@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Pool } from "pg"
-import twilio from "twilio"
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -65,22 +64,35 @@ export async function POST(request: NextRequest) {
       [mobile_number, otp, email, expiresAt]
     )
 
-    // Send SMS via Twilio
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken = process.env.TWILIO_AUTH_TOKEN
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER
+    // Send SMS via Zavu API
+    const zavuApiKey = process.env.ZAVU_API_KEY
+    const zavuApiUrl = process.env.ZAVU_API_URL
 
-    if (!accountSid || !authToken || !fromNumber) {
-      console.error("[send-otp] Twilio credentials missing")
+    if (!zavuApiKey || !zavuApiUrl) {
+      console.error("[send-otp] Zavu credentials missing")
       return NextResponse.json({ error: "SMS service not configured" }, { status: 500 })
     }
 
-    const client = twilio(accountSid, authToken)
-    await client.messages.create({
-      body: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`,
-      from: fromNumber,
-      to: mobile_number,
+    const smsBody = `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code with anyone.`
+
+    const zavuRes = await fetch(zavuApiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${zavuApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "+12024494825",
+        to: mobile_number,
+        message: smsBody,
+      }),
     })
+
+    if (!zavuRes.ok) {
+      const errText = await zavuRes.text()
+      console.error("[send-otp] Zavu API error:", errText)
+      return NextResponse.json({ error: "Failed to send SMS. Please try again." }, { status: 500 })
+    }
 
     return NextResponse.json(
       { success: true, message: "OTP sent to your mobile number", expiresIn: 600 },
