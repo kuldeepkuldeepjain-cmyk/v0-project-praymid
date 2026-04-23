@@ -758,10 +758,7 @@ function PredictPageContent() {
                   <span className="text-emerald-700">Profit Rate</span>
                   <span className="font-bold text-emerald-800">50%</span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Platform Fee</span>
-                  <span className="text-slate-600">20%</span>
-                </div>
+
                 <div className="border-t border-emerald-200 mt-2 pt-1.5 space-y-1">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-emerald-700">Potential Profit</span>
