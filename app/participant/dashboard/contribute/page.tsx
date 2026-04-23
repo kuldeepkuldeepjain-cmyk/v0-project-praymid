@@ -645,7 +645,7 @@ export default function ContributePage() {
                         {/* Selection indicator + ROI */}
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            +80% ROI
+                            +50% ROI
                           </span>
                           <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
                             isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
