@@ -90,8 +90,8 @@ const COMMODITY_TIMEFRAMES = [
 // Combined TIMEFRAMES array
 const TIMEFRAMES = [...CRYPTO_TIMEFRAMES, ...COMMODITY_TIMEFRAMES]
 
-// Fixed payout rate: 80% profit (20% platform fee)
-const PROFIT_RATE = 0.80
+// Fixed payout rate: 50% profit (50% platform fee)
+const PROFIT_RATE = 0.50
 
 function PredictPageContent() {
   const router = useRouter()
@@ -756,7 +756,7 @@ function PredictPageContent() {
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
                   <span className="text-emerald-700">Profit Rate</span>
-                  <span className="font-bold text-emerald-800">80%</span>
+                  <span className="font-bold text-emerald-800">50%</span>
                 </div>
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="text-slate-500">Platform Fee</span>
