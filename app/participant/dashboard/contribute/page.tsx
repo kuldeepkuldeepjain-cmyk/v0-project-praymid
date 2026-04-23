@@ -607,7 +607,7 @@ export default function ContributePage() {
 
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-bold text-slate-900">Choose Your Contribution Plan</h2>
-                <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.8x back upon approval</p>
+                <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.5x back upon approval</p>
               </div>
 
               {/* Plan cards */}
