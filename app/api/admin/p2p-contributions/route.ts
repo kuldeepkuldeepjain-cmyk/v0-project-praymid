@@ -66,10 +66,10 @@ export async function POST(request: NextRequest) {
 
       const currentBalance = Number(participant?.account_balance || 0)
       const currentEarnings = Number(participant?.total_earnings || 0)
-      // Reward is always 1.8× the contributed amount (works for all plans)
-      const creditAmount = Math.round(Number(contribution.amount) * 1.8 * 100) / 100
+      // Reward is always 1.5× the contributed amount (works for all plans)
+      const creditAmount = Math.round(Number(contribution.amount) * 1.5 * 100) / 100
 
-      // 2. Credit contributor +$180 and set next_contribution_date
+      // 2. Credit contributor +$150 and set next_contribution_date
       await supabase
         .from("participants")
         .update({
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: action === "approve"
-        ? "Contribution approved. $180 credited to contributor."
+        ? "Contribution approved. $150 credited to contributor."
         : "Contribution rejected. Payout unlinked and made available again.",
     })
   } catch (err: any) {

@@ -184,7 +184,7 @@ export function ContributionPayoutPanel() {
     setShowConfirmDialog(false)
 
     try {
-      // 1. Approve the contribution via existing API (credits participant $180)
+      // 1. Approve the contribution via existing API (credits participant $150)
       const res = await fetch("/api/admin/activation-payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

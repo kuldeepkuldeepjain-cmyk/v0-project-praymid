@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
-    const newBalance = Number(participant.account_balance || 0) + 180
+    const newBalance = Number(participant.account_balance || 0) + 150
     
     // Set next contribution date to 30 days from now
     const nextContributionDate = new Date()
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Failed to approve submission: " + submissionError.message }, { status: 500 })
     }
 
-    // 5. Credit $180 to participant + mark contribution_approved + set 30-day cooldown
+    // 5. Credit $150 to participant + mark contribution_approved + set 30-day cooldown
     const { error: participantError } = await supabase
       .from("participants")
       .update({
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       user_email: participantEmail,
       type: "success",
       title: "Contribution Approved",
-      message: `Your contribution has been approved. $180 has been credited to your account. Your payout request has been completed. Next contribution available after 30 days.`,
+      message: `Your contribution has been approved. $150 has been credited to your account. Your payout request has been completed. Next contribution available after 30 days.`,
       read_status: false,
     })
 
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     await supabase.from("activity_logs").insert({
       actor_email: "admin",
       action: "contribution_and_payout_approved",
-      details: `Approved contribution for ${participantEmail}. Payment proof verified (${paymentSubmission.screenshot_url ? "screenshot" : "transaction ID"}). Credited $180. Payout request #${payoutRequestId} completed.`,
+      details: `Approved contribution for ${participantEmail}. Payment proof verified (${paymentSubmission.screenshot_url ? "screenshot" : "transaction ID"}). Credited $150. Payout request #${payoutRequestId} completed.`,
       target_type: "payment_submission",
     }).catch(() => {})
 

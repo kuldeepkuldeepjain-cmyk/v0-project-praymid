@@ -32,7 +32,7 @@ const PLANS = [
     id: "platinum",
     label: "P2P Contribution",
     amount: 100,
-    reward: 180,
+    reward: 150,
     color: "violet",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",
@@ -607,7 +607,7 @@ export default function ContributePage() {
 
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-bold text-slate-900">Choose Your Contribution Plan</h2>
-                <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.8x back upon approval</p>
+                <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.5x back upon approval</p>
               </div>
 
               {/* Plan cards */}
@@ -645,7 +645,7 @@ export default function ContributePage() {
                         {/* Selection indicator + ROI */}
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            +80% ROI
+                            +50% ROI
                           </span>
                           <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
                             isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
