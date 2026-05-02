@@ -35,7 +35,8 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        setAdminAuth(data.token, email, data.role, data.permissions)
+        // Use returned token or fall back to a session marker
+        setAdminAuth(data.token || `session_${Date.now()}`, email, data.role, data.permissions)
         router.push("/admin/dashboard")
       } else {
         setError(data.error || "Login failed. Please try again.")

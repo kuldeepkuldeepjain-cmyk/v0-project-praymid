@@ -2,21 +2,22 @@
  * Supabase-compatible query builder backed by @neondatabase/serverless.
  * All API routes that import { createClient } from "@/lib/supabase/server"
  * continue to work without modification.
+ *
+ * Uses the same lazy-init sql proxy from lib/db.ts so DATABASE_URL is only
+ * required at query time, not at module import time.
  */
-import { neon } from "@neondatabase/serverless"
-
-const _neon = neon(process.env.DATABASE_URL!)
+import { sql as _neonSql } from "@/lib/db"
 
 /** Run a parameterized query using the neon tagged-template trick */
 async function execute(text: string, values: any[]): Promise<any[]> {
   if (values.length === 0) {
     const s = Object.assign([text], { raw: [text] }) as TemplateStringsArray
-    return (_neon as any)(s) as any[]
+    return (_neonSql as any)(s) as any[]
   }
   // Split "SELECT … WHERE id = $1 AND x = $2" by "$N" placeholders
   const parts = text.split(/\$\d+/)
   const s = Object.assign([...parts], { raw: [...parts] }) as TemplateStringsArray
-  return (_neon as any)(s, ...values) as any[]
+  return (_neonSql as any)(s, ...values) as any[]
 }
 
 type Condition =

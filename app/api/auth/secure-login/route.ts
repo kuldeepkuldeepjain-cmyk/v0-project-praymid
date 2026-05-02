@@ -24,6 +24,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
+        token: `sa_${Date.now()}_${Math.random().toString(36).slice(2)}`,
         email,
         role: "super_admin",
         name: "Super Admin",
@@ -39,6 +40,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
+      token: `adm_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       email,
       role: "admin",
       name: "Admin",
