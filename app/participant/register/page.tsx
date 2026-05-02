@@ -89,7 +89,6 @@ export default function ParticipantRegisterPage() {
   const [verificationStep, setVerificationStep] = useState<"idle" | "sending" | "verifying" | "completed">("idle")
   const [otpCode, setOtpCode] = useState("")
   const [otpExpiresIn, setOtpExpiresIn] = useState(0)
-  const [generatedOtp, setGeneratedOtp] = useState("")
 
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
@@ -186,11 +185,10 @@ export default function ParticipantRegisterPage() {
       setVerificationStep("verifying")
       setOtpExpiresIn(600) // 10 minutes
       setOtpCode("")
-      setGeneratedOtp(data.otp || "")
 
       toast({
-        title: "OTP Generated!",
-        description: `Your OTP is ready. Please use the code shown on screen to verify your number.`,
+        title: "OTP Sent via WhatsApp",
+        description: `A 6-digit verification code has been sent to ${formData.countryCode}${formData.mobileNumber} on WhatsApp.`,
       })
 
       // Countdown timer
@@ -640,14 +638,6 @@ export default function ParticipantRegisterPage() {
                             OTP sent to {formData.countryCode}{formData.mobileNumber}
                           </p>
                         </div>
-
-                        {/* OTP Display */}
-                        {generatedOtp && (
-                          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                            <p className="text-xs text-blue-600 text-center mb-1 font-medium uppercase tracking-wide">Your OTP</p>
-                            <p className="text-2xl font-bold text-blue-800 text-center tracking-widest">{generatedOtp}</p>
-                          </div>
-                        )}
 
                         <Button
                           type="button"

@@ -6,48 +6,47 @@ export async function POST(request: NextRequest) {
     const { mobile_number, otp_code } = await request.json()
 
     if (!mobile_number || !otp_code) {
-      return NextResponse.json(
-        { error: "Mobile number and OTP code are required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Mobile number and OTP code are required" }, { status: 400 })
     }
 
-    // Find participant with this mobile number and check OTP stored in send-mobile-otp
-    // Since we don't have a dedicated OTP table, check the participant record
+    // Find the most recent OTP entry for this mobile number in activity_logs
     const rows = await sql`
-      SELECT id, email, mobile_number FROM participants
-      WHERE mobile_number = ${mobile_number}
+      SELECT details, created_at
+      FROM activity_logs
+      WHERE action = 'otp_sent'
+        AND target_type = 'mobile_verification'
+        AND details->>'mobile_number' = ${mobile_number}
+      ORDER BY created_at DESC
       LIMIT 1
     `
-    const participant = rows[0]
 
-    if (!participant) {
-      return NextResponse.json(
-        { error: "Mobile number not found. Please request a new OTP." },
-        { status: 400 }
-      )
+    if (rows.length === 0) {
+      return NextResponse.json({ error: "No OTP found. Please request a new one." }, { status: 400 })
     }
 
-    // Mark mobile as verified
+    const { otp, expires } = rows[0].details as { otp: string; expires: string }
+
+    // Check expiry
+    if (new Date() > new Date(expires)) {
+      return NextResponse.json({ error: "OTP has expired. Please request a new one." }, { status: 400 })
+    }
+
+    // Validate OTP
+    if (otp_code !== otp) {
+      return NextResponse.json({ error: "Invalid OTP. Please check and try again." }, { status: 400 })
+    }
+
+    // Clean up used OTP entries for this mobile number
     await sql`
-      UPDATE participants
-      SET details_completed = true, updated_at = NOW()
-      WHERE mobile_number = ${mobile_number}
+      DELETE FROM activity_logs
+      WHERE action = 'otp_sent'
+        AND target_type = 'mobile_verification'
+        AND details->>'mobile_number' = ${mobile_number}
     `
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Mobile number verified successfully",
-        mobile_number,
-      },
-      { status: 200 }
-    )
+    return NextResponse.json({ success: true, message: "Mobile number verified successfully", mobile_number })
   } catch (error) {
     console.error("Error verifying OTP:", error)
-    return NextResponse.json(
-      { error: "An error occurred while verifying OTP" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "An error occurred while verifying OTP" }, { status: 500 })
   }
 }

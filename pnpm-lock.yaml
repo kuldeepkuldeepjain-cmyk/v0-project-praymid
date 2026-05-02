@@ -122,6 +122,9 @@ importers:
       '@vercel/analytics':
         specifier: 1.3.1
         version: 1.3.1(next@16.0.10(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react@19.2.0)
+      '@zavudev/sdk':
+        specifier: ^0.38.0
+        version: 0.38.0
       ai:
         specifier: 6.0.24
         version: 6.0.24(zod@3.25.76)
@@ -2138,6 +2141,9 @@ packages:
 
   '@xtuc/long@4.2.2':
     resolution: {integrity: sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==}
+
+  '@zavudev/sdk@0.38.0':
+    resolution: {integrity: sha512-3/ZjHHMg8wzoyC1ZwNlfuhOWvEPFpaiMBWcVdzF8Go8xbdFmQHr/+s1oiGhhIkO+7vg6Lm6Q7RZfafQR/VKdqA==}
 
   abitype@1.2.3:
     resolution: {integrity: sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg==}
@@ -5406,6 +5412,8 @@ snapshots:
   '@xtuc/ieee754@1.2.0': {}
 
   '@xtuc/long@4.2.2': {}
+
+  '@zavudev/sdk@0.38.0': {}
 
   abitype@1.2.3(typescript@5.9.3)(zod@3.25.76):
     optionalDependencies:
