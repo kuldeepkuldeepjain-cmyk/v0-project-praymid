@@ -81,7 +81,6 @@ export async function POST(request: Request) {
       created_at: participant.created_at,
     })
   } catch (error: any) {
-    console.error("[v0] Login error:", error)
     return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 })
   }
 }
