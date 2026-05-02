@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { type NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -7,45 +7,29 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const email = request.nextUrl.searchParams.get("email")
+    if (!email) return NextResponse.json({ error: "Email required" }, { status: 400 })
 
-    if (!email) {
-      return NextResponse.json({ error: "Email required" }, { status: 400 })
-    }
+    const [contribution] = await sql`
+      SELECT id, amount, status, created_at, matched_at, matched_payout_id, participant_email
+      FROM payment_submissions
+      WHERE participant_email = ${email}
+        AND status = 'in_process'
+        AND matched_payout_id IS NOT NULL
+      ORDER BY matched_at DESC NULLS LAST
+      LIMIT 1
+    `
 
-    const supabase = await createClient()
+    if (!contribution) return NextResponse.json({ matched: false })
 
-    // Find the most recent contribution with "in_process" status (matched by automatch or admin)
-    const { data: contribution, error: contribError } = await supabase
-      .from("payment_submissions")
-      .select("id, amount, status, created_at, matched_at, matched_payout_id, participant_email")
-      .eq("participant_email", email)
-      .eq("status", "in_process")
-      .not("matched_payout_id", "is", null)
-      .order("matched_at", { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle()
+    const [payout] = await sql`
+      SELECT pr.id, pr.participant_email, pr.amount, pr.payout_method, pr.status, pr.created_at,
+             p.full_name, p.username
+      FROM payout_requests pr
+      LEFT JOIN participants p ON p.email = pr.participant_email
+      WHERE pr.id = ${contribution.matched_payout_id}
+    `
 
-    if (contribError) {
-      return NextResponse.json({ matched: false, error: contribError.message }, { status: 500 })
-    }
-
-    if (!contribution) {
-      return NextResponse.json({ matched: false })
-    }
-
-    // Fetch the matched payout details
-    const { data: payout, error: payoutError } = await supabase
-      .from("payout_requests")
-      .select(
-        `id, participant_email, amount, payout_method, status, created_at,
-        participant:participants(full_name, username)`
-      )
-      .eq("id", contribution.matched_payout_id)
-      .maybeSingle()
-
-    if (payoutError || !payout) {
-      return NextResponse.json({ matched: false, error: "Payout not found" }, { status: 500 })
-    }
+    if (!payout) return NextResponse.json({ matched: false, error: "Payout not found" }, { status: 500 })
 
     return NextResponse.json({
       matched: true,
@@ -59,17 +43,13 @@ export async function GET(request: NextRequest) {
       payout: {
         id: payout.id,
         participant_email: payout.participant_email,
-        participant_name:
-          (payout.participant as any)?.full_name ||
-          (payout.participant as any)?.username ||
-          "Unknown",
+        participant_name: payout.full_name || payout.username || "Unknown",
         amount: payout.amount,
         payout_method: payout.payout_method,
         status: payout.status,
       },
     })
-  } catch (error) {
-    console.error("Contributions status API error:", error)
-    return NextResponse.json({ error: "Internal server error", matched: false }, { status: 500 })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message, matched: false }, { status: 500 })
   }
 }
