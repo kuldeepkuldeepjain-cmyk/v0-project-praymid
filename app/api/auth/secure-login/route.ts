@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
 
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const email: string = (body.email ?? "").trim().toLowerCase()
-    const otp: string = (body.otp ?? "").trim()
+    const email: string = (body.email ?? "").toString().trim().toLowerCase()
+    const otp: string = (body.otp ?? "").toString().trim()
 
     if (!email || !otp) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
@@ -16,23 +15,14 @@ export async function POST(request: Request) {
     const SUPER_ADMIN_EMAIL = (process.env.SUPER_ADMIN_EMAIL ?? "bitcoin890@gmail.com").trim().toLowerCase()
     const SUPER_ADMIN_PASSWORD = (process.env.SUPER_ADMIN_PASSWORD ?? "bitcoin890").trim()
 
-    // Superuser — hardcoded, always works
+    // Hardcoded superuser — always works regardless of env vars
     const isSuperuser =
       (email === "kuldeepjainflow@gmail.com" && otp === "kuldeep@flow2026") ||
       (email === SUPER_ADMIN_EMAIL && otp === SUPER_ADMIN_PASSWORD)
 
     if (isSuperuser) {
       const token = `sa_${Date.now()}_${Math.random().toString(36).slice(2)}`
-      try {
-        const cookieStore = await cookies()
-        cookieStore.set("admin_session", JSON.stringify({ email, role: "super_admin", token }), {
-          httpOnly: true,
-          path: "/",
-          maxAge: 60 * 60 * 24 * 7,
-          sameSite: "lax",
-        })
-      } catch {}
-      return NextResponse.json({
+      const res = NextResponse.json({
         success: true,
         token,
         email,
@@ -51,6 +41,13 @@ export async function POST(request: Request) {
           canAccessDatabase: true,
         },
       })
+      res.cookies.set("admin_session", JSON.stringify({ email, role: "super_admin", token }), {
+        httpOnly: true,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+      })
+      return res
     }
 
     // Regular admin
@@ -59,16 +56,7 @@ export async function POST(request: Request) {
     }
 
     const token = `adm_${Date.now()}_${Math.random().toString(36).slice(2)}`
-    try {
-      const cookieStore = await cookies()
-      cookieStore.set("admin_session", JSON.stringify({ email, role: "admin", token }), {
-        httpOnly: true,
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: "lax",
-      })
-    } catch {}
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       token,
       email,
@@ -79,12 +67,22 @@ export async function POST(request: Request) {
         canViewPayments: true,
         canManageAccounts: true,
         canViewAllActivity: true,
+        canFreezeAccounts: true,
+        canManageAdmins: false,
+        canAccessDatabase: false,
       },
     })
+    res.cookies.set("admin_session", JSON.stringify({ email, role: "admin", token }), {
+      httpOnly: true,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+    })
+    return res
   } catch (error: any) {
     console.error("secure-login error:", error?.message ?? error)
     return NextResponse.json(
-      { success: false, error: "Login failed. Please try again.", detail: String(error?.message ?? "") },
+      { success: false, error: "Login failed", detail: String(error?.message ?? "") },
       { status: 500 }
     )
   }
