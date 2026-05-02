@@ -28,22 +28,18 @@ export async function DELETE(request: NextRequest) {
 
     let totalDeleted = 0
 
-    // Delete related records
+    // Delete related records (each step is wrapped so missing tables are skipped gracefully)
     const deletionSteps = [
-      sql`DELETE FROM activity_logs WHERE actor_id = ${participantId}`,
+      sql`DELETE FROM activity_logs WHERE actor_id::text = ${participantId}`,
       sql`DELETE FROM support_tickets WHERE participant_id = ${participantId}`,
       sql`DELETE FROM payment_submissions WHERE participant_id = ${participantId}`,
       sql`DELETE FROM payout_requests WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM predictions WHERE participant_id = ${participantId}`,
       sql`DELETE FROM transactions WHERE participant_id = ${participantId}`,
       sql`DELETE FROM invite_logs WHERE participant_id = ${participantId}`,
       sql`DELETE FROM gas_approvals WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM user_contacts WHERE participant_id = ${participantId}`,
       sql`DELETE FROM spin_coupons WHERE participant_id = ${participantId}`,
       sql`DELETE FROM topup_requests WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM mobile_verification_otps WHERE email = ${participant.email}`,
       sql`DELETE FROM notifications WHERE user_email = ${participant.email}`,
-      sql`DELETE FROM wallet_pool WHERE assigned_to = ${participantId}`,
     ]
 
     for (const step of deletionSteps) {

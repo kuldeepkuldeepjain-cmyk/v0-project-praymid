@@ -1,63 +1,50 @@
 import { NextRequest, NextResponse } from "next/server"
-import { processAutomatch } from "@/lib/websocket/automatch-server"
+import { sql } from "@/lib/db"
 
-/**
- * Automatch Process API
- * 
- * Triggered by: External cron job (every 5 minutes)
- * Purpose: Find contributions ready for automatch (30 min old) and match with payouts
- * 
- * Request Headers:
- * - Authorization: Bearer {CRON_SECRET}
- */
+async function runAutomatch() {
+  const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  const eligible = await sql`
+    SELECT id, participant_email, amount FROM payment_submissions
+    WHERE status = 'approved' AND matched_payout_id IS NULL AND created_at <= ${thirtyMinutesAgo}
+    ORDER BY created_at ASC LIMIT 50
+  `
+  let matched = 0
+  for (const contrib of eligible) {
+    const payouts = await sql`
+      SELECT id, serial_number FROM payout_requests
+      WHERE status = 'pending' AND matched_contribution_id IS NULL
+      ORDER BY created_at ASC LIMIT 1
+    `
+    if (payouts.length === 0) break
+    const payout = payouts[0]
+    const now = new Date().toISOString()
+    await sql`UPDATE payment_submissions SET matched_payout_id = ${payout.id}, matched_at = ${now}, status = 'in_process' WHERE id = ${contrib.id}`
+    await sql`UPDATE payout_requests SET matched_contribution_id = ${contrib.id}, matched_at = ${now}, status = 'in_process' WHERE id = ${payout.id}`
+    await sql`INSERT INTO notifications (user_email, type, title, message) VALUES (${contrib.participant_email}, 'success', 'Contribution Matched', ${`Your contribution has been matched with payout #${payout.serial_number}.`})`
+    matched++
+  }
+  return { matched }
+}
+
 export async function POST(request: NextRequest) {
-  // Validate CRON_SECRET from Authorization header
   const authHeader = request.headers.get("authorization")
   const cronSecret = process.env.AUTOMATCH_CRON_SECRET
-
   if (!cronSecret || !authHeader || authHeader !== `Bearer ${cronSecret}`) {
-    console.warn("[v0] Unauthorized automatch process request")
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-
-  console.log("[v0] Automatch process triggered by cron")
-
   try {
-    const result = await processAutomatch()
-    
-    return NextResponse.json({
-      success: true,
-      matched: result.matched,
-      timestamp: new Date().toISOString(),
-      message: `Successfully matched ${result.matched} contribution(s) with payout(s)`,
-    })
-  } catch (error) {
-    console.error("[v0] Automatch process failed:", error)
-    return NextResponse.json(
-      {
-        success: false,
-        error: String(error),
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 }
-    )
+    const result = await runAutomatch()
+    return NextResponse.json({ success: true, matched: result.matched, timestamp: new Date().toISOString(), message: `Matched ${result.matched} contribution(s)` })
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: String(error), timestamp: new Date().toISOString() }, { status: 500 })
   }
 }
 
-/**
- * GET - Health check / debug info
- */
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization")
   const cronSecret = process.env.AUTOMATCH_CRON_SECRET
-
   if (!cronSecret || !authHeader || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
-
-  return NextResponse.json({
-    status: "ok",
-    message: "Automatch process API is running",
-    timestamp: new Date().toISOString(),
-  })
+  return NextResponse.json({ status: "ok", message: "Automatch process API is running", timestamp: new Date().toISOString() })
 }
