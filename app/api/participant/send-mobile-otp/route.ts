@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const zavu = new Zavudev({ apiKey: process.env.ZAVUDEV_API_KEY })
     await zavu.messages.send({
       to: mobile_number,
+      channel: "whatsapp",
       text: `Your Praymid verification code is: *${otp}*\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
     })
 
