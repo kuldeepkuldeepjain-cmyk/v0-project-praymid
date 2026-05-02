@@ -33,42 +33,28 @@ export class WalletService {
       const participant = rows[0]
 
       if (!participant) {
-        console.error("[v0] Participant not found:", participantId)
         return { success: false, newBalance: 0, error: "Failed to fetch participant data" }
       }
 
       const currentBalance = Number(participant.account_balance) || 0
       const newBalance = currentBalance + transaction.amount
 
-      // Prevent negative balance (except for admin adjustments)
       if (newBalance < 0 && transaction.type !== "admin_adjustment") {
         return { success: false, newBalance: currentBalance, error: "Insufficient balance" }
       }
 
-      console.log("[v0] Updating wallet:", {
-        currentBalance,
-        transaction: transaction.amount,
-        newBalance,
-      })
-
-      // Update participant balance
       await sql`UPDATE participants SET account_balance = ${newBalance} WHERE id = ${participantId}`
 
-      // Create transaction record
       try {
         await sql`
           INSERT INTO transactions (participant_email, type, amount, description, reference_id, balance_before, balance_after)
           VALUES (${participantEmail}, ${transaction.type}, ${transaction.amount}, ${transaction.description}, ${transaction.reference_id || null}, ${currentBalance}, ${newBalance})
         `
-      } catch (transactionError) {
-        console.error("[v0] Error creating transaction:", transactionError)
-        // Balance updated but transaction log failed - this is acceptable
-      }
+      } catch {}
 
-      console.log("[v0] Wallet updated successfully:", newBalance)
       return { success: true, newBalance }
     } catch (error) {
-      console.error("[v0] Wallet service error:", error)
+      console.error("Wallet service error:", error)
       return { success: false, newBalance: 0, error: "Unexpected error" }
     }
   }
@@ -86,14 +72,11 @@ export class WalletService {
       `
       return data || []
     } catch (error) {
-      console.error("[v0] Error fetching transactions:", error)
+      console.error("Error fetching transactions:", error)
       return []
     }
   }
 
-  /**
-   * Get current wallet balance
-   */
   async getBalance(participantId: string): Promise<number> {
     try {
       const rows = await sql`SELECT account_balance FROM participants WHERE id = ${participantId} LIMIT 1`
@@ -101,7 +84,7 @@ export class WalletService {
       if (!data) return 0
       return Number(data.account_balance) || 0
     } catch (error) {
-      console.error("[v0] Error fetching balance:", error)
+      console.error("Error fetching balance:", error)
       return 0
     }
   }
