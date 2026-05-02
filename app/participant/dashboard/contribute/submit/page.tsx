@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, CheckCircle2, Loader2, ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 
 export default function SubmitContributionPage() {
   const router = useRouter()
@@ -30,19 +30,9 @@ export default function SubmitContributionPage() {
   const checkPendingSubmission = async () => {
     setCheckingPending(true)
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("payment_submissions")
-        .select("id, status, created_at")
-        .eq("participant_email", participantData?.email)
-        .eq("status", "pending")
-        .maybeSingle()
-
-      if (!error && data) {
-        setHasPendingSubmission(true)
-      } else {
-        setHasPendingSubmission(false)
-      }
+      const res = await fetch(`/api/participant/contributions/matched?email=${encodeURIComponent(participantData?.email || "")}`)
+      const data = await res.json()
+      setHasPendingSubmission(!!(data.pending || data.matched))
     } catch (err) {
       console.error("Error checking pending submission:", err)
       setHasPendingSubmission(false)
@@ -113,7 +103,7 @@ export default function SubmitContributionPage() {
     }, 30000) // 30 second timeout
 
     try {
-      console.log("[v0] Validating submission data...")
+
       
       // Validate screenshot size (base64 can be very large)
       const screenshotSize = screenshot.length

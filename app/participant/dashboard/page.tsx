@@ -37,7 +37,6 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
-import { createClient } from "@/lib/supabase/client"
 
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
@@ -554,13 +553,13 @@ function DailySpinWheel({
     
     // Update database with deduction
     try {
-      const supabase = createClient()
-      await supabase
-        .from("participants")
-        .update({ account_balance: balanceAfterDeduction })
-        .eq("email", userEmail)
+      await fetch("/api/participant/update-balance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, balance: balanceAfterDeduction }),
+      })
     } catch (error) {
-      console.error("[v0] Error updating wallet after deduction:", error)
+      console.error("Error updating wallet after deduction:", error)
     }
 
   // Pick random segment FIRST - only from segments with probability > 0
@@ -596,7 +595,7 @@ function DailySpinWheel({
     const rotationForSegment = (SPIN_SEGMENTS.length - segmentIndex) * segmentAngle
     const finalRotation = spins * 360 + rotationForSegment
     
-    console.log("[v0] Want segment:", segmentIndex, wonSegment.label, "| Rotation offset:", rotationForSegment, "| Total:", finalRotation)
+
 
     // Wait a tiny bit for state to update, then apply the rotation
     setTimeout(() => {
@@ -610,24 +609,19 @@ function DailySpinWheel({
       setResult(won)
       setShowResult(true)
 
-      console.log("[v0] Spin result:", won)
+
 
       // Handle different prize types
       if (won.type === "ticket") {
         // Create free ticket coupon in database
         try {
-          const supabase = createClient()
           const expiresAt = new Date()
           expiresAt.setHours(expiresAt.getHours() + 24)
-          
-          await supabase.from("spin_coupons").insert({
-            user_email: userEmail,
-            coupon_type: "free_bet",
-            amount: 5,
-            expires_at: expiresAt.toISOString(),
-            is_used: false,
+          await fetch("/api/participant/spin-coupon", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, couponType: "free_bet", amount: 5, expiresAt: expiresAt.toISOString() }),
           })
-          
           toast({
             title: "Free Ticket Won!",
             description: "You can use this $5 free bet in predictions within 24 hours!",
@@ -643,15 +637,13 @@ function DailySpinWheel({
         
         // Update database with winnings
         try {
-          const supabase = createClient()
-          await supabase
-            .from("participants")
-            .update({ account_balance: finalBalance })
-            .eq("email", userEmail)
-          
-          console.log("[v0] Wallet updated - Deducted: $5, Won: $" + won.value + ", Final Balance: $" + finalBalance)
+          await fetch("/api/participant/update-balance", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, balance: finalBalance }),
+          })
         } catch (error) {
-          console.error("[v0] Error updating wallet with winnings:", error)
+          console.error("Error updating wallet with winnings:", error)
         }
         
         toast({
@@ -1204,38 +1196,26 @@ export default function DashboardHome() {
 
   const checkProfileCompletion = async (email: string) => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("details_completed")
-        .eq("email", email)
-        .single()
-
-      if (error) {
-        console.error("[v0] Error checking profile completion:", error)
-        return
-      }
-
-      // If profile is not completed, redirect to complete profile page
-      if (!data?.details_completed) {
+      const res = await fetch(`/api/participant/me`, {
+        headers: { "x-participant-email": email },
+      })
+      const json = await res.json()
+      if (json.success && !json.participant?.details_completed) {
         router.push("/participant/complete-profile")
-        return
       }
     } catch (error) {
-      console.error("[v0] Error in checkProfileCompletion:", error)
+      console.error("Error in checkProfileCompletion:", error)
     }
   }
 
   const handleTimerExpire = useCallback(async () => {
     if (!participantData?.email) return
-
     try {
-      const supabase = createClient()
-      await supabase
-        .from("participants")
-        .update({ account_frozen: true, status: "frozen" })
-        .eq("email", participantData.email)
-
+      await fetch("/api/participant/freeze-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: participantData.email }),
+      })
       setShowFrozenModal(true)
     } catch (error) {
       console.error("Error freezing account:", error)
@@ -1250,10 +1230,7 @@ export default function DashboardHome() {
   }
 
   const handleSpinWin = (amount: number, label: string, type: string) => {
-    // NOTE: Wallet transactions are now handled entirely within the SpinWheelModal component
-    // This callback is kept for compatibility but no longer updates the wallet to prevent double-crediting
-    // The spin wheel already: 1) Deducts $5, 2) Adds winnings, 3) Updates database
-    console.log("[v0] Spin complete - amount:", amount, "label:", label, "type:", type)
+    // Wallet transactions handled within SpinWheelModal — this callback kept for compatibility
   }
 
   // Function to fetch queue position
@@ -1265,35 +1242,30 @@ export default function DashboardHome() {
       if (data.success) {
         setQueuePosition(data.position)
         setQueueData(data)
-        console.log("[v0] Queue position:", data.position, "Days elapsed:", data.daysElapsed)
       }
     } catch (error) {
-      console.error("[v0] Error fetching queue position:", error)
+      console.error("Error fetching queue position:", error)
     }
   }
 
   // Function to fetch fresh participant data from database
   const refreshParticipantData = async (email: string) => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("*")
-        .eq("email", email)
-        .single()
-
-      if (!error && data) {
+      const res = await fetch("/api/participant/me", {
+        headers: { "x-participant-email": email },
+      })
+      const json = await res.json()
+      if (json.success && json.participant) {
         const updatedData = {
-          ...data,
-          participantId: data.id,
-          walletAddress: data.wallet_address,
+          ...json.participant,
+          participantId: json.participant.id,
+          walletAddress: json.participant.wallet_address,
         }
         setParticipantData(updatedData)
         localStorage.setItem("participantData", JSON.stringify(updatedData))
-        console.log("[v0] Refreshed participant data from database")
       }
     } catch (error) {
-      console.error("[v0] Error refreshing participant data:", error)
+      console.error("Error refreshing participant data:", error)
     }
   }
 

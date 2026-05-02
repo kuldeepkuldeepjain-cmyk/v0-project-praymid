@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, CheckCircle2, User, Mail, Wallet, DollarSign, Calendar, Clock, Copy, ExternalLink } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
+
 
 interface MatchedDetails {
   contribution: {
@@ -54,102 +54,25 @@ function MatchedDetailsContent() {
 
     const fetchMatchedDetails = async () => {
       try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        // Get user email from localStorage (participant auth)
+        const stored = localStorage.getItem("participantData")
+        if (!stored) { router.push("/participant/login"); return }
+        const { email } = JSON.parse(stored)
 
-        if (!user) {
-          console.log("[v0] User not authenticated, redirecting to login")
-          router.push("/participant/login")
-          return
-        }
+        const res = await fetch(`/api/participant/matched-details?contributionId=${encodeURIComponent(contributionId!)}&email=${encodeURIComponent(email)}`)
+        const data = await res.json()
 
-        console.log("[v0] Fetching matched details for contribution:", contributionId, "User email:", user.email)
-
-        // Fetch contribution details
-        const { data: contribution, error: contribError } = await supabase
-          .from("payment_submissions")
-          .select("id, amount, status, created_at, matched_at, matched_payout_id, participant_email")
-          .eq("id", contributionId)
-          .eq("participant_email", user.email)
-          .maybeSingle()
-
-        if (contribError) {
-          console.error("[v0] Error fetching contribution:", contribError)
-          setError(`Error: ${contribError.message}`)
+        if (!data.success || !data.matched) {
+          setError(data.error || "Contribution not found")
           setNotFoundTriggered(true)
           setLoading(false)
           return
         }
 
-        if (!contribution) {
-          console.error("[v0] Contribution not found for ID:", contributionId)
-          setError("Contribution not found")
-          setNotFoundTriggered(true)
-          setLoading(false)
-          return
-        }
-
-        console.log("[v0] Found contribution:", contribution.id, "Status:", contribution.status, "Matched payout ID:", contribution.matched_payout_id)
-
-        if (!contribution.matched_payout_id) {
-          console.error("[v0] Contribution has no matched payout ID")
-          setError("Contribution has not been matched yet")
-          setNotFoundTriggered(true)
-          setLoading(false)
-          return
-        }
-
-        // Fetch matched payout details
-        const { data: payout, error: payoutError } = await supabase
-          .from("payout_requests")
-          .select(
-            `id, participant_email, amount, payout_method, bank_details, wallet_address, status, created_at,
-            participant:participants(full_name, username)`
-          )
-          .eq("id", contribution.matched_payout_id)
-          .maybeSingle()
-
-        if (payoutError) {
-          console.error("[v0] Error fetching payout:", payoutError)
-          setError(`Error: ${payoutError.message}`)
-          setNotFoundTriggered(true)
-          setLoading(false)
-          return
-        }
-
-        if (!payout) {
-          console.error("[v0] Payout not found for ID:", contribution.matched_payout_id)
-          setError("Payout details not found")
-          setNotFoundTriggered(true)
-          setLoading(false)
-          return
-        }
-
-        console.log("[v0] Successfully loaded payout details:", payout.id)
-
-        setMatched({
-          contribution: {
-            id: contribution.id,
-            amount: contribution.amount,
-            status: contribution.status,
-            created_at: contribution.created_at,
-            matched_at: contribution.matched_at,
-          },
-          payout: {
-            id: payout.id,
-            participant_email: payout.participant_email,
-            participant_name: (payout.participant as any)?.full_name || (payout.participant as any)?.username || "Unknown",
-            amount: payout.amount,
-            payout_method: payout.payout_method,
-            bank_details: payout.bank_details,
-            wallet_address: payout.wallet_address,
-            status: payout.status,
-            created_at: payout.created_at,
-          },
-        })
+        setMatched(data.matched)
         setError(null)
       } catch (err) {
-        console.error("[v0] Error fetching matched details:", err)
+        console.error("Error fetching matched details:", err)
         setError("An unexpected error occurred")
         setNotFoundTriggered(true)
       } finally {
