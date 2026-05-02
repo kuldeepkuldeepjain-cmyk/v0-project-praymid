@@ -21,7 +21,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { AssetLogo } from "@/components/asset-logo"
 
@@ -117,18 +117,13 @@ export default function PredictionHistoryPage() {
 
     const fetchPredictions = async () => {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("predictions")
-          .select("*")
-          .eq("participant_email", participantData.email)
-          .order("created_at", { ascending: false })
-          .limit(50)
+        const res = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}&limit=50`)
+        const result = await res.json()
 
-        if (error) return
+        if (!result.success) return
 
-        setPredictions(data || [])
-        calculateStats(data || [])
+        setPredictions(result.predictions || [])
+        calculateStats(result.predictions || [])
         setIsLoading(false)
       } catch (error) {
         setIsLoading(false)

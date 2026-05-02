@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
 interface Notification {
@@ -38,22 +37,16 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true)
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_email", userEmail)
-        .order("created_at", { ascending: false })
-        .limit(50)
+      const res = await fetch(`/api/participant/notifications?email=${encodeURIComponent(userEmail)}`)
+      const result = await res.json()
 
-      if (error) {
-        console.error("Error fetching notifications:", error)
+      if (!result.success) {
         setNotifications([])
         return
       }
 
-      setNotifications(data || [])
-      setUnreadCount(data?.filter((n) => !n.read_status).length || 0)
+      setNotifications(result.notifications || [])
+      setUnreadCount(result.notifications?.filter((n: Notification) => !n.read_status).length || 0)
     } catch (error) {
       console.error("Error fetching notifications:", error)
       setNotifications([])
@@ -64,16 +57,11 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read_status: true })
-        .eq("id", notificationId)
-
-      if (error) {
-        console.error("Error marking notification as read:", error)
-        return
-      }
+      await fetch("/api/participant/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: notificationId, read_status: true }),
+      })
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, read_status: true } : n))
@@ -86,49 +74,28 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
 
   const markAllAsRead = async () => {
     try {
-      const supabase = createClient()
       const unreadIds = notifications.filter((n) => !n.read_status).map((n) => n.id)
-      
       if (unreadIds.length === 0) return
 
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read_status: true })
-        .in("id", unreadIds)
-
-      if (error) {
-        console.error("Error marking all as read:", error)
-        return
-      }
-
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, read_status: true }))
-      )
-      setUnreadCount(0)
-      
-      toast({
-        title: "Success",
-        description: "All notifications marked as read",
+      await fetch("/api/participant/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: unreadIds }),
       })
+
+      setNotifications((prev) => prev.map((n) => ({ ...n, read_status: true })))
+      setUnreadCount(0)
+
+      toast({ title: "Success", description: "All notifications marked as read" })
     } catch (error) {
       console.error("[v0] Error marking all as read:", error)
-      toast({
-        title: "Error",
-        description: "Failed to mark notifications as read",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to mark notifications as read", variant: "destructive" })
     }
   }
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", notificationId)
-
-      if (error) throw error
+      await fetch(`/api/participant/notifications?id=${notificationId}`, { method: "DELETE" })
 
       const wasUnread = notifications.find((n) => n.id === notificationId)?.read_status === false
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId))

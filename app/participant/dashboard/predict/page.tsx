@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 import { LivePredictionMonitor } from "@/components/live-prediction-monitor"
 import { ActiveTradeTracker } from "@/components/active-trade-tracker"
 import { AssetLogo } from "@/components/asset-logo"
@@ -102,7 +102,6 @@ function PredictPageContent() {
   const [priceFlash, setPriceFlash] = useState<Record<string, string>>({})
   const previousPrices = useRef<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(true)
-  const supabase = createClient() // Declared supabase
 
   // Bet dialog states
   const [showBetDialog, setShowBetDialog] = useState(false)
@@ -184,19 +183,14 @@ function PredictPageContent() {
       }
     }
 
-    // Load active trades for the user
+    // Load active trades for the user via API
     const loadActiveTrades = async () => {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("predictions")
-          .select("*")
-          .eq("participant_email", participantData.email)
-          .eq("status", "pending")
-
-        if (!error && data) {
+        const res = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}&status=pending`)
+        const result = await res.json()
+        if (result.success && result.predictions) {
           const tradesMap: Record<string, any> = {}
-          data.forEach((trade) => {
+          result.predictions.forEach((trade: any) => {
             tradesMap[trade.crypto_pair] = trade
           })
           setActiveTrades(tradesMap)
@@ -296,73 +290,33 @@ function PredictPageContent() {
         return
       }
 
-      // Get participant ID first
-      const { data: participant, error: pError } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("email", userEmail)
-        .maybeSingle()
+      // Place trade via server API (handles participant lookup, balance deduction, transaction log)
+      const tradeRes = await fetch("/api/participant/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participant_email: userEmail,
+          crypto_pair: selectedAsset.symbol,
+          prediction_type: betDirection,
+          amount,
+          entry_price: entryPrice,
+          leverage: 1,
+          status: "pending",
+          timeframe_seconds: selectedTimeframe.seconds,
+          balance_source: balanceSource,
+        }),
+      })
 
-      if (pError || !participant) {
-        toast({ title: "Could not find account", variant: "destructive" })
-        setIsPlacingTrade(false)
-        return
-      }
-  
-      // Calculate expiry timestamp based on selected timeframe
-      const now = new Date()
-      const expiryTimestamp = new Date(now.getTime() + (selectedTimeframe.seconds * 1000))
-  
-      // Insert prediction record - use .select() to get the real DB-generated ID back
-      const { data: insertedTrade, error: insertError } = await supabase.from("predictions").insert({
-        participant_id: participant.id,
-        participant_email: userEmail,
-        crypto_pair: selectedAsset.symbol,
-        prediction_type: betDirection,
-        amount: amount,
-        entry_price: entryPrice,
-        target_price: null,
-        leverage: 1,
-        status: "pending",
-        profit_loss: 0,
-        result: null,
-        timeframe_seconds: selectedTimeframe.seconds,
-        expiry_timestamp: expiryTimestamp.toISOString()
-      }).select("id, crypto_pair, prediction_type, amount, entry_price, expiry_timestamp, timeframe_seconds, status").single()
+      const tradeResult = await tradeRes.json()
 
-      if (insertError || !insertedTrade) {
-        toast({ title: "Failed to place trade", variant: "destructive" })
+      if (!tradeRes.ok || tradeResult.error) {
+        toast({ title: "Failed to place trade", description: tradeResult.error, variant: "destructive" })
         setIsPlacingTrade(false)
         return
       }
 
-      // Deduct bet amount from the correct balance field
-      // Referral earnings are stored in `bonus_balance` column (confirmed by DB schema)
-      const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
       const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
       const newFieldBalance = currentFieldBalance - amount
-
-      const { error: balanceError } = await supabase
-        .from("participants")
-        .update({ [balanceField]: newFieldBalance })
-        .eq("email", participantData.email)
-
-      if (balanceError) {
-        console.error("Balance deduction error:", balanceError)
-      }
-
-      // Log transaction with correct type
-      await supabase.from("transactions").insert({
-        participant_id: participant.id,
-        participant_email: userEmail,
-        type: balanceSource === "referral" ? "referral_earning" : "prediction_bet",
-        amount: -amount,
-        description: `Placed ${betDirection.toUpperCase()} trade on ${selectedAsset.symbol} using ${balanceSource === "referral" ? "referral earnings" : "wallet balance"}`,
-        reference_id: insertedTrade.id,
-        status: "completed",
-        balance_before: currentFieldBalance,
-        balance_after: newFieldBalance,
-      })
 
       const updatedData = balanceSource === "referral"
         ? { ...participantData, bonus_balance: newFieldBalance }

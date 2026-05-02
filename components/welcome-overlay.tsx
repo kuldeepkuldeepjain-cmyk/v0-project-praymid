@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
-import { walletService } from "@/lib/wallet-service"
+
 import { CheckCircle, Phone, Plus, Loader2 } from "lucide-react"
 
 interface WelcomeOverlayProps {
@@ -41,7 +40,6 @@ export function WelcomeOverlay({ isOpen, onClose, userId, referralCode }: Welcom
   const [isSyncingDevice, setIsSyncingDevice] = useState(false)
   const [syncedCount, setSyncedCount] = useState(0)
   const { toast } = useToast()
-  const supabase = createClient()
 
   // Check if Web Contacts API is supported
   const isContactsApiSupported = typeof navigator !== "undefined" && "contacts" in navigator && navigator.contacts
@@ -185,37 +183,14 @@ export function WelcomeOverlay({ isOpen, onClose, userId, referralCode }: Welcom
     setIsSubmitting(true)
 
     try {
-      // Insert contacts into user_contacts table
-      const contactsToInsert = validContacts.map((c) => ({
-        user_id: userId,
-        contact_name: c.name.trim(),
-        contact_phone: c.phone.trim(),
-      }))
+      const res = await fetch("/api/participant/contact-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, contacts: validContacts }),
+      })
+      const result = await res.json()
 
-      const { error: contactError } = await supabase.from("user_contacts").insert(contactsToInsert)
-
-      if (contactError) throw contactError
-
-      // Get participant email for wallet transaction
-      const { data: participant } = await supabase.from("participants").select("email").eq("id", userId).single()
-
-      if (participant) {
-        // Add $5 bonus to wallet using wallet service
-        const walletResult = await walletService.updateWallet(userId, participant.email, {
-          type: "contact_sync_bonus",
-          amount: 5,
-          description: `$5 bonus for syncing ${validContacts.length} contacts`,
-        })
-      }
-
-      // Update participant's contact_sync_completed status
-      await supabase
-        .from("participants")
-        .update({
-          contact_sync_completed: true,
-          contact_sync_bonus_claimed: true,
-        })
-        .eq("id", userId)
+      if (!result.success) throw new Error(result.error || "Sync failed")
 
       // Mark in localStorage
       localStorage.setItem("contactsSynced", "true")
@@ -241,9 +216,8 @@ export function WelcomeOverlay({ isOpen, onClose, userId, referralCode }: Welcom
     await submitContacts(contacts)
   }
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
     localStorage.setItem("contactsSynced", "skipped")
-    await supabase.from("participants").update({ contact_sync_completed: false }).eq("id", userId)
     onClose()
   }
 
