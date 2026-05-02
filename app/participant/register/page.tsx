@@ -187,8 +187,8 @@ export default function ParticipantRegisterPage() {
       setOtpCode("")
 
       toast({
-        title: "OTP Sent via WhatsApp",
-        description: `A 6-digit verification code has been sent to ${formData.countryCode}${formData.mobileNumber} on WhatsApp.`,
+        title: "OTP Sent via SMS",
+        description: `A 6-digit verification code has been sent to ${formData.countryCode}${formData.mobileNumber} via SMS.`,
       })
 
       // Countdown timer
@@ -353,8 +353,6 @@ export default function ParticipantRegisterPage() {
         localStorage.setItem("participantData", JSON.stringify(participantData))
         localStorage.setItem("participant_token", data.token)
 
-        console.log("[v0] Auth data stored in localStorage")
-
         toast({
           title: "Account Created!",
           description: `Welcome @${formData.username}! Redirecting to dashboard...`,
@@ -365,7 +363,6 @@ export default function ParticipantRegisterPage() {
         throw new Error(data.error || "Registration failed")
       }
     } catch (error) {
-      console.error("[v0] Registration error:", error)
       toast({
         title: "Registration Failed",
         description: error instanceof Error ? error.message : "Please try again",

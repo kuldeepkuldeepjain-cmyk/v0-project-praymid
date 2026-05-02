@@ -12,11 +12,13 @@ export async function POST(request: NextRequest) {
     if (!mobile_number || !email)
       return NextResponse.json({ error: "Mobile number and email are required" }, { status: 400 })
 
-    const mobileRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/
-    if (!mobileRegex.test(mobile_number.replace(/\s/g, "")))
-      return NextResponse.json({ error: "Invalid mobile number format" }, { status: 400 })
+    // Normalize to E.164: strip spaces, dashes, parens — ensure leading +
+    const normalized = mobile_number.replace(/[\s\-().]/g, "")
+    const e164 = normalized.startsWith("+") ? normalized : `+${normalized}`
+    if (!/^\+[1-9]\d{6,14}$/.test(e164))
+      return NextResponse.json({ error: "Invalid mobile number format. Please include country code (e.g. +923001234567)" }, { status: 400 })
 
-    const existingMobile = await sql`SELECT id FROM participants WHERE mobile_number = ${mobile_number} LIMIT 1`
+    const existingMobile = await sql`SELECT id FROM participants WHERE mobile_number = ${e164} LIMIT 1`
     if (existingMobile.length > 0)
       return NextResponse.json({ error: "This mobile number is already registered" }, { status: 409 })
 
@@ -27,23 +29,28 @@ export async function POST(request: NextRequest) {
     const otp = generateOTP()
     const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
-    // Store OTP in activity_logs
+    // Store OTP in activity_logs using the normalized E.164 number
     await sql`
       INSERT INTO activity_logs (actor_email, action, target_type, details)
-      VALUES (${email}, 'otp_sent', 'mobile_verification', ${JSON.stringify({ mobile_number, otp, expires })})
+      VALUES (${email}, 'otp_sent', 'mobile_verification', ${JSON.stringify({ mobile_number: e164, otp, expires })})
     `
 
-    // Send OTP via Zavu WhatsApp
+    // Send OTP via Zavu SMS (SMS works without a prior conversation window)
     const zavu = new Zavudev({ apiKey: process.env.ZAVUDEV_API_KEY })
-    await zavu.messages.send({
-      to: mobile_number,
-      channel: "whatsapp",
-      text: `Your Praymid verification code is: *${otp}*\n\nThis code expires in 10 minutes. Do not share it with anyone.`,
+    const result = await zavu.messages.send({
+      to: e164,
+      channel: "sms",
+      text: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
     })
 
-    return NextResponse.json({ success: true, message: "OTP sent via WhatsApp", expiresIn: 600 })
+    console.log("[v0] Zavu send result:", JSON.stringify(result))
+
+    return NextResponse.json({ success: true, message: "OTP sent via SMS", expiresIn: 600, normalizedNumber: e164 })
   } catch (error: any) {
-    console.error("Error sending OTP:", error)
-    return NextResponse.json({ error: "Failed to send OTP. Please try again." }, { status: 500 })
+    console.error("[v0] Zavu OTP error:", error?.message, error?.status, JSON.stringify(error?.error))
+    return NextResponse.json(
+      { error: error?.error?.message || error?.message || "Failed to send OTP. Please try again." },
+      { status: 500 }
+    )
   }
 }
