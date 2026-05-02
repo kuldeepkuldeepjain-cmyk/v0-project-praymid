@@ -54,7 +54,7 @@ class QueryBuilder {
   private _cols: string = "*"
   private _join: { alias: string; fk: string; cols: string[] } | null = null
   private _conditions: Condition[] = []
-  private _orderCols: Array<{ col: string; asc: boolean }> = []
+  private _orderCols: Array<{ col: string; asc: boolean; nullsFirst?: boolean }> = []
   private _limitVal: number | null = null
   private _offsetVal: number | null = null
   private _insertData: any = null
@@ -144,10 +144,23 @@ class QueryBuilder {
     return this
   }
 
+  /**
+   * Supabase `.not(col, "is", null)` → IS NOT NULL
+   * Only the "is" / null variant is needed in this codebase.
+   */
+  not(col: string, op: string, val: any) {
+    if (op === "is" && val === null) {
+      this._conditions.push({ op: "IS NOT NULL", col })
+    } else if (op === "eq") {
+      this._conditions.push({ op: "!=", col, val })
+    }
+    return this
+  }
+
   // ── Modifiers ─────────────────────────────────────────────────────────────
 
-  order(col: string, opts?: { ascending?: boolean }) {
-    this._orderCols.push({ col, asc: opts?.ascending ?? true })
+  order(col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) {
+    this._orderCols.push({ col, asc: opts?.ascending ?? true, nullsFirst: opts?.nullsFirst })
     return this
   }
 
@@ -256,7 +269,12 @@ class QueryBuilder {
     const orderSQL =
       this._orderCols.length > 0
         ? "ORDER BY " +
-          this._orderCols.map((o) => `"${t}"."${o.col}" ${o.asc ? "ASC" : "DESC"}`).join(", ")
+          this._orderCols.map((o) => {
+            const dir = o.asc ? "ASC" : "DESC"
+            const nulls =
+              o.nullsFirst === true ? " NULLS FIRST" : o.nullsFirst === false ? " NULLS LAST" : ""
+            return `"${t}"."${o.col}" ${dir}${nulls}`
+          }).join(", ")
         : ""
     const limitSQL = this._limitVal !== null ? `LIMIT ${this._limitVal}` : ""
     const offsetSQL = this._offsetVal !== null ? `OFFSET ${this._offsetVal}` : ""

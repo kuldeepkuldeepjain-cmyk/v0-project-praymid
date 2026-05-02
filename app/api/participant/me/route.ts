@@ -1,13 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-// Use service role to bypass RLS and always return the real balances
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { sql } from "@/lib/db"
 
 export async function GET(request: Request) {
   try {
@@ -18,19 +10,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    const supabase = getServiceClient()
+    const rows = await sql`SELECT * FROM participants WHERE email = ${email} LIMIT 1`
+    const participant = rows[0]
 
-    const { data: participant, error } = await supabase
-      .from("participants")
-      .select("*")
-      .eq("email", email)
-      .maybeSingle()
-
-    if (error || !participant) {
+    if (!participant) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
 
-    // Return all relevant fields explicitly so the client always has the correct values
     return NextResponse.json({
       success: true,
       participant: {
@@ -58,7 +44,6 @@ export async function GET(request: Request) {
         full_address: participant.full_address,
         mobile_number: participant.mobile_number,
         details_completed: participant.details_completed,
-        // Expose bonus_balance also as referral_earnings for legacy compatibility
         referral_earnings: Number(participant.bonus_balance) || 0,
         wallet_balance: Number(participant.account_balance) || 0,
       },

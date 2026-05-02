@@ -23,19 +23,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[v0] Auto-matching contribution ${contributionId} for ${participantEmail}`)
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error("[v0] Missing Supabase configuration")
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      )
-    }
-
-    const { createClient: createAdminClient } = await import("@supabase/supabase-js")
-    const supabase = createAdminClient(supabaseUrl, serviceRoleKey)
+    const supabase = await createClient()
 
     // Get the contribution
     const { data: contribution, error: contribError } = await supabase
@@ -130,7 +118,7 @@ export async function POST(request: NextRequest) {
         .from("payment_submissions")
         .update({ matched_payout_id: null, matched_at: null })
         .eq("id", contributionId)
-      
+
       return NextResponse.json(
         { error: "Failed to update payout", details: payoutUpdateError.message },
         { status: 500 }
@@ -147,7 +135,7 @@ export async function POST(request: NextRequest) {
         message: `Your contribution has been automatically matched with payout request #${payout.serial_number}. Processing in progress.`,
         read_status: false,
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.warn("[v0] Failed to send notification:", err)
       })
 
@@ -160,7 +148,7 @@ export async function POST(request: NextRequest) {
         details: `Auto-matched contribution ${contributionId} with payout #${payout.serial_number} (30min after submission)`,
         target_type: "payment_submission",
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.warn("[v0] Failed to log activity:", err)
       })
 

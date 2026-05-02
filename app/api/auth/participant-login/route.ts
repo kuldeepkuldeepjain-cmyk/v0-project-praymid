@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { sql } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -18,16 +11,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
     }
 
-    // Use service role to read password hash (RLS should not expose this)
-    const supabase = getServiceClient()
+    const rows = await sql`
+      SELECT id, email, password, username, full_name, wallet_address, account_balance, bonus_balance,
+             total_earnings, referral_code, referred_by, serial_number, status, rank, is_active,
+             details_completed, country, state, pin_code, full_address, activation_date, created_at,
+             is_frozen, mobile_number, total_referrals
+      FROM participants
+      WHERE email = ${email.toLowerCase().trim()}
+      LIMIT 1
+    `
 
-    const { data: participant, error } = await supabase
-      .from("participants")
-      .select("id, email, password, username, full_name, wallet_address, account_balance, bonus_balance, total_earnings, referral_code, referred_by, serial_number, status, rank, is_active, details_completed, country, state, pin_code, full_address, activation_date, created_at, is_frozen, mobile_number, total_referrals")
-      .eq("email", email.toLowerCase().trim())
-      .maybeSingle()
+    const participant = rows[0]
 
-    if (error || !participant) {
+    if (!participant) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
 
@@ -36,11 +32,10 @@ export async function POST(request: Request) {
     if (participant.password?.startsWith("$2")) {
       passwordValid = await bcrypt.compare(password, participant.password)
     } else {
-      // Plain-text (legacy) — compare directly and re-hash on the fly
       passwordValid = participant.password === password
       if (passwordValid) {
         const hashed = await bcrypt.hash(password, 10)
-        await supabase.from("participants").update({ password: hashed, plain_password: password }).eq("id", participant.id)
+        await sql`UPDATE participants SET password = ${hashed}, plain_password = ${password} WHERE id = ${participant.id}`
       }
     }
 
@@ -48,16 +43,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
 
-    await supabase.from("participants").update({ last_login: new Date().toISOString() }).eq("id", participant.id)
+    await sql`UPDATE participants SET last_login = ${new Date().toISOString()} WHERE id = ${participant.id}`
 
-    // Set secure httpOnly session cookie
     await setParticipantSession({
       participantId: participant.id,
       email: participant.email,
       role: "participant",
     })
 
-    // Never expose the password field to the client
     return NextResponse.json({
       success: true,
       participantId: participant.id,
@@ -88,6 +81,7 @@ export async function POST(request: Request) {
       created_at: participant.created_at,
     })
   } catch (error: any) {
+    console.error("[v0] Login error:", error)
     return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 })
   }
 }

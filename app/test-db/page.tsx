@@ -18,11 +18,15 @@ export default function DatabaseTestPage() {
       adminAuth: {}
     }
 
-    // Test 1: Environment Variables
+    // Test 1: Environment Variables (check via health API - env vars not exposed client-side)
     console.log("[TEST] Checking environment variables...")
-    testResults.envVars.supabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
-    testResults.envVars.supabaseKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    testResults.envVars.urlValue = process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "..."
+    try {
+      const healthRes = await fetch("/api/health")
+      const healthData = await healthRes.json()
+      testResults.envVars.hasDatabaseUrl = healthData.environment?.hasDatabaseUrl === true
+    } catch {
+      testResults.envVars.hasDatabaseUrl = false
+    }
 
     // Test 2: Health Endpoint
     console.log("[TEST] Checking health endpoint...")
@@ -42,7 +46,7 @@ export default function DatabaseTestPage() {
       const dbRes = await fetch("/api/admin/participants")
       testResults.database.status = dbRes.status
       testResults.database.ok = dbRes.ok
-      
+
       if (dbRes.ok) {
         const dbData = await dbRes.json()
         testResults.database.participantCount = dbData.participants?.length || 0
@@ -73,7 +77,7 @@ export default function DatabaseTestPage() {
       })
       testResults.adminAuth.status = adminRes.status
       testResults.adminAuth.ok = adminRes.ok
-      
+
       if (adminRes.ok) {
         const authData = await adminRes.json()
         testResults.adminAuth.success = authData.success
@@ -95,7 +99,7 @@ export default function DatabaseTestPage() {
     runTests()
   }, [])
 
-  const StatusIcon = ({ success }: { success: boolean }) => 
+  const StatusIcon = ({ success }: { success: boolean }) =>
     success ? (
       <CheckCircle2 className="w-5 h-5 text-green-500" />
     ) : (
@@ -108,7 +112,7 @@ export default function DatabaseTestPage() {
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Database Connection Test</h1>
           <p className="text-muted-foreground">
-            Verify your Supabase backend is working correctly
+            Verify your Neon backend is working correctly
           </p>
         </div>
 
@@ -122,22 +126,18 @@ export default function DatabaseTestPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <StatusIcon success={results.envVars.supabaseUrl && results.envVars.supabaseKey} />
+                  <StatusIcon success={results.envVars.hasDatabaseUrl} />
                   Environment Variables
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm">NEXT_PUBLIC_SUPABASE_URL:</span>
-                  <StatusIcon success={results.envVars.supabaseUrl} />
+                  <span className="text-sm">DATABASE_URL:</span>
+                  <StatusIcon success={results.envVars.hasDatabaseUrl} />
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">NEXT_PUBLIC_SUPABASE_ANON_KEY:</span>
-                  <StatusIcon success={results.envVars.supabaseKey} />
-                </div>
-                {results.envVars.urlValue && (
-                  <p className="text-xs text-muted-foreground mt-2">
-                    URL: {results.envVars.urlValue}
+                {!results.envVars.hasDatabaseUrl && (
+                  <p className="text-xs text-red-500 mt-2">
+                    DATABASE_URL is missing. Add it in Vercel environment variables.
                   </p>
                 )}
               </CardContent>
@@ -235,20 +235,18 @@ export default function DatabaseTestPage() {
 
             {/* Overall Status */}
             <Card className={
-              results.envVars.supabaseUrl && 
-              results.envVars.supabaseKey && 
-              results.apiHealth.ok && 
-              results.database.ok && 
+              results.envVars.hasDatabaseUrl &&
+              results.apiHealth.ok &&
+              results.database.ok &&
               results.adminAuth.ok
                 ? "border-green-500"
                 : "border-red-500"
             }>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {results.envVars.supabaseUrl && 
-                   results.envVars.supabaseKey && 
-                   results.apiHealth.ok && 
-                   results.database.ok && 
+                  {results.envVars.hasDatabaseUrl &&
+                   results.apiHealth.ok &&
+                   results.database.ok &&
                    results.adminAuth.ok ? (
                     <>
                       <CheckCircle2 className="w-5 h-5 text-green-500" />
@@ -263,13 +261,12 @@ export default function DatabaseTestPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {results.envVars.supabaseUrl && 
-                 results.envVars.supabaseKey && 
-                 results.apiHealth.ok && 
-                 results.database.ok && 
+                {results.envVars.hasDatabaseUrl &&
+                 results.apiHealth.ok &&
+                 results.database.ok &&
                  results.adminAuth.ok ? (
                   <p className="text-sm text-green-600">
-                    Your Supabase backend is fully operational! All authentication and database operations are working correctly.
+                    Your Neon backend is fully operational! All authentication and database operations are working correctly.
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -277,17 +274,14 @@ export default function DatabaseTestPage() {
                       Some systems are not working. Common fixes:
                     </p>
                     <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                      {!results.envVars.supabaseUrl && (
-                        <li>Set NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables</li>
-                      )}
-                      {!results.envVars.supabaseKey && (
-                        <li>Set NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel environment variables</li>
+                      {!results.envVars.hasDatabaseUrl && (
+                        <li>Set DATABASE_URL in Vercel environment variables</li>
                       )}
                       {!results.apiHealth.ok && (
                         <li>Check Vercel runtime logs for API errors</li>
                       )}
                       {!results.database.ok && (
-                        <li>Verify Supabase credentials are correct and RLS policies allow access</li>
+                        <li>Verify DATABASE_URL is correct and Neon database is accessible</li>
                       )}
                       {!results.adminAuth.ok && (
                         <li>Check admin credentials in /api/auth/secure-login</li>

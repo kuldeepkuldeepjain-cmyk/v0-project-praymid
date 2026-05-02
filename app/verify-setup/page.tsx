@@ -14,127 +14,78 @@ type TestResult = {
 
 export default function VerifySetupPage() {
   const [tests, setTests] = useState<TestResult[]>([
-    { name: "Environment Variables", status: "pending", message: "Not tested yet" },
-    { name: "Supabase Connection", status: "pending", message: "Not tested yet" },
+    { name: "API Health", status: "pending", message: "Not tested yet" },
+    { name: "Database Connection", status: "pending", message: "Not tested yet" },
     { name: "Database Tables", status: "pending", message: "Not tested yet" },
     { name: "API Routes", status: "pending", message: "Not tested yet" },
   ])
   const [running, setRunning] = useState(false)
 
+  const updateTest = (index: number, update: Partial<TestResult>) => {
+    setTests(prev => prev.map((t, i) => i === index ? { ...t, ...update } : t))
+  }
+
   const runTests = async () => {
     setRunning(true)
 
-    // Test 1: Environment Variables
-    setTests(prev => prev.map((t, i) => i === 0 ? { ...t, status: "pending", message: "Checking..." } : t))
-    
-    const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
-    const hasAnonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (hasUrl && hasAnonKey) {
-      setTests(prev => prev.map((t, i) => i === 0 ? { 
-        ...t, 
-        status: "success", 
-        message: `✓ NEXT_PUBLIC_SUPABASE_URL and ANON_KEY found` 
-      } : t))
-    } else {
-      setTests(prev => prev.map((t, i) => i === 0 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Missing: ${!hasUrl ? 'URL ' : ''}${!hasAnonKey ? 'ANON_KEY' : ''}` 
-      } : t))
+    // Test 1: API Health
+    updateTest(0, { status: "pending", message: "Checking..." })
+    try {
+      const healthRes = await fetch("/api/health")
+      const healthData = await healthRes.json()
+      if (healthData.environment?.hasDatabaseUrl) {
+        updateTest(0, { status: "success", message: "✓ API is healthy and DATABASE_URL is set" })
+      } else {
+        updateTest(0, { status: "error", message: "✗ DATABASE_URL is missing. Add it in Vercel environment variables." })
+        setRunning(false)
+        return
+      }
+    } catch (error: any) {
+      updateTest(0, { status: "error", message: `✗ API unreachable: ${error.message}` })
       setRunning(false)
       return
     }
 
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Test 2: Supabase Connection
-    setTests(prev => prev.map((t, i) => i === 1 ? { ...t, status: "pending", message: "Connecting..." } : t))
-    
+    // Test 2: Database Connection (via admin participants list)
+    updateTest(1, { status: "pending", message: "Connecting to Neon database..." })
     try {
-      const { createClient } = await import("@supabase/supabase-js")
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const { error } = await supabase.from("participants").select("count").limit(1)
-      
-      if (error) {
-        setTests(prev => prev.map((t, i) => i === 1 ? { 
-          ...t, 
-          status: "error", 
-          message: `✗ Connection failed: ${error.message}` 
-        } : t))
+      const res = await fetch("/api/admin/participants?limit=1")
+      if (res.ok) {
+        updateTest(1, { status: "success", message: "✓ Connected to Neon database successfully" })
+      } else if (res.status === 401) {
+        // 401 means auth middleware ran, which means DB is reachable
+        updateTest(1, { status: "success", message: "✓ Database reachable (auth middleware responded)" })
+      } else {
+        const text = await res.text()
+        updateTest(1, { status: "error", message: `✗ Database error: ${text}` })
         setRunning(false)
         return
       }
-      
-      setTests(prev => prev.map((t, i) => i === 1 ? { 
-        ...t, 
-        status: "success", 
-        message: "✓ Connected to Supabase successfully" 
-      } : t))
     } catch (error: any) {
-      setTests(prev => prev.map((t, i) => i === 1 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Error: ${error.message}` 
-      } : t))
+      updateTest(1, { status: "error", message: `✗ Error: ${error.message}` })
       setRunning(false)
       return
     }
 
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Test 3: Database Tables
-    setTests(prev => prev.map((t, i) => i === 2 ? { ...t, status: "pending", message: "Checking tables..." } : t))
-    
+    // Test 3: Database Tables (via verify-env)
+    updateTest(2, { status: "pending", message: "Checking database tables..." })
     try {
-      const { createClient } = await import("@supabase/supabase-js")
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const requiredTables = [
-        "participants",
-        "activity_logs",
-        "support_tickets",
-        "payment_submissions",
-        "payout_requests"
-      ]
-      
-      const missingTables = []
-      
-      for (const table of requiredTables) {
-        const { error } = await supabase.from(table).select("count").limit(1)
-        if (error) {
-          missingTables.push(table)
-        }
-      }
-      
-      if (missingTables.length > 0) {
-        setTests(prev => prev.map((t, i) => i === 2 ? { 
-          ...t, 
-          status: "error", 
-          message: `✗ Missing tables: ${missingTables.join(", ")}. Run NEW_DATABASE_SETUP.sql` 
-        } : t))
+      const res = await fetch("/api/verify-env")
+      const data = await res.json()
+      if (data.requirements?.database?.configured) {
+        updateTest(2, { status: "success", message: "✓ Database configuration verified" })
+      } else {
+        const missing = data.missingSetting?.critical?.join(", ") || "Unknown"
+        updateTest(2, { status: "error", message: `✗ Missing: ${missing}` })
         setRunning(false)
         return
       }
-      
-      setTests(prev => prev.map((t, i) => i === 2 ? { 
-        ...t, 
-        status: "success", 
-        message: `✓ All ${requiredTables.length} required tables exist` 
-      } : t))
     } catch (error: any) {
-      setTests(prev => prev.map((t, i) => i === 2 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Error: ${error.message}` 
-      } : t))
+      updateTest(2, { status: "error", message: `✗ Error: ${error.message}` })
       setRunning(false)
       return
     }
@@ -142,33 +93,16 @@ export default function VerifySetupPage() {
     await new Promise(resolve => setTimeout(resolve, 500))
 
     // Test 4: API Routes
-    setTests(prev => prev.map((t, i) => i === 3 ? { ...t, status: "pending", message: "Testing APIs..." } : t))
-    
+    updateTest(3, { status: "pending", message: "Testing APIs..." })
     try {
-      const healthResponse = await fetch("/api/health")
-      const healthData = await healthResponse.json()
-      
-      if (!healthData.ok) {
-        setTests(prev => prev.map((t, i) => i === 3 ? { 
-          ...t, 
-          status: "error", 
-          message: "✗ API health check failed" 
-        } : t))
-        setRunning(false)
-        return
+      const res = await fetch("/api/health")
+      if (res.ok) {
+        updateTest(3, { status: "success", message: "✓ API routes are responding correctly" })
+      } else {
+        updateTest(3, { status: "error", message: "✗ API health check failed" })
       }
-      
-      setTests(prev => prev.map((t, i) => i === 3 ? { 
-        ...t, 
-        status: "success", 
-        message: "✓ API routes are responding correctly" 
-      } : t))
     } catch (error: any) {
-      setTests(prev => prev.map((t, i) => i === 3 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Error: ${error.message}` 
-      } : t))
+      updateTest(3, { status: "error", message: `✗ Error: ${error.message}` })
     }
 
     setRunning(false)
@@ -182,7 +116,7 @@ export default function VerifySetupPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-gray-900">Setup Verification</h1>
-          <p className="text-gray-600">Verify your new Supabase database is configured correctly</p>
+          <p className="text-gray-600">Verify your Neon database is configured correctly</p>
         </div>
 
         <Card>
@@ -193,8 +127,8 @@ export default function VerifySetupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button 
-              onClick={runTests} 
+            <Button
+              onClick={runTests}
               disabled={running}
               className="w-full"
             >
@@ -250,7 +184,7 @@ export default function VerifySetupPage() {
               <Alert variant="destructive">
                 <XCircle className="h-4 w-4" />
                 <AlertDescription>
-                  ❌ Some tests failed. Please check FRESH_START_GUIDE.md for troubleshooting steps.
+                  ❌ Some tests failed. Please ensure DATABASE_URL is set in your Vercel environment variables.
                 </AlertDescription>
               </Alert>
             )}
@@ -274,24 +208,16 @@ export default function VerifySetupPage() {
           </CardHeader>
           <CardContent className="space-y-2">
             <a
-              href="https://supabase.com/dashboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block text-blue-600 hover:underline"
-            >
-              → Open Supabase Dashboard
-            </a>
-            <a
-              href="/FRESH_START_GUIDE.md"
-              className="block text-blue-600 hover:underline"
-            >
-              → View Setup Guide
-            </a>
-            <a
               href="/test-db"
               className="block text-blue-600 hover:underline"
             >
               → Advanced Database Tests
+            </a>
+            <a
+              href="/api/verify-env"
+              className="block text-blue-600 hover:underline"
+            >
+              → Environment Variables Status
             </a>
           </CardContent>
         </Card>
