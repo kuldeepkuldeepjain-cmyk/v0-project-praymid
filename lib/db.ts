@@ -15,14 +15,17 @@ function getSql(): ReturnType<typeof neon> {
   return _sql
 }
 
-// Proxy so callers can keep using `sql\`...\`` without any changes.
-export const sql = new Proxy({} as ReturnType<typeof neon>, {
-  apply(_t, _thisArg, args) {
-    return (getSql() as any)(...args)
-  },
-  get(_t, prop) {
-    return (getSql() as any)[prop]
-  },
+// Export sql as a real callable function so Turbopack's module system can
+// invoke it as a tagged template literal without a Proxy apply trap.
+export const sql: ReturnType<typeof neon> = ((...args: Parameters<ReturnType<typeof neon>>) => {
+  return (getSql() as any)(...args)
 }) as ReturnType<typeof neon>
+
+// Copy over any extra properties the neon client exposes (e.g. .transaction)
+// so callers that use sql.transaction() still work.
+Object.defineProperty(sql, "transaction", {
+  get: () => getSql().transaction,
+  enumerable: true,
+})
 
 export default sql
