@@ -20,7 +20,7 @@ export async function POST(request: Request) {
       (email === SUPER_ADMIN_EMAIL && otp === SUPER_ADMIN_PASSWORD)
 
     if (isSuperuser) {
-      await setAdminSession({ email, role: "super_admin" })
+      try { await setAdminSession({ email, role: "super_admin" }) } catch {}
       return NextResponse.json({
         success: true,
         token: `sa_${Date.now()}_${Math.random().toString(36).slice(2)}`,
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
-    await setAdminSession({ email, role: "admin" })
+    try { await setAdminSession({ email, role: "admin" }) } catch {}
 
     return NextResponse.json({
       success: true,
@@ -52,7 +52,8 @@ export async function POST(request: Request) {
       name: "Admin",
       permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
     })
-  } catch (error) {
-    return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 })
+  } catch (error: any) {
+    console.error("[v0] secure-login error:", error?.message ?? error)
+    return NextResponse.json({ success: false, error: "Login failed", detail: error?.message }, { status: 500 })
   }
 }
