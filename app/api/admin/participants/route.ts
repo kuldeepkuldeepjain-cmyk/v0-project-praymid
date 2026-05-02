@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -7,28 +7,18 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const supabase = await createClient()
+    const participants = await sql`
+      SELECT * FROM participants ORDER BY created_at DESC
+    `
 
-    const { data: participants, error } = await supabase
-      .from("participants")
-      .select("*")
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("[v0] Error fetching participants from Supabase:", error)
-      return NextResponse.json({ error: "Failed to fetch participants" }, { status: 500 })
-    }
-
-    console.log("[v0] Fetched participants from Supabase. Count:", participants?.length || 0)
-
-    const formattedParticipants = (participants || []).map((p: any) => ({
+    const formatted = participants.map((p: any) => ({
       id: p.id,
       serial_number: p.serial_number || "",
-      wallet_address: p.wallet_address || "",
+      wallet_address: p.wallet_address || p.bep20_address || "",
       email: p.email,
       name: p.full_name || p.username || "Unknown",
       full_name: p.full_name || "",
-      username: p.username,
+      username: p.username || "",
       mobile_number: p.mobile_number || "",
       country_code: p.country_code || "",
       full_address: p.full_address || "",
@@ -53,17 +43,10 @@ export async function GET(request: NextRequest) {
       plain_password: p.plain_password || "",
     }))
 
-    return NextResponse.json({
-      participants: formattedParticipants,
-      total: formattedParticipants.length,
-    })
+    return NextResponse.json({ participants: formatted, total: formatted.length })
   } catch (error) {
-    console.error("[v0] Error in participants API:", error)
     return NextResponse.json(
-      {
-        error: "Failed to fetch participants",
-        details: error instanceof Error ? error.message : String(error),
-      },
+      { error: "Failed to fetch participants", details: error instanceof Error ? error.message : String(error) },
       { status: 500 },
     )
   }
