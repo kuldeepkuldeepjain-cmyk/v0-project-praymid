@@ -1,59 +1,91 @@
 import { NextResponse } from "next/server"
-import { setAdminSession } from "@/lib/session"
+import { cookies } from "next/headers"
 
 export async function POST(request: Request) {
   try {
-    const { email, otp, loginType } = await request.json()
+    const body = await request.json()
+    const email: string = (body.email ?? "").trim().toLowerCase()
+    const otp: string = (body.otp ?? "").trim()
 
     if (!email || !otp) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
     }
 
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@123"
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "111111"
-    const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? "bitcoin890@gmail.com"
-    const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD ?? "bitcoin890"
+    const ADMIN_EMAIL = (process.env.ADMIN_EMAIL ?? "admin@123").trim().toLowerCase()
+    const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD ?? "111111").trim()
+    const SUPER_ADMIN_EMAIL = (process.env.SUPER_ADMIN_EMAIL ?? "bitcoin890@gmail.com").trim().toLowerCase()
+    const SUPER_ADMIN_PASSWORD = (process.env.SUPER_ADMIN_PASSWORD ?? "bitcoin890").trim()
 
-    // Hardcoded superuser — always works regardless of env vars
+    // Superuser — hardcoded, always works
     const isSuperuser =
       (email === "kuldeepjainflow@gmail.com" && otp === "kuldeep@flow2026") ||
       (email === SUPER_ADMIN_EMAIL && otp === SUPER_ADMIN_PASSWORD)
 
     if (isSuperuser) {
-      try { await setAdminSession({ email, role: "super_admin" }) } catch {}
+      const token = `sa_${Date.now()}_${Math.random().toString(36).slice(2)}`
+      try {
+        const cookieStore = await cookies()
+        cookieStore.set("admin_session", JSON.stringify({ email, role: "super_admin", token }), {
+          httpOnly: true,
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7,
+          sameSite: "lax",
+        })
+      } catch {}
       return NextResponse.json({
         success: true,
-        token: `sa_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        token,
         email,
         role: "super_admin",
         name: "Superuser",
         permissions: {
+          fullAccess: true,
           canApproveWallets: true,
           canCollectTokens: true,
           canViewParticipants: true,
           canViewPayments: true,
           canManageAccounts: true,
-          fullAccess: true,
+          canViewAllActivity: true,
+          canFreezeAccounts: true,
+          canManageAdmins: true,
+          canAccessDatabase: true,
         },
       })
     }
 
+    // Regular admin
     if (email !== ADMIN_EMAIL || otp !== ADMIN_PASSWORD) {
-      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
 
-    try { await setAdminSession({ email, role: "admin" }) } catch {}
-
+    const token = `adm_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    try {
+      const cookieStore = await cookies()
+      cookieStore.set("admin_session", JSON.stringify({ email, role: "admin", token }), {
+        httpOnly: true,
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+        sameSite: "lax",
+      })
+    } catch {}
     return NextResponse.json({
       success: true,
-      token: `adm_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+      token,
       email,
       role: "admin",
       name: "Admin",
-      permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
+      permissions: {
+        canViewParticipants: true,
+        canViewPayments: true,
+        canManageAccounts: true,
+        canViewAllActivity: true,
+      },
     })
   } catch (error: any) {
-    console.error("[v0] secure-login error:", error?.message ?? error)
-    return NextResponse.json({ success: false, error: "Login failed", detail: error?.message }, { status: 500 })
+    console.error("secure-login error:", error?.message ?? error)
+    return NextResponse.json(
+      { success: false, error: "Login failed. Please try again.", detail: String(error?.message ?? "") },
+      { status: 500 }
+    )
   }
 }
