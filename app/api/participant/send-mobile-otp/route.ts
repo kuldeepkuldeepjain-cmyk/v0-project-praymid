@@ -37,17 +37,15 @@ export async function POST(request: NextRequest) {
 
     // Send OTP via Zavu SMS (SMS works without a prior conversation window)
     const zavu = new Zavudev({ apiKey: process.env.ZAVUDEV_API_KEY })
-    const result = await zavu.messages.send({
+    await zavu.messages.send({
       to: e164,
       channel: "sms",
       text: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
     })
 
-    console.log("[v0] Zavu send result:", JSON.stringify(result))
-
-    return NextResponse.json({ success: true, message: "OTP sent via SMS", expiresIn: 600, normalizedNumber: e164 })
+    return NextResponse.json({ success: true, message: "OTP sent via SMS", expiresIn: 600 })
   } catch (error: any) {
-    console.error("[v0] Zavu OTP error:", error?.message, error?.status, JSON.stringify(error?.error))
+    console.error("Zavu OTP error:", error?.message, JSON.stringify(error?.error))
     return NextResponse.json(
       { error: error?.error?.message || error?.message || "Failed to send OTP. Please try again." },
       { status: 500 }
