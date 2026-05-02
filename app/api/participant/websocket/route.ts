@@ -1,51 +1,33 @@
-import { NextRequest } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db"
 
 /**
- * WebSocket Route for Real-Time Automatch Notifications
- * 
- * Note: This is a simplified WebSocket endpoint.
- * In production, consider using:
- * - Socket.io for robust WebSocket management
- * - Vercel KV for connection state persistence
- * - AWS API Gateway WebSocket for scalability
- * 
- * Current implementation uses polling as fallback (see use-automatch-websocket.ts)
+ * WebSocket verification endpoint.
+ * Verifies participant exists before upgrade; actual WS handling requires
+ * a persistent server (e.g. Socket.io). This route confirms auth only.
  */
 export async function GET(request: NextRequest) {
   const email = request.nextUrl.searchParams.get("email")
   const token = request.nextUrl.searchParams.get("token")
 
   if (!email || !token) {
-    return new Response("Missing email or token", { status: 400 })
+    return new NextResponse("Missing email or token", { status: 400 })
   }
 
-  // Verify token (simple check - in production use JWT)
-  const supabase = await createClient()
-  const { data: participant, error } = await supabase
-    .from("participants")
-    .select("email")
-    .eq("email", email)
-    .maybeSingle()
-
-  if (error || !participant) {
-    return new Response("Unauthorized", { status: 401 })
+  const rows = await sql`SELECT email FROM participants WHERE email = ${email} LIMIT 1`
+  if (!rows[0]) {
+    return new NextResponse("Unauthorized", { status: 401 })
   }
 
-  // Check if upgrade header is present
   if (request.headers.get("upgrade") !== "websocket") {
-    return new Response("Expected Upgrade: websocket", { status: 426 })
+    return new NextResponse("Expected Upgrade: websocket", { status: 426 })
   }
 
-  // Return WebSocket upgrade response
-  // Note: Actual WebSocket handling requires a server that supports WebSocket connections
-  // This endpoint confirms the upgrade but actual message handling needs proper WebSocket server
-  
-  return new Response(null, {
+  return new NextResponse(null, {
     status: 101,
     headers: {
-      "Upgrade": "websocket",
-      "Connection": "Upgrade",
+      Upgrade: "websocket",
+      Connection: "Upgrade",
     },
   })
 }

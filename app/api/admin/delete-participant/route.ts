@@ -13,20 +13,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Participant ID is required" }, { status: 400 })
     }
 
-    console.log("[v0] Delete request for participant:", participantId)
-
     // Get participant email first before deleting
     const rows = await sql`SELECT email, id FROM participants WHERE id = ${participantId} LIMIT 1`
     const participant = rows[0]
 
     if (!participant) {
-      console.log("[v0] Participant not found:", participantId)
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
-
-    console.log("[v0] Found participant to delete:", participant.email)
-
-    let totalDeleted = 0
 
     // Delete related records (each step is wrapped so missing tables are skipped gracefully)
     const deletionSteps = [
@@ -45,17 +38,13 @@ export async function DELETE(request: NextRequest) {
     for (const step of deletionSteps) {
       try {
         await step
-      } catch (stepError) {
-        console.warn("[v0] Warning during deletion step:", stepError)
-        // Continue even if one step fails
+      } catch {
+        // Continue even if one step fails (table may not exist yet)
       }
     }
 
-    // Finally, delete the participant record
-    console.log("[v0] Deleting participant record:", participantId)
+    // Finally delete the participant record
     await sql`DELETE FROM participants WHERE id = ${participantId}`
-
-    console.log(`[v0] Successfully deleted participant ${participantId}`)
 
     return NextResponse.json(
       {
@@ -67,7 +56,7 @@ export async function DELETE(request: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
-    console.error("[v0] Error in delete participant API:", error)
+    console.error("Error in delete participant API:", error)
     const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
       { error: "Failed to delete participant", details: errorMessage },

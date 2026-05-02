@@ -133,7 +133,7 @@ export async function POST(request: Request) {
       created_at: newParticipant.created_at,
     })
   } catch (error: any) {
-    console.error("[v0] Registration error:", error)
+    console.error("Registration error:", error)
     return NextResponse.json({ success: false, error: "Registration failed" }, { status: 500 })
   }
 }

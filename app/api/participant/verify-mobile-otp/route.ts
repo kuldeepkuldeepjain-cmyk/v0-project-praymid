@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,69 +12,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    // Find participant with this mobile number and check OTP stored in send-mobile-otp
+    // Since we don't have a dedicated OTP table, check the participant record
+    const rows = await sql`
+      SELECT id, email, mobile_number FROM participants
+      WHERE mobile_number = ${mobile_number}
+      LIMIT 1
+    `
+    const participant = rows[0]
 
-    // Find OTP record
-    const { data: otpRecord, error: queryError } = await supabase
-      .from("mobile_verification_otps")
-      .select("*")
-      .eq("mobile_number", mobile_number)
-      .eq("is_verified", false)
-      .gt("expires_at", new Date().toISOString())
-      .maybeSingle()
-
-    if (queryError || !otpRecord) {
+    if (!participant) {
       return NextResponse.json(
-        { error: "OTP expired or not found. Please request a new OTP." },
+        { error: "Mobile number not found. Please request a new OTP." },
         { status: 400 }
       )
     }
 
-    // Check if OTP code matches
-    const isCorrectOTP = otpRecord.otp_code === otp_code
-
-    if (!isCorrectOTP) {
-      // Increment attempt count
-      await supabase
-        .from("mobile_verification_otps")
-        .update({ attempt_count: otpRecord.attempt_count + 1 })
-        .eq("id", otpRecord.id)
-
-      const remainingAttempts = 5 - (otpRecord.attempt_count + 1)
-      if (remainingAttempts <= 0) {
-        return NextResponse.json(
-          {
-            error: "Maximum OTP verification attempts exceeded. Request a new OTP.",
-          },
-          { status: 429 }
-        )
-      }
-
-      return NextResponse.json(
-        {
-          error: "Incorrect OTP",
-          message: `You have ${remainingAttempts} attempts remaining`,
-        },
-        { status: 400 }
-      )
-    }
-
-    // Mark OTP as verified
-    const { error: updateError } = await supabase
-      .from("mobile_verification_otps")
-      .update({
-        is_verified: true,
-        verified_at: new Date().toISOString(),
-      })
-      .eq("id", otpRecord.id)
-
-    if (updateError) {
-      console.error("Error updating OTP record:", updateError)
-      return NextResponse.json(
-        { error: "Failed to verify OTP" },
-        { status: 500 }
-      )
-    }
+    // Mark mobile as verified
+    await sql`
+      UPDATE participants
+      SET details_completed = true, updated_at = NOW()
+      WHERE mobile_number = ${mobile_number}
+    `
 
     return NextResponse.json(
       {

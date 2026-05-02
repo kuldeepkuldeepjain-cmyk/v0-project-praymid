@@ -49,7 +49,7 @@ export async function GET(request: Request) {
       },
     })
   } catch (error) {
-    console.error("[v0] /api/participant/me error:", error)
+    console.error("/api/participant/me error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

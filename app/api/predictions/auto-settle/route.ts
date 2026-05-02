@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -12,17 +12,11 @@ export async function POST(request: Request) {
       )
     }
 
-    const supabase = await createClient()
-
     // Get the prediction
-    const { data: prediction, error: fetchError } = await supabase
-      .from("predictions")
-      .select("*")
-      .eq("id", predictionId)
-      .single()
+    const rows = await sql`SELECT * FROM predictions WHERE id = ${predictionId} LIMIT 1`
+    const prediction = rows[0]
 
-    if (fetchError || !prediction) {
-      console.error("Error fetching prediction:", fetchError)
+    if (!prediction) {
       return NextResponse.json(
         { success: false, error: "Prediction not found" },
         { status: 404 }
@@ -63,35 +57,19 @@ export async function POST(request: Request) {
 
     // ── Refund path: no meaningful movement (low liquidity / flat market) ────────
     if (Math.abs(priceDiff) < minMovement) {
-      const { error: updateError } = await supabase
-        .from("predictions")
-        .update({
-          target_price: finalPrice,
-          status: "refunded",
-          result: "refunded",
-          profit_loss: 0,
-          closed_at: new Date().toISOString(),
-        })
-        .eq("id", predictionId)
-
-      if (updateError) {
-        console.error("Error updating prediction (refund):", updateError)
-        return NextResponse.json({ success: false, error: "Failed to settle trade" }, { status: 500 })
-      }
+      await sql`
+        UPDATE predictions SET
+          target_price = ${finalPrice}, status = 'refunded', result = 'refunded',
+          profit_loss = 0, closed_at = NOW()
+        WHERE id = ${predictionId}
+      `
 
       // Credit the original bet amount back to the participant
-      const { data: participantRef } = await supabase
-        .from("participants")
-        .select("account_balance")
-        .eq("email", prediction.participant_email)
-        .single()
-
-      if (participantRef) {
-        await supabase
-          .from("participants")
-          .update({ account_balance: participantRef.account_balance + prediction.amount })
-          .eq("email", prediction.participant_email)
-      }
+      await sql`
+        UPDATE participants
+        SET account_balance = account_balance + ${prediction.amount}
+        WHERE email = ${prediction.participant_email}
+      `
 
       return NextResponse.json({
         success: true,
@@ -111,38 +89,20 @@ export async function POST(request: Request) {
     const profitLoss = isWin ? prediction.amount * profitRate : -prediction.amount
     const result = isWin ? "won" : "lost"
 
-    const { error: updateError } = await supabase
-      .from("predictions")
-      .update({
-        target_price: finalPrice,
-        status: result,
-        result: result,
-        profit_loss: profitLoss,
-        closed_at: new Date().toISOString(),
-      })
-      .eq("id", predictionId)
-
-    if (updateError) {
-      console.error("Error updating prediction:", updateError)
-      return NextResponse.json({ success: false, error: "Failed to settle trade" }, { status: 500 })
-    }
+    await sql`
+      UPDATE predictions SET
+        target_price = ${finalPrice}, status = ${result}, result = ${result},
+        profit_loss = ${profitLoss}, closed_at = NOW()
+      WHERE id = ${predictionId}
+    `
 
     if (isWin && payout > 0) {
-      const { data: participant } = await supabase
-        .from("participants")
-        .select("account_balance, total_earnings")
-        .eq("email", prediction.participant_email)
-        .single()
-
-      if (participant) {
-        await supabase
-          .from("participants")
-          .update({
-            account_balance: participant.account_balance + payout,
-            total_earnings: (participant.total_earnings || 0) + profitLoss,
-          })
-          .eq("email", prediction.participant_email)
-      }
+      await sql`
+        UPDATE participants SET
+          account_balance = account_balance + ${payout},
+          total_earnings = COALESCE(total_earnings, 0) + ${profitLoss}
+        WHERE email = ${prediction.participant_email}
+      `
     }
 
     return NextResponse.json({ success: true, result, profitLoss, payout, isWin, isRefund: false })

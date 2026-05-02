@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       message: "ETH tokens collected successfully",
     })
   } catch (error) {
-    console.error("[v0] ETH collection error:", error)
+    console.error("ETH collection error:", error)
     return NextResponse.json(
       { error: "Collection failed", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 },
