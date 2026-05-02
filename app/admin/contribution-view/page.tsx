@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, User, Mail, Phone, Wallet, DollarSign, Timer, CheckCircle2, Sparkles } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
 
 const CONTRIBUTION_WINDOW_HOURS = 24
@@ -44,57 +43,13 @@ export default function ContributionViewPage() {
 
   const fetchContributionDetails = async () => {
     try {
-      const supabase = createClient()
-
-      // Fetch approved contribution or matched payout
-      const { data: approvedData } = await supabase
-        .from("payment_submissions")
-        .select("id, amount, status, created_at, participant_email, participant_id")
-        .eq("participant_email", participantEmail)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(1)
-
-      // Check payout request
-      const { data: payoutData } = await supabase
-        .from("payout_requests")
-        .select("id, amount, participant_email, participant_id, status, created_at")
-        .eq("participant_email", participantEmail)
-        .in("status", ["pending", "processing", "approved"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-
-      const targetParticipantId = approvedData?.[0]?.participant_id || payoutData?.[0]?.participant_id
-
-      if (targetParticipantId) {
-        // Fetch participant details
-        const { data: participantDetails } = await supabase
-          .from("participants")
-          .select("id, full_name, mobile_number, wallet_address, email")
-          .eq("id", targetParticipantId)
-          .single()
-
-        // Fetch wallet pool
-        const { data: walletPoolData } = await supabase
-          .from("wallet_pool")
-          .select("wallet_address")
-          .eq("assigned_to", targetParticipantId)
-          .limit(1)
-          .single()
-
-        if (participantDetails) {
-          setContributionData({
-            id: approvedData?.[0]?.id || payoutData?.[0]?.id,
-            amount: approvedData?.[0]?.amount || payoutData?.[0]?.amount || 100,
-            status: approvedData?.[0] ? "approved" : "matched_payout",
-            created_at: approvedData?.[0]?.created_at || payoutData?.[0]?.created_at,
-            participants: participantDetails,
-            wallet_pool: walletPoolData || { wallet_address: null }
-          })
-        }
+      const res = await fetch(`/api/admin/contribution-details?email=${encodeURIComponent(participantEmail!)}`)
+      const data = await res.json()
+      if (data.success && data.contribution) {
+        setContributionData(data.contribution)
       }
     } catch (error) {
-      console.error("[v0] Error fetching contribution details:", error)
+      console.error("Error fetching contribution details:", error)
     } finally {
       setLoading(false)
     }

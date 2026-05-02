@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Users, Percent } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 interface RevenueStats {
   totalApprovedContributions: number
@@ -28,60 +27,11 @@ export function PlatformRevenueTracker() {
 
   const fetchRevenueStats = async () => {
     try {
-      const supabase = createClient()
-
-      // Fetch all approved payment submissions
-      const { data: approvedPayments, error } = await supabase
-        .from("payment_submissions")
-        .select("id, created_at")
-        .eq("status", "approved")
-
-      if (error) throw error
-
-      const totalApproved = approvedPayments?.length || 0
-      const platformRevenue = totalApproved * 10 // $10 per approved contribution
-
-      // Calculate average revenue per active user
-      const { count: activeUsers } = await supabase
-        .from("participants")
-        .select("*", { count: "exact", head: true })
-        .eq("is_active", true)
-
-      const avgRevenue = activeUsers && activeUsers > 0 ? platformRevenue / activeUsers : 0
-
-      // Calculate revenue growth (comparing this month vs last month)
-      const now = new Date()
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0)
-
-      const { data: thisMonthApprovals } = await supabase
-        .from("payment_submissions")
-        .select("id")
-        .eq("status", "approved")
-        .gte("created_at", startOfMonth.toISOString())
-
-      const { data: lastMonthApprovals } = await supabase
-        .from("payment_submissions")
-        .select("id")
-        .eq("status", "approved")
-        .gte("created_at", startOfLastMonth.toISOString())
-        .lte("created_at", endOfLastMonth.toISOString())
-
-      const thisMonthRevenue = (thisMonthApprovals?.length || 0) * 10
-      const lastMonthRevenue = (lastMonthApprovals?.length || 0) * 10
-
-      const growth =
-        lastMonthRevenue > 0 ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0
-
-      setStats({
-        totalApprovedContributions: totalApproved,
-        platformRevenue,
-        averageRevenuePerUser: avgRevenue,
-        revenueGrowth: growth,
-      })
+      const res = await fetch("/api/admin/revenue-stats")
+      const data = await res.json()
+      if (data.success) setStats(data.stats)
     } catch (error) {
-      console.error("[v0] Error fetching revenue stats:", error)
+      console.error("Error fetching revenue stats:", error)
     }
   }
 

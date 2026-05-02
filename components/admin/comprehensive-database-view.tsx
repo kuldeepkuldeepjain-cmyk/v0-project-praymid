@@ -30,7 +30,6 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface UserDatabaseRecord {
   id: string
@@ -76,58 +75,27 @@ export function ComprehensiveDatabaseView() {
   const fetchUserData = async () => {
     try {
       setIsLoading(true)
-      const supabase = createClient()
-      
-      // Fetch participants with their payout requests
-      const { data: participants, error: participantsError } = await supabase
-        .from("participants")
-        .select(`
-          id,
-          serial_number,
-          username,
-          full_name,
-          email,
-          wallet_address,
-          account_balance,
-          is_active,
-          created_at
-        `)
-        .order("created_at", { ascending: false })
+      const [participantsRes, poolRes, payoutsRes] = await Promise.all([
+        fetch("/api/admin/participants-list"),
+        fetch("/api/admin/wallet-pool"),
+        fetch("/api/admin/payout-requests"),
+      ])
+      const [participantsData, poolData, payoutsData] = await Promise.all([
+        participantsRes.json(),
+        poolRes.json(),
+        payoutsRes.json(),
+      ])
 
-      if (participantsError) {
-        throw participantsError
-      }
+      const participants = participantsData.participants || []
+      const walletPool = poolData.pool || []
+      const payouts = payoutsData.payouts || []
 
-      // Fetch wallet pool data to get contribution addresses
-      const { data: walletPool, error: poolError } = await supabase
-        .from("wallet_pool")
-        .select("id, wallet_address, assigned_to")
-
-      if (poolError && poolError.code !== 'PGRST116') {
-        console.error("Error fetching wallet pool:", poolError)
-      }
-
-      // Fetch latest payout requests for each user
-      const { data: payouts, error: payoutsError } = await supabase
-        .from("payout_requests")
-        .select("participant_email, serial_number, amount, status")
-        .order("created_at", { ascending: false })
-
-      if (payoutsError && payoutsError.code !== 'PGRST116') {
-        console.error("Error fetching payouts:", payoutsError)
-      }
-
-      // Combine the data
-      const combinedData: UserDatabaseRecord[] = (participants || []).map((participant: any) => {
-        // Find contribution address from wallet pool (assigned_to holds participant email)
-        const poolEntry = walletPool?.find((w) => w.assigned_to === participant.email)
-        
-        // Find latest payout for this user
-        const latestPayout = payouts?.find((p) => p.participant_email === participant.email)
-
+      const combinedData: UserDatabaseRecord[] = participants.map((participant: any) => {
+        const poolEntry = walletPool.find((w: any) => w.assigned_to === participant.email)
+        const latestPayout = payouts.find((p: any) => p.participant_email === participant.email)
         return {
           ...participant,
-          wallet_balance: participant.account_balance || 0, // Map account_balance to wallet_balance for display
+          wallet_balance: participant.account_balance || 0,
           contribution_address: poolEntry?.wallet_address || null,
           payout_serial: latestPayout?.serial_number,
           payout_amount: latestPayout?.amount,
@@ -137,15 +105,9 @@ export function ComprehensiveDatabaseView() {
 
       setUsers(combinedData)
     } catch (error: any) {
-      // Ignore AbortError as it's expected when component unmounts
-      if (error?.name === 'AbortError') return
-      
+      if (error?.name === "AbortError") return
       console.error("Error loading database:", error)
-      toast({
-        title: "Error",
-        description: error?.message || "Failed to load user database",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: error?.message || "Failed to load user database", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -159,54 +121,21 @@ export function ComprehensiveDatabaseView() {
 
   const handleSaveContributionAddress = async () => {
     if (!selectedUser) return
-
     try {
       setIsSaving(true)
-      const supabase = createClient()
-
-      // Check if entry exists in wallet_pool
-      const { data: existing } = await supabase
-        .from("wallet_pool")
-        .select("id")
-        .eq("assigned_to", selectedUser.email)
-        .single()
-
-      if (existing) {
-        // Update existing entry
-        const { error } = await supabase
-          .from("wallet_pool")
-          .update({ wallet_address: editingContributionAddress })
-          .eq("assigned_to", selectedUser.email)
-
-        if (error) throw error
-      } else {
-        // Insert new entry
-        const { error } = await supabase
-          .from("wallet_pool")
-          .insert({
-            wallet_address: editingContributionAddress,
-            network: "BSC",
-            status: "assigned",
-            assigned_to: selectedUser.email,
-          })
-
-        if (error) throw error
-      }
-
-      toast({
-        title: "Success",
-        description: `Contribution address updated for ${selectedUser.username}`,
+      const res = await fetch("/api/admin/wallet-pool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: selectedUser.email, wallet_address: editingContributionAddress }),
       })
-
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      toast({ title: "Success", description: `Contribution address updated for ${selectedUser.username}` })
       setShowEditDialog(false)
-      fetchUserData() // Refresh data
+      fetchUserData()
     } catch (error) {
       console.error("Error saving contribution address:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update contribution address",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to update contribution address", variant: "destructive" })
     } finally {
       setIsSaving(false)
     }

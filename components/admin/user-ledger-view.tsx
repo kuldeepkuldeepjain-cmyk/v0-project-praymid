@@ -21,7 +21,6 @@ import {
   Loader2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface Transaction {
   id: string
@@ -64,24 +63,18 @@ export function UserLedgerView() {
     }
     setLoading(true)
     try {
-      const supabase = createClient()
+      const res = await fetch(`/api/admin/user-ledger?email=${encodeURIComponent(email.trim())}`)
+      const json = await res.json()
 
-      const { data: participant } = await supabase
-        .from("participants")
-        .select("id, email, full_name, username, account_balance")
-        .eq("email", email.trim())
-        .maybeSingle()
-
-      if (!participant) {
+      if (!json.success || !json.participant) {
         toast({ title: "Not found", description: "No participant with that email.", variant: "destructive" })
         return
       }
 
-      const [{ data: transactions }, { data: contributions }, { data: payouts }] = await Promise.all([
-        supabase.from("transactions").select("*").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
-        supabase.from("payment_submissions").select("id, amount, status, created_at").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
-        supabase.from("payout_requests").select("id, amount, status, created_at").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
-      ])
+      const participant = json.participant
+      const transactions = json.transactions || []
+      const contributions = json.contributions || []
+      const payouts = json.payouts || []
 
       const all: Transaction[] = [
         ...(transactions ?? []).map((tx: any) => ({

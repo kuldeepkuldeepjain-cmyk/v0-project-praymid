@@ -32,7 +32,6 @@ import {
   FileCheck,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface PayoutRequest {
   id: number
@@ -79,37 +78,19 @@ export function PayoutManagement() {
 
   useEffect(() => {
     fetchPayoutRequests()
-    
-    const supabase = createClient()
-    const channel = supabase
-      .channel("payout_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "payout_requests" }, () => {
-        fetchPayoutRequests()
-      })
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    const interval = setInterval(fetchPayoutRequests, 15000)
+    return () => clearInterval(interval)
   }, [])
 
   const fetchPayoutRequests = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("payout_requests")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-      setPayoutRequests(data || [])
+      const res = await fetch("/api/admin/payout-requests")
+      const data = await res.json()
+      if (data.success) setPayoutRequests(data.payouts || [])
+      else throw new Error(data.error)
     } catch (error) {
       console.error("Error fetching payout requests:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch payout requests",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
@@ -122,21 +103,14 @@ export function PayoutManagement() {
     setShowProofDialog(true)
     setProofData(null)
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("payment_submissions")
-        .select("id, screenshot_url, transaction_id, amount")
-        .eq("participant_email", payout.participant_email)
-        .in("status", ["pending", "request_pending", "in_process"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
-
-      if (!error && data) {
-        setProofData(data)
-      } else {
-        setProofData(null)
-      }
+      const params = new URLSearchParams({ email: payout.participant_email })
+      const res = await fetch(`/api/admin/payment-submissions?${params}`)
+      const data = await res.json()
+      const submissions = data.submissions || []
+      const pending = submissions.find((s: any) =>
+        ["pending", "request_pending", "in_process"].includes(s.status)
+      )
+      setProofData(pending || null)
     } catch {
       setProofData(null)
     } finally {
@@ -296,23 +270,12 @@ export function PayoutManagement() {
   const fetchAllParticipants = async () => {
     setLoadingParticipants(true)
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("email, username, account_balance, serial_number")
-        .order("serial_number", { ascending: false })
-
-      if (error) throw error
-      
-      console.log("[v0] Fetched participants for redirect:", data?.length || 0)
-      setAllParticipants(data || [])
+      const res = await fetch("/api/admin/all-participants")
+      const data = await res.json()
+      setAllParticipants(data.participants || [])
     } catch (error) {
-      console.error("[v0] Error fetching participants:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch participants list",
-        variant: "destructive",
-      })
+      console.error("Error fetching participants:", error)
+      toast({ title: "Error", description: "Failed to fetch participants list", variant: "destructive" })
     } finally {
       setLoadingParticipants(false)
     }

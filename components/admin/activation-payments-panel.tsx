@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select"
 import { CheckCircle2, XCircle, Clock, Search, Eye, DollarSign, Wallet, CreditCard, ArrowRight, Users } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface Participant {
   id: string
@@ -76,15 +75,9 @@ export function ActivationPaymentsPanel() {
 
   const fetchParticipants = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("id, username, full_name, email, wallet_address")
-        .order("created_at", { ascending: false })
-      
-      if (!error && data) {
-        setParticipants(data as any)
-      }
+      const res = await fetch("/api/admin/all-participants")
+      const data = await res.json()
+      if (data.success) setParticipants(data.participants as any)
     } catch (error) {
       console.error("Error fetching participants:", error)
     }
@@ -166,60 +159,44 @@ export function ActivationPaymentsPanel() {
   const handleUpdatePayoutTracker = async (payment: ActivationPayment, newStatus: string, targetUserId?: string) => {
     setIsProcessing(true)
     try {
-      const supabase = createClient()
-      
-      // Update the payment submission with new tracker status
-      const { error: updateError } = await supabase
-        .from("payment_submissions")
-        .update({
-          status: newStatus,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", payment.id)
+      const res = await fetch("/api/admin/bulk-update-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [payment.id], status: newStatus }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
 
-      if (updateError) throw updateError
-
-      // If redirecting to specific user, update their wallet address in wallet_pool
       if (targetUserId && newStatus === "redirected") {
         const targetUser = participants.find(p => p.id === targetUserId)
         if (targetUser) {
-          // Add to wallet pool as contribution address
-          await supabase.from("wallet_pool").upsert({
-            participant_id: targetUserId,
-            participant_email: targetUser.email,
-            participant_username: targetUser.username,
-            bep20_address: payment.wallet,
-            is_active: true,
-            contribution_amount: payment.amount,
-          }, { onConflict: "participant_id" })
-
-          // Create notification
-          await supabase.from("notifications").insert({
-            user_email: targetUser.email,
-            type: "success",
-            title: "Contribution Address Assigned",
-            message: `A new contribution address has been assigned to you: ${payment.wallet}`,
-            read_status: false,
+          await fetch("/api/admin/wallet-pool", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: targetUser.email, wallet_address: payment.wallet }),
+          })
+          await fetch("/api/admin/send-notification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipientType: "single",
+              recipientEmail: targetUser.email,
+              title: "Contribution Address Assigned",
+              message: `A new contribution address has been assigned to you: ${payment.wallet}`,
+              type: "success",
+            }),
           })
         }
       }
 
-      toast({
-        title: "Payout Tracker Updated",
-        description: `Payment status changed to ${newStatus}`,
-      })
-
+      toast({ title: "Payout Tracker Updated", description: `Payment status changed to ${newStatus}` })
       setShowTrackerDialog(false)
       setSelectedPayment(null)
       setSelectedTargetUser("")
       fetchPayments()
     } catch (error) {
-      console.error("[v0] Error updating tracker:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update payout tracker",
-        variant: "destructive",
-      })
+      console.error("Error updating tracker:", error)
+      toast({ title: "Error", description: "Failed to update payout tracker", variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
