@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import Zavudev, { APIError } from "@zavudev/sdk"
+import Zavu from "@zavudev/sdk"
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -29,28 +29,25 @@ export async function POST(request: NextRequest) {
     const otp = generateOTP()
     const expires = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
-    // Store OTP in activity_logs using the normalized E.164 number
+    // Store OTP in activity_logs
     await sql`
       INSERT INTO activity_logs (actor_email, action, target_type, details)
       VALUES (${email}, 'otp_sent', 'mobile_verification', ${JSON.stringify({ mobile_number: e164, otp, expires })})
     `
 
-    // Use the officially integrated Zavu credentials
-    const zavu = new Zavudev({ apiKey: process.env.ZAVU_API_KEY })
+    // Send via Zavu using the integrated API key
+    const zavu = new Zavu({ apiKey: process.env.ZAVU_API_KEY! })
     await zavu.messages.send({
       to: e164,
-      from: process.env.ZAVU_SENDER_ID,
-      channel: "sms",
       text: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
     })
 
-    return NextResponse.json({ success: true, message: "OTP sent via SMS", expiresIn: 600 })
+    return NextResponse.json({ success: true, message: "OTP sent", expiresIn: 600 })
   } catch (error: any) {
-    if (error instanceof APIError) {
-      console.error("Zavu APIError:", error.status, error.message)
-      return NextResponse.json({ error: error.message || "Failed to send OTP." }, { status: 500 })
-    }
-    console.error("OTP send error:", error?.message)
-    return NextResponse.json({ error: "Failed to send OTP. Please try again." }, { status: 500 })
+    console.error("OTP send error:", error?.message ?? error)
+    return NextResponse.json(
+      { error: error?.message || "Failed to send OTP. Please try again." },
+      { status: 500 }
+    )
   }
 }
