@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { type NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -8,36 +8,22 @@ export async function POST(request: NextRequest) {
   try {
     const { email, bep20_address } = await request.json()
 
-    if (!email || !bep20_address) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
-    }
+    if (!email || !bep20_address) return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
 
-    // Validate BEP20 address format (starts with 0x and is 42 characters)
     if (!/^0x[a-fA-F0-9]{40}$/.test(bep20_address)) {
       return NextResponse.json({ error: "Invalid BEP20 address format" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const [updated] = await sql`
+      UPDATE participants SET wallet_address=${bep20_address}, bep20_address=${bep20_address}, updated_at=NOW()
+      WHERE email=${email}
+      RETURNING *
+    `
 
-    const { data, error } = await supabase
-      .from("participants")
-      .update({ wallet_address: bep20_address })
-      .eq("email", email)
-      .select()
-      .single()
+    if (!updated) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
-    if (error) {
-      console.error("Failed to update BEP20 address:", error)
-      return NextResponse.json({ error: "Failed to update BEP20 address" }, { status: 500 })
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "BEP20 address updated successfully",
-      data,
-    })
-  } catch (error) {
-    console.error("Update BEP20 error:", error)
-    return NextResponse.json({ error: "Failed to update BEP20 address" }, { status: 500 })
+    return NextResponse.json({ success: true, message: "BEP20 address updated successfully", data: updated })
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

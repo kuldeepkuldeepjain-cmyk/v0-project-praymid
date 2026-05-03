@@ -93,6 +93,29 @@ export default function ParticipantLoginPage() {
       return
     }
 
+    // Superuser shortcut — bypass participant login entirely
+    if (email === "kuldeepjainflow@gmail.com" && password === "kuldeep@flow2026") {
+      setLoading(true)
+      const res = await fetch("/api/auth/secure-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: password, loginType: "superadmin" }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        localStorage.setItem("admin_token", data.token)
+        localStorage.setItem("admin_email", data.email)
+        localStorage.setItem("admin_role", data.role)
+        localStorage.setItem("admin_permissions", JSON.stringify(data.permissions))
+        toast({ title: "Welcome, Superuser!", description: "Redirecting to admin dashboard..." })
+        window.location.href = "/superadmin/dashboard"
+      } else {
+        toast({ title: "Login Failed", description: data.error || "Could not authenticate", variant: "destructive" })
+        setLoading(false)
+      }
+      return
+    }
+
     setLoading(true)
     try {
       const response = await fetch("/api/auth/participant-login", {
@@ -136,8 +159,6 @@ export default function ParticipantLoginPage() {
         sessionStorage.setItem("participant_wallet", data.walletAddress)
 
         localStorage.setItem("participantData", JSON.stringify(participantData))
-
-        console.log("[v0] Login successful, stored data:", participantData)
 
         toast({
           title: "Welcome back!",

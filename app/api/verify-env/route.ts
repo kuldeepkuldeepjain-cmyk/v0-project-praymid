@@ -2,10 +2,8 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   const checks = {
-    supabase: {
-      url: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      anonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      serviceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    database: {
+      databaseUrl: !!process.env.DATABASE_URL,
     },
     features: {
       qstashToken: !!process.env.QSTASH_TOKEN,
@@ -20,9 +18,7 @@ export async function GET() {
   }
 
   const isHealthy =
-    checks.supabase.url &&
-    checks.supabase.anonKey &&
-    checks.supabase.serviceRoleKey &&
+    checks.database.databaseUrl &&
     checks.features.cronSecret
 
   const hasAutoMatch = checks.features.qstashToken && checks.features.appUrl
@@ -31,12 +27,10 @@ export async function GET() {
     status: isHealthy ? "healthy" : "configuration_required",
     timestamp: new Date().toISOString(),
     requirements: {
-      supabase: {
-        configured: checks.supabase.url && checks.supabase.anonKey,
+      database: {
+        configured: checks.database.databaseUrl,
         details: {
-          url: checks.supabase.url ? "✓" : "✗ MISSING",
-          anonKey: checks.supabase.anonKey ? "✓" : "✗ MISSING",
-          serviceRoleKey: checks.supabase.serviceRoleKey ? "✓" : "✗ MISSING",
+          databaseUrl: checks.database.databaseUrl ? "✓" : "✗ MISSING",
         },
       },
       features: {
@@ -60,9 +54,7 @@ export async function GET() {
     },
     missingSetting: {
       critical: [
-        !checks.supabase.url && "NEXT_PUBLIC_SUPABASE_URL",
-        !checks.supabase.anonKey && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        !checks.supabase.serviceRoleKey && "SUPABASE_SERVICE_ROLE_KEY",
+        !checks.database.databaseUrl && "DATABASE_URL",
         !checks.features.cronSecret && "CRON_SECRET",
       ].filter(Boolean),
       recommended: [
@@ -74,7 +66,7 @@ export async function GET() {
       isHealthy && hasAutoMatch
         ? "All systems operational. Contribution auto-matching is enabled."
         : isHealthy
-          ? "Supabase configured. Add QSTASH_TOKEN and NEXT_PUBLIC_APP_URL for 30-minute auto-match feature."
+          ? "Database configured. Add QSTASH_TOKEN and NEXT_PUBLIC_APP_URL for 30-minute auto-match feature."
           : "Please configure missing environment variables in Vercel Settings.",
   })
 }

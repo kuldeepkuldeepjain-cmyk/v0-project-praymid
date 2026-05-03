@@ -9,15 +9,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
+
 import { Loader2, User, Mail, Wallet, MapPin, CheckCircle } from "lucide-react"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 
 export default function CompleteProfilePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [participantEmail, setParticipantEmail] = useState("")
@@ -52,14 +51,11 @@ export default function CompleteProfilePage() {
       setParticipantEmail(data.email)
 
       // Check if user has already completed details
-      const { data: participant, error } = await supabase
-        .from("participants")
-        .select("details_completed, full_name, email, wallet_address, full_address")
-        .eq("email", data.email)
-        .single()
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(data.email)}`)
+      const json = await res.json()
+      const participant = json.success ? json.participant : null
 
-      if (error) {
-        console.error("[v0] Error checking participant details:", error)
+      if (!res.ok || !json.success) {
         toast({
           title: "Error",
           description: "Failed to load profile data",
@@ -77,8 +73,8 @@ export default function CompleteProfilePage() {
       // Pre-fill existing data if any
       setFormData({
         fullName: participant?.full_name || "",
-        gmail: participant?.email || data.email,
-        bep20Address: participant?.wallet_address || "",
+        gmail: participant?.email || data.email || "",
+        bep20Address: participant?.wallet_address || participant?.bep20_address || "",
         fullAddress: participant?.full_address || "",
       })
     } catch (error) {
@@ -147,27 +143,27 @@ export default function CompleteProfilePage() {
     setIsLoading(true)
 
     try {
-      const { error } = await supabase
-        .from("participants")
-        .update({
+      const response = await fetch("/api/participant/complete-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: participantEmail,
           full_name: formData.fullName.trim(),
-          email: formData.gmail.trim(),
           wallet_address: formData.bep20Address.trim(),
           full_address: formData.fullAddress.trim(),
-          details_completed: true,
-          details_submitted_at: new Date().toISOString(),
-        })
-        .eq("email", participantEmail)
+        }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Submission failed")
 
-      if (error) throw error
-
-      // Update localStorage with new email if changed
+      // Update localStorage
       const participantData = localStorage.getItem("participantData")
       if (participantData) {
         const data = JSON.parse(participantData)
-        data.email = formData.gmail.trim()
         data.full_name = formData.fullName.trim()
         data.wallet_address = formData.bep20Address.trim()
+        data.bep20_address = formData.bep20Address.trim()
+        data.details_completed = true
         localStorage.setItem("participantData", JSON.stringify(data))
       }
 
@@ -176,7 +172,6 @@ export default function CompleteProfilePage() {
         description: "Welcome to FlowChain! You can now access your dashboard.",
       })
 
-      // Redirect to dashboard
       setTimeout(() => {
         router.push("/participant/dashboard")
       }, 1000)
@@ -184,7 +179,7 @@ export default function CompleteProfilePage() {
       console.error("[v0] Error submitting profile:", error)
       toast({
         title: "Submission Failed",
-        description: "Please try again later",
+        description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       })
     } finally {

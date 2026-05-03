@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 
 const CONTRIBUTION_WINDOW_HOURS = 24
 
@@ -70,48 +70,25 @@ export default function ContributePage() {
 
     setIsRequestingContribution(true)
     try {
-      const supabase = createClient()
-      let participantId = participantData.participantId || participantData.id
-      if (!participantId) {
-        const { data: p } = await supabase
-          .from("participants").select("id").eq("email", participantData.email).maybeSingle()
-        if (!p) throw new Error("Participant account not found")
-        participantId = p.id
-      }
-
-      // DB-level duplicate check — catches cases where local state hasn't loaded yet
-      const { data: existing } = await supabase
-        .from("payment_submissions")
-        .select("id, status")
-        .eq("participant_email", participantData.email)
-        .in("status", ["request_pending", "pending", "in_process", "proof_submitted"])
-        .limit(1)
-        .maybeSingle()
-
-      if (existing) {
-        setHasPendingSubmission(true)
-        toast({
-          title: "Request Already Pending",
-          description: "You already have an active contribution request awaiting admin approval.",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const { error } = await supabase
-        .from("payment_submissions")
-        .insert({
-          participant_id: participantId,
-          participant_email: participantData.email,
+      const res = await fetch("/api/participant/request-contribution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: participantData.email,
+          participantId: participantData.participantId || participantData.id,
           amount: plan.amount,
-          payment_method: "request",
-          transaction_id: null,
-          screenshot_url: null,
-          admin_notes: null,
-          status: "request_pending",
-        })
+        }),
+      })
+      const data = await res.json()
 
-      if (error) throw new Error(error.message)
+      if (!data.success) {
+        if (data.duplicate) {
+          setHasPendingSubmission(true)
+          toast({ title: "Request Already Pending", description: "You already have an active contribution request.", variant: "destructive" })
+          return
+        }
+        throw new Error(data.error || "Failed")
+      }
 
       toast({ 
         title: "Request Submitted!", 
@@ -199,14 +176,11 @@ export default function ContributePage() {
     if (storedData) {
       const parsed = JSON.parse(storedData)
       setParticipantData(parsed)
-      const supabase = createClient()
-      supabase.from("participants")
-        .select("next_contribution_date")
-        .eq("email", parsed.email)
-        .single()
-        .then(({ data }) => {
-          if (data?.next_contribution_date) {
-            setParticipantData((prev: any) => ({ ...prev, next_contribution_date: data.next_contribution_date }))
+      fetch("/api/participant/me", { headers: { "x-participant-email": parsed.email } })
+        .then(r => r.json())
+        .then(json => {
+          if (json.participant?.next_contribution_date) {
+            setParticipantData((prev: any) => ({ ...prev, next_contribution_date: json.participant.next_contribution_date }))
           }
         })
     }
@@ -257,20 +231,18 @@ export default function ContributePage() {
         return
       }
 
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("payment_submissions")
-        .update({
-          transaction_id: transactionHash,
-          screenshot_url: base64,
-          admin_notes: paymentNote || null,
-          status: "proof_submitted",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", matchedContribution.id)
-        .in("status", ["in_process", "proof_submitted"])
-
-      if (error) throw new Error(error.message)
+      const res = await fetch("/api/participant/submit-proof", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          submissionId: matchedContribution.id,
+          transactionId: transactionHash,
+          screenshotUrl: base64,
+          adminNotes: paymentNote || null,
+        }),
+      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
 
       toast({ title: "Payment Proof Submitted!", description: "Your proof has been sent. Waiting for system approval." })
       setPaymentProofSubmitted(true)

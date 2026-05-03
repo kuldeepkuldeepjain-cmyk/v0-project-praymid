@@ -31,7 +31,6 @@ import {
   Trash2,
   Wallet,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { ParticipantDatabaseView } from "@/components/admin/participant-database-view"
@@ -74,28 +73,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     const verifyAdminAccess = () => {
       try {
-        console.log("[v0] Checking admin authentication...")
-        
-        // Check if admin is authenticated using localStorage
         if (!isAdminAuthenticated()) {
-          console.log("[v0] Admin not authenticated, redirecting to login")
           router.push("/admin/login")
           return
         }
 
-        // Get admin data from localStorage
         const adminData = getAdminData()
         if (!adminData?.email) {
-          console.log("[v0] No admin email found, redirecting to login")
           router.push("/admin/login")
           return
         }
 
-        console.log("[v0] Admin authenticated as:", adminData.email)
         setAdminEmail(adminData.email)
         setIsLoading(false)
       } catch (error) {
-        console.error("[v0] Error verifying admin access:", error)
         router.push("/admin/login")
       }
     }
@@ -120,11 +111,9 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     try {
-      console.log("[v0] Logging out admin...")
       clearAdminAuth()
       router.push("/admin/login")
     } catch (error) {
-      console.error("[v0] Error logging out:", error)
       toast({
         title: "Error",
         description: "Failed to logout",

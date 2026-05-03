@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Sparkles, Trophy, TrendingUp, Volume2, VolumeX, Wallet, Info, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 
 interface Winner {
   email: string
@@ -89,14 +89,10 @@ export default function SpinWheelPage() {
       }
       const parsed = JSON.parse(storedData)
 
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("email, account_balance, available_spins, is_active")
-        .eq("email", parsed.email)
-        .single()
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(parsed.email)}`)
+      const json = await res.json()
 
-      if (error) {
+      if (!json.success) {
         // Fallback to cached
         setParticipantEmail(parsed.email || "")
         setBalance(parsed.account_balance || 0)
@@ -105,13 +101,12 @@ export default function SpinWheelPage() {
         return
       }
 
-      if (data) {
-        setParticipantEmail(data.email)
-        setBalance(data.account_balance ?? 0)
-        setAvailableSpins(data.available_spins ?? 0)
-        setIsActive(data.is_active ?? false)
-        localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...data }))
-      }
+      const data = json.participant
+      setParticipantEmail(data.email)
+      setBalance(Number(data.account_balance) ?? 0)
+      setAvailableSpins(parsed.available_spins || 0) // available_spins from cache
+      setIsActive(data.is_active ?? false)
+      localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...data }))
     } catch (error) {
       console.error("Error in loadParticipantData:", error)
     }

@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dialog"
 import { CheckCircle2, XCircle, Clock, Search, ImageIcon, ExternalLink, Users, DollarSign } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface ContributionSubmission {
   id: string
@@ -86,29 +85,15 @@ export function P2PContributionPanel() {
 
   const fetchContributions = async () => {
     try {
-      const supabase = createClient()
+      const res = await fetch("/api/admin/contribution-payout-records")
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error)
 
-      // Fetch payment_submissions with participant details
-      const { data: submissions, error } = await supabase
-        .from("payment_submissions")
-        .select(`
-          *,
-          participants(
-            full_name,
-            username,
-            email
-          ),
-          matched_payout_id
-        `)
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-
-      const transformed = submissions?.map((sub: any) => ({
+      const transformed = (json.contributions || []).map((sub: any) => ({
         id: sub.id,
         participant_id: sub.participant_id,
         participant_email: sub.participant_email,
-        participant_name: sub.participants?.full_name || sub.participants?.username || "Unknown",
+        participant_name: sub.full_name || sub.username || "Unknown",
         amount: sub.amount,
         payment_method: sub.payment_method,
         transaction_id: sub.transaction_id || "N/A",
@@ -116,7 +101,7 @@ export function P2PContributionPanel() {
         status: sub.status,
         created_at: sub.created_at,
         matched_payout_id: sub.matched_payout_id,
-      })) || []
+      }))
 
 
       setContributions(transformed)
@@ -173,34 +158,13 @@ export function P2PContributionPanel() {
 
   const fetchAvailablePayouts = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("payout_requests")
-        .select(`
-          *,
-          participants(full_name, email, mobile_number, wallet_address, bep20_address)
-        `)
-        .in("status", ["pending", "request_pending"])
-        .is("matched_contribution_id", null)
-        .order("created_at", { ascending: false })
-
-      if (error) {
-        console.error("Fetch payouts error:", error)
-        toast({
-          title: "Error",
-          description: "Failed to fetch payout requests: " + error.message,
-          variant: "destructive",
-        })
-        return
-      }
-      setAvailablePayouts(data || [])
+      const res = await fetch("/api/admin/available-payouts")
+      const data = await res.json()
+      if (data.success) setAvailablePayouts(data.payouts || [])
+      else toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
     } catch (error) {
       console.error("Error fetching payouts:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch payout requests",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
     }
   }
 
@@ -217,45 +181,21 @@ export function P2PContributionPanel() {
     setIsProcessing(true)
 
     try {
-      const supabase = createClient()
-
-      // Update contribution with matched payout ID
-      const { data: updatedContribution, error: contributionError } = await supabase
-        .from("payment_submissions")
-        .update({ 
-          matched_payout_id: selectedPayoutId,
-          status: "in_process"
-        })
-        .eq("id", selectedContribution.id)
-        .select()
-
-      if (contributionError) throw contributionError
-
-      // Update payout with matched contribution ID
-      const { data: updatedPayout, error: payoutError } = await supabase
-        .from("payout_requests")
-        .update({ matched_contribution_id: selectedContribution.id })
-        .eq("id", selectedPayoutId)
-        .select()
-
-      if (payoutError) throw payoutError
-
-      toast({
-        title: "Successfully Matched",
-        description: "Contribution matched with payout request. Contributor can now see payout details.",
+      const res = await fetch("/api/admin/match-contribution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contributionId: selectedContribution.id, payoutId: selectedPayoutId }),
       })
-
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      toast({ title: "Successfully Matched", description: "Contribution matched with payout request." })
       setShowMatchDialog(false)
       setSelectedPayoutId("")
       setSelectedContribution(null)
       fetchContributions()
     } catch (error) {
       console.error("Match error:", error)
-      toast({
-        title: "Error",
-        description: "Failed to match contribution with payout",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to match contribution with payout", variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
@@ -311,7 +251,7 @@ export function P2PContributionPanel() {
 
     // IMMEDIATE STATE LOCK - Prevent double clicks
     if (processedIds.has(selectedContribution.id)) {
-      console.log("[v0] DUPLICATE REJECT BLOCKED - Already processed:", selectedContribution.id)
+
       return
     }
 

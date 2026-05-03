@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, Clock, ExternalLink } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+
 
 // Chart URLs for assets
 const CHART_URLS: Record<string, string> = {
@@ -206,41 +206,18 @@ export function LivePredictionMonitor({
       const profitLoss = isWin ? netProfit : -prediction.amount
       const status = isWin ? "won" : "lost"
 
-      const supabase = createClient()
+      // Settle via server-side API (uses Neon DB directly)
+      const settleResponse = await fetch("/api/predictions/auto-settle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ predictionId: prediction.id, finalPrice: currentPrice }),
+      })
 
-      // Update prediction status
-      const { error: updateError } = await supabase
-        .from("predictions")
-        .update({
-          status,
-          target_price: currentPrice,
-          profit_loss: profitLoss,
-          result: status, // "won" or "lost" — same as status
-          closed_at: new Date().toISOString(),
-        })
-        .eq("id", prediction.id)
+      if (!settleResponse.ok) {
+        throw new Error(`Settlement failed: ${settleResponse.status}`)
+      }
 
-      if (updateError) throw updateError
-
-      // Credit wallet if win — add back stake + net profit (totalPayout)
-      if (isWin && totalPayout > 0) {
-        const { data: participantData, error: fetchError } = await supabase
-          .from("participants")
-          .select("account_balance")
-          .eq("email", userEmail)
-          .single()
-
-        if (fetchError) throw fetchError
-
-        const newBalance = Number(participantData.account_balance || 0) + totalPayout
-
-        const { error: balanceError } = await supabase
-          .from("participants")
-          .update({ account_balance: newBalance })
-          .eq("email", userEmail)
-
-        if (balanceError) throw balanceError
-
+      if (isWin) {
         onBalanceUpdate()
       }
 

@@ -29,7 +29,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, clearParticipantAuth } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 import { ParticipantLedger } from "@/components/participant-ledger"
 
 export default function ProfilePage() {
@@ -69,16 +69,11 @@ export default function ProfilePage() {
           return
         }
 
-        const supabase = createClient()
-        
-        const { data, error } = await supabase
-          .from("participants")
-          .select("*")
-          .eq("email", email)
-          .single()
+        const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+        const json = await res.json()
 
-        if (error) {
-          console.error("Error fetching profile data:", error)
+        if (!json.success) {
+          console.error("Error fetching profile data:", json.error)
           toast({ 
             title: "Error", 
             description: "Failed to load profile data", 
@@ -87,10 +82,10 @@ export default function ProfilePage() {
           return
         }
 
-        if (data) {
-          setParticipantData(data)
-          setEditedData(data)
-          localStorage.setItem("participantData", JSON.stringify(data))
+        if (json.participant) {
+          setParticipantData(json.participant)
+          setEditedData(json.participant)
+          localStorage.setItem("participantData", JSON.stringify(json.participant))
         }
       } catch (err) {
         console.error("Exception in profile fetch:", err)
@@ -124,20 +119,17 @@ export default function ProfilePage() {
 
   const uploadImage = async (file: File) => {
     setIsUploading(true)
-
     try {
       const reader = new FileReader()
       reader.onloadend = async () => {
         const base64Image = reader.result as string
-
-        const supabase = createClient()
-        const { error } = await supabase
-          .from("participants")
-          .update({ profile_image: base64Image })
-          .eq("email", participantData.email)
-
-        if (error) throw new Error("Failed to upload image")
-
+        const res = await fetch("/api/participant/update-profile-image", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: participantData.email, profile_image: base64Image }),
+        })
+        const result = await res.json()
+        if (!result.success) throw new Error("Failed to upload image")
         setParticipantData({ ...participantData, profile_image: base64Image })
         toast({ title: "Success", description: "Profile image updated" })
       }
@@ -151,14 +143,13 @@ export default function ProfilePage() {
 
   const removeImage = async () => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("participants")
-        .update({ profile_image: null })
-        .eq("email", participantData.email)
-
-      if (error) throw new Error("Failed to remove image")
-
+      const res = await fetch("/api/participant/update-profile-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: participantData.email, profile_image: null }),
+      })
+      const result = await res.json()
+      if (!result.success) throw new Error("Failed to remove image")
       setParticipantData({ ...participantData, profile_image: null })
       toast({ title: "Success", description: "Profile image removed" })
     } catch (error) {
@@ -168,14 +159,17 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("participants")
-        .update({ username: editedData.username, bep20_address: editedData.bep20_address })
-        .eq("email", participantData.email)
-
-      if (error) throw error
-
+      const res = await fetch("/api/participant/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: participantData.email,
+          username: editedData.username,
+          bep20_address: editedData.bep20_address,
+        }),
+      })
+      const result = await res.json()
+      if (!result.success) throw new Error(result.error)
       setParticipantData(editedData)
       setIsEditing(false)
       toast({ title: "Success", description: "Profile updated successfully" })

@@ -44,7 +44,6 @@ import {
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { UserRankBadge } from "@/components/user-rank-badge"
-import { createClient } from "@/lib/supabase/client"
 
 export function ParticipantDatabaseView() {
   const { toast } = useToast()
@@ -60,34 +59,19 @@ export function ParticipantDatabaseView() {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Fetch participants from Supabase
   useEffect(() => {
     async function fetchParticipants() {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("participants")
-          .select("*")
-          .order("created_at", { ascending: false })
-
-        if (error) {
-          console.error("Error fetching participants:", error)
-          toast({
-            title: "Error",
-            description: "Failed to load participants",
-            variant: "destructive",
-          })
-          return
-        }
-
-        setParticipants(data || [])
+        const res = await fetch("/api/admin/participants")
+        const data = await res.json()
+        setParticipants(data.participants || [])
       } catch (err) {
         console.error("Error in fetchParticipants:", err)
+        toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
       } finally {
         setLoading(false)
       }
     }
-
     fetchParticipants()
   }, [toast])
 
@@ -213,7 +197,7 @@ export function ParticipantDatabaseView() {
   const deleteParticipant = async (participantId: string) => {
     setIsDeleting(true)
     try {
-      console.log("[v0] Starting delete for participant:", participantId)
+      console.log("Starting delete for participant:", participantId)
       
       if (!participantId || participantId.trim() === "") {
         throw new Error("Invalid participant ID")

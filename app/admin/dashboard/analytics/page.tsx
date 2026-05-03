@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,7 +26,6 @@ import {
 
 export default function AdminAnalytics() {
   const { toast } = useToast()
-  const supabase = createClient()
 
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState<string>("all")
@@ -50,46 +49,25 @@ export default function AdminAnalytics() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch payment submissions with filters
-      let query = supabase
-        .from("payment_submissions")
-        .select("*")
-        .order("created_at", { ascending: false })
+      const params = new URLSearchParams({ status: filterStatus, dateRange: filterDateRange })
+      const [contribRes, statsRes] = await Promise.all([
+        fetch(`/api/admin/payment-submissions?${params}`),
+        fetch("/api/admin/stats"),
+      ])
+      const contribData = await contribRes.json()
+      const statsData = await statsRes.json()
 
-      if (filterStatus !== "all") {
-        query = query.eq("status", filterStatus)
-      }
-
-      // Date range filter
-      const now = new Date()
-      let startDate = new Date()
-      if (filterDateRange === "7d") startDate.setDate(now.getDate() - 7)
-      else if (filterDateRange === "30d") startDate.setDate(now.getDate() - 30)
-      else if (filterDateRange === "90d") startDate.setDate(now.getDate() - 90)
-
-      if (filterDateRange !== "all") {
-        query = query.gte("created_at", startDate.toISOString())
-      }
-
-      const { data, error } = await query.limit(100)
-
-      if (error) throw error
-      setContributions(data || [])
-
-      // Fetch analytics
-      const { data: participants } = await supabase.from("participants").select("*")
-      const { data: transactions } = await supabase.from("payment_submissions").select("amount")
-
+      setContributions(contribData.submissions || [])
       setAnalytics({
-        totalUsers: participants?.length || 0,
-        activeUsers: participants?.filter((p) => p.activation_fee_paid)?.length || 0,
-        totalRevenue: transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0,
-        avgResponseTime: Math.random() * 500 + 100, // Simulated
-        errorRate: Math.random() * 2, // Simulated
+        totalUsers: statsData.stats?.totalParticipants || 0,
+        activeUsers: statsData.stats?.activeParticipants || 0,
+        totalRevenue: statsData.stats?.totalRevenue || 0,
+        avgResponseTime: Math.random() * 500 + 100,
+        errorRate: Math.random() * 2,
         topReferrers: [],
       })
     } catch (error) {
-      console.error("[v0] Error fetching data:", error)
+      console.error("Error fetching data:", error)
       toast({
         title: "Error",
         description: "Failed to load analytics data",
@@ -107,25 +85,16 @@ export default function AdminAnalytics() {
     }
 
     try {
-      const { error } = await supabase
-        .from("payment_submissions")
-        .update({ status: "approved", reviewed_at: new Date().toISOString() })
-        .in("id", selectedItems)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: `${selectedItems.length} items approved`,
+      await fetch("/api/admin/bulk-update-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedItems, status: "approved" }),
       })
+      toast({ title: "Success", description: `${selectedItems.length} items approved` })
       setSelectedItems([])
       fetchData()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve items",
-        variant: "destructive",
-      })
+    } catch {
+      toast({ title: "Error", description: "Failed to approve items", variant: "destructive" })
     }
   }
 
@@ -134,27 +103,17 @@ export default function AdminAnalytics() {
       toast({ title: "No items selected", description: "Please select items to reject" })
       return
     }
-
     try {
-      const { error } = await supabase
-        .from("payment_submissions")
-        .update({ status: "rejected", reviewed_at: new Date().toISOString() })
-        .in("id", selectedItems)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: `${selectedItems.length} items rejected`,
+      await fetch("/api/admin/bulk-update-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: selectedItems, status: "rejected" }),
       })
+      toast({ title: "Success", description: `${selectedItems.length} items rejected` })
       setSelectedItems([])
       fetchData()
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject items",
-        variant: "destructive",
-      })
+    } catch {
+      toast({ title: "Error", description: "Failed to reject items", variant: "destructive" })
     }
   }
 

@@ -20,7 +20,6 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
 
 const PAYOUT_PLANS = [
   {
@@ -75,95 +74,32 @@ export default function PayoutPage() {
         
         const parsedData = JSON.parse(storedData)
         
-        // Fetch fresh participant data from database
-        const supabase = createClient()
-        
-        const { data: freshData, error: participantError } = await supabase
-          .from("participants")
-          .select("*")
-          .eq("email", parsedData.email)
-          .single()
-        
-        if (freshData) {
-          setParticipantData(freshData)
-          localStorage.setItem("participantData", JSON.stringify(freshData))
-          
-          // Pre-fill BEP20 address if available
-          if (freshData.bep20_address) {
-            setBep20Address(freshData.bep20_address)
-          }
+        // Fetch fresh participant data from API
+        const meRes = await fetch("/api/participant/me", {
+          headers: { "x-participant-email": parsedData.email },
+        })
+        const meData = await meRes.json()
+        if (meData.success && meData.participant) {
+          setParticipantData(meData.participant)
+          localStorage.setItem("participantData", JSON.stringify(meData.participant))
+          if (meData.participant.bep20_address) setBep20Address(meData.participant.bep20_address)
         } else {
-          console.error("Error fetching participant data:", participantError)
-          // Fallback to cached data
           setParticipantData(parsedData)
-          if (parsedData.bep20_address) {
-            setBep20Address(parsedData.bep20_address)
-          }
+          if (parsedData.bep20_address) setBep20Address(parsedData.bep20_address)
         }
-        
-        // Fetch real payout history from database
-        
-        const { data, error } = await supabase
-          .from("payout_requests")
-          .select("*")
-          .eq("participant_email", parsedData.email)
-          .order("created_at", { ascending: false })
-        
-        if (data) {
-          setPayoutHistory(data)
-        } else if (error) {
-          console.error("Error fetching payout history:", error)
-        }
-        
-        // Set up real-time subscription for payout updates
-        const channel = supabase
-          .channel("payout_status_updates")
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "payout_requests",
-              filter: `participant_email=eq.${parsedData.email}`,
-            },
-            (payload) => {
-              // Refresh payout history
-              supabase
-                .from("payout_requests")
-                .select("*")
-                .eq("participant_email", parsedData.email)
-                .order("created_at", { ascending: false })
-                .then(({ data: updatedData }) => {
-                  if (updatedData) {
-                    setPayoutHistory(updatedData)
-                    
-                    // Show toast notification for completed payouts
-                    if (payload.new && (payload.new as any).status === "completed") {
-                      toast({
-                        title: "Payout Completed!",
-                        description: `Your payout of $${(payload.new as any).amount} has been sent to your wallet.`,
-                        duration: 5000,
-                      })
-                    }
-                    
-                    // Show toast for rejected payouts
-                    if (payload.new && (payload.new as any).status === "rejected") {
-                      toast({
-                        title: "Payout Rejected",
-                        description: "Your payout request has been rejected. The amount has been refunded to your wallet.",
-                        variant: "destructive",
-                        duration: 5000,
-                      })
-                    }
-                  }
-                })
-          }
-        )
-        .subscribe()
 
-        return () => {
-          supabase.removeChannel(channel)
-        }
+        // Fetch payout history
+        const histRes = await fetch(`/api/participant/payout-history?email=${encodeURIComponent(parsedData.email)}`)
+        const histData = await histRes.json()
+        if (histData.success) setPayoutHistory(histData.payouts || [])
+
+        // Poll for real-time payout updates every 15s
+        const pollInterval = setInterval(async () => {
+          const r = await fetch(`/api/participant/payout-history?email=${encodeURIComponent(parsedData.email)}`)
+          const d = await r.json()
+          if (d.success) setPayoutHistory(d.payouts || [])
+        }, 15000)
+        return () => clearInterval(pollInterval)
       } catch (err) {
         console.error("Error in fetchData:", err)
       }
@@ -247,16 +183,9 @@ export default function PayoutPage() {
         })
         
         // Refresh payout history
-        const supabase = createClient()
-        const { data: historyData } = await supabase
-          .from("payout_requests")
-          .select("*")
-          .eq("participant_email", participantData.email)
-          .order("created_at", { ascending: false })
-        
-        if (historyData) {
-          setPayoutHistory(historyData)
-        }
+        const r = await fetch(`/api/participant/payout-history?email=${encodeURIComponent(participantData.email)}`)
+        const d = await r.json()
+        if (d.success) setPayoutHistory(d.payouts || [])
         
         // Update local balance (using account_balance)
         const updatedData = { ...participantData, account_balance: data.newBalance }

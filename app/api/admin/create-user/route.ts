@@ -1,89 +1,43 @@
 import { NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
-
-const allUsers: Array<{
-  email: string
-  name: string
-  role: "participant" | "admin" | "super_admin"
-  password: string
-  walletAddress?: string
-  createdAt: string
-}> = []
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const body = await request.json()
-    const { email, name, role } = body
+    const { email, name, role } = await request.json()
+    if (!email || !name || !role) return NextResponse.json({ error: "Email, name, and role are required" }, { status: 400 })
 
-    if (!email || !name || !role) {
-      return NextResponse.json({ error: "Email, name, and role are required" }, { status: 400 })
-    }
-
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
-    }
+    if (!emailRegex.test(email)) return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
 
-    // Check if user already exists
-    const existingUser = allUsers.find((user) => user.email === email)
-    if (existingUser) {
-      return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
-    }
+    const existing = await sql`SELECT id FROM participants WHERE email = ${email} LIMIT 1`
+    if (existing.length > 0) return NextResponse.json({ error: "User with this email already exists" }, { status: 409 })
 
-    const walletAddress =
-      role === "participant" ? `0x${Math.random().toString(16).substring(2, 42).padEnd(40, "0")}` : undefined
+    const walletAddress = role === "participant" ? `0x${Math.random().toString(16).substring(2, 42).padEnd(40, "0")}` : undefined
+    const serialRows = await sql`SELECT COALESCE(MAX(serial_number), 999) + 1 AS next FROM participants`
+    const serialNumber = serialRows[0]?.next || 1000
 
-    // Create new user with default password "12345"
-    const newUser = {
-      email,
-      name,
-      role,
-      password: "12345",
-      walletAddress,
-      createdAt: new Date().toISOString(),
-    }
-
-    allUsers.push(newUser)
-
-    console.log("[v0] Created new user:", { email, name, role, password: "12345", walletAddress })
-
-    return NextResponse.json({
-      success: true,
-      message: "User created successfully",
-      user: {
-        email,
-        name,
-        role,
-        password: "12345", // For demo purposes
-        walletAddress,
-        createdAt: newUser.createdAt,
-      },
-    })
-  } catch (error) {
-    console.error("[v0] Create user error:", error)
+    const rows = await sql`
+      INSERT INTO participants (email, full_name, username, role, wallet_address, serial_number, status, password_hash)
+      VALUES (${email}, ${name}, ${email.split("@")[0]}, ${role}, ${walletAddress || null}, ${serialNumber}, 'active', '12345')
+      RETURNING id, email, full_name, role, wallet_address, serial_number, created_at
+    `
+    const newUser = rows[0]
+    return NextResponse.json({ success: true, message: "User created successfully", user: { ...newUser, password: "12345" } })
+  } catch (error: any) {
     return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
   }
 }
 
-// Get all users (for super admins only)
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSession(request)
+  if (!auth.ok) return auth.response
   try {
-    return NextResponse.json({
-      success: true,
-      users: allUsers.map((user) => ({
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        password: user.password,
-        walletAddress: user.walletAddress,
-        createdAt: user.createdAt,
-      })),
-    })
-  } catch (error) {
-    console.error("[v0] Get users error:", error)
+    const users = await sql`SELECT id, email, full_name, username, role, wallet_address, serial_number, created_at FROM participants ORDER BY created_at DESC`
+    return NextResponse.json({ success: true, users })
+  } catch (error: any) {
     return NextResponse.json({ error: "Failed to fetch users" }, { status: 500 })
   }
 }

@@ -1,5 +1,4 @@
 import { getIronSession, IronSession } from "iron-session"
-import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
 
 // ── Session data shapes ────────────────────────────────────────────────────
@@ -24,12 +23,11 @@ export type SessionData = (ParticipantSessionData | AdminSessionData) & {
 const PARTICIPANT_COOKIE = "participant_session"
 const ADMIN_COOKIE = "admin_session"
 
-// ── Secret — must be at least 32 chars ────────────────────────────────────
+// ── Secret ─────────────────────────────────────────────────────────────────
 
 function getSecret(): string {
   const secret = process.env.SESSION_SECRET
   if (!secret || secret.length < 32) {
-    // Fallback for dev; in production SESSION_SECRET must be set
     return "flowchain-default-secret-change-in-production-32chars"
   }
   return secret
@@ -41,13 +39,15 @@ const BASE_OPTIONS = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
   },
 }
 
 // ── Participant session helpers ────────────────────────────────────────────
 
 export async function getParticipantSession(): Promise<IronSession<ParticipantSessionData & { isLoggedIn?: boolean }>> {
+  // Dynamic import avoids module-level crash in Route Handlers
+  const { cookies } = await import("next/headers")
   const cookieStore = await cookies()
   return getIronSession<ParticipantSessionData & { isLoggedIn?: boolean }>(cookieStore, {
     ...BASE_OPTIONS,
@@ -73,6 +73,7 @@ export async function clearParticipantSession(): Promise<void> {
 // ── Admin session helpers ──────────────────────────────────────────────────
 
 export async function getAdminSession(): Promise<IronSession<AdminSessionData & { isLoggedIn?: boolean }>> {
+  const { cookies } = await import("next/headers")
   const cookieStore = await cookies()
   return getIronSession<AdminSessionData & { isLoggedIn?: boolean }>(cookieStore, {
     ...BASE_OPTIONS,

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Save, Wallet, Settings, Loader2, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
+
 
 export default function AdminSettingsPage() {
   const router = useRouter()
@@ -36,17 +36,10 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     setIsLoading(true)
     try {
-      const supabase = createClient()
-      
-      // Fetch topup address
-      const { data: topupData } = await supabase
-        .from("system_settings")
-        .select("setting_value")
-        .eq("setting_key", "topup_address")
-        .single()
-      
-      if (topupData) {
-        setTopupAddress(topupData.setting_value)
+      const res = await fetch("/api/admin/settings")
+      const data = await res.json()
+      if (data.success && data.settings?.topup_address) {
+        setTopupAddress(data.settings.topup_address)
       }
     } catch (error) {
       console.error("Error fetching settings:", error)
@@ -58,37 +51,20 @@ export default function AdminSettingsPage() {
   const saveSettings = async () => {
     setIsSaving(true)
     setSaved(false)
-    
     try {
-      const supabase = createClient()
-      
-      // Upsert topup address
-      const { error } = await supabase
-        .from("system_settings")
-        .upsert({
-          setting_key: "topup_address",
-          setting_value: topupAddress,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: "setting_key"
-        })
-      
-      if (error) throw error
-      
-      setSaved(true)
-      toast({
-        title: "Settings Saved",
-        description: "Your settings have been updated successfully",
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topup_address: topupAddress }),
       })
-      
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      setSaved(true)
+      toast({ title: "Settings Saved", description: "Your settings have been updated successfully" })
       setTimeout(() => setSaved(false), 2000)
     } catch (error) {
       console.error("Error saving settings:", error)
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to save settings. Please try again.", variant: "destructive" })
     } finally {
       setIsSaving(false)
     }

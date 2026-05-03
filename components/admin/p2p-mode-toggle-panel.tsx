@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertTriangle, Power, Users, Wallet, RefreshCw } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface P2PSettings {
   p2p_mode_enabled: boolean
@@ -33,34 +32,14 @@ export function P2PModeTogglePanel() {
 
   const fetchSettings = async () => {
     try {
-      const supabase = createClient()
-
-      // Fetch P2P mode setting
-      const { data: p2pModeSetting, error: p2pError } = await supabase
-        .from("system_settings")
-        .select("*")
-        .eq("setting_key", "p2p_mode_enabled")
-        .maybeSingle()
-
-      // Fetch admin wallet setting
-      const { data: walletSetting, error: walletError } = await supabase
-        .from("system_settings")
-        .select("*")
-        .eq("setting_key", "admin_wallet_address")
-        .maybeSingle()
-
-      if (p2pError && p2pError.code !== "PGRST116") throw p2pError
-      if (walletError && walletError.code !== "PGRST116") throw walletError
-
-      setSettings({
-        p2p_mode_enabled: p2pModeSetting?.setting_value === "true" || true,
-        admin_wallet_address: walletSetting?.setting_value || "",
-        last_updated: p2pModeSetting?.updated_at || new Date().toISOString(),
-      })
-
-      setAdminWallet(walletSetting?.setting_value || "")
+      const res = await fetch("/api/admin/p2p-settings")
+      const data = await res.json()
+      if (data.success) {
+        setSettings(data.settings)
+        setAdminWallet(data.settings.admin_wallet_address || "")
+      }
     } catch (error) {
-      console.error("[v0] Error fetching P2P settings:", error)
+      console.error("Error fetching P2P settings:", error)
     } finally {
       setLoading(false)
     }
@@ -68,40 +47,22 @@ export function P2PModeTogglePanel() {
 
   const toggleP2PMode = async (enabled: boolean) => {
     setIsUpdating(true)
-
     try {
-      const supabase = createClient()
-
-      // Upsert P2P mode setting
-      const { error } = await supabase.from("system_settings").upsert({
-        setting_key: "p2p_mode_enabled",
-        setting_value: enabled.toString(),
-        setting_type: "boolean",
-        description: "Enable or disable P2P contribution routing",
-        updated_at: new Date().toISOString(),
+      const res = await fetch("/api/admin/p2p-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "p2p_mode_enabled", value: enabled.toString() }),
       })
-
-      if (error) throw error
-
-      setSettings((prev) => ({
-        ...prev,
-        p2p_mode_enabled: enabled,
-        last_updated: new Date().toISOString(),
-      }))
-
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      setSettings((prev) => ({ ...prev, p2p_mode_enabled: enabled, last_updated: new Date().toISOString() }))
       toast({
         title: enabled ? "P2P Mode Enabled" : "P2P Mode Disabled",
-        description: enabled
-          ? "Contributions will be matched to pending payouts"
-          : "All contributions will go directly to admin wallet",
+        description: enabled ? "Contributions will be matched to pending payouts" : "All contributions will go directly to admin wallet",
       })
     } catch (error) {
-      console.error("[v0] Error toggling P2P mode:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update P2P mode",
-        variant: "destructive",
-      })
+      console.error("Error toggling P2P mode:", error)
+      toast({ title: "Error", description: "Failed to update P2P mode", variant: "destructive" })
     } finally {
       setIsUpdating(false)
     }
@@ -120,34 +81,18 @@ export function P2PModeTogglePanel() {
     setIsUpdating(true)
 
     try {
-      const supabase = createClient()
-
-      const { error } = await supabase.from("system_settings").upsert({
-        setting_key: "admin_wallet_address",
-        setting_value: adminWallet.trim(),
-        setting_type: "string",
-        description: "Admin wallet address for direct contributions when P2P is OFF",
-        updated_at: new Date().toISOString(),
+      const res = await fetch("/api/admin/p2p-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "admin_wallet_address", value: adminWallet.trim() }),
       })
-
-      if (error) throw error
-
-      setSettings((prev) => ({
-        ...prev,
-        admin_wallet_address: adminWallet.trim(),
-      }))
-
-      toast({
-        title: "Wallet Updated",
-        description: "Admin wallet address has been saved",
-      })
+      const data = await res.json()
+      if (!data.success) throw new Error(data.error)
+      setSettings((prev) => ({ ...prev, admin_wallet_address: adminWallet.trim() }))
+      toast({ title: "Wallet Updated", description: "Admin wallet address has been saved" })
     } catch (error) {
-      console.error("[v0] Error updating admin wallet:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update admin wallet",
-        variant: "destructive",
-      })
+      console.error("Error updating admin wallet:", error)
+      toast({ title: "Error", description: "Failed to update admin wallet", variant: "destructive" })
     } finally {
       setIsUpdating(false)
     }

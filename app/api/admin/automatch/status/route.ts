@@ -1,93 +1,40 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/db"
 
-/**
- * GET /api/admin/automatch/status
- * 
- * Monitoring endpoint for automatch system health
- * Returns statistics on pending contributions, available payouts, and recent matches
- * 
- * Query params:
- * - token: Authorization token (must match AUTOMATCH_CRON_SECRET)
- */
 export async function GET(request: NextRequest) {
   try {
-    // Verify authorization
     const token = request.nextUrl.searchParams.get("token")
     const cronSecret = process.env.AUTOMATCH_CRON_SECRET
+    if (!cronSecret || token !== cronSecret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    if (!cronSecret || token !== cronSecret) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      )
-    }
-
-    const supabase = await createClient()
     const now = new Date()
-    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000)
+    const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString()
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString()
 
-    // 1. Count pending contributions eligible for automatch
-    const { data: pendingCount } = await supabase
-      .from("payment_submissions")
-      .select("id", { count: "exact" })
-      .eq("status", "pending")
-      .lte("created_at", thirtyMinutesAgo.toISOString())
+    const [pending, inProgress, availablePayouts, recentMatches] = await Promise.all([
+      sql`SELECT COUNT(*)::int AS count FROM payment_submissions WHERE status = 'pending' AND created_at <= ${thirtyMinutesAgo}`,
+      sql`SELECT COUNT(*)::int AS count FROM payment_submissions WHERE status = 'in_process' AND matched_at >= ${fiveMinutesAgo}`,
+      sql`SELECT COUNT(*)::int AS count FROM payout_requests WHERE status = 'request_pending'`,
+      sql`SELECT id, amount, matched_at, matched_payout_id, participant_email FROM payment_submissions WHERE status = 'in_process' ORDER BY matched_at DESC LIMIT 10`,
+    ])
 
-    // 2. Count contributions in progress (recently matched)
-    const { data: inProgressCount } = await supabase
-      .from("payment_submissions")
-      .select("id", { count: "exact" })
-      .eq("status", "in_process")
-      .gte("matched_at", new Date(now.getTime() - 5 * 60 * 1000).toISOString())
-
-    // 3. Count available payouts
-    const { data: availablePayouts } = await supabase
-      .from("payout_requests")
-      .select("id", { count: "exact" })
-      .eq("status", "request_pending")
-
-    // 4. Get recent matches (last 10)
-    const { data: recentMatches } = await supabase
-      .from("payment_submissions")
-      .select(
-        "id, amount, matched_at, matched_payout_id, participant_email"
-      )
-      .eq("status", "in_process")
-      .order("matched_at", { ascending: false })
-      .limit(10)
-
-    // 5. Calculate efficiency metrics
-    const totalContributions = (pendingCount?.length || 0) + (inProgressCount?.length || 0)
-    const matchRate = totalContributions > 0 ? (inProgressCount?.length || 0) / totalContributions : 0
-    const availablePayoutCount = availablePayouts?.length || 0
+    const pendingCount = pending[0]?.count || 0
+    const inProgressCount = inProgress[0]?.count || 0
+    const availablePayoutCount = availablePayouts[0]?.count || 0
+    const total = pendingCount + inProgressCount
+    const matchRate = total > 0 ? Math.round((inProgressCount / total) * 100) : 0
 
     return NextResponse.json({
       status: "ok",
       timestamp: now.toISOString(),
-      metrics: {
-        pendingEligible: pendingCount?.length || 0,
-        recentlyMatched: inProgressCount?.length || 0,
-        availablePayouts: availablePayoutCount,
-        matchRate: Math.round(matchRate * 100),
-        system_health: availablePayoutCount > 0 ? "healthy" : "warning",
-      },
-      recentMatches: recentMatches?.map((m) => ({
-        contributionId: m.id,
-        amount: m.amount,
-        matchedAt: m.matched_at,
-        participantEmail: m.participant_email,
-      })) || [],
+      metrics: { pendingEligible: pendingCount, recentlyMatched: inProgressCount, availablePayouts: availablePayoutCount, matchRate, system_health: availablePayoutCount > 0 ? "healthy" : "warning" },
+      recentMatches: recentMatches.map((m: any) => ({ contributionId: m.id, amount: m.amount, matchedAt: m.matched_at, participantEmail: m.participant_email })),
       recommendations: [
-        ...(availablePayoutCount === 0 ? ["No payouts available - contributions will wait for next cycle"] : []),
-        ...(pendingCount && pendingCount.length > 20 ? ["High volume of pending contributions - consider increasing match frequency"] : []),
+        ...(availablePayoutCount === 0 ? ["No payouts available - contributions will wait"] : []),
+        ...(pendingCount > 20 ? ["High volume of pending contributions"] : []),
       ],
     })
-  } catch (error) {
-    console.error("[v0] Automatch status error:", error)
-    return NextResponse.json(
-      { error: "Failed to retrieve automatch status", details: String(error) },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    return NextResponse.json({ error: "Failed to retrieve automatch status", details: String(error) }, { status: 500 })
   }
 }

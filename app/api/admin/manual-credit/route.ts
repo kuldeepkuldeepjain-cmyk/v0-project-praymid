@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -13,51 +13,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email or amount" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const [participant] = await sql`SELECT id, username, account_balance FROM participants WHERE email = ${email} LIMIT 1`
+    if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
-    // Get participant
-    const { data: participant, error: participantError } = await supabase
-      .from("participants")
-      .select("id, username, account_balance")
-      .eq("email", email)
-      .single()
-
-    if (participantError || !participant) {
-      return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-    }
-
-    // Update account balance
     const newBalance = Number(participant.account_balance || 0) + Number(amount)
 
-    const { error: updateError } = await supabase
-      .from("participants")
-      .update({ account_balance: newBalance })
-      .eq("email", email)
+    await sql`UPDATE participants SET account_balance = ${newBalance}, updated_at = NOW() WHERE email = ${email}`
+    await sql`
+      INSERT INTO activity_logs (action, actor_id, actor_email, target_type, target_id, details)
+      VALUES ('manual_credit', ${participant.id}, 'admin@system.com', 'wallet', ${participant.id},
+        ${'Manual credit of $' + amount + ' to ' + email + ' (New balance: $' + newBalance + ')'})
+    `
 
-    if (updateError) {
-      console.error("[v0] Failed to update wallet balance:", updateError)
-      return NextResponse.json({ error: "Failed to update wallet" }, { status: 500 })
-    }
-
-    // Log the activity
-    await supabase.from("activity_logs").insert({
-      action: "manual_credit",
-      actor_id: participant.id,
-      actor_email: "admin@system.com",
-      target_type: "wallet",
-      target_id: participant.id,
-      details: `Manual credit of $${amount} to ${email} (New balance: $${newBalance})`,
-    })
-
-    console.log(`[v0] Manual credit successful: $${amount} to ${email}`)
-
-    return NextResponse.json({
-      success: true,
-      message: `$${amount} credited to ${email}`,
-      newBalance,
-    })
+    return NextResponse.json({ success: true, message: `$${amount} credited to ${email}`, newBalance })
   } catch (error) {
-    console.error("[v0] Manual credit error:", error)
     return NextResponse.json({ error: "Failed to process credit" }, { status: 500 })
   }
 }

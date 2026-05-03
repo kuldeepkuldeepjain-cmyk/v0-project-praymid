@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 import { Trophy, ArrowLeft, Crown, Medal, TrendingUp, Coins, Sparkles, Zap, Star, Award, TrendingDown, ArrowUp, ArrowDown, User } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+
 
 interface LeaderboardEntry {
   position: number
@@ -80,16 +80,12 @@ export default function LeaderboardContent() {
       const data = JSON.parse(participantData)
       const userEmail = data.email
 
-      const supabase = createClient()
-
-      // Get user's data
-      const { data: userData, error: userError } = await supabase
-        .from("participants")
-        .select("username, email, total_earnings, account_balance")
-        .eq("email", userEmail)
-        .single()
-
-      if (userError || !userData) return
+      const res = await fetch(`/api/participant/me`, {
+        headers: { "x-participant-email": userEmail },
+      })
+      const json = await res.json()
+      const userData = json.participant
+      if (!userData) return
 
       // Generate daily random rank between 10000-18000
       const today = new Date()
@@ -115,7 +111,7 @@ export default function LeaderboardContent() {
         earnings: Number(userData.total_earnings || 0),
       })
     } catch (error) {
-      console.error("[v0] Error fetching user stats:", error)
+      console.error("Error fetching user stats:", error)
     }
   }
 

@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog"
 import { Clock, Search, Users, Trash2, Hourglass } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface PayoutRequest {
@@ -73,45 +72,13 @@ export function P2PPayoutQueuePanel() {
 
   const fetchPayoutRequests = async () => {
     try {
-      const supabase = createClient()
-
-      const { data, error } = await supabase
-        .from("payout_requests")
-        .select(`
-          id,
-          participant_id,
-          participant_email,
-          serial_number,
-          amount,
-          wallet_address,
-          status,
-          created_at,
-          participants!inner(full_name, email, serial_number)
-        `)
-        .order("created_at", { ascending: true })
-
-      if (error) throw error
-
-      const transformed = data?.map((req: any) => ({
-        id: req.id,
-        participant_id: req.participant_id,
-        participant_email: req.participant_email,
-        participant_name: req.participants?.full_name || "Unknown",
-        serial_number: req.serial_number,
-        amount: req.amount,
-        wallet_address: req.wallet_address,
-        status: req.status,
-        created_at: req.created_at,
-      }))
-
-      setPayoutRequests(transformed || [])
+      const res = await fetch("/api/admin/payout-requests")
+      const data = await res.json()
+      if (data.success) setPayoutRequests(data.payouts || [])
+      else throw new Error(data.error)
     } catch (error) {
-      console.error("[v0] Error fetching payout requests:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch payout requests",
-        variant: "destructive",
-      })
+      console.error("Error fetching payout requests:", error)
+      toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }
