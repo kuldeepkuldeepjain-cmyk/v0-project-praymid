@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db"
-import Zavu from "@zavudev/sdk"
+import { Zavudev } from "@zavudev/sdk"
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -35,8 +35,11 @@ export async function POST(request: NextRequest) {
       VALUES (${email}, 'otp_sent', 'mobile_verification', ${JSON.stringify({ mobile_number: e164, otp, expires })})
     `
 
-    // Send via Zavu using the integrated API key
-    const zavu = new Zavu({ apiKey: process.env.ZAVU_API_KEY! })
+    // Send via Zavu using the integrated credentials
+    const zavu = new Zavudev({
+      apiKey: process.env.ZAVU_API_KEY!,
+      baseURL: process.env.ZAVU_API_URL,
+    })
     await zavu.messages.send({
       to: e164,
       text: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
