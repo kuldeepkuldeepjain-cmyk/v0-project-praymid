@@ -1177,8 +1177,10 @@ export default function HomePage() {
             <div className="col-span-2 md:col-span-1">
               <FlowChainLogo size="sm" showTagline={false} />
               <p className="text-gray-500 mt-4 text-sm leading-relaxed">
-                The world's first platform that doubles your investment in 30 days with 24/7 support and guaranteed
-                returns.
+                The world&apos;s first platform providing binary trading with a structured P2P contribution network and 24/7 support.
+              </p>
+              <p className="text-amber-600 mt-3 text-xs leading-relaxed font-medium border border-amber-200 bg-amber-50 rounded-lg px-3 py-2">
+                Risk Disclosure: Trading involves significant risk of loss. Past performance is not indicative of future results. Only invest what you can afford to lose.
               </p>
             </div>
             <div>
@@ -1247,9 +1249,9 @@ export default function HomePage() {
                 <Shield className="h-4 w-4" />
                 Bank-Grade Security
               </span>
-              <span className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
-                <Zap className="h-4 w-4" />
-                2X Guaranteed
+              <span className="flex items-center gap-2 text-sm text-gray-500">
+                <Activity className="h-4 w-4" />
+                Binary Trading
               </span>
             </div>
           </div>
