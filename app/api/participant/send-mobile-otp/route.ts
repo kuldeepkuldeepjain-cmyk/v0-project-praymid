@@ -35,11 +35,8 @@ export async function POST(request: NextRequest) {
       VALUES (${email}, 'otp_sent', 'mobile_verification', ${JSON.stringify({ mobile_number: e164, otp, expires })})
     `
 
-    // Send via Zavu using the integrated credentials
-    const zavu = new Zavudev({
-      apiKey: process.env.ZAVU_API_KEY!,
-      baseURL: process.env.ZAVU_API_URL,
-    })
+    // Send via Zavu using the integrated API key
+    const zavu = new Zavudev({ apiKey: process.env.ZAVU_API_KEY! })
     await zavu.messages.send({
       to: e164,
       text: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
