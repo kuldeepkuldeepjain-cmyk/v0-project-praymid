@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -7,19 +7,11 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const supabase = await createClient()
-
-    const { data: participants, error } = await supabase
-      .from("participants")
-      .select("*")
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      console.error("[v0] Error fetching participants from Supabase:", error)
-      return NextResponse.json({ error: "Failed to fetch participants" }, { status: 500 })
-    }
-
-    console.log("[v0] Fetched participants from Supabase. Count:", participants?.length || 0)
+    const db = getServiceClient()
+    const result = await db.query(
+      "SELECT * FROM participants ORDER BY created_at DESC"
+    )
+    const participants = result.rows
 
     const formattedParticipants = (participants || []).map((p: any) => ({
       id: p.id,

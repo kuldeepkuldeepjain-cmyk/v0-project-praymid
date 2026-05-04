@@ -31,7 +31,6 @@ import {
   Trash2,
   Wallet,
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { ParticipantDatabaseView } from "@/components/admin/participant-database-view"
