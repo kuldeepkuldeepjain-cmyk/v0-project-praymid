@@ -10,6 +10,21 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Prevent Node.js-only modules from being bundled for the browser
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        dns: false,
+        net: false,
+        tls: false,
+        fs: false,
+        pg: false,
+        'pg-native': false,
+      }
+    }
+    return config
+  },
 }
 
 export default nextConfig
