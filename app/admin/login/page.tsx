@@ -35,7 +35,7 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        setAdminAuth(data.token, email, data.role, data.permissions)
+        setAdminAuth(data.email || email, email, data.role, data.permissions)
         router.push("/admin/dashboard")
       } else {
         setError(data.error || "Login failed. Please try again.")
