@@ -2,10 +2,9 @@ import { NextResponse } from "next/server"
 
 export async function GET() {
   const checks = {
-    supabase: {
-      url: !!process.env.POSTGRES_URL,
-      anonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      serviceRoleKey: !!process.env.POSTGRES_URL,
+    database: {
+      postgresUrl: !!process.env.POSTGRES_URL,
+      postgresNonPooling: !!process.env.POSTGRES_URL_NON_POOLING,
     },
     features: {
       qstashToken: !!process.env.QSTASH_TOKEN,
@@ -20,9 +19,7 @@ export async function GET() {
   }
 
   const isHealthy =
-    checks.supabase.url &&
-    checks.supabase.anonKey &&
-    checks.supabase.serviceRoleKey &&
+    checks.database.postgresUrl &&
     checks.features.cronSecret
 
   const hasAutoMatch = checks.features.qstashToken && checks.features.appUrl
@@ -31,12 +28,11 @@ export async function GET() {
     status: isHealthy ? "healthy" : "configuration_required",
     timestamp: new Date().toISOString(),
     requirements: {
-      supabase: {
-        configured: checks.supabase.url && checks.supabase.anonKey,
+      database: {
+        configured: checks.database.postgresUrl,
         details: {
-          url: checks.supabase.url ? "✓" : "✗ MISSING",
-          anonKey: checks.supabase.anonKey ? "✓" : "✗ MISSING",
-          serviceRoleKey: checks.supabase.serviceRoleKey ? "✓" : "✗ MISSING",
+          postgresUrl: checks.database.postgresUrl ? "✓" : "✗ MISSING",
+          postgresNonPooling: checks.database.postgresNonPooling ? "✓" : "✗ MISSING",
         },
       },
       features: {
@@ -54,15 +50,13 @@ export async function GET() {
       optional: {
         smsOtp: {
           configured: checks.optional.otpApiKey && checks.optional.otpSenderId,
-          details: checks.optional.otpApiKey ? "✓ SMS OTP available" : "○ Not configured",
+          details: checks.optional.otpApiKey ? "✓ OTP available" : "○ Not configured",
         },
       },
     },
     missingSetting: {
       critical: [
-        !checks.supabase.url && "NEXT_PUBLIC_SUPABASE_URL",
-        !checks.supabase.anonKey && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        !checks.supabase.serviceRoleKey && "SUPABASE_SERVICE_ROLE_KEY",
+        !checks.database.postgresUrl && "POSTGRES_URL",
         !checks.features.cronSecret && "CRON_SECRET",
       ].filter(Boolean),
       recommended: [
@@ -74,7 +68,7 @@ export async function GET() {
       isHealthy && hasAutoMatch
         ? "All systems operational. Contribution auto-matching is enabled."
         : isHealthy
-          ? "Supabase configured. Add QSTASH_TOKEN and NEXT_PUBLIC_APP_URL for 30-minute auto-match feature."
+          ? "Database configured. Add QSTASH_TOKEN and NEXT_PUBLIC_APP_URL for 30-minute auto-match feature."
           : "Please configure missing environment variables in Vercel Settings.",
   })
 }
