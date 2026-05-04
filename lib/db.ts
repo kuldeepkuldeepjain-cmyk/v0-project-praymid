@@ -1,3 +1,4 @@
+import "server-only"
 import { Pool } from "pg"
 
 const globalForPool = globalThis as unknown as { _pgPool?: Pool }
