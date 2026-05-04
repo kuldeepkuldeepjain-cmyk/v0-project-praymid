@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 // Helper — resolve participant name from a cached map (populated per-request)
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const limit           = parseInt(sp.get("limit")  || "50", 10)
     const offset          = parseInt(sp.get("offset") || "0",  10)
 
-    const supabase = await createClient()
+    const db = getServiceClient()
     const entries: any[] = []
 
     // Build a participant name map in ONE query (no N+1)

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Check if wallet address is already used by another user
     const { data: existingWallet, error: walletCheckError } = await supabase

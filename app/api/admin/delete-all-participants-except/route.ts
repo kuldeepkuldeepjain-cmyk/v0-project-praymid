@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     const PROTECTED_EMAIL = 'kuldeepkuldeepjain@gmail.com'
 

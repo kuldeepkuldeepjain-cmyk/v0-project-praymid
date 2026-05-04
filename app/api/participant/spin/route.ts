@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // 1. Get participant data
     const { data: participant, error: participantError } = await supabase
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 // Get last 5 winners
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     const { data: winners, error } = await supabase
       .from("transactions")

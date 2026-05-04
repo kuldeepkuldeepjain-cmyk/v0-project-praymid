@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 // Company wallet address to receive USDT
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Verify BSC transaction on blockchain
     const txVerified = await verifyBSCTransaction(transactionHash, amount, COMPANY_WALLET_ADDRESS)

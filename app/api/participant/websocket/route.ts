@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 
 /**
  * WebSocket Route for Real-Time Automatch Notifications
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Verify token (simple check - in production use JWT)
-  const supabase = await createClient()
+  const db = getServiceClient()
   const { data: participant, error } = await supabase
     .from("participants")
     .select("email")

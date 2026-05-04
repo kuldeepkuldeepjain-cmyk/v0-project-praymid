@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Get the topup request
     const { data: topupRecord, error: recordError } = await supabase
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
 // GET endpoint to fetch all pending/completed topup requests
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     const { data: requests, error } = await supabase
       .from("topup_requests")

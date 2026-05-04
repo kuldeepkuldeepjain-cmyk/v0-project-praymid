@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 const PAYOUT_TIMEOUT_HOURS = 24 // Redirect if not completed within 24 hours
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     console.log("[v0] Starting auto-redirect of expired payouts...")
 

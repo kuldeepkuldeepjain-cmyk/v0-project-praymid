@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Check if transaction hash already exists (prevent double crediting)
     const { data: existingTx } = await supabase
@@ -142,7 +142,7 @@ export async function GET(request: Request) {
       )
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     const { data: topups, error } = await supabase
       .from("topup_requests")

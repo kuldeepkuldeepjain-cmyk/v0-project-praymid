@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 /**
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ matched: false, error: "email required" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // 1. Find the most recent matched contribution (in_process OR proof_submitted)
     // proof_submitted means the participant uploaded proof and is awaiting admin approval

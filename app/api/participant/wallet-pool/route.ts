@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 // Get an available wallet address from the pool
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Get all active wallets not currently assigned
     const { data: wallets, error } = await supabase
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing wallet address" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Check if wallet already exists
     const { data: existingWallet } = await supabase

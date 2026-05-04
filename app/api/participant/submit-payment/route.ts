@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { scheduleContributionAutoMatch } from "@/lib/contribution-scheduler"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     console.log("[v0] Checking for duplicate transaction hash...")
     // Check if transaction hash already exists (duplicate prevention)
@@ -180,7 +180,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     const { data: submissions, error } = await supabase
       .from("payment_submissions")
@@ -254,7 +254,7 @@ export async function PATCH(request: Request) {
     }
 
     const { submissionId, status, reviewedBy, rejectionReason } = await request.json()
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     const { data: submission, error: updateError } = await supabase
       .from("payment_submissions")

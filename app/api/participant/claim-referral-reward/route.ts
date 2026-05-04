@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 const REFERRAL_TARGET = 50
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Checking referral reward eligibility for", email)
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Check if already claimed
     const { data: participant } = await supabase

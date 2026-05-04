@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 
 /**
  * GET /api/admin/automatch/status
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const db = getServiceClient()
     const now = new Date()
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000)
 

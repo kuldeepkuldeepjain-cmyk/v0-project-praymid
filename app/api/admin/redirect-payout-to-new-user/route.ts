@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getServiceClient } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Redirecting payout to new user:", { payoutId, amount })
 
-    const supabase = await createClient()
+    const db = getServiceClient()
 
     // Get the next newest participant (highest participant_number or most recent created_at)
     const { data: newParticipant, error: participantError } = await supabase

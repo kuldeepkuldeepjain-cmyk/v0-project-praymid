@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
-import { participantMemoryStore } from "@/lib/participant-memory-store"
-import type { MemoryParticipant } from "@/lib/participant-memory-store"
 import { getServiceClient } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
   const userPrefix = username.substring(0, 3).toUpperCase()
   return `${userPrefix}${randomStr}`
-}
-
-function generateId(): string {
-  return `preview-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 }
 
 function generateWallet(): string {
@@ -29,130 +23,80 @@ export async function POST(request: Request) {
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`
     const emailKey = email.toLowerCase().trim()
+    const usernameKey = username.toLowerCase().trim()
     const walletAddress = generateWallet()
     const newReferralCode = generateReferralCode(username)
     const hashedPassword = await bcrypt.hash(password, 10)
-    const createdAt = new Date().toISOString()
 
-    // Try Supabase first
-    try {
-      const supabase = getServiceClient()
+    const db = getServiceClient()
 
-      const { data: existingEmail } = await supabase.from("participants").select("email").eq("email", email).maybeSingle()
-      if (existingEmail) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
+    // Check duplicates
+    const emailCheck = await db.query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
+    if (emailCheck.rows.length > 0) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
 
-      const { data: existingPhone } = await supabase.from("participants").select("mobile_number").eq("mobile_number", mobileNumber).maybeSingle()
-      if (existingPhone) return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
+    const phoneCheck = await db.query("SELECT id FROM participants WHERE mobile_number = $1 LIMIT 1", [mobileNumber])
+    if (phoneCheck.rows.length > 0) return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
 
-      const { data: existingUsername } = await supabase.from("participants").select("username").eq("username", username.toLowerCase()).maybeSingle()
-      if (existingUsername) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
+    const usernameCheck = await db.query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
+    if (usernameCheck.rows.length > 0) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
 
-      if (referralCode) {
-        const { data: referrer } = await supabase.from("participants").select("referral_code").eq("referral_code", referralCode.toUpperCase()).maybeSingle()
-        if (!referrer) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
-      }
-
-      const { data: newParticipant, error: insertError } = await supabase
-        .from("participants")
-        .insert({
-          full_name: fullName,
-          username: username.toLowerCase(),
-          email: emailKey,
-          mobile_number: mobileNumber,
-          password: hashedPassword,
-          plain_password: password,
-          wallet_address: walletAddress,
-          country: country || "",
-          country_code: countryCode || "",
-          state: state || "",
-          pin_code: pinCode || "",
-          status: "active",
-          rank: "bronze",
-          referral_code: newReferralCode,
-          referred_by: referralCode ? referralCode.toUpperCase() : null,
-          total_referrals: 0,
-          total_earnings: 0,
-          account_balance: 0,
-          bonus_balance: 0,
-          is_active: true,
-        })
-        .select()
-        .single()
-
-      if (insertError) throw new Error(insertError.message)
-
-      // Update referrer count
-      if (referralCode) {
-        const { data: ref } = await supabase.from("participants").select("total_referrals").eq("referral_code", referralCode.toUpperCase()).maybeSingle().catch(() => ({ data: null }))
-        if (ref) {
-          await supabase.from("participants").update({ total_referrals: (ref.total_referrals || 0) + 1 }).eq("referral_code", referralCode.toUpperCase()).catch(() => {})
-        }
-      }
-
-      await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" })
-
-      return NextResponse.json({
-        success: true, message: "Registration successful",
-        participantId: newParticipant.id, walletAddress, username: username.toLowerCase(), email: emailKey,
-        name: fullName, full_name: fullName, referralCode: newReferralCode, referral_code: newReferralCode,
-        bep20_address: walletAddress, wallet_balance: 0, account_balance: 0, bonus_balance: 0,
-        total_referrals: 0, total_earnings: 0, status: "active", rank: "bronze", is_active: true,
-        details_completed: false, serial_number: newParticipant.serial_number || "", created_at: newParticipant.created_at,
-      })
-    } catch (dbErr) {
-      console.error("[register] DB unavailable, using memory store:", dbErr instanceof Error ? dbErr.message : dbErr)
+    if (referralCode) {
+      const refCheck = await db.query("SELECT id FROM participants WHERE referral_code = $1 LIMIT 1", [referralCode.toUpperCase()])
+      if (refCheck.rows.length === 0) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
     }
 
-    // --- Memory store fallback (v0 preview / DB unreachable) ---
+    const insertResult = await db.query(
+      `INSERT INTO participants
+        (full_name, username, email, mobile_number, password, plain_password, wallet_address,
+         country, country_code, state, pin_code, status, rank, referral_code, referred_by,
+         total_referrals, total_earnings, account_balance, bonus_balance, is_active)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active','bronze',$12,$13,0,0,0,0,true)
+       RETURNING *`,
+      [
+        fullName, usernameKey, emailKey, mobileNumber, hashedPassword, password, walletAddress,
+        country || "", countryCode || "", state || "", pinCode || "",
+        newReferralCode, referralCode ? referralCode.toUpperCase() : null,
+      ]
+    )
 
-    // Check duplicates in memory store
-    for (const p of participantMemoryStore.values()) {
-      if (p.email === emailKey) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
-      if (p.mobile_number === mobileNumber) return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
-      if (p.username === username.toLowerCase()) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
+    const newParticipant = insertResult.rows[0]
+
+    // Update referrer count
+    if (referralCode) {
+      await db.query(
+        "UPDATE participants SET total_referrals = total_referrals + 1 WHERE referral_code = $1",
+        [referralCode.toUpperCase()]
+      ).catch(() => {})
     }
 
-    const participantId = generateId()
-    const memParticipant: MemoryParticipant = {
-      id: participantId,
+    try { await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" }) } catch (_) {}
+
+    return NextResponse.json({
+      success: true,
+      message: "Registration successful",
+      participantId: newParticipant.id,
+      walletAddress,
+      username: usernameKey,
       email: emailKey,
-      username: username.toLowerCase(),
+      name: fullName,
       full_name: fullName,
-      password: hashedPassword,
-      plain_password: password,
-      mobile_number: mobileNumber,
-      wallet_address: walletAddress,
+      referralCode: newReferralCode,
       referral_code: newReferralCode,
-      referred_by: referralCode ? referralCode.toUpperCase() : null,
-      country: country || "",
-      state: state || "",
-      pin_code: pinCode || "",
-      country_code: countryCode || "",
+      bep20_address: walletAddress,
+      wallet_balance: 0,
       account_balance: 0,
       bonus_balance: 0,
-      total_earnings: 0,
       total_referrals: 0,
+      total_earnings: 0,
       status: "active",
       rank: "bronze",
       is_active: true,
       details_completed: false,
-      created_at: createdAt,
-    }
-
-    participantMemoryStore.set(emailKey, memParticipant)
-
-    await setParticipantSession({ participantId, email: emailKey, role: "participant" })
-
-    return NextResponse.json({
-      success: true, message: "Registration successful",
-      participantId, walletAddress, username: username.toLowerCase(), email: emailKey,
-      name: fullName, full_name: fullName, referralCode: newReferralCode, referral_code: newReferralCode,
-      bep20_address: walletAddress, wallet_balance: 0, account_balance: 0, bonus_balance: 0,
-      total_referrals: 0, total_earnings: 0, status: "active", rank: "bronze", is_active: true,
-      details_completed: false, serial_number: "", created_at: createdAt,
+      serial_number: newParticipant.serial_number || "",
+      created_at: newParticipant.created_at,
     })
   } catch (error: any) {
-    console.error("[register] Unexpected error:", error)
-    return NextResponse.json({ success: false, error: "Registration failed" }, { status: 500 })
+    console.error("[register] Error:", error)
+    return NextResponse.json({ success: false, error: error.message || "Registration failed" }, { status: 500 })
   }
 }
