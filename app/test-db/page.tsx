@@ -20,9 +20,9 @@ export default function DatabaseTestPage() {
 
     // Test 1: Environment Variables
     console.log("[TEST] Checking environment variables...")
-    testResults.envVars.supabaseUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+    testResults.envVars.supabaseUrl = !!process.env.POSTGRES_URL
     testResults.envVars.supabaseKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    testResults.envVars.urlValue = process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + "..."
+    testResults.envVars.urlValue = process.env.POSTGRES_URL?.substring(0, 30) + "..."
 
     // Test 2: Health Endpoint
     console.log("[TEST] Checking health endpoint...")
