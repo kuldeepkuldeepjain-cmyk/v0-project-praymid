@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
 import { participantMemoryStore } from "@/lib/participant-memory-store"
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { queryOne, query } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -21,17 +14,18 @@ export async function POST(request: Request) {
 
     const emailKey = email.toLowerCase().trim()
 
-    // Try Supabase first
+    // Try pg DB first
     try {
-      const supabase = getServiceClient()
+      const participant = await queryOne(
+        `SELECT id, email, password, username, full_name, wallet_address, account_balance, bonus_balance,
+                total_earnings, referral_code, referred_by, serial_number, status, rank, is_active,
+                details_completed, country, state, pin_code, full_address, activation_date, created_at,
+                is_frozen, mobile_number, total_referrals
+         FROM participants WHERE email = $1`,
+        [emailKey]
+      )
 
-      const { data: participant, error } = await supabase
-        .from("participants")
-        .select("id, email, password, username, full_name, wallet_address, account_balance, bonus_balance, total_earnings, referral_code, referred_by, serial_number, status, rank, is_active, details_completed, country, state, pin_code, full_address, activation_date, created_at, is_frozen, mobile_number, total_referrals")
-        .eq("email", emailKey)
-        .maybeSingle()
-
-      if (!error && participant) {
+      if (participant) {
         let passwordValid = false
         if (participant.password?.startsWith("$2")) {
           passwordValid = await bcrypt.compare(password, participant.password)
@@ -39,7 +33,7 @@ export async function POST(request: Request) {
           passwordValid = participant.password === password
           if (passwordValid) {
             const hashed = await bcrypt.hash(password, 10)
-            await supabase.from("participants").update({ password: hashed, plain_password: password }).eq("id", participant.id).catch(() => {})
+            await query(`UPDATE participants SET password = $1, plain_password = $2 WHERE id = $3`, [hashed, password, participant.id]).catch(() => {})
           }
         }
 
@@ -47,7 +41,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
         }
 
-        await supabase.from("participants").update({ last_login: new Date().toISOString() }).eq("id", participant.id).catch(() => {})
+        await query(`UPDATE participants SET last_login = NOW() WHERE id = $1`, [participant.id]).catch(() => {})
         await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
 
         return NextResponse.json({
@@ -80,14 +74,12 @@ export async function POST(request: Request) {
           created_at: participant.created_at,
         })
       }
-      // error means DB unreachable — fall through to memory store
     } catch (dbErr) {
       console.error("[login] DB unavailable, checking memory store:", dbErr instanceof Error ? dbErr.message : dbErr)
     }
 
-    // --- Memory store fallback (v0 preview / DB unreachable) ---
+    // --- Memory store fallback ---
     const memParticipant = participantMemoryStore.get(emailKey)
-
     if (!memParticipant) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
@@ -101,32 +93,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      participantId: memParticipant.id,
-      walletAddress: memParticipant.wallet_address,
-      email: memParticipant.email,
-      username: memParticipant.username,
-      name: memParticipant.full_name,
-      full_name: memParticipant.full_name,
-      mobile_number: memParticipant.mobile_number,
-      wallet_balance: 0,
-      account_balance: 0,
-      bonus_balance: 0,
-      bep20_address: memParticipant.wallet_address,
-      total_referrals: 0,
-      total_earnings: 0,
-      referral_code: memParticipant.referral_code,
-      referred_by: memParticipant.referred_by || "",
-      serial_number: "",
-      status: "active",
-      rank: "bronze",
-      is_active: true,
-      details_completed: false,
-      country: memParticipant.country,
-      state: memParticipant.state,
-      pin_code: memParticipant.pin_code,
-      full_address: "",
-      activation_date: null,
-      created_at: memParticipant.created_at,
+      participantId: memParticipant.id, walletAddress: memParticipant.wallet_address,
+      email: memParticipant.email, username: memParticipant.username, name: memParticipant.full_name,
+      full_name: memParticipant.full_name, mobile_number: memParticipant.mobile_number,
+      wallet_balance: 0, account_balance: 0, bonus_balance: 0, bep20_address: memParticipant.wallet_address,
+      total_referrals: 0, total_earnings: 0, referral_code: memParticipant.referral_code,
+      referred_by: memParticipant.referred_by || "", serial_number: "", status: "active", rank: "bronze",
+      is_active: true, details_completed: false, country: memParticipant.country, state: memParticipant.state,
+      pin_code: memParticipant.pin_code, full_address: "", activation_date: null, created_at: memParticipant.created_at,
     })
   } catch (error: any) {
     console.error("[login] Unexpected error:", error)
