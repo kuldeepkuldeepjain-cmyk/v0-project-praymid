@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-
-// Always use service role to bypass RLS for balance reads/writes
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { getServiceClient } from "@/lib/db"
 
 // POST - Create new prediction
 export async function POST(request: NextRequest) {

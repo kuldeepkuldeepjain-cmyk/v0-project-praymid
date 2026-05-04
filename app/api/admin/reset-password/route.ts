@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 import bcrypt from "bcryptjs"
 import { requireAdminSession } from "@/lib/auth-middleware"
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { getServiceClient } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)

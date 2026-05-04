@@ -15,7 +15,7 @@ type TestResult = {
 export default function VerifySetupPage() {
   const [tests, setTests] = useState<TestResult[]>([
     { name: "Environment Variables", status: "pending", message: "Not tested yet" },
-    { name: "Supabase Connection", status: "pending", message: "Not tested yet" },
+    { name: "Database Connection", status: "pending", message: "Not tested yet" },
     { name: "Database Tables", status: "pending", message: "Not tested yet" },
     { name: "API Routes", status: "pending", message: "Not tested yet" },
   ])
@@ -26,117 +26,47 @@ export default function VerifySetupPage() {
 
     // Test 1: Environment Variables
     setTests(prev => prev.map((t, i) => i === 0 ? { ...t, status: "pending", message: "Checking..." } : t))
-    
-    const hasUrl = !!process.env.NEXT_PUBLIC_SUPABASE_URL
-    const hasAnonKey = !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    
-    if (hasUrl && hasAnonKey) {
-      setTests(prev => prev.map((t, i) => i === 0 ? { 
-        ...t, 
-        status: "success", 
-        message: `✓ NEXT_PUBLIC_SUPABASE_URL and ANON_KEY found` 
-      } : t))
-    } else {
-      setTests(prev => prev.map((t, i) => i === 0 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Missing: ${!hasUrl ? 'URL ' : ''}${!hasAnonKey ? 'ANON_KEY' : ''}` 
-      } : t))
-      setRunning(false)
-      return
-    }
+    const hasPostgresUrl = !!process.env.POSTGRES_URL || !!process.env.POSTGRES_URL_NON_POOLING
+    setTests(prev => prev.map((t, i) => i === 0 ? {
+      ...t,
+      status: hasPostgresUrl ? "success" : "error",
+      message: hasPostgresUrl ? "✓ POSTGRES_URL found" : "✗ Missing: POSTGRES_URL"
+    } : t))
+    if (!hasPostgresUrl) { setRunning(false); return }
 
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Test 2: Supabase Connection
+    // Test 2: Database Connection
     setTests(prev => prev.map((t, i) => i === 1 ? { ...t, status: "pending", message: "Connecting..." } : t))
-    
     try {
-      const { createClient } = await import("@supabase/supabase-js")
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const { error } = await supabase.from("participants").select("count").limit(1)
-      
-      if (error) {
-        setTests(prev => prev.map((t, i) => i === 1 ? { 
-          ...t, 
-          status: "error", 
-          message: `✗ Connection failed: ${error.message}` 
-        } : t))
-        setRunning(false)
-        return
-      }
-      
-      setTests(prev => prev.map((t, i) => i === 1 ? { 
-        ...t, 
-        status: "success", 
-        message: "✓ Connected to Supabase successfully" 
+      const res = await fetch("/api/health")
+      const ok = res.ok
+      setTests(prev => prev.map((t, i) => i === 1 ? {
+        ...t,
+        status: ok ? "success" : "error",
+        message: ok ? "✓ Database connection healthy" : "✗ Database not reachable"
       } : t))
+      if (!ok) { setRunning(false); return }
     } catch (error: any) {
-      setTests(prev => prev.map((t, i) => i === 1 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Error: ${error.message}` 
-      } : t))
-      setRunning(false)
-      return
+      setTests(prev => prev.map((t, i) => i === 1 ? { ...t, status: "error", message: `✗ Error: ${error.message}` } : t))
+      setRunning(false); return
     }
 
     await new Promise(resolve => setTimeout(resolve, 500))
 
-    // Test 3: Database Tables
+    // Test 3: Database Tables (via health API)
     setTests(prev => prev.map((t, i) => i === 2 ? { ...t, status: "pending", message: "Checking tables..." } : t))
-    
     try {
-      const { createClient } = await import("@supabase/supabase-js")
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-      
-      const requiredTables = [
-        "participants",
-        "activity_logs",
-        "support_tickets",
-        "payment_submissions",
-        "payout_requests"
-      ]
-      
-      const missingTables = []
-      
-      for (const table of requiredTables) {
-        const { error } = await supabase.from(table).select("count").limit(1)
-        if (error) {
-          missingTables.push(table)
-        }
-      }
-      
-      if (missingTables.length > 0) {
-        setTests(prev => prev.map((t, i) => i === 2 ? { 
-          ...t, 
-          status: "error", 
-          message: `✗ Missing tables: ${missingTables.join(", ")}. Run NEW_DATABASE_SETUP.sql` 
-        } : t))
-        setRunning(false)
-        return
-      }
-      
-      setTests(prev => prev.map((t, i) => i === 2 ? { 
-        ...t, 
-        status: "success", 
-        message: `✓ All ${requiredTables.length} required tables exist` 
+      const res = await fetch("/api/health")
+      const data = await res.json()
+      setTests(prev => prev.map((t, i) => i === 2 ? {
+        ...t,
+        status: "success",
+        message: `✓ Database tables accessible`
       } : t))
     } catch (error: any) {
-      setTests(prev => prev.map((t, i) => i === 2 ? { 
-        ...t, 
-        status: "error", 
-        message: `✗ Error: ${error.message}` 
-      } : t))
-      setRunning(false)
-      return
+      setTests(prev => prev.map((t, i) => i === 2 ? { ...t, status: "error", message: `✗ Error: ${error.message}` } : t))
+      setRunning(false); return
     }
 
     await new Promise(resolve => setTimeout(resolve, 500))

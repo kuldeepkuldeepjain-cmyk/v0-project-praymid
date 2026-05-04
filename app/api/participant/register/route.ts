@@ -1,16 +1,9 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
 import { participantMemoryStore } from "@/lib/participant-memory-store"
 import type { MemoryParticipant } from "@/lib/participant-memory-store"
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { getServiceClient } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()

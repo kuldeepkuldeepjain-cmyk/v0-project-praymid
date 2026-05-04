@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
 import { participantMemoryStore } from "@/lib/participant-memory-store"
-
-function getServiceClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { getServiceClient } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {

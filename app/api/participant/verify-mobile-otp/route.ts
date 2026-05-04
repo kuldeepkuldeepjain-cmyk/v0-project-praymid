@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { getServiceClient } from "@/lib/db"
 import { otpMemoryStore } from "@/lib/otp-memory-store"
 
 export async function POST(request: NextRequest) {
@@ -12,11 +12,7 @@ export async function POST(request: NextRequest) {
 
     // Try Supabase DB first
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
-      )
+      const supabase = getServiceClient()
 
       const { data: otpRecord, error: queryError } = await supabase
         .from("mobile_verification_otps")

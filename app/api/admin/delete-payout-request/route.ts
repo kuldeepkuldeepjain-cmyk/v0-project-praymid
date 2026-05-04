@@ -13,21 +13,8 @@ export async function DELETE(request: NextRequest) {
 
     console.log("[v0] Delete request for payout:", payoutRequestId)
 
-    // Get Supabase URL and Service Role Key
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error("[v0] Missing Supabase configuration")
-      return NextResponse.json(
-        { error: "Server configuration error - missing Supabase credentials" },
-        { status: 500 }
-      )
-    }
-
-    console.log("[v0] Creating admin Supabase client")
-    const { createClient: createAdminClient } = await import("@supabase/supabase-js")
-    const supabase = createAdminClient(supabaseUrl, serviceRoleKey)
+    const { getServiceClient } = await import("@/lib/db")
+    const supabase = getServiceClient()
 
     // Get payout request details first
     const { data: payoutRequest, error: fetchError } = await supabase

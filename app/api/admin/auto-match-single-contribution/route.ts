@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { requireAdminSession } from "@/lib/auth-middleware"
+import { getServiceClient } from "@/lib/db"
 
 /**
  * Auto-match single contribution with payout after 30 minutes
@@ -23,19 +23,7 @@ export async function POST(request: NextRequest) {
 
     console.log(`[v0] Auto-matching contribution ${contributionId} for ${participantEmail}`)
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      console.error("[v0] Missing Supabase configuration")
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 }
-      )
-    }
-
-    const { createClient: createAdminClient } = await import("@supabase/supabase-js")
-    const supabase = createAdminClient(supabaseUrl, serviceRoleKey)
+    const supabase = getServiceClient()
 
     // Get the contribution
     const { data: contribution, error: contribError } = await supabase

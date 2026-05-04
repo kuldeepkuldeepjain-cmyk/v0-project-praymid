@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { getServiceClient } from "@/lib/db"
 import { otpMemoryStore } from "@/lib/otp-memory-store"
 
 function generateOTP(): string {
@@ -25,11 +25,7 @@ export async function POST(request: NextRequest) {
     // Try Supabase DB first, fall back to in-memory store
     let usedMemoryStore = false
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        { auth: { persistSession: false } }
-      )
+      const supabase = getServiceClient()
 
       // Check duplicates
       const { data: existingMobile } = await supabase
