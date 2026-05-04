@@ -13,48 +13,51 @@ const SESSION_OPTIONS = {
   },
 }
 
+// Valid admin credentials
+const CREDENTIALS = [
+  {
+    email: "admin@123",
+    password: "111111",
+    role: "admin" as const,
+    name: "Admin",
+    permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
+  },
+  {
+    email: "bitcoin890@gmail.com",
+    password: "bitcoin890",
+    role: "super_admin" as const,
+    name: "Super Admin",
+    permissions: { canApproveWallets: true, canCollectTokens: true, canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
+  },
+]
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, otp, password, loginType } = body
+    const { email, otp, password } = body
 
-    // Accept either `otp` or `password` field name
-    const pass = (otp ?? password ?? "").toString()
-    const cleanEmail = (email ?? "").toString().trim()
+    const inputEmail = ((email ?? "") as string).trim().toLowerCase()
+    const inputPass = ((otp ?? password ?? "") as string).trim()
 
-    if (!cleanEmail || !pass) {
+    if (!inputEmail || !inputPass) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
     }
 
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@123"
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "111111"
-    const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL ?? "bitcoin890@gmail.com"
-    const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD ?? "bitcoin890"
+    // Find matching credential (case-insensitive email)
+    const match = CREDENTIALS.find(
+      (c) => c.email.toLowerCase() === inputEmail && c.password === inputPass
+    )
 
-    let role: "admin" | "super_admin"
-    let permissions: Record<string, boolean>
-
-    if (loginType === "superadmin") {
-      if (cleanEmail !== SUPER_ADMIN_EMAIL || pass !== SUPER_ADMIN_PASSWORD) {
-        return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
-      }
-      role = "super_admin"
-      permissions = { canApproveWallets: true, canCollectTokens: true, canViewParticipants: true, canViewPayments: true, canManageAccounts: true }
-    } else {
-      if (cleanEmail !== ADMIN_EMAIL || pass !== ADMIN_PASSWORD) {
-        return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
-      }
-      role = "admin"
-      permissions = { canViewParticipants: true, canViewPayments: true, canManageAccounts: true }
+    if (!match) {
+      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Set iron-session cookie on the response object (correct way in Route Handlers)
     const res = NextResponse.json({
       success: true,
-      email: cleanEmail,
-      role,
-      name: role === "super_admin" ? "Super Admin" : "Admin",
-      permissions,
+      email: match.email,
+      role: match.role,
+      name: match.name,
+      permissions: match.permissions,
     })
 
     try {
@@ -63,12 +66,12 @@ export async function POST(request: NextRequest) {
         res,
         SESSION_OPTIONS
       )
-      session.email = cleanEmail
-      session.role = role
+      session.email = match.email
+      session.role = match.role
       session.isLoggedIn = true
       await session.save()
     } catch (_) {
-      // Session save failed — still return success since client uses localStorage auth
+      // Session save is best-effort — client uses localStorage auth
     }
 
     return res
