@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, TrendingUp, Users, Percent } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 interface RevenueStats {
   totalApprovedContributions: number

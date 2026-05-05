@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/dialog"
 import { Clock, Search, Users, Trash2, Hourglass } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 interface PayoutRequest {

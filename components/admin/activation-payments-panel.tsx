@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select"
 import { CheckCircle2, XCircle, Clock, Search, Eye, DollarSign, Wallet, CreditCard, ArrowRight, Users } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface Participant {
   id: string

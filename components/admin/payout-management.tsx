@@ -32,7 +32,6 @@ import {
   FileCheck,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface PayoutRequest {
   id: number
