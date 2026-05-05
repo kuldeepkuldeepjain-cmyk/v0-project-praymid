@@ -37,7 +37,6 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
-import { createClient } from "@/lib/supabase/client"
 
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
@@ -1175,9 +1174,11 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
+    id?: string
+    wallet_address?: string
     email?: string
     username?: string
     activation_fee_paid?: boolean
@@ -1188,8 +1189,12 @@ export default function DashboardHome() {
     referral_code?: string
     total_referrals?: number
     total_earnings?: number
+    referral_earnings?: number
     activation_deadline?: string
     account_frozen?: boolean
+    profile_image?: string
+    details_completed?: boolean
+    [key: string]: any
   } | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [showFrozenModal, setShowFrozenModal] = useState(false)
@@ -1204,22 +1209,10 @@ export default function DashboardHome() {
 
   const checkProfileCompletion = async (email: string) => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("details_completed")
-        .eq("email", email)
-        .single()
-
-      if (error) {
-        console.error("[v0] Error checking profile completion:", error)
-        return
-      }
-
-      // If profile is not completed, redirect to complete profile page
-      if (!data?.details_completed) {
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+      const data = await res.json()
+      if (!data.participant?.details_completed) {
         router.push("/participant/complete-profile")
-        return
       }
     } catch (error) {
       console.error("[v0] Error in checkProfileCompletion:", error)
@@ -1228,14 +1221,12 @@ export default function DashboardHome() {
 
   const handleTimerExpire = useCallback(async () => {
     if (!participantData?.email) return
-
     try {
-      const supabase = createClient()
-      await supabase
-        .from("participants")
-        .update({ account_frozen: true, status: "frozen" })
-        .eq("email", participantData.email)
-
+      await fetch("/api/participant/check-expired", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: participantData.email }),
+      })
       setShowFrozenModal(true)
     } catch (error) {
       console.error("Error freezing account:", error)
@@ -1275,22 +1266,13 @@ export default function DashboardHome() {
   // Function to fetch fresh participant data from database
   const refreshParticipantData = async (email: string) => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("*")
-        .eq("email", email)
-        .single()
-
-      if (!error && data) {
-        const updatedData = {
-          ...data,
-          participantId: data.id,
-          walletAddress: data.wallet_address,
-        }
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+      const json = await res.json()
+      const data: any = json.participant
+      if (data) {
+        const updatedData = { ...data, participantId: data.id, walletAddress: data.wallet_address }
         setParticipantData(updatedData)
         localStorage.setItem("participantData", JSON.stringify(updatedData))
-        console.log("[v0] Refreshed participant data from database")
       }
     } catch (error) {
       console.error("[v0] Error refreshing participant data:", error)

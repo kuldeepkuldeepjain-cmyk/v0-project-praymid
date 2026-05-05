@@ -20,7 +20,7 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
+
 
 const PAYOUT_PLANS = [
   {
@@ -74,101 +74,30 @@ export default function PayoutPage() {
         }
         
         const parsedData = JSON.parse(storedData)
-        
-        // Fetch fresh participant data from database
-        const supabase = createClient()
-        
-        const { data: freshData, error: participantError } = await supabase
-          .from("participants")
-          .select("*")
-          .eq("email", parsedData.email)
-          .single()
-        
+
+        // Fetch fresh participant data
+        const meRes = await fetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
+        const meJson = await meRes.json()
+        const freshData: any = meJson.participant
         if (freshData) {
           setParticipantData(freshData)
           localStorage.setItem("participantData", JSON.stringify(freshData))
-          
-          // Pre-fill BEP20 address if available
-          if (freshData.bep20_address) {
-            setBep20Address(freshData.bep20_address)
-          }
+          if (freshData.bep20_address) setBep20Address(freshData.bep20_address)
         } else {
-          console.error("Error fetching participant data:", participantError)
-          // Fallback to cached data
           setParticipantData(parsedData)
-          if (parsedData.bep20_address) {
-            setBep20Address(parsedData.bep20_address)
-          }
+          if (parsedData.bep20_address) setBep20Address(parsedData.bep20_address)
         }
-        
-        // Fetch real payout history from database
-        
-        const { data, error } = await supabase
-          .from("payout_requests")
-          .select("*")
-          .eq("participant_email", parsedData.email)
-          .order("created_at", { ascending: false })
-        
-        if (data) {
-          setPayoutHistory(data)
-        } else if (error) {
-          console.error("Error fetching payout history:", error)
-        }
-        
-        // Set up real-time subscription for payout updates
-        const channel = supabase
-          .channel("payout_status_updates")
-          .on(
-            "postgres_changes",
-            {
-              event: "*",
-              schema: "public",
-              table: "payout_requests",
-              filter: `participant_email=eq.${parsedData.email}`,
-            },
-            (payload) => {
-              // Refresh payout history
-              supabase
-                .from("payout_requests")
-                .select("*")
-                .eq("participant_email", parsedData.email)
-                .order("created_at", { ascending: false })
-                .then(({ data: updatedData }) => {
-                  if (updatedData) {
-                    setPayoutHistory(updatedData)
-                    
-                    // Show toast notification for completed payouts
-                    if (payload.new && (payload.new as any).status === "completed") {
-                      toast({
-                        title: "Payout Completed!",
-                        description: `Your payout of $${(payload.new as any).amount} has been sent to your wallet.`,
-                        duration: 5000,
-                      })
-                    }
-                    
-                    // Show toast for rejected payouts
-                    if (payload.new && (payload.new as any).status === "rejected") {
-                      toast({
-                        title: "Payout Rejected",
-                        description: "Your payout request has been rejected. The amount has been refunded to your wallet.",
-                        variant: "destructive",
-                        duration: 5000,
-                      })
-                    }
-                  }
-                })
-          }
-        )
-        .subscribe()
 
-        return () => {
-          supabase.removeChannel(channel)
-        }
+        // Fetch payout history
+        const histRes = await fetch(`/api/participant/request-payout?email=${encodeURIComponent(parsedData.email)}`)
+        const histJson = await histRes.json()
+        if (histJson.payouts) setPayoutHistory(histJson.payouts)
+
       } catch (err) {
         console.error("Error in fetchData:", err)
       }
     }
-    
+
     fetchData()
   }, [router, isAuthenticated, toast])
 
@@ -179,7 +108,7 @@ export default function PayoutPage() {
 
   const handleRequestPayout = () => {
     const walletBalance = participantData?.account_balance || 0
-    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[2]
+    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
     if (hasActivePayout) {
       toast({
@@ -203,7 +132,7 @@ export default function PayoutPage() {
   }
 
   const handleWithdrawal = async () => {
-    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[2]
+    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
     if (!bep20Address || bep20Address.trim().length === 0) {
       toast({
@@ -337,7 +266,7 @@ export default function PayoutPage() {
   }
 
   const walletBalance = participantData?.account_balance || 0
-  const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[2]
+  const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
   const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
   
   // Helper function to render horizontal status tracker
