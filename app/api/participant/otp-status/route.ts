@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query as dbQuery } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,25 +11,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "participantId or email required" }, { status: 400 })
     }
 
-    const db = getPool()!
-    let result
-    if (participantId) {
-      result = await db.query(
-        "SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE id = $1 LIMIT 1",
-        [participantId]
-      )
-    } else {
-      result = await db.query(
-        "SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE email = $1 LIMIT 1",
-        [email]
-      )
-    }
+    const rows = participantId
+      ? await dbQuery("SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE id = $1 LIMIT 1", [participantId])
+      : await dbQuery("SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE email = $1 LIMIT 1", [email])
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
-    const p = result.rows[0]
+    const p = rows[0]
 
     return NextResponse.json({
       success: true,

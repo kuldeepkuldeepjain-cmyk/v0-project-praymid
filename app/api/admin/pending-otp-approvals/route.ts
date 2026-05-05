@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -7,9 +7,8 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const db = getPool()!
-    const result = await db.query(
-      `SELECT id, full_name, username, email, mobile_number, country_code,
+    const rows = await query(
+      `SELECT id, full_name, username, email,
               whatsapp_otp, otp_verified, created_at
        FROM participants
        WHERE otp_verified = false AND whatsapp_otp IS NOT NULL
@@ -18,8 +17,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      pending: result.rows,
-      count: result.rows.length,
+      pending: rows,
+      count: rows.length,
     })
   } catch (error: any) {
     console.error("[pending-otp-approvals] Error:", error)
