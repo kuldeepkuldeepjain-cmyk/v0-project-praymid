@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
 
     const db = getPool()!
-    const result = await db.query("SELECT * FROM participants WHERE email = $1", [email.toLowerCase().trim()])
+    const result = await db.query("SELECT * FROM participants WHERE email = ?", [email.toLowerCase().trim()])
     const participant = result.rows[0]
 
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
