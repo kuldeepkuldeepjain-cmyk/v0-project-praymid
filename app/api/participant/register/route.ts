@@ -32,9 +32,6 @@ export async function POST(request: Request) {
     const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
     if (emailRows.length > 0) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
 
-    const phoneRows = await query("SELECT id FROM participants WHERE mobile_number = $1 LIMIT 1", [mobileNumber])
-    if (phoneRows.length > 0) return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
-
     const usernameRows = await query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
     if (usernameRows.length > 0) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
 
@@ -45,29 +42,19 @@ export async function POST(request: Request) {
 
     const inserted = await query<Record<string, any>>(
       `INSERT INTO participants
-        (full_name, username, email, mobile_number, password, plain_password, wallet_address,
-         country, country_code, state, pin_code, status, rank, referral_code, referred_by,
-         total_referrals, total_earnings, account_balance, bonus_balance, is_active,
+        (full_name, username, email, password_hash, wallet_address,
+         referral_code, referred_by, account_balance, status, is_active,
          whatsapp_otp, otp_verified)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active','bronze',$12,$13,0,0,0,0,true,$14,false)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,0,'pending',false,$8,false)
        RETURNING *`,
       [
-        fullName, usernameKey, emailKey, mobileNumber, hashedPassword, password, walletAddress,
-        country || "", countryCode || "", state || "", pinCode || "",
+        fullName, usernameKey, emailKey, hashedPassword, walletAddress,
         newReferralCode, referralCode ? referralCode.toUpperCase() : null,
         whatsappOtp || null,
       ]
     )
 
     const newParticipant = inserted[0]
-
-    // Update referrer count
-    if (referralCode) {
-      execute(
-        "UPDATE participants SET total_referrals = total_referrals + 1 WHERE referral_code = $1",
-        [referralCode.toUpperCase()]
-      ).catch(() => {})
-    }
 
     try { await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" }) } catch (_) {}
 
