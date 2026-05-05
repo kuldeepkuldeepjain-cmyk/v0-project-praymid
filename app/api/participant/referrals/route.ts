@@ -3,47 +3,31 @@ import { getPool } from "@/lib/db"
 import { getAppUrl } from "@/lib/utils"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
-// GET endpoint to fetch user's referral data
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
     const { searchParams } = new URL(request.url)
     const email = searchParams.get("email")
-
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 })
-    }
+    if (!email) return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 })
 
     const db = getPool()!
+    const { rows } = await db.query(
+      "SELECT referral_code, total_referrals, bonus_balance, username FROM participants WHERE email = $1", [email]
+    )
+    const userData = rows[0]
+    if (!userData) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
 
-    // Get user's referral code and stats
-    const { data: userData, error: userError } = await supabase
-      .from("participants")
-      .select("referral_code, referral_count, referral_earnings, username")
-      .eq("email", email)
-      .single()
-
-    if (userError || !userData) {
-      return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
-    }
-
-    // Get list of referred users
-    const { data: referredUsers, error: referredError } = await supabase
-      .from("participants")
-      .select("username, email, created_at, is_active, account_balance")
-      .eq("referred_by", userData.referral_code)
-      .order("created_at", { ascending: false })
-
-    if (referredError) {
-      console.error("[v0] Error fetching referred users:", referredError)
-    }
+    const { rows: referredUsers } = await db.query(
+      "SELECT username, email, created_at, is_active, account_balance FROM participants WHERE referred_by = $1 ORDER BY created_at DESC",
+      [userData.referral_code]
+    )
 
     return NextResponse.json({
       success: true,
       referralCode: userData.referral_code,
-      referralCount: userData.referral_count || 0,
-      referralEarnings: userData.referral_earnings || 0,
+      referralCount: userData.total_referrals || 0,
+      referralEarnings: userData.bonus_balance || 0,
       referredUsers: referredUsers || [],
       referralLink: `${getAppUrl(request)}/participant/register?ref=${userData.referral_code}`,
     })

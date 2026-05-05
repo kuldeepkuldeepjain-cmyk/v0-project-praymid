@@ -9,11 +9,9 @@ function generateOTP(): string {
 export async function POST(request: NextRequest) {
   try {
     const { mobile_number, email } = await request.json()
-
     if (!mobile_number || !email) {
       return NextResponse.json({ error: "Mobile number and email are required" }, { status: 400 })
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json({ error: "Invalid email format" }, { status: 400 })
@@ -21,102 +19,39 @@ export async function POST(request: NextRequest) {
 
     const otp = generateOTP()
     const expiresAt = Date.now() + 10 * 60 * 1000
-
-    // Try Supabase DB first, fall back to in-memory store
     let usedMemoryStore = false
+
     try {
-      const supabase = getServiceClient()
-
-      // Check duplicates
-      const { data: existingMobile } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("mobile_number", mobile_number)
-        .maybeSingle()
-
-      if (existingMobile) {
+      const db = getPool()!
+      const { rows: existingMobile } = await db.query(
+        "SELECT id FROM participants WHERE mobile_number = $1", [mobile_number]
+      )
+      if (existingMobile.length > 0) {
         return NextResponse.json({ error: "This mobile number is already registered" }, { status: 409 })
       }
-
-      const { data: existingEmail } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("email", email)
-        .maybeSingle()
-
-      if (existingEmail) {
+      const { rows: existingEmail } = await db.query(
+        "SELECT id FROM participants WHERE email = $1", [email]
+      )
+      if (existingEmail.length > 0) {
         return NextResponse.json({ error: "This email is already registered" }, { status: 409 })
       }
-
-      // Clean old OTPs and insert new one
-      await supabase.from("mobile_verification_otps").delete().eq("mobile_number", mobile_number)
-
-      const { error: insertError } = await supabase.from("mobile_verification_otps").insert({
-        mobile_number,
-        otp_code: otp,
-        email,
-        is_verified: false,
-        attempt_count: 0,
-        created_at: new Date().toISOString(),
-        expires_at: new Date(expiresAt).toISOString(),
-      })
-
-      if (insertError) throw new Error(insertError.message)
-
+      await db.query("DELETE FROM mobile_verification_otps WHERE mobile_number = $1", [mobile_number])
+      await db.query(
+        "INSERT INTO mobile_verification_otps (mobile_number, otp_code, email, is_verified, attempt_count, expires_at) VALUES ($1,$2,$3,false,0,$4)",
+        [mobile_number, otp, email, new Date(expiresAt).toISOString()]
+      )
     } catch (dbErr) {
       console.error("[send-otp] DB unavailable, using memory store:", dbErr instanceof Error ? dbErr.message : dbErr)
-      // Store OTP in memory as fallback
       otpMemoryStore.set(mobile_number, { otp, email, expiresAt, attemptCount: 0, verified: false })
       usedMemoryStore = true
     }
 
-    // Try to send SMS via Zavu API
-    const zavuApiKey = process.env.ZAVU_API_KEY
-    const zavuApiUrl = process.env.ZAVU_API_URL
-
-    if (zavuApiKey && zavuApiUrl) {
-      try {
-        const zavuRes = await fetch(zavuApiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${zavuApiKey}`,
-          },
-          body: JSON.stringify({
-            from: "+12024494825",
-            to: mobile_number,
-            message: `Your Praymid verification code is: ${otp}. Valid for 10 minutes. Do not share this code.`,
-          }),
-        })
-
-        if (!zavuRes.ok) {
-          const errText = await zavuRes.text()
-          console.error("[send-otp] Zavu API error:", errText)
-        }
-      } catch (smsErr) {
-        console.error("[send-otp] SMS send failed:", smsErr instanceof Error ? smsErr.message : smsErr)
-      }
-    } else {
-      console.warn("[send-otp] Zavu credentials not set")
-    }
-
-    // In preview/dev (memory store), return OTP in response so it can be tested
     if (usedMemoryStore) {
-      return NextResponse.json({
-        success: true,
-        message: "OTP generated (preview mode — SMS may not be delivered)",
-        otp, // only returned in preview/memory-store mode
-        expiresIn: 600,
-      }, { status: 200 })
+      return NextResponse.json({ success: true, message: "OTP generated (preview mode)", otp, expiresIn: 600 })
     }
-
-    return NextResponse.json(
-      { success: true, message: "OTP sent to your mobile number", expiresIn: 600 },
-      { status: 200 }
-    )
+    return NextResponse.json({ success: true, message: "OTP sent to your mobile number", expiresIn: 600 })
   } catch (error: unknown) {
     console.error("[send-otp] Unexpected error:", error)
-    const msg = error instanceof Error ? error.message : "Failed to send OTP"
-    return NextResponse.json({ error: msg }, { status: 500 })
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to send OTP" }, { status: 500 })
   }
 }

@@ -6,75 +6,28 @@ export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const body = await request.json()
-    const { email, full_name, wallet_address, full_address } = body
-
-    // Validation
+    const { email, full_name, wallet_address, full_address } = await request.json()
     if (!email || !full_name || !wallet_address || !full_address) {
-      return NextResponse.json(
-        { error: "All fields are required" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
-
-    // Basic BEP20 address validation (starts with 0x and 42 characters long)
     if (!wallet_address.match(/^0x[a-fA-F0-9]{40}$/)) {
-      return NextResponse.json(
-        { error: "Invalid BEP20 wallet address format" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Invalid BEP20 wallet address format" }, { status: 400 })
     }
-
     const db = getPool()!
-
-    // Check if wallet address is already used by another user
-    const { data: existingWallet, error: walletCheckError } = await supabase
-      .from("participants")
-      .select("email")
-      .eq("wallet_address", wallet_address)
-      .neq("email", email)
-      .single()
-
-    if (existingWallet) {
-      return NextResponse.json(
-        { error: "This wallet address is already registered to another account" },
-        { status: 400 }
-      )
+    const { rows: existing } = await db.query(
+      "SELECT email FROM participants WHERE wallet_address = $1 AND email != $2", [wallet_address, email]
+    )
+    if (existing.length > 0) {
+      return NextResponse.json({ error: "This wallet address is already registered to another account" }, { status: 400 })
     }
-
-    // Update participant record with user details
-    const { data, error } = await supabase
-      .from("participants")
-      .update({
-        full_name,
-        wallet_address,
-        full_address,
-        details_completed: true,
-        username: full_name.split(" ")[0].toLowerCase(), // Set username from first name
-      })
-      .eq("email", email)
-      .select()
-      .single()
-
-    if (error) {
-      console.error("[v0] Error updating participant profile:", error)
-      return NextResponse.json(
-        { error: "Failed to update profile" },
-        { status: 500 }
-      )
-    }
-
-    // Update localStorage data
-    return NextResponse.json({
-      success: true,
-      message: "Profile completed successfully",
-      data: data,
-    })
+    const { rows } = await db.query(
+      `UPDATE participants SET full_name=$1, wallet_address=$2, full_address=$3, details_completed=true, updated_at=NOW()
+       WHERE email=$4 RETURNING *`,
+      [full_name, wallet_address, full_address, email]
+    )
+    return NextResponse.json({ success: true, message: "Profile completed successfully", data: rows[0] })
   } catch (error) {
     console.error("[v0] Error in complete-profile route:", error)
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

@@ -6,7 +6,6 @@ export const maxDuration = 30
 
 export async function POST(req: Request) {
   const { messages, userEmail }: { messages: UIMessage[]; userEmail?: string } = await req.json()
-
   const db = getPool()!
 
   const systemPrompt = `You are FlowChain AI Assistant, an advanced intelligent assistant for the FlowChain platform.
@@ -27,7 +26,7 @@ Core Features:
 Ranks & Benefits:
 - Bronze: Entry level (0-499 contributions)
 - Silver: 500-999 contributions
-- Gold: 1,000-2,499 contributions  
+- Gold: 1,000-2,499 contributions
 - Platinum: 2,500-4,999 contributions
 - Diamond: 5,000+ contributions (Elite status)
 
@@ -57,7 +56,7 @@ You have access to real-time platform data through tools. Use them to provide ac
     temperature: 0.7,
     tools: {
       getPlatformStats: tool({
-        description: "Get real-time platform statistics including total participants, active users, and pending requests",
+        description: "Get real-time platform statistics",
         inputSchema: z.object({}),
         execute: async () => {
           const [r1, r2, r3, r4, r5] = await Promise.all([
@@ -76,111 +75,82 @@ You have access to real-time platform data through tools. Use them to provide ac
           }
         }
       }),
-
       getTopContributors: tool({
-        description: "Get the top 5 contributors on the leaderboard",
-        inputSchema: z.object({
-          limit: z.number().default(5).describe("Number of top contributors to retrieve")
-        }),
+        description: "Get the top contributors on the leaderboard",
+        inputSchema: z.object({ limit: z.number().default(5) }),
         execute: async ({ limit }) => {
-          const { data, error } = await supabase
-            .from("participants")
-            .select("username, total_earnings, rank, total_referrals")
-            .order("total_earnings", { ascending: false })
-            .limit(limit)
-
-          if (error) return { error: "Could not fetch leaderboard" }
-
+          const { rows } = await db.query(
+            "SELECT username, total_earnings, rank, total_referrals FROM participants ORDER BY total_earnings DESC LIMIT $1",
+            [limit]
+          )
           return {
-            topContributors: data.map((p, idx) => ({
+            topContributors: rows.map((p: any, idx: number) => ({
               position: idx + 1,
               username: p.username,
               earnings: `$${Number(p.total_earnings || 0).toFixed(2)}`,
               rank: p.rank || "Bronze",
-              referrals: p.total_referrals || 0
+              referrals: p.total_referrals || 0,
             }))
           }
         }
       }),
-
       checkUserBalance: tool({
-        description: "Check a user's account balance and earnings (requires user email)",
-        inputSchema: z.object({
-          email: z.string().email().describe("User's email address")
-        }),
+        description: "Check a user's account balance and earnings",
+        inputSchema: z.object({ email: z.string().email() }),
         execute: async ({ email }) => {
-          const { data, error } = await supabase
-            .from("participants")
-            .select("account_balance, bonus_balance, total_earnings, rank, total_referrals")
-            .eq("email", email)
-            .single()
-
-          if (error || !data) return { error: "User not found or unauthorized" }
-
+          const { rows } = await db.query(
+            "SELECT account_balance, bonus_balance, total_earnings, rank, total_referrals FROM participants WHERE email = $1",
+            [email]
+          )
+          const data = rows[0]
+          if (!data) return { error: "User not found or unauthorized" }
           return {
             accountBalance: `$${Number(data.account_balance || 0).toFixed(2)}`,
             bonusBalance: `$${Number(data.bonus_balance || 0).toFixed(2)}`,
             totalEarnings: `$${Number(data.total_earnings || 0).toFixed(2)}`,
             rank: data.rank || "Bronze",
-            totalReferrals: data.total_referrals || 0
+            totalReferrals: data.total_referrals || 0,
           }
         }
       }),
-
       getRecentTransactions: tool({
         description: "Get recent transaction history for a user",
-        inputSchema: z.object({
-          email: z.string().email().describe("User's email address"),
-          limit: z.number().default(5).describe("Number of transactions to retrieve")
-        }),
+        inputSchema: z.object({ email: z.string().email(), limit: z.number().default(5) }),
         execute: async ({ email, limit }) => {
-          const { data, error } = await supabase
-            .from("transactions")
-            .select("type, amount, status, description, created_at")
-            .eq("participant_email", email)
-            .order("created_at", { ascending: false })
-            .limit(limit)
-
-          if (error) return { error: "Could not fetch transactions" }
-
+          const { rows } = await db.query(
+            "SELECT type, amount, status, description, created_at FROM transactions WHERE participant_email = $1 ORDER BY created_at DESC LIMIT $2",
+            [email, limit]
+          )
           return {
-            transactions: data.map(t => ({
+            transactions: rows.map((t: any) => ({
               type: t.type,
               amount: `$${Number(t.amount || 0).toFixed(2)}`,
               status: t.status,
               description: t.description,
-              date: new Date(t.created_at).toLocaleDateString()
+              date: new Date(t.created_at).toLocaleDateString(),
             }))
           }
         }
       }),
-
       getActivePredictions: tool({
         description: "Get active prediction trades for a user",
-        inputSchema: z.object({
-          email: z.string().email().describe("User's email address")
-        }),
+        inputSchema: z.object({ email: z.string().email() }),
         execute: async ({ email }) => {
-          const { data, error } = await supabase
-            .from("predictions")
-            .select("crypto_pair, prediction_type, amount, entry_price, status, created_at")
-            .eq("participant_email", email)
-            .eq("status", "pending")
-            .order("created_at", { ascending: false })
-
-          if (error) return { error: "Could not fetch predictions" }
-
+          const { rows } = await db.query(
+            "SELECT crypto_pair, prediction_type, amount, entry_price, status, created_at FROM predictions WHERE participant_email = $1 AND status = 'pending' ORDER BY created_at DESC",
+            [email]
+          )
           return {
-            activePredictions: data.map(p => ({
+            activePredictions: rows.map((p: any) => ({
               pair: p.crypto_pair,
               direction: p.prediction_type === "up" ? "LONG" : "SHORT",
               amount: `$${Number(p.amount || 0).toFixed(2)}`,
               entryPrice: `$${Number(p.entry_price || 0).toLocaleString()}`,
-              timeRemaining: Math.max(0, 60 - Math.floor((Date.now() - new Date(p.created_at).getTime()) / 1000)) + "s"
+              timeRemaining: Math.max(0, 60 - Math.floor((Date.now() - new Date(p.created_at).getTime()) / 1000)) + "s",
             }))
           }
         }
-      })
+      }),
     }
   })
 
