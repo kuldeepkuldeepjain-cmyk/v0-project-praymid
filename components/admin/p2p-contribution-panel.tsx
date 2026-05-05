@@ -190,19 +190,8 @@ export function P2PContributionPanel() {
       const matchJson = await matchRes.json()
       const updatedContribution: any = matchJson.contribution || null
       const contributionError = !matchRes.ok ? matchJson.error : null
-      if (false) { // shim to preserve downstream code shape
-        .select()
 
       if (contributionError) throw contributionError
-
-      // Update payout with matched contribution ID
-      const { data: updatedPayout, error: payoutError } = await supabase
-        .from("payout_requests")
-        .update({ matched_contribution_id: selectedContribution.id })
-        .eq("id", selectedPayoutId)
-        .select()
-
-      if (payoutError) throw payoutError
 
       toast({
         title: "Successfully Matched",
