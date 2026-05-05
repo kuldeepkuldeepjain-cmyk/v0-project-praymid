@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, RefreshCcw, Gift, User } from "lucide-react"
+import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, RefreshCcw, Gift, User, MessageCircle, CheckCircle2, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { setParticipantAuth } from "@/lib/auth"
+
+const ADMIN_WHATSAPP = "+995574450590"
 
 function AnimatedStar({ top, left, delay, size }: { top: string; left: string; delay: number; size: number }) {
   return (
@@ -89,6 +91,9 @@ export default function ParticipantRegisterPage() {
 
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
+  const [otp, setOtp] = useState("")
+  const [otpSent, setOtpSent] = useState(false)
+  const [otpCopied, setOtpCopied] = useState(false)
 
   const [referralApplied, setReferralApplied] = useState(false)
 
@@ -124,6 +129,29 @@ export default function ParticipantRegisterPage() {
     }
   }, [searchParams, referralApplied, toast])
 
+  const generateOtp = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    setOtp(code)
+    setOtpSent(false)
+    setOtpCopied(false)
+    return code
+  }
+
+  const sendOtpOnWhatsApp = () => {
+    const code = otp || generateOtp()
+    const msg = encodeURIComponent(
+      `FlowChain Registration OTP\n\nYour verification code is: *${code}*\n\nMobile: ${formData.countryCode}${formData.mobileNumber || "N/A"}\nUsername: ${formData.username || "N/A"}\n\nPlease verify this participant.`
+    )
+    window.open(`https://wa.me/${ADMIN_WHATSAPP.replace(/\D/g, "")}?text=${msg}`, "_blank")
+    setOtpSent(true)
+  }
+
+  const copyOtp = () => {
+    navigator.clipboard.writeText(otp)
+    setOtpCopied(true)
+    setTimeout(() => setOtpCopied(false), 2000)
+  }
+
   const generateCaptcha = () => {
     // Generate a random 6-character alphanumeric code
     const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789" // Excluding similar looking characters like I, O, 0, 1
@@ -153,6 +181,15 @@ export default function ParticipantRegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!otpSent || !otp) {
+      toast({
+        title: "OTP Required",
+        description: "Please generate your OTP and send it on WhatsApp before registering.",
+        variant: "destructive",
+      })
+      return
+    }
 
     if (captchaInput.toUpperCase() !== captcha.answer) {
       toast({
@@ -210,6 +247,7 @@ export default function ParticipantRegisterPage() {
           state: formData.state,
           pinCode: formData.pinCode,
           referralCode: formData.referralCode,
+          whatsappOtp: otp,
         }),
       })
 
@@ -486,7 +524,86 @@ export default function ParticipantRegisterPage() {
                   </div>
                 </div>
 
+              {/* WhatsApp OTP Section */}
+              <div className="space-y-3 p-5 bg-gradient-to-r from-green-50/90 to-emerald-50/90 rounded-xl border border-green-300 animate-fade-in-up" style={{ animationDelay: "0.28s" }}>
+                <Label className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
+                    <MessageCircle className="h-3 w-3 text-white" />
+                  </div>
+                  WhatsApp Verification *
+                </Label>
 
+                {!otp ? (
+                  <Button
+                    type="button"
+                    onClick={generateOtp}
+                    className="w-full h-11 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-lg shadow-md shadow-green-500/30 transition-all hover:scale-[1.02]"
+                  >
+                    Generate OTP Code
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    {/* OTP Display */}
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border-2 border-green-300">
+                      <div className="flex-1 text-center">
+                        <p className="text-xs text-slate-500 mb-1">Your OTP Code</p>
+                        <p className="text-3xl font-mono font-black tracking-widest text-green-600">{otp}</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={copyOtp}
+                          className="h-8 px-3 border-green-300 text-green-600 hover:bg-green-50"
+                        >
+                          {otpCopied ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={generateOtp}
+                          className="h-8 px-3 border-green-300 text-green-600 hover:bg-green-50"
+                        >
+                          <RefreshCcw className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Send on WhatsApp Button */}
+                    <Button
+                      type="button"
+                      onClick={sendOtpOnWhatsApp}
+                      className={`w-full h-12 font-semibold rounded-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-2 ${
+                        otpSent
+                          ? "bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-500/30"
+                          : "bg-[#25D366] hover:bg-[#1da851] text-white shadow-md shadow-green-500/40"
+                      }`}
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                      {otpSent ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          OTP Sent on WhatsApp — Click to Resend
+                        </>
+                      ) : (
+                        `Send OTP on WhatsApp (+995 574 45 05 90)`
+                      )}
+                    </Button>
+
+                    {otpSent && (
+                      <p className="text-xs text-green-600 flex items-center gap-1.5 font-medium">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        OTP sent! You can now complete your registration.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs text-slate-500">
+                  Generate a code and send it to our admin on WhatsApp to verify your registration.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
