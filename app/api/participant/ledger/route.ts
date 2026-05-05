@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "participantId is required" }, { status: 400 })
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
     const entries: any[] = []
 
     // ── 1. transactions ────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { getAppUrl } from "@/lib/utils"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 })
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Get user's referral code and stats
     const { data: userData, error: userError } = await supabase

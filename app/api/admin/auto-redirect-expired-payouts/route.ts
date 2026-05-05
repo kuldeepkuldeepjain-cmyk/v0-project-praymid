@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 const PAYOUT_TIMEOUT_HOURS = 24
@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const db = getServiceClient()
+    const db = getPool()!
     const cutoffTime = new Date(Date.now() - PAYOUT_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString()
 
     const expiredRes = await db.query(

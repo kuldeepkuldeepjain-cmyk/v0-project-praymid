@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const newReferralCode = generateReferralCode(username)
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Check duplicates
     const emailCheck = await db.query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])

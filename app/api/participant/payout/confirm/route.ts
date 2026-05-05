@@ -1,4 +1,4 @@
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 })
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Verify the payout belongs to this participant and is completed
     const { data: payout, error: fetchError } = await supabase

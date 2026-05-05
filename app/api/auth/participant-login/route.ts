@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
 import { participantMemoryStore } from "@/lib/participant-memory-store"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {

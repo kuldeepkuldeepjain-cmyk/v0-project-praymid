@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 /**
  * Auto-match single contribution with payout after 30 minutes

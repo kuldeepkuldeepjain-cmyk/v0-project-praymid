@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const db = getServiceClient()
+    const db = getPool()!
     const result = await db.query(`
       SELECT ps.*, p.username, p.wallet_address
       FROM payment_submissions ps
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const db = getServiceClient()
+    const db = getPool()!
     const { paymentId, action, reason } = await request.json()
 
     if (!paymentId || !action || !["approve", "reject"].includes(action)) {

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Get the prediction
     const { data: prediction, error: fetchError } = await supabase

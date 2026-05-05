@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const email = request.nextUrl.searchParams.get("email")
     if (!email) return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     const approvedRes = await db.query(
       `SELECT id,amount,status,created_at,participant_email,participant_id FROM payment_submissions WHERE participant_email=$1 AND status='approved' ORDER BY created_at DESC LIMIT 1`,

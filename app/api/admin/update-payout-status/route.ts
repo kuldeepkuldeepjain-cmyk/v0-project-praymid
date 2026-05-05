@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
     
     console.log("[v0] Updating payout status:", { payoutId, status, redirectToEmail, redirectToSerial })
 

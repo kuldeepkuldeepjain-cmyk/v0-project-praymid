@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Logging", contacts.length, "invites for user", userId)
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Prepare invite log entries
     const inviteLogs = contacts.map((contact: any) => ({

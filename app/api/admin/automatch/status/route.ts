@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.AUTOMATCH_CRON_SECRET
     if (!cronSecret || token !== cronSecret) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const db = getServiceClient()
+    const db = getPool()!
     const now = new Date()
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000)
     const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)

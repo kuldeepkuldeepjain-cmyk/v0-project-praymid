@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(sp.get("limit") || "50", 10)
     const offset = parseInt(sp.get("offset") || "0", 10)
 
-    const db = getServiceClient()
+    const db = getPool()!
     const entries: any[] = []
 
     const nameRes = await db.query(`SELECT email, full_name, username FROM participants`)

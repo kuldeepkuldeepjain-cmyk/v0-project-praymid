@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Email required" }, { status: 400 })
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Find the most recent contribution with "in_process" status (matched by automatch or admin)
     const { data: contribution, error: contribError } = await supabase

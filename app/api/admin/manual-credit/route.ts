@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid email or amount" }, { status: 400 })
     }
 
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Get participant
     const { data: participant, error: participantError } = await supabase

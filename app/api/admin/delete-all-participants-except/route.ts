@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const db = getServiceClient()
+    const db = getPool()!
     const PROTECTED_EMAIL = "kuldeepkuldeepjain@gmail.com"
 
     const protectedRes = await db.query(`SELECT id,email FROM participants WHERE email=$1`, [PROTECTED_EMAIL])

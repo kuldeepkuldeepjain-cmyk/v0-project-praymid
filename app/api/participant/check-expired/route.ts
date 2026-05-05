@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
-    const db = getServiceClient()
+    const db = getPool()!
 
     // Find all participants whose activation deadline has passed and haven't paid
     const { data: expiredParticipants, error: findError } = await supabase

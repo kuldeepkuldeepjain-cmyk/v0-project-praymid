@@ -1,13 +1,13 @@
 import { streamText, tool, convertToModelMessages, type UIMessage } from "ai"
 import { z } from "zod"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export const maxDuration = 30
 
 export async function POST(req: Request) {
   const { messages, userEmail }: { messages: UIMessage[]; userEmail?: string } = await req.json()
 
-  const db = getServiceClient()
+  const db = getPool()!
 
   const systemPrompt = `You are FlowChain AI Assistant, an advanced intelligent assistant for the FlowChain platform.
 

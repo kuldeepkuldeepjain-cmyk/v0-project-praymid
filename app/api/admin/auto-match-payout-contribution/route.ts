@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const isValidCron = vercelCronHeader === "true" || authHeader === `Bearer ${cronSecret}`
     if (!isValidCron) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const db = getServiceClient()
+    const db = getPool()!
     const now = new Date()
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000)
 

@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const db = getServiceClient()
+    const db = getPool()!
     const { contributionId, action, reason } = await request.json()
 
     if (!contributionId || !action) {

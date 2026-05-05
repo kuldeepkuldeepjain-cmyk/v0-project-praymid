@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)

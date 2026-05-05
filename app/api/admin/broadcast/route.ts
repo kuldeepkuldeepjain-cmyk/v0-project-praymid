@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const { message } = await request.json()
     if (!message || typeof message !== "string") return NextResponse.json({ error: "Message is required" }, { status: 400 })
 
-    const db = getServiceClient()
+    const db = getPool()!
     const participantsRes = await db.query(`SELECT email FROM participants`)
     if (!participantsRes.rows.length) return NextResponse.json({ error: "No participants found" }, { status: 404 })
 

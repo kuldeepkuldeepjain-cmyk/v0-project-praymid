@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { otpMemoryStore } from "@/lib/otp-memory-store"
 
 export async function POST(request: NextRequest) {

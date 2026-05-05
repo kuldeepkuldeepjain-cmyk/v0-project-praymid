@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-import { getServiceClient } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 // POST - Create new prediction
 export async function POST(request: NextRequest) {
