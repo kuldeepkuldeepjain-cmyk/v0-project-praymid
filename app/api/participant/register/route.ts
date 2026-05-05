@@ -40,7 +40,6 @@ export async function POST(request: Request) {
       if (refRows.length === 0) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
     }
 
-    console.log("[register] Inserting with whatsappOtp:", whatsappOtp)
     const inserted = await query<Record<string, any>>(
       `INSERT INTO participants
         (full_name, username, email, password_hash, wallet_address,
