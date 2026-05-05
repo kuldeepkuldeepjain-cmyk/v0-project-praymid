@@ -522,6 +522,7 @@ export default function ParticipantRegisterPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#22d3ee]/0 via-[#22d3ee]/5 to-[#22d3ee]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                   </div>
+                </div>
               </div>
 
               {/* WhatsApp OTP Section */}
