@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,8 +25,6 @@ import {
 
 export default function AdminAnalytics() {
   const { toast } = useToast()
-  const supabase = createClient()
-
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [filterStatus, setFilterStatus] = useState<string>("all")
   const [filterDateRange, setFilterDateRange] = useState<string>("7d")
@@ -50,42 +47,30 @@ export default function AdminAnalytics() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      // Fetch payment submissions with filters
-      let query = supabase
-        .from("payment_submissions")
-        .select("*")
-        .order("created_at", { ascending: false })
+      const params = new URLSearchParams()
+      if (filterStatus !== "all") params.set("status", filterStatus)
+      if (filterDateRange !== "all") params.set("dateRange", filterDateRange)
 
-      if (filterStatus !== "all") {
-        query = query.eq("status", filterStatus)
-      }
+      const [contribRes, statsRes] = await Promise.all([
+        fetch(`/api/admin/activation-payments?${params}`),
+        fetch("/api/admin/participants"),
+      ])
+      const contribData = await contribRes.json()
+      const statsData = await statsRes.json()
 
-      // Date range filter
-      const now = new Date()
-      let startDate = new Date()
-      if (filterDateRange === "7d") startDate.setDate(now.getDate() - 7)
-      else if (filterDateRange === "30d") startDate.setDate(now.getDate() - 30)
-      else if (filterDateRange === "90d") startDate.setDate(now.getDate() - 90)
+      const allPayments: any[] = contribData.payments || []
+      const filtered = filterStatus !== "all" ? allPayments.filter((p: any) => p.status === filterStatus) : allPayments
+      setContributions(filtered)
 
-      if (filterDateRange !== "all") {
-        query = query.gte("created_at", startDate.toISOString())
-      }
-
-      const { data, error } = await query.limit(100)
-
-      if (error) throw error
-      setContributions(data || [])
-
-      // Fetch analytics
-      const { data: participants } = await supabase.from("participants").select("*")
-      const { data: transactions } = await supabase.from("payment_submissions").select("amount")
+      const participants: any[] = statsData.participants || []
+      const totalRevenue = allPayments.filter((p: any) => p.status === "approved").reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0)
 
       setAnalytics({
-        totalUsers: participants?.length || 0,
-        activeUsers: participants?.filter((p) => p.activation_fee_paid)?.length || 0,
-        totalRevenue: transactions?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0,
-        avgResponseTime: Math.random() * 500 + 100, // Simulated
-        errorRate: Math.random() * 2, // Simulated
+        totalUsers: participants.length,
+        activeUsers: participants.filter((p: any) => p.is_active).length,
+        totalRevenue,
+        avgResponseTime: 0,
+        errorRate: 0,
         topReferrers: [],
       })
     } catch (error) {

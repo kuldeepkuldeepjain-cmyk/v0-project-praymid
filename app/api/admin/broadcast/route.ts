@@ -7,48 +7,26 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const { message } = await request.json()
-
-    if (!message || typeof message !== "string") {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 })
-    }
+    if (!message || typeof message !== "string") return NextResponse.json({ error: "Message is required" }, { status: 400 })
 
     const db = getServiceClient()
+    const participantsRes = await db.query(`SELECT email FROM participants`)
+    if (!participantsRes.rows.length) return NextResponse.json({ error: "No participants found" }, { status: 404 })
 
-    // Get all participant emails
-    const { data: participants } = await supabase
-      .from("participants")
-      .select("email")
-    
-    if (!participants || participants.length === 0) {
-      return NextResponse.json({ error: "No participants found" }, { status: 404 })
+    for (const p of participantsRes.rows) {
+      await db.query(
+        `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'info','Admin Announcement',$2,false)`,
+        [p.email, message.trim()]
+      )
     }
 
-    // Create broadcast notification for all participants
-    const notifications = participants.map((p) => ({
-      user_email: p.email,
-      type: "info",
-      title: "Admin Announcement",
-      message: message.trim(),
-      read_status: false,
-    }))
-
-    const { error } = await supabase.from("notifications").insert(notifications)
-
-    if (error) {
-      console.error("[v0] Broadcast error:", error)
-      return NextResponse.json({ error: "Failed to send broadcast" }, { status: 500 })
-    }
-
-    // Log activity
-    await supabase.from("audit_logs").insert({
-      action: "global_broadcast",
-      description: `Admin sent global broadcast: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`,
-      created_at: new Date().toISOString(),
-    })
+    await db.query(
+      `INSERT INTO audit_logs(action,description,created_at) VALUES('global_broadcast',$1,NOW())`,
+      [`Admin sent global broadcast: "${message.substring(0, 50)}${message.length > 50 ? "..." : ""}"`]
+    )
 
     return NextResponse.json({ success: true, message: "Broadcast sent successfully" })
   } catch (error) {
-    console.error("[v0] Broadcast API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

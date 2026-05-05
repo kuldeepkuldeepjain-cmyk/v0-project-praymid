@@ -7,128 +7,48 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const { paymentSubmissionId, payoutRequestId, participantEmail } = await request.json()
-
     if (!paymentSubmissionId || !payoutRequestId || !participantEmail) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
     }
 
     const db = getServiceClient()
 
-    // 1. Fetch payment submission to verify it has payment proof
-    const { data: paymentSubmission, error: fetchSubmissionError } = await supabase
-      .from("payment_submissions")
-      .select("id, status, screenshot_url, transaction_id")
-      .eq("id", paymentSubmissionId)
-      .single()
+    const subRes = await db.query(`SELECT id,status,screenshot_url,transaction_id FROM payment_submissions WHERE id=$1`, [paymentSubmissionId])
+    const paymentSubmission = subRes.rows[0]
+    if (!paymentSubmission) return NextResponse.json({ success: false, error: "Payment submission not found" }, { status: 404 })
 
-    if (fetchSubmissionError || !paymentSubmission) {
-      return NextResponse.json({ success: false, error: "Payment submission not found" }, { status: 404 })
-    }
-
-    // 2. Verify payment proof exists (either screenshot or transaction ID)
     if (!paymentSubmission.screenshot_url && !paymentSubmission.transaction_id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Cannot approve contribution without payment proof. Contributor must submit either a transaction ID or screenshot.",
-        },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: "Cannot approve without payment proof" }, { status: 400 })
     }
 
-    // 3. Fetch current account balance
-    const { data: participant, error: fetchError } = await supabase
-      .from("participants")
-      .select("id, account_balance")
-      .eq("email", participantEmail)
-      .single()
-
-    if (fetchError || !participant) {
-      return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
-    }
+    const partRes = await db.query(`SELECT id,account_balance FROM participants WHERE email=$1`, [participantEmail])
+    const participant = partRes.rows[0]
+    if (!participant) return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
 
     const newBalance = Number(participant.account_balance || 0) + 150
-    
-    // Set next contribution date to 30 days from now
-    const nextContributionDate = new Date()
-    nextContributionDate.setDate(nextContributionDate.getDate() + 30)
+    const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + 30)
 
-    // 4. Approve the payment submission
-    const { error: submissionError } = await supabase
-      .from("payment_submissions")
-      .update({
-        status: "approved",
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", paymentSubmissionId)
+    await db.query(`UPDATE payment_submissions SET status='approved', reviewed_at=NOW() WHERE id=$1`, [paymentSubmissionId])
 
-    if (submissionError) {
-      return NextResponse.json({ success: false, error: "Failed to approve submission: " + submissionError.message }, { status: 500 })
-    }
-
-    // 5. Credit $150 to participant + mark contribution_approved + set 30-day cooldown
-    const { error: participantError } = await supabase
-      .from("participants")
-      .update({
-        account_balance: newBalance,
-        contribution_approved: true,
-        status: "active",
-        is_active: true,
-        activation_date: new Date().toISOString(),
-        next_contribution_date: nextContributionDate.toISOString(),
-      })
-      .eq("email", participantEmail)
-
-    if (participantError) {
-      // Rollback submission status
-      await supabase
-        .from("payment_submissions")
-        .update({ status: "pending" })
-        .eq("id", paymentSubmissionId)
-      return NextResponse.json({ success: false, error: "Failed to credit participant: " + participantError.message }, { status: 500 })
-    }
-
-    // 6. Mark payout request as completed
-    const { error: payoutError } = await supabase
-      .from("payout_requests")
-      .update({
-        status: "completed",
-        processed_at: new Date().toISOString(),
-        admin_notes: "Completed via contribution approval",
-      })
-      .eq("id", payoutRequestId)
-
-    if (payoutError) {
-      console.error("Payout update error (non-fatal):", payoutError.message)
-    }
-
-    // 7. Send notification to participant
-    await supabase.from("notifications").insert({
-      user_email: participantEmail,
-      type: "success",
-      title: "Contribution Approved",
-      message: `Your contribution has been approved. $150 has been credited to your account. Your payout request has been completed. Next contribution available after 30 days.`,
-      read_status: false,
-    })
-
-    // 8. Log activity
-    await supabase.from("activity_logs").insert({
-      actor_email: "admin",
-      action: "contribution_and_payout_approved",
-      details: `Approved contribution for ${participantEmail}. Payment proof verified (${paymentSubmission.screenshot_url ? "screenshot" : "transaction ID"}). Credited $150. Payout request #${payoutRequestId} completed.`,
-      target_type: "payment_submission",
-    }).catch(() => {})
-
-    return NextResponse.json({
-      success: true,
-      message: "Contribution approved and payout completed",
-      newBalance,
-    })
-  } catch (error) {
-    console.error("Approve-contribution-payout error:", error)
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
+    await db.query(
+      `UPDATE participants SET account_balance=$1, status='active', is_active=true, activation_date=NOW(), next_contribution_date=$2 WHERE email=$3`,
+      [newBalance, nextDate.toISOString(), participantEmail]
     )
+
+    await db.query(`UPDATE payout_requests SET status='completed', processed_at=NOW(), admin_notes='Completed via contribution approval' WHERE id=$1`, [payoutRequestId])
+
+    await db.query(
+      `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'success','Contribution Approved','Your contribution has been approved. $150 has been credited to your account.',false)`,
+      [participantEmail]
+    )
+
+    await db.query(
+      `INSERT INTO activity_logs(actor_email,action,details,target_type) VALUES('admin','contribution_and_payout_approved',$1,'payment_submission')`,
+      [`Approved contribution for ${participantEmail}. Credited $150. Payout #${payoutRequestId} completed.`]
+    ).catch(() => {})
+
+    return NextResponse.json({ success: true, message: "Contribution approved and payout completed", newBalance })
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 })
   }
 }
