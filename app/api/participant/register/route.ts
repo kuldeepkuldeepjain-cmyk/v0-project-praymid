@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
-import { getPool } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -28,24 +28,22 @@ export async function POST(request: Request) {
     const newReferralCode = generateReferralCode(username)
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const db = getPool()!
-
     // Check duplicates
-    const emailCheck = await db.query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
-    if (emailCheck.rows.length > 0) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
+    const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
+    if (emailRows.length > 0) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
 
-    const phoneCheck = await db.query("SELECT id FROM participants WHERE mobile_number = $1 LIMIT 1", [mobileNumber])
-    if (phoneCheck.rows.length > 0) return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
+    const phoneRows = await query("SELECT id FROM participants WHERE mobile_number = $1 LIMIT 1", [mobileNumber])
+    if (phoneRows.length > 0) return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
 
-    const usernameCheck = await db.query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
-    if (usernameCheck.rows.length > 0) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
+    const usernameRows = await query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
+    if (usernameRows.length > 0) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
 
     if (referralCode) {
-      const refCheck = await db.query("SELECT id FROM participants WHERE referral_code = $1 LIMIT 1", [referralCode.toUpperCase()])
-      if (refCheck.rows.length === 0) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
+      const refRows = await query("SELECT id FROM participants WHERE referral_code = $1 LIMIT 1", [referralCode.toUpperCase()])
+      if (refRows.length === 0) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
     }
 
-    const insertResult = await db.query(
+    const inserted = await query<Record<string, any>>(
       `INSERT INTO participants
         (full_name, username, email, mobile_number, password, plain_password, wallet_address,
          country, country_code, state, pin_code, status, rank, referral_code, referred_by,
@@ -61,11 +59,11 @@ export async function POST(request: Request) {
       ]
     )
 
-    const newParticipant = insertResult.rows[0]
+    const newParticipant = inserted[0]
 
     // Update referrer count
     if (referralCode) {
-      await db.query(
+      execute(
         "UPDATE participants SET total_referrals = total_referrals + 1 WHERE referral_code = $1",
         [referralCode.toUpperCase()]
       ).catch(() => {})
