@@ -73,38 +73,21 @@ export function P2PPayoutQueuePanel() {
 
   const fetchPayoutRequests = async () => {
     try {
-      const supabase = createClient()
-
-      const { data, error } = await supabase
-        .from("payout_requests")
-        .select(`
-          id,
-          participant_id,
-          participant_email,
-          serial_number,
-          amount,
-          wallet_address,
-          status,
-          created_at,
-          participants!inner(full_name, email, serial_number)
-        `)
-        .order("created_at", { ascending: true })
-
-      if (error) throw error
-
-      const transformed = data?.map((req: any) => ({
+      const res = await fetch("/api/admin/all-ledger")
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Failed to fetch")
+      const transformed = (json.ledger || []).map((req: any) => ({
         id: req.id,
         participant_id: req.participant_id,
         participant_email: req.participant_email,
-        participant_name: req.participants?.full_name || "Unknown",
+        participant_name: req.full_name || "Unknown",
         serial_number: req.serial_number,
         amount: req.amount,
         wallet_address: req.wallet_address,
         status: req.status,
         created_at: req.created_at,
       }))
-
-      setPayoutRequests(transformed || [])
+      setPayoutRequests(transformed)
     } catch (error) {
       console.error("[v0] Error fetching payout requests:", error)
       toast({

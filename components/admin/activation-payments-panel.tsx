@@ -390,7 +390,7 @@ export function ActivationPaymentsPanel() {
                           <p className="font-medium text-white">
                             @{payment.username}
                           </p>
-                          {payment.status === "request_pending" && (
+                          {(payment.status as string) === "request_pending" && (
                             <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
                               <Clock className="h-3 w-3 mr-1" />
                               Contribution Request
@@ -439,7 +439,7 @@ export function ActivationPaymentsPanel() {
                         <p className="text-xs text-[#6b7280]">{formatTime(payment.submittedAt)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {(payment.status === "pending" || payment.status === "request_pending") ? (
+                        {(payment.status === "pending" || (payment.status as string) === "request_pending") ? (
                           <>
                             <Button
                               size="sm"

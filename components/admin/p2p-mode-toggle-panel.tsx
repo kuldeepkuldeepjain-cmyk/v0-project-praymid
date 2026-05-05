@@ -33,32 +33,14 @@ export function P2PModeTogglePanel() {
 
   const fetchSettings = async () => {
     try {
-      const supabase = createClient()
-
-      // Fetch P2P mode setting
-      const { data: p2pModeSetting, error: p2pError } = await supabase
-        .from("system_settings")
-        .select("*")
-        .eq("setting_key", "p2p_mode_enabled")
-        .maybeSingle()
-
-      // Fetch admin wallet setting
-      const { data: walletSetting, error: walletError } = await supabase
-        .from("system_settings")
-        .select("*")
-        .eq("setting_key", "admin_wallet_address")
-        .maybeSingle()
-
-      if (p2pError && p2pError.code !== "PGRST116") throw p2pError
-      if (walletError && walletError.code !== "PGRST116") throw walletError
-
+      const res = await fetch("/api/admin/settings")
+      const data = await res.json()
       setSettings({
-        p2p_mode_enabled: p2pModeSetting?.setting_value === "true" || true,
-        admin_wallet_address: walletSetting?.setting_value || "",
-        last_updated: p2pModeSetting?.updated_at || new Date().toISOString(),
+        p2p_mode_enabled: data.p2p_mode_enabled !== false,
+        admin_wallet_address: data.topup_address || "",
+        last_updated: data.updated_at || new Date().toISOString(),
       })
-
-      setAdminWallet(walletSetting?.setting_value || "")
+      setAdminWallet(data.topup_address || "")
     } catch (error) {
       console.error("[v0] Error fetching P2P settings:", error)
     } finally {
@@ -70,18 +52,12 @@ export function P2PModeTogglePanel() {
     setIsUpdating(true)
 
     try {
-      const supabase = createClient()
-
-      // Upsert P2P mode setting
-      const { error } = await supabase.from("system_settings").upsert({
-        setting_key: "p2p_mode_enabled",
-        setting_value: enabled.toString(),
-        setting_type: "boolean",
-        description: "Enable or disable P2P contribution routing",
-        updated_at: new Date().toISOString(),
+      const res = await fetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ p2p_mode_enabled: enabled }),
       })
-
-      if (error) throw error
+      if (!res.ok) throw new Error("Failed to update")
 
       setSettings((prev) => ({
         ...prev,

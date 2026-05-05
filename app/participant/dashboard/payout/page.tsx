@@ -176,16 +176,9 @@ export default function PayoutPage() {
         })
         
         // Refresh payout history
-        const supabase = createClient()
-        const { data: historyData } = await supabase
-          .from("payout_requests")
-          .select("*")
-          .eq("participant_email", participantData.email)
-          .order("created_at", { ascending: false })
-        
-        if (historyData) {
-          setPayoutHistory(historyData)
-        }
+        const histRes = await fetch(`/api/participant/request-payout?email=${encodeURIComponent(participantData.email)}`)
+        const histJson = await histRes.json()
+        if (histJson.payouts) setPayoutHistory(histJson.payouts)
         
         // Update local balance (using account_balance)
         const updatedData = { ...participantData, account_balance: data.newBalance }

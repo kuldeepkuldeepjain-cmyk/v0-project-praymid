@@ -30,7 +30,6 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
 
 interface UserDatabaseRecord {
   id: string
@@ -76,58 +75,28 @@ export function ComprehensiveDatabaseView() {
   const fetchUserData = async () => {
     try {
       setIsLoading(true)
-      const supabase = createClient()
-      
-      // Fetch participants with their payout requests
-      const { data: participants, error: participantsError } = await supabase
-        .from("participants")
-        .select(`
-          id,
-          serial_number,
-          username,
-          full_name,
-          email,
-          wallet_address,
-          account_balance,
-          is_active,
-          created_at
-        `)
-        .order("created_at", { ascending: false })
 
-      if (participantsError) {
-        throw participantsError
-      }
+      const [partRes, walletRes, payoutRes] = await Promise.all([
+        fetch("/api/admin/participants"),
+        fetch("/api/participant/wallet-pool"),
+        fetch("/api/admin/all-ledger"),
+      ])
+      const partJson = await partRes.json()
+      const walletJson = await walletRes.json()
+      const payoutJson = await payoutRes.json()
 
-      // Fetch wallet pool data to get contribution addresses
-      const { data: walletPool, error: poolError } = await supabase
-        .from("wallet_pool")
-        .select("id, wallet_address, assigned_to")
-
-      if (poolError && poolError.code !== 'PGRST116') {
-        console.error("Error fetching wallet pool:", poolError)
-      }
-
-      // Fetch latest payout requests for each user
-      const { data: payouts, error: payoutsError } = await supabase
-        .from("payout_requests")
-        .select("participant_email, serial_number, amount, status")
-        .order("created_at", { ascending: false })
-
-      if (payoutsError && payoutsError.code !== 'PGRST116') {
-        console.error("Error fetching payouts:", payoutsError)
-      }
+      const participants: any[] = partJson.participants || []
+      const walletPool: any[] = walletJson.walletPool || []
+      const payouts: any[] = payoutJson.ledger || []
 
       // Combine the data
-      const combinedData: UserDatabaseRecord[] = (participants || []).map((participant: any) => {
-        // Find contribution address from wallet pool (assigned_to holds participant email)
-        const poolEntry = walletPool?.find((w) => w.assigned_to === participant.email)
-        
-        // Find latest payout for this user
-        const latestPayout = payouts?.find((p) => p.participant_email === participant.email)
+      const combinedData: UserDatabaseRecord[] = participants.map((participant: any) => {
+        const poolEntry = walletPool.find((w: any) => w.assigned_to === participant.email)
+        const latestPayout = payouts.find((p: any) => p.participant_email === participant.email)
 
         return {
           ...participant,
-          wallet_balance: participant.account_balance || 0, // Map account_balance to wallet_balance for display
+          wallet_balance: participant.account_balance || 0,
           contribution_address: poolEntry?.wallet_address || null,
           payout_serial: latestPayout?.serial_number,
           payout_amount: latestPayout?.amount,
@@ -162,40 +131,17 @@ export function ComprehensiveDatabaseView() {
 
     try {
       setIsSaving(true)
-      const supabase = createClient()
+      const saveRes = await fetch("/api/participant/wallet-pool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: selectedUser.email, walletAddress: editingContributionAddress }),
+      })
+      if (!saveRes.ok) throw new Error("Failed to save wallet pool address")
 
-      // Check if entry exists in wallet_pool
-      const { data: existing } = await supabase
-        .from("wallet_pool")
-        .select("id")
-        .eq("assigned_to", selectedUser.email)
-        .single()
-
-      if (existing) {
-        // Update existing entry
-        const { error } = await supabase
-          .from("wallet_pool")
-          .update({ wallet_address: editingContributionAddress })
-          .eq("assigned_to", selectedUser.email)
-
-        if (error) throw error
-      } else {
-        // Insert new entry
-        const { error } = await supabase
-          .from("wallet_pool")
-          .insert({
-            wallet_address: editingContributionAddress,
-            network: "BSC",
-            status: "assigned",
-            assigned_to: selectedUser.email,
-          })
-
-        if (error) throw error
-      }
 
       toast({
         title: "Success",
-        description: `Contribution address updated for ${selectedUser.username}`,
+        description: `Contribution address updated for ${selectedUser?.username}`,
       })
 
       setShowEditDialog(false)

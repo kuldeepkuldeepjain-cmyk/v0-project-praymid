@@ -174,8 +174,8 @@ export function ParticipantDatabaseView() {
     ]
 
     const rows = filteredParticipants.map((p) => [
-      p.participantNumber,
-      p.serial_number || "N/A",
+      p.participant_number || p.id || "N/A",
+      p.participant_number || "N/A",
       p.username,
       p.full_name || p.name || "",
       p.email,

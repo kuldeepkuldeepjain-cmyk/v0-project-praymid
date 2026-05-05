@@ -20,7 +20,6 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
 import { LivePredictionMonitor } from "@/components/live-prediction-monitor"
 import { ActiveTradeTracker } from "@/components/active-trade-tracker"
 import { AssetLogo } from "@/components/asset-logo"
@@ -102,7 +101,6 @@ function PredictPageContent() {
   const [priceFlash, setPriceFlash] = useState<Record<string, string>>({})
   const previousPrices = useRef<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(true)
-  const supabase = createClient() // Declared supabase
 
   // Bet dialog states
   const [showBetDialog, setShowBetDialog] = useState(false)
@@ -187,16 +185,14 @@ function PredictPageContent() {
     // Load active trades for the user
     const loadActiveTrades = async () => {
       try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("predictions")
-          .select("*")
-          .eq("participant_email", participantData.email)
-          .eq("status", "pending")
+        const res = await fetch(`/api/participant/predictions?email=${encodeURIComponent(participantData.email)}&status=pending`)
+        const json = await res.json()
+        const data: any[] = json.predictions || []
+        const error = null
 
         if (!error && data) {
           const tradesMap: Record<string, any> = {}
-          data.forEach((trade) => {
+          data.forEach((trade: any) => {
             tradesMap[trade.crypto_pair] = trade
           })
           setActiveTrades(tradesMap)
@@ -297,11 +293,10 @@ function PredictPageContent() {
       }
 
       // Get participant ID first
-      const { data: participant, error: pError } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("email", userEmail)
-        .maybeSingle()
+      const pRes = await fetch(`/api/participant/me?email=${encodeURIComponent(userEmail)}`)
+      const pJson = await pRes.json()
+      const participant: any = pJson.participant || null
+      const pError = !pRes.ok ? pJson.error : null
 
       if (pError || !participant) {
         toast({ title: "Could not find account", variant: "destructive" })
@@ -313,22 +308,25 @@ function PredictPageContent() {
       const now = new Date()
       const expiryTimestamp = new Date(now.getTime() + (selectedTimeframe.seconds * 1000))
   
-      // Insert prediction record - use .select() to get the real DB-generated ID back
-      const { data: insertedTrade, error: insertError } = await supabase.from("predictions").insert({
-        participant_id: participant.id,
-        participant_email: userEmail,
-        crypto_pair: selectedAsset.symbol,
-        prediction_type: betDirection,
-        amount: amount,
-        entry_price: entryPrice,
-        target_price: null,
-        leverage: 1,
-        status: "pending",
-        profit_loss: 0,
-        result: null,
-        timeframe_seconds: selectedTimeframe.seconds,
-        expiry_timestamp: expiryTimestamp.toISOString()
-      }).select("id, crypto_pair, prediction_type, amount, entry_price, expiry_timestamp, timeframe_seconds, status").single()
+      // Insert prediction record via API
+      const tradeRes = await fetch("/api/participant/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participantId: participant.id,
+          participantEmail: userEmail,
+          cryptoPair: selectedAsset.symbol,
+          predictionType: betDirection,
+          amount,
+          entryPrice,
+          timeframeSeconds: selectedTimeframe.seconds,
+          expiryTimestamp: expiryTimestamp.toISOString(),
+          balanceSource,
+        }),
+      })
+      const tradeJson = await tradeRes.json()
+      const insertedTrade: any = tradeJson.prediction || null
+      const insertError = !tradeRes.ok ? tradeJson.error : null
 
       if (insertError || !insertedTrade) {
         toast({ title: "Failed to place trade", variant: "destructive" })
@@ -336,33 +334,9 @@ function PredictPageContent() {
         return
       }
 
-      // Deduct bet amount from the correct balance field
-      // Referral earnings are stored in `bonus_balance` column (confirmed by DB schema)
       const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
       const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
       const newFieldBalance = currentFieldBalance - amount
-
-      const { error: balanceError } = await supabase
-        .from("participants")
-        .update({ [balanceField]: newFieldBalance })
-        .eq("email", participantData.email)
-
-      if (balanceError) {
-        console.error("Balance deduction error:", balanceError)
-      }
-
-      // Log transaction with correct type
-      await supabase.from("transactions").insert({
-        participant_id: participant.id,
-        participant_email: userEmail,
-        type: balanceSource === "referral" ? "referral_earning" : "prediction_bet",
-        amount: -amount,
-        description: `Placed ${betDirection.toUpperCase()} trade on ${selectedAsset.symbol} using ${balanceSource === "referral" ? "referral earnings" : "wallet balance"}`,
-        reference_id: insertedTrade.id,
-        status: "completed",
-        balance_before: currentFieldBalance,
-        balance_after: newFieldBalance,
-      })
 
       const updatedData = balanceSource === "referral"
         ? { ...participantData, bonus_balance: newFieldBalance }
@@ -811,11 +785,9 @@ function PredictPageContent() {
               const parsedData = JSON.parse(storedData)
               const email = parsedData?.email
               if (!email) return
-              const { data } = await supabase
-                .from("participants")
-                .select("*")
-                .eq("email", email)
-                .single()
+              const refreshRes = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+              const refreshJson = await refreshRes.json()
+              const data: any = refreshJson.participant || null
               if (data) {
                 setParticipantData(data)
                 localStorage.setItem("participantData", JSON.stringify(data))

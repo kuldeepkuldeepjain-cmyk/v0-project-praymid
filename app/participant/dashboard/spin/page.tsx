@@ -106,11 +106,12 @@ export default function SpinWheelPage() {
       }
 
       if (data) {
-        setParticipantEmail(data.email)
-        setBalance(data.account_balance ?? 0)
-        setAvailableSpins(data.available_spins ?? 0)
-        setIsActive(data.is_active ?? false)
-        localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...data }))
+        const d = data as any
+        setParticipantEmail(d.email)
+        setBalance(d.account_balance ?? 0)
+        setAvailableSpins(d.available_spins ?? 0)
+        setIsActive(d.is_active ?? false)
+        localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...d }))
       }
     } catch (error) {
       console.error("Error in loadParticipantData:", error)

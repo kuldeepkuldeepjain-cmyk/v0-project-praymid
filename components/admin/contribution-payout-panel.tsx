@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -71,47 +70,20 @@ export function ContributionPayoutPanel() {
   const fetchRecords = useCallback(async () => {
     setLoading(true)
     try {
-      const supabase = createClient()
+      const [contribRes, payoutRes] = await Promise.all([
+        fetch("/api/admin/activation-payments"),
+        fetch("/api/admin/all-ledger"),
+      ])
+      const contribJson = await contribRes.json()
+      const payoutJson = await payoutRes.json()
 
-      // Fetch all payment submissions with participant info
-      const { data: contributions, error: contribError } = await supabase
-        .from("payment_submissions")
-        .select(`
-          id,
-          participant_email,
-          amount,
-          transaction_id,
-          screenshot_url,
-          status,
-          created_at,
-          participants(full_name, username)
-        `)
-        .order("created_at", { ascending: false })
-
-      if (contribError) throw contribError
-
-      // Fetch all payout requests with participant info
-      const { data: payouts, error: payoutError } = await supabase
-        .from("payout_requests")
-        .select(`
-          id,
-          participant_email,
-          amount,
-          wallet_address,
-          status,
-          serial_number,
-          created_at,
-          participants(full_name, username)
-        `)
-        .order("created_at", { ascending: false })
-
-      if (payoutError) throw payoutError
+      const contributions: any[] = contribJson.payments || []
+      const payouts: any[] = payoutJson.ledger || []
 
       // Build a map of email -> latest pending payout
       const payoutByEmail = new Map<string, any>()
-      for (const payout of payouts || []) {
+      for (const payout of payouts) {
         const email = payout.participant_email
-        // Prefer pending payout; if already have one, keep earliest pending
         const existing = payoutByEmail.get(email)
         if (!existing && payout.status === "pending") {
           payoutByEmail.set(email, payout)
@@ -120,12 +92,11 @@ export function ContributionPayoutPanel() {
         }
       }
 
-      // Merge contributions with matching payout
-      const merged: ContributionWithPayout[] = (contributions || []).map((c: any) => {
+      const merged: ContributionWithPayout[] = contributions.map((c: any) => {
         const payout = payoutByEmail.get(c.participant_email) || null
         return {
           contribution_id: c.id,
-          participant_name: c.participants?.full_name || c.participants?.username || c.participant_email,
+          participant_name: c.full_name || c.username || c.participant_email,
           participant_email: c.participant_email,
           contribution_amount: c.amount,
           transaction_id: c.transaction_id,
@@ -166,14 +137,9 @@ export function ContributionPayoutPanel() {
 
   useEffect(() => {
     fetchRecords()
-    // Real-time subscription on both tables
-    const supabase = createClient()
-    const channel = supabase
-      .channel("contribution_payout_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "payment_submissions" }, () => fetchRecords())
-      .on("postgres_changes", { event: "*", schema: "public", table: "payout_requests" }, () => fetchRecords())
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    // Poll every 30s instead of real-time subscription
+    const interval = setInterval(() => fetchRecords(), 30000)
+    return () => clearInterval(interval)
   }, [fetchRecords])
 
   const handleConfirm = async () => {
@@ -198,14 +164,15 @@ export function ContributionPayoutPanel() {
 
       // 2. If there is a matching payout, complete it atomically
       if (confirmRecord.payout_id && confirmRecord.payout_status !== "completed") {
-        const supabase = createClient()
-        const { error: payoutError } = await supabase
-          .from("payout_requests")
-          .update({ status: "completed", processed_at: new Date().toISOString() })
-          .eq("id", confirmRecord.payout_id)
-          .neq("status", "completed")
-
-        if (payoutError) throw payoutError
+        const payRes = await fetch("/api/admin/update-payout-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payoutId: confirmRecord.payout_id, status: "completed" }),
+        })
+        if (!payRes.ok) {
+          const payJson = await payRes.json()
+          throw new Error(payJson.error || "Failed to complete payout")
+        }
       }
 
       setProcessedIds((prev) => new Set(prev).add(confirmRecord.contribution_id))

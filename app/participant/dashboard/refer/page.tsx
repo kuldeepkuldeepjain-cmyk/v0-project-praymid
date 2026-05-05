@@ -10,7 +10,6 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Users, Gift, MessageCircle, Check, X, Loader2, Sparkles } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
 
 interface Contact {
   name: string
@@ -53,39 +52,25 @@ export default function ReferPage() {
         setParticipantData(parsedData)
         console.log("[v0] Participant data loaded:", parsedData.email)
 
-        // First, get the participant's ID from the database
-        const supabase = createClient()
-        const { data: participantRecord, error: participantError } = await supabase
-          .from("participants")
-          .select("id")
-          .eq("email", parsedData.email)
-          .single()
+        // Fetch participant record via API
+        const meRes = await fetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
+        const meJson = await meRes.json()
+        const participantRecord: any = meJson.participant
 
-        if (participantError || !participantRecord) {
-          console.error("[v0] Error fetching participant:", participantError)
+        if (!participantRecord) {
+          console.error("[v0] Error fetching participant")
           return
         }
 
-        console.log("[v0] Participant ID:", participantRecord.id)
+        // Fetch invite logs
+        const inviteRes = await fetch(`/api/participant/invite-log?email=${encodeURIComponent(parsedData.email)}`)
+        const inviteJson = await inviteRes.json()
+        const count: number = inviteJson.count || 0
+        setJoinedCount(count)
 
-        // Fetch joined count from invite_logs using the participant's ID
-        const { data, error } = await supabase
-          .from("invite_logs")
-          .select("*", { count: "exact" })
-          .eq("participant_id", participantRecord.id)
-
-        if (error) {
-          console.error("[v0] Error fetching invite logs:", error)
-        } else {
-          const count = data?.length || 0
-          console.log("[v0] Joined invites count:", count)
-          setJoinedCount(count)
-          
-          // Auto-claim reward if eligible and not yet claimed
-          if (count >= REFERRAL_TARGET && !participantRecord.referral_reward_claimed) {
-            console.log("[v0] Auto-claiming $20 reward...")
-            await claimReward(parsedData.email, participantRecord.id)
-          }
+        // Auto-claim reward if eligible and not yet claimed
+        if (count >= REFERRAL_TARGET && !participantRecord.referral_reward_claimed) {
+          await claimReward(parsedData.email, participantRecord.id)
         }
       } catch (err) {
         console.error("[v0] Error in fetchData:", err)
@@ -179,16 +164,13 @@ export default function ReferPage() {
     setIsSending(true)
 
     try {
-      // Get participant ID from database
-      const supabase = createClient()
-      const { data: participantRecord, error: participantError } = await supabase
-        .from("participants")
-        .select("id")
-        .eq("email", participantData?.email)
-        .single()
+      // Get participant ID via API
+      const meRes = await fetch(`/api/participant/me?email=${encodeURIComponent(participantData?.email || "")}`)
+      const meJson = await meRes.json()
+      const participantRecord: any = meJson.participant
 
-      if (participantError || !participantRecord) {
-        console.error("[v0] Error fetching participant ID:", participantError)
+      if (!participantRecord) {
+        console.error("[v0] Error fetching participant ID")
         toast({
           title: "Error",
           description: "Failed to get participant ID",
