@@ -8,31 +8,20 @@ export async function POST(request: NextRequest) {
   try {
     const db = getPool()!
     const { contributionId, action, reason } = await request.json()
-
     if (!contributionId || !action) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
     }
-
     if (!["approve", "reject"].includes(action)) {
       return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 })
     }
 
-    // Fetch the contribution with its matched payout
-    const { data: contribution, error: fetchError } = await supabase
-      .from("payment_submissions")
-      .select("*")
-      .eq("id", contributionId)
-      .single()
-
-    if (fetchError || !contribution) {
+    const contribRes = await db.query("SELECT * FROM payment_submissions WHERE id = $1", [contributionId])
+    if (!contribRes.rows.length) {
       return NextResponse.json({ success: false, error: "Contribution not found" }, { status: 404 })
     }
+    const contribution = contribRes.rows[0]
 
-    // Only allow action on proof_submitted status (or in_process for reject)
-    const allowedStatuses = action === "approve"
-      ? ["proof_submitted"]
-      : ["proof_submitted", "in_process"]
-
+    const allowedStatuses = action === "approve" ? ["proof_submitted"] : ["proof_submitted", "in_process"]
     if (!allowedStatuses.includes(contribution.status)) {
       return NextResponse.json({
         success: false,
@@ -41,160 +30,59 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Atomically update the contribution status
-    const { error: updateError } = await supabase
-      .from("payment_submissions")
-      .update({
-        status: action === "approve" ? "approved" : "rejected",
-        reviewed_at: new Date().toISOString(),
-        rejection_reason: action === "reject" ? (reason || "Rejected by admin") : null,
-      })
-      .eq("id", contributionId)
-      .in("status", allowedStatuses)
-
-    if (updateError) {
-      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 })
-    }
+    await db.query(
+      "UPDATE payment_submissions SET status = $1, reviewed_at = NOW(), rejection_reason = $2 WHERE id = $3",
+      [action === "approve" ? "approved" : "rejected", action === "reject" ? (reason || "Rejected by admin") : null, contributionId]
+    )
 
     if (action === "approve") {
-      // 1. Fetch contributor record (need referred_by + referral_contribution_rewarded flag)
-      const { data: participant } = await supabase
-        .from("participants")
-        .select("id, account_balance, total_earnings, referred_by, referral_contribution_rewarded")
-        .eq("email", contribution.participant_email)
-        .single()
+      const pRes = await db.query(
+        "SELECT id, account_balance, total_earnings, referred_by FROM participants WHERE email = $1",
+        [contribution.participant_email]
+      )
+      const participant = pRes.rows[0]
+      if (participant) {
+        const currentBalance = Number(participant.account_balance || 0)
+        const currentEarnings = Number(participant.total_earnings || 0)
+        const creditAmount = Math.round(Number(contribution.amount) * 1.5 * 100) / 100
 
-      const currentBalance = Number(participant?.account_balance || 0)
-      const currentEarnings = Number(participant?.total_earnings || 0)
-      // Reward is always 1.5× the contributed amount (works for all plans)
-      const creditAmount = Math.round(Number(contribution.amount) * 1.5 * 100) / 100
+        await db.query(
+          "UPDATE participants SET account_balance = $1, total_earnings = $2, updated_at = NOW() WHERE email = $3",
+          [currentBalance + creditAmount, currentEarnings + creditAmount, contribution.participant_email]
+        )
 
-      // 2. Credit contributor +$150 and set next_contribution_date
-      await supabase
-        .from("participants")
-        .update({
-          account_balance: currentBalance + creditAmount,
-          total_earnings: currentEarnings + creditAmount,
-          next_contribution_date: new Date(
-            Date.now() + 30 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-        })
-        .eq("email", contribution.participant_email)
-
-      // 3. Mark the matched payout as completed
-      if (contribution.matched_payout_id) {
-        await supabase
-          .from("payout_requests")
-          .update({ status: "completed", processed_at: new Date().toISOString() })
-          .eq("id", contribution.matched_payout_id)
-      }
-
-      // 4. Record contributor transaction
-      await supabase.from("transactions").insert({
-        participant_id: contribution.participant_id,
-        participant_email: contribution.participant_email,
-        type: "p2p_contribution_reward",
-        amount: creditAmount,
-        balance_before: currentBalance,
-        balance_after: currentBalance + creditAmount,
-        status: "completed",
-        reference_id: contributionId,
-        description: "P2P contribution approved — reward credited",
-      })
-
-      // 5. Referral reward — $5 to referrer, but ONLY on first completed contribution cycle
-      // Guard: referral_contribution_rewarded must still be false (prevents double-pay)
-      if (participant?.referred_by && !participant?.referral_contribution_rewarded) {
-        const { data: referrer } = await supabase
-          .from("participants")
-          .select("id, account_balance, total_earnings, email")
-          .eq("referral_code", participant.referred_by)
-          .maybeSingle()
-
-        if (referrer) {
-          const referrerBalance = Number(referrer.account_balance || 0)
-          const referrerEarnings = Number(referrer.total_earnings || 0)
-          const referralBonus = 5
-
-          // Credit referrer +$5
-          await supabase
-            .from("participants")
-            .update({
-              account_balance: referrerBalance + referralBonus,
-              total_earnings: referrerEarnings + referralBonus,
-            })
-            .eq("id", referrer.id)
-
-          // Flip the flag so this referrer can never be double-paid for this participant
-          await supabase
-            .from("participants")
-            .update({ referral_contribution_rewarded: true })
-            .eq("email", contribution.participant_email)
-
-          // Transaction record for referrer
-          await supabase.from("transactions").insert({
-            participant_id: referrer.id,
-            participant_email: referrer.email,
-            type: "referral_reward",
-            amount: referralBonus,
-            balance_before: referrerBalance,
-            balance_after: referrerBalance + referralBonus,
-            status: "completed",
-            reference_id: contributionId,
-            description: `Referral reward — ${contribution.participant_email} completed their first contribution cycle`,
-          })
-
-          // Notify referrer
-          await supabase.from("notifications").insert({
-            user_email: referrer.email,
-            type: "success",
-            title: "Referral Reward Earned",
-            message: `Your referral (${contribution.participant_email}) has successfully completed their first contribution cycle. $${referralBonus} has been credited to your account.`,
-            read_status: false,
-          })
+        if (contribution.matched_payout_id) {
+          await db.query("UPDATE payout_requests SET status = 'completed', processed_at = NOW() WHERE id = $1", [contribution.matched_payout_id])
         }
+
+        await db.query(
+          "INSERT INTO transactions (participant_id, participant_email, type, amount, balance_before, balance_after, status, reference_id, description) VALUES ($1,$2,$3,$4,$5,$6,'completed',$7,$8)",
+          [participant.id, contribution.participant_email, "p2p_contribution_reward", creditAmount, currentBalance, currentBalance + creditAmount, contributionId, "P2P contribution approved — reward credited"]
+        )
+
+        await db.query(
+          "INSERT INTO notifications (user_email, type, title, message) VALUES ($1,'success','Contribution Approved',$2)",
+          [contribution.participant_email, `Your P2P contribution of $${contribution.amount} has been verified. $${creditAmount} has been credited to your account.`]
+        )
       }
-
-      // 6. Notify contributor
-      await supabase.from("notifications").insert({
-        user_email: contribution.participant_email,
-        type: "success",
-        title: "Contribution Approved",
-        message: `Your P2P contribution of $${contribution.amount} has been verified. $${creditAmount} has been credited to your account.`,
-        read_status: false,
-      })
     } else {
-      // Notify contributor of rejection
-      await supabase.from("notifications").insert({
-        user_email: contribution.participant_email,
-        type: "error",
-        title: "Contribution Rejected",
-        message: `Your P2P contribution was rejected. Reason: ${reason || "Invalid payment proof"}. Please try again.`,
-        read_status: false,
-      })
-
-      // Unlink the matched payout so it becomes available again
+      await db.query(
+        "INSERT INTO notifications (user_email, type, title, message) VALUES ($1,'error','Contribution Rejected',$2)",
+        [contribution.participant_email, `Your P2P contribution was rejected. Reason: ${reason || "Invalid payment proof"}. Please try again.`]
+      )
       if (contribution.matched_payout_id) {
-        await supabase
-          .from("payout_requests")
-          .update({ matched_contribution_id: null, status: "pending" })
-          .eq("id", contribution.matched_payout_id)
+        await db.query("UPDATE payout_requests SET status = 'pending' WHERE id = $1", [contribution.matched_payout_id])
       }
     }
 
-    // Audit log
-    await supabase.from("activity_logs").insert({
-      actor_email: "admin",
-      action: action === "approve" ? "p2p_contribution_approved" : "p2p_contribution_rejected",
-      target_type: "payment_submission",
-      details: JSON.stringify({ contributionId, reason }),
-    })
+    await db.query(
+      "INSERT INTO activity_logs (actor_email, action, target_type, details) VALUES ($1,$2,'payment_submission',$3)",
+      ["admin", action === "approve" ? "p2p_contribution_approved" : "p2p_contribution_rejected", JSON.stringify({ contributionId, reason })]
+    )
 
     return NextResponse.json({
       success: true,
-      message: action === "approve"
-        ? "Contribution approved. $150 credited to contributor."
-        : "Contribution rejected. Payout unlinked and made available again.",
+      message: action === "approve" ? "Contribution approved and reward credited." : "Contribution rejected.",
     })
   } catch (err: any) {
     console.error("[p2p-contributions API] error:", err)

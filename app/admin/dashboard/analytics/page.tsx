@@ -92,25 +92,20 @@ export default function AdminAnalytics() {
     }
 
     try {
-      const { error } = await supabase
-        .from("payment_submissions")
-        .update({ status: "approved", reviewed_at: new Date().toISOString() })
-        .in("id", selectedItems)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: `${selectedItems.length} items approved`,
-      })
+      await Promise.all(
+        selectedItems.map((id) =>
+          fetch("/api/admin/p2p-contributions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contributionId: id, action: "approve" }),
+          })
+        )
+      )
+      toast({ title: "Success", description: `${selectedItems.length} items approved` })
       setSelectedItems([])
       fetchData()
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve items",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to approve items", variant: "destructive" })
     }
   }
 
@@ -119,27 +114,21 @@ export default function AdminAnalytics() {
       toast({ title: "No items selected", description: "Please select items to reject" })
       return
     }
-
     try {
-      const { error } = await supabase
-        .from("payment_submissions")
-        .update({ status: "rejected", reviewed_at: new Date().toISOString() })
-        .in("id", selectedItems)
-
-      if (error) throw error
-
-      toast({
-        title: "Success",
-        description: `${selectedItems.length} items rejected`,
-      })
+      await Promise.all(
+        selectedItems.map((id) =>
+          fetch("/api/admin/p2p-contributions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contributionId: id, action: "reject" }),
+          })
+        )
+      )
+      toast({ title: "Success", description: `${selectedItems.length} items rejected` })
       setSelectedItems([])
       fetchData()
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject items",
-        variant: "destructive",
-      })
+      toast({ title: "Error", description: "Failed to reject items", variant: "destructive" })
     }
   }
 

@@ -4,6 +4,7 @@ import { setParticipantSession } from "@/lib/session"
 import { participantMemoryStore } from "@/lib/participant-memory-store"
 import { getPool } from "@/lib/db"
 
+
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
@@ -14,15 +15,16 @@ export async function POST(request: Request) {
 
     const emailKey = email.toLowerCase().trim()
 
-    // Try Supabase first
+    // Try DB first
     try {
-      const supabase = getServiceClient()
+      const db = getPool()!
 
-      const { data: participant, error } = await supabase
-        .from("participants")
-        .select("id, email, password, username, full_name, wallet_address, account_balance, bonus_balance, total_earnings, referral_code, referred_by, serial_number, status, rank, is_active, details_completed, country, state, pin_code, full_address, activation_date, created_at, is_frozen, mobile_number, total_referrals")
-        .eq("email", emailKey)
-        .maybeSingle()
+      const res = await db.query(
+        "SELECT id, email, password, username, full_name, wallet_address, account_balance, bonus_balance, total_earnings, referral_code, referred_by, serial_number, status, rank, is_active, details_completed, country, state, pin_code, full_address, activation_date, created_at, is_frozen, mobile_number, total_referrals FROM participants WHERE email = $1",
+        [emailKey]
+      )
+      const participant = res.rows[0] || null
+      const error = null
 
       if (!error && participant) {
         let passwordValid = false
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
           passwordValid = participant.password === password
           if (passwordValid) {
             const hashed = await bcrypt.hash(password, 10)
-            await supabase.from("participants").update({ password: hashed, plain_password: password }).eq("id", participant.id).catch(() => {})
+            await db.query("UPDATE participants SET password = $1, plain_password = $2 WHERE id = $3", [hashed, password, participant.id]).catch(() => {})
           }
         }
 
@@ -40,7 +42,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
         }
 
-        await supabase.from("participants").update({ last_login: new Date().toISOString() }).eq("id", participant.id).catch(() => {})
+        await db.query("UPDATE participants SET last_login = NOW() WHERE id = $1", [participant.id]).catch(() => {})
         await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
 
         return NextResponse.json({

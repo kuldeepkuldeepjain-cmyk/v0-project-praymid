@@ -60,26 +60,19 @@ You have access to real-time platform data through tools. Use them to provide ac
         description: "Get real-time platform statistics including total participants, active users, and pending requests",
         inputSchema: z.object({}),
         execute: async () => {
-          const [
-            { count: totalParticipants },
-            { count: activeUsers },
-            { count: pendingPayouts },
-            { count: pendingPayments },
-            { count: activePredictions }
-          ] = await Promise.all([
-            supabase.from("participants").select("*", { count: "exact", head: true }),
-            supabase.from("participants").select("*", { count: "exact", head: true }).eq("is_active", true),
-            supabase.from("payout_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
-            supabase.from("payment_submissions").select("*", { count: "exact", head: true }).eq("status", "pending"),
-            supabase.from("predictions").select("*", { count: "exact", head: true }).eq("status", "pending")
+          const [r1, r2, r3, r4, r5] = await Promise.all([
+            db.query("SELECT COUNT(*) FROM participants"),
+            db.query("SELECT COUNT(*) FROM participants WHERE is_active = true"),
+            db.query("SELECT COUNT(*) FROM payout_requests WHERE status = 'pending'"),
+            db.query("SELECT COUNT(*) FROM payment_submissions WHERE status = 'pending'"),
+            db.query("SELECT COUNT(*) FROM predictions WHERE status = 'pending'"),
           ])
-
           return {
-            totalParticipants: totalParticipants || 0,
-            activeUsers: activeUsers || 0,
-            pendingPayouts: pendingPayouts || 0,
-            pendingPayments: pendingPayments || 0,
-            activePredictions: activePredictions || 0
+            totalParticipants: Number(r1.rows[0]?.count || 0),
+            activeUsers: Number(r2.rows[0]?.count || 0),
+            pendingPayouts: Number(r3.rows[0]?.count || 0),
+            pendingPayments: Number(r4.rows[0]?.count || 0),
+            activePredictions: Number(r5.rows[0]?.count || 0),
           }
         }
       }),

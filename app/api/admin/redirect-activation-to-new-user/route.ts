@@ -6,93 +6,33 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const db = getPool()!
     const { paymentId, amount, email } = await request.json()
+    const db = getPool()!
 
-    console.log("[v0] Redirecting activation payment to new user:", { paymentId, amount, email })
-
-    // Get the next newly created participant (most recent)
-    const { data: nextParticipant, error: participantError } = await supabase
-      .from("participants")
-      .select("id, email, username, account_balance")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single()
-
-    if (participantError || !nextParticipant) {
-      console.error("[v0] No participants found:", participantError)
+    const pRes = await db.query("SELECT id, email, username, account_balance FROM participants ORDER BY created_at DESC LIMIT 1")
+    if (!pRes.rows.length) {
       return NextResponse.json({ success: false, error: "No participants available to redirect to" }, { status: 404 })
     }
+    const next = pRes.rows[0]
+    const newBalance = Number(next.account_balance || 0) + Number(amount)
 
-    console.log("[v0] Found next participant:", nextParticipant.username)
+    await db.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [newBalance, next.id])
+    await db.query(
+      "INSERT INTO transactions (participant_email, type, amount, description) VALUES ($1,'contribution_redirect',$2,$3)",
+      [next.email, Number(amount), `Redirected activation payment from ${email}`]
+    )
+    await db.query(
+      "UPDATE payment_submissions SET status = 'approved', reviewed_at = NOW() WHERE id = $1",
+      [paymentId]
+    )
+    await db.query(
+      "INSERT INTO notifications (user_email, type, title, message) VALUES ($1,'success','Contribution Funds Received',$2)",
+      [next.email, `You received $${amount} in redirected activation funds.`]
+    )
 
-    // Credit the amount to the new participant's account
-    const newBalance = Number(nextParticipant.account_balance || 0) + Number(amount)
-    
-    const { error: updateError } = await supabase
-      .from("participants")
-      .update({ account_balance: newBalance })
-      .eq("id", nextParticipant.id)
-
-    if (updateError) {
-      console.error("[v0] Error updating participant balance:", updateError)
-      return NextResponse.json({ success: false, error: "Failed to credit participant" }, { status: 500 })
-    }
-
-    // Create transaction record
-    const { error: transactionError } = await supabase
-      .from("transactions")
-      .insert({
-        participant_email: nextParticipant.email,
-        type: "contribution_redirect",
-        amount: Number(amount),
-        description: `Redirected activation payment from ${email} for contribution`,
-      })
-
-    if (transactionError) {
-      console.error("[v0] Error creating transaction:", transactionError)
-    }
-
-    // Mark the original payment as redirected (update payment_submissions)
-    const { error: paymentUpdateError } = await supabase
-      .from("payment_submissions")
-      .update({
-        status: "approved",
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq("id", paymentId)
-
-    if (paymentUpdateError) {
-      console.error("[v0] Error updating payment status:", paymentUpdateError)
-    }
-
-    // Create notification for the recipient
-    const { error: notifError } = await supabase.from("notifications").insert({
-      user_email: nextParticipant.email,
-      type: "success",
-      title: "Contribution Funds Received",
-      message: `You received $${amount} in contribution funds from a redirected activation payment. This can be used for making contributions.`,
-      read_status: false,
-    })
-    
-    if (notifError) {
-      console.error("[v0] Error creating notification:", notifError)
-    }
-
-    console.log("[v0] Successfully redirected activation payment to", nextParticipant.username)
-
-    return NextResponse.json({
-      success: true,
-      message: `Activation payment redirected to ${nextParticipant.username}`,
-      recipientName: nextParticipant.username,
-      recipientEmail: nextParticipant.email,
-      amount: amount,
-    })
+    return NextResponse.json({ success: true, message: `Activation payment redirected to ${next.username}`, recipientEmail: next.email, amount })
   } catch (error) {
     console.error("[v0] Error in redirect activation API:", error)
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 },
-    )
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 })
   }
 }
