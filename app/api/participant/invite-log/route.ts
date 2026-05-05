@@ -7,53 +7,20 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const { userId, contacts } = await request.json()
-
     if (!userId || !contacts || !Array.isArray(contacts)) {
-      return NextResponse.json(
-        { success: false, error: "Missing required fields" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
     }
-
-    console.log("[v0] Logging", contacts.length, "invites for user", userId)
-
     const db = getPool()!
-
-    // Prepare invite log entries
-    const inviteLogs = contacts.map((contact: any) => ({
-      user_id: userId,
-      contact_phone: contact.contactPhone,
-      contact_name: contact.contactName,
-      status: "sent",
-      created_at: new Date().toISOString(),
-      sent_at: new Date().toISOString(),
-    }))
-
-    // Insert into invite_logs table
-    const { data, error } = await supabase
-      .from("invite_logs")
-      .insert(inviteLogs)
-      .select()
-
-    if (error) {
-      console.error("[v0] Error inserting invite logs:", error)
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: 500 }
+    for (const contact of contacts) {
+      await db.query(
+        `INSERT INTO invite_logs (user_id, contact_phone, contact_name, status, sent_at)
+         VALUES ($1, $2, $3, 'sent', NOW())`,
+        [userId, contact.contactPhone || null, contact.contactName || null]
       )
     }
-
-    console.log("[v0] Successfully logged", data.length, "invites")
-
-    return NextResponse.json({
-      success: true,
-      logged: data.length,
-    })
+    return NextResponse.json({ success: true, logged: contacts.length })
   } catch (error) {
     console.error("[v0] Invite log error:", error)
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }
