@@ -4,7 +4,11 @@ import { Pool } from "pg"
 const globalForPool = globalThis as unknown as { _pgPool?: Pool }
 
 function createPool() {
-  const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL
+  const url =
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL ||
+    process.env.DATABASE_URL ||
+    process.env.NEON_DATABASE_URL
   if (!url) return null
   return new Pool({
     connectionString: url,
@@ -28,7 +32,7 @@ export async function query<T = Record<string, any>>(
   params: any[] = []
 ): Promise<T[]> {
   const pool = getPool()
-  if (!pool) throw new Error("No database connection — POSTGRES_URL not set")
+  if (!pool) throw new Error("No database connection — set DATABASE_URL or POSTGRES_URL")
   const result = await pool.query(sql, params)
   return result.rows as T[]
 }
@@ -45,7 +49,7 @@ export async function queryOne<T = Record<string, any>>(
 // Helper: run an insert/update/delete, return rowCount
 export async function execute(sql: string, params: any[] = []): Promise<number> {
   const pool = getPool()
-  if (!pool) throw new Error("No database connection — POSTGRES_URL not set")
+  if (!pool) throw new Error("No database connection — set DATABASE_URL or POSTGRES_URL")
   const result = await pool.query(sql, params)
   return result.rowCount ?? 0
 }
