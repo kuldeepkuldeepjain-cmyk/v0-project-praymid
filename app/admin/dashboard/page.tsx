@@ -30,6 +30,7 @@ import {
   ArrowRight,
   Trash2,
   Wallet,
+  ShieldCheck,
 } from "lucide-react"
 import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
@@ -45,6 +46,7 @@ import { AllParticipantsLedger } from "@/components/admin/all-participants-ledge
 import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-panel"
 import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
+import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import Loading from "./loading"
 
 interface NavItem {
@@ -62,6 +64,7 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [pendingOtpCount, setPendingOtpCount] = useState(0)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024)
@@ -102,6 +105,19 @@ export default function AdminDashboard() {
     verifyAdminAccess()
   }, [router])
 
+  useEffect(() => {
+    const fetchOtpCount = async () => {
+      try {
+        const res = await fetch("/api/admin/pending-otp-approvals")
+        const data = await res.json()
+        if (data.success) setPendingOtpCount(data.count || 0)
+      } catch (_) {}
+    }
+    fetchOtpCount()
+    const interval = setInterval(fetchOtpCount, 20000)
+    return () => clearInterval(interval)
+  }, [])
+
   const navItems: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, section: "MAIN MENU" },
     { id: "participants", label: "Participants", icon: Users, section: "MAIN MENU" },
@@ -110,6 +126,7 @@ export default function AdminDashboard() {
     { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
     { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
+    { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
     { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
@@ -156,6 +173,8 @@ export default function AdminDashboard() {
         return <DeleteParticipantsPanel />
       case "send-notifications":
         return <SendNotificationPanel />
+      case "otp-approvals":
+        return <OtpApprovalsPanel />
       case "p2p-settings":
         return <P2PModeTogglePanel />
       default:
@@ -208,7 +227,12 @@ export default function AdminDashboard() {
                     }`}
                   >
                     <item.icon className="h-4 w-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
+                    <span className="text-sm font-medium flex-1">{item.label}</span>
+                    {item.id === "otp-approvals" && pendingOtpCount > 0 && (
+                      <span className="ml-auto flex-shrink-0 min-w-[20px] h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center px-1.5">
+                        {pendingOtpCount}
+                      </span>
+                    )}
                   </button>
                 ))}
               </nav>
