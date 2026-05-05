@@ -1415,7 +1415,7 @@ export default function DashboardHome() {
             </button>
             
             {/* Functional Notification Bell */}
-            <UserNotificationsBell userEmail={participantData.email} />
+            <UserNotificationsBell userEmail={participantData.email ?? ""} />
             
             {/* Logout Button */}
             
