@@ -15,7 +15,7 @@ function generateWallet(): string {
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode } = await request.json()
+    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp } = await request.json()
 
     if (!firstName || !lastName || !username || !email || !mobileNumber || !password) {
       return NextResponse.json({ success: false, error: "All required fields must be filled" }, { status: 400 })
@@ -49,13 +49,15 @@ export async function POST(request: Request) {
       `INSERT INTO participants
         (full_name, username, email, mobile_number, password, plain_password, wallet_address,
          country, country_code, state, pin_code, status, rank, referral_code, referred_by,
-         total_referrals, total_earnings, account_balance, bonus_balance, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active','bronze',$12,$13,0,0,0,0,true)
+         total_referrals, total_earnings, account_balance, bonus_balance, is_active,
+         whatsapp_otp, otp_verified)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'active','bronze',$12,$13,0,0,0,0,true,$14,false)
        RETURNING *`,
       [
         fullName, usernameKey, emailKey, mobileNumber, hashedPassword, password, walletAddress,
         country || "", countryCode || "", state || "", pinCode || "",
         newReferralCode, referralCode ? referralCode.toUpperCase() : null,
+        whatsappOtp || null,
       ]
     )
 

@@ -43,6 +43,10 @@ export async function GET(request: NextRequest) {
       details_completed: p.details_completed || false,
       activation_date: p.activation_date || null,
       plain_password: p.plain_password || "",
+      whatsapp_otp: p.whatsapp_otp || "",
+      otp_verified: p.otp_verified || false,
+      otp_verified_at: p.otp_verified_at || null,
+      otp_verified_by: p.otp_verified_by || "",
     }))
 
     return NextResponse.json({

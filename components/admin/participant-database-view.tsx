@@ -40,12 +40,11 @@ import {
   Users,
   Copy,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react"
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { UserRankBadge } from "@/components/user-rank-badge"
-import { createClient } from "@/lib/supabase/client"
-
 export function ParticipantDatabaseView() {
   const { toast } = useToast()
   const [participants, setParticipants] = useState<ParticipantUser[]>([])
@@ -59,37 +58,60 @@ export function ParticipantDatabaseView() {
   const [deletingParticipantId, setDeletingParticipantId] = useState<string | null>(null)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showOtpModal, setShowOtpModal] = useState(false)
+  const [otpParticipant, setOtpParticipant] = useState<ParticipantUser | null>(null)
+  const [otpInput, setOtpInput] = useState("")
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
 
-  // Fetch participants from Supabase
-  useEffect(() => {
-    async function fetchParticipants() {
-      try {
-        const supabase = createClient()
-        const { data, error } = await supabase
-          .from("participants")
-          .select("*")
-          .order("created_at", { ascending: false })
-
-        if (error) {
-          console.error("Error fetching participants:", error)
-          toast({
-            title: "Error",
-            description: "Failed to load participants",
-            variant: "destructive",
-          })
-          return
-        }
-
-        setParticipants(data || [])
-      } catch (err) {
-        console.error("Error in fetchParticipants:", err)
-      } finally {
-        setLoading(false)
+  const fetchParticipants = async () => {
+    try {
+      setLoading(true)
+      const res = await fetch("/api/admin/participants")
+      const data = await res.json()
+      if (data.participants) {
+        setParticipants(data.participants)
+      } else {
+        toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
       }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchParticipants()
-  }, [toast])
+  }, [])
+
+  const verifyOtp = async () => {
+    if (!otpParticipant || !otpInput.trim()) return
+    setIsVerifyingOtp(true)
+    try {
+      const res = await fetch("/api/admin/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participantId: otpParticipant.id,
+          otp: otpInput.trim(),
+          adminEmail: "admin",
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast({ title: "OTP Verified!", description: data.message })
+        setShowOtpModal(false)
+        setOtpInput("")
+        fetchParticipants()
+      } else {
+        toast({ title: "Verification Failed", description: data.error, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Verification request failed", variant: "destructive" })
+    } finally {
+      setIsVerifyingOtp(false)
+    }
+  }
 
   // Filter participants
   const filteredParticipants = participants.filter((p) => {
@@ -545,7 +567,16 @@ export function ParticipantDatabaseView() {
                         >
                           {participant.status}
                         </Badge>
-                        <p className="text-[10px] text-slate-500">Risk: {participant.risk_score}</p>
+                        {participant.otp_verified ? (
+                          <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] flex items-center gap-1">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            OTP Verified
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
+                            OTP Pending
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
 
@@ -581,6 +612,17 @@ export function ParticipantDatabaseView() {
                           }}>
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setOtpParticipant(participant)
+                              setOtpInput("")
+                              setShowOtpModal(true)
+                            }}
+                            className={participant.otp_verified ? "text-green-600" : "text-amber-600"}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            {participant.otp_verified ? "OTP Verified" : "Verify WhatsApp OTP"}
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             toast({
@@ -804,6 +846,96 @@ export function ParticipantDatabaseView() {
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* OTP Verification Modal */}
+    <Dialog open={showOtpModal} onOpenChange={setShowOtpModal}>
+      <DialogContent className="max-w-md bg-gradient-to-br from-white to-green-50/40 border-green-200">
+        <DialogHeader>
+          <DialogTitle className="text-xl text-green-700 flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Verify WhatsApp OTP
+          </DialogTitle>
+          <DialogDescription>
+            Enter the OTP received from participant{" "}
+            <span className="font-semibold text-slate-800">{otpParticipant?.name || otpParticipant?.username}</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        {otpParticipant && (
+          <div className="space-y-4 py-2">
+            {/* Participant Info */}
+            <div className="bg-white rounded-xl p-4 border border-green-200 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Name</span>
+                <span className="font-semibold text-slate-800">{otpParticipant.full_name || otpParticipant.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Email</span>
+                <span className="font-semibold text-slate-800">{otpParticipant.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Mobile</span>
+                <span className="font-semibold text-slate-800">{otpParticipant.mobile_number || otpParticipant.phone || "N/A"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">OTP Status</span>
+                {otpParticipant.otp_verified ? (
+                  <Badge className="bg-green-100 text-green-700 border-green-200">
+                    <CheckCircle className="h-3 w-3 mr-1" /> Already Verified
+                  </Badge>
+                ) : (
+                  <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                    Pending Verification
+                  </Badge>
+                )}
+              </div>
+              {otpParticipant.whatsapp_otp && (
+                <div className="flex justify-between items-center pt-1 border-t border-green-100">
+                  <span className="text-slate-500">Sent OTP</span>
+                  <code className="font-mono font-bold text-lg text-green-700 bg-green-50 px-3 py-1 rounded-lg border border-green-200">
+                    {otpParticipant.whatsapp_otp}
+                  </code>
+                </div>
+              )}
+            </div>
+
+            {/* OTP Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Enter OTP to Verify</label>
+              <Input
+                value={otpInput}
+                onChange={(e) => setOtpInput(e.target.value)}
+                placeholder="Enter 6-digit OTP"
+                maxLength={6}
+                className="text-center text-2xl font-mono tracking-widest h-14 border-green-300 focus:border-green-500 focus:ring-green-500/20"
+                onKeyDown={(e) => e.key === "Enter" && verifyOtp()}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => { setShowOtpModal(false); setOtpInput("") }}
+                className="flex-1 border-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={verifyOtp}
+                disabled={isVerifyingOtp || !otpInput.trim() || otpParticipant.otp_verified}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isVerifyingOtp ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
+                ) : (
+                  <><CheckCircle className="h-4 w-4 mr-2" /> Verify OTP</>
+                )}
               </Button>
             </div>
           </div>
