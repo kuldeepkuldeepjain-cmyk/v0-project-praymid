@@ -25,9 +25,9 @@ export function ActivityFeed({ activities, maxHeight = "400px" }: ActivityFeedPr
         return Settings
       case "admin_action":
         return Settings
-      case "new_registration":
+      case "new_registration" as string:
         return UserPlus
-      case "payment_submitted":
+      case "payment_submitted" as string:
         return CreditCard
       default:
         return Activity
@@ -42,9 +42,9 @@ export function ActivityFeed({ activities, maxHeight = "400px" }: ActivityFeedPr
         return { icon: "text-red-500", bg: "bg-red-500/10" }
       case "flag_user":
         return { icon: "text-amber-500", bg: "bg-amber-500/10" }
-      case "new_registration":
+      case "new_registration" as string:
         return { icon: "text-[#7c3aed]", bg: "bg-[#7c3aed]/10" }
-      case "payment_submitted":
+      case "payment_submitted" as string:
         return { icon: "text-[#E85D3B]", bg: "bg-[#E85D3B]/10" }
       case "login":
         return { icon: "text-[#22d3ee]", bg: "bg-[#22d3ee]/10" }

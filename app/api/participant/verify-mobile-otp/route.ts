@@ -10,63 +10,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Mobile number and OTP code are required" }, { status: 400 })
     }
 
-    // Try Supabase DB first
     try {
-      const supabase = getServiceClient()
+      const db = getPool()!
+      const otpRes = await db.query(
+        "SELECT * FROM mobile_verification_otps WHERE mobile_number = $1 AND is_verified = false AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
+        [mobile_number]
+      )
+      const otpRecord = otpRes.rows[0]
 
-      const { data: otpRecord, error: queryError } = await supabase
-        .from("mobile_verification_otps")
-        .select("*")
-        .eq("mobile_number", mobile_number)
-        .eq("is_verified", false)
-        .gt("expires_at", new Date().toISOString())
-        .maybeSingle()
-
-      if (!queryError && otpRecord) {
-        // Found in DB — verify against it
+      if (otpRecord) {
         if (otpRecord.otp_code !== otp_code) {
           const newCount = otpRecord.attempt_count + 1
-          await supabase
-            .from("mobile_verification_otps")
-            .update({ attempt_count: newCount })
-            .eq("id", otpRecord.id)
-
+          await db.query("UPDATE mobile_verification_otps SET attempt_count = $1 WHERE id = $2", [newCount, otpRecord.id])
           const remaining = 5 - newCount
           if (remaining <= 0) {
-            return NextResponse.json(
-              { error: "Maximum OTP attempts exceeded. Request a new OTP." },
-              { status: 429 }
-            )
+            return NextResponse.json({ error: "Maximum OTP attempts exceeded. Request a new OTP." }, { status: 429 })
           }
-          return NextResponse.json(
-            { error: "Incorrect OTP", message: `${remaining} attempts remaining` },
-            { status: 400 }
-          )
+          return NextResponse.json({ error: "Incorrect OTP", message: `${remaining} attempts remaining` }, { status: 400 })
         }
 
-        await supabase
-          .from("mobile_verification_otps")
-          .update({ is_verified: true, verified_at: new Date().toISOString() })
-          .eq("id", otpRecord.id)
-
-        return NextResponse.json(
-          { success: true, message: "Mobile number verified successfully", mobile_number },
-          { status: 200 }
-        )
+        await db.query("UPDATE mobile_verification_otps SET is_verified = true, verified_at = NOW() WHERE id = $1", [otpRecord.id])
+        return NextResponse.json({ success: true, message: "Mobile number verified successfully", mobile_number })
       }
-      // queryError means DB unreachable — fall through to memory store
     } catch {
-      // DB unreachable — fall through to memory store
+      // fall through to memory store
     }
 
-    // Fallback: check in-memory store (used in v0 preview sandbox)
     const memRecord = otpMemoryStore.get(mobile_number)
-
     if (!memRecord || memRecord.verified || Date.now() > memRecord.expiresAt) {
-      return NextResponse.json(
-        { error: "OTP expired or not found. Please request a new OTP." },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "OTP expired or not found. Please request a new OTP." }, { status: 400 })
     }
 
     if (memRecord.otp !== otp_code) {
@@ -74,24 +46,13 @@ export async function POST(request: NextRequest) {
       const remaining = 5 - memRecord.attemptCount
       if (remaining <= 0) {
         otpMemoryStore.delete(mobile_number)
-        return NextResponse.json(
-          { error: "Maximum OTP attempts exceeded. Request a new OTP." },
-          { status: 429 }
-        )
+        return NextResponse.json({ error: "Maximum OTP attempts exceeded. Request a new OTP." }, { status: 429 })
       }
-      return NextResponse.json(
-        { error: "Incorrect OTP", message: `${remaining} attempts remaining` },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Incorrect OTP", message: `${remaining} attempts remaining` }, { status: 400 })
     }
 
-    // Mark as verified in memory
     memRecord.verified = true
-
-    return NextResponse.json(
-      { success: true, message: "Mobile number verified successfully", mobile_number },
-      { status: 200 }
-    )
+    return NextResponse.json({ success: true, message: "Mobile number verified successfully", mobile_number })
   } catch (error) {
     console.error("[verify-otp] Unexpected error:", error)
     return NextResponse.json({ error: "An error occurred while verifying OTP" }, { status: 500 })

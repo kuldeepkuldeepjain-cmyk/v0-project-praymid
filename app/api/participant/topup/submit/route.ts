@@ -6,94 +6,44 @@ export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const body = await request.json()
-    const { userId, userEmail, amount, transactionHash, screenshotBase64, note } = body
+    const { userId, userEmail, amount, transactionHash, screenshotBase64, note } = await request.json()
 
-    // Validate required fields
-    if (!userId || !userEmail || !amount || !transactionHash || !screenshotBase64) {
-      return NextResponse.json(
-        { success: false, message: "Missing required fields" },
-        { status: 400 }
-      )
+    if (!userId || !userEmail || !amount || !transactionHash) {
+      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
-    // Validate amount
     const parsedAmount = parseFloat(amount)
     if (isNaN(parsedAmount) || parsedAmount < 5) {
-      return NextResponse.json(
-        { success: false, message: "Invalid amount. Minimum is $5" },
-        { status: 400 }
-      )
+      return NextResponse.json({ success: false, message: "Invalid amount. Minimum is $5" }, { status: 400 })
     }
 
     const db = getPool()!
 
-    // Check if transaction hash already exists (prevent duplicates)
-    const { data: existingTx } = await supabase
-      .from("topup_requests")
-      .select("id")
-      .eq("transaction_id", transactionHash)
-      .maybeSingle()
-
-    if (existingTx) {
-      return NextResponse.json(
-        { success: false, message: "This transaction has already been submitted" },
-        { status: 400 }
-      )
+    const existingTx = await db.query("SELECT id FROM topup_requests WHERE transaction_id = $1", [transactionHash])
+    if (existingTx.rows.length > 0) {
+      return NextResponse.json({ success: false, message: "This transaction has already been submitted" }, { status: 400 })
     }
 
-    // Get participant info — look up by email
-    const { data: participant, error: participantError } = await supabase
-      .from("participants")
-      .select("id")
-      .eq("email", userEmail)
-      .maybeSingle()
-
-    if (participantError || !participant) {
-      return NextResponse.json(
-        { success: false, message: "User not found" },
-        { status: 404 }
-      )
+    const participantRes = await db.query("SELECT id FROM participants WHERE email = $1", [userEmail])
+    if (participantRes.rows.length === 0) {
+      return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
     }
+    const participant = participantRes.rows[0]
 
-    // Create topup request record — transaction_id is the DB column name
-    const { error: insertError } = await supabase.from("topup_requests").insert({
-      participant_id: participant.id,
-      participant_email: userEmail,
-      amount: parsedAmount,
-      transaction_id: transactionHash,
-      screenshot_url: screenshotBase64,
-      admin_notes: note || null,
-      payment_method: "crypto",
-      status: "pending",
-    })
-
-    if (insertError) {
-      console.error("Insert error:", insertError)
-      return NextResponse.json(
-        { success: false, message: "Failed to submit request" },
-        { status: 500 }
-      )
-    }
-
-    // Log activity
-    await supabase.from("activity_logs").insert({
-      actor_id: participant.id,
-      actor_email: userEmail,
-      action: "topup_requested",
-      target_type: "wallet",
-      details: `Submitted $${parsedAmount} USDT top-up request (tx: ${transactionHash.slice(0, 12)}...)`,
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: "Top-up request submitted successfully",
-    })
-  } catch (error) {
-    console.error("Top-up submit API error:", error)
-    return NextResponse.json(
-      { success: false, message: "Internal server error" },
-      { status: 500 }
+    await db.query(
+      `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status)
+       VALUES ($1, $2, $3, $4, 'crypto', 'pending')`,
+      [participant.id, userEmail, parsedAmount, transactionHash]
     )
+
+    await db.query(
+      `INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)`,
+      [participant.id, userEmail, "topup_requested", "wallet", `Submitted $${parsedAmount} top-up (tx: ${transactionHash.slice(0,12)}...)`]
+    )
+
+    return NextResponse.json({ success: true, message: "Top-up request submitted successfully" })
+  } catch (error) {
+    console.error("Top-up submit error:", error)
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }

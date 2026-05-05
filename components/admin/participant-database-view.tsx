@@ -120,8 +120,8 @@ export function ParticipantDatabaseView() {
       p.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.phone?.includes(searchQuery) ||
-      p.participantNumber?.toString().includes(searchQuery) ||
-      p.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.participant_number?.toString().includes(searchQuery) ||
+      p.participant_number?.toString().includes(searchQuery) ||
       p.country?.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || p.status === statusFilter

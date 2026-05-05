@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 import { Trophy, ArrowLeft, Crown, Medal, TrendingUp, Coins, Sparkles, Zap, Star, Award, TrendingDown, ArrowUp, ArrowDown, User } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
 interface LeaderboardEntry {
   position: number
@@ -80,23 +79,18 @@ export default function LeaderboardContent() {
       const data = JSON.parse(participantData)
       const userEmail = data.email
 
-      const supabase = createClient()
+      const res = await fetch("/api/participant/me")
+      const meData = await res.json()
+      const userData: any = meData.participant || null
 
-      // Get user's data
-      const { data: userData, error: userError } = await supabase
-        .from("participants")
-        .select("username, email, total_earnings, account_balance")
-        .eq("email", userEmail)
-        .single()
-
-      if (userError || !userData) return
+      if (!userData) return
 
       // Generate daily random rank between 10000-18000
       const today = new Date()
       const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()
       
       // Create seed from user email for consistency
-      const emailSeed = userEmail.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      const emailSeed = userEmail.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
       const combinedSeed = seed + emailSeed
       
       // Seeded random for daily rank
