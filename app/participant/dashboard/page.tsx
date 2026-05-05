@@ -553,11 +553,11 @@ function DailySpinWheel({
     
     // Update database with deduction
     try {
-      const supabase = createClient()
-      await supabase
-        .from("participants")
-        .update({ account_balance: balanceAfterDeduction })
-        .eq("email", userEmail)
+      await fetch("/api/participant/spin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail, action: "deduct", amount: SPIN_COST }),
+      })
     } catch (error) {
       console.error("[v0] Error updating wallet after deduction:", error)
     }
@@ -615,16 +615,10 @@ function DailySpinWheel({
       if (won.type === "ticket") {
         // Create free ticket coupon in database
         try {
-          const supabase = createClient()
-          const expiresAt = new Date()
-          expiresAt.setHours(expiresAt.getHours() + 24)
-          
-          await supabase.from("spin_coupons").insert({
-            user_email: userEmail,
-            coupon_type: "free_bet",
-            amount: 5,
-            expires_at: expiresAt.toISOString(),
-            is_used: false,
+          await fetch("/api/participant/spin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, action: "coupon", prizeType: "free_bet", amount: 5 }),
           })
           
           toast({
@@ -642,13 +636,11 @@ function DailySpinWheel({
         
         // Update database with winnings
         try {
-          const supabase = createClient()
-          await supabase
-            .from("participants")
-            .update({ account_balance: finalBalance })
-            .eq("email", userEmail)
-          
-          console.log("[v0] Wallet updated - Deducted: $5, Won: $" + won.value + ", Final Balance: $" + finalBalance)
+          await fetch("/api/participant/spin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, action: "credit", amount: won.value }),
+          })
         } catch (error) {
           console.error("[v0] Error updating wallet with winnings:", error)
         }
