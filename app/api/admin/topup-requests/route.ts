@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       const newBalance = Number(pRes[0].account_balance || 0) + Number(topup.amount)
       await db.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [newBalance, topup.participant_id])
       await db.query(
-        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), reviewed_by = $1, admin_notes = $2 WHERE id = $3",
+        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), reviewed_by = $1, admin_notes = ?WHERE id = $3",
         [adminEmail, adminNotes || null, requestId]
       )
       await db.query(
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     await db.query(
-      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), reviewed_by = $1, admin_notes = $2 WHERE id = $3",
+      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), reviewed_by = $1, admin_notes = ?WHERE id = $3",
       [adminEmail, rejectionReason || adminNotes || null, requestId]
     )
     await db.query(

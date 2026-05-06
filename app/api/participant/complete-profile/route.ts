@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
     const db = getPool()!
     const { rows: existing } = await db.query(
-      "SELECT email FROM participants WHERE wallet_address = $1 AND email != $2", [wallet_address, email]
+      "SELECT email FROM participants WHERE wallet_address = ?AND email != $2", [wallet_address, email]
     )
     if (existing.length > 0) {
       return NextResponse.json({ error: "This wallet address is already registered to another account" }, { status: 400 })

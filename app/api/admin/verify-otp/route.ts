@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch participant
     const result = await db.query(
-      "SELECT id, full_name, email, whatsapp_otp, otp_verified FROM participants WHERE id = $1 LIMIT 1",
+      "SELECT id, full_name, email, whatsapp_otp, otp_verified FROM participants WHERE id = ?LIMIT 1",
       [participantId]
     )
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Mark as verified
     await db.query(
-      `UPDATE participants SET otp_verified = true, otp_verified_at = NOW(), otp_verified_by = $1 WHERE id = $2`,
+      `UPDATE participants SET otp_verified = true, otp_verified_at = NOW(), otp_verified_by = ?WHERE id = $2`,
       [adminEmail || "admin", participantId]
     )
 
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     await db.query(
       `INSERT INTO audit_logs (action, description, admin_email) VALUES ($1, $2, $3)`,
       ["OTP_VERIFIED", `WhatsApp OTP verified for participant ${participant.email}`, adminEmail || "admin"]
-    ).catch(() => {})
+    ).catch(() => { })
 
     return NextResponse.json({
       success: true,

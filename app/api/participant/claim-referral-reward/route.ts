@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newBalance = participant.account_balance + REWARD_AMOUNT
-    await db.query("UPDATE participants SET account_balance = $1 WHERE email = $2", [newBalance, email])
+    await db.query("UPDATE participants SET account_balance = ?WHERE email = $2", [newBalance, email])
     await db.query(
       "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'credit',$2,$3,$4,$5)",
       [email, REWARD_AMOUNT, `Referral reward - ${REFERRAL_TARGET} friends joined`, participant.account_balance, newBalance]

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const cutoffTime = new Date(Date.now() - PAYOUT_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString()
 
     const expiredRes = await db.query(
-      `SELECT * FROM payout_requests WHERE status='pending' AND created_at<$1 ORDER BY created_at ASC LIMIT 50`,
+      `SELECT * FROM payout_requests WHERE status='pending' AND created_at<?ORDER BY created_at ASC LIMIT 50`,
       [cutoffTime]
     )
     const expiredPayouts = expiredRes.rows
@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
     for (const payout of expiredPayouts) {
       try {
         const nextRes = await db.query(
-          `SELECT id,email,username,full_name,account_balance FROM participants WHERE email!=$1 ORDER BY created_at DESC LIMIT 5`,
+          `SELECT id,email,username,full_name,account_balance FROM participants WHERE email!=?ORDER BY created_at DESC LIMIT 5`,
           [payout.participant_email]
         )
         if (!nextRes.rows.length) continue
         const nextParticipant = nextRes[0]
         const newBalance = Number(nextParticipant.account_balance) + Number(payout.amount)
 
-        await db.query(`UPDATE participants SET account_balance=$1 WHERE id=$2`, [newBalance, nextParticipant.id])
+        await db.query(`UPDATE participants SET account_balance=?WHERE id=$2`, [newBalance, nextParticipant.id])
         await db.query(
           `INSERT INTO transactions(participant_email,participant_id,type,amount,balance_before,balance_after,description) VALUES($1,$2,'payout_redirect',$3,$4,$5,$6)`,
           [nextParticipant.email, nextParticipant.id, payout.amount, nextParticipant.account_balance, newBalance, `Auto-redirected payout from expired request #${payout.id}`]

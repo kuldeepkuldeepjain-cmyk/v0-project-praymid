@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000)
 
     const contribRes = await db.query(
-      `SELECT id,participant_email,amount,reviewed_at FROM payment_submissions WHERE status='approved' AND matched_payout_id IS NULL AND reviewed_at<=$1 ORDER BY reviewed_at ASC LIMIT 50`,
+      `SELECT id,participant_email,amount,reviewed_at FROM payment_submissions WHERE status='approved' AND matched_payout_id IS NULL AND reviewed_at<=?ORDER BY reviewed_at ASC LIMIT 50`,
       [thirtyMinutesAgo.toISOString()]
     )
     const unmatchedContributions = contribRes.rows
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     for (const contribution of unmatchedContributions) {
       try {
         const payoutRes = await db.query(
-          `SELECT id,serial_number FROM payout_requests WHERE participant_email=$1 AND status='pending' AND matched_contribution_id IS NULL ORDER BY created_at ASC LIMIT 1`,
+          `SELECT id,serial_number FROM payout_requests WHERE participant_email=?AND status='pending' AND matched_contribution_id IS NULL ORDER BY created_at ASC LIMIT 1`,
           [contribution.participant_email]
         )
         if (!payoutRes.rows.length) {
@@ -41,18 +41,18 @@ export async function POST(request: NextRequest) {
         }
         const payout = payoutRes[0]
 
-        await db.query(`UPDATE payment_submissions SET matched_payout_id=$1, matched_at=$2 WHERE id=$3`, [payout.id, now.toISOString(), contribution.id])
+        await db.query(`UPDATE payment_submissions SET matched_payout_id=$1, matched_at=?WHERE id=$3`, [payout.id, now.toISOString(), contribution.id])
         await db.query(`UPDATE payout_requests SET matched_contribution_id=$1, matched_at=$2, status='in_process' WHERE id=$3`, [contribution.id, now.toISOString(), payout.id])
 
         await db.query(
           `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'success','Payout Matched',$2,false)`,
           [contribution.participant_email, `Your contribution has been matched with payout request #${payout.serial_number}. Processing in progress.`]
-        ).catch(() => {})
+        ).catch(() => { })
 
         await db.query(
           `INSERT INTO activity_logs(actor_email,action,details,target_type) VALUES('system','auto_match_payout_contribution',$1,'payment_submission')`,
           [`Auto-matched contribution ${contribution.id} with payout #${payout.serial_number} for ${contribution.participant_email}`]
-        ).catch(() => {})
+        ).catch(() => { })
 
         matchedCount++
         matchResults.push({ contribution_id: contribution.id, payout_id: payout.id, payout_serial: payout.serial_number, status: "success" })

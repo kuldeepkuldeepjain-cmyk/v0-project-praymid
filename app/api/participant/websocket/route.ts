@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = getPool()!
-    const result = await db.query("SELECT email FROM participants WHERE email = $1 LIMIT 1", [email])
+    const result = await db.query("SELECT email FROM participants WHERE email = ?LIMIT 1", [email])
     if (result.rows.length === 0) {
       return new Response("Unauthorized", { status: 401 })
     }

@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
 
     const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
-    await db.query(`UPDATE participants SET ${balanceField} = $1 WHERE id = $2`, [newBalance, participant.id])
+    await db.query(`UPDATE participants SET ${balanceField} = ?WHERE id = $2`, [newBalance, participant.id])
     await db.query(
       "INSERT INTO transactions (participant_id, participant_email, type, amount, description, reference_id, status, balance_before, balance_after) VALUES ($1,$2,$3,$4,$5,$6,'completed',$7,$8)",
       [participant.id, participant_email, useReferralBalance ? "referral_earning" : "prediction_bet", -Number(amount),
-       `Placed ${prediction_type} trade on ${crypto_pair}`, prediction.id, availableBalance, newBalance]
+      `Placed ${prediction_type} trade on ${crypto_pair}`, prediction.id, availableBalance, newBalance]
     )
     return NextResponse.json({ success: true, prediction, new_balance: newBalance, balance_source: useReferralBalance ? "referral" : "wallet" })
   } catch (error) {
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
     if (!participant_email) return NextResponse.json({ error: "participant_email is required" }, { status: 400 })
     const db = getPool()!
     const { rows } = await db.query(
-      "SELECT * FROM predictions WHERE participant_email = $1 ORDER BY created_at DESC LIMIT $2",
+      "SELECT * FROM predictions WHERE participant_email = ?ORDER BY created_at DESC LIMIT $2",
       [participant_email, limit]
     )
     return NextResponse.json({ success: true, predictions: rows })

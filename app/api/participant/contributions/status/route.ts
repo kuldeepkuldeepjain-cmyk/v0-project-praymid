@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const { rows } = await db.query(
       `SELECT id, amount, status, created_at, matched_at, matched_payout_id, participant_email
        FROM payment_submissions
-       WHERE participant_email = $1 AND status = 'in_process' AND matched_payout_id IS NOT NULL
+       WHERE participant_email = ?AND status = 'in_process' AND matched_payout_id IS NOT NULL
        ORDER BY matched_at DESC NULLS LAST LIMIT 1`,
       [email]
     )

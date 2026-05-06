@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     const dupCheck = await db.query("SELECT id FROM topup_requests WHERE transaction_id = $1", [transactionHash])
     if (dupCheck.rows.length > 0) return NextResponse.json({ success: false, message: "Transaction already processed" }, { status: 400 })
 
-    const pRes = await db.query("SELECT id, account_balance FROM participants WHERE username = $1 OR email = $1", [userId])
+    const pRes = await db.query("SELECT id, account_balance FROM participants WHERE username = ?OR email = $1", [userId])
     const participant = pRes[0]
     if (!participant) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
 
@@ -29,12 +29,12 @@ export async function POST(request: NextRequest) {
     )
 
     const newBalance = Number(participant.account_balance || 0) + parsedAmount
-    await db.query("UPDATE participants SET account_balance=$1 WHERE id=$2", [newBalance, participant.id])
+    await db.query("UPDATE participants SET account_balance=?WHERE id=$2", [newBalance, participant.id])
     await db.query("UPDATE topup_requests SET status='completed' WHERE transaction_id=$1", [transactionHash])
     await db.query(
       "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,'wallet_topup','wallet',$3)",
       [participant.id, userId, `Topped up $${parsedAmount} USDT. New balance: $${newBalance}`]
-    ).catch(() => {})
+    ).catch(() => { })
 
     return NextResponse.json({ success: true, message: "Top-up successful", newBalance })
   } catch (error) {
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     if (!userId) return NextResponse.json({ success: false, message: "User ID required" }, { status: 400 })
     const db = getPool()!
     const result = await db.query(
-      "SELECT * FROM topup_requests WHERE participant_email = $1 ORDER BY created_at DESC LIMIT 20",
+      "SELECT * FROM topup_requests WHERE participant_email = ?ORDER BY created_at DESC LIMIT 20",
       [userId]
     )
     return NextResponse.json({ success: true, topups: result.rows })

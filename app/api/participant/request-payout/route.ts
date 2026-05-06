@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newBalance = participant.account_balance - amount
-    await db.query("UPDATE participants SET account_balance = $1, bep20_address = $2 WHERE email = $3",
+    await db.query("UPDATE participants SET account_balance = $1, bep20_address = ?WHERE email = $3",
       [newBalance, bep20_address, email])
 
     const { rows: payoutRows } = await db.query(

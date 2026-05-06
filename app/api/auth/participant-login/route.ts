@@ -34,7 +34,7 @@ export async function POST(request: Request) {
           passwordValid = participant.password === password
           if (passwordValid) {
             const hashed = await bcrypt.hash(password, 10)
-            await db.query("UPDATE participants SET password = $1, plain_password = $2 WHERE id = $3", [hashed, password, participant.id]).catch(() => {})
+            await db.query("UPDATE participants SET password = $1, plain_password = ?WHERE id = $3", [hashed, password, participant.id]).catch(() => { })
           }
         }
 
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
         }
 
-        await db.query("UPDATE participants SET last_login = NOW() WHERE id = $1", [participant.id]).catch(() => {})
+        await db.query("UPDATE participants SET last_login = NOW() WHERE id = $1", [participant.id]).catch(() => { })
         await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
 
         return NextResponse.json({

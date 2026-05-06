@@ -39,13 +39,13 @@ export async function POST(request: NextRequest) {
     if (!submission) return NextResponse.json({ error: "Failed to create submission" }, { status: 500 })
 
     if (bep20Address) {
-      await db.query("UPDATE participants SET bep20_address = $1 WHERE email = $2", [bep20Address, email]).catch(() => {})
+      await db.query("UPDATE participants SET bep20_address = ?WHERE email = $2", [bep20Address, email]).catch(() => { })
     }
 
     await db.query(
       "INSERT INTO activity_logs (action, actor_id, actor_email, target_type, details) VALUES ($1,$2,$3,$4,$5)",
       ["payment_submitted", participant.id, email, "payment", `Payment $${submission.amount} via ${paymentMethod} TxHash: ${transactionHash}`]
-    ).catch(() => {})
+    ).catch(() => { })
 
     const scheduleResult = await scheduleContributionAutoMatch(submission.id, email, 1800)
     if (!scheduleResult.success) console.warn("[v0] Auto-match schedule failed:", scheduleResult.error)
@@ -100,12 +100,12 @@ export async function PATCH(request: Request) {
         await db.query(
           "UPDATE participants SET status='active', is_active=true, account_balance=$1, total_earnings=$2, activation_date=NOW() WHERE email=$3",
           [newBalance, newEarnings, submission.participant_email]
-        ).catch(() => {})
+        ).catch(() => { })
         if (participant.wallet_address) {
           await db.query(
             "INSERT INTO wallet_pool (assigned_to, wallet_address, network, balance, status) VALUES ($1,$2,'BEP20',100,'active') ON CONFLICT DO NOTHING",
             [participant.id, participant.wallet_address]
-          ).catch(() => {})
+          ).catch(() => { })
         }
       }
     }
@@ -113,8 +113,8 @@ export async function PATCH(request: Request) {
     await db.query(
       "INSERT INTO activity_logs (action, actor_id, actor_email, target_type, details) VALUES ($1,'admin',$2,'payment',$3)",
       [status === "confirmed" ? "approve_payment" : "reject_payment", reviewedBy || "admin@system.com",
-       `Payment ${status} for ${submission.participant_email} - $${submission.amount}`]
-    ).catch(() => {})
+      `Payment ${status} for ${submission.participant_email} - $${submission.amount}`]
+    ).catch(() => { })
 
     return NextResponse.json({ success: true, submission: { id: submission.id, status: submission.status } })
   } catch (error) {

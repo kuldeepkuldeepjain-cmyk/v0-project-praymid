@@ -118,7 +118,7 @@ You have access to real-time platform data through tools. Use them to provide ac
         inputSchema: z.object({ email: z.string().email(), limit: z.number().default(5) }),
         execute: async ({ email, limit }) => {
           const { rows } = await db.query(
-            "SELECT type, amount, status, description, created_at FROM transactions WHERE participant_email = $1 ORDER BY created_at DESC LIMIT $2",
+            "SELECT type, amount, status, description, created_at FROM transactions WHERE participant_email = ?ORDER BY created_at DESC LIMIT $2",
             [email, limit]
           )
           return {
@@ -137,7 +137,7 @@ You have access to real-time platform data through tools. Use them to provide ac
         inputSchema: z.object({ email: z.string().email() }),
         execute: async ({ email }) => {
           const { rows } = await db.query(
-            "SELECT crypto_pair, prediction_type, amount, entry_price, status, created_at FROM predictions WHERE participant_email = $1 AND status = 'pending' ORDER BY created_at DESC",
+            "SELECT crypto_pair, prediction_type, amount, entry_price, status, created_at FROM predictions WHERE participant_email = ?AND status = 'pending' ORDER BY created_at DESC",
             [email]
           )
           return {

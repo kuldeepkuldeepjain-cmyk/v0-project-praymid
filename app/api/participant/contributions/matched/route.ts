@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const { rows: contribs } = await db.query(
       `SELECT id, amount, status, created_at, matched_payout_id, participant_id
        FROM payment_submissions
-       WHERE participant_email = $1 AND status IN ('in_process','proof_submitted') AND matched_payout_id IS NOT NULL
+       WHERE participant_email = ?AND status IN ('in_process','proof_submitted') AND matched_payout_id IS NOT NULL
        ORDER BY created_at DESC LIMIT 1`,
       [email]
     )
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     if (!contribution) {
       const { rows: pending } = await db.query(
         `SELECT id, created_at FROM payment_submissions
-         WHERE participant_email = $1 AND status IN ('pending','request_pending') AND matched_payout_id IS NULL
+         WHERE participant_email = ?AND status IN ('pending','request_pending') AND matched_payout_id IS NULL
          ORDER BY created_at DESC LIMIT 1`,
         [email]
       )

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newBalance = participant.account_balance - SPIN_COST
-    await db.query("UPDATE participants SET account_balance = $1 WHERE email = $2", [newBalance, email])
+    await db.query("UPDATE participants SET account_balance = ?WHERE email = $2", [newBalance, email])
     await db.query(
       "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_cost',$2,'Spin Wheel Entry Fee',$3,$4)",
       [email, -SPIN_COST, participant.account_balance, newBalance]
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     if (prize.amount > 0) {
       finalBalance = newBalance + prize.amount
-      await db.query("UPDATE participants SET account_balance = $1 WHERE email = $2", [finalBalance, email])
+      await db.query("UPDATE participants SET account_balance = ?WHERE email = $2", [finalBalance, email])
       await db.query(
         "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_win',$2,$3,$4,$5)",
         [email, prize.amount, `Spin Wheel Prize: ${prize.label}`, newBalance, finalBalance]

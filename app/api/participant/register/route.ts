@@ -29,14 +29,14 @@ export async function POST(request: Request) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Check duplicates
-    const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
+    const emailRows = await query("SELECT id FROM participants WHERE email = ?LIMIT 1", [emailKey])
     if (emailRows.length > 0) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
 
-    const usernameRows = await query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
+    const usernameRows = await query("SELECT id FROM participants WHERE username = ?LIMIT 1", [usernameKey])
     if (usernameRows.length > 0) return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
 
     if (referralCode) {
-      const refRows = await query("SELECT id FROM participants WHERE referral_code = $1 LIMIT 1", [referralCode.toUpperCase()])
+      const refRows = await query("SELECT id FROM participants WHERE referral_code = ?LIMIT 1", [referralCode.toUpperCase()])
       if (refRows.length === 0) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
     }
 
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     const newParticipant = inserted[0]
 
-    try { await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" }) } catch (_) {}
+    try { await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" }) } catch (_) { }
 
     return NextResponse.json({
       success: true,

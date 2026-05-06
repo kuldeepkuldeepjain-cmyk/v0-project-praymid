@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     if (!userData) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
 
     const { rows: referredUsers } = await db.query(
-      "SELECT username, email, created_at, is_active, account_balance FROM participants WHERE referred_by = $1 ORDER BY created_at DESC",
+      "SELECT username, email, created_at, is_active, account_balance FROM participants WHERE referred_by = ?ORDER BY created_at DESC",
       [userData.referral_code]
     )
 

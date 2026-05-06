@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const payoutRes = await db.query(
-      "SELECT id FROM payout_requests WHERE participant_email = $1 AND status = 'pending' AND matched_payout_id IS NULL ORDER BY created_at ASC LIMIT 1",
+      "SELECT id FROM payout_requests WHERE participant_email = ?AND status = 'pending' AND matched_payout_id IS NULL ORDER BY created_at ASC LIMIT 1",
       [participantEmail]
     )
     if (!payoutRes.rows.length) {

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     await db.query(
-      "UPDATE payment_submissions SET status = $1, reviewed_at = NOW(), rejection_reason = $2 WHERE id = $3",
+      "UPDATE payment_submissions SET status = $1, reviewed_at = NOW(), rejection_reason = ?WHERE id = $3",
       [action === "approve" ? "approved" : "rejected", action === "reject" ? (reason || "Rejected by admin") : null, contributionId]
     )
 

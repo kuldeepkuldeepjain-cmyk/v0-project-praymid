@@ -12,11 +12,11 @@ export async function GET(request: NextRequest) {
     const db = getPool()!
 
     const approvedRes = await db.query(
-      `SELECT id,amount,status,created_at,participant_email,participant_id FROM payment_submissions WHERE participant_email=$1 AND status='approved' ORDER BY created_at DESC LIMIT 1`,
+      `SELECT id,amount,status,created_at,participant_email,participant_id FROM payment_submissions WHERE participant_email=?AND status='approved' ORDER BY created_at DESC LIMIT 1`,
       [email]
     )
     const payoutRes = await db.query(
-      `SELECT id,amount,participant_email,participant_id,status,created_at FROM payout_requests WHERE participant_email=$1 AND status IN ('pending','processing','approved') ORDER BY created_at DESC LIMIT 1`,
+      `SELECT id,amount,participant_email,participant_id,status,created_at FROM payout_requests WHERE participant_email=?AND status IN ('pending','processing','approved') ORDER BY created_at DESC LIMIT 1`,
       [email]
     )
 
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       [targetParticipantId]
     )
     const walletRes = await db.query(
-      `SELECT wallet_address FROM wallet_pool WHERE assigned_to=$1 LIMIT 1`,
+      `SELECT wallet_address FROM wallet_pool WHERE assigned_to=?LIMIT 1`,
       [targetParticipantId]
     )
 

@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     try {
       const db = getPool()!
       const otpRes = await db.query(
-        "SELECT * FROM mobile_verification_otps WHERE mobile_number = $1 AND is_verified = false AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
+        "SELECT * FROM mobile_verification_otps WHERE mobile_number = ?AND is_verified = false AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
         [mobile_number]
       )
       const otpRecord = otpRes[0]
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       if (otpRecord) {
         if (otpRecord.otp_code !== otp_code) {
           const newCount = otpRecord.attempt_count + 1
-          await db.query("UPDATE mobile_verification_otps SET attempt_count = $1 WHERE id = $2", [newCount, otpRecord.id])
+          await db.query("UPDATE mobile_verification_otps SET attempt_count = ?WHERE id = $2", [newCount, otpRecord.id])
           const remaining = 5 - newCount
           if (remaining <= 0) {
             return NextResponse.json({ error: "Maximum OTP attempts exceeded. Request a new OTP." }, { status: 429 })

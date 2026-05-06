@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       )
       const pRes = await db.query("SELECT account_balance FROM participants WHERE email=$1", [prediction.participant_email])
       if (pRes[0]) {
-        await db.query("UPDATE participants SET account_balance = account_balance + $1 WHERE email=$2", [prediction.amount, prediction.participant_email])
+        await db.query("UPDATE participants SET account_balance = account_balance + ?WHERE email=$2", [prediction.amount, prediction.participant_email])
       }
       return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true })
     }
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
     if (isWin && payout > 0) {
       await db.query(
-        "UPDATE participants SET account_balance = account_balance + $1, total_earnings = COALESCE(total_earnings,0) + $2 WHERE email=$3",
+        "UPDATE participants SET account_balance = account_balance + $1, total_earnings = COALESCE(total_earnings,0) + ?WHERE email=$3",
         [payout, profitLoss, prediction.participant_email]
       )
     }

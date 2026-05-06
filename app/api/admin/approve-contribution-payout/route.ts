@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     await db.query(`UPDATE payment_submissions SET status='approved', reviewed_at=NOW() WHERE id=$1`, [paymentSubmissionId])
 
     await db.query(
-      `UPDATE participants SET account_balance=$1, status='active', is_active=true, activation_date=NOW(), next_contribution_date=$2 WHERE email=$3`,
+      `UPDATE participants SET account_balance=$1, status='active', is_active=true, activation_date=NOW(), next_contribution_date=?WHERE email=$3`,
       [newBalance, nextDate.toISOString(), participantEmail]
     )
 
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     await db.query(
       `INSERT INTO activity_logs(actor_email,action,details,target_type) VALUES('admin','contribution_and_payout_approved',$1,'payment_submission')`,
       [`Approved contribution for ${participantEmail}. Credited $150. Payout #${payoutRequestId} completed.`]
-    ).catch(() => {})
+    ).catch(() => { })
 
     return NextResponse.json({ success: true, message: "Contribution approved and payout completed", newBalance })
   } catch (error) {

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     const db = getPool()!
     const result = await db.query(
-      "UPDATE participants SET wallet_address = $1, bep20_address = $1, updated_at = NOW() WHERE email = $2 RETURNING id, email, wallet_address",
+      "UPDATE participants SET wallet_address = $1, bep20_address = $1, updated_at = NOW() WHERE email = ?RETURNING id, email, wallet_address",
       [bep20_address, email]
     )
 

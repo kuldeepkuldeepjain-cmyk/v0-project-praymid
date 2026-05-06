@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
     const db = getPool()!
     const { rows } = await db.query(
-      "SELECT id, status, amount, participant_email, participant_confirmed, dispute_status FROM payout_requests WHERE id = $1 AND participant_email = $2",
+      "SELECT id, status, amount, participant_email, participant_confirmed, dispute_status FROM payout_requests WHERE id = ?AND participant_email = $2",
       [payoutId, participantEmail]
     )
     const payout = rows[0]

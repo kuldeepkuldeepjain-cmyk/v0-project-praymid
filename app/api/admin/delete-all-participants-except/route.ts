@@ -30,13 +30,13 @@ export async function POST(request: NextRequest) {
     ]
 
     for (const { table, col } of tables) {
-      await db.query(`DELETE FROM ${table} WHERE ${col} IN (${placeholders})`, ids).catch(() => {})
+      await db.query(`DELETE FROM ${table} WHERE ${col} IN (${placeholders})`, ids).catch(() => { })
     }
 
-    await db.query(`DELETE FROM notifications WHERE user_email != $1`, [PROTECTED_EMAIL]).catch(() => {})
-    await db.query(`DELETE FROM activity_logs WHERE actor_email != $1`, [PROTECTED_EMAIL]).catch(() => {})
+    await db.query(`DELETE FROM notifications WHERE user_email != $1`, [PROTECTED_EMAIL]).catch(() => { })
+    await db.query(`DELETE FROM activity_logs WHERE actor_email != $1`, [PROTECTED_EMAIL]).catch(() => { })
 
-    const deleted = await db.query(`DELETE FROM participants WHERE email!=$1 RETURNING id`, [PROTECTED_EMAIL])
+    const deleted = await db.query(`DELETE FROM participants WHERE email!=?RETURNING id`, [PROTECTED_EMAIL])
 
     return NextResponse.json({ success: true, message: `Deleted all participants except ${PROTECTED_EMAIL}`, deletedParticipants: deleted.rowCount })
   } catch (error) {

@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
     }
 
     const rows = participantId
-      ? await dbQuery("SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE id = $1 LIMIT 1", [participantId])
-      : await dbQuery("SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE email = $1 LIMIT 1", [email])
+      ? await dbQuery("SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE id = ?LIMIT 1", [participantId])
+      : await dbQuery("SELECT id, email, full_name, otp_verified, otp_verified_at, whatsapp_otp FROM participants WHERE email = ?LIMIT 1", [email])
 
     if (rows.length === 0) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })

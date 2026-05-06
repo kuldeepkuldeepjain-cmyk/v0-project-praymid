@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     if (!queuePosition || !queueStartDate) {
       const randomPosition = Math.floor(Math.random() * (80 - 30 + 1)) + 30
       queueStartDate = now.toISOString()
-      await db.query("UPDATE participants SET queue_position = $1, queue_start_date = $2 WHERE email = $3",
+      await db.query("UPDATE participants SET queue_position = $1, queue_start_date = ?WHERE email = $3",
         [randomPosition, queueStartDate, email])
       return NextResponse.json({ success: true, position: randomPosition, startDate: queueStartDate, daysElapsed: 0 })
     }
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     const newPosition = Math.max(1, Math.ceil(queuePosition - daysElapsed * decrement))
 
     if (newPosition !== queuePosition) {
-      await db.query("UPDATE participants SET queue_position = $1 WHERE email = $2", [newPosition, email])
+      await db.query("UPDATE participants SET queue_position = ?WHERE email = $2", [newPosition, email])
     }
 
     return NextResponse.json({

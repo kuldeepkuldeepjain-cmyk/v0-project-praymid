@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const newStatus = action === "approve" ? "approved" : "rejected"
     const updated = await db.query(
-      `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), rejection_reason=$2 WHERE id=$3 AND status IN ('pending','request_pending') RETURNING id`,
+      `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), rejection_reason=?WHERE id=$3 AND status IN ('pending','request_pending') RETURNING id`,
       [newStatus, action === "reject" ? (reason || null) : null, paymentId]
     )
     if (updated.rowCount === 0) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       const newBalance = currentBalance + 150
       const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + 30)
       await db.query(
-        `UPDATE participants SET status='active', is_active=true, activation_date=NOW(), account_balance=$1, next_contribution_date=$2 WHERE email=$3`,
+        `UPDATE participants SET status='active', is_active=true, activation_date=NOW(), account_balance=$1, next_contribution_date=?WHERE email=$3`,
         [newBalance, nextDate.toISOString(), payment.participant_email]
       )
       await db.query(
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       )
     } else {
       const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + 30)
-      await db.query(`UPDATE participants SET next_contribution_date=$1 WHERE email=$2`, [nextDate.toISOString(), payment.participant_email])
+      await db.query(`UPDATE participants SET next_contribution_date=?WHERE email=$2`, [nextDate.toISOString(), payment.participant_email])
       await db.query(
         `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'error','Activation Payment Rejected',$2,false)`,
         [payment.participant_email, (reason || "Your activation payment was rejected") + ". You can try again after 30 days."]
