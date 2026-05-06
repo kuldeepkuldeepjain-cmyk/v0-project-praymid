@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const newStatus = action === "approve" ? "approved" : "rejected"
     const updated = await db.query(
-      `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), rejection_reason=?WHERE id=$3 AND status IN ('pending','request_pending') RETURNING id`,
+      `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), rejection_reason=?WHERE id=?AND status IN ('pending','request_pending') RETURNING id`,
       [newStatus, action === "reject" ? (reason || null) : null, paymentId]
     )
     if (updated.rowCount === 0) {

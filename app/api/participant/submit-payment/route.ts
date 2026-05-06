@@ -85,7 +85,7 @@ export async function PATCH(request: Request) {
     const db = getPool()!
 
     const updRes = await db.query(
-      `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), reviewed_by=$2, rejection_reason=$3 WHERE id=$4 RETURNING *`,
+      `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), reviewed_by=$2, rejection_reason=?WHERE id=?RETURNING *`,
       [status, reviewedBy || "admin", rejectionReason || null, submissionId]
     )
     const submission = updRes[0]

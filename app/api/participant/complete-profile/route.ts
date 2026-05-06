@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
     const { rows } = await db.query(
       `UPDATE participants SET full_name=$1, wallet_address=$2, full_address=$3, details_completed=true, updated_at=NOW()
-       WHERE email=$4 RETURNING *`,
+       WHERE email=?RETURNING *`,
       [full_name, wallet_address, full_address, email]
     )
     return NextResponse.json({ success: true, message: "Profile completed successfully", data: rows[0] })
