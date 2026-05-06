@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
           matchResults.push({ contribution_id: contribution.id, status: "skipped", reason: "No pending payout found" })
           continue
         }
-        const payout = payoutRes.rows[0]
+        const payout = payoutRes[0]
 
         await db.query(`UPDATE payment_submissions SET matched_payout_id=$1, matched_at=$2 WHERE id=$3`, [payout.id, now.toISOString(), contribution.id])
         await db.query(`UPDATE payout_requests SET matched_contribution_id=$1, matched_at=$2, status='in_process' WHERE id=$3`, [contribution.id, now.toISOString(), payout.id])

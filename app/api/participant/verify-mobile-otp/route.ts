@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
         "SELECT * FROM mobile_verification_otps WHERE mobile_number = $1 AND is_verified = false AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1",
         [mobile_number]
       )
-      const otpRecord = otpRes.rows[0]
+      const otpRecord = otpRes[0]
 
       if (otpRecord) {
         if (otpRecord.otp_code !== otp_code) {

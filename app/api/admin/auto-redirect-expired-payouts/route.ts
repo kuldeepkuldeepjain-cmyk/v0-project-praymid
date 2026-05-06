@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
           [payout.participant_email]
         )
         if (!nextRes.rows.length) continue
-        const nextParticipant = nextRes.rows[0]
+        const nextParticipant = nextRes[0]
         const newBalance = Number(nextParticipant.account_balance) + Number(payout.amount)
 
         await db.query(`UPDATE participants SET account_balance=$1 WHERE id=$2`, [newBalance, nextParticipant.id])

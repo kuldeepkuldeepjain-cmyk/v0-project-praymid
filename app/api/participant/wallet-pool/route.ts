@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     if (existing.rows.length > 0) {
       await db.query(
         "UPDATE wallet_pool SET status = $1, assigned_to = $2 WHERE id = $3",
-        [assignedTo ? "assigned" : "active", assignedTo || null, existing.rows[0].id]
+        [assignedTo ? "assigned" : "active", assignedTo || null, existing[0].id]
       )
     } else {
       await db.query(

@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const db = getPool()!
 
     const pRes = await db.query("SELECT id, email FROM participants WHERE email = $1", [userId])
-    const participant = pRes.rows[0]
+    const participant = pRes[0]
     if (!participant) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
 
     await db.query(

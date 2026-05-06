@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
-    const participant = result.rows[0]
+    const participant = result[0]
 
     if (participant.otp_verified) {
       return NextResponse.json({ success: false, error: "OTP already verified for this participant" }, { status: 400 })

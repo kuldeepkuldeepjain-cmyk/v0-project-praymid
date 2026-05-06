@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentRes = await db.query(`SELECT * FROM payment_submissions WHERE id = $1`, [paymentId])
-    const payment = paymentRes.rows[0]
+    const payment = paymentRes[0]
     if (!payment) return NextResponse.json({ success: false, error: "Payment not found" }, { status: 404 })
 
     if (payment.status !== "pending" && payment.status !== "request_pending") {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "approve") {
       const partRes = await db.query(`SELECT account_balance FROM participants WHERE email=$1`, [payment.participant_email])
-      const currentBalance = Number(partRes.rows[0]?.account_balance || 0)
+      const currentBalance = Number(partRes[0]?.account_balance || 0)
       const newBalance = currentBalance + 150
       const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + 30)
       await db.query(

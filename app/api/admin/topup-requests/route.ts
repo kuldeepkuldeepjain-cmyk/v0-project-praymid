@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     if (!topupRes.rows.length) {
       return NextResponse.json({ success: false, message: "Request not found" }, { status: 404 })
     }
-    const topup = topupRes.rows[0]
+    const topup = topupRes[0]
     if (topup.status !== "pending") {
       return NextResponse.json({ success: false, message: "Request already processed" }, { status: 400 })
     }
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     if (action === "approve") {
       const pRes = await db.query("SELECT account_balance FROM participants WHERE id = $1", [topup.participant_id])
       if (!pRes.rows.length) return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })
-      const newBalance = Number(pRes.rows[0].account_balance || 0) + Number(topup.amount)
+      const newBalance = Number(pRes[0].account_balance || 0) + Number(topup.amount)
       await db.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [newBalance, topup.participant_id])
       await db.query(
         "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), reviewed_by = $1, admin_notes = $2 WHERE id = $3",

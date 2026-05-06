@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!pRes.rows.length) {
       return NextResponse.json({ success: false, error: "No new participant found to redirect payout" }, { status: 404 })
     }
-    const next = pRes.rows[0]
+    const next = pRes[0]
     const newBalance = Number(next.account_balance || 0) + Number(amount)
 
     await db.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [newBalance, next.id])

@@ -15,7 +15,7 @@ export async function DELETE(request: NextRequest) {
     if (!res.rows.length) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
-    const email = res.rows[0].email
+    const email = res[0].email
 
     // Delete related records first
     await db.query("DELETE FROM activity_logs WHERE actor_id = $1", [participantId])

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (participantRes.rows.length === 0) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
     }
-    const participant = participantRes.rows[0]
+    const participant = participantRes[0]
 
     await db.query(
       `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status)

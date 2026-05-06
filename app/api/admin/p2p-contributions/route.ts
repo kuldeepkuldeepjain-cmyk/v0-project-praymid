@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     if (!contribRes.rows.length) {
       return NextResponse.json({ success: false, error: "Contribution not found" }, { status: 404 })
     }
-    const contribution = contribRes.rows[0]
+    const contribution = contribRes[0]
 
     const allowedStatuses = action === "approve" ? ["proof_submitted"] : ["proof_submitted", "in_process"]
     if (!allowedStatuses.includes(contribution.status)) {
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         "SELECT id, account_balance, total_earnings, referred_by FROM participants WHERE email = $1",
         [contribution.participant_email]
       )
-      const participant = pRes.rows[0]
+      const participant = pRes[0]
       if (participant) {
         const currentBalance = Number(participant.account_balance || 0)
         const currentEarnings = Number(participant.total_earnings || 0)

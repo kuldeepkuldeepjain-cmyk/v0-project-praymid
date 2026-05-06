@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
       db.query(`SELECT id,amount,matched_at,matched_payout_id,participant_email FROM payment_submissions WHERE status='in_process' ORDER BY matched_at DESC LIMIT 10`),
     ])
 
-    const pendingCount = parseInt(pendingRes.rows[0].count)
-    const inProgressCount = parseInt(inProgressRes.rows[0].count)
-    const availablePayoutCount = parseInt(availableRes.rows[0].count)
+    const pendingCount = parseInt(pendingRes[0].count)
+    const inProgressCount = parseInt(inProgressRes[0].count)
+    const availablePayoutCount = parseInt(availableRes[0].count)
     const total = pendingCount + inProgressCount
     const matchRate = total > 0 ? inProgressCount / total : 0
 

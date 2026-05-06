@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const db = getPool()!
 
     const subRes = await db.query(`SELECT id,status,screenshot_url,transaction_id FROM payment_submissions WHERE id=$1`, [paymentSubmissionId])
-    const paymentSubmission = subRes.rows[0]
+    const paymentSubmission = subRes[0]
     if (!paymentSubmission) return NextResponse.json({ success: false, error: "Payment submission not found" }, { status: 404 })
 
     if (!paymentSubmission.screenshot_url && !paymentSubmission.transaction_id) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     }
 
     const partRes = await db.query(`SELECT id,account_balance FROM participants WHERE email=$1`, [participantEmail])
-    const participant = partRes.rows[0]
+    const participant = partRes[0]
     if (!participant) return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
 
     const newBalance = Number(participant.account_balance || 0) + 150

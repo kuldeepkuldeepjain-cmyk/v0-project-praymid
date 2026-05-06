@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (dupCheck.rows.length > 0) return NextResponse.json({ success: false, message: "Transaction already processed" }, { status: 400 })
 
     const pRes = await db.query("SELECT id, account_balance, email FROM participants WHERE username = $1 OR email = $1", [userId])
-    const participant = pRes.rows[0]
+    const participant = pRes[0]
     if (!participant) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
 
     const newBalance = Number(participant.account_balance || 0) + Number(amount)

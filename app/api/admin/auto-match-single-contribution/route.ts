@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (!contribRes.rows.length) {
       return NextResponse.json({ error: "Contribution not found", success: false }, { status: 404 })
     }
-    const contribution = contribRes.rows[0]
+    const contribution = contribRes[0]
     if (contribution.matched_payout_id) {
       return NextResponse.json({ success: true, message: "Contribution already matched", alreadyMatched: true })
     }
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     if (!payoutRes.rows.length) {
       return NextResponse.json({ success: true, message: "No pending payout found", matched: false })
     }
-    const payout = payoutRes.rows[0]
+    const payout = payoutRes[0]
 
     await db.query("UPDATE payment_submissions SET matched_payout_id = $1, matched_at = NOW() WHERE id = $2", [payout.id, contributionId])
     await db.query("UPDATE payout_requests SET status = 'in_process', matched_at = NOW() WHERE id = $1", [payout.id])

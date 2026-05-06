@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (!res.rows.length) {
       return NextResponse.json({ success: false, error: "Payout request not found" }, { status: 404 })
     }
-    const payout = res.rows[0]
+    const payout = res[0]
 
     // Build update
     const setClauses: string[] = ["status = $1", "admin_notes = $2", "updated_at = NOW()"]
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     if (status === "rejected") {
       const pRes = await db.query("SELECT account_balance FROM participants WHERE email = $1", [payout.participant_email])
       if (pRes.rows.length) {
-        const refundedBalance = Number(pRes.rows[0].account_balance || 0) + Number(payout.amount)
+        const refundedBalance = Number(pRes[0].account_balance || 0) + Number(payout.amount)
         await db.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE email = $2", [refundedBalance, payout.participant_email])
         await db.query(
           "INSERT INTO transactions (participant_email, type, amount, description, reference_id) VALUES ($1,$2,$3,$4,$5)",

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     const db = getPool()!
 
     const predRes = await db.query("SELECT * FROM predictions WHERE id = $1", [predictionId])
-    const prediction = predRes.rows[0]
+    const prediction = predRes[0]
     if (!prediction) {
       return NextResponse.json({ success: false, error: "Prediction not found" }, { status: 404 })
     }
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         [finalPrice, predictionId]
       )
       const pRes = await db.query("SELECT account_balance FROM participants WHERE email=$1", [prediction.participant_email])
-      if (pRes.rows[0]) {
+      if (pRes[0]) {
         await db.query("UPDATE participants SET account_balance = account_balance + $1 WHERE email=$2", [prediction.amount, prediction.participant_email])
       }
       return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true })

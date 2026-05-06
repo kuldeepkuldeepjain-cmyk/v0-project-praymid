@@ -23,7 +23,7 @@ export async function POST(request: Request) {
         "SELECT id, email, password, username, full_name, wallet_address, account_balance, bonus_balance, total_earnings, referral_code, referred_by, serial_number, status, rank, is_active, details_completed, country, state, pin_code, full_address, activation_date, created_at, is_frozen, mobile_number, total_referrals FROM participants WHERE email = $1",
         [emailKey]
       )
-      const participant = res.rows[0] || null
+      const participant = res[0] || null
       const error = null
 
       if (!error && participant) {

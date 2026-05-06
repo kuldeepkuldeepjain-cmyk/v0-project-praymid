@@ -19,12 +19,12 @@ export async function POST(request: NextRequest) {
     // Check duplicate
     const dupCheck = await db.query("SELECT id, status FROM payment_submissions WHERE transaction_id = $1", [transactionHash])
     if (dupCheck.rows.length > 0) {
-      return NextResponse.json({ error: "Transaction hash already submitted", existingSubmissionId: dupCheck.rows[0].id, existingStatus: dupCheck.rows[0].status }, { status: 409 })
+      return NextResponse.json({ error: "Transaction hash already submitted", existingSubmissionId: dupCheck[0].id, existingStatus: dupCheck[0].status }, { status: 409 })
     }
 
     // Get participant
     const pRes = await db.query("SELECT id, username FROM participants WHERE email = $1", [email.toLowerCase().trim()])
-    const participant = pRes.rows[0]
+    const participant = pRes[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
     const screenshotData = typeof screenshot === "string" ? screenshot : await (screenshot as any).text()
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
        VALUES ($1, $2, 100, $3, $4, $5, 'pending') RETURNING *`,
       [participant.id, email, paymentMethod || "USDT_BEP20", screenshotData, transactionHash]
     )
-    const submission = insRes.rows[0]
+    const submission = insRes[0]
     if (!submission) return NextResponse.json({ error: "Failed to create submission" }, { status: 500 })
 
     if (bep20Address) {
@@ -88,12 +88,12 @@ export async function PATCH(request: Request) {
       `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), reviewed_by=$2, rejection_reason=$3 WHERE id=$4 RETURNING *`,
       [status, reviewedBy || "admin", rejectionReason || null, submissionId]
     )
-    const submission = updRes.rows[0]
+    const submission = updRes[0]
     if (!submission) return NextResponse.json({ error: "Submission not found" }, { status: 404 })
 
     if (status === "confirmed") {
       const pRes = await db.query("SELECT * FROM participants WHERE email = $1", [submission.participant_email])
-      const participant = pRes.rows[0]
+      const participant = pRes[0]
       if (participant) {
         const newBalance = Number(participant.account_balance || 0) + 200
         const newEarnings = Number(participant.total_earnings || 0) + 200

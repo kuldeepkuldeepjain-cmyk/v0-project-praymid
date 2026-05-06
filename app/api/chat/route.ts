@@ -67,11 +67,11 @@ You have access to real-time platform data through tools. Use them to provide ac
             db.query("SELECT COUNT(*) FROM predictions WHERE status = 'pending'"),
           ])
           return {
-            totalParticipants: Number(r1.rows[0]?.count || 0),
-            activeUsers: Number(r2.rows[0]?.count || 0),
-            pendingPayouts: Number(r3.rows[0]?.count || 0),
-            pendingPayments: Number(r4.rows[0]?.count || 0),
-            activePredictions: Number(r5.rows[0]?.count || 0),
+            totalParticipants: Number(r1[0]?.count || 0),
+            activeUsers: Number(r2[0]?.count || 0),
+            pendingPayouts: Number(r3[0]?.count || 0),
+            pendingPayments: Number(r4[0]?.count || 0),
+            activePredictions: Number(r5[0]?.count || 0),
           }
         }
       }),

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     if (!res.rows.length) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
-    const participant = res.rows[0]
+    const participant = res[0]
     const newBalance = Number(participant.account_balance || 0) + Number(amount)
     await db.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [newBalance, participant.id])
     await db.query(

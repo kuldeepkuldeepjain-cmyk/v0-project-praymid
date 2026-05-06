@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       [email]
     )
 
-    const approvedData = approvedRes.rows[0]
-    const payoutData = payoutRes.rows[0]
+    const approvedData = approvedRes[0]
+    const payoutData = payoutRes[0]
     const targetParticipantId = approvedData?.participant_id || payoutData?.participant_id
 
     if (!targetParticipantId) {
@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
         amount: approvedData?.amount || payoutData?.amount || 100,
         status: approvedData ? "approved" : "matched_payout",
         created_at: approvedData?.created_at || payoutData?.created_at,
-        participants: partRes.rows[0] || null,
-        wallet_pool: walletRes.rows[0] || { wallet_address: null },
+        participants: partRes[0] || null,
+        wallet_pool: walletRes[0] || { wallet_address: null },
       },
     })
   } catch (error) {
