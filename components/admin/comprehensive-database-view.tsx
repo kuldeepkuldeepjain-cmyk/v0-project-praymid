@@ -78,7 +78,7 @@ export function ComprehensiveDatabaseView() {
 
       const [partRes, walletRes, payoutRes] = await Promise.all([
         fetch("/api/admin/participants"),
-        fetch("/api/participant/wallet-pool"),
+        fetch("/api/participant/wallet-pool?admin=1"),
         fetch("/api/admin/all-ledger"),
       ])
       const partJson = await partRes.json()

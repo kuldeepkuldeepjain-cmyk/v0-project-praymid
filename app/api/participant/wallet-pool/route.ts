@@ -1,21 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query as dbQuery, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
-  const auth = await requireParticipantSession(request)
-  if (!auth.ok) return auth.response
+  // Admin database view calls this without auth — check if it's an admin request
+  const { searchParams } = new URL(request.url)
+  const adminMode = searchParams.get("admin") === "1"
+
+  if (!adminMode) {
+    const auth = await requireParticipantSession(request)
+    if (!auth.ok) return auth.response
+  }
+
   try {
-    const db = getPool()!
-    const result = await db.query(
+    if (adminMode) {
+      // Return all wallet pool entries for the admin database view
+      const rows = await dbQuery("SELECT id, wallet_address, network, status, assigned_to FROM wallet_pool ORDER BY created_at DESC")
+      return NextResponse.json({ walletPool: rows })
+    }
+
+    const wallets = await dbQuery(
       "SELECT id, wallet_address, network FROM wallet_pool WHERE status = 'active' AND assigned_to IS NULL ORDER BY created_at ASC LIMIT 10"
     )
-    const wallets = result.rows
     if (wallets.length === 0) {
       return NextResponse.json({ address: null, message: "No available wallets in pool" })
     }
-    const randomWallet = wallets[Math.floor(Math.random() * wallets.length)]
-    return NextResponse.json({ id: randomWallet.id, address: randomWallet.wallet_address, network: randomWallet.network })
+    const randomWallet = wallets[Math.floor(Math.random() * wallets.length)] as any
+    return NextResponse.json({ id: randomWallet.id, address: randomWallet.wallet_address, network: randomWallet.network, walletPool: wallets })
   } catch (error) {
     console.error("[v0] Error fetching wallet from pool:", error)
     return NextResponse.json({ error: "Failed to get wallet address" }, { status: 500 })
@@ -24,23 +35,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: Request) {
   try {
-    const { walletAddress, network, assignedTo } = await request.json()
-    if (!walletAddress) {
+    const { walletAddress, network, assignedTo, email } = await request.json()
+    const addr = walletAddress || assignedTo
+    if (!addr) {
       return NextResponse.json({ error: "Missing wallet address" }, { status: 400 })
     }
 
-    const db = getPool()!
-    const existing = await db.query("SELECT id FROM wallet_pool WHERE wallet_address = $1", [walletAddress])
+    const existing = await dbQuery("SELECT id FROM wallet_pool WHERE wallet_address = $1", [addr])
 
-    if (existing.rows.length > 0) {
-      await db.query(
+    if (existing.length > 0) {
+      await execute(
         "UPDATE wallet_pool SET status = $1, assigned_to = $2 WHERE id = $3",
-        [assignedTo ? "assigned" : "active", assignedTo || null, existing.rows[0].id]
+        [email || assignedTo ? "assigned" : "active", email || assignedTo || null, (existing[0] as any).id]
       )
     } else {
-      await db.query(
+      await execute(
         "INSERT INTO wallet_pool (wallet_address, network, status, assigned_to) VALUES ($1, $2, $3, $4)",
-        [walletAddress, network || "BEP20", assignedTo ? "assigned" : "active", assignedTo || null]
+        [addr, network || "BEP20", email || assignedTo ? "assigned" : "active", email || assignedTo || null]
       )
     }
 
