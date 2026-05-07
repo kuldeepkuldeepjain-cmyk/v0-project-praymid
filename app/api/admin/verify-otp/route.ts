@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -13,19 +13,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Participant ID and OTP are required" }, { status: 400 })
     }
 
-    const db = getPool()!
-
     // Fetch participant
-    const result = await db.query(
+    const rows = await query(
       "SELECT id, full_name, email, whatsapp_otp, otp_verified FROM participants WHERE id = $1 LIMIT 1",
       [participantId]
     )
 
-    if (result.rows.length === 0) {
+    if (rows.length === 0) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
-    const participant = result.rows[0]
+    const participant = rows[0] as any
 
     if (participant.otp_verified) {
       return NextResponse.json({ success: false, error: "OTP already verified for this participant" }, { status: 400 })
@@ -40,13 +38,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Mark as verified
-    await db.query(
+    await execute(
       `UPDATE participants SET otp_verified = true, otp_verified_at = NOW(), otp_verified_by = $1 WHERE id = $2`,
       [adminEmail || "admin", participantId]
     )
 
-    // Log action
-    await db.query(
+    // Log action (best-effort)
+    await execute(
       `INSERT INTO audit_logs (action, description, admin_email) VALUES ($1, $2, $3)`,
       ["OTP_VERIFIED", `WhatsApp OTP verified for participant ${participant.email}`, adminEmail || "admin"]
     ).catch(() => {})
