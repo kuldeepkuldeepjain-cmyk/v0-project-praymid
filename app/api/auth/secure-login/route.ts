@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getIronSession } from "iron-session"
-
-const SESSION_OPTIONS = {
-  password: process.env.SESSION_SECRET || "flowchain-default-secret-change-in-production-32chars",
-  cookieName: "admin_session",
-  cookieOptions: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax" as const,
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  },
-}
+import { setAdminSession } from "@/lib/session"
 
 // Valid admin credentials
 const CREDENTIALS = [
@@ -52,29 +40,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
-    const res = NextResponse.json({
+    // Save session using the shared session lib so encryption key is consistent
+    try {
+      await setAdminSession({ email: match.email, role: match.role })
+    } catch (_) {
+      // Session save is best-effort — client uses localStorage auth
+    }
+
+    return NextResponse.json({
       success: true,
       email: match.email,
       role: match.role,
       name: match.name,
       permissions: match.permissions,
     })
-
-    try {
-      const session = await getIronSession<{ email: string; role: string; isLoggedIn: boolean }>(
-        request,
-        res,
-        SESSION_OPTIONS
-      )
-      session.email = match.email
-      session.role = match.role
-      session.isLoggedIn = true
-      await session.save()
-    } catch (_) {
-      // Session save is best-effort — client uses localStorage auth
-    }
-
-    return res
   } catch (error) {
     return NextResponse.json({ success: false, error: "Login failed. Please try again." }, { status: 500 })
   }
