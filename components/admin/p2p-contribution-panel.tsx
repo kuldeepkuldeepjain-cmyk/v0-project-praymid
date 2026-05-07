@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -85,7 +86,7 @@ export function P2PContributionPanel() {
 
   const fetchContributions = async () => {
     try {
-      const res = await fetch("/api/admin/activation-payments")
+      const res = await adminFetch("/api/admin/activation-payments")
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Failed to fetch")
       const submissions: any[] = json.payments || []
@@ -159,7 +160,7 @@ export function P2PContributionPanel() {
 
   const fetchAvailablePayouts = async () => {
     try {
-      const res = await fetch("/api/admin/all-ledger?status=pending")
+      const res = await adminFetch("/api/admin/all-ledger?status=pending")
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Failed to fetch")
       setAvailablePayouts(json.ledger || [])
@@ -182,7 +183,7 @@ export function P2PContributionPanel() {
     setIsProcessing(true)
 
     try {
-      const matchRes = await fetch("/api/admin/auto-match-single-contribution", {
+      const matchRes = await adminFetch("/api/admin/auto-match-single-contribution", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contributionId: selectedContribution.id, payoutId: selectedPayoutId }),
@@ -221,7 +222,7 @@ export function P2PContributionPanel() {
     setProcessingId(contributionId)
 
     try {
-      const response = await fetch("/api/admin/p2p-contributions", {
+      const response = await adminFetch("/api/admin/p2p-contributions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contributionId, action: "approve" }),
@@ -271,7 +272,7 @@ export function P2PContributionPanel() {
     setIsProcessing(true)
 
     try {
-      const response = await fetch("/api/admin/p2p-contributions", {
+      const response = await adminFetch("/api/admin/p2p-contributions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

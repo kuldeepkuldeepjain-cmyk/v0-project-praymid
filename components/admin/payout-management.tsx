@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -148,7 +149,7 @@ export function PayoutManagement() {
     if (!selectedPayout || !proofData) return
     setApprovingPayout(true)
     try {
-      const response = await fetch("/api/admin/approve-contribution-payout", {
+      const response = await adminFetch("/api/admin/approve-contribution-payout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -232,7 +233,7 @@ export function PayoutManagement() {
           break
       }
 
-      const response = await fetch("/api/admin/update-payout-status", {
+      const response = await adminFetch("/api/admin/update-payout-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
