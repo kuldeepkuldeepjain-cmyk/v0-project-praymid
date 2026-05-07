@@ -18,7 +18,6 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { adminFetch } from "@/lib/auth"
 
 interface Stats {
   totalParticipants: number
@@ -93,7 +92,7 @@ export function OverviewAnalytics() {
     setLoading(true)
     setError(null)
     try {
-      const res = await adminFetch("/api/admin/stats")
+      const res = await fetch("/api/admin/stats")
       if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`)
       const data = await res.json()
       setStats(data.stats)

@@ -1,4 +1,3 @@
-import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -72,8 +71,8 @@ export function ContributionPayoutPanel() {
     setLoading(true)
     try {
       const [contribRes, payoutRes] = await Promise.all([
-        adminFetch("/api/admin/activation-payments"),
-        adminFetch("/api/admin/all-ledger"),
+        fetch("/api/admin/activation-payments"),
+        fetch("/api/admin/all-ledger"),
       ])
       const contribJson = await contribRes.json()
       const payoutJson = await payoutRes.json()
@@ -152,7 +151,7 @@ export function ContributionPayoutPanel() {
 
     try {
       // 1. Approve the contribution via existing API (credits participant $150)
-      const res = await adminFetch("/api/admin/activation-payments", {
+      const res = await fetch("/api/admin/activation-payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId: confirmRecord.contribution_id, action: "approve" }),
@@ -165,7 +164,7 @@ export function ContributionPayoutPanel() {
 
       // 2. If there is a matching payout, complete it atomically
       if (confirmRecord.payout_id && confirmRecord.payout_status !== "completed") {
-        const payRes = await adminFetch("/api/admin/update-payout-status", {
+        const payRes = await fetch("/api/admin/update-payout-status", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ payoutId: confirmRecord.payout_id, status: "completed" }),
@@ -205,7 +204,7 @@ export function ContributionPayoutPanel() {
     setShowRejectDialog(false)
 
     try {
-      const res = await adminFetch("/api/admin/activation-payments", {
+      const res = await fetch("/api/admin/activation-payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId: rejectRecord.contribution_id, action: "reject", reason: rejectReason }),

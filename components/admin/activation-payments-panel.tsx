@@ -1,4 +1,3 @@
-import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -92,7 +91,7 @@ export function ActivationPaymentsPanel() {
 
   const fetchPayments = async () => {
     try {
-      const response = await adminFetch("/api/admin/activation-payments")
+      const response = await fetch("/api/admin/activation-payments")
       const data = await response.json()
       if (data.success) {
         setPayments(data.payments)
@@ -112,7 +111,7 @@ export function ActivationPaymentsPanel() {
     setIsProcessing(true)
     setProcessingPaymentId(paymentId)
     try {
-      const response = await adminFetch("/api/admin/activation-payments", {
+      const response = await fetch("/api/admin/activation-payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId, action, reason }),
@@ -230,7 +229,7 @@ export function ActivationPaymentsPanel() {
     try {
       console.log("[v0] Redirecting activation payment to next participant:", payment.id)
       
-      const response = await adminFetch("/api/admin/redirect-activation-to-new-user", {
+      const response = await fetch("/api/admin/redirect-activation-to-new-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

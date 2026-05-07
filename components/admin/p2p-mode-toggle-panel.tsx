@@ -1,4 +1,3 @@
-import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -33,7 +32,7 @@ export function P2PModeTogglePanel() {
 
   const fetchSettings = async () => {
     try {
-      const res = await adminFetch("/api/admin/settings")
+      const res = await fetch("/api/admin/settings")
       const data = await res.json()
       setSettings({
         p2p_mode_enabled: data.p2p_mode_enabled !== false,
@@ -52,7 +51,7 @@ export function P2PModeTogglePanel() {
     setIsUpdating(true)
 
     try {
-      const res = await adminFetch("/api/admin/settings", {
+      const res = await fetch("/api/admin/settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ p2p_mode_enabled: enabled }),

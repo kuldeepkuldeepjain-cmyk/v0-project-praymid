@@ -1,4 +1,3 @@
-import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState } from "react"
@@ -26,7 +25,7 @@ export function GlobalBroadcastPanel() {
 
     setIsSending(true)
     try {
-      const response = await adminFetch("/api/admin/broadcast", {
+      const response = await fetch("/api/admin/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: message.trim() }),

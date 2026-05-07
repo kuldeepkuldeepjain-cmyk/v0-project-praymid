@@ -1,6 +1,6 @@
-import { adminFetch } from "@/lib/auth"
 "use client"
 
+import { adminFetch } from "@/lib/auth"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -79,7 +79,7 @@ export function ComprehensiveDatabaseView() {
 
       const [partRes, walletRes, payoutRes] = await Promise.all([
         adminFetch("/api/admin/participants"),
-        fetch("/api/participant/wallet-pool?admin=1"),
+        adminFetch("/api/participant/wallet-pool?admin=1"),
         adminFetch("/api/admin/all-ledger"),
       ])
       const partJson = await partRes.json()
@@ -132,7 +132,7 @@ export function ComprehensiveDatabaseView() {
 
     try {
       setIsSaving(true)
-      const saveRes = await fetch("/api/participant/wallet-pool", {
+      const saveRes = await adminFetch("/api/participant/wallet-pool", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: selectedUser.email, walletAddress: editingContributionAddress }),

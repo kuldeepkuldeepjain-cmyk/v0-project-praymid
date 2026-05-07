@@ -1,4 +1,3 @@
-import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -67,7 +66,7 @@ export function ParticipantDatabaseView() {
   const fetchParticipants = async () => {
     try {
       setLoading(true)
-      const res = await adminFetch("/api/admin/participants")
+      const res = await fetch("/api/admin/participants")
       const data = await res.json()
       if (data.participants) {
         setParticipants(data.participants)
@@ -89,7 +88,7 @@ export function ParticipantDatabaseView() {
     if (!otpParticipant || !otpInput.trim()) return
     setIsVerifyingOtp(true)
     try {
-      const res = await adminFetch("/api/admin/verify-otp", {
+      const res = await fetch("/api/admin/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -242,7 +241,7 @@ export function ParticipantDatabaseView() {
         throw new Error("Invalid participant ID")
       }
 
-      const response = await adminFetch("/api/admin/delete-participant", {
+      const response = await fetch("/api/admin/delete-participant", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ participantId }),
