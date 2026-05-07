@@ -1,25 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { getPool } from "@/lib/db"
+import { query } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const db = getPool()!
-    const [participantsRes, paymentsRes, payoutsRes, topupsRes, predictionsRes] = await Promise.all([
-      db.query("SELECT id, is_active, status, created_at, account_balance, total_earnings FROM participants"),
-      db.query("SELECT id, status, amount, created_at FROM payment_submissions"),
-      db.query("SELECT id, status, amount, created_at FROM payout_requests"),
-      db.query("SELECT id, status, amount, created_at FROM topup_requests"),
-      db.query("SELECT id, status, amount, profit_loss, created_at FROM predictions"),
+    const [participants, payments, payouts, topups, predictions] = await Promise.all([
+      query("SELECT id, is_active, status, created_at, account_balance FROM participants"),
+      query("SELECT id, status, amount, created_at FROM payment_submissions").catch(() => []),
+      query("SELECT id, status, amount, created_at FROM payout_requests").catch(() => []),
+      query("SELECT id, status, amount, created_at FROM topup_requests").catch(() => []),
+      query("SELECT id, status, amount, profit_loss, created_at FROM predictions").catch(() => []),
     ])
-
-    const participants = participantsRes.rows
-    const payments = paymentsRes.rows
-    const payouts = payoutsRes.rows
-    const topups = topupsRes.rows
-    const predictions = predictionsRes.rows
 
     const now = new Date()
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
