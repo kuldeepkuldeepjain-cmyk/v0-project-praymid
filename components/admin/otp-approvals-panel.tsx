@@ -1,3 +1,4 @@
+import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -45,7 +46,7 @@ export function OtpApprovalsPanel() {
   const fetchPending = useCallback(async () => {
     try {
       setLoading(true)
-      const res = await fetch("/api/admin/pending-otp-approvals")
+      const res = await adminFetch("/api/admin/pending-otp-approvals")
       const data = await res.json()
       if (data.success) {
         setParticipants(data.pending || [])
@@ -74,7 +75,7 @@ export function OtpApprovalsPanel() {
     setApproving(prev => ({ ...prev, [participant.id]: true }))
     try {
       const adminData = getAdminData()
-      const res = await fetch("/api/admin/verify-otp", {
+      const res = await adminFetch("/api/admin/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

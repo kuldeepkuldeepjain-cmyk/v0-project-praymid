@@ -1,3 +1,4 @@
+import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -72,7 +73,7 @@ export function P2PPayoutQueuePanel() {
 
   const fetchPayoutRequests = async () => {
     try {
-      const res = await fetch("/api/admin/all-ledger")
+      const res = await adminFetch("/api/admin/all-ledger")
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Failed to fetch")
       const transformed = (json.ledger || []).map((req: any) => ({
@@ -135,7 +136,7 @@ export function P2PPayoutQueuePanel() {
     try {
       console.log("[v0] Deleting payout request:", deleteConfirm.id)
 
-      const response = await fetch("/api/admin/delete-payout-request", {
+      const response = await adminFetch("/api/admin/delete-payout-request", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payoutRequestId: deleteConfirm.id }),

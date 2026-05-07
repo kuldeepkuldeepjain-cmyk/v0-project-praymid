@@ -1,3 +1,4 @@
+import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect } from "react"
@@ -77,9 +78,9 @@ export function ComprehensiveDatabaseView() {
       setIsLoading(true)
 
       const [partRes, walletRes, payoutRes] = await Promise.all([
-        fetch("/api/admin/participants"),
+        adminFetch("/api/admin/participants"),
         fetch("/api/participant/wallet-pool?admin=1"),
-        fetch("/api/admin/all-ledger"),
+        adminFetch("/api/admin/all-ledger"),
       ])
       const partJson = await partRes.json()
       const walletJson = await walletRes.json()

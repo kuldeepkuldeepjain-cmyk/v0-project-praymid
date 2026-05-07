@@ -1,3 +1,4 @@
+import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState } from "react"
@@ -25,7 +26,7 @@ export function DeleteParticipantsPanel() {
     try {
       console.log("[v0] Calling delete-all-participants API...")
       
-      const response = await fetch("/api/admin/delete-all-participants-except", {
+      const response = await adminFetch("/api/admin/delete-all-participants-except", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { adminFetch } from "@/lib/auth"
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -65,7 +66,7 @@ export function TopUpRequestsPanel() {
     if (!silent) setIsLoading(true)
     else setIsRefreshing(true)
     try {
-      const res = await fetch("/api/admin/topup-requests")
+      const res = await adminFetch("/api/admin/topup-requests")
       const data = await res.json()
       if (data.success) {
         setRequests(data.requests || [])
@@ -86,7 +87,7 @@ export function TopUpRequestsPanel() {
     if (!selectedRequest) return
     setIsActioning(true)
     try {
-      const res = await fetch("/api/admin/topup-requests", {
+      const res = await adminFetch("/api/admin/topup-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,7 +115,7 @@ export function TopUpRequestsPanel() {
     if (!selectedRequest) return
     setIsActioning(true)
     try {
-      const res = await fetch("/api/admin/topup-requests", {
+      const res = await adminFetch("/api/admin/topup-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
