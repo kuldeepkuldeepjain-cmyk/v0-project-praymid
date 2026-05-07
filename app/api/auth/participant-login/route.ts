@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
-import { participantMemoryStore } from "@/lib/participant-memory-store"
-import { getPool } from "@/lib/db"
-
+import { query, execute } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -15,113 +13,64 @@ export async function POST(request: Request) {
 
     const emailKey = email.toLowerCase().trim()
 
-    // Try DB first
-    try {
-      const db = getPool()!
+    // Only select columns that actually exist in the DB schema
+    const rows = await query(
+      `SELECT id, email, password_hash, username, full_name, wallet_address,
+              account_balance, referral_code, referred_by, status, is_active,
+              otp_verified, created_at
+       FROM participants WHERE email = $1 LIMIT 1`,
+      [emailKey]
+    )
 
-      const res = await db.query(
-        "SELECT id, email, password, username, full_name, wallet_address, account_balance, bonus_balance, total_earnings, referral_code, referred_by, serial_number, status, rank, is_active, details_completed, country, state, pin_code, full_address, activation_date, created_at, is_frozen, mobile_number, total_referrals FROM participants WHERE email = $1",
-        [emailKey]
-      )
-      const participant = res.rows[0] || null
-      const error = null
-
-      if (!error && participant) {
-        let passwordValid = false
-        if (participant.password?.startsWith("$2")) {
-          passwordValid = await bcrypt.compare(password, participant.password)
-        } else {
-          passwordValid = participant.password === password
-          if (passwordValid) {
-            const hashed = await bcrypt.hash(password, 10)
-            await db.query("UPDATE participants SET password = $1, plain_password = $2 WHERE id = $3", [hashed, password, participant.id]).catch(() => {})
-          }
-        }
-
-        if (!passwordValid) {
-          return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
-        }
-
-        await db.query("UPDATE participants SET last_login = NOW() WHERE id = $1", [participant.id]).catch(() => {})
-        await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
-
-        return NextResponse.json({
-          success: true,
-          participantId: participant.id,
-          walletAddress: participant.wallet_address || "",
-          email: participant.email,
-          username: participant.username || participant.email.split("@")[0],
-          name: participant.full_name || participant.username || "",
-          full_name: participant.full_name || "",
-          mobile_number: participant.mobile_number || "",
-          wallet_balance: Number(participant.account_balance) || 0,
-          account_balance: Number(participant.account_balance) || 0,
-          bonus_balance: Number(participant.bonus_balance) || 0,
-          bep20_address: participant.wallet_address || "",
-          total_referrals: participant.total_referrals || 0,
-          total_earnings: Number(participant.total_earnings) || 0,
-          referral_code: participant.referral_code || "",
-          referred_by: participant.referred_by || "",
-          serial_number: participant.serial_number || "",
-          status: participant.status || "active",
-          rank: participant.rank || "bronze",
-          is_active: participant.is_active !== false,
-          details_completed: participant.details_completed || false,
-          country: participant.country || "",
-          state: participant.state || "",
-          pin_code: participant.pin_code || "",
-          full_address: participant.full_address || "",
-          activation_date: participant.activation_date || null,
-          created_at: participant.created_at,
-        })
-      }
-      // error means DB unreachable — fall through to memory store
-    } catch (dbErr) {
-      console.error("[login] DB unavailable, checking memory store:", dbErr instanceof Error ? dbErr.message : dbErr)
-    }
-
-    // --- Memory store fallback (v0 preview / DB unreachable) ---
-    const memParticipant = participantMemoryStore.get(emailKey)
-
-    if (!memParticipant) {
+    if (rows.length === 0) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
 
-    const passwordValid = await bcrypt.compare(password, memParticipant.password)
+    const participant = rows[0] as any
+
+    // Verify password against password_hash
+    const passwordValid = participant.password_hash
+      ? await bcrypt.compare(password, participant.password_hash)
+      : false
+
     if (!passwordValid) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
 
-    await setParticipantSession({ participantId: memParticipant.id, email: memParticipant.email, role: "participant" })
+    // Update last login (best-effort, column may not exist)
+    await execute("UPDATE participants SET updated_at = NOW() WHERE id = $1", [participant.id]).catch(() => {})
+
+    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
 
     return NextResponse.json({
       success: true,
-      participantId: memParticipant.id,
-      walletAddress: memParticipant.wallet_address,
-      email: memParticipant.email,
-      username: memParticipant.username,
-      name: memParticipant.full_name,
-      full_name: memParticipant.full_name,
-      mobile_number: memParticipant.mobile_number,
-      wallet_balance: 0,
-      account_balance: 0,
+      participantId: participant.id,
+      email: participant.email,
+      username: participant.username || participant.email.split("@")[0],
+      name: participant.full_name || participant.username || "",
+      full_name: participant.full_name || "",
+      walletAddress: participant.wallet_address || "",
+      bep20_address: participant.wallet_address || "",
+      wallet_balance: Number(participant.account_balance) || 0,
+      account_balance: Number(participant.account_balance) || 0,
       bonus_balance: 0,
-      bep20_address: memParticipant.wallet_address,
       total_referrals: 0,
       total_earnings: 0,
-      referral_code: memParticipant.referral_code,
-      referred_by: memParticipant.referred_by || "",
+      referral_code: participant.referral_code || "",
+      referred_by: participant.referred_by || "",
       serial_number: "",
-      status: "active",
+      status: participant.status || "pending",
       rank: "bronze",
-      is_active: true,
+      is_active: participant.is_active !== false,
+      otp_verified: participant.otp_verified || false,
       details_completed: false,
-      country: memParticipant.country,
-      state: memParticipant.state,
-      pin_code: memParticipant.pin_code,
+      country: "",
+      state: "",
+      pin_code: "",
       full_address: "",
+      mobile_number: "",
       activation_date: null,
-      created_at: memParticipant.created_at,
+      created_at: participant.created_at,
     })
   } catch (error: any) {
     console.error("[login] Unexpected error:", error)
