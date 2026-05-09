@@ -38,6 +38,7 @@ interface TopupRequest {
   payment_method: string
   status: "pending" | "completed" | "rejected"
   created_at: string
+  bep20_address: string | null
 }
 
 const STATUS_CONFIG = {
@@ -59,8 +60,35 @@ export function TopUpRequestsPanel() {
   const [adminNoteInput, setAdminNoteInput] = useState("")
   const [rejectionInput, setRejectionInput] = useState("")
   const [showRejectConfirm, setShowRejectConfirm] = useState(false)
+  const [bep20Input, setBep20Input] = useState("")
+  const [isSavingBep20, setIsSavingBep20] = useState(false)
 
   const adminData = getAdminData()
+
+  const handleSaveBep20 = async () => {
+    if (!selectedRequest) return
+    setIsSavingBep20(true)
+    try {
+      const res = await adminFetch("/api/admin/topup-requests", {
+        method: "PATCH",
+        body: JSON.stringify({ requestId: selectedRequest.id, bep20_address: bep20Input }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setRequests(prev =>
+          prev.map(r => r.id === selectedRequest.id ? { ...r, bep20_address: bep20Input.trim() || null } : r)
+        )
+        setSelectedRequest(prev => prev ? { ...prev, bep20_address: bep20Input.trim() || null } : prev)
+        toast({ title: "Saved", description: "BEP20 address saved successfully." })
+      } else {
+        toast({ title: "Error", description: data.message, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save address", variant: "destructive" })
+    } finally {
+      setIsSavingBep20(false)
+    }
+  }
 
   const fetchRequests = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true)
@@ -284,7 +312,7 @@ export function TopUpRequestsPanel() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => { setSelectedRequest(req); setAdminNoteInput(""); setRejectionInput(""); setShowRejectConfirm(false) }}
+                        onClick={() => { setSelectedRequest(req); setAdminNoteInput(""); setRejectionInput(""); setShowRejectConfirm(false); setBep20Input(req.bep20_address || "") }}
                         className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 gap-1"
                       >
                         <Eye className="h-3.5 w-3.5" />
@@ -374,6 +402,36 @@ export function TopUpRequestsPanel() {
                       </a>
                     )}
                   </div>
+                </div>
+
+                {/* BEP20 Address — admin editable */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm text-slate-400">
+                    Participant BEP20 Address
+                    <span className="ml-2 text-xs text-violet-400">(admin can save)</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="0x... participant's BEP20 wallet address"
+                      value={bep20Input}
+                      onChange={(e) => setBep20Input(e.target.value)}
+                      className="flex-1 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs"
+                      disabled={isSavingBep20}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSaveBep20}
+                      disabled={isSavingBep20 || bep20Input === (selectedRequest.bep20_address || "")}
+                      className="bg-violet-600 hover:bg-violet-700 text-white flex-shrink-0"
+                    >
+                      {isSavingBep20 ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    </Button>
+                  </div>
+                  {selectedRequest.bep20_address && (
+                    <p className="text-xs text-slate-500 font-mono truncate">
+                      Saved: {selectedRequest.bep20_address}
+                    </p>
+                  )}
                 </div>
 
                 {/* Screenshot */}
