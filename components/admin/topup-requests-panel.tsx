@@ -19,6 +19,8 @@ import {
   Loader2,
   ExternalLink,
   AlertTriangle,
+  Copy,
+  Check,
 } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -63,7 +65,53 @@ export function TopUpRequestsPanel() {
   const [bep20Input, setBep20Input] = useState("")
   const [isSavingBep20, setIsSavingBep20] = useState(false)
 
+  // Admin's global top-up BEP20 address (shown to participants for sending funds)
+  const [topupBep20, setTopupBep20] = useState("")
+  const [topupBep20Input, setTopupBep20Input] = useState("")
+  const [isSavingTopupBep20, setIsSavingTopupBep20] = useState(false)
+  const [topupBep20Copied, setTopupBep20Copied] = useState(false)
+
   const adminData = getAdminData()
+
+  // Load global topup BEP20 address from settings
+  useEffect(() => {
+    adminFetch("/api/admin/settings")
+      .then(r => r.json())
+      .then(data => {
+        const addr = data.topup_bep20_address || ""
+        setTopupBep20(addr)
+        setTopupBep20Input(addr)
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleSaveTopupBep20 = async () => {
+    setIsSavingTopupBep20(true)
+    try {
+      const res = await adminFetch("/api/admin/settings", {
+        method: "POST",
+        body: JSON.stringify({ topup_bep20_address: topupBep20Input.trim() }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setTopupBep20(topupBep20Input.trim())
+        toast({ title: "Saved", description: "Top-up BEP20 address updated successfully." })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to save", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Request failed", variant: "destructive" })
+    } finally {
+      setIsSavingTopupBep20(false)
+    }
+  }
+
+  const copyTopupBep20 = () => {
+    navigator.clipboard.writeText(topupBep20).then(() => {
+      setTopupBep20Copied(true)
+      setTimeout(() => setTopupBep20Copied(false), 2000)
+    })
+  }
 
   const handleSaveBep20 = async () => {
     if (!selectedRequest) return
@@ -213,6 +261,52 @@ export function TopUpRequestsPanel() {
           Refresh
         </Button>
       </div>
+
+      {/* Admin Top-Up BEP20 Address — shown to participants for sending funds */}
+      <Card className="bg-slate-800 border-violet-700/50">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-violet-400" />
+            <p className="text-sm font-semibold text-white">Top-Up BEP20 Deposit Address</p>
+            <span className="text-xs text-slate-400 ml-1">(participants send funds to this address)</span>
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="0x... paste your BEP20 wallet address here"
+              value={topupBep20Input}
+              onChange={(e) => setTopupBep20Input(e.target.value)}
+              className="flex-1 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs"
+              disabled={isSavingTopupBep20}
+            />
+            {topupBep20 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyTopupBep20}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700 flex-shrink-0"
+                title="Copy address"
+              >
+                {topupBep20Copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSaveTopupBep20}
+              disabled={isSavingTopupBep20 || topupBep20Input.trim() === topupBep20}
+              className="bg-violet-600 hover:bg-violet-700 text-white flex-shrink-0"
+            >
+              {isSavingTopupBep20 ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Address"}
+            </Button>
+          </div>
+
+          {topupBep20 && (
+            <p className="text-xs text-violet-300 font-mono bg-violet-950/40 rounded px-3 py-1.5 border border-violet-800/50 truncate">
+              Active: {topupBep20}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-4">
