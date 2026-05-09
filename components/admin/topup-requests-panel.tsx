@@ -97,7 +97,7 @@ export function TopUpRequestsPanel() {
       const res = await adminFetch("/api/admin/topup-requests")
       const data = await res.json()
       if (data.success) {
-        setRequests(data.requests || [])
+        setRequests((data.requests || []).map((r: any) => ({ ...r, amount: Number(r.amount) || 0 })))
       }
     } catch (err) {
       console.error("Failed to fetch topup requests:", err)
