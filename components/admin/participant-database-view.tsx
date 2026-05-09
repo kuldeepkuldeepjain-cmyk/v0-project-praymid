@@ -63,6 +63,34 @@ export function ParticipantDatabaseView() {
   const [otpParticipant, setOtpParticipant] = useState<ParticipantUser | null>(null)
   const [otpInput, setOtpInput] = useState("")
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [activatingId, setActivatingId] = useState<string | null>(null)
+
+  const activateParticipant = async (participantId: string, action: "activate" | "deactivate" | "suspend") => {
+    setActivatingId(participantId)
+    try {
+      const res = await adminFetch("/api/admin/activate-participant", {
+        method: "POST",
+        body: JSON.stringify({ participantId, action }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast({ title: "Success", description: data.message })
+        setParticipants(prev =>
+          prev.map(p =>
+            p.id === participantId
+              ? { ...p, status: data.newStatus, is_active: data.newIsActive }
+              : p
+          )
+        )
+      } else {
+        toast({ title: "Failed", description: data.error, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Request failed", variant: "destructive" })
+    } finally {
+      setActivatingId(null)
+    }
+  }
 
   const fetchParticipants = async () => {
     try {
@@ -635,18 +663,33 @@ export function ParticipantDatabaseView() {
                             Send Email
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          {participant.status !== "active" && (
+                            <DropdownMenuItem
+                              className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50"
+                              disabled={activatingId === participant.id}
+                              onClick={() => activateParticipant(participant.id, "activate")}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {activatingId === participant.id ? "Activating..." : "Activate Account"}
+                            </DropdownMenuItem>
+                          )}
+                          {participant.status === "active" && (
+                            <DropdownMenuItem
+                              className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
+                              disabled={activatingId === participant.id}
+                              onClick={() => activateParticipant(participant.id, "deactivate")}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              {activatingId === participant.id ? "Deactivating..." : "Deactivate Account"}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
                             className="text-red-600 focus:text-red-700 focus:bg-red-50"
-                            onClick={() => {
-                              toast({
-                                title: "Account Suspended",
-                                description: `${participant.username}'s account has been suspended`,
-                                variant: "destructive",
-                              })
-                            }}
+                            disabled={activatingId === participant.id}
+                            onClick={() => activateParticipant(participant.id, "suspend")}
                           >
                             <Ban className="h-4 w-4 mr-2" />
-                            Suspend Account
+                            {activatingId === participant.id ? "Suspending..." : "Suspend Account"}
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-red-700 focus:text-red-700 focus:bg-red-100"
