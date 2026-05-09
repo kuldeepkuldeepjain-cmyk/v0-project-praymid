@@ -62,9 +62,9 @@ export async function POST(req: NextRequest) {
       const pRows = await query("SELECT account_balance FROM participants WHERE id = $1", [topup.participant_id])
       if (!pRows.length) return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })
       const newBalance = Number((pRows[0] as any).account_balance || 0) + Number(topup.amount)
-      await execute("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [newBalance, topup.participant_id])
+      await execute("UPDATE participants SET account_balance = $1 WHERE id = $2", [newBalance, topup.participant_id])
       await execute(
-        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), reviewed_by = $1, admin_notes = $2 WHERE id = $3",
+        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), reviewed_by_email = $1, admin_notes = $2 WHERE id = $3",
         [adminEmail, adminNotes || null, requestId]
       )
       await execute(
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     }
 
     await execute(
-      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), reviewed_by = $1, admin_notes = $2 WHERE id = $3",
+      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), reviewed_by_email = $1, rejection_reason = $2, admin_notes = $2 WHERE id = $3",
       [adminEmail, rejectionReason || adminNotes || null, requestId]
     )
     await execute(
