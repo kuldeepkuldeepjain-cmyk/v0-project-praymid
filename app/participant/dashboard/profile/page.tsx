@@ -29,7 +29,6 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, clearParticipantAuth } from "@/lib/auth"
-import { createClient } from "@/lib/supabase/client"
 import { ParticipantLedger } from "@/components/participant-ledger"
 
 export default function ProfilePage() {
@@ -69,22 +68,17 @@ export default function ProfilePage() {
           return
         }
 
-        const supabase = createClient()
-        
-        const { data, error } = await supabase
-          .from("participants")
-          .select("*")
-          .eq("email", email)
-          .single()
-
-        if (error) {
-          console.error("Error fetching profile data:", error)
-          toast({ 
-            title: "Error", 
-            description: "Failed to load profile data", 
-            variant: "destructive" 
-          })
+        const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+        if (!res.ok) {
+          toast({ title: "Error", description: "Failed to load profile data", variant: "destructive" })
           return
+        }
+        const json = await res.json()
+        const data = json.participant
+        if (data) {
+          setParticipantData(data)
+          setEditedData(data)
+          localStorage.setItem("participantData", JSON.stringify({ ...parsedData, ...data }))
         }
 
         if (data) {
@@ -129,15 +123,11 @@ export default function ProfilePage() {
       const reader = new FileReader()
       reader.onloadend = async () => {
         const base64Image = reader.result as string
-
-        const supabase = createClient()
-        const { error } = await supabase
-          .from("participants")
-          .update({ profile_image: base64Image })
-          .eq("email", participantData.email)
-
-        if (error) throw new Error("Failed to upload image")
-
+        const res = await participantFetch("/api/participant/me", {
+          method: "PATCH",
+          body: JSON.stringify({ email: participantData.email, profile_image: base64Image }),
+        })
+        if (!res.ok) throw new Error("Failed to upload image")
         setParticipantData({ ...participantData, profile_image: base64Image })
         toast({ title: "Success", description: "Profile image updated" })
       }
@@ -151,32 +141,30 @@ export default function ProfilePage() {
 
   const removeImage = async () => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("participants")
-        .update({ profile_image: null })
-        .eq("email", participantData.email)
-
-      if (error) throw new Error("Failed to remove image")
-
+      const res = await participantFetch("/api/participant/me", {
+        method: "PATCH",
+        body: JSON.stringify({ email: participantData.email, profile_image: null }),
+      })
+      if (!res.ok) throw new Error("Failed to remove image")
       setParticipantData({ ...participantData, profile_image: null })
       toast({ title: "Success", description: "Profile image removed" })
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to remove image", variant: "destructive" })
     }
   }
 
   const handleSave = async () => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("participants")
-        .update({ username: editedData.username, bep20_address: editedData.bep20_address })
-        .eq("email", participantData.email)
-
-      if (error) throw error
-
-      setParticipantData(editedData)
+      const res = await participantFetch("/api/participant/me", {
+        method: "PATCH",
+        body: JSON.stringify({
+          email: participantData.email,
+          username: editedData.username,
+          bep20_address: editedData.bep20_address,
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to update")
+      setParticipantData({ ...participantData, username: editedData.username, bep20_address: editedData.bep20_address })
       setIsEditing(false)
       toast({ title: "Success", description: "Profile updated successfully" })
     } catch {
