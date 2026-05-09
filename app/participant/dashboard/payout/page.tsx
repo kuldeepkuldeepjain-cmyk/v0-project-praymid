@@ -19,7 +19,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { PageLoader } from "@/components/ui/page-loader"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 
 const PAYOUT_PLANS = [
@@ -76,7 +76,7 @@ export default function PayoutPage() {
         const parsedData = JSON.parse(storedData)
 
         // Fetch fresh participant data
-        const meRes = await fetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
+        const meRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
         const meJson = await meRes.json()
         const freshData: any = meJson.participant
         if (freshData) {
@@ -89,7 +89,7 @@ export default function PayoutPage() {
         }
 
         // Fetch payout history
-        const histRes = await fetch(`/api/participant/request-payout?email=${encodeURIComponent(parsedData.email)}`)
+        const histRes = await participantFetch(`/api/participant/request-payout?email=${encodeURIComponent(parsedData.email)}`)
         const histJson = await histRes.json()
         if (histJson.payouts) setPayoutHistory(histJson.payouts)
 
@@ -154,9 +154,8 @@ export default function PayoutPage() {
 
     setIsWithdrawing(true)
     try {
-      const response = await fetch("/api/participant/request-payout", {
+      const response = await participantFetch("/api/participant/request-payout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: participantData?.email,
           amount: plan.amount,
@@ -176,7 +175,7 @@ export default function PayoutPage() {
         })
         
         // Refresh payout history
-        const histRes = await fetch(`/api/participant/request-payout?email=${encodeURIComponent(participantData.email)}`)
+        const histRes = await participantFetch(`/api/participant/request-payout?email=${encodeURIComponent(participantData.email)}`)
         const histJson = await histRes.json()
         if (histJson.payouts) setPayoutHistory(histJson.payouts)
         
@@ -201,9 +200,8 @@ export default function PayoutPage() {
     if (processingPayoutActionId) return
     setProcessingPayoutActionId(payoutId)
     try {
-      const res = await fetch("/api/participant/payout/confirm", {
+      const res = await participantFetch("/api/participant/payout/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payoutId, action: "confirm", participantEmail: participantData.email }),
       })
       const data = await res.json()
@@ -230,9 +228,8 @@ export default function PayoutPage() {
     }
     setProcessingPayoutActionId(disputePayoutId)
     try {
-      const res = await fetch("/api/participant/payout/confirm", {
+      const res = await participantFetch("/api/participant/payout/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payoutId: disputePayoutId, action: "dispute", disputeReason, participantEmail: participantData.email }),
       })
       const data = await res.json()
