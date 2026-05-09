@@ -4,16 +4,22 @@ import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdminSession(req)
-  if (!auth.ok) return auth.response
+  if (!auth.ok) {
+    console.log("[v0] Admin auth failed for topup GET")
+    return auth.response
+  }
   try {
+    console.log("[v0] Fetching topup requests from database...")
     const rows = await query(
       `SELECT id, participant_email, participant_id, amount, status, created_at,
               payment_method, transaction_id, admin_notes, bep20_address
        FROM topup_requests ORDER BY created_at DESC`
     )
+    console.log("[v0] Database returned", rows?.length || 0, "topup requests")
+    console.log("[v0] First request sample:", rows && rows[0] ? JSON.stringify(rows[0]) : "none")
     return NextResponse.json({ success: true, requests: rows })
   } catch (error) {
-    console.error("Admin topup GET error:", error)
+    console.error("[v0] Admin topup GET error:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }
