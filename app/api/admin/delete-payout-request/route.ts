@@ -12,18 +12,21 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if payout exists
-    const rows = await query("SELECT id, status FROM payout_requests WHERE id = $1", [payoutRequestId]) as any[]
+    const rows = await query("SELECT id, status FROM payout_requests WHERE id = $1 AND is_deleted = FALSE", [payoutRequestId]) as any[]
     if (rows.length === 0) {
-      return NextResponse.json({ error: "Payout request not found" }, { status: 404 })
+      return NextResponse.json({ error: "Payout request not found or already deleted" }, { status: 404 })
     }
+
+    // Soft delete: mark as deleted instead of hard delete (prevents FK constraint issues)
+    await execute(
+      "UPDATE payout_requests SET is_deleted = TRUE, deleted_at = NOW() WHERE id = $1",
+      [payoutRequestId]
+    )
 
     // Unlink any matched payment submissions
     await execute("UPDATE payment_submissions SET matched_payout_id = NULL, matched_at = NULL WHERE matched_payout_id = $1", [payoutRequestId])
 
-    // Delete the payout request
-    await execute("DELETE FROM payout_requests WHERE id = $1", [payoutRequestId])
-
-    return NextResponse.json({ success: true, message: "Payout request permanently deleted", payoutRequestId })
+    return NextResponse.json({ success: true, message: "Payout request deleted", payoutRequestId })
   } catch (error) {
     console.error("[delete-payout-request] Error:", error)
     return NextResponse.json({ error: "Failed to delete payout request" }, { status: 500 })
