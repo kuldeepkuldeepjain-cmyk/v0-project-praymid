@@ -22,7 +22,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 
 const CONTRIBUTION_WINDOW_HOURS = 24
@@ -70,9 +70,8 @@ export default function ContributePage() {
 
     setIsRequestingContribution(true)
     try {
-      const res = await fetch("/api/participant/submit-payment", {
+      const res = await participantFetch("/api/participant/submit-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: participantData.email,
           amount: plan.amount,
@@ -111,9 +110,8 @@ export default function ContributePage() {
   const checkPendingSubmission = useCallback(async () => {
     if (!participantData?.email) return
     try {
-      const res = await fetch(
-        `/api/participant/contributions/matched?email=${encodeURIComponent(participantData.email)}`,
-        { cache: "no-store" }
+      const res = await participantFetch(
+        `/api/participant/contributions/matched?email=${encodeURIComponent(participantData.email)}`
       )
       if (!res.ok) return
       const data = await res.json()
@@ -169,7 +167,7 @@ export default function ContributePage() {
     if (storedData) {
       const parsed = JSON.parse(storedData)
       setParticipantData(parsed)
-      fetch(`/api/participant/me?email=${encodeURIComponent(parsed.email)}`)
+      participantFetch(`/api/participant/me?email=${encodeURIComponent(parsed.email)}`)
         .then(r => r.json())
         .then(d => {
           if (d.participant?.next_contribution_date) {
@@ -224,9 +222,8 @@ export default function ContributePage() {
         return
       }
 
-      const proofRes = await fetch("/api/participant/submit-payment", {
+      const proofRes = await participantFetch("/api/participant/submit-payment", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contributionId: matchedContribution.id,
           transactionHash,

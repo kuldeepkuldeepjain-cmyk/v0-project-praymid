@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -9,46 +9,45 @@ export async function GET(request: NextRequest) {
     const email = request.nextUrl.searchParams.get("email")
     if (!email) return NextResponse.json({ matched: false, error: "email required" }, { status: 400 })
 
-    const db = getPool()!
-    const { rows: contribs } = await db.query(
+    const contribs = await query(
       `SELECT id, amount, status, created_at, matched_payout_id, participant_id
        FROM payment_submissions
        WHERE participant_email = $1 AND status IN ('in_process','proof_submitted') AND matched_payout_id IS NOT NULL
        ORDER BY created_at DESC LIMIT 1`,
       [email]
     )
-    const contribution = contribs[0]
+    const contribution = (contribs as any[])[0]
 
     if (!contribution) {
-      const { rows: pending } = await db.query(
+      const pending = await query(
         `SELECT id, created_at FROM payment_submissions
          WHERE participant_email = $1 AND status IN ('pending','request_pending') AND matched_payout_id IS NULL
          ORDER BY created_at DESC LIMIT 1`,
         [email]
-      )
+      ) as any[]
       return NextResponse.json({ matched: false, pending: pending.length > 0, pendingCreatedAt: pending[0]?.created_at ?? null })
     }
 
-    const { rows: payoutRows } = await db.query(
+    const payoutRows = await query(
       "SELECT id, amount, status, wallet_address, participant_id, participant_email FROM payout_requests WHERE id = $1",
       [contribution.matched_payout_id]
-    )
+    ) as any[]
     const payoutRow = payoutRows[0]
     if (!payoutRow) return NextResponse.json({ matched: false, error: "payout row not found" }, { status: 404 })
 
     let recipient: any = null
     if (payoutRow.participant_id) {
-      const { rows } = await db.query(
+      const rows = await query(
         "SELECT id, full_name, mobile_number, bep20_address, wallet_address, email FROM participants WHERE id = $1",
         [payoutRow.participant_id]
-      )
+      ) as any[]
       recipient = rows[0] || null
     }
     if (!recipient && payoutRow.participant_email) {
-      const { rows } = await db.query(
+      const rows = await query(
         "SELECT id, full_name, mobile_number, bep20_address, wallet_address, email FROM participants WHERE email = $1",
         [payoutRow.participant_email]
-      )
+      ) as any[]
       recipient = rows[0] || null
     }
 

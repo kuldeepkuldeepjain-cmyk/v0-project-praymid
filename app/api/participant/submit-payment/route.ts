@@ -1,54 +1,77 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
-import { scheduleContributionAutoMatch } from "@/lib/contribution-scheduler"
+import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const formData = await request.json()
-    const { email, paymentMethod, screenshot, transactionHash, bep20Address } = formData
+    const body = await request.json()
+    const { email, paymentMethod, screenshot, transactionHash, bep20Address, amount, status: reqStatus } = body
 
-    if (!email || !paymentMethod || !screenshot || !transactionHash) {
+    if (!email || !paymentMethod) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    const db = getPool()!
+    // --- Contribution request (no screenshot/hash yet) ---
+    if (reqStatus === "request_pending" || (!screenshot && !transactionHash)) {
+      const participants = await query(
+        "SELECT id FROM participants WHERE email = $1 LIMIT 1",
+        [email.toLowerCase().trim()]
+      ) as any[]
+      const participant = participants[0]
+      if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
-    // Check duplicate
-    const dupCheck = await db.query("SELECT id, status FROM payment_submissions WHERE transaction_id = $1", [transactionHash])
-    if (dupCheck.rows.length > 0) {
-      return NextResponse.json({ error: "Transaction hash already submitted", existingSubmissionId: dupCheck.rows[0].id, existingStatus: dupCheck.rows[0].status }, { status: 409 })
+      const rows = await query(
+        `INSERT INTO payment_submissions (participant_id, participant_email, amount, payment_method, status)
+         VALUES ($1, $2, $3, $4, 'request_pending') RETURNING id`,
+        [participant.id, email.toLowerCase().trim(), amount || 100, paymentMethod]
+      ) as any[]
+
+      return NextResponse.json({ success: true, submissionId: rows[0]?.id, message: "Contribution request submitted" })
     }
 
-    // Get participant
-    const pRes = await db.query("SELECT id, username FROM participants WHERE email = $1", [email.toLowerCase().trim()])
-    const participant = pRes.rows[0]
+    // --- Full payment proof submission ---
+    if (!screenshot || !transactionHash) {
+      return NextResponse.json({ error: "Screenshot and transaction hash required" }, { status: 400 })
+    }
+
+    const dupCheck = await query(
+      "SELECT id, status FROM payment_submissions WHERE transaction_id = $1",
+      [transactionHash]
+    ) as any[]
+    if (dupCheck.length > 0) {
+      return NextResponse.json(
+        { error: "Transaction hash already submitted", existingSubmissionId: dupCheck[0].id, existingStatus: dupCheck[0].status },
+        { status: 409 }
+      )
+    }
+
+    const participants = await query(
+      "SELECT id FROM participants WHERE email = $1 LIMIT 1",
+      [email.toLowerCase().trim()]
+    ) as any[]
+    const participant = participants[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
     const screenshotData = typeof screenshot === "string" ? screenshot : await (screenshot as any).text()
 
-    // Insert submission
-    const insRes = await db.query(
+    const rows = await query(
       `INSERT INTO payment_submissions (participant_id, participant_email, amount, payment_method, screenshot_url, transaction_id, status)
-       VALUES ($1, $2, 100, $3, $4, $5, 'pending') RETURNING *`,
-      [participant.id, email, paymentMethod || "USDT_BEP20", screenshotData, transactionHash]
-    )
-    const submission = insRes.rows[0]
+       VALUES ($1, $2, 100, $3, $4, $5, 'pending') RETURNING id, amount`,
+      [participant.id, email.toLowerCase().trim(), paymentMethod || "USDT_BEP20", screenshotData, transactionHash]
+    ) as any[]
+    const submission = rows[0]
     if (!submission) return NextResponse.json({ error: "Failed to create submission" }, { status: 500 })
 
     if (bep20Address) {
-      await db.query("UPDATE participants SET bep20_address = $1 WHERE email = $2", [bep20Address, email]).catch(() => {})
+      await execute("UPDATE participants SET bep20_address = $1 WHERE email = $2", [bep20Address, email]).catch(() => {})
     }
 
-    await db.query(
+    await execute(
       "INSERT INTO activity_logs (action, actor_id, actor_email, target_type, details) VALUES ($1,$2,$3,$4,$5)",
       ["payment_submitted", participant.id, email, "payment", `Payment $${submission.amount} via ${paymentMethod} TxHash: ${transactionHash}`]
     ).catch(() => {})
-
-    const scheduleResult = await scheduleContributionAutoMatch(submission.id, email, 1800)
-    if (!scheduleResult.success) console.warn("[v0] Auto-match schedule failed:", scheduleResult.error)
 
     return NextResponse.json({ success: true, submissionId: submission.id, message: "Payment proof submitted successfully" })
   } catch (error) {
@@ -59,9 +82,8 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: Request) {
   try {
-    const db = getPool()!
-    const result = await db.query("SELECT * FROM payment_submissions ORDER BY created_at DESC")
-    const submissions = result.rows.map((s: any) => ({
+    const submissions = await query("SELECT * FROM payment_submissions ORDER BY created_at DESC") as any[]
+    const mapped = submissions.map((s: any) => ({
       id: s.id, participantEmail: s.participant_email, participantId: s.participant_id,
       amount: s.amount, paymentMethod: s.payment_method, screenshotUrl: s.screenshot_url,
       transactionId: s.transaction_id, status: s.status, submittedAt: s.created_at,
@@ -69,48 +91,53 @@ export async function GET(request: Request) {
       matchedPayoutId: s.matched_payout_id,
     }))
     return NextResponse.json({
-      submissions, total: submissions.length,
-      pending: submissions.filter((s: any) => s.status === "pending").length,
-      confirmed: submissions.filter((s: any) => s.status === "confirmed").length,
-      rejected: submissions.filter((s: any) => s.status === "rejected").length,
+      submissions: mapped, total: mapped.length,
+      pending: mapped.filter((s: any) => s.status === "pending").length,
+      confirmed: mapped.filter((s: any) => s.status === "confirmed").length,
+      rejected: mapped.filter((s: any) => s.status === "rejected").length,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ submissions: [], total: 0, pending: 0, confirmed: 0, rejected: 0 })
   }
 }
 
 export async function PATCH(request: Request) {
   try {
-    const { submissionId, status, reviewedBy, rejectionReason } = await request.json()
-    const db = getPool()!
+    const body = await request.json()
 
-    const updRes = await db.query(
+    // Participant submitting payment proof for a matched contribution
+    if (body.contributionId) {
+      const { contributionId, transactionHash, screenshotUrl, note } = body
+      const rows = await query(
+        `UPDATE payment_submissions SET transaction_id=$1, screenshot_url=$2, status='proof_submitted', admin_notes=$3 WHERE id=$4 RETURNING id, status`,
+        [transactionHash, screenshotUrl, note || null, contributionId]
+      ) as any[]
+      if (!rows[0]) return NextResponse.json({ error: "Submission not found" }, { status: 404 })
+      return NextResponse.json({ success: true, submission: rows[0] })
+    }
+
+    // Admin updating submission status
+    const { submissionId, status, reviewedBy, rejectionReason } = body
+    const rows = await query(
       `UPDATE payment_submissions SET status=$1, reviewed_at=NOW(), reviewed_by=$2, rejection_reason=$3 WHERE id=$4 RETURNING *`,
       [status, reviewedBy || "admin", rejectionReason || null, submissionId]
-    )
-    const submission = updRes.rows[0]
+    ) as any[]
+    const submission = rows[0]
     if (!submission) return NextResponse.json({ error: "Submission not found" }, { status: 404 })
 
     if (status === "confirmed") {
-      const pRes = await db.query("SELECT * FROM participants WHERE email = $1", [submission.participant_email])
-      const participant = pRes.rows[0]
+      const parts = await query("SELECT * FROM participants WHERE email = $1", [submission.participant_email]) as any[]
+      const participant = parts[0]
       if (participant) {
         const newBalance = Number(participant.account_balance || 0) + 200
-        const newEarnings = Number(participant.total_earnings || 0) + 200
-        await db.query(
-          "UPDATE participants SET status='active', is_active=true, account_balance=$1, total_earnings=$2, activation_date=NOW() WHERE email=$3",
-          [newBalance, newEarnings, submission.participant_email]
+        await execute(
+          "UPDATE participants SET status='active', is_active=true, account_balance=$1, activation_date=NOW() WHERE email=$2",
+          [newBalance, submission.participant_email]
         ).catch(() => {})
-        if (participant.wallet_address) {
-          await db.query(
-            "INSERT INTO wallet_pool (assigned_to, wallet_address, network, balance, status) VALUES ($1,$2,'BEP20',100,'active') ON CONFLICT DO NOTHING",
-            [participant.id, participant.wallet_address]
-          ).catch(() => {})
-        }
       }
     }
 
-    await db.query(
+    await execute(
       "INSERT INTO activity_logs (action, actor_id, actor_email, target_type, details) VALUES ($1,'admin',$2,'payment',$3)",
       [status === "confirmed" ? "approve_payment" : "reject_payment", reviewedBy || "admin@system.com",
        `Payment ${status} for ${submission.participant_email} - $${submission.amount}`]
