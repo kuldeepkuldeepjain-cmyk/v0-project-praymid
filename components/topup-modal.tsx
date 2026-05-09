@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { participantFetch } from "@/lib/auth"
 
 const COMPANY_WALLET_ADDRESS = "0x77704a0FBD161F3f615e1D550bB0EE50a469B938"
 
@@ -86,9 +87,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         return
       }
 
-      const response = await fetch("/api/participant/topup/submit", {
+      const response = await participantFetch("/api/participant/topup/submit", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userId,
           userEmail: userEmail || userId,
