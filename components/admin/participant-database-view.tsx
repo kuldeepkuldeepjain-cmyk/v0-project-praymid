@@ -939,14 +939,7 @@ export function ParticipantDatabaseView() {
                   </Badge>
                 )}
               </div>
-              {otpParticipant.whatsapp_otp && (
-                <div className="flex justify-between items-center pt-1 border-t border-green-100">
-                  <span className="text-slate-500">Sent OTP</span>
-                  <code className="font-mono font-bold text-lg text-green-700 bg-green-50 px-3 py-1 rounded-lg border border-green-200">
-                    {otpParticipant.whatsapp_otp}
-                  </code>
-                </div>
-              )}
+
             </div>
 
             {/* OTP Input */}

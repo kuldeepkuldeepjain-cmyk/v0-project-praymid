@@ -12,12 +12,8 @@ import {
   Search,
   Clock,
   CheckCircle2,
-  User,
   Mail,
-  Phone,
   KeyRound,
-  Eye,
-  EyeOff,
 } from "lucide-react"
 import { getAdminData } from "@/lib/auth"
 
@@ -26,9 +22,6 @@ interface PendingParticipant {
   full_name: string
   username: string
   email: string
-  mobile_number: string
-  country_code: string
-  whatsapp_otp: string
   otp_verified: boolean
   created_at: string
 }
@@ -39,7 +32,6 @@ export function OtpApprovalsPanel() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({})
-  const [showOtp, setShowOtp] = useState<Record<string, boolean>>({})
   const [approving, setApproving] = useState<Record<string, boolean>>({})
   const [approved, setApproved] = useState<Record<string, boolean>>({})
 
@@ -232,32 +224,15 @@ export function OtpApprovalsPanel() {
                   </div>
 
                   {/* Contact details */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <Mail className="h-3 w-3 text-slate-500 flex-shrink-0" />
-                      <span className="truncate">{participant.email}</span>
-                    </div>
-                    {participant.mobile_number && (
-                      <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Phone className="h-3 w-3 text-slate-500 flex-shrink-0" />
-                        <span>{participant.mobile_number}</span>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <Mail className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                    <span className="truncate">{participant.email}</span>
                   </div>
 
-                  {/* Stored OTP (for reference) */}
+                  {/* OTP hint */}
                   <div className="flex items-center gap-2 bg-slate-900/60 rounded-lg px-3 py-2 border border-slate-700/50 w-fit">
                     <KeyRound className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
-                    <span className="text-xs text-slate-400 mr-1">Registered OTP:</span>
-                    <span className={`font-mono font-bold text-sm tracking-widest ${showOtp[participant.id] ? "text-cyan-300" : "text-slate-600 select-none"}`}>
-                      {showOtp[participant.id] ? participant.whatsapp_otp : "••••••"}
-                    </span>
-                    <button
-                      onClick={() => setShowOtp(prev => ({ ...prev, [participant.id]: !prev[participant.id] }))}
-                      className="ml-1 text-slate-500 hover:text-slate-300 transition-colors"
-                    >
-                      {showOtp[participant.id] ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                    </button>
+                    <span className="text-xs text-slate-400">Ask participant for their 6-digit OTP</span>
                   </div>
                 </div>
 
