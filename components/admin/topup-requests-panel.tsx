@@ -157,8 +157,6 @@ export function TopUpRequestsPanel() {
     } catch (err) {
       console.log("[v0] Error fetching requests:", err)
     } finally {
-      console.error("Failed to fetch topup requests:", err)
-    } finally {
       setIsLoading(false)
       setIsRefreshing(false)
     }
