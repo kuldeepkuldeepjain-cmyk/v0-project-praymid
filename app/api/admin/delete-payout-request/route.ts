@@ -23,6 +23,12 @@ export async function DELETE(request: NextRequest) {
       [payoutRequestId]
     )
 
+    // Also mark the contribution ledger entry as deleted
+    await execute(
+      "UPDATE contribution_ledger SET is_deleted = TRUE WHERE payout_id = $1",
+      [payoutRequestId]
+    )
+
     // Unlink any matched payment submissions
     await execute("UPDATE payment_submissions SET matched_payout_id = NULL, matched_at = NULL WHERE matched_payout_id = $1", [payoutRequestId])
 
