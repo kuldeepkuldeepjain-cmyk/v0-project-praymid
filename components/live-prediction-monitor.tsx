@@ -144,26 +144,38 @@ export function LivePredictionMonitor({
   const loadPredictions = async () => {
     // Skip if no email provided
     if (!userEmail) {
+      console.log("[v0] No userEmail provided")
       return
     }
     
     try {
+      console.log("[v0] Loading predictions for:", userEmail)
       const response = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       })
 
+      console.log("[v0] API response status:", response.status)
+      
       if (!response.ok) {
+        const errorText = await response.text()
+        console.log("[v0] API error response:", errorText)
         throw new Error(`API error: ${response.status}`)
       }
 
       const result = await response.json()
+      console.log("[v0] Predictions loaded:", result.predictions?.length || 0, "predictions")
       
       if (result.success && result.predictions) {
         setPredictions(result.predictions)
         setIsInitialLoad(false)
+      } else {
+        console.log("[v0] Invalid response format:", result)
+        setPredictions([])
+        setIsInitialLoad(false)
       }
     } catch (error: any) {
+      console.error("[v0] Error loading predictions:", error.message)
       // Ignore AbortError - it happens when component unmounts or requests are cancelled
       if (error?.name === 'AbortError') {
         return
