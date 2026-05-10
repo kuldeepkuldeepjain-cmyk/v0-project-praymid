@@ -66,6 +66,7 @@ export function LivePredictionMonitor({
   const [predictions, setPredictions] = useState<Prediction[]>([])
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+  const [activeFilter, setActiveFilter] = useState<"all" | "live" | "won" | "lost">("all")
 
   // Load predictions - refresh periodically for updates
   useEffect(() => {
@@ -343,9 +344,58 @@ export function LivePredictionMonitor({
     )
   }
 
+  // Filter predictions based on active filter
+  const filteredPredictions = predictions.filter((p) => {
+    if (activeFilter === "all") return true
+    if (activeFilter === "live") return p.status === "pending"
+    if (activeFilter === "won") return p.status === "won"
+    if (activeFilter === "lost") return p.status === "lost"
+    return true
+  })
+
+  // Count stats
+  const stats = {
+    all: predictions.length,
+    live: predictions.filter((p) => p.status === "pending").length,
+    won: predictions.filter((p) => p.status === "won").length,
+    lost: predictions.filter((p) => p.status === "lost").length,
+  }
+
   return (
-    <div className="space-y-3">
-      {predictions.map((prediction) => {
+    <div className="space-y-4">
+      {/* Filter Tabs */}
+      <div className="flex gap-2 border-b border-slate-200 flex-wrap">
+        {(
+          [
+            { key: "all" as const, label: "All", icon: "📊" },
+            { key: "live" as const, label: "Live", icon: "🔴" },
+            { key: "won" as const, label: "Won", icon: "✅" },
+            { key: "lost" as const, label: "Lost", icon: "❌" },
+          ]
+        ).map(({ key, label, icon }) => (
+          <button
+            key={key}
+            onClick={() => setActiveFilter(key)}
+            className={`px-4 py-2.5 font-semibold transition-all border-b-2 ${
+              activeFilter === key
+                ? "border-blue-600 text-blue-600"
+                : "border-transparent text-slate-600 hover:text-slate-800"
+            }`}
+          >
+            <span className="mr-1">{icon}</span>
+            {label} <span className="text-xs ml-1 opacity-70">({stats[key]})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Results */}
+      {filteredPredictions.length === 0 ? (
+        <div className="text-center py-8 text-slate-600">
+          <p className="font-semibold">No {activeFilter === "all" ? "predictions" : activeFilter + " predictions"}</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+      {filteredPredictions.map((prediction) => {
             const { value: plValue, isProfit } = getProfitLoss(prediction)
             const isActive = prediction.status === "pending"
             const timeRemaining = isActive ? getTimeRemaining(prediction.created_at, prediction.timeframe_seconds, prediction.expiry_timestamp) : null
@@ -527,6 +577,8 @@ export function LivePredictionMonitor({
           </div>
         )
       })}
+        </div>
+      )}
     </div>
   )
 }

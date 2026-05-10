@@ -91,17 +91,28 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const participant_email = searchParams.get("participant_email")
-    const limit = Number.parseInt(searchParams.get("limit") || "50")
+    const limit = Number.parseInt(searchParams.get("limit") || "1000") // Default to 1000 to show all
+    const status = searchParams.get("status") // Optional filter: pending, won, lost, all
+    
     if (!participant_email) return NextResponse.json({ error: "participant_email is required" }, { status: 400 })
 
+    // Build query with optional status filter
+    let whereClause = "WHERE participant_email = $1"
+    const params = [participant_email]
+    
+    if (status && status !== "all") {
+      whereClause += ` AND status = $${params.length + 1}`
+      params.push(status)
+    }
+    
     const rows = await query(
       `SELECT id, participant_id, participant_email, crypto_pair, prediction_type, amount, entry_price, expiry_at, timeframe_seconds,
               result, profit_loss, status, created_at, settled_at
        FROM predictions
-       WHERE participant_email = $1
+       ${whereClause}
        ORDER BY created_at DESC
-       LIMIT $2`,
-      [participant_email, limit]
+       LIMIT $${params.length + 1}`,
+      [...params, limit]
     ) as any[]
 
     return NextResponse.json({ 
@@ -109,7 +120,8 @@ export async function GET(request: NextRequest) {
       predictions: rows.map(p => ({
         ...p,
         expiry_timestamp: p.expiry_at, // Alias for frontend compatibility
-      }))
+      })),
+      total: rows.length
     })
   } catch (error) {
     console.error("Predictions GET error:", error)
