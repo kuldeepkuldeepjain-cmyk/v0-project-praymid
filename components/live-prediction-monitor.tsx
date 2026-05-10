@@ -1,61 +1,30 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, Clock, ExternalLink } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-
-// Chart URLs for assets
-const CHART_URLS: Record<string, string> = {
-  BTCUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:BTCUSDT',
-  ETHUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:ETHUSDT',
-  BNBUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:BNBUSDT',
-  SOLUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:SOLUSDT',
-  XRPUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:XRPUSDT',
-  DOGEUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:DOGEUSDT',
-  ADAUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:ADAUSDT',
-  AVAXUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:AVAXUSDT',
-  MATICUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:MATICUSDT',
-  SHIBUSDT: 'https://www.tradingview.com/chart/?symbol=BINANCE:SHIBUSDT',
-}
-
-// Crypto icons and colors
-const CRYPTO_ICONS: Record<string, { icon: string; color: string; bgColor: string }> = {
-  BTCUSDT: { icon: '₿', color: '#F7931A', bgColor: 'rgba(247, 147, 26, 0.15)' },
-  ETHUSDT: { icon: '♦', color: '#627EEA', bgColor: 'rgba(98, 126, 234, 0.15)' },
-  BNBUSDT: { icon: '◆', color: '#F3BA2F', bgColor: 'rgba(243, 186, 47, 0.15)' },
-  SOLUSDT: { icon: '◉', color: '#14F195', bgColor: 'rgba(20, 241, 149, 0.15)' },
-  XRPUSDT: { icon: '✦', color: '#23292F', bgColor: 'rgba(35, 41, 47, 0.15)' },
-  DOGEUSDT: { icon: 'Ð', color: '#C2A633', bgColor: 'rgba(194, 166, 51, 0.15)' },
-  ADAUSDT: { icon: '₳', color: '#0033AD', bgColor: 'rgba(0, 51, 173, 0.15)' },
-  AVAXUSDT: { icon: '△', color: '#E84142', bgColor: 'rgba(232, 65, 66, 0.15)' },
-  MATICUSDT: { icon: '⬡', color: '#8247E5', bgColor: 'rgba(130, 71, 229, 0.15)' },
-  SHIBUSDT: { icon: '🐕', color: '#FFA409', bgColor: 'rgba(255, 164, 9, 0.15)' },
-}
+import { useState, useEffect } from 'react'
+import { Card } from '@/components/ui/card'
+import { TrendingUp, TrendingDown, Clock, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 interface Prediction {
   id: string
   participant_id: string
   participant_email: string
   crypto_pair: string
-  prediction_type: "up" | "down"
-  amount: number
-  leverage?: number
-  entry_price: number
-  target_price?: number
-  status: "pending" | "won" | "lost"
-  profit_loss: number
-  result?: string
+  prediction_type: 'up' | 'down'
+  amount: number | string
+  entry_price: number | string
+  expiry_at: string
+  timeframe_seconds: number
+  result: string | null
+  profit_loss: number | null
+  status: 'pending' | 'won' | 'lost'
   created_at: string
-  closed_at?: string
-  timeframe_seconds?: number
-  expiry_timestamp?: string
 }
 
 interface LivePredictionMonitorProps {
   userEmail: string
-  currentPrices: Record<string, { price: number }>
-  onBalanceUpdate: () => void
+  currentPrices: Record<string, { price: number; change: number }>
+  onBalanceUpdate?: () => void
 }
 
 export function LivePredictionMonitor({
@@ -64,290 +33,72 @@ export function LivePredictionMonitor({
   onBalanceUpdate,
 }: LivePredictionMonitorProps) {
   const [predictions, setPredictions] = useState<Prediction[]>([])
-  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
-  const [isInitialLoad, setIsInitialLoad] = useState(true)
-  const [activeFilter, setActiveFilter] = useState<"all" | "live" | "won" | "lost">("all")
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [activeFilter, setActiveFilter] = useState<'all' | 'live' | 'won' | 'lost'>('all')
 
-  // Load predictions - refresh periodically for updates
+  // Fetch predictions
   useEffect(() => {
-    let isMounted = true
-    let timeoutId: NodeJS.Timeout
-    
-    // Load predictions immediately if we have an email
-    const loadWithMountCheck = async () => {
-      if (!isMounted) return
-      
-      // Only fetch if we have an email
-      if (userEmail) {
-        console.log("[v0] Loading predictions for email:", userEmail)
-        await loadPredictions()
-        
-        // Schedule next load only after current completes
-        if (isMounted) {
-          timeoutId = setTimeout(loadWithMountCheck, 10000)
-        }
-      } else {
-        console.log("[v0] No userEmail provided, waiting...")
-        // Check again in 500ms if email becomes available
-        if (isMounted) {
-          timeoutId = setTimeout(loadWithMountCheck, 500)
-        }
-      }
-    }
-    
-    loadWithMountCheck()
-    
-    return () => {
-      isMounted = false
-      if (timeoutId) clearTimeout(timeoutId)
-    }
-  }, [userEmail])
-
-  // Auto-settle predictions when expiry timestamp is reached
-  useEffect(() => {
-    let isMounted = true
-    
-    const checkAndSettle = async () => {
-      if (!isMounted) return
-      
-      const now = new Date()
-      const activePredictions = predictions.filter(
-        (p) => p.status === "pending" && !processingIds.has(p.id)
-      )
-
-      for (const prediction of activePredictions) {
-        if (!isMounted) break
-        
-        // Use expiry_timestamp if available, otherwise fall back to calculated expiry
-        const expiryTime = prediction.expiry_timestamp 
-          ? new Date(prediction.expiry_timestamp)
-          : new Date(new Date(prediction.created_at).getTime() + ((prediction.timeframe_seconds || 60) * 1000))
-        
-        const timeUntilExpiry = expiryTime.getTime() - now.getTime()
-        
-        // Only settle if current time has passed the expiry timestamp
-        if (timeUntilExpiry <= 0) {
-          await settlePrediction(prediction)
-        }
-      }
-    }
-
-    // Check every 3 seconds for settlement timing
-    const interval = setInterval(checkAndSettle, 3000)
-    
-    // Run initial check after 1 second delay to avoid immediate settlement of newly created trades
-    const initialTimeout = setTimeout(() => {
-      if (isMounted) checkAndSettle()
-    }, 1000)
-    
-    return () => {
-      isMounted = false
-      clearInterval(interval)
-      clearTimeout(initialTimeout)
-    }
-  }, [predictions, currentPrices, processingIds])
-
-  const loadPredictions = async () => {
-    // Skip if no email provided
     if (!userEmail) {
-      console.log("[v0] No userEmail provided")
+      setLoading(false)
+      setPredictions([])
       return
     }
-    
-    try {
-      console.log("[v0] Loading predictions for:", userEmail)
-      const response = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      })
 
-      console.log("[v0] API response status:", response.status)
-      
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.log("[v0] API error response:", errorText)
-        throw new Error(`API error: ${response.status}`)
-      }
+    const fetchPredictions = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        console.log('[v0] Fetching predictions for:', userEmail)
+        
+        const response = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`)
+        
+        if (!response.ok) {
+          const errorData = await response.text()
+          console.error('[v0] API error:', response.status, errorData)
+          throw new Error(`Failed to fetch predictions: ${response.status}`)
+        }
 
-      const result = await response.json()
-      console.log("[v0] Predictions loaded:", result.predictions?.length || 0, "predictions")
-      
-      if (result.success && result.predictions) {
-        setPredictions(result.predictions)
-        setIsInitialLoad(false)
-      } else {
-        console.log("[v0] Invalid response format:", result)
+        const data = await response.json()
+        console.log('[v0] Predictions loaded:', data.predictions?.length || 0)
+        
+        if (data.success && Array.isArray(data.predictions)) {
+          setPredictions(data.predictions)
+        } else {
+          console.warn('[v0] Invalid response format:', data)
+          setPredictions([])
+        }
+      } catch (err: any) {
+        console.error('[v0] Error fetching predictions:', err.message)
+        setError(err.message)
         setPredictions([])
-        setIsInitialLoad(false)
+      } finally {
+        setLoading(false)
       }
-    } catch (error: any) {
-      console.error("[v0] Error loading predictions:", error.message)
-      // Ignore AbortError - it happens when component unmounts or requests are cancelled
-      if (error?.name === 'AbortError') {
-        return
-      }
-      console.error("Load predictions error:", error)
-      // Always set isInitialLoad to false so loading state clears
-      setPredictions([])
-      setIsInitialLoad(false)
-    }
-  }
-
-  const settlePrediction = async (prediction: Prediction) => {
-    // Skip if no created_at (means it's not fully settled yet)
-    if (!prediction.created_at) return
-    
-    // Mark as processing
-    setProcessingIds((prev) => new Set(prev).add(prediction.id))
-
-    try {
-      // Get current price for the crypto pair
-      const priceSymbol = prediction.crypto_pair
-      
-      const currentPrice = currentPrices[priceSymbol]?.price
-      if (!currentPrice) {
-        console.error("No current price for", prediction.crypto_pair)
-        setProcessingIds((prev) => {
-          const newSet = new Set(prev)
-          newSet.delete(prediction.id)
-          return newSet
-        })
-        return
-      }
-
-      const entryPrice = prediction.entry_price
-      const isWin =
-        (prediction.prediction_type === "up" && currentPrice > entryPrice) ||
-        (prediction.prediction_type === "down" && currentPrice < entryPrice)
-
-      // 80% profit rate — net profit only; total payout = stake + net profit
-      const profitRate = 0.80
-      const leverage = prediction.leverage || 1
-      const netProfit = prediction.amount * profitRate * leverage
-      const totalPayout = isWin ? prediction.amount + netProfit : 0
-      const profitLoss = isWin ? netProfit : -prediction.amount
-      const status = isWin ? "won" : "lost"
-
-      const supabase = createClient()
-
-      // Update prediction status
-      const { error: updateError } = await supabase
-        .from("predictions")
-        .update({
-          status,
-          target_price: currentPrice,
-          profit_loss: profitLoss,
-          result: status, // "won" or "lost" — same as status
-          closed_at: new Date().toISOString(),
-        })
-        .eq("id", prediction.id)
-
-      if (updateError) throw updateError
-
-      // Credit wallet if win — add back stake + net profit (totalPayout)
-      if (isWin && totalPayout > 0) {
-        const { data: participantData, error: fetchError } = await supabase
-          .from("participants")
-          .select("account_balance")
-          .eq("email", userEmail)
-          .single()
-
-        if (fetchError) throw fetchError
-
-        const newBalance = Number(participantData.account_balance || 0) + totalPayout
-
-        const { error: balanceError } = await supabase
-          .from("participants")
-          .update({ account_balance: newBalance })
-          .eq("email", userEmail)
-
-        if (balanceError) throw balanceError
-
-        onBalanceUpdate()
-      }
-
-      // Reload predictions
-      await loadPredictions()
-    } catch (error: any) {
-      // Ignore AbortError - it happens when component unmounts or requests are cancelled
-      if (error?.name === 'AbortError') {
-        return
-      }
-      console.error("Settlement error:", error)
-    } finally {
-      // Remove from processing
-      setProcessingIds((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(prediction.id)
-        return newSet
-      })
-    }
-  }
-
-  const getTimeRemaining = (createdAt: string, timeframeSeconds?: number, expiryTimestamp?: string) => {
-    const now = new Date()
-    
-    // Use expiry_timestamp if available, otherwise calculate from created_at
-    const settlementTime = expiryTimestamp 
-      ? new Date(expiryTimestamp)
-      : new Date(new Date(createdAt).getTime() + ((timeframeSeconds || 60) * 1000))
-    
-    const diff = settlementTime.getTime() - now.getTime()
-
-    if (diff <= 0) return "Settling..."
-
-    const totalSeconds = Math.floor(diff / 1000)
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`
-    } else if (minutes > 0) {
-      return `${minutes}m ${seconds}s`
-    } else if (seconds > 0) {
-      return `${seconds}s`
-    }
-    return "Settling..."
-  }
-
-  const getProgressPercentage = (createdAt: string, timeframeSeconds?: number, expiryTimestamp?: string) => {
-    const start = new Date(createdAt).getTime()
-    
-    // Use expiry_timestamp if available, otherwise calculate from timeframe
-    const end = expiryTimestamp 
-      ? new Date(expiryTimestamp).getTime()
-      : start + ((timeframeSeconds || 60) * 1000)
-    
-    const now = Date.now()
-    const progress = ((now - start) / (end - start)) * 100
-    return Math.min(Math.max(progress, 0), 100)
-  }
-
-  const getProfitLoss = (prediction: Prediction) => {
-    if (prediction.status !== "pending") {
-      return prediction.status === "won"
-        ? { value: prediction.profit_loss || 0, isProfit: true }
-        : { value: prediction.profit_loss || -prediction.amount, isProfit: false }
     }
 
-    const currentPrice = currentPrices[prediction.crypto_pair]?.price
-    if (!currentPrice) return { value: 0, isProfit: false }
+    fetchPredictions()
+  }, [userEmail])
 
-    const entryPrice = prediction.entry_price
-    const isInProfit =
-      (prediction.prediction_type === "up" && currentPrice > entryPrice) ||
-      (prediction.prediction_type === "down" && currentPrice < entryPrice)
+  // Filter predictions
+  const filteredPredictions = predictions.filter((p) => {
+    if (activeFilter === 'all') return true
+    if (activeFilter === 'live') return p.status === 'pending'
+    if (activeFilter === 'won') return p.status === 'won'
+    if (activeFilter === 'lost') return p.status === 'lost'
+    return true
+  })
 
-    const leverage = prediction.leverage || 1
-    const potentialPayout = prediction.amount * 1.9 * leverage
-    return {
-      value: isInProfit ? potentialPayout : -prediction.amount,
-      isProfit: isInProfit,
-    }
+  // Count stats
+  const stats = {
+    all: predictions.length,
+    live: predictions.filter((p) => p.status === 'pending').length,
+    won: predictions.filter((p) => p.status === 'won').length,
+    lost: predictions.filter((p) => p.status === 'lost').length,
   }
 
-  if (isInitialLoad && predictions.length === 0) {
+  // Loading state
+  if (loading) {
     return (
       <div className="text-center py-12">
         <div className="w-10 h-10 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin mx-auto mb-4" />
@@ -356,6 +107,17 @@ export function LivePredictionMonitor({
     )
   }
 
+  // Error state
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-sm text-red-600 font-semibold">Error loading predictions</p>
+        <p className="text-xs text-slate-500 mt-2">{error}</p>
+      </div>
+    )
+  }
+
+  // Empty state
   if (predictions.length === 0) {
     return (
       <div className="text-center py-12 text-slate-600">
@@ -365,239 +127,150 @@ export function LivePredictionMonitor({
     )
   }
 
-  // Filter predictions based on active filter
-  const filteredPredictions = predictions.filter((p) => {
-    if (activeFilter === "all") return true
-    if (activeFilter === "live") return p.status === "pending"
-    if (activeFilter === "won") return p.status === "won"
-    if (activeFilter === "lost") return p.status === "lost"
-    return true
-  })
-
-  // Count stats
-  const stats = {
-    all: predictions.length,
-    live: predictions.filter((p) => p.status === "pending").length,
-    won: predictions.filter((p) => p.status === "won").length,
-    lost: predictions.filter((p) => p.status === "lost").length,
-  }
-
   return (
     <div className="space-y-4">
       {/* Filter Tabs */}
       <div className="flex gap-2 border-b border-slate-200 flex-wrap">
-        {(
-          [
-            { key: "all" as const, label: "All", icon: "📊" },
-            { key: "live" as const, label: "Live", icon: "🔴" },
-            { key: "won" as const, label: "Won", icon: "✅" },
-            { key: "lost" as const, label: "Lost", icon: "❌" },
-          ]
-        ).map(({ key, label, icon }) => (
+        {[
+          { key: 'all' as const, label: 'All' },
+          { key: 'live' as const, label: 'Live' },
+          { key: 'won' as const, label: 'Won' },
+          { key: 'lost' as const, label: 'Lost' },
+        ].map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setActiveFilter(key)}
             className={`px-4 py-2.5 font-semibold transition-all border-b-2 ${
               activeFilter === key
-                ? "border-blue-600 text-blue-600"
-                : "border-transparent text-slate-600 hover:text-slate-800"
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-slate-600 hover:text-slate-800'
             }`}
           >
-            <span className="mr-1">{icon}</span>
             {label} <span className="text-xs ml-1 opacity-70">({stats[key]})</span>
           </button>
         ))}
       </div>
 
-      {/* Results */}
+      {/* Predictions List */}
       {filteredPredictions.length === 0 ? (
         <div className="text-center py-8 text-slate-600">
-          <p className="font-semibold">No {activeFilter === "all" ? "predictions" : activeFilter + " predictions"}</p>
+          <p className="font-semibold">No {activeFilter === 'all' ? 'predictions' : activeFilter + ' predictions'}</p>
         </div>
       ) : (
         <div className="space-y-3">
-      {filteredPredictions.map((prediction) => {
-            const { value: plValue, isProfit } = getProfitLoss(prediction)
-            const isActive = prediction.status === "pending"
-            const timeRemaining = isActive ? getTimeRemaining(prediction.created_at, prediction.timeframe_seconds, prediction.expiry_timestamp) : null
-            const progress = isActive ? getProgressPercentage(prediction.created_at, prediction.timeframe_seconds, prediction.expiry_timestamp) : 100
+          {filteredPredictions.map((prediction) => {
+            const amount = Number(prediction.amount)
+            const entryPrice = Number(prediction.entry_price)
+            const profitLoss = prediction.profit_loss ? Number(prediction.profit_loss) : 0
+            const isWin = prediction.status === 'won'
+            const isLoss = prediction.status === 'lost'
+            const isLive = prediction.status === 'pending'
+            
+            // Calculate time remaining
+            const expiryTime = new Date(prediction.expiry_at).getTime()
+            const nowTime = Date.now()
+            const secondsLeft = Math.max(0, Math.floor((expiryTime - nowTime) / 1000))
+            const timeRemaining = secondsLeft > 0 
+              ? `${Math.floor(secondsLeft / 60)}m ${secondsLeft % 60}s`
+              : 'Expired'
 
+            // Current price
+            const currentPrice = currentPrices[prediction.crypto_pair]?.price || entryPrice
+            
             return (
-          <div
-            key={prediction.id}
-            className={`relative overflow-hidden rounded-xl border transition-all duration-200 ${
-              isActive
-                ? "bg-white border-slate-200 shadow-sm"
-                : prediction.status === "won"
-                  ? "bg-white border-green-200"
-                  : "bg-white border-red-200"
-            }`}
-          >
-            {/* Header with Prominent Logo */}
-            <div className="flex items-center justify-between p-3 border-b border-slate-100">
-              <div className="flex items-center gap-3">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold shadow-sm"
-                  style={{
-                    background: CRYPTO_ICONS[prediction.crypto_pair]?.bgColor || 'rgba(100, 100, 100, 0.15)',
-                    color: CRYPTO_ICONS[prediction.crypto_pair]?.color || '#666',
-                  }}
-                >
-                  {CRYPTO_ICONS[prediction.crypto_pair]?.icon || '◎'}
-                </div>
-                <div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base font-bold text-slate-900">
-                      {prediction.crypto_pair.replace('USDT', '')}
-                    </span>
-                    {prediction.leverage && prediction.leverage > 1 && (
-                      <span className="px-1.5 py-0.5 text-xs font-bold rounded bg-orange-100 text-orange-700">
-                        {prediction.leverage}x
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs text-slate-500">
-                    {new Date(prediction.created_at).toLocaleString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {isActive ? (
-                <Badge className="text-xs font-semibold bg-amber-100 text-amber-700 border-0">
-                  <Clock className="h-3 w-3 mr-1 inline" />
-                  {timeRemaining}
-                </Badge>
-              ) : (
-                <Badge 
-                  className={`text-xs font-semibold border-0 ${
-                    prediction.status === "won" 
-                      ? "bg-green-100 text-green-700" 
-                      : "bg-red-100 text-red-700"
-                  }`}
-                >
-                  {prediction.status === "won" ? "Won" : "Lost"}
-                </Badge>
-              )}
-            </div>
-
-            {/* Trade Details */}
-            <div className="p-3 space-y-2">
-              <div className="flex items-center gap-2 pb-2">
-                {prediction.prediction_type === "up" ? (
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-600" />
-                )}
-                <span className={`text-sm font-semibold ${
-                  prediction.prediction_type === "up" ? "text-green-600" : "text-red-600"
-                }`}>
-                  {prediction.prediction_type === "up" ? "Long Position" : "Short Position"}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
-                <div>
-                  <div className="text-xs text-slate-500">Entry Point</div>
-                  <div className="text-sm font-semibold text-slate-900">
-                    ${Number(prediction.entry_price).toFixed(prediction.entry_price < 1 ? 8 : 2)}
-                  </div>
-                </div>
-                {!isActive && prediction.target_price ? (
-                  <div>
-                    <div className="text-xs text-slate-500">Close Point</div>
-                    <div className="text-sm font-semibold text-slate-900">
-                      ${Number(prediction.target_price).toFixed(prediction.target_price < 1 ? 8 : 2)}
+              <Card
+                key={prediction.id}
+                className={`p-4 border transition-all hover:shadow-md ${
+                  isWin
+                    ? 'border-green-200 bg-green-50/50'
+                    : isLoss
+                    ? 'border-red-200 bg-red-50/50'
+                    : 'border-slate-200 bg-slate-50/50'
+                }`}
+              >
+                <div className="space-y-3">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {/* Prediction Type Icon */}
+                      <div
+                        className={`p-2 rounded ${
+                          prediction.prediction_type === 'up' ? 'bg-green-100' : 'bg-red-100'
+                        }`}
+                      >
+                        {prediction.prediction_type === 'up' ? (
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                      {/* Pair & Amount */}
+                      <div>
+                        <p className="font-semibold text-slate-900">{prediction.crypto_pair}</p>
+                        <p className="text-xs text-slate-500">${amount.toFixed(2)} bet</p>
+                      </div>
+                    </div>
+                    {/* Status Badge */}
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        isWin
+                          ? 'bg-green-200 text-green-800'
+                          : isLoss
+                          ? 'bg-red-200 text-red-800'
+                          : 'bg-amber-200 text-amber-800'
+                      }`}
+                    >
+                      {isWin ? 'Won' : isLoss ? 'Lost' : 'Live'}
                     </div>
                   </div>
-                ) : (
-                  <div>
-                    <div className="text-xs text-slate-500">Current</div>
-                    <div className="text-sm font-semibold text-slate-900">
-                      ${(currentPrices[prediction.crypto_pair]?.price || Number(prediction.entry_price)).toFixed(currentPrices[prediction.crypto_pair]?.price < 1 ? 8 : 2)}
+
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-200">
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-semibold">Entry</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        ${entryPrice.toFixed(entryPrice < 1 ? 8 : 2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-semibold">Current</p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        ${currentPrice.toFixed(currentPrice < 1 ? 8 : 2)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 uppercase font-semibold">P/L</p>
+                      <p
+                        className={`text-sm font-semibold ${
+                          profitLoss > 0
+                            ? 'text-green-600'
+                            : profitLoss < 0
+                            ? 'text-red-600'
+                            : 'text-slate-600'
+                        }`}
+                      >
+                        {profitLoss > 0 ? '+' : ''} ${profitLoss.toFixed(2)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500 uppercase font-semibold">
+                        {isLive ? 'Time Left' : 'Closed'}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {isLive ? timeRemaining : new Date(prediction.created_at).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
-                )}
-                <div className="text-right">
-                  <div className="text-xs text-slate-500">Volume</div>
-                  <div className="text-sm font-semibold text-slate-900">${Number(prediction.amount).toFixed(2)}</div>
+
+                  {/* Time Created */}
+                  <div className="text-xs text-slate-500 flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Placed {new Date(prediction.created_at).toLocaleString()}
+                  </div>
                 </div>
-              </div>
-
-              {/* P&L Display */}
-              <div className={`flex items-center justify-between p-2 rounded-lg ${
-                isProfit ? "bg-green-50" : "bg-red-50"
-              }`}>
-                <span className="text-xs font-medium text-slate-600">Profit/Loss</span>
-                <span className={`text-base font-bold ${
-                  isProfit ? "text-green-600" : "text-red-600"
-                }`}>
-                  {isProfit ? "+" : ""}{typeof plValue === "number" ? plValue.toFixed(2) : "0.00"}
-                </span>
-              </div>
-
-              {/* Close Time for Settled Trades */}
-              {!isActive && prediction.closed_at && (
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-500">Closed at:</span>
-                  <span className="text-slate-600 font-medium">
-                    {new Date(prediction.closed_at).toLocaleString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric', 
-                      hour: '2-digit', 
-                      minute: '2-digit' 
-                    })}
-                  </span>
-                </div>
-              )}
-
-              {/* Chart Link */}
-              {CHART_URLS[prediction.crypto_pair] && (
-                <a
-                  href={CHART_URLS[prediction.crypto_pair]}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  View Chart
-                </a>
-              )}
-            </div>
-
-            {/* Progress Bar for Active */}
-            {isActive && (
-              <div className="px-3 pb-3">
-                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-1000 ${
-                      isProfit ? "bg-green-500" : "bg-red-500"
-                    }`}
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Manual Settle Button */}
-            {isActive && timeRemaining === "Expired" && !processingIds.has(prediction.id) && (
-              <div className="px-3 pb-3">
-                <button
-                  onClick={() => manuallySettlePrediction(prediction.id)}
-                  disabled={processingIds.has(prediction.id)}
-                  className="w-full py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  Settle Trade
-                </button>
-              </div>
-            )}
-          </div>
-        )
-      })}
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>

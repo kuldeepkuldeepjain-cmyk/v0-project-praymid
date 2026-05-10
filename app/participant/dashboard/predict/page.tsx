@@ -801,6 +801,7 @@ function PredictPageContent() {
       {/* Active Trade Tracker - Shows for selected asset with active trade */}
       {selectedAssetSymbol && activeTrades[selectedAssetSymbol] && cryptoPrices[selectedAssetSymbol] && (
         <ActiveTradeTracker
+          key={`trade-${activeTrades[selectedAssetSymbol]?.id}`}
           activeTrade={activeTrades[selectedAssetSymbol]}
           currentPrice={cryptoPrices[selectedAssetSymbol].price}
           onTradeSettled={() => {}}
