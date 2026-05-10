@@ -66,22 +66,29 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   // Keep refs updated
   currentPriceRef.current = currentPrice
 
+  // Normalize activeTrade amount to ensure it's a number
+  const normalizedTrade = activeTrade ? {
+    ...activeTrade,
+    amount: Number(activeTrade.amount),
+    entry_price: Number(activeTrade.entry_price),
+  } : null
+
   // Determine precision for this pair
-  const pricePrecision = activeTrade ? getPairPrecision(activeTrade.crypto_pair) : 2
+  const pricePrecision = normalizedTrade ? getPairPrecision(normalizedTrade.crypto_pair) : 2
 
   // Calculate P/L using pip-aware comparison with tie detection
-  const tradeState = activeTrade ? getTradeState(
-    activeTrade.crypto_pair,
-    activeTrade.prediction_type,
-    activeTrade.entry_price,
+  const tradeState = normalizedTrade ? getTradeState(
+    normalizedTrade.crypto_pair,
+    normalizedTrade.prediction_type,
+    normalizedTrade.entry_price,
     currentPrice
   ) : "tie"
 
   const currentPL = (() => {
-    if (!activeTrade) return 0
+    if (!normalizedTrade) return 0
     if (tradeState === "tie") return 0  // No movement = no profit/loss (refund)
-    if (tradeState === "win") return activeTrade.amount * 0.80
-    return -activeTrade.amount
+    if (tradeState === "win") return normalizedTrade.amount * 0.80
+    return -normalizedTrade.amount
   })()
 
   const isWinning = tradeState === "win"
@@ -90,7 +97,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
 
   // Settle trade via API (called once)
   const settleTrade = useCallback(async () => {
-    if (!activeTrade || settlingRef.current) return
+    if (!normalizedTrade || settlingRef.current) return
     settlingRef.current = true
 
     setResultPL(currentPLRef.current)
@@ -102,7 +109,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          predictionId: activeTrade.id,
+          predictionId: normalizedTrade.id,
           finalPrice: currentPriceRef.current,
         }),
       })
@@ -114,7 +121,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
           // Flat market — full refund, zero P/L
           setResultPL(0)
         } else {
-          setResultPL(res.isWin ? res.payout - activeTrade.amount : -activeTrade.amount)
+          setResultPL(res.isWin ? res.payout - normalizedTrade.amount : -normalizedTrade.amount)
         }
       }
     } catch (err) {
@@ -128,26 +135,26 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
       settlingRef.current = false
       onTradeSettled()
     }, 3000)
-  }, [activeTrade, onTradeSettled]) // Updated dependency list
+  }, [normalizedTrade, onTradeSettled]) // Updated dependency list
 
   // Reset state when a NEW trade comes in
   useEffect(() => {
-    if (!activeTrade) return
+    if (!normalizedTrade) return
     settlingRef.current = false
     setPhase("live")
     setResultPL(0)
     setResultWin(false)
-  }, [activeTrade])
+  }, [normalizedTrade])
 
   // Countdown timer
   useEffect(() => {
-    if (!activeTrade || phase !== "live") return
+    if (!normalizedTrade || phase !== "live") return
 
     let iv: NodeJS.Timeout | null = null
 
     const tick = () => {
       const now = Date.now()
-      const expiry = new Date(activeTrade.expiry_timestamp).getTime()
+      const expiry = new Date(normalizedTrade.expiry_timestamp).getTime()
       const remaining = Math.max(0, Math.floor((expiry - now) / 1000))
       setTimeRemaining(remaining)
 
@@ -162,11 +169,11 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
     return () => {
       if (iv) clearInterval(iv)
     }
-  }, [activeTrade, phase, settleTrade])
+  }, [normalizedTrade, phase, settleTrade])
 
   // --- Render ---
 
-  if (!activeTrade || phase === "hidden") return null
+  if (!normalizedTrade || phase === "hidden") return null
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60)
@@ -196,7 +203,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
             </h3>
             <div className="text-xl font-black">
               {isRefund
-                ? `$${activeTrade.amount.toFixed(2)} returned`
+                ? `$${normalizedTrade.amount.toFixed(2)} returned`
                 : `${resultPL > 0 ? "+" : "-"}$${Math.abs(resultPL).toFixed(2)}`}
             </div>
             <p className="text-[10px] mt-1.5 text-white/80">
@@ -224,8 +231,8 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
           {/* Header */}
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-1">
-              <div className={`p-0.5 rounded ${activeTrade.prediction_type === "up" ? "bg-green-500" : "bg-red-500"}`}>
-                {activeTrade.prediction_type === "up" ? (
+              <div className={`p-0.5 rounded ${normalizedTrade.prediction_type === "up" ? "bg-green-500" : "bg-red-500"}`}>
+                {normalizedTrade.prediction_type === "up" ? (
                   <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
                 ) : (
                   <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
@@ -233,10 +240,10 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
               </div>
               <div>
                 <p className="text-[10px] sm:text-xs font-bold text-slate-800 leading-tight">
-                  {activeTrade.crypto_pair}
+                  {normalizedTrade.crypto_pair}
                 </p>
                 <p className="text-[8px] sm:text-[9px] text-slate-600 leading-tight">
-                  ${activeTrade.amount.toFixed(2)}
+                  ${normalizedTrade.amount.toFixed(2)}
                 </p>
               </div>
             </div>
@@ -284,7 +291,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
             <div className="bg-white/50 rounded p-1 sm:p-1.5">
               <p className="text-[7px] sm:text-[8px] text-slate-500 uppercase font-semibold">Entry</p>
               <p className="text-[10px] sm:text-[11px] font-bold text-slate-800 tabular-nums">
-                {activeTrade.entry_price.toFixed(pricePrecision)}
+                {normalizedTrade.entry_price.toFixed(pricePrecision)}
               </p>
             </div>
             <div className="bg-white/50 rounded p-1 sm:p-1.5">
