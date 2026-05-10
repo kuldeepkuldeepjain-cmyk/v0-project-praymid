@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { TrendingUp, TrendingDown, Clock, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
+import { participantFetch } from '@/lib/auth'
 
 interface Prediction {
   id: string
@@ -51,10 +52,7 @@ export function LivePredictionMonitor({
         setError(null)
         console.log('[v0] Fetching predictions for:', userEmail)
         
-        const response = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`, {
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        })
+        const response = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`)
         
         if (!response.ok) {
           const errorData = await response.text()
