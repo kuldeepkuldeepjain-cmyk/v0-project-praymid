@@ -25,14 +25,21 @@ export async function GET(request: NextRequest) {
 
     const targetParticipantId = ledgerData.participant_id
 
+    // Fetch participant details
     const partRes = await db.query(
       `SELECT id, full_name, mobile_number, wallet_address, email FROM participants WHERE id=$1`,
       [targetParticipantId]
     )
+    
+    const participantData = partRes.rows[0] || {}
+    
+    // Fetch wallet pool
     const walletRes = await db.query(
       `SELECT wallet_address FROM wallet_pool WHERE assigned_to=$1 LIMIT 1`,
       [targetParticipantId]
     )
+    
+    const collectionWallet = walletRes.rows[0]?.wallet_address || participantData.wallet_address
 
     return NextResponse.json({
       success: true,
@@ -48,8 +55,16 @@ export async function GET(request: NextRequest) {
         difference: Math.abs(parseFloat(ledgerData.payment_amount) - parseFloat(ledgerData.payout_amount)),
         created_at: ledgerData.created_at,
         participant_email: email,
-        participants: partRes.rows[0] || null,
-        wallet_pool: walletRes.rows[0] || { wallet_address: null },
+        participants: {
+          id: participantData.id,
+          full_name: participantData.full_name,
+          email: participantData.email,
+          mobile_number: participantData.mobile_number,
+          wallet_address: participantData.wallet_address,
+        },
+        wallet_pool: {
+          wallet_address: collectionWallet,
+        },
       },
     })
   } catch (error) {
