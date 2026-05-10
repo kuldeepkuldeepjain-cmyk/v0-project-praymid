@@ -1,19 +1,13 @@
 "use client"
 import { adminFetch } from "@/lib/auth"
-
 import { useState, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import {
-  ShieldCheck,
-  RefreshCw,
-  Search,
-  Clock,
-  CheckCircle2,
-  Mail,
-  KeyRound,
+  ShieldCheck, RefreshCw, Search, Clock,
+  CheckCircle2, Mail, KeyRound, Phone, Eye, EyeOff,
 } from "lucide-react"
 import { getAdminData } from "@/lib/auth"
 
@@ -22,6 +16,8 @@ interface PendingParticipant {
   full_name: string
   username: string
   email: string
+  mobile_number: string
+  whatsapp_otp: string
   otp_verified: boolean
   created_at: string
 }
@@ -34,17 +30,15 @@ export function OtpApprovalsPanel() {
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({})
   const [approving, setApproving] = useState<Record<string, boolean>>({})
   const [approved, setApproved] = useState<Record<string, boolean>>({})
+  const [showOtp, setShowOtp] = useState<Record<string, boolean>>({})
 
   const fetchPending = useCallback(async () => {
     try {
       setLoading(true)
       const res = await adminFetch("/api/admin/pending-otp-approvals")
       const data = await res.json()
-      if (data.success) {
-        setParticipants(data.pending || [])
-      }
-    } catch (error) {
-      console.error("[v0] Error fetching pending approvals:", error)
+      if (data.success) setParticipants(data.pending || [])
+    } catch {
       toast({ title: "Error", description: "Failed to fetch pending approvals", variant: "destructive" })
     } finally {
       setLoading(false)
@@ -60,7 +54,7 @@ export function OtpApprovalsPanel() {
   const handleApprove = async (participant: PendingParticipant) => {
     const enteredOtp = otpInputs[participant.id]?.trim()
     if (!enteredOtp) {
-      toast({ title: "OTP Required", description: "Please enter the OTP shared by the participant.", variant: "destructive" })
+      toast({ title: "OTP Required", description: "Enter the OTP to verify.", variant: "destructive" })
       return
     }
 
@@ -82,20 +76,25 @@ export function OtpApprovalsPanel() {
         setApproved(prev => ({ ...prev, [participant.id]: true }))
         toast({
           title: "OTP Verified!",
-          description: `${participant.full_name || participant.username} has been approved successfully.`,
+          description: `${participant.full_name || participant.username} can now log in.`,
         })
-        // Remove from list after short delay
         setTimeout(() => {
           setParticipants(prev => prev.filter(p => p.id !== participant.id))
-          setApproved(prev => { const n = { ...prev }; delete n[participant.id]; return n })
-        }, 2000)
+        }, 2500)
       } else {
         toast({ title: "Verification Failed", description: data.error || "Invalid OTP", variant: "destructive" })
       }
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to verify OTP", variant: "destructive" })
     } finally {
       setApproving(prev => ({ ...prev, [participant.id]: false }))
+    }
+  }
+
+  // Auto-fill OTP from DB if admin wants to approve directly
+  const handleAutoFill = (participant: PendingParticipant) => {
+    if (participant.whatsapp_otp) {
+      setOtpInputs(prev => ({ ...prev, [participant.id]: participant.whatsapp_otp }))
     }
   }
 
@@ -112,9 +111,7 @@ export function OtpApprovalsPanel() {
 
   const formatTime = (dateStr: string) => {
     const d = new Date(dateStr)
-    const now = new Date()
-    const diffMs = now.getTime() - d.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
+    const diffMins = Math.floor((Date.now() - d.getTime()) / 60000)
     if (diffMins < 1) return "Just now"
     if (diffMins < 60) return `${diffMins}m ago`
     const diffHrs = Math.floor(diffMins / 60)
@@ -132,7 +129,7 @@ export function OtpApprovalsPanel() {
             OTP Approvals
           </h2>
           <p className="text-sm text-slate-400 mt-0.5">
-            Approve participants who have shared their registration OTP
+            Verify mobile OTP to allow new participants to log in
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -156,12 +153,20 @@ export function OtpApprovalsPanel() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          placeholder="Search by name, email, or phone..."
+          placeholder="Search by name, email, or mobile..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-500"
         />
       </div>
+
+      {/* Loading */}
+      {loading && participants.length === 0 && (
+        <div className="flex items-center justify-center py-16">
+          <RefreshCw className="h-6 w-6 text-slate-400 animate-spin mr-3" />
+          <span className="text-slate-400">Loading pending approvals...</span>
+        </div>
+      )}
 
       {/* Empty state */}
       {!loading && filtered.length === 0 && (
@@ -176,77 +181,93 @@ export function OtpApprovalsPanel() {
         </div>
       )}
 
-      {/* Loading */}
-      {loading && participants.length === 0 && (
-        <div className="flex items-center justify-center py-16">
-          <RefreshCw className="h-6 w-6 text-slate-400 animate-spin mr-3" />
-          <span className="text-slate-400">Loading pending approvals...</span>
-        </div>
-      )}
-
       {/* Participant cards */}
       <div className="space-y-4">
         {filtered.map(participant => {
           const isApproved = approved[participant.id]
           const isApproving = approving[participant.id]
+          const otpVisible = showOtp[participant.id]
 
           return (
             <div
               key={participant.id}
-              className={`rounded-xl border p-5 transition-all duration-300 ${
+              className={`rounded-xl border p-5 transition-colors ${
                 isApproved
                   ? "bg-emerald-500/10 border-emerald-500/30"
                   : "bg-slate-800/60 border-slate-700 hover:border-slate-600"
               }`}
             >
-              <div className="flex flex-col md:flex-row md:items-start gap-4">
-                {/* Participant info */}
+              <div className="flex flex-col md:flex-row md:items-start gap-5">
+                {/* Left: participant info */}
                 <div className="flex-1 space-y-3">
-                  {/* Name + time */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                          {(participant.full_name || participant.username || "?")[0].toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-white font-semibold text-sm leading-tight">
-                            {participant.full_name || participant.username}
-                          </p>
-                          <p className="text-slate-400 text-xs">@{participant.username}</p>
-                        </div>
+                  {/* Avatar + name */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                        {(participant.full_name || participant.username || "?")[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-white font-semibold text-sm leading-tight">
+                          {participant.full_name || participant.username}
+                        </p>
+                        <p className="text-slate-400 text-xs">@{participant.username}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-slate-500 flex-shrink-0">
+                    <span className="flex items-center gap-1 text-xs text-slate-500 flex-shrink-0">
                       <Clock className="h-3 w-3" />
                       {formatTime(participant.created_at)}
-                    </div>
+                    </span>
                   </div>
 
-                  {/* Contact details */}
+                  {/* Email */}
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <Mail className="h-3 w-3 text-slate-500 flex-shrink-0" />
                     <span className="truncate">{participant.email}</span>
                   </div>
 
-                  {/* OTP hint */}
-                  <div className="flex items-center gap-2 bg-slate-900/60 rounded-lg px-3 py-2 border border-slate-700/50 w-fit">
-                    <KeyRound className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
-                    <span className="text-xs text-slate-400">Ask participant for their 6-digit OTP</span>
-                  </div>
+                  {/* Mobile */}
+                  {participant.mobile_number && (
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <Phone className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                      <span>{participant.mobile_number}</span>
+                    </div>
+                  )}
+
+                  {/* Registered OTP — admin can see it to verify */}
+                  {participant.whatsapp_otp && (
+                    <div className="flex items-center gap-2 bg-slate-900/80 rounded-lg px-3 py-2 border border-slate-700/60 w-fit">
+                      <KeyRound className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
+                      <span className="text-xs text-slate-400 mr-1">Registered OTP:</span>
+                      <span className={`font-mono text-sm font-bold tracking-widest ${otpVisible ? "text-cyan-300" : "text-slate-600"}`}>
+                        {otpVisible ? participant.whatsapp_otp : "••••••"}
+                      </span>
+                      <button
+                        onClick={() => setShowOtp(prev => ({ ...prev, [participant.id]: !prev[participant.id] }))}
+                        className="text-slate-500 hover:text-slate-300 ml-1"
+                      >
+                        {otpVisible ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                      </button>
+                      <button
+                        onClick={() => handleAutoFill(participant)}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 ml-2 underline underline-offset-2"
+                      >
+                        Auto-fill
+                      </button>
+                    </div>
+                  )}
                 </div>
 
-                {/* OTP input + approve */}
+                {/* Right: OTP input + approve */}
                 <div className="flex flex-col gap-3 md:w-56 flex-shrink-0">
                   {isApproved ? (
                     <div className="flex items-center gap-2 justify-center py-4 text-emerald-400">
                       <CheckCircle2 className="h-5 w-5" />
-                      <span className="text-sm font-semibold">Approved!</span>
+                      <span className="text-sm font-semibold">Approved! Can now log in.</span>
                     </div>
                   ) : (
                     <>
                       <div className="space-y-1.5">
-                        <label className="text-xs text-slate-400 font-medium">Enter OTP from participant</label>
+                        <label className="text-xs text-slate-400 font-medium">Enter OTP to verify</label>
                         <Input
                           placeholder="6-digit OTP"
                           maxLength={6}
@@ -262,15 +283,9 @@ export function OtpApprovalsPanel() {
                         className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold w-full"
                       >
                         {isApproving ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Verifying...
-                          </>
+                          <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Verifying...</>
                         ) : (
-                          <>
-                            <ShieldCheck className="h-4 w-4 mr-2" />
-                            Approve
-                          </>
+                          <><ShieldCheck className="h-4 w-4 mr-2" />Verify & Approve</>
                         )}
                       </Button>
                     </>

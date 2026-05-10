@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
-import { setParticipantSession } from "@/lib/session"
 import { query, execute } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
@@ -56,11 +55,12 @@ export async function POST(request: Request) {
 
     const newParticipant = inserted[0]
 
-    try { await setParticipantSession({ participantId: newParticipant.id, email: newParticipant.email, role: "participant" }) } catch (_) {}
+    // Do NOT auto-login — participant must wait for admin to verify mobile OTP first
 
     return NextResponse.json({
       success: true,
-      message: "Registration successful",
+      pendingVerification: true,
+      message: "Registration successful! Please wait for admin to verify your mobile OTP before logging in.",
       participantId: newParticipant.id,
       walletAddress,
       username: usernameKey,

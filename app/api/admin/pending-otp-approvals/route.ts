@@ -9,9 +9,9 @@ export async function GET(request: NextRequest) {
   try {
     const rows = await query(
       `SELECT id, full_name, username, email,
-              otp_verified, created_at
+              mobile_number, whatsapp_otp, otp_verified, created_at
        FROM participants
-       WHERE otp_verified = false AND whatsapp_otp IS NOT NULL
+       WHERE otp_verified = false OR otp_verified IS NULL
        ORDER BY created_at DESC`
     )
 

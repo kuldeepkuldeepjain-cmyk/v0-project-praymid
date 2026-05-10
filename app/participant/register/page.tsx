@@ -151,11 +151,11 @@ export default function ParticipantRegisterPage() {
           clearInterval(interval)
           toast({
             title: "OTP Approved!",
-            description: "Your account has been verified. Redirecting to dashboard...",
+            description: "Your account has been verified. Please log in to continue.",
           })
           setTimeout(() => {
-            window.location.href = "/participant/dashboard"
-          }, 1500)
+            window.location.href = "/participant/login"
+          }, 2000)
         }
       } catch (_) {}
     }, 5000)
@@ -376,7 +376,7 @@ export default function ParticipantRegisterPage() {
             </h1>
             <p className="text-sm text-slate-400">
               {otpApproved
-                ? "Redirecting you to the dashboard..."
+                ? "Account verified! Redirecting you to login..."
                 : "Share your OTP with the admin on WhatsApp to get approved."
               }
             </p>
@@ -449,7 +449,7 @@ export default function ParticipantRegisterPage() {
             <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center space-y-3">
               <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto" />
               <p className="text-white font-semibold">Your OTP has been verified!</p>
-              <p className="text-slate-400 text-sm">Taking you to your dashboard now...</p>
+              <p className="text-slate-400 text-sm">You can now log in to your account.</p>
             </div>
           )}
         </div>

@@ -37,6 +37,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
     }
 
+    // Block login if mobile OTP not yet verified by admin
+    if (participant.otp_verified === false) {
+      return NextResponse.json({
+        success: false,
+        error: "Your account is pending admin verification. Please wait for admin to verify your mobile OTP before logging in.",
+        pendingVerification: true,
+      }, { status: 403 })
+    }
+
     // Update last login (best-effort, column may not exist)
     await execute("UPDATE participants SET updated_at = NOW() WHERE id = $1", [participant.id]).catch(() => {})
 

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2 } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2, ShieldCheck, Clock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { setParticipantAuth } from "@/lib/auth"
 
@@ -59,6 +59,7 @@ export default function ParticipantLoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [pendingVerification, setPendingVerification] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
 
   const runDiagnostics = async () => {
@@ -103,6 +104,11 @@ export default function ParticipantLoginPage() {
       })
 
       const data = await response.json()
+
+      if (!data.success && data.pendingVerification) {
+        setPendingVerification(true)
+        return
+      }
 
       if (data.success) {
         const participantData = {
@@ -213,6 +219,41 @@ export default function ParticipantLoginPage() {
           <p className="text-sm text-slate-500 font-medium">Sign in to access your dashboard</p>
         </div>
 
+        {/* Pending Verification Banner */}
+        {pendingVerification && (
+          <Card className="border-0 shadow-xl bg-amber-50/95 backdrop-blur-xl animate-fade-in-up overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center mx-auto">
+                <Clock className="h-8 w-8 text-amber-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-amber-900 flex items-center justify-center gap-2">
+                  <ShieldCheck className="h-5 w-5" />
+                  Awaiting Admin Verification
+                </h3>
+                <p className="text-sm text-amber-700 leading-relaxed">
+                  Your account is registered but your mobile OTP has not been verified by admin yet.
+                  Please contact admin or wait for verification before logging in.
+                </p>
+              </div>
+              <div className="bg-amber-100 rounded-lg px-4 py-3 text-xs text-amber-800 font-medium">
+                Once admin verifies your mobile number, you will be able to log in.
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPendingVerification(false)}
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              >
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Login Card */}
+        {!pendingVerification && (
         <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/90 backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group">
           {/* Animated gradient border */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#E85D3B] via-[#7c3aed] to-[#22d3ee] opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" style={{ padding: "2px" }}>
@@ -304,6 +345,7 @@ export default function ParticipantLoginPage() {
             </form>
           </CardContent>
         </Card>
+        )}
 
         <div className="text-center space-y-3 animate-fade-in-up-delay-2">
           <p className="text-sm text-slate-500 font-bold">
