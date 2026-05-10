@@ -49,8 +49,8 @@ export async function POST(request: Request) {
     const result = isWin ? "won" : "lost"
 
     await db.query(
-      "UPDATE predictions SET target_price=$1, status=$2, result=$2, profit_loss=$3, closed_at=NOW() WHERE id=$4",
-      [finalPrice, result, profitLoss, predictionId]
+      "UPDATE predictions SET status=$1, result=$2, profit_loss=$3 WHERE id=$4",
+      [result, result, profitLoss, predictionId]
     )
 
     if (isWin && payout > 0) {
