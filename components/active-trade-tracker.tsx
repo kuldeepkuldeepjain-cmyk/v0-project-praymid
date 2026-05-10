@@ -225,7 +225,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   return (
     <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50">
       <Card
-        className={`border shadow-lg backdrop-blur-lg transition-all duration-200 ${
+        className={`border shadow-lg backdrop-blur-lg ${
           isTie
             ? "bg-gradient-to-br from-amber-50/95 to-orange-50/95 border-amber-500"
             : isWinning
