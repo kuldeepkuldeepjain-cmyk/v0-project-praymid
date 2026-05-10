@@ -10,6 +10,7 @@ const nextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
+  turbopack: {},
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Prevent Node.js-only modules from being bundled for the browser
