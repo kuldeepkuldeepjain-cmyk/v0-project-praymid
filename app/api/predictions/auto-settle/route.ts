@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     const isWin = prediction.prediction_type === "up" ? priceDiff > 0 : priceDiff < 0
-    const profitRate = 0.80
+    const profitRate = 0.50
     const payout = isWin ? prediction.amount * (1 + profitRate) : 0
     const profitLoss = isWin ? prediction.amount * profitRate : -prediction.amount
     const result = isWin ? "won" : "lost"

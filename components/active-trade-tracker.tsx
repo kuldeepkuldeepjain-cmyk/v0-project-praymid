@@ -88,7 +88,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   const currentPL = (() => {
     if (!normalizedTrade) return 0
     if (tradeState === "tie") return 0  // No movement = no profit/loss (refund)
-    if (tradeState === "win") return normalizedTrade.amount * 0.80
+    if (tradeState === "win") return normalizedTrade.amount * 0.50
     return -normalizedTrade.amount
   })()
 
