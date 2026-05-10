@@ -182,21 +182,29 @@ function PredictPageContent() {
       }
     }
 
-    // Load active trades for the user
+    // Load ONLY pending/active trades for the user — never reload settled/refunded ones
     const loadActiveTrades = async () => {
       try {
-        const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}`)
+        const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}&status=pending`)
         const json = await res.json()
         const data: any[] = json.predictions || []
-        const error = null
 
-        if (!error && data) {
-          const tradesMap: Record<string, any> = {}
-          data.forEach((trade: any) => {
+        // Only add trades that are genuinely still pending
+        const tradesMap: Record<string, any> = {}
+        data.forEach((trade: any) => {
+          if (trade.status === "pending") {
             tradesMap[trade.crypto_pair] = trade
+          }
+        })
+        // Preserve any trades already in state that are still pending
+        setActiveTrades(prev => {
+          const next: Record<string, any> = { ...tradesMap }
+          // Keep locally-placed trades that haven't been confirmed settled yet
+          Object.entries(prev).forEach(([pair, t]) => {
+            if (t.status === "pending" && !next[pair]) next[pair] = t
           })
-          setActiveTrades(tradesMap)
-        }
+          return next
+        })
       } catch (error) {
         console.error("Error loading active trades:", error)
       }
@@ -804,7 +812,15 @@ function PredictPageContent() {
           key={`trade-${activeTrades[selectedAssetSymbol]?.id}`}
           activeTrade={activeTrades[selectedAssetSymbol]}
           currentPrice={cryptoPrices[selectedAssetSymbol].price}
-          onTradeSettled={() => {}}
+          onTradeSettled={() => {
+            // Remove this trade from the active map so it never re-settles
+            setActiveTrades(prev => {
+              const next = { ...prev }
+              delete next[selectedAssetSymbol]
+              return next
+            })
+            setSelectedAssetSymbol(null)
+          }}
         />
       )}
     </div>

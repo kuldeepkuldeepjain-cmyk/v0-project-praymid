@@ -147,30 +147,38 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
     setResultWin(false)
   }, [normalizedTrade])
 
-  // Countdown timer - uses ref to avoid dependency chain
+  // Countdown timer — fires settlement exactly once when time hits zero
   useEffect(() => {
     if (!normalizedTrade || phase !== "live") return
+
+    const expiry = new Date(normalizedTrade.expiry_timestamp).getTime()
+
+    // If already expired when component mounts, settle immediately
+    if (Date.now() >= expiry && !settlingRef.current) {
+      setTimeRemaining(0)
+      settleTradeRef.current?.()
+      return
+    }
 
     let iv: NodeJS.Timeout | null = null
 
     const tick = () => {
-      const now = Date.now()
-      const expiry = new Date(normalizedTrade.expiry_timestamp).getTime()
-      const remaining = Math.max(0, Math.floor((expiry - now) / 1000))
+      const remaining = Math.max(0, Math.floor((expiry - Date.now()) / 1000))
       setTimeRemaining(remaining)
 
       if (remaining <= 0 && !settlingRef.current) {
         if (iv) clearInterval(iv)
+        iv = null
         settleTradeRef.current?.()
       }
     }
 
-    tick() // run immediately
-    iv = setInterval(tick, 1000)
+    tick()
+    iv = setInterval(tick, 500) // 500ms for snappier zero detection
     return () => {
       if (iv) clearInterval(iv)
     }
-  }, [normalizedTrade, phase])
+  }, [normalizedTrade?.id, phase]) // only re-run when a NEW trade id appears, not every render
 
   // --- Render ---
 
