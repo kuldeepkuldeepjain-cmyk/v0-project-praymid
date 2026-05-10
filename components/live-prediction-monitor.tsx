@@ -51,7 +51,10 @@ export function LivePredictionMonitor({
         setError(null)
         console.log('[v0] Fetching predictions for:', userEmail)
         
-        const response = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`)
+        const response = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`, {
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        })
         
         if (!response.ok) {
           const errorData = await response.text()
