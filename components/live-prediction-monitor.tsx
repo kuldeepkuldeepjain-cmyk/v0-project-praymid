@@ -73,19 +73,25 @@ export function LivePredictionMonitor({
     let isMounted = true
     let timeoutId: NodeJS.Timeout
     
-    // Don't fetch if no email
-    if (!userEmail) {
-      return
-    }
-    
+    // Load predictions immediately if we have an email
     const loadWithMountCheck = async () => {
-      if (!isMounted || !userEmail) return
+      if (!isMounted) return
       
-      await loadPredictions()
-      
-      // Schedule next load only after current completes
-      if (isMounted) {
-        timeoutId = setTimeout(loadWithMountCheck, 10000)
+      // Only fetch if we have an email
+      if (userEmail) {
+        console.log("[v0] Loading predictions for email:", userEmail)
+        await loadPredictions()
+        
+        // Schedule next load only after current completes
+        if (isMounted) {
+          timeoutId = setTimeout(loadWithMountCheck, 10000)
+        }
+      } else {
+        console.log("[v0] No userEmail provided, waiting...")
+        // Check again in 500ms if email becomes available
+        if (isMounted) {
+          timeoutId = setTimeout(loadWithMountCheck, 500)
+        }
       }
     }
     
@@ -341,7 +347,7 @@ export function LivePredictionMonitor({
     }
   }
 
-  if (isInitialLoad) {
+  if (isInitialLoad && predictions.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="w-10 h-10 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin mx-auto mb-4" />
