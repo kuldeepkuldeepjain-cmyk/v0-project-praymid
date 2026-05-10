@@ -266,10 +266,101 @@ function PredictPageContent() {
   const handlePlaceBet = async () => {
     if (isPlacingTrade) return // Prevent double-click
     
-    if (!betAmount || parseFloat(betAmount) <= 0) {
-      toast({ title: "Enter a valid amount", variant: "destructive" })
+    const amount = parseFloat(betAmount)
+    if (!amount || amount <= 0) {
+      toast({ title: "Invalid amount", variant: "destructive" })
       return
     }
+
+    const availableBalance = balanceSource === "referral" ? referralBalance : walletBalance
+    if (availableBalance < amount) {
+      toast({
+        title: "Insufficient balance",
+        description: balanceSource === "referral"
+          ? "Not enough referral earnings."
+          : "Not enough wallet balance.",
+        variant: "destructive"
+      })
+      console.log("[v0] Balance check failed. Available:", availableBalance, "Needed:", amount, "Source:", balanceSource)
+      return
+    }
+
+    setIsPlacingTrade(true)
+    try {
+      console.log("[v0] Placing bet with:", { userEmail, selectedAsset: selectedAsset.symbol, betDirection, amount, balanceSource })
+      
+      const entryPrice = cryptoPrices[selectedAsset.symbol]?.price
+      if (!entryPrice) {
+        toast({ title: "Price not available", variant: "destructive" })
+        setIsPlacingTrade(false)
+        return
+      }
+
+      // Insert prediction record via API
+      const tradeRes = await participantFetch("/api/participant/predictions", {
+        method: "POST",
+        body: JSON.stringify({
+          participant_email: userEmail,
+          crypto_pair: selectedAsset.symbol,
+          prediction_type: betDirection,
+          amount,
+          entry_price: entryPrice,
+          balance_source: balanceSource,
+        }),
+      })
+      
+      console.log("[v0] API response status:", tradeRes.status)
+      const tradeJson = await tradeRes.json()
+      console.log("[v0] API response body:", tradeJson)
+      
+      const insertedTrade: any = tradeJson.prediction || null
+      const insertError = !tradeRes.ok ? tradeJson.error : null
+
+      if (insertError || !insertedTrade) {
+        console.log("[v0] Bet placement failed. Error:", insertError, "Trade:", insertedTrade)
+        toast({ 
+          title: "Failed to place trade", 
+          description: insertError || "Unknown error",
+          variant: "destructive" 
+        })
+        setIsPlacingTrade(false)
+        return
+      }
+
+      console.log("[v0] Bet placed successfully. Trade ID:", insertedTrade.id)
+      
+      const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
+      const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
+      const newFieldBalance = currentFieldBalance - amount
+
+      const updatedData = balanceSource === "referral"
+        ? { ...participantData, bonus_balance: newFieldBalance }
+        : { ...participantData, account_balance: newFieldBalance }
+
+      setParticipantData(updatedData)
+      localStorage.setItem("participantData", JSON.stringify(updatedData))
+      
+      // Use the REAL database trade (with correct ID for settlement API)
+      setActiveTrades((prev) => ({
+        ...prev,
+        [selectedAsset.symbol]: insertedTrade
+      }))
+      
+      // Keep user on current asset to see the trade tracker
+      setSelectedAssetSymbol(selectedAsset.symbol)
+      
+      // Close dialog immediately - the live tracker card is the feedback
+      setShowBetDialog(false)
+      setBetAmount("")
+      
+      toast({ title: "Trade placed successfully!", description: "Your bet is now live." })
+    } catch (error) {
+      console.log("[v0] Bet placement error:", error)
+      toast({ title: "Failed to place trade", variant: "destructive" })
+    } finally {
+      setIsPlacingTrade(false)
+    }
+  }
 
     const amount = parseFloat(betAmount)
     if (amount > activeBalance) {
