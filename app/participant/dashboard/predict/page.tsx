@@ -362,78 +362,7 @@ function PredictPageContent() {
     }
   }
 
-    const amount = parseFloat(betAmount)
-    if (amount > activeBalance) {
-      toast({
-        title: "Insufficient balance",
-        description: balanceSource === "referral"
-          ? "Not enough referral earnings. Switch to Wallet Balance or earn more referral rewards."
-          : "Not enough wallet balance.",
-        variant: "destructive"
-      })
-      return
-    }
-
-    setIsPlacingTrade(true)
-    try {
-      const entryPrice = cryptoPrices[selectedAsset.symbol]?.price
-      if (!entryPrice) {
-        toast({ title: "Price not available", variant: "destructive" })
-        setIsPlacingTrade(false)
-        return
-      }
-
-      // Insert prediction record via API
-      const tradeRes = await participantFetch("/api/participant/predictions", {
-        method: "POST",
-        body: JSON.stringify({
-          participant_email: userEmail,
-          crypto_pair: selectedAsset.symbol,
-          prediction_type: betDirection,
-          amount,
-          entry_price: entryPrice,
-          balance_source: balanceSource,
-        }),
-      })
-      const tradeJson = await tradeRes.json()
-      const insertedTrade: any = tradeJson.prediction || null
-      const insertError = !tradeRes.ok ? tradeJson.error : null
-
-      if (insertError || !insertedTrade) {
-        toast({ title: "Failed to place trade", variant: "destructive" })
-        setIsPlacingTrade(false)
-        return
-      }
-
-      const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
-      const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
-      const newFieldBalance = currentFieldBalance - amount
-
-      const updatedData = balanceSource === "referral"
-        ? { ...participantData, bonus_balance: newFieldBalance }
-        : { ...participantData, account_balance: newFieldBalance }
-
-      setParticipantData(updatedData)
-      localStorage.setItem("participantData", JSON.stringify(updatedData))
-      
-      // Use the REAL database trade (with correct ID for settlement API)
-      setActiveTrades((prev) => ({
-        ...prev,
-        [selectedAsset.symbol]: insertedTrade
-      }))
-      
-      // Keep user on current asset to see the trade tracker
-      setSelectedAssetSymbol(selectedAsset.symbol)
-      
-      // Close dialog immediately - the live tracker card is the feedback
-      setShowBetDialog(false)
-      setBetAmount("")
-    } catch (error) {
-      toast({ title: "Failed to place trade", variant: "destructive" })
-    } finally {
-      setIsPlacingTrade(false)
-    }
-  }
+  // PAGE COMPONENT
 
   const formatVolume = (volume: number) => {
     if (volume >= 1e9) return `$${(volume / 1e9).toFixed(2)}B`
