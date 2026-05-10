@@ -181,6 +181,9 @@ export function LivePredictionMonitor({
         return
       }
       console.error("Load predictions error:", error)
+      // Always set isInitialLoad to false so loading state clears
+      setPredictions([])
+      setIsInitialLoad(false)
     }
   }
 
