@@ -9,8 +9,6 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { participantFetch } from "@/lib/auth"
 
-const COMPANY_WALLET_ADDRESS = "0x77704a0FBD161F3f615e1D550bB0EE50a469B938"
-
 interface TopUpModalProps {
   isOpen: boolean
   onClose: () => void
@@ -31,22 +29,38 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [screenshot, setScreenshot] = useState<File | null>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [loadingAddress, setLoadingAddress] = useState(false)
 
-  // Reset when modal opens
+  // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
-    if (isOpen) {
-      setStep("form")
-      setAmount("")
-      setTxHash("")
-      setNote("")
-      setScreenshot(null)
-      setCopiedAddress(false)
-      setErrorMessage("")
+    if (!isOpen) return
+    setStep("form")
+    setAmount("")
+    setTxHash("")
+    setNote("")
+    setScreenshot(null)
+    setCopiedAddress(false)
+    setErrorMessage("")
+
+    const fetchAddress = async () => {
+      setLoadingAddress(true)
+      try {
+        const res = await fetch("/api/public/settings")
+        const data = await res.json()
+        setWalletAddress(data.topup_address || null)
+      } catch {
+        setWalletAddress(null)
+      } finally {
+        setLoadingAddress(false)
+      }
     }
+    fetchAddress()
   }, [isOpen])
 
   const copyAddress = () => {
-    navigator.clipboard.writeText(COMPANY_WALLET_ADDRESS)
+    if (!walletAddress) return
+    navigator.clipboard.writeText(walletAddress)
     setCopiedAddress(true)
     setTimeout(() => setCopiedAddress(false), 2000)
   }
@@ -156,23 +170,48 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
               {/* Wallet Address */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">System Wallet Address</Label>
-                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2">
-                  <code className="flex-1 text-[10px] text-slate-800 font-mono truncate">
-                    {COMPANY_WALLET_ADDRESS}
-                  </code>
-                  <button
-                    onClick={copyAddress}
-                    className="flex-shrink-0 p-1 rounded hover:bg-slate-200 transition-colors"
-                    title="Copy address"
-                  >
-                    {copiedAddress
-                      ? <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                      : <Copy className="h-3.5 w-3.5 text-slate-500" />}
-                  </button>
-                </div>
+                <Label className="text-xs font-semibold text-slate-700">BEP20 Deposit Address (USDT)</Label>
+                {loadingAddress ? (
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2.5 animate-pulse">
+                    <div className="h-3 bg-slate-200 rounded flex-1" />
+                    <div className="h-6 w-6 bg-slate-200 rounded" />
+                  </div>
+                ) : walletAddress ? (
+                  <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
+                    {/* QR-like header strip */}
+                    <div className="px-3 py-1.5 bg-violet-600 flex items-center justify-between">
+                      <span className="text-[10px] font-bold text-white tracking-widest uppercase">BEP20 Network</span>
+                      <span className="text-[10px] text-white/80">USDT Only</span>
+                    </div>
+                    {/* Address row */}
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <code className="flex-1 text-[11px] text-violet-900 font-mono break-all leading-snug">
+                        {walletAddress}
+                      </code>
+                      <button
+                        onClick={copyAddress}
+                        className="flex-shrink-0 p-1.5 rounded-lg bg-violet-100 hover:bg-violet-200 transition-colors"
+                        title="Copy address"
+                      >
+                        {copiedAddress
+                          ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          : <Copy className="h-4 w-4 text-violet-600" />}
+                      </button>
+                    </div>
+                    {copiedAddress && (
+                      <p className="text-[10px] text-green-700 font-medium text-center pb-1.5">Address copied!</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
+                    <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
+                    <p className="text-[11px] text-amber-700">
+                      Deposit address not set. Please contact admin.
+                    </p>
+                  </div>
+                )}
                 <p className="text-[10px] text-slate-500">
-                  Send USDT (BEP20) to this address, then fill in the details below.
+                  Send USDT (BEP20) to this address, then fill in your transaction details below.
                 </p>
               </div>
 
