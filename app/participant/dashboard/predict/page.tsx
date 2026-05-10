@@ -795,25 +795,26 @@ function PredictPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Active Trade Tracker - Shows for selected asset with active trade */}
-      {selectedAssetSymbol && activeTrades[selectedAssetSymbol] && cryptoPrices[selectedAssetSymbol] && (
-        <ActiveTradeTracker
-          key={`trade-${activeTrades[selectedAssetSymbol]?.id}`}
-          activeTrade={activeTrades[selectedAssetSymbol]}
-          currentPrice={cryptoPrices[selectedAssetSymbol].price}
-          onTradeSettled={() => {
-            // Remove settled trade immediately so it never re-settles
-            setActiveTrades(prev => {
-              const next = { ...prev }
-              delete next[selectedAssetSymbol]
-              return next
-            })
-            setSelectedAssetSymbol(null)
-            // Refresh balance from DB after settlement
-            fetchParticipantData()
-          }}
-        />
-      )}
+      {/* Active Trade Trackers — one per pending trade, visible regardless of selected asset */}
+      {Object.entries(activeTrades).map(([pair, trade]) => {
+        const price = cryptoPrices[pair]?.price
+        if (!price) return null
+        return (
+          <ActiveTradeTracker
+            key={`trade-${trade.id}`}
+            activeTrade={trade}
+            currentPrice={price}
+            onTradeSettled={() => {
+              setActiveTrades(prev => {
+                const next = { ...prev }
+                delete next[pair]
+                return next
+              })
+              fetchParticipantData()
+            }}
+          />
+        )
+      })}
     </div>
   )
 }
