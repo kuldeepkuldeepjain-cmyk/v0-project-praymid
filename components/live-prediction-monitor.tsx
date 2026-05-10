@@ -432,26 +432,28 @@ export function LivePredictionMonitor({
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
                 <div>
                   <div className="text-xs text-slate-500">Entry Point</div>
-                  <div className="text-sm font-semibold text-slate-900">${prediction.entry_price.toLocaleString()}</div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    ${Number(prediction.entry_price).toFixed(prediction.entry_price < 1 ? 8 : 2)}
+                  </div>
                 </div>
                 {!isActive && prediction.target_price ? (
                   <div>
                     <div className="text-xs text-slate-500">Close Point</div>
                     <div className="text-sm font-semibold text-slate-900">
-                      ${prediction.target_price.toLocaleString()}
+                      ${Number(prediction.target_price).toFixed(prediction.target_price < 1 ? 8 : 2)}
                     </div>
                   </div>
                 ) : (
                   <div>
                     <div className="text-xs text-slate-500">Current</div>
                     <div className="text-sm font-semibold text-slate-900">
-                      ${(currentPrices[prediction.crypto_pair]?.price || prediction.entry_price).toLocaleString()}
+                      ${(currentPrices[prediction.crypto_pair]?.price || Number(prediction.entry_price)).toFixed(currentPrices[prediction.crypto_pair]?.price < 1 ? 8 : 2)}
                     </div>
                   </div>
                 )}
                 <div className="text-right">
                   <div className="text-xs text-slate-500">Volume</div>
-                  <div className="text-sm font-semibold text-slate-900">${prediction.amount.toFixed(2)}</div>
+                  <div className="text-sm font-semibold text-slate-900">${Number(prediction.amount).toFixed(2)}</div>
                 </div>
               </div>
 

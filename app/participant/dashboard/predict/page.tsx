@@ -305,6 +305,7 @@ function PredictPageContent() {
           prediction_type: betDirection,
           amount,
           entry_price: entryPrice,
+          timeframe_seconds: selectedTimeframe.seconds,
           balance_source: balanceSource,
         }),
       })
