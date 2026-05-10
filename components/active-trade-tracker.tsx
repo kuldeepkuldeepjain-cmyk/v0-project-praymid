@@ -129,13 +129,8 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
       console.error("[v0] Settlement error:", err)
     }
 
-    // Show result for 3 seconds, then hide and notify parent
+    // Show result — user must dismiss it manually
     setPhase("result")
-    setTimeout(() => {
-      setPhase("hidden")
-      settlingRef.current = false
-      onTradeSettled()
-    }, 3000)
   }, [normalizedTrade, onTradeSettled])
 
   // Store settleTrade in ref to avoid dependency chain issues
@@ -190,31 +185,41 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   // Determine if this is a refund (no price movement)
   const isRefund = !resultWin && resultPL === 0
 
-  // Result card (shown for 3 seconds after settlement)
+  // Result card — stays visible until user dismisses
   if (phase === "result" || phase === "settling") {
     return (
       <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50">
         <Card
-          className={`border-2 shadow-xl backdrop-blur-md ${
+          className={`border-2 shadow-xl ${
             isRefund
-              ? "bg-gradient-to-br from-amber-400/95 to-orange-500/95 border-amber-300"
+              ? "bg-amber-500 border-amber-400"
               : resultWin
-              ? "bg-gradient-to-br from-green-500/95 to-emerald-600/95 border-green-400"
-              : "bg-gradient-to-br from-red-500/95 to-rose-600/95 border-red-400"
+              ? "bg-green-500 border-green-400"
+              : "bg-red-500 border-red-400"
           }`}
         >
-          <div className="p-3 text-center text-white">
-            <h3 className="text-base font-bold mb-1">
-              {isRefund ? "Bet Refunded" : resultWin ? "You Won!" : "You Lost"}
-            </h3>
-            <div className="text-xl font-black">
+          <div className="p-4 text-center text-white space-y-1">
+            <p className="text-[11px] uppercase tracking-widest font-semibold text-white/70">
+              {isRefund ? "Refunded" : resultWin ? "Trade Won" : "Trade Lost"}
+            </p>
+            <div className="text-2xl font-black tabular-nums">
               {isRefund
-                ? `$${normalizedTrade.amount.toFixed(2)} returned`
+                ? `$${normalizedTrade.amount.toFixed(2)}`
                 : `${resultPL > 0 ? "+" : "-"}$${Math.abs(resultPL).toFixed(2)}`}
             </div>
-            <p className="text-[10px] mt-1.5 text-white/80">
-              {isRefund ? "Low liquidity — no market movement" : "View in history"}
+            <p className="text-[10px] text-white/70">
+              {normalizedTrade.crypto_pair} &middot; {normalizedTrade.prediction_type.toUpperCase()}
             </p>
+            <button
+              onClick={() => {
+                setPhase("hidden")
+                settlingRef.current = false
+                onTradeSettled()
+              }}
+              className="mt-2 w-full py-1.5 rounded bg-white/20 hover:bg-white/30 text-white text-xs font-semibold"
+            >
+              Dismiss &amp; View History
+            </button>
           </div>
         </Card>
       </div>
@@ -227,10 +232,10 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
       <Card
         className={`border shadow-lg backdrop-blur-lg ${
           isTie
-            ? "bg-gradient-to-br from-amber-50/95 to-orange-50/95 border-amber-500"
+            ? "bg-amber-50 border-amber-400"
             : isWinning
-            ? "bg-gradient-to-br from-green-50/95 to-emerald-50/95 border-green-500"
-            : "bg-gradient-to-br from-red-50/95 to-rose-50/95 border-red-500"
+            ? "bg-green-50 border-green-400"
+            : "bg-red-50 border-red-400"
         }`}
       >
         <div className="p-2 sm:p-2.5">
@@ -261,14 +266,14 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
             </div>
           </div>
 
-          {/* Live P/L */}
+          {/* Live P/L — no transition so price ticks don't blink */}
           <div
             className={`rounded p-2 sm:p-2.5 mb-1.5 ${
               isTie
-                ? "bg-gradient-to-r from-amber-500 to-orange-600"
-                : isWinning 
-                ? "bg-gradient-to-r from-green-500 to-emerald-600" 
-                : "bg-gradient-to-r from-red-500 to-rose-600"
+                ? "bg-amber-500"
+                : isWinning
+                ? "bg-green-500"
+                : "bg-red-500"
             }`}
           >
             <div className="flex items-center justify-between">
