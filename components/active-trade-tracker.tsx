@@ -138,14 +138,14 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
     settleTradeRef.current = settleTrade
   }, [settleTrade])
 
-  // Reset state when a NEW trade comes in
+  // Reset state only when a NEW trade id comes in — not on every render
   useEffect(() => {
-    if (!normalizedTrade) return
+    if (!normalizedTrade?.id) return
     settlingRef.current = false
     setPhase("live")
     setResultPL(0)
     setResultWin(false)
-  }, [normalizedTrade])
+  }, [normalizedTrade?.id])
 
   // Countdown timer — fires settlement exactly once when time hits zero
   useEffect(() => {

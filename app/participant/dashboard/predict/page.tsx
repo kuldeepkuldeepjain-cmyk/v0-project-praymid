@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -163,67 +163,66 @@ function PredictPageContent() {
     }
   }, [router])
 
-  // Refresh participant data from database via service-role API (bypasses RLS)
+  // Stable refs so interval callbacks don't go stale
+  const emailRef = useRef<string>("")
+  if (participantData?.email) emailRef.current = participantData.email
+
+  const fetchParticipantData = useCallback(async () => {
+    const email = emailRef.current
+    if (!email) return
+    try {
+      const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+      if (!res.ok) return
+      const json = await res.json()
+      if (json.success && json.participant) {
+        setParticipantData((prev: any) => {
+          const fresh = { ...prev, ...json.participant }
+          localStorage.setItem("participantData", JSON.stringify(fresh))
+          return fresh
+        })
+      }
+    } catch {}
+  }, [])
+
+  const loadActiveTrades = useCallback(async () => {
+    const email = emailRef.current
+    if (!email) return
+    try {
+      const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(email)}&status=pending`)
+      const json = await res.json()
+      const data: any[] = json.predictions || []
+      // Only keep trades that are still genuinely pending from DB
+      const tradesMap: Record<string, any> = {}
+      data.forEach((trade: any) => {
+        if (trade.status === "pending") tradesMap[trade.crypto_pair] = trade
+      })
+      setActiveTrades(prev => {
+        const next: Record<string, any> = { ...tradesMap }
+        // Keep locally-placed trades not yet confirmed by DB
+        Object.entries(prev).forEach(([pair, t]) => {
+          if (t.status === "pending" && !next[pair]) next[pair] = t
+        })
+        return next
+      })
+    } catch {}
+  }, [])
+
+  // Initial data load — runs once when email is known
   useEffect(() => {
     if (!mounted || !participantData?.email) return
-
-    const fetchParticipantData = async () => {
-      try {
-        const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(participantData.email)}`)
-        if (!res.ok) return
-        const json = await res.json()
-        if (json.success && json.participant) {
-          const fresh = { ...participantData, ...json.participant }
-          setParticipantData(fresh)
-          localStorage.setItem("participantData", JSON.stringify(fresh))
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching participant data:", error)
-      }
-    }
-
-    // Load ONLY pending/active trades for the user — never reload settled/refunded ones
-    const loadActiveTrades = async () => {
-      try {
-        const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}&status=pending`)
-        const json = await res.json()
-        const data: any[] = json.predictions || []
-
-        // Only add trades that are genuinely still pending
-        const tradesMap: Record<string, any> = {}
-        data.forEach((trade: any) => {
-          if (trade.status === "pending") {
-            tradesMap[trade.crypto_pair] = trade
-          }
-        })
-        // Preserve any trades already in state that are still pending
-        setActiveTrades(prev => {
-          const next: Record<string, any> = { ...tradesMap }
-          // Keep locally-placed trades that haven't been confirmed settled yet
-          Object.entries(prev).forEach(([pair, t]) => {
-            if (t.status === "pending" && !next[pair]) next[pair] = t
-          })
-          return next
-        })
-      } catch (error) {
-        console.error("Error loading active trades:", error)
-      }
-    }
-
-    // Initial fetch
     fetchParticipantData()
     loadActiveTrades()
-    
-    // Refresh participant data periodically
-    const balanceInterval = setInterval(() => {
+  }, [mounted, participantData?.email, fetchParticipantData, loadActiveTrades])
+
+  // Stable polling interval — never re-registers
+  useEffect(() => {
+    if (!mounted) return
+    const iv = setInterval(() => {
       fetchParticipantData()
       loadActiveTrades()
-    }, 15000) // Check every 15 seconds
-
-    return () => {
-      clearInterval(balanceInterval)
-    }
-  }, [mounted, participantData?.email])
+    }, 15000)
+    return () => clearInterval(iv)
+  }, [mounted, fetchParticipantData, loadActiveTrades])
 
   // Fetch crypto prices
   useEffect(() => {
@@ -289,14 +288,11 @@ function PredictPageContent() {
           : "Not enough wallet balance.",
         variant: "destructive"
       })
-      console.log("[v0] Balance check failed. Available:", availableBalance, "Needed:", amount, "Source:", balanceSource)
       return
     }
 
     setIsPlacingTrade(true)
     try {
-      console.log("[v0] Placing bet with:", { userEmail, selectedAsset: selectedAsset.symbol, betDirection, amount, balanceSource })
-      
       const entryPrice = cryptoPrices[selectedAsset.symbol]?.price
       if (!entryPrice) {
         toast({ title: "Price not available", variant: "destructive" })
@@ -318,15 +314,11 @@ function PredictPageContent() {
         }),
       })
       
-      console.log("[v0] API response status:", tradeRes.status)
       const tradeJson = await tradeRes.json()
-      console.log("[v0] API response body:", tradeJson)
-      
       const insertedTrade: any = tradeJson.prediction || null
       const insertError = !tradeRes.ok ? tradeJson.error : null
 
       if (insertError || !insertedTrade) {
-        console.log("[v0] Bet placement failed. Error:", insertError, "Trade:", insertedTrade)
         toast({ 
           title: "Failed to place trade", 
           description: insertError || "Unknown error",
@@ -336,8 +328,6 @@ function PredictPageContent() {
         return
       }
 
-      console.log("[v0] Bet placed successfully. Trade ID:", insertedTrade.id)
-      
       const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
       const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
       const newFieldBalance = currentFieldBalance - amount
@@ -364,7 +354,6 @@ function PredictPageContent() {
       
       toast({ title: "Trade placed successfully!", description: "Your bet is now live." })
     } catch (error) {
-      console.log("[v0] Bet placement error:", error)
       toast({ title: "Failed to place trade", variant: "destructive" })
     } finally {
       setIsPlacingTrade(false)
@@ -813,13 +802,15 @@ function PredictPageContent() {
           activeTrade={activeTrades[selectedAssetSymbol]}
           currentPrice={cryptoPrices[selectedAssetSymbol].price}
           onTradeSettled={() => {
-            // Remove this trade from the active map so it never re-settles
+            // Remove settled trade immediately so it never re-settles
             setActiveTrades(prev => {
               const next = { ...prev }
               delete next[selectedAssetSymbol]
               return next
             })
             setSelectedAssetSymbol(null)
+            // Refresh balance from DB after settlement
+            fetchParticipantData()
           }}
         />
       )}

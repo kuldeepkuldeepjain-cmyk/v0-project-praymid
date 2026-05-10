@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card } from '@/components/ui/card'
 import { TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 import { participantFetch } from '@/lib/auth'
@@ -47,37 +47,33 @@ export function LivePredictionMonitor({
   const [error, setError] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<'all' | 'live' | 'won' | 'lost' | 'refunded'>('all')
 
-  useEffect(() => {
-    if (!userEmail) {
-      setLoading(false)
+  const fetchPredictions = useCallback(async (showLoader = false) => {
+    if (!userEmail) { setLoading(false); setPredictions([]); return }
+    try {
+      if (showLoader) setLoading(true)
+      setError(null)
+      const response = await participantFetch(
+        `/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`
+      )
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
+      const data = await response.json()
+      setPredictions(data.success && Array.isArray(data.predictions) ? data.predictions : [])
+    } catch (err: any) {
+      setError(err.message)
       setPredictions([])
-      return
+    } finally {
+      setLoading(false)
     }
-
-    const fetchPredictions = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const response = await participantFetch(
-          `/api/participant/predictions?participant_email=${encodeURIComponent(userEmail)}`
-        )
-        if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
-        const data = await response.json()
-        if (data.success && Array.isArray(data.predictions)) {
-          setPredictions(data.predictions)
-        } else {
-          setPredictions([])
-        }
-      } catch (err: any) {
-        setError(err.message)
-        setPredictions([])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchPredictions()
   }, [userEmail])
+
+  // Initial fetch
+  useEffect(() => { fetchPredictions(true) }, [fetchPredictions])
+
+  // Auto-refresh every 10s so results appear without manual reload
+  useEffect(() => {
+    const iv = setInterval(() => fetchPredictions(false), 10000)
+    return () => clearInterval(iv)
+  }, [fetchPredictions])
 
   // Normalise status: DB stores 'settled' with result='won'/'lost', or 'pending', or 'refunded'
   const isLive = (p: Prediction) => p.status === 'pending'

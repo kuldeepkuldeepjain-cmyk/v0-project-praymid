@@ -37,6 +37,11 @@ export async function POST(request: Request) {
       )
       const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
       await db.query(`UPDATE participants SET ${balanceField} = ${balanceField} + $1 WHERE email=$2`, [prediction.amount, prediction.participant_email])
+      await db.query(
+        `INSERT INTO transactions (participant_email, type, amount, description, reference_id, status)
+         VALUES ($1,'refund',$2,'Trade refunded - no price movement',$3,'completed') ON CONFLICT DO NOTHING`,
+        [prediction.participant_email, prediction.amount, predictionId]
+      ).catch(() => {})
       return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true })
     }
 
@@ -59,6 +64,11 @@ export async function POST(request: Request) {
         `UPDATE participants SET ${balanceField} = ${balanceField} + $1, total_earnings = COALESCE(total_earnings,0) + $2 WHERE email=$3`,
         [payout, profitLoss, prediction.participant_email]
       )
+      await db.query(
+        `INSERT INTO transactions (participant_email, type, amount, description, reference_id, status)
+         VALUES ($1,'prediction_win',$2,'Trade won on ' || $3,$4,'completed') ON CONFLICT DO NOTHING`,
+        [prediction.participant_email, payout, prediction.crypto_pair, predictionId]
+      ).catch(() => {})
     }
 
     return NextResponse.json({ success: true, result, profitLoss, payout, isWin, isRefund: false })
