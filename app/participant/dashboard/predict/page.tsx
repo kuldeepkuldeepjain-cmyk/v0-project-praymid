@@ -19,7 +19,7 @@ import {
   ArrowDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import { LivePredictionMonitor } from "@/components/live-prediction-monitor"
 import { ActiveTradeTracker } from "@/components/active-trade-tracker"
 import { AssetLogo } from "@/components/asset-logo"
@@ -169,7 +169,7 @@ function PredictPageContent() {
 
     const fetchParticipantData = async () => {
       try {
-        const res = await fetch(`/api/participant/me?email=${encodeURIComponent(participantData.email)}`)
+        const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(participantData.email)}`)
         if (!res.ok) return
         const json = await res.json()
         if (json.success && json.participant) {
@@ -185,7 +185,7 @@ function PredictPageContent() {
     // Load active trades for the user
     const loadActiveTrades = async () => {
       try {
-        const res = await fetch(`/api/participant/predictions?email=${encodeURIComponent(participantData.email)}&status=pending`)
+        const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}`)
         const json = await res.json()
         const data: any[] = json.predictions || []
         const error = null
@@ -292,36 +292,16 @@ function PredictPageContent() {
         return
       }
 
-      // Get participant ID first
-      const pRes = await fetch(`/api/participant/me?email=${encodeURIComponent(userEmail)}`)
-      const pJson = await pRes.json()
-      const participant: any = pJson.participant || null
-      const pError = !pRes.ok ? pJson.error : null
-
-      if (pError || !participant) {
-        toast({ title: "Could not find account", variant: "destructive" })
-        setIsPlacingTrade(false)
-        return
-      }
-  
-      // Calculate expiry timestamp based on selected timeframe
-      const now = new Date()
-      const expiryTimestamp = new Date(now.getTime() + (selectedTimeframe.seconds * 1000))
-  
       // Insert prediction record via API
-      const tradeRes = await fetch("/api/participant/predictions", {
+      const tradeRes = await participantFetch("/api/participant/predictions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          participantId: participant.id,
-          participantEmail: userEmail,
-          cryptoPair: selectedAsset.symbol,
-          predictionType: betDirection,
+          participant_email: userEmail,
+          crypto_pair: selectedAsset.symbol,
+          prediction_type: betDirection,
           amount,
-          entryPrice,
-          timeframeSeconds: selectedTimeframe.seconds,
-          expiryTimestamp: expiryTimestamp.toISOString(),
-          balanceSource,
+          entry_price: entryPrice,
+          balance_source: balanceSource,
         }),
       })
       const tradeJson = await tradeRes.json()
@@ -785,7 +765,7 @@ function PredictPageContent() {
               const parsedData = JSON.parse(storedData)
               const email = parsedData?.email
               if (!email) return
-              const refreshRes = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+              const refreshRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
               const refreshJson = await refreshRes.json()
               const data: any = refreshJson.participant || null
               if (data) {
