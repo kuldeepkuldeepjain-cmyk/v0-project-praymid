@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
     }
     const contribution = contribRows[0]
 
-    const allowedStatuses = action === "approve" ? ["proof_submitted"] : ["proof_submitted", "in_process"]
+    const allowedStatuses = action === "approve"
+      ? ["proof_submitted", "in_process", "pending"]
+      : ["proof_submitted", "in_process", "pending"]
     if (!allowedStatuses.includes(contribution.status)) {
       return NextResponse.json({
         success: false,
