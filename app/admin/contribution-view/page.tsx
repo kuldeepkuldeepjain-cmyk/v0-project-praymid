@@ -246,16 +246,34 @@ export default function ContributionViewPage() {
 
         {/* Contribution Amount */}
         <Card className="border-2 border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 animate-in slide-in-from-bottom duration-500" style={{ animationDelay: '0.2s' }}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <DollarSign className="h-8 w-8 text-purple-600" />
-                <div>
-                  <p className="text-sm text-purple-700 font-medium">Contribution Amount</p>
-                  <p className="text-3xl font-black text-purple-900">${contributionData.amount}</p>
-                </div>
+          <CardContent className="p-6 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 bg-white rounded-lg border border-purple-300">
+                <p className="text-xs text-slate-600 font-medium mb-2">Payment Amount</p>
+                <p className="text-2xl font-bold text-green-600">${contributionData.payment_amount?.toFixed(2) || '0.00'}</p>
               </div>
-              <Badge className="bg-purple-600 text-white">USDT (BEP20)</Badge>
+              <div className="p-4 bg-white rounded-lg border border-purple-300">
+                <p className="text-xs text-slate-600 font-medium mb-2">Payout Amount</p>
+                <p className="text-2xl font-bold text-blue-600">${contributionData.payout_amount?.toFixed(2) || '0.00'}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-3 p-3 bg-purple-100 rounded-lg border border-purple-300">
+              {contributionData.is_matched ? (
+                <>
+                  <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <p className="text-sm font-semibold text-purple-900">Payment and Payout MATCHED perfectly</p>
+                </>
+              ) : (
+                <>
+                  <div className="h-5 w-5 rounded-full bg-yellow-500 flex-shrink-0" />
+                  <p className="text-sm font-semibold text-yellow-900">Difference: ${contributionData.difference?.toFixed(2) || '0.00'}</p>
+                </>
+              )}
+            </div>
+            
+            <div>
+              <p className="text-sm text-purple-700 font-medium">Status: <span className="font-bold">{contributionData.match_status?.toUpperCase()}</span></p>
             </div>
           </CardContent>
         </Card>
@@ -273,7 +291,7 @@ export default function ContributionViewPage() {
               </p>
             </div>
             <p className="text-xs text-slate-600 mt-3 text-center">
-              Participant should send ${contributionData.amount} USDT to this address
+              Participant should send ${contributionData.payment_amount?.toFixed(2) || '0.00'} USDT to this address
             </p>
           </CardContent>
         </Card>
