@@ -62,6 +62,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   const settlingRef = useRef(false)
   const currentPriceRef = useRef(currentPrice)
   const currentPLRef = useRef(0)
+  const settleTradeRef = useRef<(() => Promise<void>) | null>(null)
 
   // Keep refs updated
   currentPriceRef.current = currentPrice
@@ -135,7 +136,12 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
       settlingRef.current = false
       onTradeSettled()
     }, 3000)
-  }, [normalizedTrade, onTradeSettled]) // Updated dependency list
+  }, [normalizedTrade, onTradeSettled])
+
+  // Store settleTrade in ref to avoid dependency chain issues
+  useEffect(() => {
+    settleTradeRef.current = settleTrade
+  }, [settleTrade])
 
   // Reset state when a NEW trade comes in
   useEffect(() => {
@@ -146,7 +152,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
     setResultWin(false)
   }, [normalizedTrade])
 
-  // Countdown timer
+  // Countdown timer - uses ref to avoid dependency chain
   useEffect(() => {
     if (!normalizedTrade || phase !== "live") return
 
@@ -160,7 +166,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
 
       if (remaining <= 0 && !settlingRef.current) {
         if (iv) clearInterval(iv)
-        settleTrade()
+        settleTradeRef.current?.()
       }
     }
 
@@ -169,7 +175,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
     return () => {
       if (iv) clearInterval(iv)
     }
-  }, [normalizedTrade, phase, settleTrade])
+  }, [normalizedTrade, phase])
 
   // --- Render ---
 
@@ -187,7 +193,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   // Result card (shown for 3 seconds after settlement)
   if (phase === "result" || phase === "settling") {
     return (
-      <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50 animate-in fade-in zoom-in-95 duration-300">
+      <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50">
         <Card
           className={`border-2 shadow-xl backdrop-blur-md ${
             isRefund
@@ -217,7 +223,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
 
   // Live tracking card
   return (
-    <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50 animate-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50">
       <Card
         className={`border shadow-lg backdrop-blur-lg transition-all duration-200 ${
           isTie
