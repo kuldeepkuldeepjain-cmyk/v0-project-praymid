@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
     
     const rows = await query(
       `SELECT id, participant_id, participant_email, crypto_pair, prediction_type, amount, entry_price, expiry_at, timeframe_seconds,
-              result, profit_loss, status, created_at, settled_at
+              result, profit_loss, status, created_at, updated_at
        FROM predictions
        ${whereClause}
        ORDER BY created_at DESC
