@@ -107,7 +107,15 @@ export async function GET(request: NextRequest) {
     
     const rows = await query(
       `SELECT id, participant_id, participant_email, crypto_pair, prediction_type, amount, entry_price, expiry_at, timeframe_seconds,
-              result, profit_loss, status, target_price, closed_at, created_at
+              result, profit_loss, status, created_at,
+              CASE WHEN EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='predictions' AND column_name='target_price'
+              ) THEN target_price ELSE NULL END AS target_price,
+              CASE WHEN EXISTS (
+                SELECT 1 FROM information_schema.columns
+                WHERE table_name='predictions' AND column_name='closed_at'
+              ) THEN closed_at ELSE NULL END AS closed_at
        FROM predictions
        ${whereClause}
        ORDER BY created_at DESC
