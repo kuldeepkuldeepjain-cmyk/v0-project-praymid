@@ -72,15 +72,14 @@ export function P2PPayoutQueuePanel() {
   const fetchPayoutRequests = async () => {
     try {
       const res = await adminFetch("/api/admin/pending-payout-requests")
+      if (!res.ok) {
+        setIsLoading(false)
+        return
+      }
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || "Failed to fetch")
-      setPayoutRequests(json.payouts || [])
+      setPayoutRequests(Array.isArray(json.payouts) ? json.payouts : [])
     } catch {
-      toast({
-        title: "Unable to Load",
-        description: "Could not fetch payout requests. Please try again.",
-        variant: "destructive",
-      })
+      // silently fail on network errors — no toast to avoid crashing error boundary
     } finally {
       setIsLoading(false)
     }

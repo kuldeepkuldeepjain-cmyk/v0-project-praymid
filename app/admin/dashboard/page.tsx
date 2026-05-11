@@ -32,7 +32,7 @@ import {
   Wallet,
   ShieldCheck,
 } from "lucide-react"
-import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
+import { isAdminAuthenticated, getAdminData, clearAdminAuth, adminFetch } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { ParticipantDatabaseView } from "@/components/admin/participant-database-view"
 import { OverviewAnalytics } from "@/components/admin/overview-analytics"
@@ -76,28 +76,20 @@ export default function AdminDashboard() {
   useEffect(() => {
     const verifyAdminAccess = () => {
       try {
-        console.log("[v0] Checking admin authentication...")
-        
-        // Check if admin is authenticated using localStorage
         if (!isAdminAuthenticated()) {
-          console.log("[v0] Admin not authenticated, redirecting to login")
           router.push("/admin/login")
           return
         }
 
-        // Get admin data from localStorage
         const adminData = getAdminData()
         if (!adminData?.email) {
-          console.log("[v0] No admin email found, redirecting to login")
           router.push("/admin/login")
           return
         }
 
-        console.log("[v0] Admin authenticated as:", adminData.email)
         setAdminEmail(adminData.email)
         setIsLoading(false)
-      } catch (error) {
-        console.error("[v0] Error verifying admin access:", error)
+      } catch {
         router.push("/admin/login")
       }
     }
@@ -108,10 +100,11 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchOtpCount = async () => {
       try {
-        const res = await fetch("/api/admin/pending-otp-approvals")
+        const res = await adminFetch("/api/admin/pending-otp-approvals")
+        if (!res.ok) return
         const data = await res.json()
         if (data.success) setPendingOtpCount(data.count || 0)
-      } catch (_) {}
+      } catch {}
     }
     fetchOtpCount()
     const interval = setInterval(fetchOtpCount, 20000)
