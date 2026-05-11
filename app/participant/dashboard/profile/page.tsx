@@ -28,7 +28,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated, clearParticipantAuth } from "@/lib/auth"
+import { isParticipantAuthenticated, clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { ParticipantLedger } from "@/components/participant-ledger"
 
 export default function ProfilePage() {
@@ -76,15 +76,10 @@ export default function ProfilePage() {
         const json = await res.json()
         const data = json.participant
         if (data) {
-          setParticipantData(data)
-          setEditedData(data)
-          localStorage.setItem("participantData", JSON.stringify({ ...parsedData, ...data }))
-        }
-
-        if (data) {
-          setParticipantData(data)
-          setEditedData(data)
-          localStorage.setItem("participantData", JSON.stringify(data))
+          const merged = { ...parsedData, ...data }
+          setParticipantData(merged)
+          setEditedData(merged)
+          localStorage.setItem("participantData", JSON.stringify(merged))
         }
       } catch (err) {
         console.error("Exception in profile fetch:", err)
