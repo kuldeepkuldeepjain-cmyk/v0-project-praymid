@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-import { uploadToR2, base64ToBuffer, getMimeTypeFromBase64 } from "@/lib/r2-storage"
+import { uploadBase64ToR2 } from "@/lib/cloudflare-r2"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
     let screenshotUrl: string | null = null
     if (screenshotBase64 && screenshotBase64.startsWith("data:")) {
       try {
-        const mimeType = getMimeTypeFromBase64(screenshotBase64)
-        const buffer = base64ToBuffer(screenshotBase64)
+        const mimeType = screenshotBase64.match(/data:([^;]+)/)?.[1] || "image/jpeg"
         const fileName = `topup-${participant.id}-${transactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
-        screenshotUrl = await uploadToR2(buffer, fileName, mimeType)
+        const uploadedUrl = await uploadBase64ToR2(screenshotBase64, fileName, mimeType)
+        if (!uploadedUrl) throw new Error("Upload returned null")
+        screenshotUrl = uploadedUrl
       } catch (uploadErr) {
         console.error("[topup-submit] R2 upload failed:", uploadErr)
         return NextResponse.json({ success: false, message: "Screenshot upload failed" }, { status: 500 })
