@@ -1,73 +1,81 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  Users,
-  DollarSign,
-  TrendingUp,
-  Activity,
-  UserCheck,
-  Wallet,
-  Clock,
-  CheckCircle,
-  ArrowDownCircle,
-  BarChart3,
-  RefreshCw,
-  AlertCircle,
+  Users, DollarSign, TrendingUp, Activity, UserCheck, Wallet,
+  Clock, CheckCircle, ArrowDownCircle, BarChart3, RefreshCw,
+  AlertCircle, ShieldAlert, Repeat2, BadgeDollarSign, CircleDot,
+  ArrowUpCircle, Hourglass,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { Badge } from "@/components/ui/badge"
 import { adminFetch } from "@/lib/auth"
+
+const REFRESH_INTERVAL = 30_000 // 30 seconds
 
 interface Stats {
   totalParticipants: number
   activeParticipants: number
+  pendingOtpVerification: number
   newThisWeek: number
   newThisMonth: number
   activationRate: number
   totalContributions: number
   pendingContributions: number
+  inProcessContributions: number
   approvedContributions: number
   totalContributedAmount: number
   totalPayouts: number
   pendingPayouts: number
+  matchedPayouts: number
   completedPayouts: number
   totalPayoutAmount: number
+  totalTopups: number
   pendingTopups: number
+  approvedTopups: number
   totalTopupAmount: number
   totalPredictions: number
   activePredictions: number
   settledPredictions: number
+  totalPredictionProfit: number
   totalPlatformBalance: number
+  avgParticipantBalance: number
+  positiveBalanceCount: number
+}
+
+function fmt(n: number) {
+  return n.toLocaleString("en-IN", { maximumFractionDigits: 2 })
+}
+function fmtUSDT(n: number) {
+  return `${fmt(n)} USDT`
 }
 
 function StatCard({
-  title,
-  value,
-  sub,
-  icon: Icon,
-  iconClass,
-  cardClass,
+  title, value, sub, icon: Icon, accent, highlight = false,
 }: {
   title: string
   value: string | number
   sub?: string
   icon: React.ElementType
-  iconClass: string
-  cardClass: string
+  accent: string
+  highlight?: boolean
 }) {
   return (
-    <Card className={`border ${cardClass}`}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">{title}</p>
-            <p className="text-2xl font-bold text-white">{value}</p>
-            {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+    <Card className={`border transition-all duration-200 ${
+      highlight
+        ? "border-orange-600/60 bg-orange-950/30"
+        : "border-slate-700/60 bg-slate-800/50"
+    }`}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1 leading-tight">{title}</p>
+            <p className="text-xl font-bold text-white leading-tight truncate">{value}</p>
+            {sub && <p className="text-[11px] text-slate-500 mt-1 leading-tight">{sub}</p>}
           </div>
-          <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${iconClass}`}>
-            <Icon className="h-5 w-5 text-white" />
+          <div className={`h-9 w-9 rounded-lg flex-shrink-0 flex items-center justify-center ${accent}`}>
+            <Icon className="h-4 w-4 text-white" />
           </div>
         </div>
       </CardContent>
@@ -75,45 +83,71 @@ function StatCard({
   )
 }
 
-function SectionHeading({ title }: { title: string }) {
+function Section({ title, badge }: { title: string; badge?: number }) {
   return (
-    <h3 className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3 mt-6 first:mt-0">
-      {title}
-    </h3>
+    <div className="flex items-center gap-3 mt-7 mb-3 first:mt-0">
+      <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{title}</h3>
+      {badge !== undefined && badge > 0 && (
+        <Badge variant="destructive" className="text-[10px] h-5 px-1.5">{badge} pending</Badge>
+      )}
+      <div className="flex-1 h-px bg-slate-800" />
+    </div>
   )
 }
 
 export function OverviewAnalytics() {
-  const { toast } = useToast()
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [countdown, setCountdown] = useState(REFRESH_INTERVAL / 1000)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchStats = useCallback(async () => {
-    setLoading(true)
+  const fetchStats = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true)
+    else setRefreshing(true)
     setError(null)
     try {
       const res = await adminFetch("/api/admin/stats")
-      if (!res.ok) throw new Error(`Failed to fetch stats (${res.status})`)
+      if (!res.ok) throw new Error()
       const data = await res.json()
       setStats(data.stats)
-    } catch (err: any) {
-      setError(err.message || "Failed to load stats")
-      toast({ title: "Error", description: "Could not load platform stats", variant: "destructive" })
+      setLastUpdated(new Date())
+      setCountdown(REFRESH_INTERVAL / 1000)
+    } catch {
+      setError("Could not load platform stats. Retrying automatically.")
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
-  }, [toast])
+  }, [])
 
-  useEffect(() => { fetchStats() }, [fetchStats])
+  // Auto-refresh every 30s
+  useEffect(() => {
+    fetchStats()
+    timerRef.current = setInterval(() => fetchStats(true), REFRESH_INTERVAL)
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [fetchStats])
+
+  // Countdown ticker
+  useEffect(() => {
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => (prev <= 1 ? REFRESH_INTERVAL / 1000 : prev - 1))
+    }, 1000)
+    return () => { if (countdownRef.current) clearInterval(countdownRef.current) }
+  }, [])
 
   if (loading) {
     return (
-      <div className="space-y-3">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {Array.from({ length: 16 }).map((_, i) => (
             <Card key={i} className="border border-slate-700 bg-slate-800 animate-pulse">
-              <CardContent className="p-5 h-20" />
+              <CardContent className="p-4 h-[72px]" />
             </Card>
           ))}
         </div>
@@ -121,189 +155,248 @@ export function OverviewAnalytics() {
     )
   }
 
-  if (error || !stats) {
+  if (error && !stats) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <AlertCircle className="h-10 w-10 text-red-400" />
-        <p className="text-slate-400">{error || "No data available"}</p>
-        <Button variant="outline" size="sm" onClick={fetchStats}>
-          <RefreshCw className="h-4 w-4 mr-2" /> Retry
+        <p className="text-slate-400 text-sm text-center max-w-xs">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => fetchStats()}>
+          <RefreshCw className="h-4 w-4 mr-2" /> Retry Now
         </Button>
       </div>
     )
   }
 
+  if (!stats) return null
+
+  const totalPending = stats.pendingContributions + stats.pendingPayouts + stats.pendingTopups + stats.pendingOtpVerification
+
   return (
-    <div className="space-y-2">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-1">
+      {/* Header bar */}
+      <div className="flex items-center justify-between mb-2">
         <div>
-          <h2 className="text-2xl font-bold text-white">Platform Overview</h2>
-          <p className="text-sm text-slate-400">Live data from all tables</p>
+          <h2 className="text-xl font-bold text-white">Platform Overview</h2>
+          <p className="text-xs text-slate-500">
+            {lastUpdated
+              ? `Updated ${lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+              : "Loading..."
+            }
+            {" · "}
+            <span className="text-slate-600">Auto-refresh in {countdown}s</span>
+          </p>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={fetchStats}
-          className="text-slate-400 hover:text-white"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          {totalPending > 0 && (
+            <Badge variant="destructive" className="text-xs">
+              {totalPending} items need attention
+            </Badge>
+          )}
+          <Button
+            variant="ghost" size="sm"
+            onClick={() => fetchStats(true)}
+            disabled={refreshing}
+            className="text-slate-400 hover:text-white h-8"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? "Refreshing..." : "Refresh"}
+          </Button>
+        </div>
       </div>
 
-      {/* Participants */}
-      <SectionHeading title="Participants" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Live dot + error banner */}
+      {error && (
+        <div className="flex items-center gap-2 text-xs text-amber-400 bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2 mb-2">
+          <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+          Showing last known data. Failed to refresh.
+        </div>
+      )}
+
+      {/* ── PARTICIPANTS ── */}
+      <Section title="Participants" badge={stats.pendingOtpVerification} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="Total Participants"
-          value={stats.totalParticipants.toLocaleString()}
+          value={fmt(stats.totalParticipants)}
+          sub={`${stats.newThisMonth} joined this month`}
           icon={Users}
-          iconClass="bg-cyan-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-cyan-600"
         />
         <StatCard
-          title="Active Participants"
-          value={stats.activeParticipants.toLocaleString()}
+          title="Active"
+          value={fmt(stats.activeParticipants)}
           sub={`${stats.activationRate}% activation rate`}
           icon={UserCheck}
-          iconClass="bg-emerald-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-emerald-600"
         />
         <StatCard
           title="New This Week"
-          value={stats.newThisWeek.toLocaleString()}
+          value={fmt(stats.newThisWeek)}
           icon={TrendingUp}
-          iconClass="bg-blue-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-blue-600"
         />
         <StatCard
-          title="New This Month"
-          value={stats.newThisMonth.toLocaleString()}
-          icon={Activity}
-          iconClass="bg-violet-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          title="Pending OTP Verify"
+          value={fmt(stats.pendingOtpVerification)}
+          sub="Awaiting admin approval"
+          icon={ShieldAlert}
+          accent="bg-rose-600"
+          highlight={stats.pendingOtpVerification > 0}
         />
       </div>
 
-      {/* Contributions */}
-      <SectionHeading title="Contributions (Payment Submissions)" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── CONTRIBUTIONS ── */}
+      <Section title="Contributions (Payment Submissions)" badge={stats.pendingContributions + stats.inProcessContributions} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="Total Submissions"
-          value={stats.totalContributions.toLocaleString()}
+          value={fmt(stats.totalContributions)}
           icon={BarChart3}
-          iconClass="bg-amber-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-amber-600"
         />
         <StatCard
           title="Pending"
-          value={stats.pendingContributions.toLocaleString()}
+          value={fmt(stats.pendingContributions)}
+          sub={`${stats.inProcessContributions} in process`}
           icon={Clock}
-          iconClass="bg-orange-600"
-          cardClass="border-amber-900/30 bg-amber-950/20"
+          accent="bg-orange-600"
+          highlight={stats.pendingContributions > 0}
         />
         <StatCard
           title="Approved / Matched"
-          value={stats.approvedContributions.toLocaleString()}
+          value={fmt(stats.approvedContributions)}
           icon={CheckCircle}
-          iconClass="bg-emerald-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-emerald-600"
         />
         <StatCard
           title="Total Contributed"
-          value={`$${stats.totalContributedAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+          value={fmtUSDT(stats.totalContributedAmount)}
           sub="Approved contributions"
-          icon={DollarSign}
-          iconClass="bg-emerald-700"
-          cardClass="border-slate-700 bg-slate-800/60"
+          icon={BadgeDollarSign}
+          accent="bg-emerald-700"
         />
       </div>
 
-      {/* Payouts */}
-      <SectionHeading title="Payout Requests" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── PAYOUTS ── */}
+      <Section title="Payout Requests" badge={stats.pendingPayouts} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="Total Requests"
-          value={stats.totalPayouts.toLocaleString()}
+          value={fmt(stats.totalPayouts)}
           icon={ArrowDownCircle}
-          iconClass="bg-rose-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-rose-600"
         />
         <StatCard
-          title="Pending Payouts"
-          value={stats.pendingPayouts.toLocaleString()}
-          icon={Clock}
-          iconClass="bg-orange-600"
-          cardClass="border-orange-900/30 bg-orange-950/20"
+          title="Pending"
+          value={fmt(stats.pendingPayouts)}
+          sub={`${stats.matchedPayouts} matched`}
+          icon={Hourglass}
+          accent="bg-orange-600"
+          highlight={stats.pendingPayouts > 0}
         />
         <StatCard
-          title="Completed Payouts"
-          value={stats.completedPayouts.toLocaleString()}
+          title="Completed"
+          value={fmt(stats.completedPayouts)}
           icon={CheckCircle}
-          iconClass="bg-emerald-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-emerald-600"
         />
         <StatCard
           title="Total Paid Out"
-          value={`$${stats.totalPayoutAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
+          value={fmtUSDT(stats.totalPayoutAmount)}
           sub="Completed payouts"
           icon={Wallet}
-          iconClass="bg-rose-700"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-rose-700"
         />
       </div>
 
-      {/* Top-ups & Predictions */}
-      <SectionHeading title="Top-Ups & Predictions" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── TOP-UPS ── */}
+      <Section title="Top-Up Requests" badge={stats.pendingTopups} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          title="Pending Top-Ups"
-          value={stats.pendingTopups.toLocaleString()}
+          title="Total Top-Ups"
+          value={fmt(stats.totalTopups)}
+          icon={ArrowUpCircle}
+          accent="bg-yellow-600"
+        />
+        <StatCard
+          title="Pending"
+          value={fmt(stats.pendingTopups)}
           icon={Clock}
-          iconClass="bg-yellow-600"
-          cardClass="border-yellow-900/30 bg-yellow-950/20"
+          accent="bg-orange-600"
+          highlight={stats.pendingTopups > 0}
         />
         <StatCard
-          title="Top-Up Volume"
-          value={`$${stats.totalTopupAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`}
-          sub="Approved top-ups"
-          icon={DollarSign}
-          iconClass="bg-yellow-700"
-          cardClass="border-slate-700 bg-slate-800/60"
+          title="Approved"
+          value={fmt(stats.approvedTopups)}
+          icon={CheckCircle}
+          accent="bg-emerald-600"
         />
+        <StatCard
+          title="Total Top-Up Volume"
+          value={fmtUSDT(stats.totalTopupAmount)}
+          sub="Approved only"
+          icon={DollarSign}
+          accent="bg-yellow-700"
+        />
+      </div>
+
+      {/* ── PREDICTIONS ── */}
+      <Section title="Predictions (Trades)" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           title="Total Predictions"
-          value={stats.totalPredictions.toLocaleString()}
-          sub={`${stats.activePredictions} active`}
+          value={fmt(stats.totalPredictions)}
           icon={Activity}
-          iconClass="bg-indigo-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          accent="bg-indigo-600"
         />
         <StatCard
-          title="Settled Predictions"
-          value={stats.settledPredictions.toLocaleString()}
-          icon={CheckCircle}
-          iconClass="bg-teal-600"
-          cardClass="border-slate-700 bg-slate-800/60"
+          title="Active / Pending"
+          value={fmt(stats.activePredictions)}
+          icon={CircleDot}
+          accent="bg-violet-600"
+        />
+        <StatCard
+          title="Settled"
+          value={fmt(stats.settledPredictions)}
+          icon={Repeat2}
+          accent="bg-teal-600"
+        />
+        <StatCard
+          title="Total Profit Generated"
+          value={fmtUSDT(stats.totalPredictionProfit)}
+          sub="Win payouts"
+          icon={TrendingUp}
+          accent="bg-teal-700"
         />
       </div>
 
-      {/* Platform Balance */}
-      <SectionHeading title="Platform Balance" />
-      <Card className="border border-cyan-800/40 bg-cyan-950/20">
-        <CardContent className="p-5 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
-              Total Account Balances (All Participants)
-            </p>
-            <p className="text-3xl font-bold text-cyan-300">
-              ${stats.totalPlatformBalance.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-            </p>
-          </div>
-          <Wallet className="h-10 w-10 text-cyan-500" />
-        </CardContent>
-      </Card>
+      {/* ── PLATFORM BALANCE ── */}
+      <Section title="Platform Balance" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card className="lg:col-span-2 border border-cyan-700/40 bg-cyan-950/20">
+          <CardContent className="p-5 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-1">
+                Total Account Balances (All Participants)
+              </p>
+              <p className="text-3xl font-bold text-cyan-300">
+                {fmtUSDT(stats.totalPlatformBalance)}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                Avg {fmtUSDT(stats.avgParticipantBalance)} per participant
+              </p>
+            </div>
+            <Wallet className="h-10 w-10 text-cyan-500 flex-shrink-0" />
+          </CardContent>
+        </Card>
+        <StatCard
+          title="With Positive Balance"
+          value={`${fmt(stats.positiveBalanceCount)} participants`}
+          sub={`${stats.totalParticipants > 0 ? Math.round((stats.positiveBalanceCount / stats.totalParticipants) * 100) : 0}% of total`}
+          icon={UserCheck}
+          accent="bg-cyan-700"
+        />
+      </div>
     </div>
   )
 }
