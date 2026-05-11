@@ -24,13 +24,9 @@ export function DeleteParticipantsPanel() {
     setDeleteResult(null)
 
     try {
-      console.log("[v0] Calling delete-all-participants API...")
-      
       const response = await adminFetch("/api/admin/delete-all-participants-except", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       })
 
       const data = await response.json()
@@ -39,23 +35,15 @@ export function DeleteParticipantsPanel() {
         throw new Error(data.error || "Failed to delete participants")
       }
 
-      console.log("[v0] Deletion successful:", data)
       setDeleteResult(data)
 
       toast({
         title: "Success!",
-        description: `Deleted ${data.deletedCount || 0} participants. Kept kuldeepkuldeepjain@gmail.com`,
+        description: `Deleted ${data.deletedParticipants || 0} participants.`,
       })
     } catch (error) {
-      console.error("[v0] Delete error:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      })
-      
+      toast({ title: "Error", description: errorMessage, variant: "destructive" })
       setDeleteResult({ error: errorMessage })
     } finally {
       setIsDeleting(false)
@@ -68,10 +56,10 @@ export function DeleteParticipantsPanel() {
       <CardHeader className="border-b border-red-700 pb-4">
         <CardTitle className="text-red-400 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
-          Delete All Participants (Except One)
+          Delete All Participants
         </CardTitle>
         <CardDescription className="text-slate-300">
-          Permanently delete all participants except kuldeepkuldeepjain@gmail.com
+          Permanently delete all participant records and their related data.
         </CardDescription>
       </CardHeader>
 
@@ -89,16 +77,14 @@ export function DeleteParticipantsPanel() {
             <CheckCircle2 className="h-4 w-4 text-green-400" />
             <AlertDescription className="text-green-300">
               <strong>Deletion Complete!</strong>
-              <div className="mt-2 text-sm space-y-1">
-                <p>• Participants deleted: {deleteResult.deletedCount || 0}</p>
-                <p>• Protected email: {deleteResult.protectedEmail}</p>
-                <p>• Total records processed: {deleteResult.totalRecordsDeleted || 0}</p>
+              <div className="mt-2 text-sm">
+                <p>Participants deleted: {deleteResult.deletedParticipants || 0}</p>
               </div>
             </AlertDescription>
           </Alert>
         )}
 
-        {deleteResult && deleteResult.error && (
+        {deleteResult?.error && (
           <Alert className="border-red-700 bg-red-950/50">
             <AlertTriangle className="h-4 w-4 text-red-400" />
             <AlertDescription className="text-red-300">
@@ -127,19 +113,11 @@ export function DeleteParticipantsPanel() {
           </Button>
 
           {isConfirming && (
-            <Button
-              onClick={() => setIsConfirming(false)}
-              variant="outline"
-              className="w-full"
-            >
+            <Button onClick={() => setIsConfirming(false)} variant="outline" className="w-full">
               Cancel
             </Button>
           )}
         </div>
-
-        <p className="text-xs text-slate-400 text-center">
-          Protected email: <span className="font-mono text-slate-300">kuldeepkuldeepjain@gmail.com</span>
-        </p>
       </CardContent>
     </Card>
   )

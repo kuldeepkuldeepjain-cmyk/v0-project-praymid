@@ -8,16 +8,12 @@ export async function POST(request: NextRequest) {
 
   try {
     const db = getPool()!
-    const PROTECTED_EMAIL = "kuldeepkuldeepjain@gmail.com"
 
-    const protectedRes = await db.query(`SELECT id,email FROM participants WHERE email=$1`, [PROTECTED_EMAIL])
-    if (!protectedRes.rows.length) return NextResponse.json({ error: "Protected participant not found" }, { status: 404 })
+    const allRes = await db.query(`SELECT id, email FROM participants`)
+    const participants = allRes.rows
+    if (!participants.length) return NextResponse.json({ success: true, message: "No participants to delete", deletedCount: 0 })
 
-    const allRes = await db.query(`SELECT id,email FROM participants WHERE email!=$1`, [PROTECTED_EMAIL])
-    const participantsToDelete = allRes.rows
-    if (!participantsToDelete.length) return NextResponse.json({ success: true, message: "No participants to delete", deletedCount: 0 })
-
-    const ids = participantsToDelete.map((p: any) => p.id)
+    const ids = participants.map((p: any) => p.id)
     const placeholders = ids.map((_: any, i: number) => `$${i + 1}`).join(",")
 
     const tables = [
@@ -33,12 +29,12 @@ export async function POST(request: NextRequest) {
       await db.query(`DELETE FROM ${table} WHERE ${col} IN (${placeholders})`, ids).catch(() => {})
     }
 
-    await db.query(`DELETE FROM notifications WHERE user_email != $1`, [PROTECTED_EMAIL]).catch(() => {})
-    await db.query(`DELETE FROM activity_logs WHERE actor_email != $1`, [PROTECTED_EMAIL]).catch(() => {})
+    await db.query(`DELETE FROM notifications`).catch(() => {})
+    await db.query(`DELETE FROM activity_logs`).catch(() => {})
 
-    const deleted = await db.query(`DELETE FROM participants WHERE email!=$1 RETURNING id`, [PROTECTED_EMAIL])
+    const deleted = await db.query(`DELETE FROM participants RETURNING id`)
 
-    return NextResponse.json({ success: true, message: `Deleted all participants except ${PROTECTED_EMAIL}`, deletedParticipants: deleted.rowCount })
+    return NextResponse.json({ success: true, message: `Deleted all participants`, deletedParticipants: deleted.rowCount })
   } catch (error) {
     return NextResponse.json({ error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" }, { status: 500 })
   }

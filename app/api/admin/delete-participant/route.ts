@@ -11,20 +11,12 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Participant ID is required" }, { status: 400 })
     }
     const db = getPool()!
-    
-    // Get participant email first
-    const PROTECTED_EMAIL = "kuldeepkuldeepjain@gmail.com"
 
     const res = await db.query("SELECT email FROM participants WHERE id = $1", [participantId])
     if (!res.rows.length) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
     const email = res.rows[0].email
-
-    // Block deletion of protected account
-    if (email.toLowerCase() === PROTECTED_EMAIL.toLowerCase()) {
-      return NextResponse.json({ error: "This participant account is protected and cannot be deleted." }, { status: 403 })
-    }
 
     await db.query("UPDATE payment_submissions SET is_deleted = true WHERE participant_id = $1", [participantId]).catch(() => {})
     await db.query("UPDATE payout_requests SET is_deleted = true WHERE participant_id = $1", [participantId]).catch(() => {})
