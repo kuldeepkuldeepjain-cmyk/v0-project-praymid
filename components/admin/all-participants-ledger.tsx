@@ -87,10 +87,7 @@ export function AllParticipantsLedger() {
         `/api/admin/all-ledger?type=${filterType}&participant=${filterParticipant}&sortBy=date&order=${sortOrder}&limit=${limit}&offset=${offset}`
       )
       const data = await res.json()
-      if (!res.ok) {
-        toast({ title: "Error", description: "Failed to load ledger", variant: "destructive" })
-        return
-      }
+      if (!res.ok) throw new Error(data.error || "Failed to fetch ledger")
       setEntries(data.data || [])
       setTotalEntries(data.pagination?.total || 0)
       setTotalPages(data.pagination?.totalPages || 0)
