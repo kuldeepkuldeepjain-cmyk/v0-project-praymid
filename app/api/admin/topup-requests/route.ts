@@ -8,12 +8,13 @@ export async function GET(req: NextRequest) {
   try {
     const rows = await query(
       `SELECT id, participant_email, participant_id, amount, status, created_at,
-              payment_method, transaction_id, admin_notes, bep20_address
+              payment_method, transaction_id, admin_notes, bep20_address, screenshot_url,
+              rejection_reason, reviewed_at, reviewed_by_email
        FROM topup_requests ORDER BY created_at DESC`
     )
     return NextResponse.json({ success: true, requests: rows })
   } catch (error) {
-    console.error("[v0] Admin topup GET error:", error)
+    console.error("[topup-requests] GET error:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }
@@ -29,11 +30,12 @@ export async function PATCH(req: NextRequest) {
     await execute(
       "UPDATE topup_requests SET bep20_address = $1 WHERE id = $2",
       [bep20_address?.trim() || null, requestId]
-    )
-    return NextResponse.json({ success: true, message: "BEP20 address saved" })
-  } catch (error) {
-    console.error("Admin topup PATCH error:", error)
-    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+      )
+      return NextResponse.json({ success: true, message: "Top-up rejected" })
+    } catch (error) {
+      console.error("[topup-requests] POST error:", error)
+      return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
+    }
   }
 }
 
