@@ -31,7 +31,7 @@ export function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
 
           {/* Description */}
           <p className="text-slate-600 mb-6">
-            {error.message || "An unexpected error occurred. Please try again."}
+            We&apos;re having trouble loading this page. Please try again or contact support if the issue persists.
           </p>
 
           {/* Error digest (for tracking) */}

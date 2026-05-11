@@ -160,12 +160,18 @@ export default function ParticipantLoginPage() {
 
         window.location.href = "/participant/dashboard"
       } else {
-        throw new Error(data.error || "Login failed")
+        toast({
+          title: "Login Failed",
+          description: data.pendingVerification
+            ? data.error
+            : "Invalid email or password. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Login Failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
+        title: "Connection Error",
+        description: "Unable to connect. Please check your connection and try again.",
         variant: "destructive",
       })
     } finally {

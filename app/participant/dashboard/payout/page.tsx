@@ -184,12 +184,16 @@ export default function PayoutPage() {
         setParticipantData(updatedData)
         localStorage.setItem("participantData", JSON.stringify(updatedData))
       } else {
-        throw new Error(data.error)
+        toast({
+          title: "Request Failed",
+          description: data.message || "Unable to submit payout request. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        title: "Connection Error",
+        description: "Unable to connect. Please check your connection and try again.",
         variant: "destructive",
       })
     }
@@ -211,10 +215,10 @@ export default function PayoutPage() {
           prev.map((p) => p.id === payoutId ? { ...p, participant_confirmed: true, confirmed_at: new Date().toISOString() } : p)
         )
       } else {
-        toast({ title: "Error", description: data.error, variant: "destructive" })
+        toast({ title: "Unable to Confirm", description: "Could not confirm receipt. Please try again.", variant: "destructive" })
       }
     } catch {
-      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" })
+      toast({ title: "Connection Error", description: "Please check your connection and try again.", variant: "destructive" })
     } finally {
       setProcessingPayoutActionId(null)
     }
@@ -242,10 +246,10 @@ export default function PayoutPage() {
         setDisputeReason("")
         setDisputePayoutId(null)
       } else {
-        toast({ title: "Error", description: data.error, variant: "destructive" })
+        toast({ title: "Unable to Raise Dispute", description: "Could not submit dispute. Please try again.", variant: "destructive" })
       }
     } catch {
-      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" })
+      toast({ title: "Connection Error", description: "Please check your connection and try again.", variant: "destructive" })
     } finally {
       setProcessingPayoutActionId(null)
     }

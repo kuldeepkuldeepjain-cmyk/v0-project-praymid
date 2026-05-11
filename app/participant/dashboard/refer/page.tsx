@@ -230,13 +230,16 @@ export default function ReferPage() {
           setSelectedContacts([])
         }, selectedContacts.length * 1000 + 500)
       } else {
-        throw new Error(result.error || "Failed to log invites")
+        toast({
+          title: "Failed to Send",
+          description: "Unable to send invites. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
-      console.error("[v0] Error sending invites:", error)
+    } catch {
       toast({
-        title: "Failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        title: "Connection Error",
+        description: "Unable to connect. Please check your connection and try again.",
         variant: "destructive",
       })
     } finally {

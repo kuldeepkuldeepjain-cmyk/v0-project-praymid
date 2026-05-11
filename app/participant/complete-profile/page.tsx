@@ -53,7 +53,7 @@ export default function CompleteProfilePage() {
       const participant: any = json.participant || null
 
       if (!participant) {
-        toast({ title: "Error", description: "Failed to load profile data", variant: "destructive" })
+        toast({ title: "Unable to Load Profile", description: "Please try again or contact support.", variant: "destructive" })
         return
       }
 
@@ -68,8 +68,7 @@ export default function CompleteProfilePage() {
         bep20Address: participant.wallet_address || "",
         fullAddress: participant.full_address || "",
       })
-    } catch (error) {
-      console.error("[v0] Error in checkAuthAndDetails:", error)
+    } catch {
       router.push("/participant/login")
     } finally {
       setIsCheckingAuth(false)
@@ -130,8 +129,8 @@ export default function CompleteProfilePage() {
 
       toast({ title: "Profile Updated", description: "Your profile has been completed successfully!" })
       router.push("/participant/dashboard")
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to update profile", variant: "destructive" })
+    } catch {
+      toast({ title: "Update Failed", description: "Unable to save your profile. Please try again.", variant: "destructive" })
     } finally {
       setIsLoading(false)
     }

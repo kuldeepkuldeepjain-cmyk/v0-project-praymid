@@ -215,12 +215,11 @@ export default function SpinWheelPage() {
       // Refresh balance silently after spin completes
       loadParticipantData()
       loadLastWinners()
-    } catch (error: any) {
-      console.error("Spin error:", error)
+    } catch {
       setIsSpinning(false)
       toast({
         title: "Spin Failed",
-        description: error.message || "Something went wrong. Please try again.",
+        description: "Unable to spin right now. Please try again in a moment.",
         variant: "destructive",
       })
     }

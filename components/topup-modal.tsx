@@ -123,8 +123,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
       setStep("success")
       if (onSuccess) onSuccess(parsedAmount)
-    } catch (err: any) {
-      setErrorMessage(err.message || "Something went wrong. Please try again.")
+    } catch {
+      setErrorMessage("Something went wrong. Please check your connection and try again.")
       setStep("form")
     }
   }

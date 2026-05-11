@@ -58,8 +58,8 @@ export function LivePredictionMonitor({
       if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
       const data = await response.json()
       setPredictions(data.success && Array.isArray(data.predictions) ? data.predictions : [])
-    } catch (err: any) {
-      setError(err.message)
+    } catch {
+      setError("Unable to load trade history. Please try again.")
       setPredictions([])
     } finally {
       setLoading(false)
@@ -111,9 +111,12 @@ export function LivePredictionMonitor({
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-sm text-red-600 font-semibold">Error loading history</p>
-        <p className="text-xs text-slate-500 mt-1">{error}</p>
+      <div className="text-center py-12 space-y-3">
+        <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
+          <Clock className="h-5 w-5 text-amber-500" />
+        </div>
+        <p className="text-sm font-semibold text-slate-700">Unable to load history</p>
+        <p className="text-xs text-slate-500">Please check your connection and try again.</p>
       </div>
     )
   }

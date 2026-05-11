@@ -67,7 +67,7 @@ export class ErrorBoundary extends React.Component<
               {process.env.NODE_ENV === "development" && this.state.error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-xs font-mono text-red-800 break-all">
-                    {this.state.error.message}
+                    Error Reference: #{Date.now().toString(36)}
                   </p>
                 </div>
               )}

@@ -329,13 +329,16 @@ export default function ParticipantRegisterPage() {
         setPendingOtp(otp)
         setPendingApproval(true)
       } else {
-        throw new Error(data.error || "Registration failed")
+        toast({
+          title: "Registration Failed",
+          description: data.message || "Unable to complete registration. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
-      console.error("[v0] Registration error:", error)
+    } catch {
       toast({
-        title: "Registration Failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        title: "Connection Error",
+        description: "Unable to connect. Please check your connection and try again.",
         variant: "destructive",
       })
     } finally {
