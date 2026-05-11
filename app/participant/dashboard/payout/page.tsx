@@ -54,12 +54,10 @@ export default function PayoutPage() {
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
   const [disputeReason, setDisputeReason] = useState("")
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
-  const isAuthenticated = isParticipantAuthenticated()
-
   useEffect(() => {
     setMounted(true)
     
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -617,11 +615,11 @@ export default function PayoutPage() {
                     
                     <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 mt-3">
                       <span className="text-slate-400">
-                        {new Date(payout.requested_at).toLocaleDateString()}
+                        {new Date(payout.created_at || payout.requested_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </span>
-                      {payout.bep20_address && (
+                      {(payout.wallet_address || payout.bep20_address) && (
                         <span className="text-slate-500 font-mono">
-                          {payout.bep20_address.substring(0, 6)}...{payout.bep20_address.substring(payout.bep20_address.length - 4)}
+                          {(payout.wallet_address || payout.bep20_address).substring(0, 6)}...{(payout.wallet_address || payout.bep20_address).slice(-4)}
                         </span>
                       )}
                     </div>

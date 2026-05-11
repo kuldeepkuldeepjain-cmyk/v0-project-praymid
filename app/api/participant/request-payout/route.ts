@@ -9,7 +9,13 @@ export async function GET(request: NextRequest) {
     const email = request.nextUrl.searchParams.get("email")
     if (!email) return NextResponse.json({ success: false, error: "email required" }, { status: 400 })
     const payouts = await query(
-      "SELECT id, amount, status, wallet_address, created_at, payout_method FROM payout_requests WHERE participant_email = $1 ORDER BY created_at DESC",
+      `SELECT id, amount, status, wallet_address, created_at, payout_method,
+              transaction_hash, admin_notes,
+              participant_confirmed, confirmed_at,
+              dispute_status, dispute_raised_at
+       FROM payout_requests
+       WHERE participant_email = $1
+       ORDER BY created_at DESC`,
       [email]
     ) as any[]
     return NextResponse.json({ success: true, payouts })
