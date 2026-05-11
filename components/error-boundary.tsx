@@ -30,8 +30,6 @@ export class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("[v0] Error caught by boundary:", error, errorInfo)
-    
     Sentry.captureException(error, {
       contexts: {
         react: {

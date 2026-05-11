@@ -66,11 +66,14 @@ export function DeleteParticipantsPanel() {
         body: JSON.stringify({ participantId: participant.id }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to delete")
+      if (!res.ok) {
+        toast({ title: "Delete Failed", description: "Unable to delete participant. Please try again.", variant: "destructive" })
+        return
+      }
       setParticipants(prev => prev.filter(p => p.id !== participant.id))
       toast({ title: "Deleted", description: `${participant.email} permanently removed from all systems.` })
-    } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to delete", variant: "destructive" })
+    } catch {
+      toast({ title: "Delete Failed", description: "Unable to delete participant. Please try again.", variant: "destructive" })
     } finally {
       setDeletingId(null)
     }
@@ -85,11 +88,14 @@ export function DeleteParticipantsPanel() {
         headers: { "Content-Type": "application/json" },
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to delete all")
+      if (!res.ok) {
+        toast({ title: "Delete Failed", description: "Unable to delete participants. Please try again.", variant: "destructive" })
+        return
+      }
       setParticipants([])
       toast({ title: "All Deleted", description: `${data.deletedParticipants || 0} participants permanently removed.` })
-    } catch (error) {
-      toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to delete all", variant: "destructive" })
+    } catch {
+      toast({ title: "Delete Failed", description: "Unable to delete participants. Please try again.", variant: "destructive" })
     } finally {
       setIsDeletingAll(false)
     }

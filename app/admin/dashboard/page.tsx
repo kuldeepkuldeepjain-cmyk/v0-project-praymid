@@ -48,6 +48,7 @@ import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import Loading from "./loading"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 interface NavItem {
   id: string
@@ -260,7 +261,19 @@ export default function AdminDashboard() {
 
         {/* Content Area */}
         <main className="flex-1 overflow-y-auto bg-slate-950 p-6">
-          {renderView()}
+          <ErrorBoundary key={activeView} fallback={
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <p className="text-slate-400 text-sm">This panel encountered an error. Please try refreshing.</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-cyan-700 hover:bg-cyan-600 text-white text-sm rounded-lg transition-colors"
+              >
+                Reload
+              </button>
+            </div>
+          }>
+            {renderView()}
+          </ErrorBoundary>
         </main>
       </div>
     </div>

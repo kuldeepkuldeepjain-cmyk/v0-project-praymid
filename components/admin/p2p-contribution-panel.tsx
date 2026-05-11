@@ -75,8 +75,8 @@ export function P2PContributionPanel() {
   const fetchContributions = useCallback(async () => {
     try {
       const res = await adminFetch("/api/admin/activation-payments")
+      if (!res.ok) { setIsLoading(false); return }
       const json = await res.json()
-      if (!res.ok) throw new Error(json.error || "Failed to fetch contributions")
       const submissions: any[] = json.payments || []
       setContributions(
         submissions.map((s: any) => ({
