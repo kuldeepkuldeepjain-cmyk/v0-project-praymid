@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
+import { uploadToR2, base64ToBuffer, getMimeTypeFromBase64 } from "@/lib/r2-storage"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -56,10 +57,24 @@ export async function POST(request: NextRequest) {
 
     const screenshotData = typeof screenshot === "string" ? screenshot : await (screenshot as any).text()
 
+    // Upload screenshot to R2
+    let screenshotUrl = screenshotData
+    if (screenshotData.startsWith("data:")) {
+      try {
+        const mimeType = getMimeTypeFromBase64(screenshotData)
+        const buffer = base64ToBuffer(screenshotData)
+        const fileName = `payment-${participant.id}-${transactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
+        screenshotUrl = await uploadToR2(buffer, fileName, mimeType)
+      } catch (uploadErr) {
+        console.error("[submit-payment] R2 upload failed:", uploadErr)
+        return NextResponse.json({ error: "Screenshot upload failed" }, { status: 500 })
+      }
+    }
+
     const rows = await query(
       `INSERT INTO payment_submissions (participant_id, participant_email, amount, payment_method, screenshot_url, transaction_id, status)
        VALUES ($1, $2, 100, $3, $4, $5, 'pending') RETURNING id, amount`,
-      [participant.id, email.toLowerCase().trim(), paymentMethod || "USDT_BEP20", screenshotData, transactionHash]
+      [participant.id, email.toLowerCase().trim(), paymentMethod || "USDT_BEP20", screenshotUrl, transactionHash]
     ) as any[]
     const submission = rows[0]
     if (!submission) return NextResponse.json({ error: "Failed to create submission" }, { status: 500 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
+import { uploadToR2, base64ToBuffer, getMimeTypeFromBase64 } from "@/lib/r2-storage"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -34,10 +35,24 @@ export async function POST(request: NextRequest) {
     }
     const participant = participants[0]
 
+    // Upload screenshot to R2 if provided
+    let screenshotUrl: string | null = null
+    if (screenshotBase64 && screenshotBase64.startsWith("data:")) {
+      try {
+        const mimeType = getMimeTypeFromBase64(screenshotBase64)
+        const buffer = base64ToBuffer(screenshotBase64)
+        const fileName = `topup-${participant.id}-${transactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
+        screenshotUrl = await uploadToR2(buffer, fileName, mimeType)
+      } catch (uploadErr) {
+        console.error("[topup-submit] R2 upload failed:", uploadErr)
+        return NextResponse.json({ success: false, message: "Screenshot upload failed" }, { status: 500 })
+      }
+    }
+
     await execute(
-      `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status)
-       VALUES ($1, $2, $3, $4, 'crypto', 'pending')`,
-      [participant.id, userEmail, parsedAmount, transactionHash]
+      `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
+       VALUES ($1, $2, $3, $4, 'crypto', 'pending', $5)`,
+      [participant.id, userEmail, parsedAmount, transactionHash, screenshotUrl]
     )
 
     // Log activity (best-effort — table may not exist)
