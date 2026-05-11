@@ -42,11 +42,16 @@ export async function POST(request: NextRequest) {
         const mimeType = screenshotBase64.match(/data:([^;]+)/)?.[1] || "image/jpeg"
         const fileName = `topup-${participant.id}-${transactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
         const uploadedUrl = await uploadBase64ToR2(screenshotBase64, fileName, mimeType)
-        if (!uploadedUrl) throw new Error("Upload returned null")
-        screenshotUrl = uploadedUrl
+        if (uploadedUrl) {
+          screenshotUrl = uploadedUrl
+        } else {
+          // Fallback: use base64 if R2 is not available
+          screenshotUrl = screenshotBase64
+        }
       } catch (uploadErr) {
         console.error("[topup-submit] R2 upload failed:", uploadErr)
-        return NextResponse.json({ success: false, message: "Screenshot upload failed" }, { status: 500 })
+        // Continue with base64 as fallback
+        screenshotUrl = screenshotBase64
       }
     }
 

@@ -64,11 +64,13 @@ export async function POST(request: NextRequest) {
         const mimeType = screenshotData.match(/data:([^;]+)/)?.[1] || "image/jpeg"
         const fileName = `payment-${participant.id}-${transactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
         const uploadedUrl = await uploadBase64ToR2(screenshotData, fileName, mimeType)
-        if (!uploadedUrl) throw new Error("Upload returned null")
-        screenshotUrl = uploadedUrl
+        if (uploadedUrl) {
+          screenshotUrl = uploadedUrl
+        }
+        // If uploadedUrl is null, keep original base64Data
       } catch (uploadErr) {
         console.error("[submit-payment] R2 upload failed:", uploadErr)
-        return NextResponse.json({ error: "Screenshot upload failed" }, { status: 500 })
+        // Continue with base64 storage as fallback
       }
     }
 
