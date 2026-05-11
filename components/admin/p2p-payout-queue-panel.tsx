@@ -1,5 +1,4 @@
 "use client"
-import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -17,6 +16,7 @@ import {
 import { Clock, Search, Users, Trash2, Hourglass } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { adminFetch } from "@/lib/auth"
 
 interface PayoutRequest {
   id: string
@@ -52,8 +52,10 @@ export function P2PPayoutQueuePanel() {
     const countdownInterval = setInterval(() => {
       const newCountdowns: Record<string, string> = {}
       payoutRequests.forEach((payout) => {
-        const thirtyMinutesLater = new Date(payout.created_at).getTime() + 30 * 60 * 1000
-        const remaining = thirtyMinutesLater - Date.now()
+        if (!payout.created_at) { newCountdowns[payout.id] = "—"; return }
+        const createdMs = new Date(payout.created_at).getTime()
+        if (isNaN(createdMs)) { newCountdowns[payout.id] = "—"; return }
+        const remaining = createdMs + 30 * 60 * 1000 - Date.now()
         if (remaining > 0) {
           const m = Math.floor(remaining / 1000 / 60)
           const s = Math.floor(remaining / 1000) % 60
@@ -130,11 +132,17 @@ export function P2PPayoutQueuePanel() {
     completed: payoutRequests.filter((p) => p.status === "completed").length,
   }
 
-  const fmtDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+  const fmtDate = (d: string | null | undefined) => {
+    if (!d) return "—"
+    const dt = new Date(d)
+    return isNaN(dt.getTime()) ? "—" : dt.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+  }
 
-  const fmtTime = (d: string) =>
-    new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
+  const fmtTime = (d: string | null | undefined) => {
+    if (!d) return "—"
+    const dt = new Date(d)
+    return isNaN(dt.getTime()) ? "—" : dt.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
+  }
 
   if (isLoading) {
     return (

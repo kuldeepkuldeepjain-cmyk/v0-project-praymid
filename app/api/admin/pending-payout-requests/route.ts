@@ -10,16 +10,30 @@ export async function GET(request: NextRequest) {
     const sp = request.nextUrl.searchParams
     const amount = sp.get("amount") // optional filter by amount
 
+    // Check which columns exist on payout_requests to build safe query
+    const colCheck = await db.query(
+      `SELECT column_name FROM information_schema.columns
+       WHERE table_name='payout_requests' AND column_name IN ('serial_number','payout_method','redirect_to_email','redirect_to_serial','is_deleted')
+       AND table_schema='public'`
+    )
+    const existingCols = new Set(colCheck.rows.map((r: any) => r.column_name))
+
+    const selectSerial     = existingCols.has("serial_number")     ? "pr.serial_number,"       : "NULL AS serial_number,"
+    const selectMethod     = existingCols.has("payout_method")     ? "pr.payout_method,"       : "NULL AS payout_method,"
+    const selectRedirEmail = existingCols.has("redirect_to_email") ? "pr.redirect_to_email,"   : "NULL AS redirect_to_email,"
+    const selectRedirSerial= existingCols.has("redirect_to_serial")? "pr.redirect_to_serial,"  : "NULL AS redirect_to_serial,"
+    const deletedFilter    = existingCols.has("is_deleted")        ? "AND pr.is_deleted IS NOT TRUE" : ""
+
     let sql = `
       SELECT
         pr.id,
         pr.participant_email,
         pr.amount,
         pr.status,
-        pr.serial_number,
-        pr.payout_method,
-        pr.redirect_to_email,
-        pr.redirect_to_serial,
+        ${selectSerial}
+        ${selectMethod}
+        ${selectRedirEmail}
+        ${selectRedirSerial}
         pr.created_at,
         p.full_name,
         p.username,
@@ -29,7 +43,7 @@ export async function GET(request: NextRequest) {
         p.serial_number AS participant_serial
       FROM payout_requests pr
       LEFT JOIN participants p ON p.email = pr.participant_email
-      WHERE pr.status IN ('pending', 'matched')
+      WHERE pr.status IN ('pending', 'matched') ${deletedFilter}
     `
     const params: any[] = []
     if (amount) {
@@ -58,8 +72,7 @@ export async function GET(request: NextRequest) {
         participant_serial: r.participant_serial,
       })),
     })
-  } catch (err: any) {
-    console.error("[pending-payout-requests] error:", err)
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+  } catch {
+    return NextResponse.json({ success: false, error: "Failed to fetch payout requests" }, { status: 500 })
   }
 }
