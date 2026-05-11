@@ -1,31 +1,20 @@
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3"
 
-// Parse API token (format: token_id:token_secret)
-const parseApiToken = () => {
-  const token = process.env.CLOUDFLARE_API_TOKEN || ""
-  if (token.includes(":")) {
-    const [id, secret] = token.split(":")
-    return { id, secret }
-  }
-  // If not in id:secret format, treat entire token as accessKeyId
-  // and use account ID as secret (for older format)
-  return { id: token, secret: process.env.CLOUDFLARE_ACCOUNT_ID || "" }
-}
-
-const { id: accessKeyId, secret: secretAccessKey } = parseApiToken()
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
+const S3_ACCESS_KEY_ID = process.env.CLOUDFLARE_S3_ACCESS_KEY_ID
+const S3_SECRET_ACCESS_KEY = process.env.CLOUDFLARE_S3_SECRET_ACCESS_KEY
+const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || ""
+const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL || ""
 
 const s3Client = new S3Client({
   region: "auto",
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: `https://${ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId,
-    secretAccessKey,
+    accessKeyId: S3_ACCESS_KEY_ID || "",
+    secretAccessKey: S3_SECRET_ACCESS_KEY || "",
   },
   requestTimeout: 10000,
 })
-
-const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME || ""
-const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL || ""
 
 /**
  * Upload an image to Cloudflare R2
@@ -99,7 +88,7 @@ export async function uploadBase64ToR2(
 ): Promise<string | null> {
   try {
     // Check if R2 is configured
-    if (!BUCKET_NAME || !PUBLIC_URL || !accessKeyId || !secretAccessKey) {
+    if (!BUCKET_NAME || !PUBLIC_URL || !S3_ACCESS_KEY_ID || !S3_SECRET_ACCESS_KEY) {
       console.warn("[R2] R2 not fully configured, storing as base64")
       return null
     }
