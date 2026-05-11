@@ -9,33 +9,42 @@ export async function POST(request: NextRequest) {
   try {
     const db = getPool()!
 
-    const allRes = await db.query(`SELECT id, email FROM participants`)
+    const allRes = await db.query("SELECT id, email FROM participants")
     const participants = allRes.rows
-    if (!participants.length) return NextResponse.json({ success: true, message: "No participants to delete", deletedCount: 0 })
-
-    const ids = participants.map((p: any) => p.id)
-    const placeholders = ids.map((_: any, i: number) => `$${i + 1}`).join(",")
-
-    const tables = [
-      { table: "transactions", col: "participant_id" },
-      { table: "payment_submissions", col: "participant_id" },
-      { table: "payout_requests", col: "participant_id" },
-      { table: "predictions", col: "participant_id" },
-      { table: "topup_requests", col: "participant_id" },
-      { table: "wallet_pool", col: "assigned_to" },
-    ]
-
-    for (const { table, col } of tables) {
-      await db.query(`DELETE FROM ${table} WHERE ${col} IN (${placeholders})`, ids).catch(() => {})
+    if (!participants.length) {
+      return NextResponse.json({ success: true, message: "No participants to delete", deletedParticipants: 0 })
     }
 
-    await db.query(`DELETE FROM notifications`).catch(() => {})
-    await db.query(`DELETE FROM activity_logs`).catch(() => {})
+    const ids = participants.map((p: any) => p.id)
+    const ph = ids.map((_: any, i: number) => `$${i + 1}`).join(",")
 
-    const deleted = await db.query(`DELETE FROM participants RETURNING id`)
+    const byId = [
+      "transactions", "payment_submissions", "payout_requests", "predictions",
+      "topup_requests", "contribution_ledger", "gas_approvals",
+      "invite_logs", "spin_coupons", "support_tickets",
+    ]
+    for (const table of byId) {
+      await db.query(`DELETE FROM ${table} WHERE participant_id IN (${ph})`, ids).catch(() => {})
+    }
 
-    return NextResponse.json({ success: true, message: `Deleted all participants`, deletedParticipants: deleted.rowCount })
+    // wallet_pool uses assigned_to column
+    await db.query(`UPDATE wallet_pool SET assigned_to = NULL WHERE assigned_to IN (${ph})`, ids).catch(() => {})
+
+    // Clear shared tables with no participant_id FK
+    await db.query("DELETE FROM notifications").catch(() => {})
+    await db.query("DELETE FROM activity_logs").catch(() => {})
+
+    const deleted = await db.query("DELETE FROM participants RETURNING id")
+
+    return NextResponse.json({
+      success: true,
+      message: "All participants and related data permanently deleted",
+      deletedParticipants: deleted.rowCount,
+    })
   } catch (error) {
-    return NextResponse.json({ error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
+    )
   }
 }
