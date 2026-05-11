@@ -29,6 +29,7 @@ import {
   FileText,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { participantFetch } from "@/lib/auth"
 
 interface LedgerEntry {
   id: string
@@ -81,7 +82,7 @@ export function ParticipantLedger({ participantId }: LedgerProps) {
     setLoading(true)
     try {
       const offset = currentPage * limit
-      const res = await fetch(
+      const res = await participantFetch(
         `/api/participant/ledger?participantId=${participantId}&type=${filterType}&sortBy=date&order=${sortOrder}&limit=${limit}&offset=${offset}`
       )
       const data = await res.json()
