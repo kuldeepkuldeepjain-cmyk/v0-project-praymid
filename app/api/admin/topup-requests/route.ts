@@ -30,12 +30,11 @@ export async function PATCH(req: NextRequest) {
     await execute(
       "UPDATE topup_requests SET bep20_address = $1 WHERE id = $2",
       [bep20_address?.trim() || null, requestId]
-      )
-      return NextResponse.json({ success: true, message: "Top-up rejected" })
-    } catch (error) {
-      console.error("[topup-requests] POST error:", error)
-      return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
-    }
+    )
+    return NextResponse.json({ success: true, message: "BEP20 address updated" })
+  } catch (error) {
+    console.error("[topup-requests] PATCH error:", error)
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }
 
