@@ -32,6 +32,7 @@ interface Contribution {
   id: string
   participant_email: string
   participant_name: string
+  participant_mobile: string | null
   amount: number
   payment_method: string
   transaction_id: string
@@ -80,14 +81,15 @@ export function P2PContributionPanel() {
       setContributions(
         submissions.map((s: any) => ({
           id: s.id,
-          participant_email: s.participant_email,
-          participant_name: s.participants?.full_name || s.participants?.username || s.participant_email,
+          participant_email: s.email || s.participant_email,
+          participant_name: s.full_name || s.participants?.full_name || s.username || s.participants?.username || s.email?.split("@")[0] || "Unknown",
+          participant_mobile: s.mobile_number || s.participants?.mobile_number || null,
           amount: Number(s.amount),
-          payment_method: s.payment_method || "crypto",
-          transaction_id: s.transaction_id || "N/A",
-          screenshot_url: s.screenshot_url || null,
+          payment_method: s.payment_method || s.paymentMethod || "BEP20",
+          transaction_id: s.transaction_id || s.transactionHash || "N/A",
+          screenshot_url: s.screenshot_url || s.screenshotUrl || null,
           status: s.status,
-          created_at: s.created_at,
+          created_at: s.created_at || s.submittedAt,
           matched_payout_id: s.matched_payout_id || null,
         }))
       )
@@ -335,9 +337,12 @@ export function P2PContributionPanel() {
                     }`}
                   >
                     {/* Contributor */}
-                    <td className="py-3 px-4">
-                      <p className="text-sm font-medium text-white">{c.participant_name}</p>
-                      <p className="text-xs text-slate-400">{c.participant_email}</p>
+                    <td className="py-3 px-4 min-w-[160px]">
+                      <p className="text-sm font-semibold text-white leading-tight">{c.participant_name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{c.participant_email}</p>
+                      {c.participant_mobile && (
+                        <p className="text-xs text-slate-500 mt-0.5">{c.participant_mobile}</p>
+                      )}
                     </td>
                     {/* Amount */}
                     <td className="py-3 px-4">
@@ -366,11 +371,13 @@ export function P2PContributionPanel() {
                         ? <span className="text-xs text-purple-400 font-mono">{c.matched_payout_id.slice(0, 8)}...</span>
                         : <span className="text-xs text-slate-600">Not matched</span>}
                     </td>
-                    {/* Date */}
-                    <td className="py-3 px-4">
-                      <p className="text-xs text-slate-400 whitespace-nowrap">
-                        {new Date(c.created_at).toLocaleDateString()}<br />
-                        <span className="text-slate-500">{new Date(c.created_at).toLocaleTimeString()}</span>
+                    {/* Date & Time */}
+                    <td className="py-3 px-4 min-w-[110px]">
+                      <p className="text-xs font-medium text-slate-300 whitespace-nowrap">
+                        {new Date(c.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                      <p className="text-xs text-slate-500 whitespace-nowrap mt-0.5">
+                        {new Date(c.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
                       </p>
                     </td>
                     {/* Actions */}
@@ -478,9 +485,17 @@ export function P2PContributionPanel() {
           <div className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                <p className="text-xs text-slate-400 mb-0.5">Contributor</p>
-                <p className="text-white font-semibold text-sm">{selectedContribution?.participant_name}</p>
-                <p className="text-slate-400 text-xs">{selectedContribution?.participant_email}</p>
+                <p className="text-xs text-slate-400 mb-1">Contributor</p>
+                <p className="text-white font-semibold text-sm leading-tight">{selectedContribution?.participant_name}</p>
+                <p className="text-slate-400 text-xs mt-0.5">{selectedContribution?.participant_email}</p>
+                {selectedContribution?.participant_mobile && (
+                  <p className="text-slate-500 text-xs mt-0.5">{selectedContribution.participant_mobile}</p>
+                )}
+                <p className="text-slate-600 text-[10px] mt-1">
+                  {selectedContribution?.created_at && new Date(selectedContribution.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                  {" "}
+                  {selectedContribution?.created_at && new Date(selectedContribution.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                </p>
               </div>
               <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
                 <p className="text-xs text-slate-400 mb-0.5">Amount</p>

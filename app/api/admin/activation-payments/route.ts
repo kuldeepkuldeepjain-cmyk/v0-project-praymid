@@ -8,9 +8,11 @@ export async function GET(request: NextRequest) {
   try {
     const db = getPool()!
     const result = await db.query(`
-      SELECT ps.*, p.username, p.wallet_address
+      SELECT ps.*,
+             p.username, p.full_name, p.mobile_number, p.wallet_address,
+             p.serial_number
       FROM payment_submissions ps
-      LEFT JOIN participants p ON p.id = ps.participant_id
+      LEFT JOIN participants p ON p.id = ps.participant_id OR p.email = ps.participant_email
       ORDER BY ps.created_at DESC
     `)
     const payments = result.rows
@@ -18,14 +20,27 @@ export async function GET(request: NextRequest) {
     const transformedPayments = payments.map((payment: any) => ({
       id: payment.id,
       email: payment.participant_email,
+      full_name: payment.full_name || payment.username || payment.participant_email?.split("@")[0] || "Unknown",
       username: payment.username || payment.participant_email?.split("@")[0] || "Unknown",
+      mobile_number: payment.mobile_number || null,
+      serial_number: payment.serial_number || null,
       wallet: payment.wallet_address || "",
       amount: Number(payment.amount) || 100,
       paymentMethod: payment.payment_method === "BEP20" ? "crypto" : "bank",
+      payment_method: payment.payment_method || "BEP20",
       screenshotUrl: payment.screenshot_url || "",
+      screenshot_url: payment.screenshot_url || null,
       transactionHash: payment.transaction_id || "",
+      transaction_id: payment.transaction_id || "N/A",
       submittedAt: payment.created_at,
+      created_at: payment.created_at,
       status: payment.status || "pending",
+      matched_payout_id: payment.matched_payout_id || null,
+      participants: {
+        full_name: payment.full_name || null,
+        username: payment.username || null,
+        mobile_number: payment.mobile_number || null,
+      }
     }))
 
     const today = new Date(); today.setHours(0, 0, 0, 0)
