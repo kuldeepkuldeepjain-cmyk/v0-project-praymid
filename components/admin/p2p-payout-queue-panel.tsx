@@ -99,17 +99,26 @@ export function P2PPayoutQueuePanel() {
   const handleDeletePayout = async () => {
     if (!deleteConfirm) return
     setIsDeleting(true)
+    const id = deleteConfirm.id
     try {
       const response = await adminFetch("/api/admin/delete-payout-request", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ payoutRequestId: deleteConfirm.id }),
+        body: JSON.stringify({ payoutRequestId: id }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || "Failed to delete")
-      setPayoutRequests((prev) => prev.filter((p) => p.id !== deleteConfirm.id))
-      setDeleteConfirm(null)
-      toast({ title: "Deleted", description: "Payout request removed successfully." })
+      let ok = response.ok
+      try {
+        const data = await response.json()
+        ok = response.ok && data.success !== false
+      } catch { /* non-JSON response */ }
+
+      if (ok) {
+        setPayoutRequests((prev) => prev.filter((p) => p.id !== id))
+        setDeleteConfirm(null)
+        toast({ title: "Deleted", description: "Payout request removed successfully." })
+      } else {
+        toast({ title: "Delete Failed", description: "Unable to delete. Please try again.", variant: "destructive" })
+      }
     } catch {
       toast({ title: "Delete Failed", description: "Unable to delete. Please try again.", variant: "destructive" })
     } finally {

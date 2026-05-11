@@ -127,18 +127,12 @@ export default function AdminDashboard() {
     { id: "p2p-settings", label: "P2P Mode Toggle", icon: Settings, section: "SYSTEM" },
   ]
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     try {
-      console.log("[v0] Logging out admin...")
       clearAdminAuth()
       router.push("/admin/login")
-    } catch (error) {
-      console.error("[v0] Error logging out:", error)
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
-      })
+    } catch {
+      toast({ title: "Error", description: "Failed to logout", variant: "destructive" })
     }
   }
 
