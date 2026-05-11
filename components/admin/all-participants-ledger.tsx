@@ -36,6 +36,8 @@ interface LedgerEntry {
   id: string
   participantEmail: string
   participantName: string
+  participantMobile?: string | null
+  participantSerial?: string | null
   type: "transaction" | "contribution" | "payout" | "prediction" | "topup"
   subType: string
   amount: number
@@ -100,14 +102,15 @@ export function AllParticipantsLedger() {
 
   const exportToCSV = () => {
     const rows = [
-      ["Date", "Participant", "Email", "Type", "Description", "Amount", "Status"],
+      ["Date", "Participant", "Email", "Mobile", "Type", "Description", "Amount", "Status"],
       ...entries.map((e) => [
-        new Date(e.date).toLocaleDateString(),
+        new Date(e.date).toLocaleDateString("en-IN"),
         e.participantName,
         e.participantEmail,
+        e.participantMobile || "",
         e.type,
         e.description,
-        (e.amount >= 0 ? "+" : "") + `$${Math.abs(e.amount).toFixed(2)}`,
+        (e.amount >= 0 ? "+" : "") + `USDT ${Math.abs(e.amount).toFixed(2)}`,
         e.status,
       ]),
     ]
@@ -121,10 +124,10 @@ export function AllParticipantsLedger() {
   }
 
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    new Date(d).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })
 
   const formatTime = (d: string) =>
-    new Date(d).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
 
   return (
     <Card className="bg-slate-900 border-slate-700/60 shadow-none">
@@ -224,12 +227,17 @@ export function AllParticipantsLedger() {
                         <div className="text-xs text-slate-500">{formatTime(entry.date)}</div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div className="text-xs font-medium text-slate-200 truncate max-w-[120px]">
+                        <div className="text-xs font-medium text-slate-200 truncate max-w-[140px]">
                           {entry.participantName}
                         </div>
-                        <div className="text-xs text-slate-500 truncate max-w-[120px]">
+                        <div className="text-xs text-slate-500 truncate max-w-[140px]">
                           {entry.participantEmail}
                         </div>
+                        {entry.participantMobile && (
+                          <div className="text-xs text-slate-600 truncate max-w-[140px]">
+                            {entry.participantMobile}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="py-2.5">
                         <Badge
@@ -249,7 +257,7 @@ export function AllParticipantsLedger() {
                             : <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
                           }
                           <span className={`text-xs font-bold ${entry.amount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                            {entry.amount >= 0 ? "+" : ""}${Math.abs(entry.amount).toFixed(2)}
+                            {entry.amount >= 0 ? "+" : ""}USDT {Math.abs(entry.amount).toFixed(2)}
                           </span>
                         </div>
                       </TableCell>
