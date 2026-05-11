@@ -20,12 +20,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 interface PayoutRequest {
   id: string
-  participant_id: string
   participant_email: string
-  participant_name: string
+  full_name: string
+  mobile_number: string | null
   serial_number: string
+  participant_serial: string | null
   amount: number
-  wallet_address: string
+  bep20_address: string | null
+  payout_method: string | null
   status: string
   created_at: string
 }
@@ -41,58 +43,40 @@ export function P2PPayoutQueuePanel() {
 
   useEffect(() => {
     fetchPayoutRequests()
-    const interval = setInterval(() => {
-      fetchPayoutRequests()
-    }, 10000)
+    const interval = setInterval(fetchPayoutRequests, 10000)
     return () => clearInterval(interval)
   }, [])
 
-  // Update countdown timers every second
+  // Countdown timers per row
   useEffect(() => {
     const countdownInterval = setInterval(() => {
       const newCountdowns: Record<string, string> = {}
       payoutRequests.forEach((payout) => {
-        const createdTime = new Date(payout.created_at).getTime()
-        const thirtyMinutesLater = createdTime + 30 * 60 * 1000
-        const now = Date.now()
-        const timeRemaining = thirtyMinutesLater - now
-
-        if (timeRemaining > 0) {
-          const minutes = Math.floor((timeRemaining / 1000 / 60) % 60)
-          const seconds = Math.floor((timeRemaining / 1000) % 60)
-          newCountdowns[payout.id] = `${minutes}m ${seconds}s`
+        const thirtyMinutesLater = new Date(payout.created_at).getTime() + 30 * 60 * 1000
+        const remaining = thirtyMinutesLater - Date.now()
+        if (remaining > 0) {
+          const m = Math.floor(remaining / 1000 / 60)
+          const s = Math.floor(remaining / 1000) % 60
+          newCountdowns[payout.id] = `${m}m ${s}s`
         } else {
           newCountdowns[payout.id] = "Expired"
         }
       })
       setCountdowns(newCountdowns)
     }, 1000)
-
     return () => clearInterval(countdownInterval)
   }, [payoutRequests])
 
   const fetchPayoutRequests = async () => {
     try {
-      const res = await adminFetch("/api/admin/all-ledger")
+      const res = await adminFetch("/api/admin/pending-payout-requests")
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Failed to fetch")
-      const transformed = (json.ledger || []).map((req: any) => ({
-        id: req.id,
-        participant_id: req.participant_id,
-        participant_email: req.participant_email,
-        participant_name: req.full_name || "Unknown",
-        serial_number: req.serial_number,
-        amount: req.amount,
-        wallet_address: req.wallet_address,
-        status: req.status,
-        created_at: req.created_at,
-      }))
-      setPayoutRequests(transformed)
-    } catch (error) {
-      console.error("[v0] Error fetching payout requests:", error)
+      setPayoutRequests(json.payouts || [])
+    } catch {
       toast({
-        title: "Error",
-        description: "Failed to fetch payout requests",
+        title: "Unable to Load",
+        description: "Could not fetch payout requests. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -102,95 +86,62 @@ export function P2PPayoutQueuePanel() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>
-      case "processing":
-        return <Badge className="bg-blue-100 text-blue-800">Processing</Badge>
-      case "approved":
-        return <Badge className="bg-purple-100 text-purple-800">Approved</Badge>
-      case "completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>
-      default:
-        return <Badge className="bg-slate-100 text-slate-800">{status}</Badge>
+      case "pending":    return <Badge className="bg-yellow-100 text-yellow-800 border-0">Pending</Badge>
+      case "matched":    return <Badge className="bg-blue-100 text-blue-800 border-0">Matched</Badge>
+      case "processing": return <Badge className="bg-purple-100 text-purple-800 border-0">Processing</Badge>
+      case "completed":  return <Badge className="bg-green-100 text-green-800 border-0">Completed</Badge>
+      case "rejected":   return <Badge className="bg-red-100 text-red-800 border-0">Rejected</Badge>
+      default:           return <Badge className="bg-slate-100 text-slate-800 border-0">{status}</Badge>
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    })
   }
 
   const handleDeletePayout = async () => {
     if (!deleteConfirm) return
-
     setIsDeleting(true)
     try {
-      console.log("[v0] Deleting payout request:", deleteConfirm.id)
-
       const response = await adminFetch("/api/admin/delete-payout-request", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payoutRequestId: deleteConfirm.id }),
       })
-
       const data = await response.json()
-
-      if (!response.ok) {
-        console.error("[v0] Delete failed:", data)
-        throw new Error(data.details || data.error || "Failed to delete payout request")
-      }
-
-      // Remove from list
-      setPayoutRequests(payoutRequests.filter((p) => p.id !== deleteConfirm.id))
+      if (!response.ok) throw new Error(data.error || "Failed to delete")
+      setPayoutRequests((prev) => prev.filter((p) => p.id !== deleteConfirm.id))
       setDeleteConfirm(null)
-
-      toast({
-        title: "Success",
-        description: `Payout request #${data.serialNumber} deleted successfully`,
-      })
-    } catch (error) {
-      console.error("[v0] Delete error:", error)
-      toast({
-        title: "Delete Failed",
-        description: error instanceof Error ? error.message : "Failed to delete payout request",
-        variant: "destructive",
-      })
+      toast({ title: "Deleted", description: "Payout request removed successfully." })
+    } catch {
+      toast({ title: "Delete Failed", description: "Unable to delete. Please try again.", variant: "destructive" })
     } finally {
       setIsDeleting(false)
     }
   }
 
-  const filteredPayouts = payoutRequests.filter(
-    (payout) =>
-      (payout.serial_number || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (payout.participant_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (payout.participant_email || "").toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPayouts = payoutRequests.filter((p) =>
+    (p.serial_number || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.full_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.participant_email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (p.mobile_number || "").includes(searchQuery)
   )
 
   const stats = {
-    total: payoutRequests.length,
-    pending: payoutRequests.filter((p) => p.status === "pending").length,
-    processing: payoutRequests.filter((p) => p.status === "processing").length,
+    total:   payoutRequests.length,
+    pending:  payoutRequests.filter((p) => p.status === "pending").length,
+    matched:  payoutRequests.filter((p) => p.status === "matched").length,
     completed: payoutRequests.filter((p) => p.status === "completed").length,
   }
+
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+
+  const fmtTime = (d: string) =>
+    new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
 
   if (isLoading) {
     return (
       <Card className="border-slate-700 bg-slate-900">
         <CardContent className="pt-6">
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin">
-              <Clock className="h-8 w-8 text-slate-400" />
-            </div>
+            <div className="animate-spin"><Clock className="h-8 w-8 text-slate-400" /></div>
           </div>
         </CardContent>
       </Card>
@@ -204,10 +155,10 @@ export function P2PPayoutQueuePanel() {
           <div>
             <CardTitle className="text-white flex items-center gap-2">
               <Users className="h-5 w-5 text-cyan-500" />
-              P2P Payout Requests
+              P2P Payout Queue
             </CardTitle>
             <CardDescription className="text-slate-400">
-              All payout requests with number, date and time
+              Pending &amp; matched payout requests awaiting contribution match
             </CardDescription>
           </div>
         </div>
@@ -223,8 +174,8 @@ export function P2PPayoutQueuePanel() {
             <p className="text-lg font-bold text-yellow-400">{stats.pending}</p>
           </div>
           <div className="bg-blue-900/20 rounded-lg p-3 border border-blue-900/50">
-            <p className="text-xs text-blue-400 mb-1">Processing</p>
-            <p className="text-lg font-bold text-blue-400">{stats.processing}</p>
+            <p className="text-xs text-blue-400 mb-1">Matched</p>
+            <p className="text-lg font-bold text-blue-400">{stats.matched}</p>
           </div>
           <div className="bg-green-900/20 rounded-lg p-3 border border-green-900/50">
             <p className="text-xs text-green-400 mb-1">Completed</p>
@@ -233,16 +184,14 @@ export function P2PPayoutQueuePanel() {
         </div>
 
         {/* Search */}
-        <div className="mt-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
-            <Input
-              placeholder="Search by serial #, name, or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-            />
-          </div>
+        <div className="mt-4 relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-500" />
+          <Input
+            placeholder="Search by name, email, mobile or serial..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+          />
         </div>
       </CardHeader>
 
@@ -252,8 +201,7 @@ export function P2PPayoutQueuePanel() {
             <TableHeader>
               <TableRow className="border-b border-slate-700 hover:bg-transparent">
                 <TableHead className="text-slate-300 font-semibold">Serial #</TableHead>
-                <TableHead className="text-slate-300 font-semibold">Participant Name</TableHead>
-                <TableHead className="text-slate-300 font-semibold">Email</TableHead>
+                <TableHead className="text-slate-300 font-semibold">Participant</TableHead>
                 <TableHead className="text-slate-300 font-semibold">Date</TableHead>
                 <TableHead className="text-slate-300 font-semibold">Time</TableHead>
                 <TableHead className="text-slate-300 font-semibold">Amount</TableHead>
@@ -264,52 +212,71 @@ export function P2PPayoutQueuePanel() {
             </TableHeader>
             <TableBody>
               {filteredPayouts.length > 0 ? (
-                filteredPayouts.map((payout) => {
-                  const createdDate = new Date(payout.created_at)
-                  const dateStr = createdDate.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                  const timeStr = createdDate.toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    second: "2-digit",
-                  })
+                filteredPayouts.map((payout) => (
+                  <TableRow key={payout.id} className="border-b border-slate-700 hover:bg-slate-800/50">
 
-                  return (
-                    <TableRow key={payout.id} className="border-b border-slate-700 hover:bg-slate-800/50">
-                      <TableCell className="text-slate-200 font-mono font-semibold">#{payout.serial_number}</TableCell>
-                      <TableCell className="text-slate-200 font-semibold">{payout.participant_name}</TableCell>
-                      <TableCell className="text-slate-300 text-sm">{payout.participant_email}</TableCell>
-                      <TableCell className="text-slate-300 text-sm">{dateStr}</TableCell>
-                      <TableCell className="text-slate-300 text-sm">{timeStr}</TableCell>
-                      <TableCell className="text-slate-200 font-semibold">${payout.amount.toFixed(2)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 text-slate-300 text-sm">
-                          <Hourglass className="h-4 w-4 text-orange-400" />
-                          <span className="font-mono font-semibold text-orange-400">
-                            {countdowns[payout.id] || "Calculating..."}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(payout.status)}</TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setDeleteConfirm(payout)}
-                          className="text-red-400 hover:text-red-600 hover:bg-red-900/20"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
+                    {/* Serial */}
+                    <TableCell className="text-slate-200 font-mono font-semibold whitespace-nowrap">
+                      #{payout.serial_number || payout.participant_serial || "—"}
+                    </TableCell>
+
+                    {/* Participant — Name + Email + Mobile stacked */}
+                    <TableCell className="min-w-[180px]">
+                      <p className="text-sm font-semibold text-white leading-tight">{payout.full_name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{payout.participant_email}</p>
+                      {payout.mobile_number && payout.mobile_number !== "N/A" && (
+                        <p className="text-xs text-slate-500 mt-0.5">{payout.mobile_number}</p>
+                      )}
+                    </TableCell>
+
+                    {/* Date */}
+                    <TableCell className="min-w-[110px]">
+                      <p className="text-sm font-medium text-slate-300 whitespace-nowrap">
+                        {fmtDate(payout.created_at)}
+                      </p>
+                    </TableCell>
+
+                    {/* Time */}
+                    <TableCell className="min-w-[90px]">
+                      <p className="text-sm text-slate-400 whitespace-nowrap">
+                        {fmtTime(payout.created_at)}
+                      </p>
+                    </TableCell>
+
+                    {/* Amount */}
+                    <TableCell className="text-slate-200 font-semibold whitespace-nowrap">
+                      ${Number(payout.amount).toFixed(2)}
+                    </TableCell>
+
+                    {/* Countdown */}
+                    <TableCell className="min-w-[110px]">
+                      <div className="flex items-center gap-1.5">
+                        <Hourglass className="h-3.5 w-3.5 text-orange-400 flex-shrink-0" />
+                        <span className={`text-xs font-mono font-semibold ${countdowns[payout.id] === "Expired" ? "text-red-400" : "text-orange-400"}`}>
+                          {countdowns[payout.id] || "—"}
+                        </span>
+                      </div>
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell>{getStatusBadge(payout.status)}</TableCell>
+
+                    {/* Delete */}
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setDeleteConfirm(payout)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1.5"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
               ) : (
                 <TableRow className="border-b border-slate-700">
-                  <TableCell colSpan={9} className="text-center text-slate-400 py-8">
+                  <TableCell colSpan={8} className="text-center text-slate-400 py-12">
                     No payout requests found
                   </TableCell>
                 </TableRow>
@@ -325,31 +292,38 @@ export function P2PPayoutQueuePanel() {
           <DialogHeader>
             <DialogTitle className="text-red-400">Delete Payout Request</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Are you sure you want to permanently delete payout request #{deleteConfirm?.serial_number}?
-              This action cannot be undone.
+              This action permanently removes the payout request and cannot be undone.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 py-4 text-slate-300">
-            <div className="flex justify-between">
-              <span>Participant:</span>
-              <span className="font-semibold text-slate-100">{deleteConfirm?.participant_name}</span>
+          <div className="space-y-2.5 py-4 text-sm">
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Name</span>
+              <span className="font-semibold text-slate-100">{deleteConfirm?.full_name}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Email:</span>
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Email</span>
               <span className="font-semibold text-slate-100">{deleteConfirm?.participant_email}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Amount:</span>
+            {deleteConfirm?.mobile_number && deleteConfirm.mobile_number !== "N/A" && (
+              <div className="flex justify-between border-b border-slate-800 pb-2">
+                <span className="text-slate-400">Mobile</span>
+                <span className="font-semibold text-slate-100">{deleteConfirm.mobile_number}</span>
+              </div>
+            )}
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Amount</span>
               <span className="font-semibold text-slate-100">${deleteConfirm?.amount.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between">
-              <span>Status:</span>
-              <span className="font-semibold text-slate-100">{deleteConfirm?.status}</span>
+            <div className="flex justify-between border-b border-slate-800 pb-2">
+              <span className="text-slate-400">Status</span>
+              <span className="font-semibold text-slate-100 capitalize">{deleteConfirm?.status}</span>
             </div>
             <div className="flex justify-between">
-              <span>Created:</span>
-              <span className="font-semibold text-slate-100">{formatDate(deleteConfirm?.created_at || "")}</span>
+              <span className="text-slate-400">Submitted</span>
+              <span className="font-semibold text-slate-100">
+                {deleteConfirm?.created_at && `${fmtDate(deleteConfirm.created_at)} ${fmtTime(deleteConfirm.created_at)}`}
+              </span>
             </div>
           </div>
 
