@@ -31,11 +31,9 @@ export default function NotificationsPage() {
     announcements: true,
   })
 
-  const isAuthenticated = isParticipantAuthenticated()
-
   useEffect(() => {
     setMounted(true)
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
     }
     // Load saved settings from localStorage
@@ -43,7 +41,7 @@ export default function NotificationsPage() {
     if (savedSettings) {
       setSettings(JSON.parse(savedSettings))
     }
-  }, [router, isAuthenticated])
+  }, [router])
 
   const handleToggle = async (key: keyof NotificationSettings, value: boolean) => {
     setIsLoading(true)

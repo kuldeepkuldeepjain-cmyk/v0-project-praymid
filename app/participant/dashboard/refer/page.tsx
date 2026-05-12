@@ -26,16 +26,14 @@ export default function ReferPage() {
   const [isSending, setIsSending] = useState(false)
   const [rewardClaimed, setRewardClaimed] = useState(false)
 
-  const isAuthenticated = isParticipantAuthenticated()
   const REFERRAL_TARGET = 4
   const REWARD_AMOUNT = 20
 
   useEffect(() => {
-    console.log("[v0] Refer page mounting...")
+
     setMounted(true)
     
-    if (!isAuthenticated) {
-      console.log("[v0] Not authenticated, redirecting")
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -78,7 +76,7 @@ export default function ReferPage() {
     }
 
     fetchData()
-  }, [router, isAuthenticated])
+  }, [router])
 
   const claimReward = async (email: string, userId: string) => {
     try {

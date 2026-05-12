@@ -28,14 +28,12 @@ export default function SecurityPage() {
     confirmPassword: "",
   })
 
-  const isAuthenticated = isParticipantAuthenticated()
-
   useEffect(() => {
     setMounted(true)
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
     }
-  }, [router, isAuthenticated])
+  }, [router])
 
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {

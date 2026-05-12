@@ -25,8 +25,6 @@ export default function SubmitContributionPage() {
   const [hasPendingSubmission, setHasPendingSubmission] = useState(false)
   const [checkingPending, setCheckingPending] = useState(true)
 
-  const isAuthenticated = isParticipantAuthenticated()
-
   const checkPendingSubmission = async () => {
     setCheckingPending(true)
     try {
@@ -53,7 +51,7 @@ export default function SubmitContributionPage() {
 
   useEffect(() => {
     setMounted(true)
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -61,7 +59,7 @@ export default function SubmitContributionPage() {
     if (storedData) {
       setParticipantData(JSON.parse(storedData))
     }
-  }, [router, isAuthenticated])
+  }, [router])
 
   useEffect(() => {
     if (participantData?.email) {

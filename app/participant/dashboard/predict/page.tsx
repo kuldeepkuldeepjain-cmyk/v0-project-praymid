@@ -157,9 +157,7 @@ function PredictPageContent() {
       try {
         const data = JSON.parse(storedData)
         setParticipantData(data)
-      } catch (error) {
-        console.error("Error parsing stored participant data:", error)
-      }
+      } catch {}
     }
   }, [router])
 

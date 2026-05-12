@@ -41,11 +41,9 @@ export default function ProfilePage() {
   const [editedData, setEditedData] = useState<any>({})
   const [isUploading, setIsUploading] = useState(false)
 
-  const isAuthenticated = isParticipantAuthenticated()
-
   useEffect(() => {
     setMounted(true)
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -92,7 +90,7 @@ export default function ProfilePage() {
     }
 
     fetchParticipantData()
-  }, [router, isAuthenticated, toast])
+  }, [router, toast])
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
