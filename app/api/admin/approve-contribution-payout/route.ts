@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     await db.query(
       `UPDATE participants
        SET account_balance=$1, status='active', is_active=true,
-           activation_date=NOW(), last_contribution_date=NOW(), next_contribution_date=$2
+           activation_date=NOW(), contribution_approved=true, next_contribution_date=$2
        WHERE email=$3`,
       [newBalance, nextContributionDate.toISOString(), participantEmail]
     )
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     ).catch(() => {})
 
     return NextResponse.json({ success: true, message: "Contribution approved and payout completed", newBalance })
-  } catch (error) {
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 })
+  } catch {
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }

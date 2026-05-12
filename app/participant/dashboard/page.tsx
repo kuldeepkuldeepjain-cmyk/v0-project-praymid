@@ -1244,21 +1244,15 @@ export default function DashboardHome() {
       const json = await res.json()
       const data: any = json.participant
       if (!data) return
-      // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
+      // Coerce only real DB columns to numbers to prevent .toFixed() crashes
       const updatedData = {
         ...data,
         participantId: data.id,
-        walletAddress: data.wallet_address || data.bep20_address || "",
-        bep20_address: data.wallet_address || data.bep20_address || "",
+        walletAddress: data.wallet_address || "",
+        bep20_address: data.wallet_address || "",
         account_balance: Number(data.account_balance) || 0,
-        wallet_balance: Number(data.wallet_balance ?? data.account_balance) || 0,
-        bonus_balance: Number(data.bonus_balance) || 0,
-        total_earnings: Number(data.total_earnings) || 0,
-        referral_earnings: Number(data.referral_earnings) || 0,
-        contributed_amount: Number(data.contributed_amount) || 0,
-        participation_count: Number(data.participation_count) || 0,
-        referral_count: Number(data.referral_count) || 0,
-        total_referrals: Number(data.total_referrals) || 0,
+        next_contribution_date: data.next_contribution_date || null,
+        contribution_approved: data.contribution_approved ?? false,
       }
       setParticipantData(updatedData)
       localStorage.setItem("participantData", JSON.stringify(updatedData))
