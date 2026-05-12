@@ -2,14 +2,9 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
-
-// Create transport instance outside component to avoid recreation on every render
-const chatTransport = new DefaultChatTransport({
-  api: "/api/chat",
-})
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,8 +36,12 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
 
   const [input, setInput] = useState("")
 
+  // Create transport lazily using useMemo to ensure it's only created once per component instance
+  // This avoids SSR issues since useMemo runs after hydration on client
+  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), [])
+
   const { messages, sendMessage, status } = useChat({
-    transport: chatTransport,
+    transport,
   })
 
   const isStreaming = status === "streaming" || status === "submitted"

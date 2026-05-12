@@ -1828,8 +1828,8 @@ export default function DashboardHome() {
         <MessageCircle className="h-6 w-6 text-white" />
       </Button>
 
-      {/* AI Chat Dialog */}
-      <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} />
+      {/* AI Chat Dialog - temporarily disabled to test */}
+      {/* <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} /> */}
     </div>
   )
 }
