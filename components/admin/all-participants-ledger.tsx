@@ -31,6 +31,7 @@ import {
   Search,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { adminFetch } from "@/lib/auth"
 
 interface LedgerEntry {
   id: string
@@ -79,6 +80,8 @@ export function AllParticipantsLedger() {
   const limit = 50
   const { toast } = useToast()
 
+  // Reset to page 0 when filters change
+  useEffect(() => { setCurrentPage(0) }, [filterType, filterParticipant, sortOrder])
   useEffect(() => { fetchAllLedgers() }, [filterType, filterParticipant, sortOrder, currentPage])
 
   const fetchAllLedgers = async () => {
