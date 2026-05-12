@@ -1300,14 +1300,16 @@ export default function DashboardHome() {
       } catch {}
     }
 
-    const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
-      position: index + 1,
-      username,
-      participantNumber: Math.floor(Math.random() * 9000) + 1000,
-      rank: (index < 2 ? "Platinum" : index < 5 ? "Gold" : "Silver") as UserRank,
-      participation_count: Math.floor(Math.random() * 50) + (10 - index) * 5,
-      contributedAmount: 100,
-    }))
+    const mockLeaderboard: LeaderboardEntry[] = useMemo(() => 
+      SAMPLE_USERNAMES.map((username, index) => ({
+        position: index + 1,
+        username,
+        participantNumber: Math.floor(Math.random() * 9000) + 1000,
+        rank: (index < 2 ? "Platinum" : index < 5 ? "Gold" : "Silver") as UserRank,
+        participation_count: Math.floor(Math.random() * 50) + (10 - index) * 5,
+        contributedAmount: 100,
+      })), []
+    )
     setLeaderboard(mockLeaderboard)
 
     // Set up periodic refresh to sync balance updates
@@ -1827,8 +1829,8 @@ export default function DashboardHome() {
         <MessageCircle className="h-6 w-6 text-white" />
       </Button>
 
-      {/* AI Chat Dialog - Disabled temporarily for debugging */}
-      {false && <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} />}
+      {/* AI Chat Dialog */}
+      <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} />
     </div>
   )
 }
