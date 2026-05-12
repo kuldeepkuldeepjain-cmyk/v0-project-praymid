@@ -1342,8 +1342,6 @@ export default function DashboardHome() {
     return <PageLoader variant="dashboard" />
   }
 
-
-
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
   const walletBalance = participantData.account_balance || 0
   const bonusBalance = participantData.bonus_balance ?? participantData.referral_earnings ?? 0
