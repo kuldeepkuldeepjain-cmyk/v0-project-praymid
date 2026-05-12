@@ -116,8 +116,9 @@ export async function participantFetch(input: string, init?: RequestInit): Promi
 export function isParticipantAuthenticated(): boolean {
   if (typeof window === "undefined") return false
   const token = sessionStorage.getItem("participant_token")
-  const wallet = sessionStorage.getItem("participant_wallet")
-  return !!(token && wallet)
+  const email = sessionStorage.getItem("participant_email")
+  // wallet may be empty for new participants — only require token + email
+  return !!(token && email)
 }
 
 export function getParticipantToken(): string | null {
@@ -172,15 +173,16 @@ export function getParticipantData(): {
   is_frozen?: boolean
 } | null {
   if (typeof window === "undefined") return null
-  const wallet = sessionStorage.getItem("participant_wallet")
+  const token = sessionStorage.getItem("participant_token")
   const email = sessionStorage.getItem("participant_email") || undefined
+  // require token + email; wallet may be empty for new participants
+  if (!token || !email) return null
+  const wallet = sessionStorage.getItem("participant_wallet") || ""
   const username = sessionStorage.getItem("participant_username") || undefined
   const name = sessionStorage.getItem("participant_name") || undefined
   const activation_fee_paid = sessionStorage.getItem("participant_activation_fee_paid") === "true"
   const created_at = sessionStorage.getItem("participant_created_at") || undefined
   const is_frozen = sessionStorage.getItem("participant_is_frozen") === "true"
-
-  if (!wallet) return null
   return { wallet, email, username, name, activation_fee_paid, created_at, is_frozen }
 }
 

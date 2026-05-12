@@ -97,7 +97,7 @@ export default function PayoutPage() {
     }
 
     fetchData()
-  }, [router, isAuthenticated, toast])
+  }, [router, toast])
 
   // Check if user has an active (pending/processing/approved) payout
   const hasActivePayout = payoutHistory.some(
