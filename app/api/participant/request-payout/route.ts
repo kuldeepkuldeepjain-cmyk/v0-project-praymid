@@ -67,8 +67,7 @@ export async function POST(request: NextRequest) {
     ).catch(() => {})
 
     return NextResponse.json({ success: true, message: "Payout request submitted successfully", newBalance, requestId: payoutRequest.id })
-  } catch (error) {
-    console.error("Payout request error:", error)
-    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 })
+  } catch {
+    return NextResponse.json({ success: false, error: "Unable to submit payout request. Please try again." }, { status: 500 })
   }
 }

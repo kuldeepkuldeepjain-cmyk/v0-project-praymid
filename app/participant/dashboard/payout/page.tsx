@@ -193,7 +193,7 @@ export default function PayoutPage() {
       } else {
         toast({
           title: "Request Failed",
-          description: data.message || "Unable to submit payout request. Please try again.",
+          description: data.error || data.message || "Unable to submit payout request. Please try again.",
           variant: "destructive",
         })
       }

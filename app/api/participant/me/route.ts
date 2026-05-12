@@ -1,6 +1,49 @@
 import { NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 
+export async function PATCH(request: Request) {
+  try {
+    const body = await request.json()
+    const { email, full_name, mobile_number, country, state, pin_code, full_address, wallet_address, bep20_address } = body
+
+    if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
+
+    const db = getPool()!
+
+    // Build dynamic update
+    const fields: string[] = []
+    const values: any[] = []
+    let idx = 1
+
+    if (full_name !== undefined)     { fields.push(`full_name = $${idx++}`);     values.push(full_name) }
+    if (mobile_number !== undefined) { fields.push(`mobile_number = $${idx++}`); values.push(mobile_number) }
+    if (country !== undefined)       { fields.push(`country = $${idx++}`);       values.push(country) }
+    if (state !== undefined)         { fields.push(`state = $${idx++}`);         values.push(state) }
+    if (pin_code !== undefined)      { fields.push(`pin_code = $${idx++}`);      values.push(pin_code) }
+    if (full_address !== undefined)  { fields.push(`full_address = $${idx++}`);  values.push(full_address) }
+
+    // bep20_address is stored as wallet_address
+    const walletVal = bep20_address || wallet_address
+    if (walletVal !== undefined)     { fields.push(`wallet_address = $${idx++}`); values.push(walletVal) }
+
+    if (fields.length === 0) return NextResponse.json({ error: "No fields to update" }, { status: 400 })
+
+    values.push(email.toLowerCase().trim())
+    const result = await db.query(
+      `UPDATE participants SET ${fields.join(", ")}, details_completed = true WHERE email = $${idx} RETURNING *`,
+      values
+    )
+
+    const p = result.rows[0]
+    if (!p) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
+
+    return NextResponse.json({ success: true, participant: { ...p, bep20_address: p.wallet_address } })
+  } catch (error) {
+    console.error("[participant/me PATCH]", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -47,8 +90,7 @@ export async function GET(request: Request) {
         wallet_balance: Number(participant.account_balance) || 0,
       },
     })
-  } catch (error) {
-    console.error("[v0] /api/participant/me error:", error)
+  } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
