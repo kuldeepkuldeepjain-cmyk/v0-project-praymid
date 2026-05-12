@@ -91,9 +91,7 @@ export default function PayoutPage() {
         const histJson = await histRes.json()
         if (histJson.payouts) setPayoutHistory(histJson.payouts)
 
-      } catch (err) {
-        console.error("Error in fetchData:", err)
-      }
+      } catch {}
     }
 
     fetchData()
@@ -266,11 +264,10 @@ export default function PayoutPage() {
     return <PageLoader variant="subpage" />
   }
 
-  const walletBalance = participantData?.account_balance || 0
+  const walletBalance = Number(participantData?.account_balance) || 0
   const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
-  const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout && !isOnCooldown
 
-  // 30-day contribution cooldown
+  // 30-day contribution cooldown — must be declared BEFORE canWithdraw
   const nextContributionDate = participantData?.next_contribution_date
     ? new Date(participantData.next_contribution_date)
     : null
@@ -281,6 +278,8 @@ export default function PayoutPage() {
   const cooldownDateStr = nextContributionDate
     ? nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     : null
+
+  const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout && !isOnCooldown
   
   // Helper function to render horizontal status tracker
   const renderStatusTracker = (status: string, transactionHash?: string) => {
