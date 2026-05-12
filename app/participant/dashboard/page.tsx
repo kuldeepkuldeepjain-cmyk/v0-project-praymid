@@ -554,13 +554,13 @@ function DailySpinWheel({
     // This prevents the wheel from just slowly rotating between close angles
     setRotation(0)
     
-  // Store original balance before deduction
-  const originalBalance = participantData?.account_balance || 0
-  
-  // Deduct $5 from wallet immediately
-  const balanceAfterDeduction = originalBalance - SPIN_COST
-  setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
-  localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
+    // Store original balance before deduction
+    const originalBalance = participantData?.account_balance || 0
+    
+    // Deduct $5 from wallet immediately
+    const balanceAfterDeduction = originalBalance - SPIN_COST
+    setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
+    localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
     
     // Update database with deduction
     try {
@@ -571,13 +571,13 @@ function DailySpinWheel({
       })
     } catch {}
 
-  // Pick random segment FIRST - only from segments with probability > 0
-  const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
-  const randomEligible = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)]
-  const segmentIndex = randomEligible.idx
-  const wonSegment = SPIN_SEGMENTS[segmentIndex]
-  
-  const segmentAngle = 360 / SPIN_SEGMENTS.length // 36° for 10 segments
+    // Pick random segment FIRST - only from segments with probability > 0
+    const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
+    const randomEligible = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)]
+    const segmentIndex = randomEligible.idx
+    const wonSegment = SPIN_SEGMENTS[segmentIndex]
+    
+    const segmentAngle = 360 / SPIN_SEGMENTS.length // 36° for 10 segments
     const spins = 5 + Math.floor(Math.random() * 3) // 5-7 full rotations for excitement
     
     // FINAL SOLUTION: Calculate rotation based on pointer position
