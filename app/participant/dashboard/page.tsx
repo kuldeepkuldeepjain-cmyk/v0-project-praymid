@@ -1270,18 +1270,6 @@ export default function DashboardHome() {
     } catch {}
   }
 
-  // Pre-generate mock leaderboard data once
-  const mockLeaderboard: LeaderboardEntry[] = useMemo(() => 
-    SAMPLE_USERNAMES.map((username, index) => ({
-      position: index + 1,
-      username,
-      participantNumber: Math.floor(Math.random() * 9000) + 1000,
-      rank: (index < 2 ? "Platinum" : index < 5 ? "Gold" : "Silver") as UserRank,
-      participation_count: Math.floor(Math.random() * 50) + (10 - index) * 5,
-      contributedAmount: 100,
-    })), []
-  )
-
   useEffect(() => {
     setMounted(true)
 
@@ -1312,7 +1300,15 @@ export default function DashboardHome() {
       } catch {}
     }
 
-    // Set the leaderboard from pre-generated data
+    // Generate mock leaderboard data (client-side only to avoid hydration mismatch)
+    const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
+      position: index + 1,
+      username,
+      participantNumber: Math.floor(Math.random() * 9000) + 1000,
+      rank: (index < 2 ? "Platinum" : index < 5 ? "Gold" : "Silver") as UserRank,
+      participation_count: Math.floor(Math.random() * 50) + (10 - index) * 5,
+      contributedAmount: 100,
+    }))
     setLeaderboard(mockLeaderboard)
 
     // Set up periodic refresh to sync balance updates
@@ -1329,7 +1325,7 @@ export default function DashboardHome() {
     }, 60000) // Refresh every 60 seconds to reduce load
 
     return () => clearInterval(refreshInterval)
-  }, [router, mockLeaderboard])
+  }, [router])
 
   const copyToClipboard = async (text: string) => {
     try {
