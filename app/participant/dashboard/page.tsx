@@ -1195,15 +1195,8 @@ export default function DashboardHome() {
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
   
-  const checkProfileCompletion = async (email: string) => {
-    try {
-      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
-      const data = await res.json()
-      if (!data.participant?.details_completed) {
-        router.push("/participant/complete-profile")
-      }
-    } catch {}
-  }
+  // Profile completion check removed — details_completed column does not exist in DB schema
+  // Users should not be forced off the dashboard for missing this field
 
   const handleTimerExpire = useCallback(async () => {
     if (!participantData?.email) return
@@ -1247,13 +1240,28 @@ export default function DashboardHome() {
   const refreshParticipantData = async (email: string) => {
     try {
       const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+      if (!res.ok) return
       const json = await res.json()
       const data: any = json.participant
-      if (data) {
-        const updatedData = { ...data, participantId: data.id, walletAddress: data.wallet_address }
-        setParticipantData(updatedData)
-        localStorage.setItem("participantData", JSON.stringify(updatedData))
+      if (!data) return
+      // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
+      const updatedData = {
+        ...data,
+        participantId: data.id,
+        walletAddress: data.wallet_address || data.bep20_address || "",
+        bep20_address: data.wallet_address || data.bep20_address || "",
+        account_balance: Number(data.account_balance) || 0,
+        wallet_balance: Number(data.wallet_balance ?? data.account_balance) || 0,
+        bonus_balance: Number(data.bonus_balance) || 0,
+        total_earnings: Number(data.total_earnings) || 0,
+        referral_earnings: Number(data.referral_earnings) || 0,
+        contributed_amount: Number(data.contributed_amount) || 0,
+        participation_count: Number(data.participation_count) || 0,
+        referral_count: Number(data.referral_count) || 0,
+        total_referrals: Number(data.total_referrals) || 0,
       }
+      setParticipantData(updatedData)
+      localStorage.setItem("participantData", JSON.stringify(updatedData))
     } catch {}
   }
 
@@ -1328,6 +1336,8 @@ export default function DashboardHome() {
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
   }
+
+
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
   const walletBalance = participantData.account_balance || 0

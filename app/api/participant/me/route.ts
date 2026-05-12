@@ -65,9 +65,16 @@ export async function GET(request: Request) {
       success: true,
       participant: {
         ...p,
-        // alias wallet_address as bep20_address so the frontend can read either
         bep20_address: p.wallet_address || null,
         next_contribution_date: p.next_contribution_date || null,
+        last_contribution_date: p.last_contribution_date || null,
+        // Coerce PostgreSQL numeric strings to JS numbers
+        account_balance: Number(p.account_balance) || 0,
+        wallet_balance: Number(p.wallet_balance ?? p.account_balance) || 0,
+        bonus_balance: Number(p.bonus_balance) || 0,
+        total_earnings: Number(p.total_earnings) || 0,
+        contributed_amount: Number(p.contributed_amount) || 0,
+        participation_count: Number(p.participation_count) || 0,
       },
     })
   } catch {
