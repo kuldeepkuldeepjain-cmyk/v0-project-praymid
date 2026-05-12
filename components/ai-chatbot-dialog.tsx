@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -29,20 +29,21 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
         const data = JSON.parse(participantData)
         setUserEmail(data.email || null)
       }
-    } catch (error) {
-      console.error("[v0] Error loading participant data:", error)
+    } catch {
+      // Ignore localStorage errors
     }
   }, [open])
 
   const [input, setInput] = useState("")
 
+  // Memoize transport to prevent re-instantiation on every render
+  const transport = useMemo(() => new DefaultChatTransport({
+    api: "/api/chat",
+  }), [])
+
   const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      prepareSendMessagesRequest: ({ id, messages }) => ({
-        body: { messages, id, userEmail },
-      }),
-    }),
+    transport,
+    body: { userEmail },
   })
 
   const isStreaming = status === "streaming" || status === "submitted"
