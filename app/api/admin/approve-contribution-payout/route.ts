@@ -45,10 +45,42 @@ export async function POST(request: NextRequest) {
     const notifDate = nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     await db.query(
       `INSERT INTO notifications(user_email,type,title,message,read_status)
-       VALUES($1,'success','Contribution Approved',
-       $2,false)`,
+       VALUES($1,'success','Contribution Approved',$2,false)`,
       [participantEmail, `Your contribution has been approved and $150 has been credited to your account. Your next contribution will be available on ${notifDate}.`]
     )
+
+    // Credit $5 referral reward to referrer when their referral completes a contribution
+    try {
+      const refRes = await db.query(
+        `SELECT referred_by FROM participants WHERE email = $1`, [participantEmail]
+      )
+      const referredBy = refRes.rows[0]?.referred_by
+      if (referredBy) {
+        const referrerRes = await db.query(
+          `SELECT email FROM participants WHERE referral_code = $1`, [referredBy]
+        )
+        const referrerEmail = referrerRes.rows[0]?.email
+        if (referrerEmail) {
+          await db.query(
+            `UPDATE participants
+             SET account_balance = account_balance + 5,
+                 referral_earnings = referral_earnings + 5,
+                 total_referrals = total_referrals + 1
+             WHERE referral_code = $1`,
+            [referredBy]
+          )
+          await db.query(
+            `INSERT INTO notifications(user_email,type,title,message,read_status)
+             VALUES($1,'success','Referral Reward +$5','You earned a $5 referral reward! One of your referrals has completed their contribution.',false)`,
+            [referrerEmail]
+          )
+          await db.query(
+            `INSERT INTO activity_logs(actor_email,action,details,target_type) VALUES($1,'referral_reward_credited','$5 referral reward credited for referral contribution completion by ${participantEmail}','wallet')`,
+            [referrerEmail]
+          ).catch(() => {})
+        }
+      }
+    } catch {}
 
     await db.query(
       `INSERT INTO activity_logs(actor_email,action,details,target_type) VALUES('admin','contribution_and_payout_approved',$1,'payment_submission')`,
