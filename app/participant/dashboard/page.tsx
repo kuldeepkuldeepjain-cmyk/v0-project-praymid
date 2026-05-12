@@ -558,9 +558,7 @@ function DailySpinWheel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userEmail, action: "deduct", amount: SPIN_COST }),
       })
-    } catch (error) {
-      console.error("[v0] Error updating wallet after deduction:", error)
-    }
+    } catch {}
 
   // Pick random segment FIRST - only from segments with probability > 0
   const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
@@ -595,7 +593,7 @@ function DailySpinWheel({
     const rotationForSegment = (SPIN_SEGMENTS.length - segmentIndex) * segmentAngle
     const finalRotation = spins * 360 + rotationForSegment
     
-    console.log("[v0] Want segment:", segmentIndex, wonSegment.label, "| Rotation offset:", rotationForSegment, "| Total:", finalRotation)
+
 
     // Wait a tiny bit for state to update, then apply the rotation
     setTimeout(() => {
@@ -609,7 +607,7 @@ function DailySpinWheel({
       setResult(won)
       setShowResult(true)
 
-      console.log("[v0] Spin result:", won)
+
 
       // Handle different prize types
       if (won.type === "ticket") {
@@ -626,7 +624,7 @@ function DailySpinWheel({
             description: "You can use this $5 free bet in predictions within 24 hours!",
           })
         } catch (error) {
-          console.error("[v0] Error creating coupon:", error)
+
         }
       } else if (won.type === "cash" && won.value > 0) {
         // Credit cash winnings to wallet (add to balance AFTER deduction)
@@ -642,7 +640,7 @@ function DailySpinWheel({
             body: JSON.stringify({ email: userEmail, action: "credit", amount: won.value }),
           })
         } catch (error) {
-          console.error("[v0] Error updating wallet with winnings:", error)
+
         }
         
         toast({
@@ -1197,8 +1195,6 @@ export default function DashboardHome() {
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
   
-  const isAuthenticated = isParticipantAuthenticated()
-
   const checkProfileCompletion = async (email: string) => {
     try {
       const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
@@ -1206,9 +1202,7 @@ export default function DashboardHome() {
       if (!data.participant?.details_completed) {
         router.push("/participant/complete-profile")
       }
-    } catch (error) {
-      console.error("[v0] Error in checkProfileCompletion:", error)
-    }
+    } catch {}
   }
 
   const handleTimerExpire = useCallback(async () => {
@@ -1232,11 +1226,8 @@ export default function DashboardHome() {
     router.push("/participant/login")
   }
 
-  const handleSpinWin = (amount: number, label: string, type: string) => {
-    // NOTE: Wallet transactions are now handled entirely within the SpinWheelModal component
-    // This callback is kept for compatibility but no longer updates the wallet to prevent double-crediting
-    // The spin wheel already: 1) Deducts $5, 2) Adds winnings, 3) Updates database
-    console.log("[v0] Spin complete - amount:", amount, "label:", label, "type:", type)
+  const handleSpinWin = (_amount: number, _label: string, _type: string) => {
+    // Wallet transactions handled within SpinWheelModal — no double-credit here
   }
 
   // Function to fetch queue position
@@ -1248,11 +1239,8 @@ export default function DashboardHome() {
       if (data.success) {
         setQueuePosition(data.position)
         setQueueData(data)
-        console.log("[v0] Queue position:", data.position, "Days elapsed:", data.daysElapsed)
       }
-    } catch (error) {
-      console.error("[v0] Error fetching queue position:", error)
-    }
+    } catch {}
   }
 
   // Function to fetch fresh participant data from database
@@ -1266,15 +1254,13 @@ export default function DashboardHome() {
         setParticipantData(updatedData)
         localStorage.setItem("participantData", JSON.stringify(updatedData))
       }
-    } catch (error) {
-      console.error("[v0] Error refreshing participant data:", error)
-    }
+    } catch {}
   }
 
   useEffect(() => {
     setMounted(true)
 
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -1298,9 +1284,7 @@ export default function DashboardHome() {
         if (data.email) {
           refreshParticipantData(data.email)
         }
-      } catch (error) {
-        console.error("Error parsing participant data:", error)
-      }
+      } catch {}
     }
 
     const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
@@ -1322,14 +1306,12 @@ export default function DashboardHome() {
           if (data.email) {
             refreshParticipantData(data.email)
           }
-        } catch (error) {
-          console.error("[v0] Error in periodic refresh:", error)
-        }
+        } catch {}
       }
     }, 60000) // Refresh every 60 seconds to reduce load
 
     return () => clearInterval(refreshInterval)
-  }, [router, isAuthenticated])
+  }, [router])
 
   const copyToClipboard = async (text: string) => {
     try {
