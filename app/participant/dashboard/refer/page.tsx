@@ -27,8 +27,8 @@ export default function ReferPage() {
   const [rewardClaimed, setRewardClaimed] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const REFERRAL_TARGET = 4
-  const REWARD_AMOUNT = 20
+  const REFERRAL_TARGET = 40
+  const REWARD_AMOUNT = 200
 
   useEffect(() => {
 
@@ -333,7 +333,7 @@ export default function ReferPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
-          <h1 className="text-lg font-semibold text-slate-900">Invite 4 Friends, Get $20</h1>
+          <h1 className="text-lg font-semibold text-slate-900">Invite 40 Friends, Get $200</h1>
         </div>
       </header>
 
@@ -354,10 +354,10 @@ export default function ReferPage() {
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h2 className="text-2xl font-bold text-white mb-2">
-                    Invite 4 Friends, Get $20
+                    Invite 40 Friends, Get $200
                   </h2>
-                  <p className="text-white/90 text-sm">
-                    Share your referral link on WhatsApp. When 4 friends successfully register, you get $20 USDT instantly.
+                  <p className="text-xs text-slate-600 line-clamp-2">
+                    Share your referral link on WhatsApp. When 40 friends successfully register, you get $200 USDT instantly.
                   </p>
                 </div>
                 <Gift className="h-12 w-12 text-white/90" />
@@ -373,7 +373,7 @@ export default function ReferPage() {
                 </div>
                 <Progress value={progressPercentage} className="h-3 bg-white/30" />
                 <p className="text-white/80 text-xs mt-2">
-                  {isRewardEligible ? "🎉 You've earned $20!" : `${REFERRAL_TARGET - joinedCount} more invites for $20`}
+                  {isRewardEligible ? "You've earned $200!" : `${REFERRAL_TARGET - joinedCount} more invites for $200`}
                 </p>
               </div>
 
@@ -382,7 +382,7 @@ export default function ReferPage() {
                 <div className="mt-4 bg-emerald-500 rounded-xl p-3 flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-white" />
                   <span className="text-white font-semibold">
-                    {rewardClaimed ? "$20 Claimed!" : "$20 Ready to Claim!"}
+                    {rewardClaimed ? "$200 Claimed!" : "$200 Ready to Claim!"}
                   </span>
                 </div>
               )}
@@ -400,7 +400,7 @@ export default function ReferPage() {
           }}
         >
           <Users className="h-5 w-5 mr-2" />
-          Invite Friends & Earn $20
+          Invite Friends & Earn $200
         </Button>
 
         {/* Share Referral Link Card */}
@@ -606,7 +606,7 @@ export default function ReferPage() {
                 <div>
                   <p className="font-semibold text-slate-900 text-sm">Earn Reward</p>
                   <p className="text-xs text-slate-600">
-                    After 4 friends register, get $20 USDT instantly in your wallet
+                    After 40 friends register, get $200 USDT instantly in your wallet
                   </p>
                 </div>
               </div>

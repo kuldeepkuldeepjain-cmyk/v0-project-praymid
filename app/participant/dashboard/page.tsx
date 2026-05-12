@@ -436,7 +436,7 @@ function HamburgerMenu({
           <Link href="/participant/dashboard/refer" onClick={onClose}>
             <div className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
               <Gift className="h-5 w-5 text-slate-600" />
-              <span className="text-slate-700">Invite 4 Friends, Get $20</span>
+              <span className="text-slate-700">Invite 40 Friends, Get $200</span>
             </div>
           </Link>
           <Link href="/participant/dashboard/settings/security" onClick={onClose}>
@@ -1670,7 +1670,7 @@ export default function DashboardHome() {
                       <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Invite 4 Friends, Get $20</h3>
+                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Invite 40 Friends, Get $200</h3>
                       <p className="text-[10px] sm:text-xs text-slate-600">Share your link & earn instantly</p>
                     </div>
                   </div>
