@@ -519,18 +519,18 @@ function DailySpinWheel({
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
+  const [confettiParticles, setConfettiParticles] = useState<Array<{left: string, duration: string, delay: string, color: string}>>([])
+  const { toast } = useToast()
 
-  // Pre-generate confetti positions once — avoids Math.random() in JSX render (hydration mismatch)
-  const confettiParticles = useMemo(
-    () => Array.from({ length: 20 }, (_, i) => ({
+  // Generate confetti particles only on client after mount to avoid SSR hydration mismatch
+  useEffect(() => {
+    setConfettiParticles(Array.from({ length: 20 }, (_, i) => ({
       left: `${Math.random() * 100}%`,
       duration: `${1 + Math.random()}s`,
       delay: `${Math.random() * 0.5}s`,
       color: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
-    })),
-    []
-  )
-  const { toast } = useToast()
+    })))
+  }, [])
   const SPIN_COST = 5
 
   const spinWheel = async () => {

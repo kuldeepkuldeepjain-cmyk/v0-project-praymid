@@ -4,7 +4,7 @@ import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Home, PlusCircle, User, TrendingUp, Trophy } from "lucide-react"
-import { useState, useEffect, useRef, useMemo } from "react"
+import { useState, useEffect, useRef } from "react"
 
 export default function DashboardLayout({
   children,
@@ -45,6 +45,7 @@ export default function DashboardLayout({
   }, [pathname])
 
   const [bouncingIndex, setBouncingIndex] = useState<number | null>(null)
+  const [particles, setParticles] = useState<Array<{id: number, left: string, delay: string, size: number, color: string, duration: string}>>([])
 
   const handleNavClick = (index: number) => {
     setBouncingIndex(index)
@@ -54,16 +55,17 @@ export default function DashboardLayout({
     setTimeout(() => setBouncingIndex(null), 300)
   }
 
-  // useMemo prevents Math.random() from running on both server + client
-  // causing a hydration mismatch that crashes the entire dashboard segment
-  const particles = useMemo(() => Array.from({ length: 12 }, (_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    delay: `${Math.random() * 15}s`,
-    size: Math.random() * 6 + 3,
-    color: ["#E85D3B", "#7c3aed", "#22d3ee", "#10b981"][Math.floor(Math.random() * 4)],
-    duration: `${15 + Math.random() * 10}s`,
-  })), [])
+  // Generate particles only on client after mount to avoid SSR hydration mismatch
+  useEffect(() => {
+    setParticles(Array.from({ length: 12 }, (_, i) => ({
+      id: i,
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 15}s`,
+      size: Math.random() * 6 + 3,
+      color: ["#E85D3B", "#7c3aed", "#22d3ee", "#10b981"][Math.floor(Math.random() * 4)],
+      duration: `${15 + Math.random() * 10}s`,
+    })))
+  }, [])
 
   return (
     <div className="min-h-screen bg-white pb-20 relative overflow-hidden">
