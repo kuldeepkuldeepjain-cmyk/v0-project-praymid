@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useRef } from "react"
 import { PageLoader } from "@/components/ui/page-loader"
 
@@ -519,6 +519,17 @@ function DailySpinWheel({
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
+
+  // Pre-generate confetti positions once — avoids Math.random() in JSX render (hydration mismatch)
+  const confettiParticles = useMemo(
+    () => Array.from({ length: 20 }, (_, i) => ({
+      left: `${Math.random() * 100}%`,
+      duration: `${1 + Math.random()}s`,
+      delay: `${Math.random() * 0.5}s`,
+      color: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
+    })),
+    []
+  )
   const { toast } = useToast()
   const SPIN_COST = 5
 
@@ -992,19 +1003,19 @@ function DailySpinWheel({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Confetti Effect for Wins */}
+            {/* Confetti Effect for Wins — uses pre-generated positions to avoid hydration mismatch */}
             {result.type === 'cash' && result.value > 0 && (
               <div className="absolute inset-0 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
+                {confettiParticles.map((p, i) => (
                   <div
                     key={i}
                     className="absolute w-2 h-2 rounded-full"
                     style={{
-                      left: `${Math.random() * 100}%`,
+                      left: p.left,
                       top: '-10px',
-                      background: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
-                      animation: `confetti-fall ${1 + Math.random()}s ease-out forwards`,
-                      animationDelay: `${Math.random() * 0.5}s`
+                      background: p.color,
+                      animation: `confetti-fall ${p.duration} ease-out forwards`,
+                      animationDelay: p.delay,
                     }}
                   />
                 ))}
