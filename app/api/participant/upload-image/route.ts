@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { uploadToR2, base64ToBuffer, getMimeTypeFromBase64 } from "@/lib/r2-storage"
-import db from "@/lib/db"
+import { execute } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Update participant profile picture if type is "avatar"
     if (type === "avatar") {
-      await db.query("UPDATE participants SET profile_picture_url = $1 WHERE email = $2", [publicUrl, email])
+      await execute("UPDATE participants SET profile_picture_url = $1 WHERE email = $2", [publicUrl, email])
     }
 
     return NextResponse.json({ success: true, url: publicUrl })
