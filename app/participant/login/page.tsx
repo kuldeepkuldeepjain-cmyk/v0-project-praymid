@@ -194,26 +194,26 @@ export default function ParticipantLoginPage() {
       <div className="fixed bottom-20 right-20 w-80 h-80 bg-[#7c3aed]/20 rounded-full blur-3xl animate-float-slow" />
       <div className="fixed top-1/2 left-1/2 w-72 h-72 bg-[#22d3ee]/20 rounded-full blur-3xl animate-float-delayed" />
 
-      {/* Animated stars */}
+      {/* Animated stars - fixed positions to avoid SSR hydration mismatch */}
       {[...Array(12)].map((_, i) => (
         <AnimatedStar
           key={i}
-          top={`${Math.random() * 100}%`}
-          left={`${Math.random() * 100}%`}
-          delay={Math.random() * 3}
-          size={2 + Math.random() * 2}
+          top={`${(i * 8 + 5) % 100}%`}
+          left={`${(i * 7 + 10) % 100}%`}
+          delay={(i * 0.25) % 3}
+          size={2 + (i % 3)}
         />
       ))}
 
-      {/* Floating particles */}
+      {/* Floating particles - fixed positions */}
       {[...Array(8)].map((_, i) => (
         <FloatingParticle
           key={i}
           delay={i * 0.5}
-          size={4 + Math.random() * 4}
+          size={4 + (i % 4)}
           color={["#E85D3B", "#7c3aed", "#22d3ee"][i % 3]}
           left={`${10 + i * 10}%`}
-          duration={8 + Math.random() * 4}
+          duration={8 + (i % 4)}
         />
       ))}
 
