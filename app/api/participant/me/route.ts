@@ -34,6 +34,8 @@ export async function GET(request: Request) {
         status: participant.status,
         rank: participant.rank,
         activation_date: participant.activation_date,
+        last_contribution_date: participant.last_contribution_date || null,
+        next_contribution_date: participant.next_contribution_date || null,
         created_at: participant.created_at,
         country: participant.country,
         state: participant.state,

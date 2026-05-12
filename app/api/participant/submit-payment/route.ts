@@ -17,11 +17,25 @@ export async function POST(request: NextRequest) {
     // --- Contribution request (no screenshot/hash yet) ---
     if (reqStatus === "request_pending" || (!screenshot && !transactionHash)) {
       const participants = await query(
-        "SELECT id FROM participants WHERE email = $1 LIMIT 1",
+        "SELECT id, next_contribution_date FROM participants WHERE email = $1 LIMIT 1",
         [email.toLowerCase().trim()]
       ) as any[]
       const participant = participants[0]
       if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
+
+      // 30-day cooldown check
+      if (participant.next_contribution_date) {
+        const cooldownUntil = new Date(participant.next_contribution_date)
+        if (cooldownUntil > new Date()) {
+          const daysLeft = Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          return NextResponse.json({
+            error: `Your next contribution is available in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
+            cooldown: true,
+            next_contribution_date: cooldownUntil.toISOString(),
+            days_remaining: daysLeft,
+          }, { status: 429 })
+        }
+      }
 
       const rows = await query(
         `INSERT INTO payment_submissions (participant_id, participant_email, amount, payment_method, status)
@@ -49,11 +63,25 @@ export async function POST(request: NextRequest) {
     }
 
     const participants = await query(
-      "SELECT id FROM participants WHERE email = $1 LIMIT 1",
+      "SELECT id, next_contribution_date FROM participants WHERE email = $1 LIMIT 1",
       [email.toLowerCase().trim()]
     ) as any[]
     const participant = participants[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
+
+    // 30-day cooldown check
+    if (participant.next_contribution_date) {
+      const cooldownUntil = new Date(participant.next_contribution_date)
+      if (cooldownUntil > new Date()) {
+        const daysLeft = Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+        return NextResponse.json({
+          error: `Your next contribution is available in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
+          cooldown: true,
+          next_contribution_date: cooldownUntil.toISOString(),
+          days_remaining: daysLeft,
+        }, { status: 429 })
+      }
+    }
 
     const screenshotData = typeof screenshot === "string" ? screenshot : await (screenshot as any).text()
 

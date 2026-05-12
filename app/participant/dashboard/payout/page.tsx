@@ -108,6 +108,15 @@ export default function PayoutPage() {
     const walletBalance = participantData?.account_balance || 0
     const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
+    if (isOnCooldown) {
+      toast({
+        title: "Contribution Cooldown Active",
+        description: `Your next contribution is available on ${cooldownDateStr} (${cooldownDaysLeft} day${cooldownDaysLeft !== 1 ? "s" : ""} remaining).`,
+        variant: "destructive",
+      })
+      return
+    }
+
     if (hasActivePayout) {
       toast({
         title: "Active Payout Exists",
@@ -259,7 +268,19 @@ export default function PayoutPage() {
 
   const walletBalance = participantData?.account_balance || 0
   const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
-  const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
+  const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout && !isOnCooldown
+
+  // 30-day contribution cooldown
+  const nextContributionDate = participantData?.next_contribution_date
+    ? new Date(participantData.next_contribution_date)
+    : null
+  const isOnCooldown = nextContributionDate ? nextContributionDate > new Date() : false
+  const cooldownDaysLeft = isOnCooldown && nextContributionDate
+    ? Math.ceil((nextContributionDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : 0
+  const cooldownDateStr = nextContributionDate
+    ? nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+    : null
   
   // Helper function to render horizontal status tracker
   const renderStatusTracker = (status: string, transactionHash?: string) => {
@@ -408,6 +429,29 @@ export default function PayoutPage() {
             </span>
           </div>
         </div>
+
+        {/* 30-Day Contribution Cooldown Banner */}
+        {isOnCooldown && (
+          <div className="rounded-xl p-4 border border-amber-200 bg-amber-50 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center flex-shrink-0">
+              <Clock className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-amber-800">Next Contribution in {cooldownDaysLeft} Day{cooldownDaysLeft !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-amber-700 mt-0.5 leading-relaxed">
+                Your last contribution was approved. You can submit your next contribution on{" "}
+                <span className="font-semibold">{cooldownDateStr}</span>.
+              </p>
+              <div className="mt-2 h-1.5 rounded-full bg-amber-200 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-amber-500 transition-all"
+                  style={{ width: `${Math.max(5, 100 - (cooldownDaysLeft / 30) * 100)}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-amber-600 mt-1">{30 - cooldownDaysLeft} of 30 days elapsed</p>
+            </div>
+          </div>
+        )}
 
         {/* Payout Request Card */}
         <Card className="border border-slate-100 shadow-lg rounded-2xl overflow-hidden">

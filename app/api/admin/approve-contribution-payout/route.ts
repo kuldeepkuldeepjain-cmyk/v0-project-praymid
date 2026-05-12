@@ -26,20 +26,28 @@ export async function POST(request: NextRequest) {
     if (!participant) return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
 
     const newBalance = Number(participant.account_balance || 0) + 150
-    const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + 30)
+    // 30-day cooldown from NOW
+    const nextContributionDate = new Date()
+    nextContributionDate.setDate(nextContributionDate.getDate() + 30)
 
     await db.query(`UPDATE payment_submissions SET status='approved', reviewed_at=NOW() WHERE id=$1`, [paymentSubmissionId])
 
     await db.query(
-      `UPDATE participants SET account_balance=$1, status='active', is_active=true, activation_date=NOW(), next_contribution_date=$2 WHERE email=$3`,
-      [newBalance, nextDate.toISOString(), participantEmail]
+      `UPDATE participants
+       SET account_balance=$1, status='active', is_active=true,
+           activation_date=NOW(), last_contribution_date=NOW(), next_contribution_date=$2
+       WHERE email=$3`,
+      [newBalance, nextContributionDate.toISOString(), participantEmail]
     )
 
     await db.query(`UPDATE payout_requests SET status='completed', processed_at=NOW(), admin_notes='Completed via contribution approval' WHERE id=$1`, [payoutRequestId])
 
+    const notifDate = nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     await db.query(
-      `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'success','Contribution Approved','Your contribution has been approved. $150 has been credited to your account.',false)`,
-      [participantEmail]
+      `INSERT INTO notifications(user_email,type,title,message,read_status)
+       VALUES($1,'success','Contribution Approved',
+       $2,false)`,
+      [participantEmail, `Your contribution has been approved and $150 has been credited to your account. Your next contribution will be available on ${notifDate}.`]
     )
 
     await db.query(
