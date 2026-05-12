@@ -46,7 +46,7 @@ export default function PayoutPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [payoutHistory, setPayoutHistory] = useState<any[]>([])
   const [queuePosition, setQueuePosition] = useState(15)
-  const [payoutNumber] = useState(() => Math.floor(Math.random() * (34000 - 5000 + 1)) + 5000)
+  const [payoutNumber, setPayoutNumber] = useState(0)
   const [selectedPayoutPlanId, setSelectedPayoutPlanId] = useState<PayoutPlanId>("platinum")
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
   const [bep20Address, setBep20Address] = useState("")
@@ -56,6 +56,8 @@ export default function PayoutPage() {
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
   useEffect(() => {
     setMounted(true)
+    // Initialize payoutNumber with random value (client-side only)
+    setPayoutNumber(Math.floor(Math.random() * (34000 - 5000 + 1)) + 5000)
     
     if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
