@@ -20,6 +20,29 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [showAuthSetup, setShowAuthSetup] = useState(false)
+  const [setupKey, setSetupKey] = useState("")
+
+  const handleShowSetupKey = async () => {
+    try {
+      const response = await fetch("/api/auth/get-totp-setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email || "montyflowchain890@gmail.com" }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSetupKey(data.setupKey)
+        setShowAuthSetup(true)
+      } else {
+        setError(data.error || "Failed to get setup key")
+      }
+    } catch (err) {
+      setError("Failed to get setup key. Please try again.")
+    }
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -74,7 +97,7 @@ export default function AdminLoginPage() {
                 <Input
                   id="email"
                   type="text"
-                  placeholder="montyflowchain890@gmail.com"
+                  placeholder="Enter admin email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -120,7 +143,36 @@ export default function AdminLoginPage() {
                   className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200 font-mono text-center tracking-widest"
                 />
                 <p className="text-xs text-slate-500">Enter the 6-digit code from your authenticator app if enabled</p>
+                <button
+                  type="button"
+                  onClick={handleShowSetupKey}
+                  className="text-xs text-[#6968A6] hover:text-[#085078] font-semibold mt-2 hover:underline transition-colors"
+                >
+                  Setup Google Authenticator
+                </button>
               </div>
+
+              {showAuthSetup && (
+                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 space-y-3">
+                  <div className="space-y-2">
+                    <p className="text-sm font-semibold text-[#085078]">Google Authenticator Setup</p>
+                    <p className="text-xs text-slate-600">Scan this key with your authenticator app or enter it manually:</p>
+                  </div>
+                  <div className="bg-white p-3 rounded border border-blue-300 font-mono text-sm text-center text-[#085078] break-all">
+                    {setupKey}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(setupKey)
+                      setError("")
+                    }}
+                    className="w-full text-xs bg-[#6968A6] hover:bg-[#085078] text-white py-2 rounded font-semibold transition-colors"
+                  >
+                    Copy Setup Key
+                  </button>
+                </div>
+              )}
               </div>
 
               {error && (
