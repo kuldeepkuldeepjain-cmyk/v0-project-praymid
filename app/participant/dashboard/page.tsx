@@ -1528,18 +1528,6 @@ export default function DashboardHome() {
 
           </div>
 
-            {/* Referral Earnings */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Gift className="h-5 w-5 text-[#E85D3B]" />
-                <span className="text-sm text-slate-500 uppercase tracking-wider font-bold">Referral Earnings</span>
-              </div>
-              <div className="text-3xl font-bold text-slate-800">
-                <AnimatedNumber value={referralEarnings} prefix="$" decimals={2} />
-              </div>
-            </div>
-
-
           </div>
         </div>
 
