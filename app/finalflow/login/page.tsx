@@ -127,6 +127,7 @@ export default function AdminLoginPage() {
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -173,7 +174,6 @@ export default function AdminLoginPage() {
                   </button>
                 </div>
               )}
-              </div>
 
               {error && (
                 <Alert variant="destructive" className="bg-[#CF9893]/20 border-[#CF9893]">
