@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       referralCount: userData.total_referrals || 0,
       referralEarnings: userData.bonus_balance || 0,
       referredUsers: referredUsers || [],
-      referralLink: `${getAppUrl(request)}/participant/register?ref=${userData.referral_code}`,
+      referralLink: `https://flowchain.club/register?ref=${userData.referral_code}`,
     })
   } catch (error) {
     console.error("[v0] Referrals API error:", error)

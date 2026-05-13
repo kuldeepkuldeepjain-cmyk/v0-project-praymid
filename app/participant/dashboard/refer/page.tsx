@@ -21,7 +21,6 @@ export default function ReferPage() {
 
   const isAuthenticated = isParticipantAuthenticated()
   const REWARD_PER_REFERRAL = 5 // $5 per referral when they add funds or complete contribution
-  const REFERRAL_DOMAIN = "flowchain.club"
 
   useEffect(() => {
     setMounted(true)
@@ -43,7 +42,7 @@ export default function ReferPage() {
         setParticipantData(parsedData)
 
         // Build referral link using flowchain.club
-        const link = `https://${REFERRAL_DOMAIN}/register?ref=${parsedData.referral_code}`
+        const link = `https://flowchain.club/register?ref=${parsedData.referral_code}`
         setReferralLink(link)
 
         // Fetch participant record to get earnings
