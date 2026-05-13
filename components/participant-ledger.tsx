@@ -39,6 +39,7 @@ interface LedgerEntry {
   status: string
   date: string
   description: string
+  balanceAfter?: number | null
   [key: string]: any
 }
 
@@ -167,6 +168,7 @@ export function ParticipantLedger({ participantId }: LedgerProps) {
                     <TableHead className="text-xs font-semibold text-slate-500 py-2.5">Type</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 py-2.5">Description</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 py-2.5 text-right">Amount</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-500 py-2.5 text-right">Balance</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-500 py-2.5 pr-5">Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -198,6 +200,15 @@ export function ParticipantLedger({ participantId }: LedgerProps) {
                             {entry.amount >= 0 ? "+" : ""}${Math.abs(entry.amount).toFixed(2)}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="py-2.5 text-right">
+                        {entry.balanceAfter != null ? (
+                          <span className="text-xs font-semibold text-cyan-600">
+                            ${Number(entry.balanceAfter).toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-400">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-2.5 pr-5">
                         <Badge
