@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     await db.query(
-      `INSERT INTO activity_logs(actor_email,action,target_type,details) VALUES('admin@123',$1,'payment_submission',$2)`,
+      `INSERT INTO activity_logs(actor_email,action,target_type,details) VALUES('montyflowchain890@gmail.com',$1,'payment_submission',$2)`,
       [action === "approve" ? "activation_approved" : "activation_rejected", JSON.stringify({ paymentId, reason })]
     )
 
