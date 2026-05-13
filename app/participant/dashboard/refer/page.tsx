@@ -27,8 +27,7 @@ export default function ReferPage() {
   const [rewardClaimed, setRewardClaimed] = useState(false)
 
   const isAuthenticated = isParticipantAuthenticated()
-  const REFERRAL_TARGET = 4
-  const REWARD_AMOUNT = 20
+  const REWARD_PER_REFERRAL = 5 // $5 per referral when they add funds or complete contribution
 
   useEffect(() => {
     console.log("[v0] Refer page mounting...")

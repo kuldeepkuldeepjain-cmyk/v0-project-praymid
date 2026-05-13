@@ -85,6 +85,30 @@ export async function POST(req: NextRequest) {
         [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up`]
       ).catch(() => {})
 
+      // Credit $5 to referrer if this participant was referred
+      const referrerRows = await query(
+        `SELECT id, email, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
+        [topup.participant_email]
+      )
+      if (referrerRows.length > 0) {
+        const referrer = referrerRows[0] as any
+        const referrerBonus = 5 // $5 per referral
+        const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referrerBonus
+        await execute(
+          `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
+          [referrerNewEarnings, referrer.id]
+        )
+        await execute(
+          `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+           VALUES ($1, 'credit', $2, $3, $4, $5)`,
+          [referrer.email, referrerBonus, `Referral bonus - ${topup.participant_email} added funds`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+        ).catch(() => {})
+        await execute(
+          `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
+          [referrer.email, `Earned $5 referral bonus from ${topup.participant_email} adding funds`]
+        ).catch(() => {})
+      }
+
       return NextResponse.json({ success: true, message: "Top-up approved and wallet credited", newBalance })
     }
 

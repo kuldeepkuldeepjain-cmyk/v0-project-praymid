@@ -42,6 +42,30 @@ export async function POST(request: NextRequest) {
 
     await db.query(`UPDATE payout_requests SET status='completed', processed_at=NOW(), admin_notes='Completed via contribution approval' WHERE id=$1`, [payoutRequestId])
 
+    // Credit $5 to referrer if this participant was referred
+    const referrerRes = await db.query(
+      `SELECT id, account_balance, email, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
+      [participantEmail]
+    )
+    if (referrerRes.rows.length > 0) {
+      const referrer = referrerRes.rows[0]
+      const referrerBonus = 5 // $5 per referral
+      const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referrerBonus
+      await db.query(
+        `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
+        [referrerNewEarnings, referrer.id]
+      )
+      await db.query(
+        `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+         VALUES ($1, 'credit', $2, $3, $4, $5)`,
+        [referrer.email, referrerBonus, `Referral bonus - ${participantEmail} completed contribution`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+      )
+      await db.query(
+        `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
+        [referrer.email, `Earned $5 referral bonus from ${participantEmail} completing contribution`]
+      ).catch(() => {})
+    }
+
     const notifDate = nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
     await db.query(
       `INSERT INTO notifications(user_email,type,title,message,read_status)
