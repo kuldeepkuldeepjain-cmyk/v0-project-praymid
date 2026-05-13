@@ -67,7 +67,10 @@ export default function ReferPage() {
     try {
       const response = await fetch("/api/participant/claim-referral-reward", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "X-Participant-Token": email
+        },
         body: JSON.stringify({ email }),
       })
 
