@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import {
   ShieldCheck, RefreshCw, Search, Clock,
-  CheckCircle2, Mail, KeyRound, Phone, Eye, EyeOff,
+  CheckCircle2, Mail, KeyRound, Phone, Eye, EyeOff, Trash2,
 } from "lucide-react"
 import { getAdminData } from "@/lib/auth"
 
@@ -31,6 +31,7 @@ export function OtpApprovalsPanel() {
   const [approving, setApproving] = useState<Record<string, boolean>>({})
   const [approved, setApproved] = useState<Record<string, boolean>>({})
   const [showOtp, setShowOtp] = useState<Record<string, boolean>>({})
+  const [deleting, setDeleting] = useState<Record<string, boolean>>({})
 
   const fetchPending = useCallback(async () => {
     try {
@@ -95,6 +96,36 @@ export function OtpApprovalsPanel() {
   const handleAutoFill = (participant: PendingParticipant) => {
     if (participant.whatsapp_otp) {
       setOtpInputs(prev => ({ ...prev, [participant.id]: participant.whatsapp_otp }))
+    }
+  }
+
+  const handleDelete = async (participant: PendingParticipant) => {
+    if (!confirm(`Are you sure you want to delete the pending OTP approval for ${participant.full_name || participant.username}?`)) {
+      return
+    }
+
+    setDeleting(prev => ({ ...prev, [participant.id]: true }))
+    try {
+      const res = await adminFetch("/api/admin/delete-otp-approval", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: participant.id }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        toast({
+          title: "Deleted",
+          description: `Pending approval for ${participant.full_name || participant.username} has been removed.`,
+        })
+        setParticipants(prev => prev.filter(p => p.id !== participant.id))
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to delete", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to delete approval", variant: "destructive" })
+    } finally {
+      setDeleting(prev => ({ ...prev, [participant.id]: false }))
     }
   }
 
@@ -286,6 +317,18 @@ export function OtpApprovalsPanel() {
                           <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Verifying...</>
                         ) : (
                           <><ShieldCheck className="h-4 w-4 mr-2" />Verify & Approve</>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={() => handleDelete(participant)}
+                        disabled={deleting[participant.id]}
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-950/20 w-full border border-red-500/20"
+                      >
+                        {deleting[participant.id] ? (
+                          <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Deleting...</>
+                        ) : (
+                          <><Trash2 className="h-4 w-4 mr-2" />Delete</>
                         )}
                       </Button>
                     </>
