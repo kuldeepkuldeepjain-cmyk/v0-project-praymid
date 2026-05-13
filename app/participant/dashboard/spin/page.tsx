@@ -229,7 +229,7 @@ export default function SpinWheelPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4" />
           <p className="text-amber-900 font-semibold">Loading Lucky Wheel...</p>
         </div>
       </div>
@@ -422,7 +422,7 @@ export default function SpinWheelPage() {
           >
             {isSpinning ? (
               <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
                 Spinning...
               </span>
             ) : (
