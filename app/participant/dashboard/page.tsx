@@ -33,7 +33,6 @@ import {
   Home,
   Trophy,
   Plus,
-  Users,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
@@ -925,29 +924,7 @@ function DailySpinWheel({
             )}
           </div>
 
-          {/* Referral Count Display */}
-          <div 
-            className="relative rounded-2xl p-4 overflow-hidden border-2 border-emerald-400 transform hover:scale-105 transition-transform"
-            style={{
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #10b981 100%)',
-              boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
-            }}
-          >
-            <div className="absolute inset-0 opacity-30"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer-bg 2s infinite'
-              }}
-            />
-            <div className="relative flex items-center justify-center gap-3">
-                <Users className="h-5 w-5 text-slate-800" />
-                <p className="text-slate-800 text-base font-black">
-                  Total Referrals: <span className="text-emerald-700 text-2xl">{participantData?.referral_count || 0}</span>
-                </p>
-                <Users className="h-5 w-5 text-slate-800" />
-            </div>
-          </div>
+          {/* Spin Cost Info - Enhanced with Animation */}
           <div 
             className="relative rounded-2xl p-4 overflow-hidden border-2 border-amber-400 transform hover:scale-105 transition-transform"
             style={{
