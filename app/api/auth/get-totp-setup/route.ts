@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import speakeasy from "speakeasy"
 
-// TOTP secrets for each admin account
+// TOTP secrets for each admin account - Valid base32 encoded secrets
 const ADMIN_SECRETS: Record<string, string> = {
-  "montyflowchain890@gmail.com": "MONTYFLOWCHAIN890SECRET",
-  "bitcoin890@gmail.com": "BITCOINSUPERSECRET123456",
+  "montyflowchain890@gmail.com": "I4QXIVRSKYZXQ7JJMNCCQ6RDJZWXWYSUIE6D6MLTGVZUC5LGG43A",
+  "bitcoin890@gmail.com": "JFKDYIZOKRJFWV2IGBDCSI22EVWWOUR4FAZDMKTWJJCDGUKBKQ4Q",
 }
 
 export async function POST(request: NextRequest) {
