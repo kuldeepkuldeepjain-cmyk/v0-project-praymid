@@ -45,6 +45,8 @@ interface LedgerEntry {
   status: string
   date: string
   description: string
+  balanceBefore?: number | null
+  balanceAfter?: number | null
   [key: string]: any
 }
 
@@ -108,7 +110,7 @@ export function AllParticipantsLedger() {
 
   const exportToCSV = () => {
     const rows = [
-      ["Date", "Participant", "Email", "Mobile", "Type", "Description", "Amount", "Status"],
+      ["Date", "Participant", "Email", "Mobile", "Type", "Description", "Amount", "Balance After", "Status"],
       ...entries.map((e) => [
         new Date(e.date).toLocaleDateString("en-IN"),
         e.participantName,
@@ -117,6 +119,7 @@ export function AllParticipantsLedger() {
         e.type,
         e.description,
         (e.amount >= 0 ? "+" : "") + `USDT ${Math.abs(e.amount).toFixed(2)}`,
+        e.balanceAfter != null ? `USDT ${Number(e.balanceAfter).toFixed(2)}` : "-",
         e.status,
       ]),
     ]
@@ -219,6 +222,7 @@ export function AllParticipantsLedger() {
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5">Type</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5">Description</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5 text-right">Amount</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-400 py-2.5 text-right">Balance</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5 pr-5">Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -266,6 +270,15 @@ export function AllParticipantsLedger() {
                             {entry.amount >= 0 ? "+" : ""}USDT {Math.abs(entry.amount).toFixed(2)}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="py-2.5 text-right">
+                        {entry.balanceAfter != null ? (
+                          <span className="text-xs font-semibold text-cyan-400">
+                            USDT {Number(entry.balanceAfter).toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-2.5 pr-5">
                         <Badge
