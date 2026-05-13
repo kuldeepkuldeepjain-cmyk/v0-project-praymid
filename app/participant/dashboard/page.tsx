@@ -1372,7 +1372,6 @@ export default function DashboardHome() {
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
   const walletBalance = participantData.account_balance || 0
-  const bonusBalance = participantData.bonus_balance ?? participantData.referral_earnings ?? 0
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
   const referralCode = participantData.referral_code || ""
@@ -1545,25 +1544,6 @@ export default function DashboardHome() {
               </div>
               <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900">
                 <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-              <span className="text-slate-400 text-xs">+</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-            </div>
-
-            {/* Bonus Balance */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Sparkles className="h-5 w-5 text-[#22d3ee]" />
-                <span className="text-sm text-slate-500 uppercase tracking-wider font-bold">Bonus Balance</span>
-                
-              </div>
-              <div className="text-3xl font-bold text-slate-800">
-                <AnimatedNumber value={bonusBalance} prefix="$" decimals={2} />
               </div>
             </div>
 
