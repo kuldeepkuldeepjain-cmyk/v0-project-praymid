@@ -1547,12 +1547,17 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-              <span className="text-slate-400 text-xs">+</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+            {/* Referral Earnings - Below Wallet Balance */}
+            <div className="text-center relative">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
+                <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-slate-800" />
+                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider font-bold">Referral Earnings</span>
+              </div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
+                <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
             </div>
+
+          </div>
 
             {/* Referral Earnings */}
             <div className="text-center">
