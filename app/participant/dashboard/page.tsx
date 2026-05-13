@@ -893,7 +893,36 @@ function DailySpinWheel({
             </div>
           </div>
 
-          {/* Spin Cost Info - Enhanced with Animation */}
+          {/* Referral Earnings Display */}
+          <div 
+            className="relative rounded-2xl p-4 overflow-hidden border-2 border-cyan-400 transform hover:scale-105 transition-transform"
+            style={{
+              background: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 50%, #06b6d4 100%)',
+              boxShadow: '0 4px 20px rgba(6, 182, 212, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
+            }}
+          >
+            <div className="absolute inset-0 opacity-30"
+              style={{
+                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
+                backgroundSize: '200% 100%',
+                animation: 'shimmer-bg 2s infinite'
+              }}
+            />
+            <div className="relative flex items-center justify-center gap-3">
+                <Gift className="h-5 w-5 text-slate-800" />
+                <p className="text-slate-800 text-base font-black">
+                  Referral Earnings: <span className="text-cyan-700 text-2xl">${(participantData?.referral_earnings || 0).toFixed(2)}</span>
+                </p>
+                <Gift className="h-5 w-5 text-slate-800" />
+            </div>
+            {(participantData?.referral_earnings || 0) > 0 && (
+              <Link href="/participant/dashboard/refer" className="block mt-3">
+                <Button className="w-full h-10 bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white font-semibold text-sm">
+                  Claim Referral Earnings
+                </Button>
+              </Link>
+            )}
+          </div>
           <div 
             className="relative rounded-2xl p-4 overflow-hidden border-2 border-amber-400 transform hover:scale-105 transition-transform"
             style={{
