@@ -292,67 +292,6 @@ export default function ReferPage() {
           </CardContent>
         </Card>
 
-        {/* Selected Contacts */}
-        {selectedContacts.length > 0 && (
-          <Card className="border-2 border-purple-200 shadow-lg">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-slate-900">
-                  Selected Contacts ({selectedContacts.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedContacts([])}
-                  className="h-8 bg-transparent"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {selectedContacts.map((contact, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-3 p-2 bg-slate-50 rounded-lg"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-orange-500 flex items-center justify-center text-white text-sm font-bold">
-                      {contact.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900">{contact.name}</p>
-                      <p className="text-xs text-slate-500">{contact.phone}</p>
-                    </div>
-                    <Check className="h-4 w-4 text-emerald-500" />
-                  </div>
-                ))}
-              </div>
-
-              <Button
-                onClick={handleSendInvites}
-                disabled={isSending}
-                className="w-full mt-4 h-12 bg-transparent"
-                style={{
-                  background: "linear-gradient(135deg, #7c3aed, #c084fc)",
-                  boxShadow: "0 4px 0 #6d28d9",
-                }}
-              >
-                {isSending ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="h-5 w-5 mr-2" />
-                    Send WhatsApp Invites
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
         {/* How it Works */}
         <Card className="border-0 shadow-lg bg-white">
           <CardContent className="p-6">
