@@ -12,14 +12,6 @@ const CREDENTIALS = [
     name: "Admin",
     permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
   },
-  {
-    email: "bitcoin890@gmail.com",
-    password: "bitcoin890",
-    totpSecret: "MEYXIQBBF54XWXKUEVVV2RJTGF2CI6LZPFNDYNDJERSG4OB2NN4A", // Valid TOTP secret
-    role: "super_admin" as const,
-    name: "Super Admin",
-    permissions: { canApproveWallets: true, canCollectTokens: true, canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
-  },
 ]
 
 export async function POST(request: NextRequest) {
