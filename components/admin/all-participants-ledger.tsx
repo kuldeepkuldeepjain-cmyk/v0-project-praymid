@@ -29,6 +29,7 @@ import {
   Download,
   ArrowUpDown,
   Search,
+  Trash2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { adminFetch } from "@/lib/auth"
@@ -79,6 +80,7 @@ export function AllParticipantsLedger() {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalEntries, setTotalEntries] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [clearing, setClearing] = useState(false)
   const limit = 50
   const { toast } = useToast()
 
@@ -105,6 +107,42 @@ export function AllParticipantsLedger() {
       toast({ title: "Error", description: "Failed to load ledger", variant: "destructive" })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleClearLedger = async () => {
+    if (!confirm("⚠️ Are you sure you want to delete ALL ledger records? This action cannot be undone.")) {
+      return
+    }
+    if (!confirm("Click OK again to confirm you want to permanently delete all ledger records.")) {
+      return
+    }
+
+    setClearing(true)
+    try {
+      const res = await adminFetch("/api/admin/clear-all-ledger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "CLEAR_ALL_LEDGER" }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        toast({
+          title: "Ledger Cleared",
+          description: "All ledger records have been permanently deleted.",
+          variant: "destructive",
+        })
+        setEntries([])
+        setTotalEntries(0)
+        setCurrentPage(0)
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to clear ledger", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to clear ledger", variant: "destructive" })
+    } finally {
+      setClearing(false)
     }
   }
 
@@ -142,60 +180,63 @@ export function AllParticipantsLedger() {
     <Card className="bg-slate-900 border-slate-700/60 shadow-none">
       <CardHeader className="px-5 py-4 border-b border-slate-700/60">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-semibold text-white">All Participants Ledger</CardTitle>
-            {!loading && (
-              <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
-                {totalEntries} records
-              </span>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-              <Input
-                placeholder="Email or name..."
-                value={filterParticipant}
-                onChange={(e) => { setFilterParticipant(e.target.value); setCurrentPage(0) }}
-                className="pl-8 h-8 w-44 text-xs bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-              />
-            </div>
-
-            <Select value={filterType} onValueChange={(v) => { setFilterType(v); setCurrentPage(0) }}>
-              <SelectTrigger className="h-8 text-xs w-36 bg-slate-800 border-slate-700 text-white">
-                <SelectValue />
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-white">
+                <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent className="bg-slate-800 border-slate-600">
                 <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="transaction">Transactions</SelectItem>
                 <SelectItem value="contribution">Contributions</SelectItem>
                 <SelectItem value="payout">Payouts</SelectItem>
-                <SelectItem value="transaction">Transactions</SelectItem>
-                <SelectItem value="prediction">Predictions</SelectItem>
                 <SelectItem value="topup">Top-ups</SelectItem>
               </SelectContent>
             </Select>
 
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <Input
+                placeholder="Search participant email..."
+                value={filterParticipant}
+                onChange={e => setFilterParticipant(e.target.value)}
+                className="pl-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
+              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
               variant="outline"
               size="sm"
-              className="h-8 px-2.5 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 gap-1.5"
-              onClick={() => { setSortOrder((o) => o === "desc" ? "asc" : "desc"); setCurrentPage(0) }}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
             >
-              <ArrowUpDown className="h-3 w-3" />
-              {sortOrder === "desc" ? "Newest" : "Oldest"}
+              <ArrowUpDown className="h-4 w-4 mr-1" />
+              Sort {sortOrder === "desc" ? "▼" : "▲"}
             </Button>
 
             <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-2.5 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 gap-1.5"
               onClick={exportToCSV}
-              disabled={entries.length === 0}
+              size="sm"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold"
             >
-              <Download className="h-3 w-3" />
-              CSV
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+
+            <Button
+              onClick={handleClearLedger}
+              disabled={clearing || loading}
+              size="sm"
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-500 text-white font-semibold"
+            >
+              {clearing ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Clearing...</>
+              ) : (
+                <><Trash2 className="h-4 w-4 mr-1" />Clear All</>
+              )}
             </Button>
           </div>
         </div>
