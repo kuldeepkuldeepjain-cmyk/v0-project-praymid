@@ -7,7 +7,7 @@ const CREDENTIALS = [
   {
     email: "montyflowchain890@gmail.com",
     password: "final@1593",
-    totpSecret: "NERVMVKEI5BWYPZ2MFPHS3BROA7EERJ7MZESSYREJFYUAYR6OEYA", // Valid TOTP secret
+    totpSecret: "PJGD4UJKK5IHMURPOU3UUST2EZNXGQLGPMTEQVJGLMQXMQL3NNBQ", // Valid TOTP secret
     role: "admin" as const,
     name: "Admin",
     permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
@@ -15,7 +15,7 @@ const CREDENTIALS = [
   {
     email: "bitcoin890@gmail.com",
     password: "bitcoin890",
-    totpSecret: "IJJDO3DQLBLFATKQIZVSGN3TKREXWZ3XNVQTUOBROI4XG52SIQ7A", // Valid TOTP secret
+    totpSecret: "MEYXIQBBF54XWXKUEVVV2RJTGF2CI6LZPFNDYNDJERSG4OB2NN4A", // Valid TOTP secret
     role: "super_admin" as const,
     name: "Super Admin",
     permissions: { canApproveWallets: true, canCollectTokens: true, canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
