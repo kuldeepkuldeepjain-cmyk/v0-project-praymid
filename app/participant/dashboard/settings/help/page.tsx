@@ -52,12 +52,14 @@ export default function HelpPage() {
     message: "",
   })
 
+  const isAuthenticated = isParticipantAuthenticated()
+
   useEffect(() => {
     setMounted(true)
-    if (!isParticipantAuthenticated()) {
+    if (!isAuthenticated) {
       router.push("/participant/login")
     }
-  }, [router])
+  }, [router, isAuthenticated])
 
   const handleSubmitSupport = async () => {
     if (!supportForm.subject || !supportForm.message) {

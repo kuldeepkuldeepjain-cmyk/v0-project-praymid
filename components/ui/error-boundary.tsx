@@ -11,8 +11,7 @@ interface ErrorBoundaryProps {
 
 export function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
   useEffect(() => {
-    console.log("[v0] ErrorBoundary caught error:", error.message)
-    console.log("[v0] Error stack:", error.stack)
+    // Error is surfaced to the user via the UI below
   }, [error])
 
   return (

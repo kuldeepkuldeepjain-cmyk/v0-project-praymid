@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useRef } from "react"
 import { PageLoader } from "@/components/ui/page-loader"
 
@@ -436,7 +436,7 @@ function HamburgerMenu({
           <Link href="/participant/dashboard/refer" onClick={onClose}>
             <div className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
               <Gift className="h-5 w-5 text-slate-600" />
-              <span className="text-slate-700">Earn $5 Per Referral</span>
+              <span className="text-slate-700">Invite 4 Friends, Get $20</span>
             </div>
           </Link>
           <Link href="/participant/dashboard/settings/security" onClick={onClose}>
@@ -519,18 +519,7 @@ function DailySpinWheel({
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
-  const [confettiParticles, setConfettiParticles] = useState<Array<{left: string, duration: string, delay: string, color: string}>>([])
   const { toast } = useToast()
-
-  // Generate confetti particles only on client after mount to avoid SSR hydration mismatch
-  useEffect(() => {
-    setConfettiParticles(Array.from({ length: 20 }, (_, i) => ({
-      left: `${Math.random() * 100}%`,
-      duration: `${1 + Math.random()}s`,
-      delay: `${Math.random() * 0.5}s`,
-      color: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
-    })))
-  }, [])
   const SPIN_COST = 5
 
   const spinWheel = async () => {
@@ -554,13 +543,13 @@ function DailySpinWheel({
     // This prevents the wheel from just slowly rotating between close angles
     setRotation(0)
     
-    // Store original balance before deduction
-    const originalBalance = participantData?.account_balance || 0
-    
-    // Deduct $5 from wallet immediately
-    const balanceAfterDeduction = originalBalance - SPIN_COST
-    setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
-    localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
+  // Store original balance before deduction
+  const originalBalance = participantData?.account_balance || 0
+  
+  // Deduct $5 from wallet immediately
+  const balanceAfterDeduction = originalBalance - SPIN_COST
+  setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
+  localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
     
     // Update database with deduction
     try {
@@ -571,13 +560,13 @@ function DailySpinWheel({
       })
     } catch {}
 
-    // Pick random segment FIRST - only from segments with probability > 0
-    const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
-    const randomEligible = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)]
-    const segmentIndex = randomEligible.idx
-    const wonSegment = SPIN_SEGMENTS[segmentIndex]
-    
-    const segmentAngle = 360 / SPIN_SEGMENTS.length // 36° for 10 segments
+  // Pick random segment FIRST - only from segments with probability > 0
+  const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
+  const randomEligible = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)]
+  const segmentIndex = randomEligible.idx
+  const wonSegment = SPIN_SEGMENTS[segmentIndex]
+  
+  const segmentAngle = 360 / SPIN_SEGMENTS.length // 36° for 10 segments
     const spins = 5 + Math.floor(Math.random() * 3) // 5-7 full rotations for excitement
     
     // FINAL SOLUTION: Calculate rotation based on pointer position
@@ -1003,19 +992,19 @@ function DailySpinWheel({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Confetti Effect for Wins — uses pre-generated positions to avoid hydration mismatch */}
+            {/* Confetti Effect for Wins */}
             {result.type === 'cash' && result.value > 0 && (
               <div className="absolute inset-0 pointer-events-none">
-                {confettiParticles.map((p, i) => (
+                {[...Array(20)].map((_, i) => (
                   <div
                     key={i}
                     className="absolute w-2 h-2 rounded-full"
                     style={{
-                      left: p.left,
+                      left: `${Math.random() * 100}%`,
                       top: '-10px',
-                      background: p.color,
-                      animation: `confetti-fall ${p.duration} ease-out forwards`,
-                      animationDelay: p.delay,
+                      background: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
+                      animation: `confetti-fall ${1 + Math.random()}s ease-out forwards`,
+                      animationDelay: `${Math.random() * 0.5}s`
                     }}
                   />
                 ))}
@@ -1255,15 +1244,21 @@ export default function DashboardHome() {
       const json = await res.json()
       const data: any = json.participant
       if (!data) return
-      // Coerce only real DB columns to numbers to prevent .toFixed() crashes
+      // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
       const updatedData = {
         ...data,
         participantId: data.id,
-        walletAddress: data.wallet_address || "",
-        bep20_address: data.wallet_address || "",
+        walletAddress: data.wallet_address || data.bep20_address || "",
+        bep20_address: data.wallet_address || data.bep20_address || "",
         account_balance: Number(data.account_balance) || 0,
-        next_contribution_date: data.next_contribution_date || null,
-        contribution_approved: data.contribution_approved ?? false,
+        wallet_balance: Number(data.wallet_balance ?? data.account_balance) || 0,
+        bonus_balance: Number(data.bonus_balance) || 0,
+        total_earnings: Number(data.total_earnings) || 0,
+        referral_earnings: Number(data.referral_earnings) || 0,
+        contributed_amount: Number(data.contributed_amount) || 0,
+        participation_count: Number(data.participation_count) || 0,
+        referral_count: Number(data.referral_count) || 0,
+        total_referrals: Number(data.total_referrals) || 0,
       }
       setParticipantData(updatedData)
       localStorage.setItem("participantData", JSON.stringify(updatedData))
@@ -1300,7 +1295,6 @@ export default function DashboardHome() {
       } catch {}
     }
 
-    // Generate mock leaderboard data (client-side only to avoid hydration mismatch)
     const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
       position: index + 1,
       username,
@@ -1342,6 +1336,8 @@ export default function DashboardHome() {
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
   }
+
+
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
   const walletBalance = participantData.account_balance || 0
@@ -1666,7 +1662,7 @@ export default function DashboardHome() {
                       <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Earn $5 Per Referral</h3>
+                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Invite 4 Friends, Get $20</h3>
                       <p className="text-[10px] sm:text-xs text-slate-600">Share your link & earn instantly</p>
                     </div>
                   </div>
@@ -1828,8 +1824,8 @@ export default function DashboardHome() {
         <MessageCircle className="h-6 w-6 text-white" />
       </Button>
 
-      {/* AI Chat Dialog - temporarily disabled to test */}
-      {/* <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} /> */}
+      {/* AI Chat Dialog */}
+      <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} />
     </div>
   )
 }

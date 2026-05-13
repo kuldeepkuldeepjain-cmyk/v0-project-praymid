@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     if (!submission) return NextResponse.json({ error: "Failed to create submission" }, { status: 500 })
 
     if (bep20Address) {
-      await execute("UPDATE participants SET wallet_address = $1 WHERE email = $2", [bep20Address, email]).catch(() => {})
+      await execute("UPDATE participants SET bep20_address = $1 WHERE email = $2", [bep20Address, email]).catch(() => {})
     }
 
     await execute(

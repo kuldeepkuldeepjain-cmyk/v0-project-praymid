@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
-const REFERRAL_TARGET = 40
-const REWARD_AMOUNT = 200
+const REFERRAL_TARGET = 50
+const REWARD_AMOUNT = 20
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)

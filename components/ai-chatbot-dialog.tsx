@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect, useMemo } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -29,19 +29,20 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
         const data = JSON.parse(participantData)
         setUserEmail(data.email || null)
       }
-    } catch {
-      // Ignore localStorage errors
+    } catch (error) {
+      console.error("[v0] Error loading participant data:", error)
     }
   }, [open])
 
   const [input, setInput] = useState("")
 
-  // Create transport lazily using useMemo to ensure it's only created once per component instance
-  // This avoids SSR issues since useMemo runs after hydration on client
-  const transport = useMemo(() => new DefaultChatTransport({ api: "/api/chat" }), [])
-
   const { messages, sendMessage, status } = useChat({
-    transport,
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      prepareSendMessagesRequest: ({ id, messages }) => ({
+        body: { messages, id, userEmail },
+      }),
+    }),
   })
 
   const isStreaming = status === "streaming" || status === "submitted"

@@ -104,6 +104,8 @@ export default function ContributePage() {
   const [isSubmittingPayment, setIsSubmittingPayment] = useState(false)
   const [paymentProofSubmitted, setPaymentProofSubmitted] = useState(false)
 
+  const isAuthenticated = isParticipantAuthenticated()
+
   // ─── Data fetch (server-side API bypasses RLS on payout_requests) ────────────
   const checkPendingSubmission = useCallback(async () => {
     if (!participantData?.email) return
@@ -160,7 +162,7 @@ export default function ContributePage() {
   // ─── Effects ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     setMounted(true)
-    if (!isParticipantAuthenticated()) { router.push("/participant/login"); return }
+    if (!isAuthenticated) { router.push("/participant/login"); return }
     const storedData = localStorage.getItem("participantData")
     if (storedData) {
       const parsed = JSON.parse(storedData)
@@ -173,7 +175,7 @@ export default function ContributePage() {
           }
         }).catch(() => {})
     }
-  }, [router])
+  }, [router, isAuthenticated])
 
   useEffect(() => {
     if (!participantData?.email) return

@@ -460,20 +460,19 @@ export default function ParticipantRegisterPage() {
     )
   }
 
-  // Fixed positions to avoid SSR hydration mismatch
   const stars = Array.from({ length: 15 }, (_, i) => ({
-    top: `${(i * 6 + 3) % 100}%`,
-    left: `${(i * 7 + 5) % 100}%`,
-    delay: (i * 0.2) % 3,
-    size: 2 + (i % 3),
+    top: `${Math.random() * 100}%`,
+    left: `${Math.random() * 100}%`,
+    delay: Math.random() * 3,
+    size: 2 + Math.random() * 2,
   }))
 
   const particles = Array.from({ length: 10 }, (_, i) => ({
     delay: i * 0.4,
-    size: 4 + (i % 4),
+    size: 4 + Math.random() * 4,
     color: ["#E85D3B", "#7c3aed", "#22d3ee"][i % 3],
     left: `${5 + i * 9}%`,
-    duration: 8 + (i % 4),
+    duration: 8 + Math.random() * 4,
   }))
 
   return (

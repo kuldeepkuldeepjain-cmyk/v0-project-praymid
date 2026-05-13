@@ -105,7 +105,9 @@ export default function PredictionHistoryPage() {
       try {
         const data = JSON.parse(storedData)
         setParticipantData(data)
-      } catch {}
+      } catch (error) {
+        console.error("Error parsing participant data:", error)
+      }
     }
   }, [router])
 

@@ -178,7 +178,6 @@ function FloatingCoin({
 
 export default function HomePage() {
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showLearnMore, setShowLearnMore] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
@@ -188,7 +187,6 @@ export default function HomePage() {
   const partnerLogos = ["OpenAI", "Amazon", "Google", "Anthropic", "Shopify", "Airbnb", "Stripe", "Vercel"]
 
   useEffect(() => {
-    setMounted(true)
     const handleScroll = () => setScrollY(window.scrollY)
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY })
@@ -202,25 +200,19 @@ export default function HomePage() {
     }
   }, [])
 
-  // All Math.random() calls inside useMemo so they only run client-side
-  // and stay stable across re-renders — prevents SSR hydration mismatch
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 20 }, () => ({
-        delay: Math.random() * 5,
-        size: Math.random() * 8 + 4,
-        color: ["rgba(232, 93, 59, 0.6)", "rgba(124, 58, 237, 0.6)", "rgba(34, 211, 238, 0.6)", "rgba(16, 185, 129, 0.6)"][
-          Math.floor(Math.random() * 4)
-        ],
-        left: `${Math.random() * 100}%`,
-        duration: Math.random() * 4 + 4,
-      })),
-    [],
-  )
+  const particles = Array.from({ length: 20 }, (_, i) => ({
+    delay: Math.random() * 5,
+    size: Math.random() * 8 + 4,
+    color: ["rgba(232, 93, 59, 0.6)", "rgba(124, 58, 237, 0.6)", "rgba(34, 211, 238, 0.6)", "rgba(16, 185, 129, 0.6)"][
+      Math.floor(Math.random() * 4)
+    ],
+    left: `${Math.random() * 100}%`,
+    duration: Math.random() * 4 + 4,
+  }))
 
   const stars = useMemo(
     () =>
-      Array.from({ length: 30 }, () => ({
+      Array.from({ length: 30 }, (_, i) => ({
         top: `${Math.random() * 100}%`,
         left: `${Math.random() * 100}%`,
         delay: Math.random() * 3,
@@ -250,21 +242,17 @@ export default function HomePage() {
         <div className="wave-pattern" />
       </div>
 
-      {mounted && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
-          {stars.map((star, i) => (
-            <AnimatedStar key={i} {...star} />
-          ))}
-        </div>
-      )}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
+        {stars.map((star, i) => (
+          <AnimatedStar key={i} {...star} />
+        ))}
+      </div>
 
-      {mounted && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
-          {ribbons.map((ribbon, i) => (
-            <FlowRibbon key={i} {...ribbon} />
-          ))}
-        </div>
-      )}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
+        {ribbons.map((ribbon, i) => (
+          <FlowRibbon key={i} {...ribbon} />
+        ))}
+      </div>
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden flex items-center justify-center hidden md:block">
         <div
@@ -318,14 +306,12 @@ export default function HomePage() {
         />
       </div>
 
-      {/* Particle system - Hidden on mobile, only rendered client-side */}
-      {mounted && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
-          {particles.map((p, i) => (
-            <Particle key={i} {...p} />
-          ))}
-        </div>
-      )}
+      {/* Particle system - Hidden on mobile */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden sm:block">
+        {particles.map((p, i) => (
+          <Particle key={i} {...p} />
+        ))}
+      </div>
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-10 hidden md:block">
         {/* USDT Coin - Green (Large) - Moved to left side, middle height */}
