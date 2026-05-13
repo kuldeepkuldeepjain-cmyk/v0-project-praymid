@@ -73,10 +73,14 @@ export async function POST(request: NextRequest) {
 
     const newBalance = currentBalance - Number(amount)
 
-    // Deduct balance and save wallet address (column is wallet_address)
+    // Calculate next contribution date (30 days from now)
+    const nextContributionDate = new Date()
+    nextContributionDate.setDate(nextContributionDate.getDate() + 30)
+
+    // Deduct balance, save wallet address, and set next contribution date
     await execute(
-      "UPDATE participants SET account_balance = $1, wallet_address = $2 WHERE email = $3",
-      [newBalance, walletAddr, email.toLowerCase().trim()]
+      "UPDATE participants SET account_balance = $1, wallet_address = $2, next_contribution_date = $3 WHERE email = $4",
+      [newBalance, walletAddr, nextContributionDate.toISOString(), email.toLowerCase().trim()]
     )
 
     // Insert payout request
