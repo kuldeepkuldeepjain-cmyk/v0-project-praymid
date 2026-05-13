@@ -100,6 +100,35 @@ export async function POST(request: NextRequest) {
         `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'success','Activation Approved','Your contribution has been approved. $150 has been credited to your account.',false)`,
         [payment.participant_email]
       )
+
+      // Credit $5 referral bonus to referrer when funds are added
+      try {
+        const referrerRes = await db.query(
+          `SELECT id, email, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
+          [payment.participant_email]
+        )
+        if (referrerRes.rows.length > 0) {
+          const referrer = referrerRes.rows[0]
+          const referralBonus = 5
+          const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referralBonus
+          await db.query(
+            `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
+            [referrerNewEarnings, referrer.id]
+          )
+          await db.query(
+            `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+             VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
+            [referrer.email, referralBonus, `Referral bonus - ${payment.participant_email} funds added`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+          ).catch(() => {})
+          await db.query(
+            `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
+            [referrer.email, `Earned $5 referral bonus from ${payment.participant_email} adding funds`]
+          ).catch(() => {})
+        }
+      } catch (referralError) {
+        // Non-critical - don't fail if referral credit fails
+        console.error("Failed to credit referral bonus:", referralError)
+      }
     } else {
       const nextDate = new Date(); nextDate.setDate(nextDate.getDate() + 30)
       await db.query(`UPDATE participants SET next_contribution_date=$1 WHERE email=$2`, [nextDate.toISOString(), payment.participant_email])
