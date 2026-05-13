@@ -131,7 +131,7 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     try {
       clearAdminAuth()
-      router.push("/admin/login")
+      router.push("/finalflow/login")
     } catch {
       toast({ title: "Error", description: "Failed to logout", variant: "destructive" })
     }

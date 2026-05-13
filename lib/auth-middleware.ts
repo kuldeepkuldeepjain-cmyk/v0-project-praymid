@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getParticipantSession, getAdminSession } from "@/lib/session"
 
 // Valid admin emails — used for token-based auth fallback
-const ADMIN_EMAILS = ["admin@123", "bitcoin890@gmail.com"]
+const ADMIN_EMAILS = ["montyflowchain890@gmail.com", "bitcoin890@gmail.com"]
 
 // ── Participant route guard ────────────────────────────────────────────────
 export async function requireParticipantSession(

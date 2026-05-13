@@ -59,7 +59,8 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        setAdminAuth(data.email || email, email, data.role, data.permissions)
+        // Use email as the token for admin auth
+        setAdminAuth(email, email, data.role, data.permissions)
         router.push("/finalflow/dashboard")
       } else {
         setError(data.error || "Login failed. Please try again.")
