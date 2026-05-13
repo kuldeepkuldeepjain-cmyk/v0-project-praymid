@@ -5,16 +5,9 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, Users, Gift, MessageCircle, Check, X, Loader2, Sparkles, Share2, Copy, Mail, Heart } from "lucide-react"
+import { ArrowLeft, Gift, MessageCircle, Copy, Mail, Heart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
-
-interface Contact {
-  name: string
-  phone: string
-}
 
 export default function ReferPage() {
   const router = useRouter()
@@ -24,8 +17,6 @@ export default function ReferPage() {
   const [totalEarnings, setTotalEarnings] = useState(0)
   const [pendingEarnings, setPendingEarnings] = useState(0)
   const [referralLink, setReferralLink] = useState("")
-  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([])
-  const [isSending, setIsSending] = useState(false)
   const [showCopyAlert, setShowCopyAlert] = useState(false)
 
   const isAuthenticated = isParticipantAuthenticated()
@@ -150,141 +141,6 @@ export default function ReferPage() {
     }
   }
 
-  const handleContactPicker = async () => {
-    try {
-      // Check if Contact Picker API is available
-      if (!("contacts" in navigator)) {
-        toast({
-          title: "Not Supported",
-          description: "Contact picker is not available on this device",
-          variant: "destructive",
-        })
-        return
-      }
-
-      const props = ["name", "tel"]
-      const contacts = await (navigator as any).contacts.select(props, { multiple: true })
-      
-      console.log("[v0] Contacts selected:", contacts.length)
-      
-      const formattedContacts: Contact[] = contacts
-        .filter((c: any) => c.tel && c.tel.length > 0)
-        .map((contact: any) => ({
-          name: contact.name?.[0] || "Unknown",
-          phone: contact.tel[0].replace(/\D/g, ""), // Remove non-digits
-        }))
-
-      setSelectedContacts(formattedContacts)
-      toast({
-        title: "Contacts Selected",
-        description: `${formattedContacts.length} contacts selected`,
-      })
-    } catch (error) {
-      console.error("[v0] Contact picker error:", error)
-      toast({
-        title: "Selection Cancelled",
-        description: "No contacts were selected",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleSendInvites = async () => {
-    if (selectedContacts.length === 0) {
-      toast({
-        title: "No Contacts",
-        description: "Please select contacts first",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsSending(true)
-
-    try {
-      // Get participant ID via API
-      const meRes = await fetch(`/api/participant/me?email=${encodeURIComponent(participantData?.email || "")}`)
-      const meJson = await meRes.json()
-      const participantRecord: any = meJson.participant
-
-      if (!participantRecord) {
-        console.error("[v0] Error fetching participant ID")
-        toast({
-          title: "Error",
-          description: "Failed to get participant ID",
-          variant: "destructive",
-        })
-        setIsSending(false)
-        return
-      }
-
-      // Hash phone numbers using SHA-256
-      const contactHashes = await Promise.all(
-        selectedContacts.map(async (c) => {
-          // Use Web Crypto API for SHA-256 hashing
-          const encoder = new TextEncoder()
-          const data = encoder.encode(c.phone)
-          const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-          const hashArray = Array.from(new Uint8Array(hashBuffer))
-          const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
-          
-          return { contactHash: hashHex, contactName: c.name, contactPhone: c.phone }
-        })
-      )
-
-      console.log("[v0] Logging", contactHashes.length, "invites for user ID:", participantRecord.id)
-
-      // Send to API to log invites
-      const response = await fetch("/api/participant/invite-log", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: participantRecord.id,
-          contacts: contactHashes,
-        }),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        toast({
-          title: "Invites Logged!",
-          description: "Opening WhatsApp for each contact...",
-        })
-
-        // Open WhatsApp for each contact
-        const referralLink = `${window.location.origin}/participant/register?ref=${participantData?.referral_code}`
-        const message = `Hey! I joined FlowChain 🚀 Join using my link and earn rewards: ${referralLink}`
-
-        selectedContacts.forEach((contact, index) => {
-          setTimeout(() => {
-            const whatsappUrl = `https://wa.me/${contact.phone}?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, "_blank")
-          }, index * 1000) // Stagger by 1 second
-        })
-
-        // Clear selection after sending
-        setTimeout(() => {
-          setSelectedContacts([])
-        }, selectedContacts.length * 1000 + 500)
-      } else {
-        toast({
-          title: "Failed to Send",
-          description: "Unable to send invites. Please try again.",
-          variant: "destructive",
-        })
-      }
-    } catch {
-      toast({
-        title: "Connection Error",
-        description: "Unable to connect. Please check your connection and try again.",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSending(false)
-    }
-  }
-
   if (!mounted || !participantData) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -292,9 +148,6 @@ export default function ReferPage() {
       </div>
     )
   }
-
-  const progressPercentage = Math.min((joinedCount / REFERRAL_TARGET) * 100, 100)
-  const isRewardEligible = joinedCount >= REFERRAL_TARGET
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-orange-50">
