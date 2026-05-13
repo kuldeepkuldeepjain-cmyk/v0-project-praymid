@@ -99,6 +99,38 @@ export async function POST(request: NextRequest) {
       [email, `Requested payout of $${Number(amount).toFixed(2)} to ${walletAddr}`]
     ).catch(() => {})
 
+    // Credit $5 referral bonus to referrer after contribution completed
+    const REFERRAL_BONUS = 5
+    try {
+      // Find the referrer by looking up who referred this participant
+      const referrerRows = await query(
+        `SELECT id, email, referral_earnings FROM participants 
+         WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
+        [email.toLowerCase().trim()]
+      ) as any[]
+      
+      const referrer = referrerRows[0]
+      if (referrer) {
+        const referrerNewEarnings = Number(referrer.referral_earnings || 0) + REFERRAL_BONUS
+        
+        // Update referrer's referral_earnings
+        await execute(
+          `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
+          [referrerNewEarnings, referrer.id]
+        )
+        
+        // Log the referral bonus transaction
+        await execute(
+          `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+           VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
+          [referrer.email, REFERRAL_BONUS, `Referral bonus - ${email} completed contribution`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+        ).catch(() => {})
+      }
+    } catch (referralError) {
+      // Non-critical - don't fail the payout if referral credit fails
+      console.error("Failed to credit referral bonus:", referralError)
+    }
+
     return NextResponse.json({
       success: true,
       message: "Payout request submitted successfully",
