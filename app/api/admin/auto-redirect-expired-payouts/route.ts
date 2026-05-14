@@ -18,48 +18,35 @@ export async function GET(request: NextRequest) {
     const expiredPayouts = expiredRes.rows
 
     if (!expiredPayouts.length) {
-      return NextResponse.json({ success: true, message: "No expired payouts to redirect", redirectedCount: 0 })
+      return NextResponse.json({ success: true, message: "No expired payouts found", expiredCount: 0, redirectedCount: 0 })
     }
 
-    let redirectedCount = 0
-    const redirectResults: any[] = []
-
+    // Mark expired payouts as expired instead of redirecting to other participants
     for (const payout of expiredPayouts) {
       try {
-        const nextRes = await db.query(
-          `SELECT id,email,username,full_name,account_balance FROM participants WHERE email!=$1 ORDER BY created_at DESC LIMIT 5`,
-          [payout.participant_email]
-        )
-        if (!nextRes.rows.length) continue
-        const nextParticipant = nextRes.rows[0]
-        const newBalance = Number(nextParticipant.account_balance) + Number(payout.amount)
-
-        await db.query(`UPDATE participants SET account_balance=$1 WHERE id=$2`, [newBalance, nextParticipant.id])
         await db.query(
-          `INSERT INTO transactions(participant_email,participant_id,type,amount,balance_before,balance_after,description) VALUES($1,$2,'payout_redirect',$3,$4,$5,$6)`,
-          [nextParticipant.email, nextParticipant.id, payout.amount, nextParticipant.account_balance, newBalance, `Auto-redirected payout from expired request #${payout.id}`]
+          `UPDATE payout_requests SET status='expired', admin_notes=$1, processed_at=NOW() WHERE id=$2`,
+          [`Payout request expired after ${PAYOUT_TIMEOUT_HOURS}h without completion`, payout.id]
         )
         await db.query(
-          `UPDATE payout_requests SET status='redirected', admin_notes=$1, processed_at=NOW() WHERE id=$2`,
-          [`Auto-redirected after ${PAYOUT_TIMEOUT_HOURS}h. Original: ${payout.participant_email}`, payout.id]
+          `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'payout_expired','Payout Request Expired',$2,false)`,
+          [payout.participant_email, `Your payout request of $${payout.amount} has expired. Please submit a new request if needed.`]
         )
         await db.query(
-          `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'payout_received','Payout Redirected To Your Account',$2,false)`,
-          [nextParticipant.email, `You received a redirected payout of $${payout.amount}. New balance: $${newBalance.toFixed(2)}.`]
+          `INSERT INTO activity_logs(actor_email,action,target_type,details) VALUES('system_auto','payout_expired','payout',$1)`,
+          [`Payout request expired for ${payout.participant_email}`]
         )
-        await db.query(
-          `INSERT INTO activity_logs(actor_email,action,target_type,details) VALUES('system_auto_redirect','payout_auto_redirected','payout',$1)`,
-          [`Auto-redirected payout $${payout.amount} from ${payout.participant_email} to ${nextParticipant.email}`]
-        )
-
-        redirectResults.push({ payoutId: payout.id, originalRecipient: payout.participant_email, newRecipient: nextParticipant.email, amount: payout.amount, status: "success" })
-        redirectedCount++
       } catch (error) {
-        redirectResults.push({ payoutId: payout.id, status: "failed", error: error instanceof Error ? error.message : "Unknown error" })
+        console.error(`Failed to mark payout ${payout.id} as expired:`, error)
       }
     }
 
-    return NextResponse.json({ success: true, message: `Auto-redirect completed. ${redirectedCount} payouts redirected.`, redirectedCount, results: redirectResults })
+    return NextResponse.json({ 
+      success: true, 
+      message: `Auto-cleanup completed. ${expiredPayouts.length} expired payouts marked as expired.`, 
+      expiredCount: expiredPayouts.length,
+      redirectedCount: 0 
+    })
   } catch (error) {
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 })
   }
