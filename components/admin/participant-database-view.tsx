@@ -149,7 +149,7 @@ export function ParticipantDatabaseView() {
       p.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.phone?.includes(searchQuery) ||
-      p.participant_number?.toString().includes(searchQuery) ||
+      p.mobile_number?.includes(searchQuery) ||
       p.participant_number?.toString().includes(searchQuery) ||
       p.country?.toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -521,7 +521,7 @@ export function ParticipantDatabaseView() {
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3 w-3 text-slate-400" />
                           <span className="text-xs text-slate-700">
-                            {participant.country_code} {participant.phone || "—"}
+                            {participant.mobile_number || (participant.country_code ? `${participant.country_code} ${participant.phone}` : participant.phone) || "—"}
                           </span>
                         </div>
                       </div>
@@ -757,8 +757,10 @@ export function ParticipantDatabaseView() {
                   <p className="font-semibold text-slate-900">{selectedParticipant.email}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Phone</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.phone || "Not provided"}</p>
+                  <p className="text-slate-500">Mobile Number</p>
+                  <p className="font-semibold text-slate-900">
+                    {selectedParticipant.mobile_number || (selectedParticipant.country_code ? `${selectedParticipant.country_code} ${selectedParticipant.phone}` : selectedParticipant.phone) || "Not provided"}
+                  </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-slate-500">Full Address</p>
