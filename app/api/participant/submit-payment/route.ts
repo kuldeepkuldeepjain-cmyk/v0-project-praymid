@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
         const cooldownUntil = new Date(participant.next_contribution_date)
         if (cooldownUntil > new Date()) {
           const daysLeft = Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+          console.log(`[v0] Cooldown blocked for ${email}: next_contribution_date=${participant.next_contribution_date}, daysLeft=${daysLeft}`)
           return NextResponse.json({
             error: `Your next contribution is available in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
             cooldown: true,
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
         [participant.id, email.toLowerCase().trim(), amount || 100, paymentMethod]
       ) as any[]
 
+      console.log(`[v0] Contribution request submitted for ${email}, will set next_contribution_date when approved`)
       return NextResponse.json({ success: true, submissionId: rows[0]?.id, message: "Contribution request submitted" })
     }
 

@@ -38,18 +38,37 @@ export async function POST(request: NextRequest) {
 
     if (action === "approve") {
       const pRows = await query(
-        "SELECT id, account_balance, total_earnings FROM participants WHERE email = $1",
+        "SELECT id, account_balance, total_earnings, next_contribution_date FROM participants WHERE email = $1",
         [contribution.participant_email]
       ) as any[]
       const participant = pRows[0]
       if (participant) {
+        // Check cooldown before approving
+        if (participant.next_contribution_date) {
+          const cooldownUntil = new Date(participant.next_contribution_date)
+          if (cooldownUntil > new Date()) {
+            const daysLeft = Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            console.log(`[v0] Cannot approve P2P contribution for ${contribution.participant_email}: cooldown active, ${daysLeft} days remaining`)
+            return NextResponse.json({
+              success: false,
+              error: `Participant is on cooldown. Next contribution available in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
+              cooldown: true,
+              days_remaining: daysLeft,
+            }, { status: 429 })
+          }
+        }
+
         const currentBalance = Number(participant.account_balance || 0)
         const currentEarnings = Number(participant.total_earnings || 0)
         const creditAmount = Math.round(Number(contribution.amount) * 1.5 * 100) / 100
 
+        // Calculate next contribution date (30 days from now)
+        const nextContributionDate = new Date()
+        nextContributionDate.setDate(nextContributionDate.getDate() + 30)
+
         await execute(
-          "UPDATE participants SET account_balance = $1, total_earnings = $2 WHERE email = $3",
-          [currentBalance + creditAmount, currentEarnings + creditAmount, contribution.participant_email]
+          "UPDATE participants SET account_balance = $1, total_earnings = $2, next_contribution_date = $3 WHERE email = $4",
+          [currentBalance + creditAmount, currentEarnings + creditAmount, nextContributionDate.toISOString(), contribution.participant_email]
         )
 
         if (contribution.matched_payout_id) {
@@ -61,9 +80,10 @@ export async function POST(request: NextRequest) {
           [participant.id, contribution.participant_email, "p2p_contribution_reward", creditAmount, currentBalance, currentBalance + creditAmount, contributionId, "P2P contribution approved — reward credited"]
         )
 
+        const notifDate = nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
         await execute(
           "INSERT INTO notifications (user_email, type, title, message) VALUES ($1,'success','Contribution Approved',$2)",
-          [contribution.participant_email, `Your P2P contribution of $${contribution.amount} has been verified. $${creditAmount} has been credited to your account.`]
+          [contribution.participant_email, `Your P2P contribution of $${contribution.amount} has been verified. $${creditAmount} has been credited to your account. Your next contribution will be available on ${notifDate}.`]
         )
       }
     } else {
