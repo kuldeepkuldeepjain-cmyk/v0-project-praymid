@@ -882,15 +882,15 @@ export default function ParticipantRegisterPage() {
                   </div>
                   Security Verification *
                 </Label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
                   {/* Clean CAPTCHA Display */}
-                  <div className="relative flex-1 max-w-[180px] h-14 bg-white rounded-lg border-2 border-violet-300 shadow-md overflow-hidden flex items-center justify-center">
+                  <div className="flex-1 min-w-0 h-14 bg-white rounded-lg border-2 border-violet-300 shadow-md overflow-hidden flex items-center justify-center px-2 sm:px-3">
                     {/* CAPTCHA Text - Clean and readable */}
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-0.5 sm:gap-1.5 flex-wrap justify-center">
                       {captcha.text.split("").map((char, i) => (
                         <span
                           key={i}
-                          className="font-mono select-none leading-7 text-sm font-bold tracking-widest text-[rgba(10,10,10,1)]"
+                          className="font-mono select-none leading-7 text-sm sm:text-base font-bold tracking-widest text-[rgba(10,10,10,1)] flex-shrink-0"
                           style={{
                             letterSpacing: "0.05em",
                           }}
@@ -902,13 +902,13 @@ export default function ParticipantRegisterPage() {
                   </div>
                   
                   {/* Input Field */}
-                  <div className="relative flex-1 group">
+                  <div className="flex-1 min-w-0 relative group">
                     <Input
                       type="text"
                       placeholder="Enter code"
                       value={captchaInput}
                       onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
-                      className="h-14 bg-white border-2 border-violet-300 text-center font-mono text-lg font-bold tracking-widest focus:border-violet-500 focus:ring-violet-500/20 transition-all hover:border-violet-400 focus:shadow-lg focus:shadow-violet-500/10 uppercase"
+                      className="h-14 bg-white border-2 border-violet-300 text-center font-mono text-base sm:text-lg font-bold tracking-widest focus:border-violet-500 focus:ring-violet-500/20 transition-all hover:border-violet-400 focus:shadow-lg focus:shadow-violet-500/10 uppercase"
                       maxLength={6}
                       required
                     />
@@ -921,14 +921,14 @@ export default function ParticipantRegisterPage() {
                     onClick={generateCaptcha}
                     variant="outline"
                     size="icon"
-                    className="h-14 w-14 border-2 border-violet-300 hover:bg-violet-100 hover:border-violet-400 bg-white transition-all hover:scale-105 hover:rotate-180 duration-300"
+                    className="h-14 w-14 flex-shrink-0 border-2 border-violet-300 hover:bg-violet-100 hover:border-violet-400 bg-white transition-all hover:scale-105 hover:rotate-180 duration-300"
                   >
                     <RefreshCcw className="h-5 w-5 text-[#7c3aed]" />
                   </Button>
                 </div>
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-                  Enter the 6-character code shown above to verify you're human
+                <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse flex-shrink-0" />
+                  <span>Enter the 6-character code shown above to verify you&apos;re human</span>
                 </p>
               </div>
 
