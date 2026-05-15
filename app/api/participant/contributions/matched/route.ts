@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!email) return NextResponse.json({ matched: false, error: "email required" }, { status: 400 })
 
     const contribs = await query(
-      `SELECT id, amount, status, created_at, matched_payout_id, participant_id
+      `SELECT id, amount, status, created_at, matched_at, matched_payout_id, participant_id
        FROM payment_submissions
        WHERE participant_email = $1 AND status IN ('in_process','proof_submitted') AND matched_payout_id IS NOT NULL
        ORDER BY created_at DESC LIMIT 1`,
@@ -29,32 +29,40 @@ export async function GET(request: NextRequest) {
     }
 
     const payoutRows = await query(
-      "SELECT id, amount, status, wallet_address, participant_id, participant_email FROM payout_requests WHERE id = $1",
+      `SELECT pr.id, pr.amount, pr.status, pr.wallet_address, pr.payout_method,
+              pr.serial_number, pr.participant_id, pr.participant_email,
+              p.full_name, p.mobile_number, p.bep20_address,
+              p.wallet_address AS p_wallet_address
+       FROM payout_requests pr
+       LEFT JOIN participants p ON p.email = pr.participant_email
+       WHERE pr.id = $1`,
       [contribution.matched_payout_id]
     ) as any[]
     const payoutRow = payoutRows[0]
     if (!payoutRow) return NextResponse.json({ matched: false, error: "payout row not found" }, { status: 404 })
 
-    let recipient: any = null
-    if (payoutRow.participant_id) {
-      const rows = await query(
-        "SELECT id, full_name, mobile_number, bep20_address, wallet_address, email FROM participants WHERE id = $1",
-        [payoutRow.participant_id]
-      ) as any[]
-      recipient = rows[0] || null
-    }
-    if (!recipient && payoutRow.participant_email) {
-      const rows = await query(
-        "SELECT id, full_name, mobile_number, bep20_address, wallet_address, email FROM participants WHERE email = $1",
-        [payoutRow.participant_email]
-      ) as any[]
-      recipient = rows[0] || null
-    }
+    const walletAddress = payoutRow.bep20_address || payoutRow.wallet_address || payoutRow.p_wallet_address || null
 
     return NextResponse.json({
       matched: true,
-      contribution: { id: contribution.id, amount: contribution.amount, status: contribution.status, created_at: contribution.created_at },
-      payout: { id: payoutRow.id, amount: payoutRow.amount, status: payoutRow.status, wallet_address: payoutRow.wallet_address, participant_email: payoutRow.participant_email, participants: recipient },
+      contribution: {
+        id: contribution.id,
+        amount: contribution.amount,
+        status: contribution.status,
+        created_at: contribution.created_at,
+        matched_at: contribution.matched_at,
+      },
+      payout: {
+        id: payoutRow.id,
+        serial_number: payoutRow.serial_number,
+        amount: payoutRow.amount,
+        status: payoutRow.status,
+        payout_method: payoutRow.payout_method,
+        wallet_address: walletAddress,
+        participant_email: payoutRow.participant_email,
+        participant_name: payoutRow.full_name || payoutRow.participant_email,
+        mobile_number: payoutRow.mobile_number || null,
+      },
     })
   } catch (err: any) {
     console.error("[matched-api] unexpected error:", err)

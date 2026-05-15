@@ -40,68 +40,63 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Payout is already completed" }, { status: 400 })
     }
 
-    // Approve contribution — credit participant balance
-    const partRes = await db.query(
-      `SELECT id, account_balance FROM participants WHERE email = $1`,
-      [contribution.participant_email]
-    )
-    const participant = partRes.rows[0]
-    if (!participant) {
-      return NextResponse.json({ success: false, error: "Contribution participant not found" }, { status: 404 })
-    }
-
-    const newBalance = Number(participant.account_balance || 0) + 150
-    const nextContributionDate = new Date()
-    nextContributionDate.setDate(nextContributionDate.getDate() + 30)
-
+    // Set contribution to 'in_process' and link matched_payout_id
+    // so the contributor sees the payout details on their contribute page
     await db.query(
-      `UPDATE payment_submissions SET status = 'approved', reviewed_at = NOW() WHERE id = $1`,
-      [contributionId]
-    )
-    await db.query(
-      `UPDATE participants SET account_balance = $1, status = 'active', is_active = true,
-       activation_date = COALESCE(activation_date, NOW()), last_contribution_date = NOW(),
-       next_contribution_date = $2 WHERE email = $3`,
-      [newBalance, nextContributionDate.toISOString(), contribution.participant_email]
+      `UPDATE payment_submissions 
+       SET status = 'in_process', matched_payout_id = $1, matched_at = NOW(), reviewed_at = NOW()
+       WHERE id = $2`,
+      [payoutId, contributionId]
     )
 
-    // Complete payout
+    // Set payout to 'in_process' linked to this contribution
     await db.query(
-      `UPDATE payout_requests SET status = 'completed', processed_at = NOW(),
-       admin_notes = $1 WHERE id = $2`,
-      [`Manually matched with contribution #${contributionId} from ${contribution.participant_email}`, payoutId]
+      `UPDATE payout_requests 
+       SET status = 'in_process', matched_contribution_id = $1, matched_at = NOW(),
+       admin_notes = $2
+       WHERE id = $3`,
+      [contributionId, `Manually matched with contribution #${contributionId} from ${contribution.participant_email}`, payoutId]
     )
 
-    // Transactions
+    // Notify contributor to send funds
+    const payoutRecipientRows = await db.query(
+      `SELECT full_name, mobile_number, bep20_address, wallet_address FROM participants WHERE email = $1`,
+      [payout.participant_email]
+    )
+    const payoutRecipient = payoutRecipientRows.rows[0]
+
     await db.query(
-      `INSERT INTO transactions (participant_email, participant_id, type, amount, balance_before, balance_after, status, description)
-       VALUES ($1, $2, 'contribution_reward', 150, $3, $4, 'completed', 'Manual match: contribution approved, $150 credited')`,
-      [contribution.participant_email, participant.id, participant.account_balance, newBalance]
+      `INSERT INTO notifications (user_email, type, title, message)
+       VALUES ($1, 'success', 'Contribution Matched — Send Payment', $2)`,
+      [contribution.participant_email,
+        `Your contribution has been matched! Please send $${payout.amount} to ${payoutRecipient?.full_name || payout.participant_email}. Wallet: ${payoutRecipient?.bep20_address || payoutRecipient?.wallet_address || payout.wallet_address || "See contribute page"}. Mobile: ${payoutRecipient?.mobile_number || "—"}.`]
     ).catch(() => {})
 
-    // Notifications
+    // Notify payout requester that payment is coming
     await db.query(
-      `INSERT INTO notifications (user_email, type, title, message) VALUES ($1, 'success', 'Contribution Approved', $2)`,
-      [contribution.participant_email, `Your contribution has been approved and $150 credited. Next contribution available on ${nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}.`]
-    ).catch(() => {})
-
-    await db.query(
-      `INSERT INTO notifications (user_email, type, title, message) VALUES ($1, 'success', 'Payout Completed', $2)`,
-      [payout.participant_email, `Your payout request #${payout.serial_number} of $${payout.amount} has been completed.`]
+      `INSERT INTO notifications (user_email, type, title, message)
+       VALUES ($1, 'info', 'Payout In Process', $2)`,
+      [payout.participant_email,
+        `Your payout request #${payout.serial_number} of $${payout.amount} has been matched with a contributor. Payment is being processed.`]
     ).catch(() => {})
 
     // Activity log
     await db.query(
-      `INSERT INTO activity_logs (actor_email, action, details, target_type) VALUES ('admin', 'manual_match_contribution_payout', $1, 'payment_submission')`,
-      [`Manually matched contribution #${contributionId} (${contribution.participant_email}) with payout #${payoutId} (${payout.participant_email})`]
+      `INSERT INTO activity_logs (actor_email, action, details, target_type)
+       VALUES ('admin', 'manual_match_contribution_payout', $1, 'payment_submission')`,
+      [`Matched contribution #${contributionId} (${contribution.participant_email}) → payout #${payoutId} (${payout.participant_email})`]
     ).catch(() => {})
 
     return NextResponse.json({
       success: true,
-      message: `Contribution approved and payout #${payout.serial_number} completed`,
+      message: `Contribution matched with payout #${payout.serial_number}. Contributor will see payout details on their contribute page.`,
       contributionEmail: contribution.participant_email,
       payoutEmail: payout.participant_email,
-      newBalance,
+      payoutRecipient: {
+        name: payoutRecipient?.full_name || payout.participant_email,
+        mobile: payoutRecipient?.mobile_number || null,
+        wallet: payoutRecipient?.bep20_address || payoutRecipient?.wallet_address || payout.wallet_address || null,
+      }
     })
   } catch (error) {
     return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Internal server error" }, { status: 500 })

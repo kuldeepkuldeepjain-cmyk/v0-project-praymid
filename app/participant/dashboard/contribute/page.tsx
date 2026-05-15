@@ -347,7 +347,9 @@ export default function ContributePage() {
                   <User className="h-5 w-5 text-slate-500 shrink-0" />
                   <div>
                     <p className="text-xs text-slate-500">Full Name</p>
-                    <p className="font-bold text-slate-900">{matchedContribution.payout?.participants?.full_name || "N/A"}</p>
+                    <p className="font-bold text-slate-900">
+                      {matchedContribution.payout?.participant_name || matchedContribution.payout?.participants?.full_name || "N/A"}
+                    </p>
                   </div>
                 </div>
 
@@ -355,32 +357,35 @@ export default function ContributePage() {
                   <Mail className="h-5 w-5 text-slate-500 shrink-0" />
                   <div>
                     <p className="text-xs text-slate-500">Email Address</p>
-                    <p className="font-semibold text-slate-900 text-sm">{matchedContribution.payout?.participants?.email || "N/A"}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <Phone className="h-5 w-5 text-slate-500 shrink-0" />
-                  <div>
-                    <p className="text-xs text-slate-500">Mobile Number</p>
-                    <p className="font-bold text-slate-900">
-                      {matchedContribution.payout?.participants?.mobile_number || "Not provided"}
+                    <p className="font-semibold text-slate-900 text-sm">
+                      {matchedContribution.payout?.participant_email || matchedContribution.payout?.participants?.email || "N/A"}
                     </p>
                   </div>
                 </div>
 
-                {(matchedContribution.payout?.participants?.bep20_address || matchedContribution.payout?.participants?.wallet_address) && (
+                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                  <Phone className="h-5 w-5 text-amber-600 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs text-amber-700 font-semibold">Mobile Number</p>
+                    <p className="font-bold text-amber-900 text-lg tracking-wide">
+                      {matchedContribution.payout?.mobile_number || matchedContribution.payout?.participants?.mobile_number || "Not provided"}
+                    </p>
+                  </div>
+                </div>
+
+                {(matchedContribution.payout?.wallet_address || matchedContribution.payout?.participants?.bep20_address || matchedContribution.payout?.participants?.wallet_address) && (
                   <div className="p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Wallet className="h-4 w-4 text-blue-600" />
-                        <p className="text-xs text-blue-700 font-semibold">BEP20 Wallet Address</p>
+                        <p className="text-xs text-blue-700 font-semibold">BEP20 Wallet Address — Send Here</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => copyToClipboard(
+                          matchedContribution.payout?.wallet_address ||
                           matchedContribution.payout?.participants?.bep20_address ||
                           matchedContribution.payout?.participants?.wallet_address,
                           "Wallet address"
@@ -390,7 +395,8 @@ export default function ContributePage() {
                       </Button>
                     </div>
                     <p className="text-xs font-mono font-bold text-blue-900 break-all bg-white p-2 rounded border border-blue-200">
-                      {matchedContribution.payout?.participants?.bep20_address ||
+                      {matchedContribution.payout?.wallet_address ||
+                        matchedContribution.payout?.participants?.bep20_address ||
                         matchedContribution.payout?.participants?.wallet_address}
                     </p>
                   </div>
@@ -401,7 +407,7 @@ export default function ContributePage() {
                     <DollarSign className="h-5 w-5 text-purple-600 shrink-0" />
                     <div>
                       <p className="text-xs text-purple-600 font-medium">Payout Serial Number</p>
-                      <p className="text-lg font-black text-purple-900">{matchedContribution.payout.serial_number}</p>
+                      <p className="text-lg font-black text-purple-900">#{matchedContribution.payout.serial_number}</p>
                     </div>
                   </div>
                 )}
