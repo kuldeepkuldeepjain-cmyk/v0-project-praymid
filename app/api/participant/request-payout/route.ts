@@ -38,29 +38,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields (email, amount, wallet address)" }, { status: 400 })
     }
 
-    // Load participant with cooldown info
+    // Load participant balance info
     const rows = await query(
-      "SELECT id, account_balance, next_contribution_date FROM participants WHERE email = $1 LIMIT 1",
+      "SELECT id, account_balance FROM participants WHERE email = $1 LIMIT 1",
       [email.toLowerCase().trim()]
     ) as any[]
     const participant = rows[0]
     if (!participant) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
-    }
-
-    // 30-day cooldown check
-    if (participant.next_contribution_date) {
-      const cooldownUntil = new Date(participant.next_contribution_date)
-      if (cooldownUntil > new Date()) {
-        const daysLeft = Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-        return NextResponse.json({
-          success: false,
-          error: `Your next contribution is available in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
-          cooldown: true,
-          next_contribution_date: cooldownUntil.toISOString(),
-          days_remaining: daysLeft,
-        }, { status: 429 })
-      }
     }
 
     const currentBalance = Number(participant.account_balance) || 0
@@ -73,14 +58,10 @@ export async function POST(request: NextRequest) {
 
     const newBalance = currentBalance - Number(amount)
 
-    // Calculate next contribution date (30 days from now)
-    const nextContributionDate = new Date()
-    nextContributionDate.setDate(nextContributionDate.getDate() + 30)
-
-    // Deduct balance, save wallet address, and set next contribution date
+    // Deduct balance and save wallet address (no cooldown set on payout)
     await execute(
-      "UPDATE participants SET account_balance = $1, wallet_address = $2, next_contribution_date = $3 WHERE email = $4",
-      [newBalance, walletAddr, nextContributionDate.toISOString(), email.toLowerCase().trim()]
+      "UPDATE participants SET account_balance = $1, wallet_address = $2 WHERE email = $3",
+      [newBalance, walletAddr, email.toLowerCase().trim()]
     )
 
     // Insert payout request
