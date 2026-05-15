@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, CheckCircle2, User, Mail, Wallet, DollarSign, Calendar, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { maskMobileNumber } from "@/lib/format-utils"
 
 interface MatchedDetails {
   contribution: {

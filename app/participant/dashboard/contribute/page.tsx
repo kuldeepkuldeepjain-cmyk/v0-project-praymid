@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { maskMobileNumber } from "@/lib/format-utils"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
@@ -366,9 +367,9 @@ export default function ContributePage() {
                 <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
                   <Phone className="h-5 w-5 text-amber-600 shrink-0" />
                   <div className="flex-1">
-                    <p className="text-xs text-amber-700 font-semibold">Mobile Number</p>
+                    <p className="text-xs text-amber-700 font-semibold">Mobile Number (Last 4 Digits)</p>
                     <p className="font-bold text-amber-900 text-lg tracking-wide">
-                      {matchedContribution.payout?.mobile_number || matchedContribution.payout?.participants?.mobile_number || "Not provided"}
+                      {maskMobileNumber(matchedContribution.payout?.mobile_number || matchedContribution.payout?.participants?.mobile_number)}
                     </p>
                   </div>
                 </div>
