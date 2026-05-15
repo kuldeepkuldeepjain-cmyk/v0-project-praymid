@@ -23,6 +23,7 @@ export async function POST(request: Request) {
     const fullName = `${firstName.trim()} ${lastName.trim()}`
     const emailKey = email.toLowerCase().trim()
     const usernameKey = username.toLowerCase().trim()
+    const mobileNumberClean = mobileNumber?.toString().trim() || null
     const walletAddress = generateWallet()
     const newReferralCode = generateReferralCode(username)
     const hashedPassword = await bcrypt.hash(password, 10)
@@ -43,13 +44,13 @@ export async function POST(request: Request) {
       `INSERT INTO participants
         (full_name, username, email, password_hash, wallet_address,
          referral_code, referred_by, account_balance, status, is_active,
-         whatsapp_otp, otp_verified)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,0,'pending',false,$8,false)
+         whatsapp_otp, otp_verified, mobile_number)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,0,'pending',false,$8,false,$9)
        RETURNING *`,
       [
         fullName, usernameKey, emailKey, hashedPassword, walletAddress,
         newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-        whatsappOtp || null,
+        whatsappOtp || null, mobileNumberClean,
       ]
     )
 

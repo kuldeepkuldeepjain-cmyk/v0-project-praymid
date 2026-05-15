@@ -364,9 +364,7 @@ export default function ContributePage() {
                   <div>
                     <p className="text-xs text-slate-500">Mobile Number</p>
                     <p className="font-bold text-slate-900">
-                      {matchedContribution.payout?.participants?.mobile_number
-                        ? `••••••${String(matchedContribution.payout.participants.mobile_number).slice(-4)}`
-                        : "Not provided"}
+                      {matchedContribution.payout?.participants?.mobile_number || "Not provided"}
                     </p>
                   </div>
                 </div>

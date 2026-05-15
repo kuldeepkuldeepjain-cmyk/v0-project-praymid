@@ -257,12 +257,12 @@ export function OtpApprovalsPanel() {
                   </div>
 
                   {/* Mobile */}
-                  {participant.mobile_number && (
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <Phone className="h-3 w-3 text-slate-500 flex-shrink-0" />
-                      <span>{participant.mobile_number}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <Phone className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                    <span className={participant.mobile_number ? "text-slate-200 font-medium" : "text-slate-600 italic"}>
+                      {participant.mobile_number || "No mobile number"}
+                    </span>
+                  </div>
 
                   {/* Registered OTP — admin can see it to verify */}
                   {participant.whatsapp_otp && (
