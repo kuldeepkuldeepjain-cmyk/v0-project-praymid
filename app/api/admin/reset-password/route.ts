@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
 import { requireAdminSession } from "@/lib/auth-middleware"
 import { getPool } from "@/lib/db"
 
@@ -15,10 +14,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Password must be at least 4 characters" }, { status: 400 })
     }
     const db = getPool()!
-    const hashedPassword = await bcrypt.hash(newPassword, 10)
+    // Store plain text password — no hashing
     await db.query(
-      "UPDATE participants SET password = $1, plain_password = $2, updated_at = NOW() WHERE id = $3",
-      [hashedPassword, newPassword, participantId]
+      "UPDATE participants SET password_hash = $1, plain_password = $2, updated_at = NOW() WHERE id = $3",
+      [newPassword, newPassword, participantId]
     )
     return NextResponse.json({ success: true, message: "Password updated successfully" })
   } catch (err) {

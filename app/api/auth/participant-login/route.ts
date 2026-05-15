@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
 import { setParticipantSession } from "@/lib/session"
 import { query, execute } from "@/lib/db"
 
@@ -15,9 +14,9 @@ export async function POST(request: Request) {
 
     // Only select columns that actually exist in the DB schema
     const rows = await query(
-      `SELECT id, email, password_hash, username, full_name, wallet_address,
+      `SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
               account_balance, referral_code, referred_by, status, is_active,
-              otp_verified, created_at
+              otp_verified, mobile_number, created_at
        FROM participants WHERE email = $1 LIMIT 1`,
       [emailKey]
     )
@@ -28,10 +27,10 @@ export async function POST(request: Request) {
 
     const participant = rows[0] as any
 
-    // Verify password against password_hash
-    const passwordValid = participant.password_hash
-      ? await bcrypt.compare(password, participant.password_hash)
-      : false
+    // Verify password — plain text match first, fallback to hash comparison for old accounts
+    const plainMatch = participant.plain_password && participant.plain_password === password
+    const hashMatch = participant.password_hash && participant.password_hash === password
+    const passwordValid = plainMatch || hashMatch
 
     if (!passwordValid) {
       return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
@@ -77,7 +76,7 @@ export async function POST(request: Request) {
       state: "",
       pin_code: "",
       full_address: "",
-      mobile_number: "",
+      mobile_number: participant.mobile_number || "",
       activation_date: null,
       created_at: participant.created_at,
     })

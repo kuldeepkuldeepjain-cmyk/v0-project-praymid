@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
 import { query, execute } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
@@ -26,8 +25,6 @@ export async function POST(request: Request) {
     const mobileNumberClean = mobileNumber?.toString().trim() || null
     const walletAddress = generateWallet()
     const newReferralCode = generateReferralCode(username)
-    const hashedPassword = await bcrypt.hash(password, 10)
-
     // Check duplicates
     const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
     if (emailRows.length > 0) return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
@@ -42,13 +39,13 @@ export async function POST(request: Request) {
 
     const inserted = await query<Record<string, any>>(
       `INSERT INTO participants
-        (full_name, username, email, password_hash, wallet_address,
+        (full_name, username, email, password_hash, plain_password, wallet_address,
          referral_code, referred_by, account_balance, status, is_active,
          whatsapp_otp, otp_verified, mobile_number)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,0,'pending',false,$8,false,$9)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'pending',false,$9,false,$10)
        RETURNING *`,
       [
-        fullName, usernameKey, emailKey, hashedPassword, walletAddress,
+        fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
         newReferralCode, referralCode ? referralCode.toUpperCase() : null,
         whatsappOtp || null, mobileNumberClean,
       ]
