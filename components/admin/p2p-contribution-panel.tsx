@@ -100,12 +100,10 @@ export function P2PContributionPanel() {
     }
   }, [toast])
 
-  const fetchAvailablePayouts = useCallback(async (amount?: number) => {
+  const fetchAvailablePayouts = useCallback(async (_amount?: number) => {
     try {
-      const url = amount
-        ? `/api/admin/pending-payout-requests?amount=${amount}`
-        : `/api/admin/pending-payout-requests`
-      const res = await adminFetch(url)
+      // Fetch ALL pending payouts — admin manually chooses which to match
+      const res = await adminFetch(`/api/admin/pending-payout-requests`)
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || "Failed to fetch payout requests")
       setAvailablePayouts(json.payouts || [])
@@ -393,8 +391,8 @@ export function P2PContributionPanel() {
                           </Badge>
                         ) : (
                           <>
-                            {/* Match button — for unmatched pending contributions */}
-                            {["pending", "request_pending"].includes(c.status) && !c.matched_payout_id && (
+                            {/* Match button — for any unmatched contribution */}
+                            {["pending", "request_pending", "in_process", "proof_submitted"].includes(c.status) && !c.matched_payout_id && (
                               <Button size="sm"
                                 onClick={() => {
                                   setSelectedContribution(c)
@@ -566,10 +564,7 @@ export function P2PContributionPanel() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm text-slate-300 font-medium">
-                  Pending Payout Requests
-                  {selectedContribution && (
-                    <span className="ml-2 text-xs text-slate-500">(amount: ${selectedContribution.amount})</span>
-                  )}
+                  All Pending Payout Requests
                 </p>
                 <Button size="sm" variant="ghost"
                   onClick={() => fetchAvailablePayouts(selectedContribution?.amount)}
