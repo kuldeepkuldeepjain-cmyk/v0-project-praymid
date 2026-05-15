@@ -156,7 +156,7 @@ export function P2PContributionPanel() {
     }
     setIsProcessing(true)
     try {
-      const res = await adminFetch("/api/admin/auto-match-single-contribution", {
+      const res = await adminFetch("/api/admin/manual-match-contribution-payout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
