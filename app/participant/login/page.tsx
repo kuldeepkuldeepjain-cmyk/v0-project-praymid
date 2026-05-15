@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2, ShieldCheck, Clock } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2, ShieldCheck, Clock, HelpCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { setParticipantAuth } from "@/lib/auth"
+import { ForgotPasswordModal } from "@/components/forgot-password-modal"
 
 function AnimatedStar({ top, left, delay, size }: { top: string; left: string; delay: number; size: number }) {
   return (
@@ -61,6 +62,7 @@ export default function ParticipantLoginPage() {
   const [loading, setLoading] = useState(false)
   const [pendingVerification, setPendingVerification] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
 
   const runDiagnostics = async () => {
     try {
@@ -180,6 +182,7 @@ export default function ParticipantLoginPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 -z-10" />
@@ -326,6 +329,18 @@ export default function ParticipantLoginPage() {
                 </div>
               </div>
 
+              {/* Forgot Password Link */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
+                  className="text-sm text-[#7c3aed] hover:text-[#6d28d9] font-medium flex items-center gap-1 transition-colors hover:underline"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  Forgot Password?
+                </button>
+              </div>
+
               {/* Submit Button */}
               <Button
                 type="submit"
@@ -373,5 +388,9 @@ export default function ParticipantLoginPage() {
         </div>
       </div>
     </div>
+
+    {/* Forgot Password Modal */}
+    <ForgotPasswordModal open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen} />
+    </>
   )
 }
