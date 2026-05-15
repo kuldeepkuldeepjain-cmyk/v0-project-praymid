@@ -7,10 +7,6 @@ function generateReferralCode(username: string): string {
   return `${userPrefix}${randomStr}`
 }
 
-function generateWallet(): string {
-  return `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`
-}
-
 export async function POST(request: Request) {
   try {
     const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp } = await request.json()
@@ -23,7 +19,7 @@ export async function POST(request: Request) {
     const emailKey = email.toLowerCase().trim()
     const usernameKey = username.toLowerCase().trim()
     const mobileNumberClean = mobileNumber?.toString().trim() || null
-    const walletAddress = generateWallet()
+    const walletAddress = null // No demo wallet — user must enter their own BEP20 address
     const newReferralCode = generateReferralCode(username)
     // Check duplicates
     const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])

@@ -193,7 +193,7 @@ export default function CompleteProfilePage() {
                   id="bep20Address"
                   value={formData.bep20Address}
                   onChange={(e) => setFormData((p) => ({ ...p, bep20Address: e.target.value }))}
-                  placeholder="0x..."
+                  placeholder="Enter your BEP20 wallet address here"
                   className={errors.bep20Address ? "border-red-500" : ""}
                 />
                 {errors.bep20Address && <p className="text-xs text-red-500">{errors.bep20Address}</p>}

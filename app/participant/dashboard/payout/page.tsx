@@ -721,7 +721,7 @@ export default function PayoutPage() {
               <Input
                 id="bep20Address"
                 type="text"
-                placeholder="0x..."
+                placeholder="Enter your BEP20 wallet address here"
                 value={bep20Address}
                 onChange={(e) => setBep20Address(e.target.value)}
                 className="h-12 text-sm font-mono"

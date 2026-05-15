@@ -158,7 +158,7 @@ export default function AdminSettingsPage() {
                     id="topupAddress"
                     value={topupAddress}
                     onChange={(e) => setTopupAddress(e.target.value)}
-                    placeholder="Enter BEP20 wallet address for user deposits"
+                    placeholder="Enter your BEP20 wallet address here"
                     className="h-12 text-base font-mono border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500/20"
                   />
                   <p className="text-xs text-slate-500">
