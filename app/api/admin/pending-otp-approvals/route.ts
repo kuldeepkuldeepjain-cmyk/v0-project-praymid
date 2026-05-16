@@ -17,12 +17,13 @@ export async function GET(request: NextRequest) {
 
     // Fetch password reset OTPs (from mobile_verification_otps table)
     const passwordResetOtps = await query(
-      `SELECT id, otp as whatsapp_otp, verified as otp_verified, created_at, 'password_reset' as otp_type,
-              mobile_number
-       FROM mobile_verification_otps
-       WHERE verified = false AND purpose = 'password_reset'
-       AND created_at > NOW() - INTERVAL '10 minutes'
-       ORDER BY created_at DESC`
+      `SELECT mvo.id, mvo.otp as whatsapp_otp, mvo.verified as otp_verified, mvo.created_at, 'password_reset' as otp_type,
+              mvo.mobile_number, p.email, p.full_name, p.username
+       FROM mobile_verification_otps mvo
+       LEFT JOIN participants p ON p.mobile_number = mvo.mobile_number
+       WHERE mvo.verified = false AND mvo.purpose = 'password_reset'
+       AND mvo.created_at > NOW() - INTERVAL '10 minutes'
+       ORDER BY mvo.created_at DESC`
     )
 
     // Combine and sort by date

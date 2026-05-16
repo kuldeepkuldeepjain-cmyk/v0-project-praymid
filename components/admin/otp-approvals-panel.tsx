@@ -216,7 +216,7 @@ export function OtpApprovalsPanel() {
       {/* Participant cards */}
       <div className="space-y-4">
         {filtered.map(participant => {
-          const isApproved = approved[participant.id]
+          const isApproved = approved[participant.id] || participant.otp_verified
           const isApproving = approving[participant.id]
           const otpVisible = showOtp[participant.id]
 
@@ -274,11 +274,11 @@ export function OtpApprovalsPanel() {
                     </span>
                   </div>
 
-                  {/* Registered OTP — admin can see it to verify */}
-                  {participant.whatsapp_otp && (
+                  {/* Registered OTP or Password Reset OTP — admin can see it to verify */}
+                  {(participant.whatsapp_otp) && (
                     <div className="flex items-center gap-2 bg-slate-900/80 rounded-lg px-3 py-2 border border-slate-700/60 w-fit">
                       <KeyRound className="h-3.5 w-3.5 text-cyan-400 flex-shrink-0" />
-                      <span className="text-xs text-slate-400 mr-1">Registered OTP:</span>
+                      <span className="text-xs text-slate-400 mr-1">{participant.otp_type === "password_reset" ? "Password Reset OTP:" : "Registered OTP:"}</span>
                       <span className={`font-mono text-sm font-bold tracking-widest ${otpVisible ? "text-cyan-300" : "text-slate-600"}`}>
                         {otpVisible ? participant.whatsapp_otp : "••••••"}
                       </span>
