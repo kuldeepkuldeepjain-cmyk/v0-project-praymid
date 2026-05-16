@@ -558,7 +558,7 @@ export function ParticipantDatabaseView() {
                       <div className="space-y-0.5 text-xs">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-slate-400" />
-                          <span className="font-medium text-slate-900">{participant.country || "—"}</span>
+                          <span className="font-medium text-slate-900">{participant.country || participant.location || "—"}</span>
                         </div>
                         {participant.state && <p className="text-slate-600">{participant.state}</p>}
                         {participant.city && <p className="text-slate-500">{participant.city}</p>}
@@ -578,11 +578,25 @@ export function ParticipantDatabaseView() {
 
                     {/* Wallet */}
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Wallet className="h-3 w-3 text-slate-400" />
-                        <code className="text-xs text-slate-600 font-mono">
-                          {participant.wallet_address.slice(0, 6)}...{participant.wallet_address.slice(-4)}
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-3 w-3 text-slate-400 flex-shrink-0" />
+                        <code className="text-xs text-slate-600 font-mono break-all">
+                          {participant.wallet_address}
                         </code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-slate-100 flex-shrink-0"
+                          onClick={() => {
+                            navigator.clipboard.writeText(participant.wallet_address)
+                            toast({
+                              title: "Wallet Address Copied",
+                              description: "Full wallet address copied to clipboard",
+                            })
+                          }}
+                        >
+                          <Copy className="h-3 w-3 text-slate-400" />
+                        </Button>
                       </div>
                     </TableCell>
 
@@ -644,9 +658,20 @@ export function ParticipantDatabaseView() {
                         </p>
                         <p className="text-emerald-600 font-semibold">${participant.totalContributed || 0}</p>
                         <p className="text-amber-600">{participant.totalPoints || 0} pts</p>
-                        <p className="text-slate-400 text-[10px]">
-                          Last: {new Date(participant.last_active).toLocaleDateString()}
-                        </p>
+                        <div className="space-y-0.5 text-[10px] text-slate-500 border-t pt-1 mt-1">
+                          {participant.last_seen && (
+                            <p>Seen: {new Date(participant.last_seen).toLocaleString()}</p>
+                          )}
+                          {participant.created_at && (
+                            <p>Joined: {new Date(participant.created_at).toLocaleString()}</p>
+                          )}
+                          {participant.updated_at && (
+                            <p>Updated: {new Date(participant.updated_at).toLocaleString()}</p>
+                          )}
+                          {participant.last_active && (
+                            <p>Active: {new Date(participant.last_active).toLocaleString()}</p>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
 
