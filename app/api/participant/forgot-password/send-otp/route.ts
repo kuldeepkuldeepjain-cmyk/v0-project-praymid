@@ -29,25 +29,20 @@ export async function POST(request: NextRequest) {
 
     // Generate OTP
     const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-    // Delete any existing password reset OTPs for this email
+    // Store password reset OTP in participants table
     await db.query(
-      "DELETE FROM mobile_verification_otps WHERE email = $1 AND purpose = 'password_reset'",
-      [emailKey]
-    )
-
-    // Insert new password reset OTP with correct column names
-    await db.query(
-      `INSERT INTO mobile_verification_otps 
-       (mobile_number, otp_code, email, is_verified, attempt_count, expires_at, purpose) 
-       VALUES ($1, $2, $3, false, 0, $4, 'password_reset')`,
-      [participant.mobile_number, otp, emailKey, expiresAt]
+      `UPDATE participants 
+       SET password_reset_otp = $1, 
+           password_reset_otp_verified = false,
+           password_reset_otp_created_at = NOW()
+       WHERE email = $2`,
+      [otp, emailKey]
     )
 
     return NextResponse.json({
       success: true,
-      otp,                               // returned so modal can display it
+      otp,
       mobileNumber: participant.mobile_number,
       expiresIn: 600
     })

@@ -10,27 +10,37 @@ export async function POST(request: Request) {
     }
 
     const db = getPool()!
+    const emailKey = email.toLowerCase().trim()
 
-    // Check if admin has approved (is_verified = true) the password reset OTP for this email
+    // Check if admin has approved the password reset OTP
     const { rows } = await db.query(
-      `SELECT id, otp_code, is_verified FROM mobile_verification_otps 
-       WHERE email = $1 
-       AND purpose = 'password_reset'
-       AND is_verified = true
-       AND expires_at > NOW()
-       ORDER BY created_at DESC LIMIT 1`,
-      [email.toLowerCase().trim()]
+      `SELECT password_reset_otp_verified, password_reset_otp_created_at 
+       FROM participants 
+       WHERE email = $1`,
+      [emailKey]
     )
 
     if (rows.length === 0) {
-      return NextResponse.json({ success: true, approved: false, message: "OTP not yet approved by admin" })
+      return NextResponse.json({ success: true, approved: false, message: "Account not found" })
+    }
+
+    const participant = rows[0]
+
+    // Check if OTP has expired (10 minutes)
+    if (participant.password_reset_otp_created_at) {
+      const createdAt = new Date(participant.password_reset_otp_created_at).getTime()
+      const now = Date.now()
+      const tenMinutes = 10 * 60 * 1000
+
+      if (now - createdAt > tenMinutes) {
+        return NextResponse.json({ success: true, approved: false, message: "OTP has expired" })
+      }
     }
 
     return NextResponse.json({
       success: true,
-      approved: true,
-      otp: rows[0].otp_code,
-      message: "OTP has been approved by admin"
+      approved: participant.password_reset_otp_verified === true,
+      message: participant.password_reset_otp_verified ? "OTP approved" : "Waiting for admin approval"
     })
   } catch (error: any) {
     console.error("[check-approval]:", error)

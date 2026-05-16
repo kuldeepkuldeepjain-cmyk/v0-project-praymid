@@ -16,40 +16,28 @@ export async function POST(request: NextRequest) {
     const db = getPool()!
     const emailKey = email.toLowerCase().trim()
 
-    // Check admin has approved the OTP (is_verified = true, correct columns)
-    const { rows: otpRows } = await db.query(
-      `SELECT id FROM mobile_verification_otps
-       WHERE email = $1 AND purpose = 'password_reset' AND is_verified = true AND expires_at > NOW()
-       ORDER BY created_at DESC LIMIT 1`,
+    // Check admin has approved the OTP
+    const { rows: checkRows } = await db.query(
+      `SELECT password_reset_otp_verified FROM participants WHERE email = $1`,
       [emailKey]
     )
 
-    if (otpRows.length === 0) {
-      return NextResponse.json({ error: "OTP not approved by admin yet. Please wait." }, { status: 403 })
-    }
-
-    // Update password
-    const { rowCount } = await db.query(
-      `UPDATE participants SET password_hash = $1, plain_password = $2, updated_at = NOW() WHERE email = $3`,
-      [newPassword, newPassword, emailKey]
-    )
-
-    if (!rowCount || rowCount === 0) {
+    if (checkRows.length === 0) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 })
     }
 
-    // Delete used OTP
+    if (!checkRows[0].password_reset_otp_verified) {
+      return NextResponse.json({ error: "OTP not approved by admin yet" }, { status: 403 })
+    }
+
+    // Update password and clear OTP
     await db.query(
-      "DELETE FROM mobile_verification_otps WHERE email = $1 AND purpose = 'password_reset'",
-      [emailKey]
+      `UPDATE participants SET password_hash = $1, plain_password = $2, password_reset_otp = NULL, password_reset_otp_verified = false, updated_at = NOW() 
+       WHERE email = $3`,
+      [newPassword, newPassword, emailKey]
     )
 
-    await db.query(
-      "INSERT INTO activity_logs (actor_email, action, details) VALUES ($1, $2, $3)",
-      [emailKey, "password_reset_completed", "User reset password via forgot password"]
-    ).catch(() => {})
-
-    return NextResponse.json({ success: true, message: "Password updated. You can now login with your new password." })
+    return NextResponse.json({ success: true, message: "Password updated successfully. You can now login." })
   } catch (err: any) {
     console.error("[set-password]:", err)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
