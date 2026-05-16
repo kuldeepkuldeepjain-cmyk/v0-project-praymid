@@ -1,7 +1,3 @@
-import { NextRequest, NextResponse } from "next/server"
-import { query, execute } from "@/lib/db"
-import { requireAdminSession } from "@/lib/auth-middleware"
-
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
@@ -14,12 +10,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Try password reset OTP first (participants table)
-    const passwordResetRows = await query(
+    const pwdResetResult = await query(
       `SELECT id, password_reset_otp, password_reset_otp_verified FROM participants WHERE id = $1 LIMIT 1`,
       [participantId]
     )
 
-    if (passwordResetRows.length > 0) {
+    const passwordResetRows = pwdResetResult.rows || pwdResetResult
+
+    if (passwordResetRows && passwordResetRows.length > 0) {
       const record = passwordResetRows[0] as any
 
       if (record.password_reset_otp) {
@@ -47,12 +45,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Fall back to registration OTP (participants table)
-    const registrationRows = await query(
+    const regResult = await query(
       `SELECT id, full_name, email, whatsapp_otp, otp_verified FROM participants WHERE id = $1 LIMIT 1`,
       [participantId]
     )
 
-    if (registrationRows.length === 0) {
+    const registrationRows = regResult.rows || regResult
+
+    if (!registrationRows || registrationRows.length === 0) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       message: `OTP verified for ${participant.full_name || participant.email}`
     })
   } catch (error: any) {
-    console.error("[verify-otp] Error:", error)
+    console.error("[verify-otp] Error:", error.message || error)
     return NextResponse.json({ success: false, error: error.message || "Verification failed" }, { status: 500 })
   }
 }

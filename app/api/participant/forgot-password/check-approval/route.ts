@@ -13,14 +13,16 @@ export async function POST(request: Request) {
     const emailKey = email.toLowerCase().trim()
 
     // Check if admin has approved the password reset OTP
-    const { rows } = await db.query(
+    const result = await db.query(
       `SELECT password_reset_otp_verified, password_reset_otp_created_at 
        FROM participants 
        WHERE email = $1`,
       [emailKey]
     )
 
-    if (rows.length === 0) {
+    const rows = result.rows || result
+
+    if (!rows || rows.length === 0) {
       return NextResponse.json({ success: true, approved: false, message: "Account not found" })
     }
 
@@ -43,7 +45,7 @@ export async function POST(request: Request) {
       message: participant.password_reset_otp_verified ? "OTP approved" : "Waiting for admin approval"
     })
   } catch (error: any) {
-    console.error("[check-approval]:", error)
-    return NextResponse.json({ success: false, error: "Failed to check OTP approval" }, { status: 500 })
+    console.error("[check-approval]:", error.message || error)
+    return NextResponse.json({ success: false, error: error.message || "Failed to check OTP approval" }, { status: 500 })
   }
 }

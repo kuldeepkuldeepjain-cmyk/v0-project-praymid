@@ -17,12 +17,14 @@ export async function POST(request: NextRequest) {
     const emailKey = email.toLowerCase().trim()
 
     // Check admin has approved the OTP
-    const { rows: checkRows } = await db.query(
+    const checkResult = await db.query(
       `SELECT password_reset_otp_verified FROM participants WHERE email = $1`,
       [emailKey]
     )
 
-    if (checkRows.length === 0) {
+    const checkRows = checkResult.rows || checkResult
+
+    if (!checkRows || checkRows.length === 0) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 })
     }
 
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Password updated successfully. You can now login." })
   } catch (err: any) {
-    console.error("[set-password]:", err)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[set-password]:", err.message || err)
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 })
   }
 }

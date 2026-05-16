@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Fetch registration OTPs from participants table
-    const registrationOtps = await query(
+    const regResult = await query(
       `SELECT id, full_name, username, email, mobile_number, whatsapp_otp, otp_verified, created_at, 'registration' as otp_type
        FROM participants
        WHERE (otp_verified = false OR otp_verified IS NULL)
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Fetch password reset OTPs from participants table
-    const passwordResetOtps = await query(
+    const pwdResult = await query(
       `SELECT id, full_name, username, email, mobile_number, password_reset_otp as whatsapp_otp, password_reset_otp_verified as otp_verified,
               password_reset_otp_created_at as created_at, 'password_reset' as otp_type
        FROM participants
@@ -26,13 +26,16 @@ export async function GET(request: NextRequest) {
        ORDER BY password_reset_otp_created_at DESC`
     )
 
-    const allOtps = [...registrationOtps, ...passwordResetOtps].sort((a: any, b: any) =>
+    const registrationOtps = regResult.rows || regResult
+    const passwordResetOtps = pwdResult.rows || pwdResult
+
+    const allOtps = [...(registrationOtps || []), ...(passwordResetOtps || [])].sort((a: any, b: any) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
 
     return NextResponse.json({ success: true, pending: allOtps, count: allOtps.length })
   } catch (error: any) {
-    console.error("[pending-otp-approvals] Error:", error)
+    console.error("[pending-otp-approvals] Error:", error.message || error)
     return NextResponse.json({ success: false, error: error.message || "Failed" }, { status: 500 })
   }
 }
