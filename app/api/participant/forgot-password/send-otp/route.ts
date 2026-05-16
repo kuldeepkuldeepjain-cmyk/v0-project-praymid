@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: "OTP generated (preview mode)",
         otp,
-        mobile_masked: `****${participant.mobile_number.slice(-4)}`,
+        mobileNumber: participant.mobile_number,
         expiresIn: 600
       })
     }
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: "OTP sent to your registered WhatsApp number",
-      mobile_masked: `****${participant.mobile_number.slice(-4)}`,
+      mobileNumber: participant.mobile_number,
       expiresIn: 600
     })
   } catch (err: any) {
