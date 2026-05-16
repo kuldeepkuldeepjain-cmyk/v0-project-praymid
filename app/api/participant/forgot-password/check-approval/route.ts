@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -9,18 +9,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
     }
 
-    const db = getPool()!
     const emailKey = email.toLowerCase().trim()
 
     // Check if admin has approved the password reset OTP
-    const result = await db.query(
+    const rows = await query(
       `SELECT password_reset_otp_verified, password_reset_otp_created_at 
        FROM participants 
        WHERE email = $1`,
       [emailKey]
     )
-
-    const rows = result.rows || result
 
     if (!rows || rows.length === 0) {
       return NextResponse.json({ success: true, approved: false, message: "Account not found" })

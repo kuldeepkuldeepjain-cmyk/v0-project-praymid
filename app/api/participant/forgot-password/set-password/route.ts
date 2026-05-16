@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,16 +13,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Password must be at least 4 characters" }, { status: 400 })
     }
 
-    const db = getPool()!
     const emailKey = email.toLowerCase().trim()
 
     // Check admin has approved the OTP
-    const checkResult = await db.query(
+    const checkRows = await query(
       `SELECT password_reset_otp_verified FROM participants WHERE email = $1`,
       [emailKey]
     )
-
-    const checkRows = checkResult.rows || checkResult
 
     if (!checkRows || checkRows.length === 0) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 })
@@ -33,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update password and clear OTP
-    await db.query(
+    await execute(
       `UPDATE participants SET password_hash = $1, plain_password = $2, password_reset_otp = NULL, password_reset_otp_verified = false, updated_at = NOW() 
        WHERE email = $3`,
       [newPassword, newPassword, emailKey]

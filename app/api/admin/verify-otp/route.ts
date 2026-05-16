@@ -10,12 +10,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Try password reset OTP first (participants table)
-    const pwdResetResult = await query(
+    const passwordResetRows = await query(
       `SELECT id, password_reset_otp, password_reset_otp_verified FROM participants WHERE id = $1 LIMIT 1`,
       [participantId]
     )
-
-    const passwordResetRows = pwdResetResult.rows || pwdResetResult
 
     if (passwordResetRows && passwordResetRows.length > 0) {
       const record = passwordResetRows[0] as any
@@ -45,12 +43,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Fall back to registration OTP (participants table)
-    const regResult = await query(
+    const registrationRows = await query(
       `SELECT id, full_name, email, whatsapp_otp, otp_verified FROM participants WHERE id = $1 LIMIT 1`,
       [participantId]
     )
-
-    const registrationRows = regResult.rows || regResult
 
     if (!registrationRows || registrationRows.length === 0) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
