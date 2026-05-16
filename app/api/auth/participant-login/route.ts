@@ -4,25 +4,41 @@ import { query, execute } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json()
+    const { email, password, mobile_number } = await request.json()
 
-    if (!email || !password) {
-      return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
+    if (!password) {
+      return NextResponse.json({ success: false, error: "Password is required" }, { status: 400 })
     }
 
-    const emailKey = email.toLowerCase().trim()
+    if (!email && !mobile_number) {
+      return NextResponse.json({ success: false, error: "Email or mobile number is required" }, { status: 400 })
+    }
 
-    // Only select columns that actually exist in the DB schema
-    const rows = await query(
-      `SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
-              account_balance, referral_code, referred_by, status, is_active,
-              otp_verified, mobile_number, created_at
-       FROM participants WHERE email = $1 LIMIT 1`,
-      [emailKey]
-    )
+    let emailKey = email ? email.toLowerCase().trim() : null
+    let mobileKey = mobile_number ? mobile_number.toString().trim() : null
+
+    // Query participant by email or mobile number
+    let rows = []
+    if (emailKey) {
+      rows = await query(
+        `SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
+                account_balance, referral_code, referred_by, status, is_active,
+                otp_verified, mobile_number, created_at
+         FROM participants WHERE email = $1 LIMIT 1`,
+        [emailKey]
+      )
+    } else if (mobileKey) {
+      rows = await query(
+        `SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
+                account_balance, referral_code, referred_by, status, is_active,
+                otp_verified, mobile_number, created_at
+         FROM participants WHERE mobile_number = $1 LIMIT 1`,
+        [mobileKey]
+      )
+    }
 
     if (rows.length === 0) {
-      return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
     const participant = rows[0] as any
@@ -33,7 +49,7 @@ export async function POST(request: Request) {
     const passwordValid = plainMatch || hashMatch
 
     if (!passwordValid) {
-      return NextResponse.json({ success: false, error: "Invalid email or password" }, { status: 401 })
+      return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
     // Block login if mobile OTP not yet verified by admin

@@ -58,11 +58,13 @@ export default function ParticipantLoginPage() {
   const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
+  const [mobile_number, setMobileNumber] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [pendingVerification, setPendingVerification] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
+  const [loginMode, setLoginMode] = useState<"email" | "mobile">("email")
 
   const runDiagnostics = async () => {
     try {
@@ -88,10 +90,13 @@ export default function ParticipantLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !password) {
+    const identifier = loginMode === "email" ? email : mobile_number
+    if (!identifier || !password) {
       toast({
         title: "Error",
-        description: "Please enter your email and password",
+        description: loginMode === "email" 
+          ? "Please enter your email and password"
+          : "Please enter your mobile number and password",
         variant: "destructive",
       })
       return
@@ -99,10 +104,14 @@ export default function ParticipantLoginPage() {
 
     setLoading(true)
     try {
+      const body = loginMode === "email" 
+        ? { email, password }
+        : { mobile_number, password }
+
       const response = await fetch("/api/auth/participant-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       })
 
       const data = await response.json()
@@ -278,7 +287,34 @@ export default function ParticipantLoginPage() {
           
           <CardContent className="p-6 relative z-10">
             <form onSubmit={handleLogin} className="space-y-5">
+              {/* Login Mode Toggle */}
+              <div className="flex gap-2 p-2 bg-gray-100 rounded-lg animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode("email")}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    loginMode === "email"
+                      ? "bg-white text-[#E85D3B] shadow-md"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode("mobile")}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    loginMode === "mobile"
+                      ? "bg-white text-[#7c3aed] shadow-md"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Mobile
+                </button>
+              </div>
+
               {/* Email Field */}
+              {loginMode === "email" && (
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
                 <Label htmlFor="email" className="text-slate-700 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#E85D3B] to-orange-500 flex items-center justify-center">
@@ -299,6 +335,31 @@ export default function ParticipantLoginPage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-[#E85D3B]/0 via-[#E85D3B]/5 to-[#E85D3B]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                 </div>
               </div>
+              )}
+
+              {/* Mobile Number Field */}
+              {loginMode === "mobile" && (
+              <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+                <Label htmlFor="mobile" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-purple-500 flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">📱</span>
+                  </div>
+                  Mobile Number
+                </Label>
+                <div className="relative group">
+                  <Input
+                    id="mobile"
+                    type="tel"
+                    placeholder="+95 9 123 456 789"
+                    value={mobile_number}
+                    onChange={(e) => setMobileNumber(e.target.value)}
+                    className="h-12 bg-gradient-to-r from-white to-purple-50/30 border-slate-200 focus:border-[#7c3aed] focus:ring-[#7c3aed]/20 transition-all hover:border-[#7c3aed]/50 focus:shadow-lg focus:shadow-[#7c3aed]/10"
+                    required
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#7c3aed]/0 via-[#7c3aed]/5 to-[#7c3aed]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
+                </div>
+              </div>
+              )}
 
               {/* Password Field */}
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
