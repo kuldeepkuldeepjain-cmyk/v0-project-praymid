@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { query } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     }
 
     // Check if OTP has been approved by admin
-    const otpRecord = await db.query(
+    const otpRecord = await query(
       `SELECT * FROM mobile_verification_otps 
        WHERE otp = $1 
        AND verified = true 
@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       [otp]
     )
 
-    if (otpRecord.rows.length === 0) {
+    if (otpRecord.length === 0) {
       return NextResponse.json(
         { 
           success: true, 
