@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ArrowRight, Search, TrendingUp, Users, DollarSign, Clock } from "lucide-react"
+import { ArrowRight, Search, TrendingUp, Users, DollarSign, Clock, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface PayoutFlow {
@@ -299,9 +299,25 @@ export function PayoutTrackerPanel() {
 
                       {/* Wallet Address */}
                       <TableCell>
-                        <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700">
-                          {flow.wallet_address.slice(0, 8)}...{flow.wallet_address.slice(-6)}
-                        </code>
+                        <div className="flex items-center gap-2">
+                          <code className="text-xs bg-slate-100 px-2 py-1 rounded font-mono text-slate-700 break-all">
+                            {flow.wallet_address}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 flex-shrink-0"
+                            onClick={() => {
+                              navigator.clipboard.writeText(flow.wallet_address)
+                              toast({
+                                title: "Wallet Address Copied",
+                                description: "Full wallet address copied to clipboard",
+                              })
+                            }}
+                          >
+                            <Copy className="h-3 w-3 text-slate-500" />
+                          </Button>
+                        </div>
                       </TableCell>
 
                       {/* Status */}

@@ -25,6 +25,7 @@ import {
   DollarSign,
   Link2,
   RefreshCw,
+  Copy,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -366,7 +367,20 @@ export function P2PContributionPanel() {
                     {/* Matched payout */}
                     <td className="py-3 px-4">
                       {c.matched_payout_id
-                        ? <span className="text-xs text-purple-400 font-mono">{c.matched_payout_id.slice(0, 8)}...</span>
+                        ? <div className="flex items-center gap-2">
+                            <span className="text-xs text-purple-400 font-mono">{c.matched_payout_id}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 w-5 p-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(c.matched_payout_id)
+                                toast({ title: "Copied", description: "Payout ID copied" })
+                              }}
+                            >
+                              <Copy className="h-3 w-3 text-purple-400" />
+                            </Button>
+                          </div>
                         : <span className="text-xs text-slate-600">Not matched</span>}
                     </td>
                     {/* Date & Time */}
