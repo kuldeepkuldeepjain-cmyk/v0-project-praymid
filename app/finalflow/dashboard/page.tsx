@@ -31,6 +31,7 @@ import {
   Trash2,
   Wallet,
   ShieldCheck,
+  Key,
 } from "lucide-react"
 import { isAdminAuthenticated, getAdminData, clearAdminAuth, adminFetch } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
@@ -47,6 +48,7 @@ import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-
 import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
+import { PasswordResetOTPsPanel } from "@/components/admin/password-reset-otps-panel"
 import Loading from "./loading"
 import { ErrorBoundary } from "@/components/error-boundary"
 
@@ -121,6 +123,7 @@ export default function AdminDashboard() {
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
     { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
     { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
+    { id: "password-reset-otps", label: "Password Reset OTPs", icon: Key, section: "MANAGEMENT" },
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
     { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
@@ -163,6 +166,8 @@ export default function AdminDashboard() {
         return <SendNotificationPanel />
       case "otp-approvals":
         return <OtpApprovalsPanel />
+      case "password-reset-otps":
+        return <PasswordResetOTPsPanel />
       case "p2p-settings":
         return <P2PModeTogglePanel />
       default:
