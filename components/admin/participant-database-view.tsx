@@ -64,6 +64,7 @@ export function ParticipantDatabaseView() {
   const [otpInput, setOtpInput] = useState("")
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
   const [activatingId, setActivatingId] = useState<string | null>(null)
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
 
   const activateParticipant = async (participantId: string, action: "activate" | "deactivate" | "suspend") => {
     setActivatingId(participantId)
@@ -490,23 +491,48 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 font-mono">
-                          {participant.plain_password || "—"}
+                          {visiblePasswords.has(participant.id)
+                            ? participant.plain_password || "—"
+                            : participant.plain_password
+                              ? "••••••••"
+                              : "—"}
                         </code>
                         {participant.plain_password && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 hover:bg-red-100"
-                            onClick={() => {
-                              navigator.clipboard.writeText(participant.plain_password || "")
-                              toast({
-                                title: "Password Copied",
-                                description: "Password copied to clipboard",
-                              })
-                            }}
-                          >
-                            <Copy className="h-3 w-3 text-red-600" />
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-red-100"
+                              onClick={() => {
+                                setVisiblePasswords((prev) => {
+                                  const newSet = new Set(prev)
+                                  if (newSet.has(participant.id)) {
+                                    newSet.delete(participant.id)
+                                  } else {
+                                    newSet.add(participant.id)
+                                  }
+                                  return newSet
+                                })
+                              }}
+                              title={visiblePasswords.has(participant.id) ? "Hide password" : "Show password"}
+                            >
+                              <Eye className="h-3 w-3 text-red-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-red-100"
+                              onClick={() => {
+                                navigator.clipboard.writeText(participant.plain_password || "")
+                                toast({
+                                  title: "Password Copied",
+                                  description: "Password copied to clipboard",
+                                })
+                              }}
+                            >
+                              <Copy className="h-3 w-3 text-red-600" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
