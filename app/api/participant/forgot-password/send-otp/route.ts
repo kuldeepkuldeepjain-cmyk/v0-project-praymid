@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "OTP sent to your registered WhatsApp number",
+      message: "OTP generated",
+      otp,
       mobileNumber: participant.mobile_number,
       expiresIn: 600
     })
