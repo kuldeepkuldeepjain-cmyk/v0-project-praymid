@@ -1,12 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Mail, Loader2, CheckCircle2, AlertCircle, Clock, Smartphone } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import { Loader2, Mail, Lock, CheckCircle2, Phone, ArrowRight, ArrowLeft } from "lucide-react"
 
 interface ForgotPasswordModalProps {
   open: boolean
@@ -20,7 +20,8 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [maskedMobile, setMaskedMobile] = useState("")
+  const [mobileMasked, setMobileMasked] = useState("")
+  const [otpExpiry, setOtpExpiry] = useState(0)
 
   const handleSendOtp = async () => {
     if (!email.trim()) {
@@ -33,7 +34,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
       const res = await fetch("/api/participant/forgot-password/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim() })
       })
 
       const data = await res.json()
@@ -43,41 +44,25 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
         return
       }
 
-      setMaskedMobile(data.mobile_masked)
+      setMobileMasked(data.mobile_masked || "")
+      setOtpExpiry(data.expiresIn || 600)
       setStep("otp")
-      toast({
-        title: "Success",
-        description: `OTP sent to ${data.mobile_masked}. Please wait for admin approval.`,
-      })
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" })
+      toast({ title: "Success", description: "OTP sent to your WhatsApp number" })
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to send OTP", variant: "destructive" })
     } finally {
       setLoading(false)
     }
   }
 
-  const handleVerifyOtp = async () => {
-    if (!otp.trim()) {
-      toast({ title: "Error", description: "Please enter the OTP", variant: "destructive" })
-      return
-    }
-
-    if (otp.length !== 6) {
-      toast({ title: "Error", description: "OTP must be 6 digits", variant: "destructive" })
-      return
-    }
-
-    setStep("password")
-  }
-
   const handleSetPassword = async () => {
+    if (!otp.trim()) {
+      toast({ title: "Error", description: "Please enter the OTP code", variant: "destructive" })
+      return
+    }
+
     if (!newPassword.trim()) {
       toast({ title: "Error", description: "Please enter a new password", variant: "destructive" })
-      return
-    }
-
-    if (newPassword.length < 4) {
-      toast({ title: "Error", description: "Password must be at least 4 characters", variant: "destructive" })
       return
     }
 
@@ -86,222 +71,229 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
       return
     }
 
+    if (newPassword.length < 4) {
+      toast({ title: "Error", description: "Password must be at least 4 characters", variant: "destructive" })
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetch("/api/participant/forgot-password/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          otp: otp.trim(),
-          newPassword: newPassword.trim(),
-        }),
+        body: JSON.stringify({ email: email.trim(), otp, newPassword })
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        toast({ title: "Error", description: data.error || "Failed to reset password", variant: "destructive" })
+        if (res.status === 403) {
+          toast({ title: "Pending", description: "Please wait for admin to approve your OTP", variant: "default" })
+        } else {
+          toast({ title: "Error", description: data.error || "Failed to update password", variant: "destructive" })
+        }
         return
       }
 
       setStep("success")
-      toast({ title: "Success", description: "Password reset successfully!" })
-
-      setTimeout(() => {
-        onOpenChange(false)
-        setStep("email")
-        setEmail("")
-        setOtp("")
-        setNewPassword("")
-        setConfirmPassword("")
-      }, 2000)
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" })
+      toast({ title: "Success", description: "Password updated successfully!" })
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to update password", variant: "destructive" })
     } finally {
       setLoading(false)
     }
   }
 
   const handleClose = () => {
-    if (step !== "success") {
-      onOpenChange(false)
-      setStep("email")
-      setEmail("")
-      setOtp("")
-      setNewPassword("")
-      setConfirmPassword("")
-    }
+    setStep("email")
+    setEmail("")
+    setOtp("")
+    setNewPassword("")
+    setConfirmPassword("")
+    setMobileMasked("")
+    onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        {step === "email" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5 text-violet-600" />
-                Forgot Password
-              </DialogTitle>
-              <DialogDescription>
-                Enter your email address and we'll send an OTP to your registered WhatsApp number
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="mt-2"
-                  disabled={loading}
-                />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md p-0 overflow-hidden bg-white">
+        {/* Header */}
+        <DialogHeader className="bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] text-white p-6 pb-4">
+          <DialogTitle className="text-xl font-bold">Reset Password</DialogTitle>
+          <p className="text-sm text-purple-100 mt-2">Secure password recovery via WhatsApp OTP</p>
+        </DialogHeader>
+
+        <div className="p-6 space-y-6">
+          {/* Step 1: Email */}
+          {step === "email" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-semibold text-slate-700">
+                  Email Address
+                </Label>
+                <div className="relative group">
+                  <Mail className="absolute left-3 top-3.5 h-5 w-5 text-slate-400 group-focus-within:text-[#7c3aed] transition-colors" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="Enter your registered email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10 h-11 border-2 border-slate-200 focus:border-[#7c3aed] focus:ring-[#7c3aed]/20 transition-all"
+                    onKeyDown={(e) => e.key === "Enter" && handleSendOtp()}
+                  />
+                </div>
+                <p className="text-xs text-slate-500">We'll send a 6-digit code to your registered WhatsApp number</p>
               </div>
+
               <Button
                 onClick={handleSendOtp}
                 disabled={loading || !email.trim()}
-                className="w-full bg-violet-600 hover:bg-violet-700"
+                className="w-full h-11 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9] hover:shadow-lg transition-all"
               >
-                {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
-                Send OTP
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending OTP...
+                  </>
+                ) : (
+                  "Send OTP via WhatsApp"
+                )}
               </Button>
             </div>
-          </>
-        )}
+          )}
 
-        {step === "otp" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Phone className="h-5 w-5 text-violet-600" />
-                Verify OTP
-              </DialogTitle>
-              <DialogDescription>
-                Enter the 6-digit OTP sent to {maskedMobile}. Admin approval is required.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="otp">OTP Code</Label>
+          {/* Step 2: OTP */}
+          {step === "otp" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+                <Smartphone className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-blue-900">OTP Sent</p>
+                  <p className="text-sm text-blue-700">A 6-digit code has been sent to {mobileMasked}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="otp" className="text-sm font-semibold text-slate-700">
+                  Enter 6-Digit Code
+                </Label>
                 <Input
                   id="otp"
                   type="text"
-                  placeholder="Enter 6-digit OTP"
+                  placeholder="000000"
                   value={otp}
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="mt-2 text-center text-2xl font-mono tracking-widest"
                   maxLength={6}
-                  disabled={loading}
+                  className="h-11 text-center font-mono text-lg font-bold letter-spacing-wide border-2 border-slate-200 focus:border-[#7c3aed]"
+                  autoFocus
                 />
-                <p className="text-xs text-slate-500 mt-2">
-                  Please ensure your OTP is approved by admin before proceeding
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  Wait for admin approval (Code expires in {otpExpiry}s)
                 </p>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep("email")}
-                  className="flex-1"
-                  disabled={loading}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-                <Button
-                  onClick={handleVerifyOtp}
-                  disabled={loading || otp.length !== 6}
-                  className="flex-1 bg-violet-600 hover:bg-violet-700"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ArrowRight className="h-4 w-4 mr-2" />}
-                  Next
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
 
-        {step === "password" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Lock className="h-5 w-5 text-violet-600" />
-                Set New Password
-              </DialogTitle>
-              <DialogDescription>
-                Create a new password for your account
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="newPassword">New Password</Label>
+              <Button
+                onClick={handleSetPassword}
+                disabled={loading || otp.length !== 6}
+                className="w-full h-11 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  "Proceed to Change Password"
+                )}
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={() => setStep("email")}
+                className="w-full"
+                disabled={loading}
+              >
+                Try Different Email
+              </Button>
+            </div>
+          )}
+
+          {/* Step 3: New Password */}
+          {step === "password" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <p className="text-sm font-semibold text-green-900">OTP Approved</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="newPassword" className="text-sm font-semibold text-slate-700">
+                  New Password
+                </Label>
                 <Input
                   id="newPassword"
                   type="password"
                   placeholder="Enter new password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="mt-2"
-                  disabled={loading}
+                  className="h-11 border-2 border-slate-200 focus:border-[#7c3aed]"
                 />
               </div>
-              <div>
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700">
+                  Confirm Password
+                </Label>
                 <Input
                   id="confirmPassword"
                   type="password"
-                  placeholder="Confirm your password"
+                  placeholder="Confirm password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="mt-2"
-                  disabled={loading}
+                  className="h-11 border-2 border-slate-200 focus:border-[#7c3aed]"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setStep("otp")}
-                  className="flex-1"
-                  disabled={loading}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-                <Button
-                  onClick={handleSetPassword}
-                  disabled={loading || !newPassword || newPassword !== confirmPassword}
-                  className="flex-1 bg-violet-600 hover:bg-violet-700"
-                >
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                  Reset Password
-                </Button>
-              </div>
-            </div>
-          </>
-        )}
 
-        {step === "success" && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                Success
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 text-center">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
+              <Button
+                onClick={handleSetPassword}
+                disabled={loading || !newPassword || newPassword !== confirmPassword}
+                className="w-full h-11 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9]"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Step 4: Success */}
+          {step === "success" && (
+            <div className="space-y-4 text-center animate-fade-in">
+              <div className="flex justify-center">
+                <div className="bg-green-100 p-4 rounded-full">
+                  <CheckCircle2 className="h-8 w-8 text-green-600" />
+                </div>
               </div>
               <div>
-                <p className="font-semibold text-slate-900">Password Reset Successful</p>
-                <p className="text-sm text-slate-600">You can now login with your new password</p>
+                <p className="text-lg font-bold text-slate-900">Password Updated!</p>
+                <p className="text-sm text-slate-500 mt-2">Your password has been successfully reset.</p>
               </div>
+              <Button
+                onClick={handleClose}
+                className="w-full h-11 bg-gradient-to-r from-[#7c3aed] to-[#6d28d9]"
+              >
+                Login with New Password
+              </Button>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   )
