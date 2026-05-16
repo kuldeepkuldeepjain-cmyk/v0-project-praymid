@@ -1,47 +1,39 @@
 import { NextResponse } from "next/server"
-import { query } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
-    const { email, otp } = await request.json()
+    const { email } = await request.json()
 
-    if (!email || !otp) {
-      return NextResponse.json(
-        { success: false, error: "Email and OTP required" },
-        { status: 400 }
-      )
+    if (!email) {
+      return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
     }
 
-    // Check if OTP has been approved by admin
-    const otpRecord = await query(
-      `SELECT * FROM mobile_verification_otps 
-       WHERE otp = $1 
-       AND verified = true 
+    const db = getPool()!
+
+    // Check if admin has approved (is_verified = true) the password reset OTP for this email
+    const { rows } = await db.query(
+      `SELECT id, otp_code, is_verified FROM mobile_verification_otps 
+       WHERE email = $1 
        AND purpose = 'password_reset'
-       AND created_at > NOW() - INTERVAL '10 minutes'`,
-      [otp]
+       AND is_verified = true
+       AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [email.toLowerCase().trim()]
     )
 
-    if (otpRecord.length === 0) {
-      return NextResponse.json(
-        { 
-          success: true, 
-          approved: false,
-          message: "OTP not yet approved by admin"
-        }
-      )
+    if (rows.length === 0) {
+      return NextResponse.json({ success: true, approved: false, message: "OTP not yet approved by admin" })
     }
 
     return NextResponse.json({
       success: true,
       approved: true,
-      message: "OTP has been approved"
+      otp: rows[0].otp_code,
+      message: "OTP has been approved by admin"
     })
-  } catch (error) {
-    console.error("Check approval error:", error)
-    return NextResponse.json(
-      { success: false, error: "Failed to check OTP approval" },
-      { status: 500 }
-    )
+  } catch (error: any) {
+    console.error("[check-approval]:", error)
+    return NextResponse.json({ success: false, error: "Failed to check OTP approval" }, { status: 500 })
   }
 }

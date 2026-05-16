@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
-import { otpMemoryStore } from "@/lib/otp-memory-store"
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -13,74 +12,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    // Find participant by email to get mobile number
-    let participant: any = null
-    try {
-      const db = getPool()!
-      const { rows } = await db.query(
-        "SELECT id, email, mobile_number, full_name FROM participants WHERE email = $1",
-        [email.toLowerCase().trim()]
-      )
-      participant = rows[0]
-    } catch (dbErr) {
-      console.error("[forgot-password send-otp] DB error:", dbErr)
-    }
+    const db = getPool()!
+    const emailKey = email.toLowerCase().trim()
 
-    if (!participant) {
+    // Find participant by email
+    const { rows: pRows } = await db.query(
+      "SELECT id, email, mobile_number, full_name FROM participants WHERE email = $1 LIMIT 1",
+      [emailKey]
+    )
+
+    if (!pRows[0]) {
       return NextResponse.json({ error: "No account found with this email" }, { status: 404 })
     }
 
-    if (!participant.mobile_number) {
-      return NextResponse.json({ error: "Mobile number not registered for this account" }, { status: 400 })
-    }
+    const participant = pRows[0]
 
-    // Generate and store OTP
+    // Generate OTP
     const otp = generateOTP()
-    const expiresAt = Date.now() + 10 * 60 * 1000
-    let usedMemoryStore = false
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
-    try {
-      const db = getPool()!
-      // Delete any old password reset OTPs for this email
-      await db.query(
-        "DELETE FROM mobile_verification_otps WHERE email = $1 AND purpose = $2",
-        [email.toLowerCase().trim(), "password_reset"]
-      )
-      // Insert new password reset OTP
-      await db.query(
-        "INSERT INTO mobile_verification_otps (mobile_number, otp_code, email, is_verified, attempt_count, expires_at, purpose) VALUES ($1,$2,$3,false,0,$4,$5)",
-        [participant.mobile_number, otp, email.toLowerCase().trim(), new Date(expiresAt).toISOString(), "password_reset"]
-      )
-    } catch (dbErr) {
-      console.error("[forgot-password send-otp] DB error, using memory:", dbErr)
-      otpMemoryStore.set(`pwd_reset_${email}`, { otp, expiresAt, attemptCount: 0, verified: false })
-      usedMemoryStore = true
-    }
+    // Delete any existing password reset OTPs for this email
+    await db.query(
+      "DELETE FROM mobile_verification_otps WHERE email = $1 AND purpose = 'password_reset'",
+      [emailKey]
+    )
 
-    // Log activity
-    try {
-      const db = getPool()!
-      await db.query(
-        "INSERT INTO activity_logs (actor_email, action, details) VALUES ($1, $2, $3)",
-        [email, "password_reset_otp_sent", `OTP sent to ${participant.mobile_number}`]
-      ).catch(() => {})
-    } catch (err) {
-      // Ignore logging errors
-    }
-
-    if (usedMemoryStore) {
-      return NextResponse.json({
-        success: true,
-        message: "OTP generated (preview mode)",
-        otp,
-        mobileNumber: participant.mobile_number,
-        expiresIn: 600
-      })
-    }
+    // Insert new password reset OTP with correct column names
+    await db.query(
+      `INSERT INTO mobile_verification_otps 
+       (mobile_number, otp_code, email, is_verified, attempt_count, expires_at, purpose) 
+       VALUES ($1, $2, $3, false, 0, $4, 'password_reset')`,
+      [participant.mobile_number, otp, emailKey, expiresAt]
+    )
 
     return NextResponse.json({
       success: true,
-      message: "OTP sent to your registered WhatsApp number",
+      otp,                               // returned so modal can display it
       mobileNumber: participant.mobile_number,
       expiresIn: 600
     })
