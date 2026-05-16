@@ -20,6 +20,7 @@ interface PendingParticipant {
   whatsapp_otp: string
   otp_verified: boolean
   created_at: string
+  otp_type?: "registration" | "password_reset"
 }
 
 export function OtpApprovalsPanel() {
@@ -238,9 +239,18 @@ export function OtpApprovalsPanel() {
                         {(participant.full_name || participant.username || "?")[0].toUpperCase()}
                       </div>
                       <div>
-                        <p className="text-white font-semibold text-sm leading-tight">
-                          {participant.full_name || participant.username}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-white font-semibold text-sm leading-tight">
+                            {participant.full_name || participant.username}
+                          </p>
+                          <Badge className={`text-xs px-2 py-0.5 ${
+                            participant.otp_type === "password_reset"
+                              ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                              : "bg-cyan-500/20 text-cyan-300 border-cyan-500/30"
+                          }`}>
+                            {participant.otp_type === "password_reset" ? "Password Reset" : "Registration"}
+                          </Badge>
+                        </div>
                         <p className="text-slate-400 text-xs">@{participant.username}</p>
                       </div>
                     </div>
