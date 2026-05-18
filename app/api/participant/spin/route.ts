@@ -4,12 +4,12 @@ import { requireParticipantSession } from "@/lib/auth-middleware"
 
 // Actual prizes that can be won (50 and 100 are for display only, never won)
 const SPIN_PRIZES = [
-  { label: "$2", amount: 2, probability: 0.20 },
-  { label: "$1", amount: 1, probability: 0.15 },
-  { label: "$5", amount: 5, probability: 0.15 },
-  { label: "Oops!", amount: 0, probability: 0.15 },
-  { label: "$3", amount: 3, probability: 0.25 },
-  { label: "$10", amount: 10, probability: 0.10 },
+  { label: "$2", amount: 2, probability: 0.23 },
+  { label: "$1", amount: 1, probability: 0.18 },
+  { label: "$5", amount: 5, probability: 0.18 },
+  { label: "Oops!", amount: 0, probability: 0.18 },
+  { label: "$3", amount: 3, probability: 0.21 },
+  { label: "$10", amount: 10, probability: 0.02 },
 ]
 
 // Refer and Jackpot map to real prizes
