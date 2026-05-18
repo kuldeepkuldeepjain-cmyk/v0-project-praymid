@@ -21,6 +21,7 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
+import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 
 interface ApprovedWallet {
   id: string
@@ -358,6 +359,9 @@ export default function SuperAdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Two-Factor Authentication Setup */}
+        <AdminTwoFactorSetup />
       </main>
     </div>
   )
