@@ -22,6 +22,9 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("")
   const [showAuthSetup, setShowAuthSetup] = useState(false)
   const [setupKey, setSetupKey] = useState("")
+  const [step, setStep] = useState<"credentials" | "2fa">("credentials")
+  const [qrCode, setQrCode] = useState("")
+  const [tempSecret, setTempSecret] = useState("")
 
   const handleShowSetupKey = async () => {
     try {
@@ -44,29 +47,86 @@ export default function AdminLoginPage() {
     }
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
     try {
-      const response = await fetch("/api/auth/secure-login", {
+      // First, verify email and password
+      const response = await fetch("/api/auth/verify-admin-credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: password, loginType: "admin", totpCode }),
+        body: JSON.stringify({ email, password }),
       })
 
       const data = await response.json()
 
       if (data.success) {
-        // Use email as the token for admin auth
-        setAdminAuth(email, email, data.role, data.permissions)
-        router.push("/finalflow/dashboard")
+        // Credentials are valid, now generate a new TOTP secret for this login session
+        const setupResponse = await fetch("/api/admin/setup-2fa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "generate" }),
+        })
+
+        const setupData = await setupResponse.json()
+
+        if (setupData.success) {
+          setTempSecret(setupData.secret)
+          setQrCode(setupData.qrCode)
+          setStep("2fa")
+          setTotpCode("")
+        } else {
+          setError("Failed to generate 2FA code. Please try again.")
+        }
       } else {
-        setError(data.error || "Login failed. Please try again.")
+        setError(data.error || "Invalid email or password")
       }
     } catch (err) {
-      setError("Login failed. Please try again.")
+      setError("Verification failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTOTPSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    try {
+      // Verify the TOTP code
+      const response = await fetch("/api/admin/setup-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify", secret: tempSecret, code: totpCode }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // TOTP verified, now complete login
+        const loginResponse = await fetch("/api/auth/secure-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp: password, loginType: "admin", totpCode }),
+        })
+
+        const loginData = await loginResponse.json()
+
+        if (loginData.success) {
+          setAdminAuth(email, email, loginData.role, loginData.permissions)
+          router.push("/finalflow/dashboard")
+        } else {
+          setError(loginData.error || "Login failed. Please try again.")
+          setStep("credentials")
+        }
+      } else {
+        setError("Invalid 2FA code. Please try again.")
+      }
+    } catch (err) {
+      setError("2FA verification failed. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -90,114 +150,140 @@ export default function AdminLoginPage() {
 
         <Card className="animate-[fadeInUp_0.6s_ease-out] border-0 shadow-2xl bg-white/95 backdrop-blur-xl rounded-2xl">
           <CardContent className="p-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-[#085078] text-sm font-medium">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="text"
-                  placeholder="Enter admin email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-[#085078] text-sm font-medium">
-                  Password
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6968A6]" />
+            {step === "credentials" ? (
+              <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-[#085078] text-sm font-medium">
+                    Email
+                  </Label>
                   <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    id="email"
+                    type="text"
+                    placeholder="Enter admin email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="h-11 pl-10 pr-10 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200"
+                    className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200"
                   />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6968A6] hover:text-[#085078] transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="totpCode" className="text-[#085078] text-sm font-medium">
-                  Google Authenticator (Optional)
-                </Label>
-                <Input
-                  id="totpCode"
-                  type="text"
-                  placeholder="Enter 6-digit code"
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6}
-                  className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200 font-mono text-center tracking-widest"
-                />
-                <p className="text-xs text-slate-500">Enter the 6-digit code from your authenticator app if enabled</p>
-                <button
-                  type="button"
-                  onClick={handleShowSetupKey}
-                  className="text-xs text-[#6968A6] hover:text-[#085078] font-semibold mt-2 hover:underline transition-colors"
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[#085078] text-sm font-medium">
+                    Password
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6968A6]" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="h-11 pl-10 pr-10 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6968A6] hover:text-[#085078] transition-colors"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive" className="bg-[#CF9893]/20 border-[#CF9893]">
+                    <AlertCircle className="h-4 w-4 text-[#CF9893]" />
+                    <AlertDescription className="text-sm text-[#085078]">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <Button
+                  type="submit"
+                  className="w-full h-11 bg-gradient-to-r from-[#6968A6] to-[#085078] hover:from-[#5a5995] hover:to-[#074068] text-white rounded-xl shadow-lg shadow-[#6968A6]/30 font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#6968A6]/40"
+                  disabled={loading}
                 >
-                  Setup Google Authenticator
-                </button>
-              </div>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Users className="h-4 w-4 mr-2" />
+                      Next: Authenticate
+                    </>
+                  )}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleTOTPSubmit} className="space-y-4">
+                <div className="space-y-3 text-center">
+                  <h2 className="text-lg font-semibold text-[#085078]">Scan QR Code</h2>
+                  <p className="text-sm text-slate-600">
+                    Scan the QR code with Google Authenticator, then enter the 6-digit code
+                  </p>
+                </div>
 
-              {showAuthSetup && (
-                <div className="p-4 rounded-lg bg-blue-50 border border-blue-200 space-y-3">
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold text-[#085078]">Google Authenticator Setup</p>
-                    <p className="text-xs text-slate-600">Scan this key with your authenticator app or enter it manually:</p>
+                {qrCode && (
+                  <div className="flex justify-center p-4 bg-white border border-[#6968A6]/20 rounded-xl">
+                    <img src={qrCode} alt="2FA QR Code" className="h-48 w-48" />
                   </div>
-                  <div className="bg-white p-3 rounded border border-blue-300 font-mono text-sm text-center text-[#085078] break-all">
-                    {setupKey}
-                  </div>
-                  <button
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="2faCode" className="text-[#085078] text-sm font-medium">
+                    Enter 6-Digit Code
+                  </Label>
+                  <Input
+                    id="2faCode"
+                    type="text"
+                    placeholder="000000"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    maxLength={6}
+                    className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200 font-mono text-center tracking-widest text-lg"
+                  />
+                  <p className="text-xs text-slate-500 text-center">
+                    The code refreshes every 30 seconds
+                  </p>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive" className="bg-[#CF9893]/20 border-[#CF9893]">
+                    <AlertCircle className="h-4 w-4 text-[#CF9893]" />
+                    <AlertDescription className="text-sm text-[#085078]">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
                     type="button"
                     onClick={() => {
-                      navigator.clipboard.writeText(setupKey)
+                      setStep("credentials")
+                      setTotpCode("")
                       setError("")
                     }}
-                    className="w-full text-xs bg-[#6968A6] hover:bg-[#085078] text-white py-2 rounded font-semibold transition-colors"
+                    variant="outline"
+                    className="w-1/3 h-11 border-[#6968A6]/30 text-[#6968A6] rounded-xl font-semibold"
                   >
-                    Copy Setup Key
-                  </button>
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-2/3 h-11 bg-gradient-to-r from-[#6968A6] to-[#085078] hover:from-[#5a5995] hover:to-[#074068] text-white rounded-xl shadow-lg shadow-[#6968A6]/30 font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#6968A6]/40"
+                    disabled={loading || totpCode.length !== 6}
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Verify & Login
+                      </>
+                    )}
+                  </Button>
                 </div>
-              )}
-
-              {error && (
-                <Alert variant="destructive" className="bg-[#CF9893]/20 border-[#CF9893]">
-                  <AlertCircle className="h-4 w-4 text-[#CF9893]" />
-                  <AlertDescription className="text-sm text-[#085078]">{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full h-11 bg-gradient-to-r from-[#6968A6] to-[#085078] hover:from-[#5a5995] hover:to-[#074068] text-white rounded-xl shadow-lg shadow-[#6968A6]/30 font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#6968A6]/40"
-                disabled={loading}
-              >
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    <Users className="h-4 w-4 mr-2" />
-                    Access Admin Dashboard
-                  </>
-                )}
-              </Button>
-            </form>
+              </form>
+            )}
           </CardContent>
         </Card>
 
