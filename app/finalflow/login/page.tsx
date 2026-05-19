@@ -63,27 +63,45 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        // Credentials are valid, now generate a new TOTP secret for this login session
-        const setupResponse = await fetch("/api/admin/setup-2fa", {
+        // Credentials are valid, check if 2FA is already set up for this admin
+        const twoFACheck = await fetch("/api/auth/2fa-storage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "generate" }),
+          body: JSON.stringify({ action: "get", email }),
         })
 
-        const setupData = await setupResponse.json()
+        const twoFAData = await twoFACheck.json()
 
-        if (setupData.success) {
-          setTempSecret(setupData.secret)
-          setQrCode(setupData.qrCode)
+        if (twoFAData.verified && twoFAData.secret) {
+          // 2FA already verified for this admin, just ask for the code (no QR needed)
+          setTempSecret(twoFAData.secret)
           setStep("2fa")
           setTotpCode("")
+          setQrCode("") // No QR code needed on subsequent logins
         } else {
-          setError("Failed to generate 2FA code. Please try again.")
+          // First time setup, generate new QR code
+          const setupResponse = await fetch("/api/admin/setup-2fa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "generate" }),
+          })
+
+          const setupData = await setupResponse.json()
+
+          if (setupData.success) {
+            setTempSecret(setupData.secret)
+            setQrCode(setupData.qrCode)
+            setStep("2fa")
+            setTotpCode("")
+          } else {
+            setError("Failed to generate 2FA code. Please try again.")
+          }
         }
       } else {
         setError(data.error || "Invalid email or password")
       }
     } catch (err) {
+      console.error("[v0] Error:", err)
       setError("Verification failed. Please try again.")
     } finally {
       setLoading(false)
@@ -106,7 +124,14 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        // TOTP verified, now complete login
+        // TOTP verified! Store the secret as verified for future logins
+        await fetch("/api/auth/2fa-storage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "store", email, secret: tempSecret, verified: true }),
+        })
+
+        // Now complete login with secure-login API
         const loginResponse = await fetch("/api/auth/secure-login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -126,6 +151,7 @@ export default function AdminLoginPage() {
         setError("Invalid 2FA code. Please try again.")
       }
     } catch (err) {
+      console.error("[v0] Error:", err)
       setError("2FA verification failed. Please try again.")
     } finally {
       setLoading(false)
@@ -217,10 +243,21 @@ export default function AdminLoginPage() {
             ) : (
               <form onSubmit={handleTOTPSubmit} className="space-y-4">
                 <div className="space-y-3 text-center">
-                  <h2 className="text-lg font-semibold text-[#085078]">Scan QR Code</h2>
-                  <p className="text-sm text-slate-600">
-                    Scan the QR code with Google Authenticator, then enter the 6-digit code
-                  </p>
+                  {qrCode ? (
+                    <>
+                      <h2 className="text-lg font-semibold text-[#085078]">Scan QR Code (First Time)</h2>
+                      <p className="text-sm text-slate-600">
+                        Scan this QR code with Google Authenticator, then enter the 6-digit code below
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="text-lg font-semibold text-[#085078]">Enter Your Code</h2>
+                      <p className="text-sm text-slate-600">
+                        Enter the 6-digit code from your Google Authenticator app
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 {qrCode && (

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { query } from "@/lib/db"
-import bcrypt from "bcryptjs"
+
+// Valid admin credentials
+const ADMIN_CREDENTIALS = [
+  {
+    email: "montyflowchain890@gmail.com",
+    password: "final@1593",
+    role: "admin",
+  },
+]
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,22 +20,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if admin exists
-    const rows = await query("SELECT * FROM admins WHERE email = $1", [email])
+    // Find matching admin credential (case-insensitive email)
+    const admin = ADMIN_CREDENTIALS.find(
+      (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
+    )
 
-    if (!rows || rows.length === 0) {
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password" },
-        { status: 401 }
-      )
-    }
-
-    const admin = rows[0]
-
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, admin.password_hash)
-
-    if (!isValidPassword) {
+    if (!admin) {
       return NextResponse.json(
         { success: false, error: "Invalid email or password" },
         { status: 401 }
@@ -38,7 +35,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       email: admin.email,
-      role: admin.role || "admin",
+      role: admin.role,
     })
   } catch (error) {
     console.error("[v0] Admin credential verification error:", error)
