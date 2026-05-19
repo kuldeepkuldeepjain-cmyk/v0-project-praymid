@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { totp } from "speakeasy"
+import speakeasy from "speakeasy"
 import QRCode from "qrcode"
 
 export async function POST(request: NextRequest) {
@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 
     if (action === "generate") {
       // Generate a new TOTP secret
-      const secret = totp.generateSecret({
+      const secret = speakeasy.generateSecret({
         name: "FlowChain Admin",
         issuer: "FlowChain",
         length: 32,
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      const isValid = totp.verify({
+      const isValid = speakeasy.totp.verify({
         secret,
         encoding: "base32",
         token: code,
