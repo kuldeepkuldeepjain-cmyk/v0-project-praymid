@@ -47,6 +47,7 @@ import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-
 import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
+import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import Loading from "./loading"
 import { ErrorBoundary } from "@/components/error-boundary"
 
@@ -124,6 +125,7 @@ export default function AdminDashboard() {
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
     { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
+    { id: "two-factor-auth", label: "2FA Setup", icon: Shield, section: "SYSTEM" },
     { id: "send-notifications", label: "Send Notifications", icon: Bell, section: "SYSTEM" },
     { id: "p2p-settings", label: "P2P Mode Toggle", icon: Settings, section: "SYSTEM" },
   ]
@@ -159,6 +161,8 @@ export default function AdminDashboard() {
         return <UserLedgerView />
       case "delete-participants":
         return <DeleteParticipantsPanel />
+      case "two-factor-auth":
+        return <AdminTwoFactorSetup />
       case "send-notifications":
         return <SendNotificationPanel />
       case "otp-approvals":
