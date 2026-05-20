@@ -20,32 +20,9 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [showAuthSetup, setShowAuthSetup] = useState(false)
-  const [setupKey, setSetupKey] = useState("")
-  const [step, setStep] = useState<"credentials" | "2fa">("credentials")
+  const [step, setStep] = useState<"credentials" | "setup-qr" | "verify-code">("credentials")
   const [qrCode, setQrCode] = useState("")
   const [tempSecret, setTempSecret] = useState("")
-
-  const handleShowSetupKey = async () => {
-    try {
-      const response = await fetch("/api/auth/get-totp-setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email || "montyflowchain890@gmail.com" }),
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setSetupKey(data.setupKey)
-        setShowAuthSetup(true)
-      } else {
-        setError(data.error || "Failed to get setup key")
-      }
-    } catch (err) {
-      setError("Failed to get setup key. Please try again.")
-    }
-  }
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +30,7 @@ export default function AdminLoginPage() {
     setLoading(true)
 
     try {
-      // First, verify email and password
+      // Verify email and password
       const response = await fetch("/api/auth/verify-admin-credentials", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -63,22 +40,38 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        // Credentials are valid, ALWAYS generate a NEW QR code for this login
-        const setupResponse = await fetch("/api/admin/setup-2fa", {
+        // Check if admin has already set up the final QR
+        const checkSetup = await fetch("/api/auth/2fa-storage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "generate" }),
+          body: JSON.stringify({ action: "get", email }),
         })
 
-        const setupData = await setupResponse.json()
+        const setupData = await checkSetup.json()
 
-        if (setupData.success) {
+        if (setupData.verified && setupData.secret) {
+          // Final QR already set up, go to verify-code only
           setTempSecret(setupData.secret)
-          setQrCode(setupData.qrCode)
-          setStep("2fa")
+          setStep("verify-code")
           setTotpCode("")
         } else {
-          setError("Failed to generate 2FA code. Please try again.")
+          // First time - generate the final QR code
+          const qrResponse = await fetch("/api/admin/setup-2fa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "generate" }),
+          })
+
+          const qrData = await qrResponse.json()
+
+          if (qrData.success) {
+            setTempSecret(qrData.secret)
+            setQrCode(qrData.qrCode)
+            setStep("setup-qr")
+            setTotpCode("")
+          } else {
+            setError("Failed to generate QR code. Please try again.")
+          }
         }
       } else {
         setError(data.error || "Invalid email or password")
@@ -91,13 +84,19 @@ export default function AdminLoginPage() {
     }
   }
 
-  const handleTOTPSubmit = async (e: React.FormEvent) => {
+  const handleSetupQR = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setLoading(true)
 
     try {
-      // Verify the TOTP code from the newly scanned QR code
+      if (!totpCode || totpCode.length !== 6) {
+        setError("Please enter a valid 6-digit code")
+        setLoading(false)
+        return
+      }
+
+      // Verify the code from the scanned QR
       const response = await fetch("/api/admin/setup-2fa", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -107,7 +106,14 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (data.success) {
-        // TOTP verified! Complete login immediately (no persistence)
+        // Save this secret permanently as the "final QR"
+        await fetch("/api/auth/2fa-storage", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "store", email, secret: tempSecret, verified: true }),
+        })
+
+        // Now login
         const loginResponse = await fetch("/api/auth/secure-login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -124,11 +130,60 @@ export default function AdminLoginPage() {
           setStep("credentials")
         }
       } else {
-        setError("Invalid 2FA code. Please try again.")
+        setError("Invalid code. Please try again.")
       }
     } catch (err) {
       console.error("[v0] Error:", err)
-      setError("2FA verification failed. Please try again.")
+      setError("Setup failed. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+
+    try {
+      if (!totpCode || totpCode.length !== 6) {
+        setError("Please enter a valid 6-digit code")
+        setLoading(false)
+        return
+      }
+
+      // Verify the code using the saved final QR secret
+      const response = await fetch("/api/admin/setup-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "verify", secret: tempSecret, code: totpCode }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Login
+        const loginResponse = await fetch("/api/auth/secure-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, otp: password, loginType: "admin", totpCode }),
+        })
+
+        const loginData = await loginResponse.json()
+
+        if (loginData.success) {
+          setAdminAuth(email, email, loginData.role, loginData.permissions)
+          router.push("/finalflow/dashboard")
+        } else {
+          setError(loginData.error || "Login failed. Please try again.")
+          setStep("credentials")
+        }
+      } else {
+        setError("Invalid code. Please try again.")
+      }
+    } catch (err) {
+      console.error("[v0] Error:", err)
+      setError("Verification failed. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -211,29 +266,29 @@ export default function AdminLoginPage() {
                   ) : (
                     <>
                       <Users className="h-4 w-4 mr-2" />
-                      Next: Authenticate
+                      Next: Scan QR
                     </>
                   )}
                 </Button>
               </form>
-            ) : (
-              <form onSubmit={handleTOTPSubmit} className="space-y-4">
+            ) : step === "setup-qr" ? (
+              <form onSubmit={handleSetupQR} className="space-y-4">
                 <div className="space-y-3 text-center">
-                  <h2 className="text-lg font-semibold text-[#085078]">Scan QR Code (Named: final)</h2>
+                  <h2 className="text-lg font-semibold text-[#085078]">Setup Final QR</h2>
                   <p className="text-sm text-slate-600">
-                    Scan the QR code below with Google Authenticator, then enter the 6-digit code
+                    Scan this QR code with Google Authenticator, then enter the 6-digit code below
                   </p>
                 </div>
 
                 {qrCode && (
                   <div className="flex justify-center p-4 bg-white border border-[#6968A6]/20 rounded-xl">
-                    <img src={qrCode} alt="2FA QR Code - final" className="h-48 w-48" />
+                    <img src={qrCode} alt="Final QR Code" className="h-48 w-48" />
                   </div>
                 )}
 
                 <div className="space-y-2">
                   <Label htmlFor="2faCode" className="text-[#085078] text-sm font-medium">
-                    Enter 6-Digit Code
+                    Enter 6-Digit Code from Authenticator
                   </Label>
                   <Input
                     id="2faCode"
@@ -243,6 +298,72 @@ export default function AdminLoginPage() {
                     onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                     maxLength={6}
                     className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200 font-mono text-center tracking-widest text-lg"
+                    autoFocus
+                  />
+                  <p className="text-xs text-slate-500 text-center">
+                    This QR will be saved as your permanent authentication method
+                  </p>
+                </div>
+
+                {error && (
+                  <Alert variant="destructive" className="bg-[#CF9893]/20 border-[#CF9893]">
+                    <AlertCircle className="h-4 w-4 text-[#CF9893]" />
+                    <AlertDescription className="text-sm text-[#085078]">{error}</AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setStep("credentials")
+                      setTotpCode("")
+                      setError("")
+                      setQrCode("")
+                    }}
+                    variant="outline"
+                    className="w-1/3 h-11 border-[#6968A6]/30 text-[#6968A6] rounded-xl font-semibold"
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="w-2/3 h-11 bg-gradient-to-r from-[#6968A6] to-[#085078] hover:from-[#5a5995] hover:to-[#074068] text-white rounded-xl shadow-lg shadow-[#6968A6]/30 font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-[#6968A6]/40"
+                    disabled={loading || totpCode.length !== 6}
+                  >
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Verify & Save
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyCode} className="space-y-4">
+                <div className="space-y-3 text-center">
+                  <h2 className="text-lg font-semibold text-[#085078]">Enter Your Code</h2>
+                  <p className="text-sm text-slate-600">
+                    Enter the 6-digit code from your Google Authenticator app
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="2faCode" className="text-[#085078] text-sm font-medium">
+                    6-Digit Code
+                  </Label>
+                  <Input
+                    id="2faCode"
+                    type="text"
+                    placeholder="000000"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    maxLength={6}
+                    className="h-11 border-[#6968A6]/30 focus:border-[#6968A6] focus:ring-[#6968A6]/20 rounded-xl transition-all duration-200 font-mono text-center tracking-widest text-lg"
+                    autoFocus
                   />
                   <p className="text-xs text-slate-500 text-center">
                     The code refreshes every 30 seconds
@@ -279,7 +400,7 @@ export default function AdminLoginPage() {
                     ) : (
                       <>
                         <Shield className="h-4 w-4 mr-2" />
-                        Verify & Login
+                        Login
                       </>
                     )}
                   </Button>
