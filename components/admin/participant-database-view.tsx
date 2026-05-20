@@ -183,11 +183,11 @@ export function ParticipantDatabaseView() {
       "Full Address",
       "Account Balance",
       "Bonus Balance",
-      "Wallet Address",
       "Date of Birth",
       "Gender",
       "Occupation",
       "Monthly Income",
+      "BEP20 Wallet Address",
       "Profile Completed",
       "Activation Paid",
       "Activation Amount",
@@ -223,11 +223,11 @@ export function ParticipantDatabaseView() {
       p.full_address || p.address || "",
       (p.account_balance || 0).toFixed(2),
       (p.bonus_balance || 0).toFixed(2),
-      p.wallet_address || p.bep20_wallet_address || "",
       p.date_of_birth || "",
       p.gender || "",
       p.occupation || "",
       p.monthly_income || "",
+      p.wallet_address || p.bep20_wallet_address || "",
       p.details_completed ? "Yes" : "No",
       p.activation_fee_paid ? "Yes" : "No",
       p.activation_fee_amount,
@@ -458,6 +458,7 @@ export function ParticipantDatabaseView() {
                   <TableHead className="font-semibold text-red-600">Password</TableHead>
                   <TableHead className="font-semibold text-rose-600">Contact</TableHead>
                   <TableHead className="font-semibold text-purple-600">Location</TableHead>
+                  <TableHead className="font-semibold text-green-600">Balance</TableHead>
                   <TableHead className="font-semibold text-violet-600">Personal</TableHead>
                   <TableHead className="font-semibold text-cyan-600">Wallet</TableHead>
                   <TableHead className="font-semibold text-emerald-600">Activation</TableHead>
@@ -601,49 +602,25 @@ export function ParticipantDatabaseView() {
 
                     {/* Wallet */}
                     <TableCell>
-                      <div className="space-y-2">
-                        {/* Account Balance */}
-                        <div className="flex items-center gap-1.5 bg-green-50 px-2 py-1.5 rounded border border-green-200">
-                          <Wallet className="h-4 w-4 text-green-600" />
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[10px] text-green-600 font-semibold">Balance</span>
-                            <span className="font-bold text-green-700">${(participant.account_balance || 0).toFixed(2)}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Bonus Balance if exists */}
-                        {participant.bonus_balance && participant.bonus_balance > 0 && (
-                          <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1.5 rounded border border-blue-200">
-                            <Sparkles className="h-4 w-4 text-blue-600" />
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] text-blue-600 font-semibold">Bonus</span>
-                              <span className="font-bold text-blue-700">${(participant.bonus_balance).toFixed(2)}</span>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Wallet Address */}
-                        {participant.wallet_address && (
-                          <div className="flex items-center gap-1 border-t pt-1.5">
-                            <code className="text-[11px] text-slate-600 font-mono break-all flex-1">
-                              {participant.wallet_address.substring(0, 12)}...
-                            </code>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5 p-0 hover:bg-slate-100 flex-shrink-0"
-                              onClick={() => {
-                                navigator.clipboard.writeText(participant.wallet_address)
-                                toast({
-                                  title: "Wallet Address Copied",
-                                  description: "Full wallet address copied to clipboard",
-                                })
-                              }}
-                            >
-                              <Copy className="h-3 w-3 text-slate-400" />
-                            </Button>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-3 w-3 text-slate-400 flex-shrink-0" />
+                        <code className="text-xs text-slate-600 font-mono break-all">
+                          {participant.wallet_address}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-slate-100 flex-shrink-0"
+                          onClick={() => {
+                            navigator.clipboard.writeText(participant.wallet_address)
+                            toast({
+                              title: "Wallet Address Copied",
+                              description: "Full wallet address copied to clipboard",
+                            })
+                          }}
+                        >
+                          <Copy className="h-3 w-3 text-slate-400" />
+                        </Button>
                       </div>
                     </TableCell>
 
