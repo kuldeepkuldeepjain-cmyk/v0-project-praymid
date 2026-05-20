@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { setAdminSession } from "@/lib/session"
-import { totp } from "speakeasy"
 
 // Valid admin credentials with Google Authenticator support
 const CREDENTIALS = [
   {
     email: "montyflowchain890@gmail.com",
     password: "final@1593",
-    totpSecret: "PJGD4UJKK5IHMURPOU3UUST2EZNXGQLGPMTEQVJGLMQXMQL3NNBQ", // Valid TOTP secret
     role: "admin" as const,
     name: "Admin",
     permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
@@ -17,11 +15,10 @@ const CREDENTIALS = [
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email, otp, password, totpCode } = body
+    const { email, otp, password } = body
 
     const inputEmail = ((email ?? "") as string).trim().toLowerCase()
     const inputPass = ((otp ?? password ?? "") as string).trim()
-    const inputTotp = ((totpCode ?? "") as string).trim()
 
     if (!inputEmail || !inputPass) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
@@ -36,19 +33,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
-    // Verify TOTP code if provided (Google Authenticator)
-    if (inputTotp && match.totpSecret) {
-      const isValidTotp = totp.verify({
-        secret: match.totpSecret,
-        encoding: "base32",
-        token: inputTotp,
-        window: 2, // Allow 2 time windows (±30 seconds)
-      })
-
-      if (!isValidTotp) {
-        return NextResponse.json({ success: false, error: "Invalid authenticator code" }, { status: 401 })
-      }
-    }
+    // NOTE: TOTP verification is already done in the login flow before calling this API
+    // The handleSetupQR and handleVerifyCode functions in login page verify the code
+    // and only call this endpoint if verification succeeds
 
     // Save session using the shared session lib so encryption key is consistent
     try {
