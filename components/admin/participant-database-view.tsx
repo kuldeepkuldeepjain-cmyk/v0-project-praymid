@@ -42,6 +42,7 @@ import {
   Copy,
   AlertTriangle,
   MessageCircle,
+  Sparkles,
 } from "lucide-react"
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
@@ -178,7 +179,10 @@ export function ParticipantDatabaseView() {
       "State",
       "City",
       "Postal Code",
+      "Pin Code",
       "Full Address",
+      "Account Balance",
+      "Bonus Balance",
       "Date of Birth",
       "Gender",
       "Occupation",
@@ -215,7 +219,10 @@ export function ParticipantDatabaseView() {
       p.state || "",
       p.city || "",
       p.postal_code || "",
+      p.pin_code || "",
       p.full_address || p.address || "",
+      (p.account_balance || 0).toFixed(2),
+      (p.bonus_balance || 0).toFixed(2),
       p.date_of_birth || "",
       p.gender || "",
       p.occupation || "",
@@ -451,6 +458,7 @@ export function ParticipantDatabaseView() {
                   <TableHead className="font-semibold text-red-600">Password</TableHead>
                   <TableHead className="font-semibold text-rose-600">Contact</TableHead>
                   <TableHead className="font-semibold text-purple-600">Location</TableHead>
+                  <TableHead className="font-semibold text-green-600">Balance</TableHead>
                   <TableHead className="font-semibold text-violet-600">Personal</TableHead>
                   <TableHead className="font-semibold text-cyan-600">Wallet</TableHead>
                   <TableHead className="font-semibold text-emerald-600">Activation</TableHead>
@@ -560,9 +568,25 @@ export function ParticipantDatabaseView() {
                           <MapPin className="h-3 w-3 text-slate-400" />
                           <span className="font-medium text-slate-900">{participant.country || participant.location || "—"}</span>
                         </div>
-                        {participant.state && <p className="text-slate-600">{participant.state}</p>}
-                        {participant.city && <p className="text-slate-500">{participant.city}</p>}
-                        {participant.postal_code && <p className="text-slate-400">{participant.postal_code}</p>}
+                        {participant.state && <p className="text-slate-600 font-semibold">State: {participant.state}</p>}
+                        {participant.city && <p className="text-slate-500">City: {participant.city}</p>}
+                        {participant.pin_code && <p className="text-slate-600 font-semibold">Pin: {participant.pin_code}</p>}
+                      </div>
+                    </TableCell>
+
+                    {/* Balance */}
+                    <TableCell>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-1.5 bg-green-50 px-2 py-1 rounded">
+                          <Wallet className="h-3 w-3 text-green-600" />
+                          <span className="font-bold text-green-700">${(participant.account_balance || 0).toFixed(2)}</span>
+                        </div>
+                        {participant.bonus_balance && participant.bonus_balance > 0 && (
+                          <div className="flex items-center gap-1.5 bg-blue-50 px-2 py-1 rounded">
+                            <Sparkles className="h-3 w-3 text-blue-600" />
+                            <span className="font-semibold text-blue-700">Bonus: ${(participant.bonus_balance).toFixed(2)}</span>
+                          </div>
+                        )}
                       </div>
                     </TableCell>
 
