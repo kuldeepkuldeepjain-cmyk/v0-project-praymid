@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { query, execute } from "@/lib/db"
-import { requireAdminSession } from "@/lib/auth-middleware"
+import { query } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
-  const auth = await requireAdminSession(request)
-  if (!auth.ok) return auth.response
-
   try {
     // Total participants
     const participantRows = await query("SELECT COUNT(*) as count FROM participants")
