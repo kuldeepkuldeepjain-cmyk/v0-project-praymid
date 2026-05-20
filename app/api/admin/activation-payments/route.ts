@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         [payment.participant_email]
       )
 
-      // Credit $5 referral bonus to referrer when funds are added
+      // Credit $5 referral bonus to referrer when funds are added (only once per referred user)
       try {
         const referrerRes = await db.query(
           `SELECT id, email, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
@@ -109,21 +109,37 @@ export async function POST(request: NextRequest) {
         )
         if (referrerRes.rows.length > 0) {
           const referrer = referrerRes.rows[0]
-          const referralBonus = 5
-          const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referralBonus
-          await db.query(
-            `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
-            [referrerNewEarnings, referrer.id]
+          
+          // Check if bonus was already given for this referred user
+          const bonusCheckRes = await db.query(
+            `SELECT id FROM referral_bonuses WHERE referred_email = $1 AND referrer_id = $2`,
+            [payment.participant_email, referrer.id]
           )
-          await db.query(
-            `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
-             VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
-            [referrer.email, referralBonus, `Referral bonus - ${payment.participant_email} funds added`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
-          ).catch(() => {})
-          await db.query(
-            `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
-            [referrer.email, `Earned $5 referral bonus from ${payment.participant_email} adding funds`]
-          ).catch(() => {})
+          
+          // Only add bonus if it hasn't been added yet
+          if (bonusCheckRes.rows.length === 0) {
+            const referralBonus = 5
+            const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referralBonus
+            await db.query(
+              `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
+              [referrerNewEarnings, referrer.id]
+            )
+            await db.query(
+              `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+               VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
+              [referrer.email, referralBonus, `Referral bonus - ${payment.participant_email} funds added`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+            ).catch(() => {})
+            await db.query(
+              `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
+              [referrer.email, `Earned $5 referral bonus from ${payment.participant_email} adding funds`]
+            ).catch(() => {})
+            
+            // Track that bonus was given for this referred user
+            await db.query(
+              `INSERT INTO referral_bonuses (referred_email, referrer_id, bonus_amount, given_date) VALUES ($1, $2, $3, NOW())`,
+              [payment.participant_email, referrer.id, referralBonus]
+            ).catch(() => {})
+          }
         }
       } catch (referralError) {
         // Non-critical - don't fail if referral credit fails

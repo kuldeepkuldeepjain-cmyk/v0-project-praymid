@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
       [email, `Requested payout of $${Number(amount).toFixed(2)} to ${walletAddr}`]
     ).catch(() => {})
 
-    // Credit $5 referral bonus to referrer after contribution completed
+    // Credit $5 referral bonus to referrer after contribution completed (only once per referred user)
     const REFERRAL_BONUS = 5
     try {
       // Find the referrer by looking up who referred this participant
@@ -92,20 +92,35 @@ export async function POST(request: NextRequest) {
       
       const referrer = referrerRows[0]
       if (referrer) {
-        const referrerNewEarnings = Number(referrer.referral_earnings || 0) + REFERRAL_BONUS
+        // Check if bonus was already given for this referred user
+        const bonusCheckRows = await query(
+          `SELECT id FROM referral_bonuses WHERE referred_email = $1 AND referrer_id = $2`,
+          [email.toLowerCase().trim(), referrer.id]
+        ) as any[]
         
-        // Update referrer's referral_earnings
-        await execute(
-          `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
-          [referrerNewEarnings, referrer.id]
-        )
-        
-        // Log the referral bonus transaction
-        await execute(
-          `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
-           VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
-          [referrer.email, REFERRAL_BONUS, `Referral bonus - ${email} completed contribution`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
-        ).catch(() => {})
+        // Only add bonus if it hasn't been added yet
+        if (bonusCheckRows.length === 0) {
+          const referrerNewEarnings = Number(referrer.referral_earnings || 0) + REFERRAL_BONUS
+          
+          // Update referrer's referral_earnings
+          await execute(
+            `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
+            [referrerNewEarnings, referrer.id]
+          )
+          
+          // Log the referral bonus transaction
+          await execute(
+            `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+             VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
+            [referrer.email, REFERRAL_BONUS, `Referral bonus - ${email} completed contribution`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+          ).catch(() => {})
+          
+          // Track that bonus was given for this referred user
+          await execute(
+            `INSERT INTO referral_bonuses (referred_email, referrer_id, bonus_amount, given_date) VALUES ($1, $2, $3, NOW())`,
+            [email.toLowerCase().trim(), referrer.id, REFERRAL_BONUS]
+          ).catch(() => {})
+        }
       }
     } catch (referralError) {
       // Non-critical - don't fail the payout if referral credit fails
