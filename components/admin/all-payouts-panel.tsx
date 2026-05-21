@@ -5,62 +5,53 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface PayoutRecord {
   id: string
+  serial_number: string
   participant_email: string
   amount: number
   status: string
-  serial_number: string
   payout_method: string
   wallet_address: string
   redirect_to_email: string
+  redirect_to_serial: string
+  admin_notes: string
   created_at: string
   updated_at: string
   full_name: string
-  phone: string | null
-  bep20_address: string | null
+  mobile_number: string
   account_balance: number
-  contributed_amount: number
 }
 
 export function AllPayoutsPanel() {
   const [payouts, setPayouts] = useState<PayoutRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState("")
 
   useEffect(() => {
     const fetchPayouts = async () => {
       setLoading(true)
+      setError(null)
       try {
-        const params = new URLSearchParams({
-          loadAll: "true",
-        })
+        const params = new URLSearchParams()
         if (statusFilter) params.append("status", statusFilter)
 
-        const response = await fetch(`/api/admin/all-payouts?${params}`)
+        const response = await fetch(`/api/admin/all-payouts?${params.toString()}`)
         const data = await response.json()
 
         if (data.success) {
-          setPayouts(data.payouts)
+          setPayouts(data.payouts || [])
         } else {
-          toast({
-            title: "Error",
-            description: "Failed to fetch payout records",
-            variant: "destructive",
-          })
+          setError(data.error || "Failed to fetch payout records")
         }
-      } catch (error) {
-        console.error("Failed to fetch payouts:", error)
-        toast({
-          title: "Error",
-          description: "Failed to fetch payout records",
-          variant: "destructive",
-        })
+      } catch (err) {
+        console.error("[v0] Failed to fetch payouts:", err)
+        setError("Network error. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -71,41 +62,40 @@ export function AllPayoutsPanel() {
 
   const handleExportCSV = () => {
     const headers = [
-      "ID",
-      "Participant Serial",
+      "Serial #",
       "Participant Email",
       "Full Name",
-      "Phone",
+      "Mobile",
       "Amount",
       "Status",
       "Payout Method",
       "Wallet Address",
       "Redirect Email",
+      "Redirect Serial",
       "Account Balance",
-      "Contributed Amount",
+      "Admin Notes",
       "Created At",
       "Updated At",
     ]
 
     const rows = payouts.map((p) => [
-      p.id,
-      p.serial_number || "N/A",
+      p.serial_number,
       p.participant_email,
       p.full_name,
-      p.phone || "N/A",
+      p.mobile_number || "N/A",
       p.amount.toFixed(2),
       p.status,
       p.payout_method,
       p.wallet_address || "N/A",
       p.redirect_to_email || "N/A",
+      p.redirect_to_serial || "N/A",
       p.account_balance.toFixed(2),
-      p.contributed_amount.toFixed(2),
-      new Date(p.created_at).toLocaleString(),
-      new Date(p.updated_at).toLocaleString(),
+      p.admin_notes || "",
+      p.created_at ? new Date(p.created_at).toLocaleString() : "N/A",
+      p.updated_at ? new Date(p.updated_at).toLocaleString() : "N/A",
     ])
 
     const csvContent = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n")
-
     const blob = new Blob([csvContent], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
@@ -113,42 +103,32 @@ export function AllPayoutsPanel() {
     a.download = `all-payouts-${new Date().toISOString().split("T")[0]}.csv`
     a.click()
 
-    toast({
-      title: "Exported",
-      description: `${payouts.length} payout records exported to CSV`,
-    })
+    toast({ title: "Exported", description: `${payouts.length} payout records exported to CSV` })
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
-      case "matched":
-        return "bg-blue-100 text-blue-800"
-      case "approved":
-        return "bg-green-100 text-green-800"
-      case "completed":
-        return "bg-emerald-100 text-emerald-800"
-      case "rejected":
-        return "bg-red-100 text-red-800"
-      case "cancelled":
-        return "bg-gray-100 text-gray-800"
-      default:
-        return "bg-slate-100 text-slate-800"
+  const getStatusBadgeClass = (status: string) => {
+    switch ((status || "").toLowerCase()) {
+      case "pending":   return "bg-yellow-100 text-yellow-800 border-yellow-200"
+      case "matched":   return "bg-blue-100 text-blue-800 border-blue-200"
+      case "approved":  return "bg-green-100 text-green-800 border-green-200"
+      case "completed": return "bg-emerald-100 text-emerald-800 border-emerald-200"
+      case "rejected":  return "bg-red-100 text-red-800 border-red-200"
+      case "cancelled": return "bg-gray-100 text-gray-800 border-gray-200"
+      default:          return "bg-slate-100 text-slate-800 border-slate-200"
     }
   }
 
   return (
-    <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
+    <Card className="border-0 shadow-lg">
       <CardHeader className="border-b border-slate-200 bg-white rounded-t-lg">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
+          <div>
             <CardTitle className="text-2xl font-bold text-slate-900">All Payout Records</CardTitle>
-            <CardDescription className="text-slate-600">
-              Total payouts: {payouts.length.toLocaleString()} records
+            <CardDescription className="text-slate-600 mt-1">
+              {loading ? "Loading..." : `${payouts.length.toLocaleString()} total records`}
             </CardDescription>
           </div>
-          <Button onClick={handleExportCSV} variant="outline" className="gap-2">
+          <Button onClick={handleExportCSV} variant="outline" className="gap-2" disabled={loading || payouts.length === 0}>
             <Download className="h-4 w-4" />
             Export CSV
           </Button>
@@ -156,9 +136,10 @@ export function AllPayoutsPanel() {
       </CardHeader>
 
       <CardContent className="p-6">
-        <div className="mb-6 flex gap-4">
+        {/* Filter */}
+        <div className="mb-5">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-48">
+            <SelectTrigger className="w-52">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -175,50 +156,60 @@ export function AllPayoutsPanel() {
 
         <div className="overflow-x-auto border border-slate-200 rounded-lg">
           <Table>
-            <TableHeader className="bg-slate-100">
+            <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead className="font-semibold text-slate-900">Serial #</TableHead>
-                <TableHead className="font-semibold text-slate-900">Email</TableHead>
-                <TableHead className="font-semibold text-slate-900">Full Name</TableHead>
-                <TableHead className="font-semibold text-slate-900">Amount</TableHead>
-                <TableHead className="font-semibold text-slate-900">Status</TableHead>
-                <TableHead className="font-semibold text-slate-900">Method</TableHead>
-                <TableHead className="font-semibold text-slate-900">Balance</TableHead>
-                <TableHead className="font-semibold text-slate-900">Created</TableHead>
+                <TableHead className="font-semibold text-slate-700">Serial #</TableHead>
+                <TableHead className="font-semibold text-slate-700">Email</TableHead>
+                <TableHead className="font-semibold text-slate-700">Full Name</TableHead>
+                <TableHead className="font-semibold text-slate-700">Amount</TableHead>
+                <TableHead className="font-semibold text-slate-700">Status</TableHead>
+                <TableHead className="font-semibold text-slate-700">Method</TableHead>
+                <TableHead className="font-semibold text-slate-700">Balance</TableHead>
+                <TableHead className="font-semibold text-slate-700">Redirect To</TableHead>
+                <TableHead className="font-semibold text-slate-700">Created</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8">
-                    <div className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading payouts...
+                  <TableCell colSpan={9} className="text-center py-12">
+                    <div className="flex items-center justify-center gap-2 text-slate-500">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      Loading all payout records...
                     </div>
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-12 text-red-500">
+                    {error}
                   </TableCell>
                 </TableRow>
               ) : payouts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={9} className="text-center py-12 text-slate-500">
                     No payout records found
                   </TableCell>
                 </TableRow>
               ) : (
                 payouts.map((payout) => (
-                  <TableRow key={payout.id} className="hover:bg-slate-50 border-b border-slate-200">
-                    <TableCell className="font-medium text-slate-900">{payout.serial_number || "—"}</TableCell>
-                    <TableCell className="text-sm text-slate-600 font-mono">{payout.participant_email}</TableCell>
-                    <TableCell className="text-sm text-slate-900">{payout.full_name}</TableCell>
-                    <TableCell className="font-semibold text-green-700">${payout.amount.toFixed(2)}</TableCell>
+                  <TableRow key={payout.id} className="hover:bg-slate-50 border-b border-slate-100">
+                    <TableCell className="font-mono text-xs text-slate-700">{payout.serial_number}</TableCell>
+                    <TableCell className="text-sm text-slate-600 font-mono max-w-[180px] truncate">{payout.participant_email}</TableCell>
+                    <TableCell className="text-sm text-slate-900 font-medium">{payout.full_name}</TableCell>
+                    <TableCell className="font-bold text-green-700">${payout.amount.toFixed(2)}</TableCell>
                     <TableCell>
-                      <Badge className={`${getStatusColor(payout.status)} border-0`}>
-                        {payout.status.charAt(0).toUpperCase() + payout.status.slice(1)}
+                      <Badge className={`${getStatusBadgeClass(payout.status)} border text-xs font-medium`}>
+                        {(payout.status || "").charAt(0).toUpperCase() + (payout.status || "").slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">{payout.payout_method || "—"}</TableCell>
                     <TableCell className="font-semibold text-blue-700">${payout.account_balance.toFixed(2)}</TableCell>
-                    <TableCell className="text-sm text-slate-600">
-                      {new Date(payout.created_at).toLocaleDateString()}
+                    <TableCell className="text-xs text-slate-500">
+                      {payout.redirect_to_email || payout.redirect_to_serial || "—"}
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-500">
+                      {payout.created_at ? new Date(payout.created_at).toLocaleDateString() : "—"}
                     </TableCell>
                   </TableRow>
                 ))
