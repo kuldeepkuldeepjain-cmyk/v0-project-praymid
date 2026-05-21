@@ -40,8 +40,7 @@ export async function GET(request: NextRequest) {
         p.mobile_number,
         p.bep20_address,
         p.serial_number AS participant_serial,
-        p.account_balance,
-        p.contributed_amount
+        p.account_balance
       FROM payout_requests pr
       LEFT JOIN participants p ON p.email = pr.participant_email
       WHERE 1=1 ${statusFilter}
@@ -75,7 +74,6 @@ export async function GET(request: NextRequest) {
         bep20_address: r.bep20_address || r.wallet_address || null,
         participant_serial: r.participant_serial,
         account_balance: Number(r.account_balance) || 0,
-        contributed_amount: Number(r.contributed_amount) || 0,
       })),
       totalCount,
       limit: loadAll ? totalCount : limit,
