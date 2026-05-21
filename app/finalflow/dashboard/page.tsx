@@ -48,6 +48,7 @@ import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
+import { AllPayoutsPanel } from "@/components/admin/all-payouts-panel"
 import Loading from "./loading"
 import { ErrorBoundary } from "@/components/error-boundary"
 
@@ -119,6 +120,7 @@ export default function AdminDashboard() {
     { id: "p2p-contributions", label: "P2P Contributions", icon: Coins, section: "MAIN MENU" },
     { id: "p2p-payout-queue", label: "P2P Payout Queue", icon: UserPlus, section: "MAIN MENU" },
     { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
+    { id: "all-payouts", label: "All Payout Records", icon: Wallet, section: "MAIN MENU" },
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
     { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
     { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
@@ -153,6 +155,8 @@ export default function AdminDashboard() {
         return <ComprehensiveDatabaseView />
       case "topup-requests":
         return <TopUpRequestsPanel />
+      case "all-payouts":
+        return <AllPayoutsPanel />
       case "revenue-tracker":
         return <PlatformRevenueTracker />
       case "all-ledger":
