@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, ChevronLeft, ChevronRight, Download } from "lucide-react"
+import { Loader2, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface PayoutRecord {
@@ -32,18 +32,13 @@ export function AllPayoutsPanel() {
   const [payouts, setPayouts] = useState<PayoutRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("")
-  const [page, setPage] = useState(0)
-  const [totalCount, setTotalCount] = useState(0)
-  const [limit] = useState(50)
-  const pageSize = limit
 
   useEffect(() => {
     const fetchPayouts = async () => {
       setLoading(true)
       try {
         const params = new URLSearchParams({
-          limit: pageSize.toString(),
-          offset: (page * pageSize).toString(),
+          loadAll: "true",
         })
         if (statusFilter) params.append("status", statusFilter)
 
@@ -52,7 +47,6 @@ export function AllPayoutsPanel() {
 
         if (data.success) {
           setPayouts(data.payouts)
-          setTotalCount(data.totalCount)
         } else {
           toast({
             title: "Error",
@@ -73,7 +67,7 @@ export function AllPayoutsPanel() {
     }
 
     fetchPayouts()
-  }, [page, statusFilter, pageSize])
+  }, [statusFilter])
 
   const handleExportCSV = () => {
     const headers = [
@@ -144,8 +138,6 @@ export function AllPayoutsPanel() {
     }
   }
 
-  const totalPages = Math.ceil(totalCount / pageSize)
-
   return (
     <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-slate-50">
       <CardHeader className="border-b border-slate-200 bg-white rounded-t-lg">
@@ -153,7 +145,7 @@ export function AllPayoutsPanel() {
           <div className="flex-1">
             <CardTitle className="text-2xl font-bold text-slate-900">All Payout Records</CardTitle>
             <CardDescription className="text-slate-600">
-              Total payouts: {totalCount.toLocaleString()} records
+              Total payouts: {payouts.length.toLocaleString()} records
             </CardDescription>
           </div>
           <Button onClick={handleExportCSV} variant="outline" className="gap-2">
@@ -233,41 +225,6 @@ export function AllPayoutsPanel() {
               )}
             </TableBody>
           </Table>
-        </div>
-
-        {/* Pagination */}
-        <div className="mt-6 flex items-center justify-between">
-          <div className="text-sm text-slate-600">
-            Showing {payouts.length > 0 ? page * pageSize + 1 : 0} to{" "}
-            {Math.min((page + 1) * pageSize, totalCount)} of {totalCount.toLocaleString()} records
-          </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0 || loading}
-              variant="outline"
-              size="sm"
-              className="gap-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <div className="flex items-center gap-2 px-4">
-              <span className="text-sm font-medium">
-                Page {page + 1} of {totalPages}
-              </span>
-            </div>
-            <Button
-              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-              disabled={page >= totalPages - 1 || loading}
-              variant="outline"
-              size="sm"
-              className="gap-1"
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
       </CardContent>
     </Card>

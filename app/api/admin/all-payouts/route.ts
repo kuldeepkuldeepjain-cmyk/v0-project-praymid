@@ -7,6 +7,7 @@ export async function GET(request: NextRequest) {
     const status = sp.get("status")
     const limit = sp.get("limit") ? Number(sp.get("limit")) : 100
     const offset = sp.get("offset") ? Number(sp.get("offset")) : 0
+    const loadAll = sp.get("loadAll") === "true"
 
     const params: any[] = []
     let statusFilter = ""
@@ -23,14 +24,8 @@ export async function GET(request: NextRequest) {
     )
     const totalCount = Number(countRows?.[0]?.total) || 0
 
-    // Get paginated results
-    params.push(limit)
-    const limitParam = `$${params.length}`
-    params.push(offset)
-    const offsetParam = `$${params.length}`
-
-    const rows = await query(
-      `SELECT
+    // Build query based on whether we're loading all or paginating
+    let queryStr = `SELECT
         pr.id,
         pr.participant_email,
         pr.amount,
@@ -51,10 +46,17 @@ export async function GET(request: NextRequest) {
       FROM payout_requests pr
       LEFT JOIN participants p ON p.email = pr.participant_email
       WHERE 1=1 ${statusFilter}
-      ORDER BY pr.created_at DESC
-      LIMIT ${limitParam} OFFSET ${offsetParam}`,
-      params
-    )
+      ORDER BY pr.created_at DESC`
+
+    if (!loadAll) {
+      params.push(limit)
+      const limitParam = `$${params.length}`
+      params.push(offset)
+      const offsetParam = `$${params.length}`
+      queryStr += ` LIMIT ${limitParam} OFFSET ${offsetParam}`
+    }
+
+    const rows = await query(queryStr, params)
 
     return NextResponse.json({
       success: true,
@@ -77,9 +79,9 @@ export async function GET(request: NextRequest) {
         contributed_amount: Number(r.contributed_amount) || 0,
       })),
       totalCount,
-      limit,
-      offset,
-      hasMore: offset + limit < totalCount,
+      limit: loadAll ? totalCount : limit,
+      offset: loadAll ? 0 : offset,
+      hasMore: loadAll ? false : offset + limit < totalCount,
     })
   } catch (err) {
     console.error("[all-payouts] GET error:", err)
