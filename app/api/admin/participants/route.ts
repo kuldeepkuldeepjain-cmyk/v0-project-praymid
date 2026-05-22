@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
               whatsapp_otp, otp_verified, otp_verified_at, created_at, updated_at, rank,
               serial_number, mobile_number, country_code, country, state, pin_code, full_address,
               bep20_address, total_earnings, bonus_balance, referral_count, referral_earnings,
-              is_deleted, deleted_at, last_login, total_referrals
+              is_deleted, deleted_at, last_login, total_referrals, activation_date, activation_deadline
        FROM participants WHERE is_deleted = FALSE ORDER BY created_at DESC`
     )
 
@@ -51,6 +51,9 @@ export async function GET(request: NextRequest) {
       whatsapp_otp: p.whatsapp_otp || "",
       otp_verified: p.otp_verified || false,
       otp_verified_at: p.otp_verified_at || null,
+      activation_fee_paid: !!p.activation_date,
+      activation_fee_paid_at: p.activation_date || null,
+      activation_deadline: p.activation_deadline || null,
     }))
 
     return NextResponse.json({ participants, total: participants.length })
