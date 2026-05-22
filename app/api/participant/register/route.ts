@@ -33,6 +33,14 @@ export async function POST(request: Request) {
       if (refRows.length === 0) return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
     }
 
+    // Helper to increment referrer counts after insert
+    const incrementReferrerCounts = async (code: string) => {
+      await query(
+        `UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1, total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`,
+        [code]
+      ).catch(() => {})
+    }
+
     const inserted = await query<Record<string, any>>(
       `INSERT INTO participants
         (full_name, username, email, password_hash, plain_password, wallet_address,
@@ -48,6 +56,11 @@ export async function POST(request: Request) {
     )
 
     const newParticipant = inserted[0]
+
+    // Increment referrer's referral count if a valid referral code was used
+    if (referralCode) {
+      await incrementReferrerCounts(referralCode.toUpperCase())
+    }
 
     // Do NOT auto-login — participant must wait for admin to verify mobile OTP first
 
