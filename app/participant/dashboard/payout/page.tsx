@@ -27,12 +27,29 @@ const PAYOUT_PLANS = [
     id: "platinum",
     label: "P2P Payout",
     amount: 100,
+    minAmount: 100,
+    method: "BEP20",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",
     bg: "bg-violet-50",
     badge: "bg-violet-200 text-violet-800",
     ring: "ring-violet-500",
     icon: "💎",
+    description: "Peer-to-peer payout via BEP20 wallet",
+  },
+  {
+    id: "direct",
+    label: "Direct Payout",
+    amount: 100,
+    minAmount: 100,
+    method: "DIRECT",
+    accent: "from-amber-500 to-orange-500",
+    border: "border-amber-300",
+    bg: "bg-amber-50",
+    badge: "bg-amber-200 text-amber-800",
+    ring: "ring-amber-500",
+    icon: "⚡",
+    description: "Trader Payout — direct transfer, $100 and above",
   },
 ] as const
 
@@ -156,6 +173,7 @@ export default function PayoutPage() {
           email: participantData?.email,
           amount: plan.amount,
           bep20_address: bep20Address,
+          payout_method: plan.method,
         }),
       })
 
@@ -453,15 +471,15 @@ export default function PayoutPage() {
                           {plan.icon}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="text-sm font-bold text-slate-900">{plan.label}</span>
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${plan.badge}`}>
-                              {plan.label.toUpperCase()}
-                            </span>
+                            {plan.id === "direct" && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
+                                TRADER PAYOUT
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Request <span className="font-bold text-slate-700">${plan.amount} USDT</span> payout
-                          </p>
+                          <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">

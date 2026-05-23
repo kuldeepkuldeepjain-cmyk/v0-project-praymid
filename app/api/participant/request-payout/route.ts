@@ -31,11 +31,17 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const body = await request.json()
-    const { email, amount, bep20_address, wallet_address } = body
+    const { email, amount, bep20_address, wallet_address, payout_method } = body
     const walletAddr = bep20_address || wallet_address
+    const method = payout_method || "BEP20"
 
     if (!email || !amount || !walletAddr) {
       return NextResponse.json({ success: false, error: "Missing required fields (email, amount, wallet address)" }, { status: 400 })
+    }
+
+    // Validate minimum amount for Direct Payout
+    if (method === "DIRECT" && Number(amount) < 100) {
+      return NextResponse.json({ success: false, error: "Direct Payout (Trader Payout) requires a minimum of $100" }, { status: 400 })
     }
 
     // Load participant balance info
@@ -68,9 +74,9 @@ export async function POST(request: NextRequest) {
     const payoutRows = await query(
       `INSERT INTO payout_requests
          (participant_id, participant_email, wallet_address, amount, status, payout_method)
-       VALUES ($1, $2, $3, $4, 'pending', 'BEP20')
+       VALUES ($1, $2, $3, $4, 'pending', $5)
        RETURNING id`,
-      [participant.id, email.toLowerCase().trim(), walletAddr, Number(amount)]
+      [participant.id, email.toLowerCase().trim(), walletAddr, Number(amount), method]
     ) as any[]
     const payoutRequest = payoutRows[0]
 
