@@ -71,6 +71,8 @@ export default function PayoutPage() {
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
   const [disputeReason, setDisputeReason] = useState("")
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
+  const [directPayoutEligible, setDirectPayoutEligible] = useState(false)
+  const [totalWinnings, setTotalWinnings] = useState(0)
   useEffect(() => {
     setMounted(true)
     
@@ -108,6 +110,16 @@ export default function PayoutPage() {
         const histJson = await histRes.json()
         if (histJson.payouts) setPayoutHistory(histJson.payouts)
 
+        // Fetch Direct Payout eligibility
+        try {
+          const eligRes = await participantFetch(`/api/participant/direct-payout-eligibility?email=${encodeURIComponent(parsedData.email)}`)
+          const eligJson = await eligRes.json()
+          if (eligJson.success) {
+            setDirectPayoutEligible(eligJson.eligible)
+            setTotalWinnings(eligJson.totalWinnings || 0)
+          }
+        } catch {}
+
       } catch {}
     }
 
@@ -127,6 +139,15 @@ export default function PayoutPage() {
       toast({
         title: "Active Payout Exists",
         description: "You can only place a new payout request after your current one is completed.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (plan.id === "direct" && !directPayoutEligible) {
+      toast({
+        title: "Not Eligible for Direct Payout",
+        description: `You need to win at least $100 from Luck Wheel or Prediction to use Direct Payout. Your current winnings: $${totalWinnings.toFixed(2)}`,
         variant: "destructive",
       })
       return
@@ -454,42 +475,59 @@ export default function PayoutPage() {
               {PAYOUT_PLANS.map((plan) => {
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
+                const isDirectPlan = plan.id === "direct"
+                const isNotEligible = isDirectPlan && !directPayoutEligible
+                const isDisabled = hasActivePayout || isNotEligible
                 return (
                   <button
                     key={plan.id}
-                    onClick={() => setSelectedPayoutPlanId(plan.id)}
-                    disabled={hasActivePayout}
-                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 ${
-                      isSelected
+                    onClick={() => !isNotEligible && setSelectedPayoutPlanId(plan.id)}
+                    disabled={isDisabled}
+                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
+                      isNotEligible
+                        ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
+                        : isSelected
                         ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
                         : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${hasActivePayout && !isNotEligible ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
-                          {plan.icon}
+                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${isNotEligible ? "from-slate-300 to-slate-400" : plan.accent} flex items-center justify-center text-base shadow-sm`}>
+                          {isNotEligible ? <ShieldAlert className="h-5 w-5 text-white" /> : plan.icon}
                         </div>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-bold text-slate-900">{plan.label}</span>
-                            {plan.id === "direct" && (
+                            <span className={`text-sm font-bold ${isNotEligible ? "text-slate-400" : "text-slate-900"}`}>{plan.label}</span>
+                            {isDirectPlan && !isNotEligible && (
                               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
                                 TRADER PAYOUT
                               </span>
                             )}
+                            {isNotEligible && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">
+                                NOT ELIGIBLE
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
+                          {isNotEligible ? (
+                            <p className="text-xs text-red-400 mt-0.5">
+                              Win $100+ from Luck Wheel or Prediction to unlock. Your wins: ${totalWinnings.toFixed(2)}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {!canAfford && (
+                        {!isNotEligible && !canAfford && (
                           <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
                         )}
                         <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                          isNotEligible ? "border-slate-200 bg-slate-100" :
                           isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
                         }`}>
-                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                          {isSelected && !isNotEligible && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                         </div>
                       </div>
                     </div>
@@ -514,9 +552,11 @@ export default function PayoutPage() {
             </button>
 
             {!canWithdraw && (
-              <p className="text-center text-xs text-slate-400 mt-3">
+              <p className="text-center text-xs text-red-400 mt-3 font-medium">
                 {hasActivePayout
                   ? "Complete your current payout request before placing a new one"
+                  : selectedPayoutPlanId === "direct" && !directPayoutEligible
+                  ? `You are Not Eligible for Direct Payout. Win $100+ from Luck Wheel or Prediction to unlock. (Current: $${totalWinnings.toFixed(2)})`
                   : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} payout`}
               </p>
             )}
