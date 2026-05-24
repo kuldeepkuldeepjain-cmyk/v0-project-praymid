@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const db = getPool()!
     const { rows } = await db.query(
-      "SELECT referral_code, total_referrals, referral_earnings, referral_count, username FROM participants WHERE email = $1", [email]
+      "SELECT referral_code, total_referrals, referral_earnings FROM participants WHERE email = $1", [email]
     )
     const userData = rows[0]
     if (!userData) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       referralCode: userData.referral_code,
-      referralCount: userData.referral_count || userData.total_referrals || 0,
+      referralCount: userData.total_referrals || 0,
       referralEarnings: Number(userData.referral_earnings) || 0,
       referredUsers: referredUsers || [],
       referralLink: `https://flowchain.club/register?ref=${userData.referral_code}`,

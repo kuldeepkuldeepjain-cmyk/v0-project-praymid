@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
               wallet_address, account_balance, is_active, status, referral_code, referred_by,
               whatsapp_otp, otp_verified, otp_verified_at, created_at, updated_at, rank,
               serial_number, mobile_number, country_code, country, state, pin_code, full_address,
-              bep20_address, total_earnings, bonus_balance, referral_count, referral_earnings,
+              bep20_address, total_earnings, bonus_balance, referral_earnings,
               is_deleted, deleted_at, last_login, total_referrals, activation_date, activation_deadline
        FROM participants WHERE is_deleted = FALSE ORDER BY created_at DESC`
     )
@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
       total_earnings: Number(p.total_earnings) || 0,
       referral_code: p.referral_code || "",
       referred_by: p.referred_by || "",
-      referral_count: p.referral_count || 0,
       referral_earnings: Number(p.referral_earnings) || 0,
       total_referrals: p.total_referrals || 0,
       whatsapp_otp: p.whatsapp_otp || "",
