@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { PageLoader } from "@/components/ui/page-loader"
-import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert } from "lucide-react"
+import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert, Zap } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
@@ -471,70 +471,166 @@ export default function PayoutPage() {
             </p>
 
             {/* Payout Plan Selector */}
-            <div className="space-y-2 mb-5">
-              <p className="text-sm font-semibold text-slate-700">Select Payout Amount</p>
-              {PAYOUT_PLANS.map((plan) => {
+            <div className="space-y-3 mb-5">
+              <p className="text-sm font-semibold text-slate-700">Select Payout Type</p>
+
+              {/* P2P Payout card */}
+              {(() => {
+                const plan = PAYOUT_PLANS[0]
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
-                const isDirectPlan = plan.id === "direct"
-                const isNotEligible = isDirectPlan && !directPayoutEligible
-                const isDisabled = hasActivePayout || isNotEligible
                 return (
                   <button
                     key={plan.id}
-                    onClick={() => !isNotEligible && setSelectedPayoutPlanId(plan.id)}
-                    disabled={isDisabled}
-                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
-                      isNotEligible
-                        ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
-                        : isSelected
+                    onClick={() => setSelectedPayoutPlanId(plan.id)}
+                    disabled={hasActivePayout}
+                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 ${
+                      isSelected
                         ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
                         : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout && !isNotEligible ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${isNotEligible ? "from-slate-300 to-slate-400" : plan.accent} flex items-center justify-center text-base shadow-sm`}>
-                          {isNotEligible ? <ShieldAlert className="h-5 w-5 text-white" /> : plan.icon}
+                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
+                          {plan.icon}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-sm font-bold ${isNotEligible ? "text-slate-400" : "text-slate-900"}`}>{plan.label}</span>
-                            {isDirectPlan && !isNotEligible && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-200 text-amber-800">
-                                TRADER PAYOUT
-                              </span>
-                            )}
-                            {isNotEligible && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-600">
-                                NOT ELIGIBLE
-                              </span>
-                            )}
-                          </div>
-                          {isNotEligible ? (
-                            <p className="text-xs text-red-400 mt-0.5">
-                              Win $100+ from Luck Wheel or Prediction to unlock. Your wins: ${totalWinnings.toFixed(2)}
-                            </p>
-                          ) : (
-                            <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
-                          )}
+                          <span className="text-sm font-bold text-slate-900">{plan.label}</span>
+                          <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {!isNotEligible && !canAfford && (
-                          <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
+                        {!canAfford && (
+                          <span className="text-xs text-red-500 font-medium">Need ${Math.max(0, plan.amount - walletBalance).toFixed(2)} more</span>
                         )}
                         <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          isNotEligible ? "border-slate-200 bg-slate-100" :
                           isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
                         }`}>
-                          {isSelected && !isNotEligible && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                         </div>
                       </div>
                     </div>
                   </button>
                 )
-              })}
+              })()}
+
+              {/* Direct Payout — highlighted premium card */}
+              {(() => {
+                const plan = PAYOUT_PLANS[1]
+                const isSelected = selectedPayoutPlanId === plan.id
+                const isNotEligible = !directPayoutEligible
+                const needed = Math.max(0, 100 - totalWinnings)
+                return (
+                  <div className="relative">
+                    {/* Glow border */}
+                    <div className={`absolute -inset-[2px] rounded-2xl ${isNotEligible ? "bg-gradient-to-r from-slate-300 to-slate-400" : "bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400"} blur-[3px] opacity-70`} />
+                    <button
+                      onClick={() => !isNotEligible && !hasActivePayout && setSelectedPayoutPlanId(plan.id)}
+                      disabled={isNotEligible || hasActivePayout}
+                      className={`relative w-full text-left rounded-xl border-2 transition-all duration-200 overflow-hidden ${
+                        isNotEligible
+                          ? "border-slate-200 cursor-not-allowed"
+                          : isSelected
+                          ? "border-amber-400 ring-2 ring-amber-400 ring-offset-1"
+                          : "border-amber-300 hover:border-amber-400"
+                      }`}
+                    >
+                      {/* Top ribbon */}
+                      <div className={`w-full px-4 py-2 flex items-center justify-between ${isNotEligible ? "bg-slate-100" : "bg-gradient-to-r from-amber-500 to-orange-500"}`}>
+                        <div className="flex items-center gap-2">
+                          <Zap className={`h-3.5 w-3.5 ${isNotEligible ? "text-slate-400" : "text-white"}`} />
+                          <span className={`text-xs font-bold tracking-wide ${isNotEligible ? "text-slate-400" : "text-white"}`}>
+                            DIRECT PAYOUT — TRADER EXCLUSIVE
+                          </span>
+                        </div>
+                        {isNotEligible ? (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500">LOCKED</span>
+                        ) : (
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/30 text-white">$100+</span>
+                        )}
+                      </div>
+
+                      {/* Card body */}
+                      <div className={`px-4 py-3 ${isNotEligible ? "bg-slate-50" : "bg-gradient-to-br from-amber-50 to-orange-50"}`}>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shadow-sm ${isNotEligible ? "bg-slate-200" : "bg-gradient-to-br from-amber-500 to-orange-500"}`}>
+                              {isNotEligible
+                                ? <ShieldAlert className="h-5 w-5 text-slate-400" />
+                                : <Zap className="h-5 w-5 text-white" />
+                              }
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold ${isNotEligible ? "text-slate-400" : "text-slate-900"}`}>Direct Payout</span>
+                              </div>
+                              {isNotEligible ? (
+                                <p className="text-xs text-red-400 mt-0.5 font-medium">
+                                  You are not eligible — win ${needed.toFixed(2)} more to unlock
+                                </p>
+                              ) : (
+                                <p className="text-xs text-amber-700 mt-0.5">Instant trader payout · min $100</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
+                            isNotEligible ? "border-slate-200 bg-slate-100"
+                            : isSelected ? "border-amber-500 bg-gradient-to-br from-amber-500 to-orange-500"
+                            : "border-amber-300 bg-white"
+                          }`}>
+                            {isSelected && !isNotEligible && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                          </div>
+                        </div>
+
+                        {/* Progress bar when not eligible */}
+                        {isNotEligible && (
+                          <div className="mt-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-slate-500">Your winnings progress</span>
+                              <span className="text-xs font-bold text-slate-600">${totalWinnings.toFixed(2)} / $100</span>
+                            </div>
+                            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all"
+                                style={{ width: `${Math.min(100, (totalWinnings / 100) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                )
+              })()}
+
+              {/* Motivational banner — shown when not eligible */}
+              {!directPayoutEligible && (
+                <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-4 mt-1">
+                  <div className="flex items-start gap-3">
+                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-amber-800">Unlock Direct Trader Payout</p>
+                      <p className="text-xs text-amber-700 mt-1 leading-relaxed">
+                        Play <span className="font-bold">Prediction</span> or spin the <span className="font-bold">Luck Wheel</span> and win a total of <span className="font-bold">$100</span> to unlock instant Direct Payout. Top traders earn more — every correct prediction brings you closer to elite payouts.
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-200 text-amber-800">
+                          <TrendingUp className="h-3 w-3" /> Predict &amp; Win
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-200 text-orange-800">
+                          <Zap className="h-3 w-3" /> Spin the Wheel
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+                          <CheckCircle2 className="h-3 w-3" /> Unlock Trader Payout
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
