@@ -297,7 +297,8 @@ export default function PayoutPage() {
   const walletBalance = Number(participantData?.account_balance) || 0
   const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
-  const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
+  const isDirectSelected = selectedPayoutPlanId === "direct"
+      const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout && !(isDirectSelected && !directPayoutEligible)
   
   // Helper function to render horizontal status tracker
   const renderStatusTracker = (status: string, transactionHash?: string) => {
