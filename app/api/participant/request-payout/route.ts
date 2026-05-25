@@ -44,16 +44,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Direct Payout (Trader Payout) requires a minimum of $100" }, { status: 400 })
     }
 
-    // Eligibility check for Direct Payout — must have won $100+ from Luck Wheel or Prediction
+    // Eligibility check for Direct Payout — must have WON $100+ from Luck Wheel or Prediction
+    // This checks ONLY winnings, NOT account balance
     if (method === "DIRECT") {
       const spinWinRows = await query(
-        `SELECT COALESCE(SUM(amount), 0) as total FROM transactions WHERE participant_email = $1 AND type = 'spin_win'`,
+        `SELECT COALESCE(SUM(amount), 0) as total 
+         FROM transactions 
+         WHERE LOWER(participant_email) = $1 AND type = 'spin_win'`,
         [email.toLowerCase().trim()]
       ) as any[]
       const totalSpinWins = Number(spinWinRows?.[0]?.total) || 0
 
       const predWinRows = await query(
-        `SELECT COALESCE(SUM(profit_loss), 0) as total FROM predictions WHERE participant_email = $1 AND status = 'won' AND profit_loss > 0`,
+        `SELECT COALESCE(SUM(profit_loss), 0) as total 
+         FROM predictions 
+         WHERE LOWER(participant_email) = $1 
+         AND (status = 'won' OR result = 'win') 
+         AND profit_loss > 0`,
         [email.toLowerCase().trim()]
       ) as any[]
       const totalPredWins = Number(predWinRows?.[0]?.total) || 0
@@ -64,7 +71,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           success: false,
           notEligible: true,
-          error: `You are not eligible for Direct Payout. You need to win at least $100 from Luck Wheel or Prediction. Your current winnings: $${totalWinnings.toFixed(2)}`,
+          error: `You are Not Eligible for Direct Payout. Win at least $100 from Luck Wheel or Prediction. Your winnings: $${totalWinnings.toFixed(2)} (Spin: $${totalSpinWins.toFixed(2)}, Prediction: $${totalPredWins.toFixed(2)})`,
         }, { status: 403 })
       }
     }

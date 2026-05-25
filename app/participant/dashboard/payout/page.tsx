@@ -73,6 +73,8 @@ export default function PayoutPage() {
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
   const [directPayoutEligible, setDirectPayoutEligible] = useState(false)
   const [totalWinnings, setTotalWinnings] = useState(0)
+  const [spinWins, setSpinWins] = useState(0)
+  const [predictionWins, setPredictionWins] = useState(0)
   useEffect(() => {
     setMounted(true)
     
@@ -117,6 +119,8 @@ export default function PayoutPage() {
           if (eligJson.success) {
             setDirectPayoutEligible(eligJson.eligible)
             setTotalWinnings(eligJson.totalWinnings || 0)
+            setSpinWins(eligJson.totalSpinWins || 0)
+            setPredictionWins(eligJson.totalPredWins || 0)
           }
         } catch {}
 
@@ -595,6 +599,16 @@ export default function PayoutPage() {
                                 className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all"
                                 style={{ width: `${Math.min(100, (totalWinnings / 100) * 100)}%` }}
                               />
+                            </div>
+                            {/* Winnings breakdown */}
+                            <div className="mt-2 flex items-center gap-3 text-xs">
+                              <span className="text-slate-500">
+                                Luck Wheel: <span className="font-semibold text-orange-600">${spinWins.toFixed(2)}</span>
+                              </span>
+                              <span className="text-slate-300">|</span>
+                              <span className="text-slate-500">
+                                Prediction: <span className="font-semibold text-amber-600">${predictionWins.toFixed(2)}</span>
+                              </span>
                             </div>
                           </div>
                         )}
