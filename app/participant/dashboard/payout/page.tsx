@@ -91,15 +91,21 @@ export default function PayoutPage() {
         
         const parsedData = JSON.parse(storedData)
 
-        // Fetch fresh participant data
-        const meRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
-        const meJson = await meRes.json()
-        const freshData: any = meJson.participant
-        if (freshData) {
-          setParticipantData(freshData)
-          localStorage.setItem("participantData", JSON.stringify(freshData))
-          if (freshData.bep20_address) setBep20Address(freshData.bep20_address)
-        } else {
+        // Always fetch fresh balance from DB — never rely on localStorage balance
+        try {
+          const meRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
+          const meJson = await meRes.json()
+          if (meJson.success && meJson.participant) {
+            const freshData = { ...parsedData, ...meJson.participant }
+            setParticipantData(freshData)
+            localStorage.setItem("participantData", JSON.stringify(freshData))
+            if (freshData.bep20_address) setBep20Address(freshData.bep20_address)
+          } else {
+            // DB fetch failed — still load non-balance data from localStorage for email/name
+            setParticipantData(parsedData)
+            if (parsedData.bep20_address) setBep20Address(parsedData.bep20_address)
+          }
+        } catch {
           setParticipantData(parsedData)
           if (parsedData.bep20_address) setBep20Address(parsedData.bep20_address)
         }
