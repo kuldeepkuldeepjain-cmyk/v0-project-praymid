@@ -7,42 +7,32 @@ export async function GET(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
+    // Only select columns that actually exist in the participants table
     const rows = await query(
-      `SELECT id, email, username, full_name, plain_password,
-              wallet_address, account_balance, is_active, status, referral_code, referred_by,
-              whatsapp_otp, otp_verified, otp_verified_at, created_at, updated_at, rank,
-              serial_number, mobile_number, country_code, country, state, pin_code, full_address,
-              bep20_address, total_earnings, bonus_balance, referral_earnings,
-              is_deleted, deleted_at, last_login, total_referrals, activation_date, activation_deadline
-       FROM participants WHERE is_deleted = FALSE ORDER BY created_at DESC`
+      `SELECT id, email, username, full_name,
+              wallet_address, account_balance, is_active, status,
+              referral_code, referred_by, referral_earnings, total_referrals,
+              whatsapp_otp, otp_verified, otp_verified_at,
+              created_at, updated_at, activation_date, activation_fee_paid,
+              location, last_seen
+       FROM participants ORDER BY created_at DESC`
     )
 
     const participants = rows.map((p: any) => ({
       id: p.id,
-      serial_number: p.serial_number || p.id?.toString().slice(-6) || "",
+      serial_number: p.id?.toString().slice(-6) || "",
       wallet_address: p.wallet_address || "",
-      bep20_address: p.bep20_address || "",
       email: p.email,
-      plain_password: p.plain_password || "",
       name: p.full_name || p.username || "Unknown",
       full_name: p.full_name || "",
       username: p.username || "",
-      mobile_number: p.mobile_number || "",
-      country_code: p.country_code || "",
-      country: p.country || "",
-      state: p.state || "",
-      pin_code: p.pin_code || "",
-      full_address: p.full_address || "",
       created_at: p.created_at,
       updated_at: p.updated_at,
-      last_login: p.last_login,
+      last_login: p.last_seen,
       status: p.status || "active",
-      rank: p.rank || "",
       is_active: p.is_active !== false,
       wallet_balance: Number(p.account_balance) || 0,
       account_balance: Number(p.account_balance) || 0,
-      bonus_balance: Number(p.bonus_balance) || 0,
-      total_earnings: Number(p.total_earnings) || 0,
       referral_code: p.referral_code || "",
       referred_by: p.referred_by || "",
       referral_earnings: Number(p.referral_earnings) || 0,
@@ -50,9 +40,9 @@ export async function GET(request: NextRequest) {
       whatsapp_otp: p.whatsapp_otp || "",
       otp_verified: p.otp_verified || false,
       otp_verified_at: p.otp_verified_at || null,
-      activation_fee_paid: !!p.activation_date,
+      activation_fee_paid: p.activation_fee_paid || !!p.activation_date,
       activation_fee_paid_at: p.activation_date || null,
-      activation_deadline: p.activation_deadline || null,
+      location: p.location || "",
     }))
 
     return NextResponse.json({ participants, total: participants.length })

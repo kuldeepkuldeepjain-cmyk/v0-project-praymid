@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         `SELECT COALESCE(SUM(profit_loss), 0) as total 
          FROM predictions 
          WHERE LOWER(participant_email) = $1 
-         AND (status = 'won' OR result = 'win') 
+         AND result = 'won'
          AND profit_loss > 0`,
         [email.toLowerCase().trim()]
       ) as any[]

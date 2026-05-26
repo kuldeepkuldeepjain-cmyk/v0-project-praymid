@@ -20,13 +20,13 @@ export async function GET(request: NextRequest) {
     ) as any[]
     const totalSpinWins = Number(spinRows?.[0]?.total) || 0
 
-    // Sum all prediction wins (profit_loss > 0, result = 'win' or status = 'won')
+    // Sum all prediction wins — result = 'won' and profit_loss > 0
     const predRows = await query(
       `SELECT COALESCE(SUM(profit_loss), 0) AS total
        FROM predictions
        WHERE LOWER(participant_email) = $1
-         AND profit_loss > 0
-         AND (result = 'win' OR status = 'won')`,
+         AND result = 'won'
+         AND profit_loss > 0`,
       [normalizedEmail]
     ) as any[]
     const totalPredWins = Number(predRows?.[0]?.total) || 0

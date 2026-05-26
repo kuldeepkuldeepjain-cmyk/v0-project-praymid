@@ -35,8 +35,8 @@ export async function POST(request: Request) {
         "UPDATE predictions SET target_price=$1, status='refunded', result='refunded', profit_loss=0, closed_at=NOW() WHERE id=$2",
         [finalPrice, predictionId]
       )
-      const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
-      await db.query(`UPDATE participants SET ${balanceField} = ${balanceField} + $1 WHERE email=$2`, [prediction.amount, prediction.participant_email])
+      // Always refund to account_balance
+      await db.query(`UPDATE participants SET account_balance = account_balance + $1 WHERE email=$2`, [prediction.amount, prediction.participant_email])
       await db.query(
         `INSERT INTO transactions (participant_email, type, amount, description, reference_id, status)
          VALUES ($1,'refund',$2,'Trade refunded - no price movement',$3,'completed') ON CONFLICT DO NOTHING`,
@@ -56,13 +56,12 @@ export async function POST(request: Request) {
       [result, profitLoss, finalPrice, predictionId]
     )
 
-    // On WIN: credit payout (stake back + profit). Balance was already debited at bet placement.
+    // On WIN: credit payout (stake back + profit) to account_balance. Balance was already debited at bet placement.
     // On LOSS: nothing to do — balance was already debited at bet placement.
     if (isWin && payout > 0) {
-      const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
       await db.query(
-        `UPDATE participants SET ${balanceField} = ${balanceField} + $1, total_earnings = COALESCE(total_earnings,0) + $2 WHERE email=$3`,
-        [payout, profitLoss, prediction.participant_email]
+        `UPDATE participants SET account_balance = account_balance + $1 WHERE email=$2`,
+        [payout, prediction.participant_email]
       )
       await db.query(
         `INSERT INTO transactions (participant_email, type, amount, description, reference_id, status)
