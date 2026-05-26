@@ -17,7 +17,7 @@ const SPECIAL_PRIZES = [
   { label: "Refer a Friend", actualAmount: 10, probability: 0.05 },
 ]
 
-const SPIN_COST = 5
+const SPIN_COST = 0
 
 function selectPrize() {
   const random = Math.random()
@@ -49,16 +49,7 @@ export async function POST(request: NextRequest) {
     if (!rows || rows.length === 0) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     
     const participant = rows[0]
-    if (participant.account_balance < SPIN_COST) {
-      return NextResponse.json({ error: `Insufficient balance. You need $${SPIN_COST} to spin.` }, { status: 400 })
-    }
-
-    const newBalance = participant.account_balance - SPIN_COST
-    await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [newBalance, email])
-    await execute(
-      "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_cost',$2,'Spin Wheel Entry Fee',$3,$4)",
-      [email, -SPIN_COST, participant.account_balance, newBalance]
-    )
+    const newBalance = participant.account_balance
 
     const prize = selectPrize()
     let finalBalance = newBalance

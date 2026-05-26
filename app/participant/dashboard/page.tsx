@@ -520,21 +520,11 @@ function DailySpinWheel({
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
   const { toast } = useToast()
-  const SPIN_COST = 5
+  const SPIN_COST = 0
 
   const spinWheel = async () => {
     if (isSpinning) return
     
-    // Check if user has enough balance
-    if (currentBalance < SPIN_COST) {
-      toast({
-        title: "Insufficient Balance",
-        description: "You need $" + SPIN_COST + " to spin the wheel. Please top up your wallet.",
-        variant: "destructive",
-      })
-      return
-    }
-
     setIsSpinning(true)
     setShowResult(false)
     setResult(null)
@@ -545,18 +535,13 @@ function DailySpinWheel({
     
   // Store original balance before deduction
   const originalBalance = participantData?.account_balance || 0
-  
-  // Deduct $5 from wallet immediately
-  const balanceAfterDeduction = originalBalance - SPIN_COST
-  setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
-  localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
     
     // Update database with deduction
     try {
       await fetch("/api/participant/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail, action: "deduct", amount: SPIN_COST }),
+        body: JSON.stringify({ email: userEmail }),
       })
     } catch {}
 
