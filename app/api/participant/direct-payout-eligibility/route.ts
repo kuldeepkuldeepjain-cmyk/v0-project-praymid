@@ -10,13 +10,12 @@ export async function GET(request: NextRequest) {
 
     const normalizedEmail = email.toLowerCase().trim()
 
-    // Sum all spin wheel wins from transactions table
+    // Sum all spin wheel wins from transactions table (only wins, not losses)
     const spinRows = await query(
       `SELECT COALESCE(SUM(amount), 0) AS total
        FROM transactions
        WHERE LOWER(participant_email) = $1
-         AND type = 'spin_win'
-         AND status = 'completed'`,
+         AND type = 'spin_win'`,
       [normalizedEmail]
     ) as any[]
     const totalSpinWins = Number(spinRows?.[0]?.total) || 0
