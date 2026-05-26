@@ -72,9 +72,6 @@ export default function PayoutPage() {
   const [disputeReason, setDisputeReason] = useState("")
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
   const [directPayoutEligible, setDirectPayoutEligible] = useState(false)
-  const [totalWinnings, setTotalWinnings] = useState(0)
-  const [spinWins, setSpinWins] = useState(0)
-  const [predictionWins, setPredictionWins] = useState(0)
   useEffect(() => {
     setMounted(true)
     
@@ -118,9 +115,6 @@ export default function PayoutPage() {
           const eligJson = await eligRes.json()
           if (eligJson.success) {
             setDirectPayoutEligible(eligJson.eligible)
-            setTotalWinnings(eligJson.totalWinnings || 0)
-            setSpinWins(eligJson.totalSpinWins || 0)
-            setPredictionWins(eligJson.totalPredWins || 0)
           }
         } catch {}
 
@@ -151,7 +145,7 @@ export default function PayoutPage() {
     if (plan.id === "direct" && !directPayoutEligible) {
       toast({
         title: "Not Eligible for Direct Payout",
-        description: `You need to win at least $100 from Luck Wheel or Prediction to use Direct Payout. Your current winnings: $${totalWinnings.toFixed(2)}`,
+        description: "Win $100+ from Luck Wheel or Prediction to unlock Direct Payout.",
         variant: "destructive",
       })
       return
@@ -524,7 +518,6 @@ export default function PayoutPage() {
                 const plan = PAYOUT_PLANS[1]
                 const isSelected = selectedPayoutPlanId === plan.id
                 const isNotEligible = !directPayoutEligible
-                const needed = Math.max(0, 100 - totalWinnings)
                 return (
                   <div className="relative">
                     {/* Glow border */}
@@ -549,9 +542,9 @@ export default function PayoutPage() {
                           </span>
                         </div>
                         {isNotEligible ? (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500">LOCKED</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-500">NOT ELIGIBLE</span>
                         ) : (
-                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-white/30 text-white">$100+</span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-600">ELIGIBLE</span>
                         )}
                       </div>
 
@@ -566,15 +559,13 @@ export default function PayoutPage() {
                               }
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm font-bold ${isNotEligible ? "text-slate-400" : "text-slate-900"}`}>Direct Payout</span>
-                              </div>
+                              <span className={`text-sm font-bold ${isNotEligible ? "text-slate-400" : "text-slate-900"}`}>Direct Payout</span>
                               {isNotEligible ? (
                                 <p className="text-xs text-red-400 mt-0.5 font-medium">
-                                  You are not eligible — win ${needed.toFixed(2)} more to unlock
+                                  Win $100+ from Prediction or Luck Wheel to unlock
                                 </p>
                               ) : (
-                                <p className="text-xs text-amber-700 mt-0.5">Instant trader payout · min $100</p>
+                                <p className="text-xs text-amber-700 mt-0.5">Instant trader payout - min $100</p>
                               )}
                             </div>
                           </div>
@@ -586,65 +577,11 @@ export default function PayoutPage() {
                             {isSelected && !isNotEligible && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                           </div>
                         </div>
-
-                        {/* Progress bar when not eligible */}
-                        {isNotEligible && (
-                          <div className="mt-3">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs text-slate-500">Your winnings progress</span>
-                              <span className="text-xs font-bold text-slate-600">${totalWinnings.toFixed(2)} / $100</span>
-                            </div>
-                            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full transition-all"
-                                style={{ width: `${Math.min(100, (totalWinnings / 100) * 100)}%` }}
-                              />
-                            </div>
-                            {/* Winnings breakdown */}
-                            <div className="mt-2 flex items-center gap-3 text-xs">
-                              <span className="text-slate-500">
-                                Luck Wheel: <span className="font-semibold text-orange-600">${spinWins.toFixed(2)}</span>
-                              </span>
-                              <span className="text-slate-300">|</span>
-                              <span className="text-slate-500">
-                                Prediction: <span className="font-semibold text-amber-600">${predictionWins.toFixed(2)}</span>
-                              </span>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </button>
                   </div>
                 )
               })()}
-
-              {/* Motivational banner — shown when not eligible */}
-              {!directPayoutEligible && (
-                <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 px-4 py-4 mt-1">
-                  <div className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center flex-shrink-0">
-                      <TrendingUp className="h-4 w-4 text-white" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-amber-800">Unlock Direct Trader Payout</p>
-                      <p className="text-xs text-amber-700 mt-1 leading-relaxed">
-                        Play <span className="font-bold">Prediction</span> or spin the <span className="font-bold">Luck Wheel</span> and win a total of <span className="font-bold">$100</span> to unlock instant Direct Payout. Top traders earn more — every correct prediction brings you closer to elite payouts.
-                      </p>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-200 text-amber-800">
-                          <TrendingUp className="h-3 w-3" /> Predict &amp; Win
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-200 text-orange-800">
-                          <Zap className="h-3 w-3" /> Spin the Wheel
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-green-100 text-green-700">
-                          <CheckCircle2 className="h-3 w-3" /> Unlock Trader Payout
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
             <button
@@ -667,7 +604,7 @@ export default function PayoutPage() {
                 {hasActivePayout
                   ? "Complete your current payout request before placing a new one"
                   : selectedPayoutPlanId === "direct" && !directPayoutEligible
-                  ? `You are Not Eligible for Direct Payout. Win $100+ from Luck Wheel or Prediction to unlock. (Current: $${totalWinnings.toFixed(2)})`
+                  ? "You are Not Eligible for Direct Payout. Win $100+ from Luck Wheel or Prediction to unlock."
                   : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} payout`}
               </p>
             )}
