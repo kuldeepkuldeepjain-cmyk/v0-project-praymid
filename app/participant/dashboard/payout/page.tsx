@@ -207,25 +207,10 @@ export default function PayoutPage() {
           duration: 5000,
         })
 
-        // Re-fetch fresh participant data from server to get real updated balance
-        try {
-          const meRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(participantData.email)}`)
-          const meJson = await meRes.json()
-          if (meJson.participant) {
-            setParticipantData(meJson.participant)
-            localStorage.setItem("participantData", JSON.stringify(meJson.participant))
-          } else {
-            // Fallback: use newBalance from API response
-            const updatedData = { ...participantData, account_balance: data.newBalance }
-            setParticipantData(updatedData)
-            localStorage.setItem("participantData", JSON.stringify(updatedData))
-          }
-        } catch {
-          // Fallback: use newBalance from API response
-          const updatedData = { ...participantData, account_balance: data.newBalance }
-          setParticipantData(updatedData)
-          localStorage.setItem("participantData", JSON.stringify(updatedData))
-        }
+        // Update balance using the newBalance returned directly from the payout API
+        const updatedData = { ...participantData, account_balance: Number(data.newBalance) }
+        setParticipantData(updatedData)
+        localStorage.setItem("participantData", JSON.stringify(updatedData))
         
         // Refresh payout history
         const histRes = await participantFetch(`/api/participant/request-payout?email=${encodeURIComponent(participantData.email)}`)
