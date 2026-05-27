@@ -1220,7 +1220,22 @@ export default function DashboardHome() {
   }
 
   const handleSpinWin = (_amount: number, _label: string, _type: string) => {
-    // Wallet transactions handled within SpinWheelModal — no double-credit here
+    // Refresh participant data from server to sync balance
+    fetchParticipantData()
+  }
+
+  // Refresh participant data from server
+  const fetchParticipantData = async () => {
+    try {
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(participantData?.email || "")}`)
+      const data = await res.json()
+      if (data.success && data.participant) {
+        setParticipantData(data.participant)
+        localStorage.setItem("participantData", JSON.stringify(data.participant))
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing participant data:", error)
+    }
   }
 
   // Function to fetch queue position
