@@ -1,6 +1,5 @@
 import { query, execute } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
-import { requireParticipantSession } from "@/lib/auth-middleware"
 
 // Actual prizes that can be won (50 and 100 are for display only, never won)
 const SPIN_PRIZES = [
@@ -39,8 +38,6 @@ function selectPrize() {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await requireParticipantSession(request)
-  if (!auth.ok) return auth.response
   try {
     const { email } = await request.json()
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
