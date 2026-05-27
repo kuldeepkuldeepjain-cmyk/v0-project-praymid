@@ -35,7 +35,7 @@ import {
   Plus,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
 
 import { TopUpModal } from "@/components/topup-modal"
@@ -545,9 +545,8 @@ function DailySpinWheel({
     // Call the spin API ONCE — it handles deduction, prize selection, and crediting all atomically
     let apiResult: { prize: { label: string; amount: number; segmentIndex: number }; balanceAfter: number } | null = null
     try {
-      const res = await fetch("/api/participant/spin", {
+      const res = await participantFetch("/api/participant/spin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: userEmail }),
       })
       const data = await res.json()
