@@ -48,7 +48,6 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
       setIsLoading(false)
     }
   }
-  }
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -60,7 +59,6 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
       setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, read_status: true } : n)))
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {}
-  }
   }
 
   const markAllAsRead = async () => {
@@ -79,7 +77,6 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
       toast({ title: "Error", description: "Failed to mark notifications as read", variant: "destructive" })
     }
   }
-  }
 
   const deleteNotification = async (notificationId: string) => {
     try {
@@ -88,7 +85,6 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
       if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch {}
-  }
   }
 
   const typeIcons = {

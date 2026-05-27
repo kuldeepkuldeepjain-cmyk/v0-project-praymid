@@ -1,5 +1,6 @@
 "use client"
 
+import { adminFetch } from "@/lib/auth"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -41,91 +42,11 @@ export function PayoutTrackerPanel() {
 
   const fetchPayoutFlows = async () => {
     try {
-      const supabase = createClient()
-
-      // Fetch payout requests with redirected contributions
-      const { data: payouts, error } = await supabase
-        .from("payout_requests")
-        .select(`
-          id,
-          participant_email,
-          serial_number,
-          amount,
-          status,
-          redirect_to_serial,
-          redirect_to_email,
-          created_at
-        `)
-        .eq("status", "redirected")
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-
-      console.log("[v0] Fetched payouts with redirected status:", payouts?.length || 0)
-
-      // For each payout, find the contributor and requester info
-      const flows: PayoutFlow[] = []
-      
-      for (const payout of payouts || []) {
-        // Get payout requester info with wallet address
-        const { data: requester } = await supabase
-          .from("participants")
-          .select("full_name, username, serial_number, wallet_address")
-          .eq("email", payout.participant_email)
-          .single()
-        
-        console.log("[v0] Requester found:", requester)
-
-        // Find contributor based on redirect_to_serial or redirect_to_email
-        let contributor = null
-        
-        if (payout.redirect_to_serial) {
-          const { data } = await supabase
-            .from("participants")
-            .select("email, full_name, username, serial_number")
-            .eq("serial_number", payout.redirect_to_serial)
-            .single()
-          contributor = data
-          console.log("[v0] Contributor found by serial:", contributor)
-        } else if (payout.redirect_to_email) {
-          const { data } = await supabase
-            .from("participants")
-            .select("email, full_name, username, serial_number")
-            .eq("email", payout.redirect_to_email)
-            .single()
-          contributor = data
-          console.log("[v0] Contributor found by email:", contributor)
-        }
-
-        if (contributor && requester) {
-          flows.push({
-            payout_id: payout.id,
-            payout_requester_email: payout.participant_email,
-            payout_requester_name: requester.full_name || requester.username || "N/A",
-            payout_requester_serial: payout.serial_number || requester.serial_number || "N/A",
-            payout_amount: payout.amount,
-            payout_status: payout.status,
-            payout_created_at: payout.created_at,
-            contributor_email: contributor.email,
-            contributor_name: contributor.full_name || contributor.username || "N/A",
-            contributor_serial: contributor.serial_number || "N/A",
-            contribution_amount: 100, // Fixed contribution amount
-            contribution_created_at: payout.created_at,
-            wallet_address: requester.wallet_address || "N/A"
-          })
-          console.log("[v0] Flow added:", flows[flows.length - 1])
-        }
-      }
-
-      console.log("[v0] Total flows created:", flows.length)
-      setPayoutFlows(flows)
+      const res = await adminFetch("/api/admin/p2p-payout-queue")
+      const data = await res.json()
+      setPayoutFlows(data.flows || [])
     } catch (error) {
       console.error("[v0] Error fetching payout flows:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load payout tracker data",
-        variant: "destructive",
-      })
     } finally {
       setIsLoading(false)
     }

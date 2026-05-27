@@ -96,17 +96,13 @@ export function P2PModeTogglePanel() {
     setIsUpdating(true)
 
     try {
-      const supabase = createClient()
-
-      const { error } = await supabase.from("system_settings").upsert({
-        setting_key: "admin_wallet_address",
-        setting_value: adminWallet.trim(),
-        setting_type: "string",
-        description: "Admin wallet address for direct contributions when P2P is OFF",
-        updated_at: new Date().toISOString(),
+      const res = await adminFetch("/api/admin/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ setting_key: "admin_wallet_address", setting_value: adminWallet.trim() }),
       })
-
-      if (error) throw error
+      const result = await res.json()
+      if (!result.success) throw new Error(result.error || "Failed to save")
 
       setSettings((prev) => ({
         ...prev,

@@ -76,14 +76,10 @@ export function ActivationPaymentsPanel() {
 
   const fetchParticipants = async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("id, username, full_name, email, wallet_address")
-        .order("created_at", { ascending: false })
-      
-      if (!error && data) {
-        setParticipants(data as any)
+      const res = await adminFetch("/api/admin/participants")
+      const data = await res.json()
+      if (data.success && data.participants) {
+        setParticipants(data.participants as any)
       }
     } catch (error) {
       console.error("Error fetching participants:", error)
@@ -166,43 +162,19 @@ export function ActivationPaymentsPanel() {
   const handleUpdatePayoutTracker = async (payment: ActivationPayment, newStatus: string, targetUserId?: string) => {
     setIsProcessing(true)
     try {
-      const supabase = createClient()
-      
-      // Update the payment submission with new tracker status
-      const { error: updateError } = await supabase
-        .from("payment_submissions")
-        .update({
+      const res = await adminFetch("/api/admin/update-payout-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId: payment.id,
           status: newStatus,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", payment.id)
-
-      if (updateError) throw updateError
-
-      // If redirecting to specific user, update their wallet address in wallet_pool
-      if (targetUserId && newStatus === "redirected") {
-        const targetUser = participants.find(p => p.id === targetUserId)
-        if (targetUser) {
-          // Add to wallet pool as contribution address
-          await supabase.from("wallet_pool").upsert({
-            participant_id: targetUserId,
-            participant_email: targetUser.email,
-            participant_username: targetUser.username,
-            bep20_address: payment.wallet,
-            is_active: true,
-            contribution_amount: payment.amount,
-          }, { onConflict: "participant_id" })
-
-          // Create notification
-          await supabase.from("notifications").insert({
-            user_email: targetUser.email,
-            type: "success",
-            title: "Contribution Address Assigned",
-            message: `A new contribution address has been assigned to you: ${payment.wallet}`,
-            read_status: false,
-          })
-        }
-      }
+          targetUserId,
+          wallet: payment.wallet,
+          amount: payment.amount,
+        }),
+      })
+      const result = await res.json()
+      if (!result.success) throw new Error(result.error || "Failed")
 
       toast({
         title: "Payout Tracker Updated",
