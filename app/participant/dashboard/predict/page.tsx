@@ -353,10 +353,29 @@ function PredictPageContent() {
       setBetAmount("")
       
       toast({ title: "Trade placed successfully!", description: "Your bet is now live." })
+      
+      // Refresh participant data from server to sync balance
+      setTimeout(() => {
+        refreshParticipantData()
+      }, 500)
     } catch (error) {
       toast({ title: "Failed to place trade", variant: "destructive" })
     } finally {
       setIsPlacingTrade(false)
+    }
+  }
+
+  // Refresh participant data from server
+  const refreshParticipantData = async () => {
+    try {
+      const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(userEmail)}`)
+      const data = await res.json()
+      if (data.success && data.participant) {
+        setParticipantData(data.participant)
+        localStorage.setItem("participantData", JSON.stringify(data.participant))
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing participant data:", error)
     }
   }
 
