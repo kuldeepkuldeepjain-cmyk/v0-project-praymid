@@ -507,7 +507,7 @@ function DailySpinWheel({
 }: {
   isOpen: boolean
   onClose: () => void
-  onWin: (amount: number, label: string, type: string) => void
+  onWin: (amount: number, label: string, type: string, balanceAfter: number) => void
   userEmail: string
   currentBalance: number
   participantData: any
@@ -578,6 +578,9 @@ function DailySpinWheel({
       setRotation(finalRotation)
     }, 50)
 
+    // Capture for closure use in setTimeout
+    const capturedResult = apiResult!
+
     // After spin animation completes (3 seconds)
     setTimeout(() => {
       setIsSpinning(false)
@@ -602,8 +605,8 @@ function DailySpinWheel({
         })
       }
 
-      // Notify parent to also refresh from server
-      onWin(won.value, won.label, won.type)
+      // Notify parent with the server-confirmed balance
+      onWin(won.value, won.label, won.type, capturedResult.balanceAfter)
     }, 3000)
   }
 
@@ -1166,9 +1169,19 @@ export default function DashboardHome() {
     router.push("/participant/login")
   }
 
-  const handleSpinWin = (_amount: number, _label: string, _type: string) => {
-    // Refresh participant data from server to sync balance
-    fetchParticipantData()
+  const handleSpinWin = (_amount: number, _label: string, _type: string, balanceAfter?: number) => {
+    if (balanceAfter !== undefined) {
+      // Directly update balance with the server-confirmed value — no round-trip needed
+      setParticipantData((prev: any) => {
+        const updated = { ...prev, account_balance: balanceAfter }
+        localStorage.setItem("participantData", JSON.stringify(updated))
+        return updated
+      })
+    } else {
+      // Fallback: refresh from server
+      const email = participantData?.email
+      if (email) refreshParticipantData(email)
+    }
   }
 
   // Refresh participant data from server
