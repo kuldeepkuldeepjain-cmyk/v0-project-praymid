@@ -1325,9 +1325,6 @@ export default function DashboardHome() {
       }
     }
 
-    document.addEventListener("visibilitychange", handleVisibilityChange)
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
-  }, [])
     const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
       position: index + 1,
       username,
@@ -1351,7 +1348,12 @@ export default function DashboardHome() {
       }
     }, 60000) // Refresh every 60 seconds to reduce load
 
-    return () => clearInterval(refreshInterval)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      clearInterval(refreshInterval)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
   }, [router])
 
   const copyToClipboard = async (text: string) => {
