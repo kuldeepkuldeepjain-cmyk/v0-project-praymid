@@ -46,6 +46,12 @@ export async function queryOne<T = Record<string, any>>(
   return rows[0] ?? null
 }
 
+// sql tagged-template shim for routes that do: sql`SELECT ... WHERE id = ${val}`
+export async function sql(strings: TemplateStringsArray, ...values: any[]): Promise<any[]> {
+  const text = strings.reduce((acc, s, i) => acc + s + (i < values.length ? `$${i + 1}` : ""), "")
+  return query(text, values)
+}
+
 // Helper: run an insert/update/delete, return rowCount
 export async function execute(sql: string, params: any[] = []): Promise<number> {
   const pool = getPool()
