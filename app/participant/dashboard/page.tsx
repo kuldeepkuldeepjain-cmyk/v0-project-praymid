@@ -1310,6 +1310,24 @@ export default function DashboardHome() {
       } catch {}
     }
 
+    // Add listener for page visibility to refresh balance when user returns to this page
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const storedData = localStorage.getItem("participantData")
+        if (storedData) {
+          try {
+            const data = JSON.parse(storedData)
+            if (data.email) {
+              refreshParticipantData(data.email)
+            }
+          } catch {}
+        }
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }, [])
     const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
       position: index + 1,
       username,
