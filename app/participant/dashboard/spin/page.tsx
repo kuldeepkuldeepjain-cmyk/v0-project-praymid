@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Sparkles, Trophy, TrendingUp, Volume2, VolumeX, Wallet, Info, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
+import { createClient } from "@/lib/supabase/client"
 
 interface Winner {
   email: string
@@ -88,26 +89,30 @@ export default function SpinWheelPage() {
       }
       const parsed = JSON.parse(storedData)
 
-      // Fetch fresh data from the me API (Neon-backed)
-      try {
-        const res = await fetch(`/api/participant/me?email=${encodeURIComponent(parsed.email)}`)
-        const json = await res.json()
-        if (json.success && json.participant) {
-          const d = json.participant
-          setParticipantEmail(d.email)
-          setBalance(Number(d.account_balance) ?? 0)
-          setAvailableSpins(d.available_spins ?? 0)
-          setIsActive(d.is_active ?? false)
-          localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...d }))
-          return
-        }
-      } catch {}
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("participants")
+        .select("email, account_balance, available_spins, is_active")
+        .eq("email", parsed.email)
+        .single()
 
-      // Fallback to cached
-      setParticipantEmail(parsed.email || "")
-      setBalance(parsed.account_balance || 0)
-      setAvailableSpins(parsed.available_spins || 0)
-      setIsActive(parsed.is_active || false)
+      if (error) {
+        // Fallback to cached
+        setParticipantEmail(parsed.email || "")
+        setBalance(parsed.account_balance || 0)
+        setAvailableSpins(parsed.available_spins || 0)
+        setIsActive(parsed.is_active || false)
+        return
+      }
+
+      if (data) {
+        const d = data as any
+        setParticipantEmail(d.email)
+        setBalance(d.account_balance ?? 0)
+        setAvailableSpins(d.available_spins ?? 0)
+        setIsActive(d.is_active ?? false)
+        localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...d }))
+      }
     } catch (error) {
       console.error("Error in loadParticipantData:", error)
     }

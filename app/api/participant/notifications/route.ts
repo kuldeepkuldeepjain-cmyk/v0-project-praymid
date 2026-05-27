@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,13 +10,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
     }
 
-    const notifications = await sql`
-      SELECT id, title, message, type, read_status, created_at
-      FROM notifications
-      WHERE user_email = ${email}
-      ORDER BY created_at DESC
-      LIMIT 50
-    `
+    const notifications = await query(
+      `SELECT id, title, message, type, read_status, created_at
+       FROM notifications
+       WHERE user_email = $1
+       ORDER BY created_at DESC
+       LIMIT 50`,
+      [email]
+    )
 
     return NextResponse.json({ success: true, notifications: notifications || [] })
   } catch (error) {
@@ -32,9 +33,16 @@ export async function PATCH(request: NextRequest) {
 
     if (ids && Array.isArray(ids)) {
       // Mark multiple as read
-      await sql`UPDATE notifications SET read_status = true WHERE id = ANY(${ids}::uuid[])`
+      const placeholders = ids.map((_, i) => `$${i + 1}`).join(",")
+      await execute(
+        `UPDATE notifications SET read_status = true WHERE id = ANY(ARRAY[${placeholders}]::uuid[])`,
+        ids
+      )
     } else if (id) {
-      await sql`UPDATE notifications SET read_status = ${read_status ?? true} WHERE id = ${id}`
+      await execute(
+        `UPDATE notifications SET read_status = $1 WHERE id = $2`,
+        [read_status ?? true, id]
+      )
     } else {
       return NextResponse.json({ success: false, error: "id or ids required" }, { status: 400 })
     }
@@ -55,7 +63,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, error: "id required" }, { status: 400 })
     }
 
-    await sql`DELETE FROM notifications WHERE id = ${id}`
+    await execute(`DELETE FROM notifications WHERE id = $1`, [id])
 
     return NextResponse.json({ success: true })
   } catch (error) {

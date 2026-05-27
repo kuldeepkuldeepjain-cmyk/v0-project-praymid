@@ -543,20 +543,20 @@ function DailySpinWheel({
     // This prevents the wheel from just slowly rotating between close angles
     setRotation(0)
     
-    // Store original balance before deduction
-    const originalBalance = participantData?.account_balance || 0
-    
-    // Deduct $5 from wallet immediately
-    const balanceAfterDeduction = originalBalance - SPIN_COST
-    setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
-    localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
+  // Store original balance before deduction
+  const originalBalance = participantData?.account_balance || 0
+  
+  // Deduct $5 from wallet immediately
+  const balanceAfterDeduction = originalBalance - SPIN_COST
+  setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
+  localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
     
     // Update database with deduction
     try {
       await fetch("/api/participant/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail }),
+        body: JSON.stringify({ email: userEmail, action: "deduct", amount: SPIN_COST }),
       })
     } catch {}
 

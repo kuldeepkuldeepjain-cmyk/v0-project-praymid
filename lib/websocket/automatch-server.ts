@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/server"
+
 /**
  * In-memory store for WebSocket connections (placeholder for future implementation)
  * In production, use Redis or Vercel KV for persistence across serverless instances

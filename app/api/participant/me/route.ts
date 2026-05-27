@@ -54,13 +54,7 @@ export async function GET(request: Request) {
 
     const db = getPool()!
     const result = await db.query(
-      `SELECT id, email, username, full_name, wallet_address,
-              account_balance, is_active, status,
-              referral_code, referred_by, referral_earnings, total_referrals,
-              whatsapp_otp, otp_verified, otp_verified_at,
-              created_at, updated_at, activation_date, activation_fee_paid,
-              location, last_seen
-       FROM participants WHERE email = $1`,
+      "SELECT * FROM participants WHERE email = $1",
       [email.toLowerCase().trim()]
     )
 
@@ -72,10 +66,15 @@ export async function GET(request: Request) {
       participant: {
         ...p,
         bep20_address: p.wallet_address || null,
+        next_contribution_date: p.next_contribution_date || null,
+        last_contribution_date: p.last_contribution_date || null,
+        // Coerce PostgreSQL numeric strings to JS numbers
         account_balance: Number(p.account_balance) || 0,
-        wallet_balance: Number(p.account_balance) || 0,
-        referral_earnings: Number(p.referral_earnings) || 0,
-        total_referrals: Number(p.total_referrals) || 0,
+        wallet_balance: Number(p.wallet_balance ?? p.account_balance) || 0,
+        bonus_balance: Number(p.bonus_balance) || 0,
+        total_earnings: Number(p.total_earnings) || 0,
+        contributed_amount: Number(p.contributed_amount) || 0,
+        participation_count: Number(p.participation_count) || 0,
       },
     })
   } catch {

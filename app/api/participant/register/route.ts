@@ -36,22 +36,22 @@ export async function POST(request: Request) {
     // Helper to increment referrer counts after insert
     const incrementReferrerCounts = async (code: string) => {
       await query(
-        `UPDATE participants SET total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`,
+        `UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1, total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`,
         [code]
       ).catch(() => {})
     }
 
     const inserted = await query<Record<string, any>>(
       `INSERT INTO participants
-        (full_name, username, email, password_hash, wallet_address,
+        (full_name, username, email, password_hash, plain_password, wallet_address,
          referral_code, referred_by, account_balance, status, is_active,
-         whatsapp_otp, otp_verified)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,0,'pending',false,$8,false)
+         whatsapp_otp, otp_verified, mobile_number)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'pending',false,$9,false,$10)
        RETURNING *`,
       [
-        fullName, usernameKey, emailKey, password.trim(), walletAddress,
+        fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
         newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-        whatsappOtp || null,
+        whatsappOtp || null, mobileNumberClean,
       ]
     )
 

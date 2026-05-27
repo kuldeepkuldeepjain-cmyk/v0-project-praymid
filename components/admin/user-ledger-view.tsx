@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -64,26 +64,27 @@ export function UserLedgerView() {
     }
     setLoading(true)
     try {
-      const [meRes, txRes, payoutRes] = await Promise.all([
-        fetch(`/api/participant/me?email=${encodeURIComponent(email.trim())}`),
-        fetch(`/api/participant/ledger?email=${encodeURIComponent(email.trim())}`),
-        fetch(`/api/participant/request-payout?email=${encodeURIComponent(email.trim())}`),
-      ])
+      const supabase = createClient()
 
-      const [meJson, txJson, payoutJson] = await Promise.all([meRes.json(), txRes.json(), payoutRes.json()])
+      const { data: participant } = await supabase
+        .from("participants")
+        .select("id, email, full_name, username, account_balance")
+        .eq("email", email.trim())
+        .maybeSingle()
 
-      const participant = meJson.participant
       if (!participant) {
         toast({ title: "Not found", description: "No participant with that email.", variant: "destructive" })
         return
       }
 
-      const transactions = txJson.transactions || []
-      const payouts = payoutJson.payouts || []
-      const contributions: any[] = []
+      const [{ data: transactions }, { data: contributions }, { data: payouts }] = await Promise.all([
+        supabase.from("transactions").select("*").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
+        supabase.from("payment_submissions").select("id, amount, status, created_at").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
+        supabase.from("payout_requests").select("id, amount, status, created_at").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
+      ])
 
       const all: Transaction[] = [
-        ...transactions.map((tx: any) => ({
+        ...(transactions ?? []).map((tx: any) => ({
           id: tx.id,
           type: tx.type || "transaction",
           amount: tx.amount,
@@ -93,7 +94,7 @@ export function UserLedgerView() {
           created_at: tx.created_at,
           status: tx.status || "completed",
         })),
-        ...contributions
+        ...(contributions ?? [])
           .filter((c: any) => c.status === "approved")
           .map((c: any) => ({
             id: c.id,
@@ -105,7 +106,7 @@ export function UserLedgerView() {
             created_at: c.created_at,
             status: c.status,
           })),
-        ...payouts
+        ...(payouts ?? [])
           .filter((p: any) => p.status === "completed")
           .map((p: any) => ({
             id: p.id,
@@ -123,7 +124,7 @@ export function UserLedgerView() {
         participant_id: participant.id,
         participant_email: participant.email,
         participant_name: participant.full_name || participant.username || "Unknown",
-        current_balance: Number(participant.account_balance) || 0,
+        current_balance: participant.account_balance,
         transactions: all,
       })
       setOpen(true)

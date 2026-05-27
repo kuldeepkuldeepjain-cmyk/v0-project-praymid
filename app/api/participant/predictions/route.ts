@@ -13,20 +13,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Only account_balance is supported — referral earnings are tracked separately in referral_earnings column
+    const useReferralBalance = balance_source === "referral"
+
     const rows = await query(
-      "SELECT id, account_balance, referral_earnings FROM participants WHERE email = $1 LIMIT 1",
+      "SELECT id, account_balance, bonus_balance FROM participants WHERE email = $1 LIMIT 1",
       [participant_email]
     ) as any[]
     const participant = rows[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
-    // Always use account_balance — no bonus_balance column exists
-    const availableBalance = Number(participant.account_balance ?? 0)
+    const availableBalance = useReferralBalance
+      ? Number(participant.bonus_balance ?? 0)
+      : Number(participant.account_balance ?? 0)
 
     if (availableBalance < Number(amount)) {
       return NextResponse.json({
-        error: "Insufficient wallet balance",
+        error: useReferralBalance ? "Insufficient referral earnings balance" : "Insufficient wallet balance",
       }, { status: 400 })
     }
 
@@ -43,10 +45,11 @@ export async function POST(request: NextRequest) {
     ) as any[]
     const prediction = predRows[0]
 
+    const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
     
     await execute(
-      `UPDATE participants SET account_balance = $1 WHERE id = $2`,
+      `UPDATE participants SET ${balanceField} = $1 WHERE id = $2`,
       [newBalance, participant.id]
     )
 
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       [
         participant.id,
         participant_email,
-        "prediction_bet",
+        useReferralBalance ? "referral_earning" : "prediction_bet",
         -Number(amount),
         `Placed ${prediction_type} trade on ${crypto_pair} @ ${entry_price}`,
         prediction.id,

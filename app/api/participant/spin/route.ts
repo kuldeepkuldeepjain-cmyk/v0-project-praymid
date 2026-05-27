@@ -49,39 +49,27 @@ export async function POST(request: NextRequest) {
     if (!rows || rows.length === 0) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     
     const participant = rows[0]
-    
-    // Check sufficient balance for spin cost
     if (participant.account_balance < SPIN_COST) {
       return NextResponse.json({ error: `Insufficient balance. You need $${SPIN_COST} to spin.` }, { status: 400 })
     }
 
-    // Deduct spin cost first
-    const balanceAfterCost = participant.account_balance - SPIN_COST
-    await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [balanceAfterCost, email])
+    const newBalance = participant.account_balance - SPIN_COST
+    await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [newBalance, email])
     await execute(
       "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_cost',$2,'Spin Wheel Entry Fee',$3,$4)",
-      [email, -SPIN_COST, participant.account_balance, balanceAfterCost]
+      [email, -SPIN_COST, participant.account_balance, newBalance]
     )
-
-    const newBalance = balanceAfterCost
 
     const prize = selectPrize()
     let finalBalance = newBalance
     let wheelSegmentIndex = 0
 
     if (prize.amount > 0) {
-      // WIN: Add prize to balance
       finalBalance = newBalance + prize.amount
       await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [finalBalance, email])
       await execute(
         "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_win',$2,$3,$4,$5)",
         [email, prize.amount, `Spin Wheel Prize: ${prize.label}`, newBalance, finalBalance]
-      )
-    } else {
-      // LOSS: Record loss transaction (amount is 0, balance stays same after spin cost deduction)
-      await execute(
-        "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_loss',$2,$3,$4,$5)",
-        [email, 0, `Spin Wheel Loss: ${prize.label}`, newBalance, finalBalance]
       )
     }
 
