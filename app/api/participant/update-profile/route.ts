@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute, queryOne } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,15 +9,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
     }
 
-    await sql`
-      UPDATE participants
-      SET
-        username = COALESCE(${username || null}, username),
-        wallet_address = COALESCE(${bep20_address || null}, wallet_address),
-        bep20_address = COALESCE(${bep20_address || null}, bep20_address),
-        updated_at = NOW()
-      WHERE email = ${email}
-    `
+    await execute(
+      `UPDATE participants
+       SET
+         username = COALESCE($1, username),
+         wallet_address = COALESCE($2, wallet_address),
+         bep20_address = COALESCE($3, bep20_address),
+         updated_at = NOW()
+       WHERE email = $4`,
+      [username || null, bep20_address || null, bep20_address || null, email]
+    )
 
     return NextResponse.json({ success: true })
   } catch (error) {

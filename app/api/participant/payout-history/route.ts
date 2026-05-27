@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute, queryOne } from "@/lib/db"
 
 export async function GET(request: Request) {
   try {
@@ -7,11 +7,12 @@ export async function GET(request: Request) {
     const email = searchParams.get("email")
     if (!email) return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
 
-    const rows = await sql`
-      SELECT * FROM payout_requests
-      WHERE participant_email = ${email}
-      ORDER BY created_at DESC
-    `
+    const rows = await query(
+      `SELECT * FROM payout_requests
+       WHERE participant_email = $1
+       ORDER BY created_at DESC`,
+      [email]
+    )
     return NextResponse.json({ success: true, payouts: rows })
   } catch (error: any) {
     console.error("payout-history error:", error)

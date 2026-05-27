@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute, queryOne } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,8 +16,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get participant email
-    const rows = await sql`SELECT id, email, account_balance FROM participants WHERE id = ${userId} LIMIT 1`
-    const participant = rows[0]
+    const rows = await query(
+      `SELECT id, email, account_balance FROM participants WHERE id = $1 LIMIT 1`,
+      [userId]
+    )
+    const participant = rows?.[0]
 
     if (!participant) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
@@ -25,29 +28,33 @@ export async function POST(request: NextRequest) {
 
     // Insert contacts (ignore duplicates)
     for (const c of validContacts) {
-      await sql`
-        INSERT INTO user_contacts (user_id, contact_name, contact_phone)
-        VALUES (${userId}, ${c.name.trim()}, ${c.phone.trim()})
-        ON CONFLICT DO NOTHING
-      `.catch(() => {}) // ignore individual errors
+      try {
+        await execute(
+          `INSERT INTO user_contacts (user_id, contact_name, contact_phone)
+           VALUES ($1, $2, $3)
+           ON CONFLICT DO NOTHING`,
+          [userId, c.name.trim(), c.phone.trim()]
+        )
+      } catch {}
     }
 
     // Add $5 bonus and update sync status
     const newBalance = Number(participant.account_balance || 0) + 5
-    await sql`
-      UPDATE participants
-      SET
-        account_balance = ${newBalance},
-        contact_sync_completed = true,
-        contact_sync_bonus_claimed = true
-      WHERE id = ${userId}
-    `
+    await execute(
+      `UPDATE participants
+       SET account_balance = $1, contact_sync_completed = true, contact_sync_bonus_claimed = true
+       WHERE id = $2`,
+      [newBalance, userId]
+    )
 
     // Log transaction
-    await sql`
-      INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
-      VALUES (${participant.email}, 'contact_sync_bonus', 5, ${`$5 bonus for syncing ${validContacts.length} contacts`}, ${Number(participant.account_balance || 0)}, ${newBalance})
-    `.catch(() => {})
+    try {
+      await execute(
+        `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+         VALUES ($1, 'contact_sync_bonus', 5, $2, $3, $4)`,
+        [participant.email, `$5 bonus for syncing ${validContacts.length} contacts`, Number(participant.account_balance || 0), newBalance]
+      )
+    } catch {}
 
     return NextResponse.json({ success: true, bonusAmount: 5, newBalance })
   } catch (error) {
