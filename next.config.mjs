@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-// Cache bust: 2025-03-26 - Removed crons from vercel.json to fix Hobby plan deployment
+// Cache bust: 2026-05-27 - Fixed all sql imports to use query/execute
 const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
