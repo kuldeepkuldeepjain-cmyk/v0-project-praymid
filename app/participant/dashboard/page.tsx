@@ -524,7 +524,7 @@ function DailySpinWheel({
 
   const spinWheel = async () => {
     if (isSpinning) return
-    
+
     // Check if user has enough balance
     if (currentBalance < SPIN_COST) {
       toast({
@@ -538,124 +538,72 @@ function DailySpinWheel({
     setIsSpinning(true)
     setShowResult(false)
     setResult(null)
-    
-    // IMPORTANT: Reset wheel to 0° before each spin to ensure full animation
-    // This prevents the wheel from just slowly rotating between close angles
+
+    // Reset wheel to 0° before each spin to ensure full animation
     setRotation(0)
-    
-  // Store original balance before deduction
-  const originalBalance = participantData?.account_balance || 0
-  
-  // Deduct $5 from wallet immediately
-  const balanceAfterDeduction = originalBalance - SPIN_COST
-  setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
-  localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
-    
-    // Update database with deduction
+
+    // Call the spin API ONCE — it handles deduction, prize selection, and crediting all atomically
+    let apiResult: { prize: { label: string; amount: number; segmentIndex: number }; balanceAfter: number } | null = null
     try {
-      await fetch("/api/participant/spin", {
+      const res = await fetch("/api/participant/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail, action: "deduct", amount: SPIN_COST }),
+        body: JSON.stringify({ email: userEmail }),
       })
-    } catch {}
+      const data = await res.json()
+      if (!res.ok) {
+        toast({ title: "Spin Failed", description: data.error || "Could not process spin.", variant: "destructive" })
+        setIsSpinning(false)
+        return
+      }
+      apiResult = data
 
-  // Pick random segment FIRST - only from segments with probability > 0
-  const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
-  const randomEligible = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)]
-  const segmentIndex = randomEligible.idx
-  const wonSegment = SPIN_SEGMENTS[segmentIndex]
-  
-  const segmentAngle = 360 / SPIN_SEGMENTS.length // 36° for 10 segments
-    const spins = 5 + Math.floor(Math.random() * 3) // 5-7 full rotations for excitement
-    
-    // FINAL SOLUTION: Calculate rotation based on pointer position
-    // The pointer is at TOP. After wheel rotates, which segment is under the pointer?
-    // 
-    // In the SVG, segments are positioned at angles (measured from -90° at top):
-    // Segment i is at angle: (i * 45) degrees from TOP, going CLOCKWISE
-    // - Segment 0: 0° from top (AT top)
-    // - Segment 1: 45° from top (clockwise)
-    // - Segment 2: 90° from top (at right)
-    // - Segment 3: 135° from top
-    // - Segment 4: 180° from top (at bottom)
-    // 
-    // When we apply CSS rotate(R), the wheel rotates clockwise by R degrees
-    // Pointer stays at top, but segments move
-    // To determine which segment ends under pointer after rotation R:
-    // The segment that was R degrees COUNTER-CLOCKWISE from top is now at top
-    // That's segment at position (-R) from top
-    // So segment (-R / 45) ends up at top
-    // 
-    // To get segment i at top: -R / 45 = i, so R = -i * 45
-    // Convert to positive: R = 360 - (i * 45) = (8 - i) * 45
-    
+      // Immediately update wallet with the balance returned from the server
+      const updated = { ...participantData, account_balance: data.balanceAfter }
+      setParticipantData(updated)
+      localStorage.setItem("participantData", JSON.stringify(updated))
+    } catch {
+      toast({ title: "Spin Failed", description: "Network error. Please try again.", variant: "destructive" })
+      setIsSpinning(false)
+      return
+    }
+
+    // Use the server-determined segment index so the wheel matches the actual prize
+    const segmentIndex = apiResult!.prize.segmentIndex
+    const segmentAngle = 360 / SPIN_SEGMENTS.length
+    const spins = 5 + Math.floor(Math.random() * 3)
     const rotationForSegment = (SPIN_SEGMENTS.length - segmentIndex) * segmentAngle
     const finalRotation = spins * 360 + rotationForSegment
-    
 
-
-    // Wait a tiny bit for state to update, then apply the rotation
     setTimeout(() => {
       setRotation(finalRotation)
     }, 50)
 
-    // After spin completes (3 seconds)
-    setTimeout(async () => {
+    // After spin animation completes (3 seconds)
+    setTimeout(() => {
       setIsSpinning(false)
       const won = SPIN_SEGMENTS[segmentIndex]
       setResult(won)
       setShowResult(true)
 
-
-
-      // Handle different prize types
       if (won.type === "ticket") {
-        // Create free ticket coupon in database
-        try {
-          await fetch("/api/participant/spin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: userEmail, action: "coupon", prizeType: "free_bet", amount: 5 }),
-          })
-          
-          toast({
-            title: "Free Ticket Won!",
-            description: "You can use this $5 free bet in predictions within 24 hours!",
-          })
-        } catch (error) {
-
-        }
+        toast({
+          title: "Free Ticket Won!",
+          description: "You can use this $5 free bet in predictions within 24 hours!",
+        })
       } else if (won.type === "cash" && won.value > 0) {
-        // Credit cash winnings to wallet (add to balance AFTER deduction)
-        const finalBalance = balanceAfterDeduction + won.value
-        setParticipantData({ ...participantData, account_balance: finalBalance })
-        localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: finalBalance }))
-        
-        // Update database with winnings
-        try {
-          await fetch("/api/participant/spin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: userEmail, action: "credit", amount: won.value }),
-          })
-        } catch (error) {
-
-        }
-        
         toast({
           title: won.value >= 10 ? "Jackpot!" : "Congratulations!",
           description: `You won $${won.value}! It has been added to your wallet.`,
         })
-      } else if (won.type === "luck") {
-        // No credit for luck segments
+      } else {
         toast({
           title: "Better Luck Next Time!",
           description: "Try spinning again for a chance to win!",
         })
       }
-      
-      // Trigger balance refresh
+
+      // Notify parent to also refresh from server
       onWin(won.value, won.label, won.type)
     }, 3000)
   }
