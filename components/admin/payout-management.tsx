@@ -79,17 +79,37 @@ export function PayoutManagement() {
 
   useEffect(() => {
     fetchPayoutRequests()
-    const interval = setInterval(fetchPayoutRequests, 30000)
-    return () => clearInterval(interval)
+    
+    const supabase = createClient()
+    const channel = supabase
+      .channel("payout_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payout_requests" }, () => {
+        fetchPayoutRequests()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fetchPayoutRequests = async () => {
     try {
-      const res = await adminFetch("/api/admin/p2p-contributions")
-      const data = await res.json()
-      setPayoutRequests(data.payouts || data.requests || data.data || [])
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("payout_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      setPayoutRequests(data || [])
     } catch (error) {
       console.error("Error fetching payout requests:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch payout requests",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -102,9 +122,21 @@ export function PayoutManagement() {
     setShowProofDialog(true)
     setProofData(null)
     try {
-      const res = await adminFetch(`/api/admin/contribution-details?email=${encodeURIComponent(payout.participant_email)}`)
-      const data = await res.json()
-      setProofData(data.submission || null)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("payment_submissions")
+        .select("id, screenshot_url, transaction_id, amount")
+        .eq("participant_email", payout.participant_email)
+        .in("status", ["pending", "request_pending", "in_process"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+
+      if (!error && data) {
+        setProofData(data)
+      } else {
+        setProofData(null)
+      }
     } catch {
       setProofData(null)
     } finally {
@@ -264,11 +296,23 @@ export function PayoutManagement() {
   const fetchAllParticipants = async () => {
     setLoadingParticipants(true)
     try {
-      const res = await adminFetch("/api/admin/participants")
-      const data = await res.json()
-      setAllParticipants(data.participants || [])
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("participants")
+        .select("email, username, account_balance, serial_number")
+        .order("serial_number", { ascending: false })
+
+      if (error) throw error
+      
+      console.log("[v0] Fetched participants for redirect:", data?.length || 0)
+      setAllParticipants(data || [])
     } catch (error) {
       console.error("[v0] Error fetching participants:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch participants list",
+        variant: "destructive",
+      })
     } finally {
       setLoadingParticipants(false)
     }

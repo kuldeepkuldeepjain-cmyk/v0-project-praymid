@@ -62,30 +62,8 @@ export default function ParticipantLoginPage() {
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [pendingVerification, setPendingVerification] = useState(false)
-  const [showDiagnostics, setShowDiagnostics] = useState(false)
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
   const [loginMode, setLoginMode] = useState<"email" | "mobile">("email")
-
-  const runDiagnostics = async () => {
-    try {
-      const { SystemDiagnostics } = await import('@/lib/diagnostics')
-      const diagnostics = new SystemDiagnostics()
-      const results = await diagnostics.runAll()
-      
-      toast({
-        title: "Diagnostics Complete",
-        description: `Found ${results.criticalIssues.length} issues. Check console for details.`,
-        variant: results.criticalIssues.length > 0 ? "destructive" : "default"
-      })
-    } catch (error) {
-      console.error("Diagnostics error:", error)
-      toast({
-        title: "Diagnostics Failed",
-        description: "Could not run system diagnostics",
-        variant: "destructive"
-      })
-    }
-  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

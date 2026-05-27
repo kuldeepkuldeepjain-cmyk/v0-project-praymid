@@ -1,6 +1,5 @@
 "use client"
 
-import { adminFetch } from "@/lib/auth"
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,24 +42,53 @@ export function SendNotificationPanel() {
     setIsSending(true)
 
     try {
-      const res = await adminFetch("/api/admin/broadcast", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientType,
-          recipientEmail: recipientType === "single" ? recipientEmail : undefined,
+      const supabase = createClient()
+
+      if (recipientType === "all") {
+        // Send to all participants
+        const { data: participants, error: fetchError } = await supabase
+          .from("participants")
+          .select("email")
+
+        if (fetchError) throw fetchError
+
+        const notifications = participants.map((p) => ({
+          user_email: p.email,
           title,
           message,
           type: notificationType,
-        }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error || "Failed to send")
+          read_status: false,
+        }))
 
-      toast({
-        title: "Success",
-        description: recipientType === "all" ? "Notification sent to all users" : `Notification sent to ${recipientEmail}`,
-      })
+        const { error: insertError } = await supabase
+          .from("notifications")
+          .insert(notifications)
+
+        if (insertError) throw insertError
+
+        toast({
+          title: "Success",
+          description: `Notification sent to ${participants.length} users`,
+        })
+      } else {
+        // Send to single user
+        const { error } = await supabase
+          .from("notifications")
+          .insert({
+            user_email: recipientEmail,
+            title,
+            message,
+            type: notificationType,
+            read_status: false,
+          })
+
+        if (error) throw error
+
+        toast({
+          title: "Success",
+          description: `Notification sent to ${recipientEmail}`,
+        })
+      }
 
       // Reset form
       setTitle("")
