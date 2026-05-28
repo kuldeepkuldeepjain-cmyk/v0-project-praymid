@@ -1,40 +1,31 @@
 import { query, execute } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 
-// Actual prizes that can be won (50 and 100 are for display only, never won)
-const SPIN_PRIZES = [
-  { label: "$2", amount: 2, probability: 0.23 },
-  { label: "$1", amount: 1, probability: 0.18 },
-  { label: "$5", amount: 5, probability: 0.18 },
-  { label: "Oops!", amount: 0, probability: 0.18 },
-  { label: "$3", amount: 3, probability: 0.21 },
-  { label: "$10", amount: 10, probability: 0.02 },
-]
-
-// Refer and Jackpot map to real prizes
-const SPECIAL_PRIZES = [
-  { label: "Refer a Friend", actualAmount: 10, probability: 0.05 },
-]
-
 const SPIN_COST = 5
+
+// Must exactly match SPIN_SEGMENTS in page.tsx (index = wheel position)
+// Index 0: $10, 1: BETTER LUCK, 2: $4, 3: $1, 4: $50(never), 5: $5, 6: TRY AGAIN, 7: $2, 8: $100(never), 9: $3
+const SPIN_PRIZES = [
+  { label: "$10",         amount: 10, segmentIndex: 0,  probability: 0.03 },
+  { label: "BETTER LUCK", amount: 0,  segmentIndex: 1,  probability: 0.20 },
+  { label: "$4",          amount: 4,  segmentIndex: 2,  probability: 0.12 },
+  { label: "$1",          amount: 1,  segmentIndex: 3,  probability: 0.25 },
+  { label: "$5",          amount: 5,  segmentIndex: 5,  probability: 0.15 },
+  { label: "TRY AGAIN",   amount: 0,  segmentIndex: 6,  probability: 0.10 },
+  { label: "$2",          amount: 2,  segmentIndex: 7,  probability: 0.12 },
+  { label: "$3",          amount: 3,  segmentIndex: 9,  probability: 0.03 },
+  // Indexes 4 ($50) and 8 ($100) are never selected — probability 0
+]
 
 function selectPrize() {
   const random = Math.random()
   let cumulative = 0
-  
-  // Check special prizes first
-  for (const prize of SPECIAL_PRIZES) {
-    cumulative += prize.probability
-    if (random <= cumulative) return { label: prize.label, amount: prize.actualAmount }
-  }
-  
-  // Then regular prizes
   for (const prize of SPIN_PRIZES) {
     cumulative += prize.probability
     if (random <= cumulative) return prize
   }
-  
-  return SPIN_PRIZES[0]
+  // Fallback to BETTER LUCK
+  return SPIN_PRIZES[1]
 }
 
 export async function POST(request: NextRequest) {
@@ -42,53 +33,41 @@ export async function POST(request: NextRequest) {
     const { email } = await request.json()
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
 
-    const rows = await query("SELECT * FROM participants WHERE email = $1", [email])
+    const rows = await query("SELECT * FROM participants WHERE email = $1", [email.toLowerCase().trim()])
     if (!rows || rows.length === 0) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-    
+
     const participant = rows[0]
-    if (participant.account_balance < SPIN_COST) {
+    const currentBalance = parseFloat(participant.account_balance) || 0
+
+    if (currentBalance < SPIN_COST) {
       return NextResponse.json({ error: `Insufficient balance. You need $${SPIN_COST} to spin.` }, { status: 400 })
     }
 
-    const newBalance = participant.account_balance - SPIN_COST
-    await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [newBalance, email])
+    // Deduct spin cost
+    const balanceAfterDeduct = parseFloat((currentBalance - SPIN_COST).toFixed(2))
+    await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [balanceAfterDeduct, email.toLowerCase().trim()])
     await execute(
       "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_cost',$2,'Spin Wheel Entry Fee',$3,$4)",
-      [email, -SPIN_COST, participant.account_balance, newBalance]
+      [email.toLowerCase().trim(), SPIN_COST, currentBalance, balanceAfterDeduct]
     )
 
+    // Select prize
     const prize = selectPrize()
-    let finalBalance = newBalance
-    let wheelSegmentIndex = 0
+    let finalBalance = balanceAfterDeduct
 
     if (prize.amount > 0) {
-      finalBalance = newBalance + prize.amount
-      await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [finalBalance, email])
+      finalBalance = parseFloat((balanceAfterDeduct + prize.amount).toFixed(2))
+      await execute("UPDATE participants SET account_balance = $1 WHERE email = $2", [finalBalance, email.toLowerCase().trim()])
       await execute(
         "INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after) VALUES ($1,'spin_win',$2,$3,$4,$5)",
-        [email, prize.amount, `Spin Wheel Prize: ${prize.label}`, newBalance, finalBalance]
+        [email.toLowerCase().trim(), prize.amount, `Spin Wheel Win: ${prize.label}`, balanceAfterDeduct, finalBalance]
       )
     }
 
-    // Map prize to wheel segment index (order from page.tsx WHEEL_SEGMENTS)
-    // This ensures 50 and 100 never appear to win
-    const prizeToSegmentMap: Record<string, number> = {
-      "$2": 0,
-      "$1": 1,
-      "$5": 2,
-      "Oops!": 3,
-      "$3": 4,
-      "$10": 5,
-      "Refer a Friend": 6,
-      // Note: JACKPOT (50) is index 7 but will NEVER be selected
-    }
-
-    wheelSegmentIndex = prizeToSegmentMap[prize.label] ?? 0
-
     return NextResponse.json({
       success: true,
-      prize: { label: prize.label, amount: prize.amount, segmentIndex: wheelSegmentIndex },
-      balanceBefore: participant.account_balance,
+      prize: { label: prize.label, amount: prize.amount, segmentIndex: prize.segmentIndex },
+      balanceBefore: currentBalance,
       balanceAfter: finalBalance,
     })
   } catch (error) {
