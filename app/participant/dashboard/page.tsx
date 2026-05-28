@@ -507,7 +507,7 @@ function DailySpinWheel({
 }: {
   isOpen: boolean
   onClose: () => void
-  onWin: (amount: number, label: string, type: string, balanceAfter: number) => void
+  onWin: (amount: number, label: string, type: string, balanceAfter: number, balanceAfterDeduct: number) => void
   userEmail: string
   currentBalance: number
   participantData: any
@@ -543,7 +543,7 @@ function DailySpinWheel({
     setRotation(0)
 
     // Call the spin API ONCE — it handles deduction, prize selection, and crediting all atomically
-    let apiResult: { prize: { label: string; amount: number; segmentIndex: number }; balanceAfter: number } | null = null
+    let apiResult: { prize: { label: string; amount: number; segmentIndex: number }; balanceAfter: number; balanceBefore: number } | null = null
     try {
       const res = await participantFetch("/api/participant/spin", {
         method: "POST",
@@ -556,11 +556,10 @@ function DailySpinWheel({
         return
       }
       apiResult = data
-
-      // Immediately update wallet with the balance returned from the server
-      const updated = { ...participantData, account_balance: data.balanceAfter }
-      setParticipantData(updated)
-      localStorage.setItem("participantData", JSON.stringify(updated))
+      // Immediately show $5 deducted balance (balanceBefore - 5 = balanceAfter when no prize yet)
+      // The server already deducted it; update UI right away so user sees deduction
+      const balanceAfterDeduct = parseFloat((data.balanceBefore - 5).toFixed(2))
+      onWin(0, "", "deduct", balanceAfterDeduct, balanceAfterDeduct)
     } catch {
       toast({ title: "Spin Failed", description: "Network error. Please try again.", variant: "destructive" })
       setIsSpinning(false)
@@ -605,8 +604,8 @@ function DailySpinWheel({
         })
       }
 
-      // Notify parent with the server-confirmed balance
-      onWin(won.value, won.label, won.type, capturedResult.balanceAfter)
+      // Notify parent with the final server-confirmed balance (after winnings added)
+      onWin(won.value, won.label, won.type, capturedResult.balanceAfter, capturedResult.balanceAfter)
     }, 3000)
   }
 
@@ -1169,7 +1168,7 @@ export default function DashboardHome() {
     router.push("/participant/login")
   }
 
-  const handleSpinWin = (_amount: number, _label: string, _type: string, balanceAfter?: number) => {
+  const handleSpinWin = (_amount: number, _label: string, _type: string, balanceAfter?: number, _balanceAfterDeduct?: number) => {
     if (balanceAfter !== undefined) {
       // Directly update balance with the server-confirmed value — no round-trip needed
       setParticipantData((prev: any) => {
@@ -1177,10 +1176,6 @@ export default function DashboardHome() {
         localStorage.setItem("participantData", JSON.stringify(updated))
         return updated
       })
-    } else {
-      // Fallback: refresh from server
-      const email = participantData?.email
-      if (email) refreshParticipantData(email)
     }
   }
 
