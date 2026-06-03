@@ -37,6 +37,21 @@ const PAYOUT_PLANS = [
     icon: "💎",
     description: "Peer-to-peer payout via BEP20 wallet",
   },
+  {
+    id: "direct",
+    label: "Direct Withdrawal",
+    amount: 300,
+    minAmount: 300,
+    method: "DIRECT",
+    accent: "from-emerald-500 to-teal-600",
+    border: "border-emerald-300",
+    bg: "bg-emerald-50",
+    badge: "bg-emerald-200 text-emerald-800",
+    ring: "ring-emerald-500",
+    icon: "⚡",
+    description: "Direct instant withdrawal when balance exceeds $300",
+    motivation: "If you win you can Direct Withdrawal",
+  },
 ] as const
 
 type PayoutPlanId = (typeof PAYOUT_PLANS)[number]["id"]
@@ -443,35 +458,63 @@ export default function PayoutPage() {
               {PAYOUT_PLANS.map((plan) => {
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
+                const isDirectPlan = plan.id === "direct"
+                const isDirectEligible = isDirectPlan && walletBalance >= 300
+                const isDisabled = hasActivePayout || (isDirectPlan && !isDirectEligible)
                 return (
                   <button
                     key={plan.id}
-                    onClick={() => !hasActivePayout && setSelectedPayoutPlanId(plan.id)}
-                    disabled={hasActivePayout}
+                    onClick={() => !isDisabled && setSelectedPayoutPlanId(plan.id)}
+                    disabled={isDisabled}
                     className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
-                      isSelected
+                      isDisabled && isDirectPlan
+                        ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
+                        : isSelected
                         ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
                         : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${hasActivePayout && !isDirectPlan ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
+                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${isDirectPlan && !isDirectEligible ? "from-slate-300 to-slate-400" : plan.accent} flex items-center justify-center text-base shadow-sm`}>
                           {plan.icon}
                         </div>
                         <div>
-                          <span className="text-sm font-bold text-slate-900">{plan.label}</span>
-                          <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${isDirectPlan && !isDirectEligible ? "text-slate-400" : "text-slate-900"}`}>{plan.label}</span>
+                            {isDirectPlan && isDirectEligible && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">
+                                AVAILABLE
+                              </span>
+                            )}
+                          </div>
+                          {isDirectPlan && !isDirectEligible ? (
+                            <p className="text-xs text-red-400 mt-0.5 font-medium">
+                              Balance must be $300 or more
+                            </p>
+                          ) : (
+                            <>
+                              <p className={`text-xs ${isDirectPlan && plan.motivation ? "text-emerald-600 font-medium" : "text-slate-500"} mt-0.5`}>
+                                {plan.motivation || plan.description}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {!canAfford && (
+                        {!isDirectEligible && isDirectPlan ? (
+                          <span className="text-xs text-red-500 font-medium">Need ${(300 - walletBalance).toFixed(2)} more</span>
+                        ) : !canAfford && !isDirectPlan ? (
                           <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
-                        )}
+                        ) : null}
                         <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
+                          isDisabled && isDirectPlan
+                            ? "border-slate-200 bg-slate-100"
+                            : isSelected
+                            ? `${plan.border} bg-gradient-to-br ${plan.accent}`
+                            : "border-slate-300 bg-white"
                         }`}>
-                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                          {isSelected && !isDisabled && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                         </div>
                       </div>
                     </div>
