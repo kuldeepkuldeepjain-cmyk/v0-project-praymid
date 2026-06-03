@@ -1527,9 +1527,10 @@ export default function DashboardHome() {
               onClick={createRipple}
               className="group w-full h-28 text-white flex flex-col items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 active:scale-[0.97] leading-7 rounded-3xl"
               style={{
-                background: "linear-gradient(145deg, #FDB813 0%, #FEC930 50%, #FDB813 100%)",
+                background: "linear-gradient(145deg, rgba(217, 119, 6, 0.9) 0%, rgba(245, 158, 11, 0.95) 50%, rgba(217, 119, 6, 0.9) 100%)",
                 boxShadow:
-                  "0 8px 32px rgba(253, 184, 19, 0.5), 0 4px 8px rgba(253, 184, 19, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.1)",
+                  "0 8px 32px rgba(217, 119, 6, 0.6), 0 4px 8px rgba(217, 119, 6, 0.5), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2), 0 0 20px rgba(245, 158, 11, 0.3)",
+                backdropFilter: "blur(10px)",
               }}
             >
               {/* Shine effect */}
@@ -1756,7 +1757,7 @@ export default function DashboardHome() {
             onClick={() => setActiveTab("activity")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
               activeTab === "activity"
-                ? "text-yellow-500"
+                ? "text-amber-600"
                 : "text-slate-400 hover:text-slate-600"
             }`}
           >
