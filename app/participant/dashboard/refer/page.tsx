@@ -95,14 +95,52 @@ export default function ReferPage() {
   }
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    setShowCopyAlert(true)
-    setTimeout(() => setShowCopyAlert(false), 2000)
-    toast({
-      title: "Copied!",
-      description: "Referral link copied to clipboard",
-      duration: 2000,
-    })
+    // Try Clipboard API first
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => {
+        setShowCopyAlert(true)
+        setTimeout(() => setShowCopyAlert(false), 2000)
+        toast({
+          title: "Copied!",
+          description: "Referral link copied to clipboard",
+          duration: 2000,
+        })
+      }).catch(() => {
+        // Fallback to old method
+        fallbackCopy(text)
+      })
+    } else {
+      // Fallback for non-secure contexts (like sandboxed preview)
+      fallbackCopy(text)
+    }
+  }
+
+  const fallbackCopy = (text: string) => {
+    const textArea = document.createElement("textarea")
+    textArea.value = text
+    textArea.style.position = "fixed"
+    textArea.style.left = "-999999px"
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand("copy")
+      setShowCopyAlert(true)
+      setTimeout(() => setShowCopyAlert(false), 2000)
+      toast({
+        title: "Copied!",
+        description: "Referral link copied to clipboard",
+        duration: 2000,
+      })
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Please copy the link manually",
+        variant: "destructive",
+        duration: 2000,
+      })
+    } finally {
+      document.body.removeChild(textArea)
+    }
   }
 
   const shareVia = (platform: string) => {
