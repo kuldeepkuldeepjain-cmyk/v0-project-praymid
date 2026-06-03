@@ -489,8 +489,8 @@ export default function PayoutPage() {
                             )}
                           </div>
                           {isDirectPlan && !isDirectEligible ? (
-                            <p className="text-xs text-red-400 mt-0.5 font-medium">
-                              Balance must be $300 or more
+                            <p className="text-xs text-emerald-500 mt-0.5 font-medium">
+                              Withdraw your winnings
                             </p>
                           ) : (
                             <>
