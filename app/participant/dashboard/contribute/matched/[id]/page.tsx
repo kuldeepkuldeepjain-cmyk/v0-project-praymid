@@ -8,7 +8,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, CheckCircle2, User, Mail, Wallet, DollarSign, Calendar, Copy } from "lucide-react"
+import { ArrowLeft, CheckCircle2, User, Wallet, DollarSign, Calendar, Copy } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { maskMobileNumber } from "@/lib/format-utils"
 
@@ -167,12 +167,6 @@ function MatchedDetailsContent() {
               <div>
                 <p className="text-sm text-slate-600 mb-1">Recipient Name</p>
                 <p className="text-lg font-semibold text-slate-900">{matched.payout.participant_name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-slate-600 mb-1">Email</p>
-                <a href={`mailto:${matched.payout.participant_email}`} className="text-sm text-blue-600 hover:underline flex items-center gap-1">
-                  <Mail className="h-4 w-4" /> {matched.payout.participant_email}
-                </a>
               </div>
               <div>
                 <p className="text-sm text-slate-600 mb-1">Payout Amount</p>
