@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Gift, MessageCircle, Copy, Mail, Heart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 export default function ReferPage() {
   const router = useRouter()
@@ -45,14 +45,12 @@ export default function ReferPage() {
         const link = `https://flowchain.club/register?ref=${parsedData.referral_code}`
         setReferralLink(link)
 
-        // Fetch participant record to get earnings
-        const meRes = await fetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
-        const meJson = await meRes.json()
-        const participantRecord: any = meJson.participant
-
-        if (participantRecord) {
-          setTotalEarnings(Number(participantRecord.referral_earnings) || 0)
-          setPendingEarnings(Number(participantRecord.referral_earnings) || 0)
+        // Fetch referral data from API
+        const referralRes = await participantFetch(`/api/participant/referrals?email=${encodeURIComponent(parsedData.email)}`)
+        const referralJson = await referralRes.json()
+        if (referralJson.success) {
+          setTotalEarnings(Number(referralJson.referralEarnings) || 0)
+          setPendingEarnings(Number(referralJson.referralEarnings) || 0)
         }
       } catch (err) {
         console.error("[v0] Error in fetchData:", err)
@@ -64,12 +62,8 @@ export default function ReferPage() {
 
   const claimReward = async (email: string) => {
     try {
-      const response = await fetch("/api/participant/claim-referral-reward", {
+      const response = await participantFetch("/api/participant/claim-referral-reward", {
         method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "X-Participant-Token": email
-        },
         body: JSON.stringify({ email }),
       })
 
