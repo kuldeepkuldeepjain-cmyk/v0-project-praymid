@@ -110,16 +110,16 @@ export default function ParticipantRegisterPage() {
     lastName: "",
     username: "",
     email: "",
-    countryCode: "+91",
+    countryCode: "",
     mobileNumber: "",
     password: "",
     confirmPassword: "",
-    country: "India",
+    country: "",
     state: "",
     pinCode: "",
     referralCode: "",
   })
-  const [selectedCountryData, setSelectedCountryData] = useState(COUNTRIES_DATA[0])
+  const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(null)
 
   useEffect(() => {
     generateCaptcha()
@@ -624,11 +624,11 @@ export default function ParticipantRegisterPage() {
                 
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-2xl">{selectedCountryData.flag}</span>
+                    <span className="text-2xl">{selectedCountryData?.flag || "🌍"}</span>
                     <div className="min-w-0 flex-1">
                       <Select value={formData.country} onValueChange={handleCountryChange}>
                         <SelectTrigger className="h-10 bg-white border-slate-200 hover:border-blue-300 focus:border-blue-500 transition-all">
-                          <SelectValue />
+                          <SelectValue placeholder="Choose a country" />
                         </SelectTrigger>
                         <SelectContent className="bg-white max-h-[300px]">
                           {COUNTRIES_DATA.map((country) => (
@@ -646,7 +646,7 @@ export default function ParticipantRegisterPage() {
                   </div>
                   <div className="flex items-center gap-1 px-3 py-1 bg-white rounded-md border border-blue-300">
                     <span className="text-xs text-slate-500">Code:</span>
-                    <span className="text-sm font-bold text-blue-600">{selectedCountryData.code}</span>
+                    <span className="text-sm font-bold text-blue-600">{selectedCountryData?.code || "-"}</span>
                   </div>
                 </div>
               </div>
