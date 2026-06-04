@@ -43,6 +43,7 @@ import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { MessageCircle } from "lucide-react"
 import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
+import { StakingBanner } from "@/components/staking-banner"
 
 interface LeaderboardEntry {
   position: number
@@ -1520,6 +1521,9 @@ export default function DashboardHome() {
 
           </div>
         </div>
+
+        {/* Staking Banner - New Feature */}
+        <StakingBanner />
 
         <div className="grid grid-cols-2 gap-4">
           <Link href="/participant/dashboard/contribute">
