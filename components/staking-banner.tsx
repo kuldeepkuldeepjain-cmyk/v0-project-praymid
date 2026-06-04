@@ -66,7 +66,7 @@ export function StakingBanner() {
           <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="bg-white/70 rounded-lg p-2.5 sm:p-3 text-center">
               <div className="text-xs text-slate-600 mb-0.5">Min Stake</div>
-              <div className="text-sm sm:text-base font-bold text-orange-600">$100</div>
+              <div className="text-sm sm:text-base font-bold text-orange-600">$10</div>
             </div>
             <div className="bg-white/70 rounded-lg p-2.5 sm:p-3 text-center">
               <div className="text-xs text-slate-600 mb-0.5">Lock Period</div>
