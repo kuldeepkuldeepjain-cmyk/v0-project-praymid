@@ -6,7 +6,6 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { ToastProvider } from "@/components/ui/toast-provider"
-import { NoticeBoard } from "@/components/notice-board"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -28,7 +27,6 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <ToastProvider>
             {children}
-            <NoticeBoard />
             <Toaster />
           </ToastProvider>
         </ThemeProvider>

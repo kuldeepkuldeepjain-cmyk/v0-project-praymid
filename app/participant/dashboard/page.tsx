@@ -44,6 +44,7 @@ import { MessageCircle } from "lucide-react"
 import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { StakingBanner } from "@/components/staking-banner"
+import { NoticeBoard } from "@/components/notice-board"
 
 interface LeaderboardEntry {
   position: number
@@ -1728,6 +1729,10 @@ export default function DashboardHome() {
           <LeaderboardView mode="compact" initialTab="contributors" />
         </div>
       )}
+      
+      {/* Notice Board - Display important announcements */}
+      <NoticeBoard />
+      
       </main>
 
       {/* Footer Navigation */}
