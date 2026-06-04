@@ -1177,8 +1177,7 @@ export default function HomePage() {
             <div className="col-span-2 md:col-span-1">
               <FlowChainLogo size="sm" showTagline={false} />
               <p className="text-gray-500 mt-4 text-sm leading-relaxed">
-                The world's first platform that doubles your investment in 30 days with 24/7 support and guaranteed
-                returns.
+                The world's first platform for earning passive income with 24/7 support and transparent operations.
               </p>
             </div>
             <div>
@@ -1246,10 +1245,6 @@ export default function HomePage() {
               <span className="flex items-center gap-2 text-sm text-gray-500">
                 <Shield className="h-4 w-4" />
                 Bank-Grade Security
-              </span>
-              <span className="flex items-center gap-2 text-sm text-emerald-600 font-medium">
-                <Zap className="h-4 w-4" />
-                2X Guaranteed
               </span>
             </div>
           </div>
