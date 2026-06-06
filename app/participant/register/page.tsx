@@ -478,10 +478,10 @@ export default function ParticipantRegisterPage() {
                   Mobile Number *
                 </Label>
                 <div className="flex gap-2">
-                  <div className="w-[110px] h-12 px-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center gap-1.5">
-                    <span className="text-lg">{selectedCountryData.flag}</span>
-                    <span className="text-sm font-bold text-slate-700">{formData.countryCode}</span>
-                  </div>
+                <div className="w-[110px] h-12 px-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center gap-1.5">
+                  <span className="text-lg">{selectedCountryData?.flag || "🌍"}</span>
+                  <span className="text-sm font-bold text-slate-700">{formData.countryCode || "+00"}</span>
+                </div>
                   <div className="relative flex-1 group">
                     <Input
                       id="mobileNumber"
