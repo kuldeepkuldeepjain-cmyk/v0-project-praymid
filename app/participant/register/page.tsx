@@ -92,14 +92,7 @@ export default function ParticipantRegisterPage() {
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
 
-  // Post-registration pending approval state
-  const [pendingApproval, setPendingApproval] = useState(false)
-  const [pendingParticipantId, setPendingParticipantId] = useState<string | null>(null)
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
-  const [pendingOtp, setPendingOtp] = useState<string | null>(null)
-  const [otpApproved, setOtpApproved] = useState(false)
-  const [pollCount, setPollCount] = useState(0)
-
+  // Post-registration state
   const [referralApplied, setReferralApplied] = useState(false)
 
   const [formData, setFormData] = useState({
@@ -133,55 +126,6 @@ export default function ParticipantRegisterPage() {
       })
     }
   }, [searchParams, referralApplied, toast])
-
-  // Poll for OTP approval after registration
-  useEffect(() => {
-    if (!pendingApproval || !pendingParticipantId || otpApproved) return
-
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/participant/otp-status?participantId=${pendingParticipantId}`)
-        const data = await res.json()
-        setPollCount(c => c + 1)
-        if (data.otp_verified) {
-          setOtpApproved(true)
-          clearInterval(interval)
-          toast({
-            title: "OTP Approved!",
-            description: "Your account has been verified. Please log in to continue.",
-          })
-          setTimeout(() => {
-            window.location.href = "/participant/login"
-          }, 2000)
-        }
-      } catch (_) {}
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [pendingApproval, pendingParticipantId, otpApproved, toast])
-
-  const generateOtp = () => {
-    const code = Math.floor(100000 + Math.random() * 900000).toString()
-    setOtp(code)
-    setOtpSent(false)
-    setOtpCopied(false)
-    return code
-  }
-
-  const sendOtpOnWhatsApp = () => {
-    const code = otp || generateOtp()
-    const msg = encodeURIComponent(
-      `FlowChain Registration OTP\n\nYour verification code is: *${code}*\n\nMobile: ${formData.countryCode}${formData.mobileNumber || "N/A"}\nUsername: ${formData.username || "N/A"}\n\nPlease verify this participant.`
-    )
-    window.open(`https://wa.me/${ADMIN_WHATSAPP.replace(/\D/g, "")}?text=${msg}`, "_blank")
-    setOtpSent(true)
-  }
-
-  const copyOtp = () => {
-    navigator.clipboard.writeText(otp)
-    setOtpCopied(true)
-    setTimeout(() => setOtpCopied(false), 2000)
-  }
 
   const generateCaptcha = () => {
     // Generate a random 6-character alphanumeric code
@@ -332,120 +276,6 @@ export default function ParticipantRegisterPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  const copyPendingOtp = () => {
-    if (pendingOtp) {
-      navigator.clipboard.writeText(pendingOtp)
-      toast({ title: "OTP Copied!", description: "Paste it in WhatsApp to the admin." })
-    }
-  }
-
-  const shareOnWhatsApp = () => {
-    if (!pendingOtp) return
-    const msg = encodeURIComponent(
-      `FlowChain Registration OTP\n\nPlease verify my account.\n\nOTP Code: *${pendingOtp}*\nEmail: ${pendingEmail}\n\nKindly approve my registration. Thank you!`
-    )
-    window.open(`https://wa.me/${ADMIN_WHATSAPP.replace(/\D/g, "")}?text=${msg}`, "_blank")
-  }
-
-  // Pending approval screen
-  if (pendingApproval) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-        <div className="w-full max-w-md space-y-6">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 transition-all duration-500 ${otpApproved ? "bg-emerald-500/20 ring-4 ring-emerald-500/40" : "bg-cyan-500/20 ring-4 ring-cyan-500/20 animate-pulse"}`}>
-              {otpApproved
-                ? <ShieldCheck className="h-8 w-8 text-emerald-400" />
-                : <Clock className="h-8 w-8 text-cyan-400" />
-              }
-            </div>
-            <h1 className="text-2xl font-bold text-white">
-              {otpApproved ? "Account Verified!" : "Pending Admin Approval"}
-            </h1>
-            <p className="text-sm text-slate-400">
-              {otpApproved
-                ? "Account verified! Redirecting you to login..."
-                : "Share your OTP with the admin on WhatsApp to get approved."
-              }
-            </p>
-          </div>
-
-          {/* OTP display card */}
-          {!otpApproved && (
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700 rounded-2xl p-6 space-y-5">
-              {/* OTP code */}
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider text-center">Your OTP Code</p>
-                <div className="flex items-center justify-center gap-1">
-                  {pendingOtp?.split("").map((digit, i) => (
-                    <div key={i} className="w-11 h-14 bg-slate-900 border border-cyan-500/40 rounded-lg flex items-center justify-center text-2xl font-bold text-cyan-400 font-mono shadow-inner shadow-cyan-500/10">
-                      {digit}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Copy button */}
-              <button
-                onClick={copyPendingOtp}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-600 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors text-sm font-medium"
-              >
-                <Copy className="h-4 w-4" />
-                Copy OTP Code
-              </button>
-
-              {/* WhatsApp share */}
-              <button
-                onClick={shareOnWhatsApp}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-[#25D366] hover:bg-[#20BA5A] text-white font-semibold transition-colors text-sm shadow-lg shadow-[#25D366]/20"
-              >
-                <MessageCircle className="h-5 w-5" />
-                Share OTP on WhatsApp
-              </button>
-
-              {/* Status */}
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="text-xs text-slate-400">
-                  Waiting for admin approval
-                  {pollCount > 0 && <span className="text-slate-500"> · checking...</span>}
-                </span>
-              </div>
-
-              {/* Instructions */}
-              <div className="bg-slate-900/60 rounded-xl p-4 space-y-2 border border-slate-700/50">
-                <p className="text-xs font-semibold text-slate-300">How it works:</p>
-                <ol className="space-y-1">
-                  {[
-                    "Copy or tap the WhatsApp button above",
-                    "Send the OTP to the admin on WhatsApp",
-                    "Admin will verify and approve your account",
-                    "You will be automatically redirected",
-                  ].map((step, i) => (
-                    <li key={i} className="flex items-start gap-2 text-xs text-slate-400">
-                      <span className="flex-shrink-0 w-4 h-4 rounded-full bg-cyan-500/20 text-cyan-400 text-[10px] font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
-                      {step}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            </div>
-          )}
-
-          {/* Approved state */}
-          {otpApproved && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-8 text-center space-y-3">
-              <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto" />
-              <p className="text-white font-semibold">Your OTP has been verified!</p>
-              <p className="text-slate-400 text-sm">You can now log in to your account.</p>
-            </div>
-          )}
-        </div>
-      </div>
-    )
   }
 
   const stars = Array.from({ length: 15 }, (_, i) => ({
