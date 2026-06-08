@@ -213,7 +213,6 @@ export default function ParticipantRegisterPage() {
           state: formData.state,
           pinCode: formData.pinCode,
           referralCode: formData.referralCode,
-          whatsappOtp: otp,
         }),
       })
 
