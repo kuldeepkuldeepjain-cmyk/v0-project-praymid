@@ -1524,117 +1524,95 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* 4D Animated Action Buttons - Side by Side */}
+        {/* Action Buttons - Side by Side with Simple Animations */}
         <style>{`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px) rotateZ(0deg); }
-            50% { transform: translateY(-12px) rotateZ(1deg); }
+          @keyframes slideUp {
+            from { transform: translateY(4px); opacity: 0.95; }
+            to { transform: translateY(0); opacity: 1; }
           }
-          @keyframes glow-pulse {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(255, 100, 50, 0.6)); }
-            50% { filter: drop-shadow(0 0 40px rgba(255, 100, 50, 0.9)); }
+          @keyframes hoverLift {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-4px); }
           }
-          @keyframes glow-pulse-green {
-            0%, 100% { filter: drop-shadow(0 0 20px rgba(16, 185, 129, 0.6)); }
-            50% { filter: drop-shadow(0 0 40px rgba(16, 185, 129, 0.9)); }
+          .button-simple {
+            animation: slideUp 0.4s ease-out;
           }
-          @keyframes icon-orbit {
-            0% { transform: rotateZ(0deg) translateX(45px) rotateZ(0deg); }
-            100% { transform: rotateZ(360deg) translateX(45px) rotateZ(-360deg); }
-          }
-          @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
-          }
-          @keyframes lift3d {
-            0% { transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateZ(0) scale(1); }
-            100% { transform: perspective(1000px) rotateX(5deg) rotateY(-5deg) translateZ(30px) scale(1.02); }
-          }
-          .button-4d {
-            animation: float 4s ease-in-out infinite;
-          }
-          .button-4d:hover {
-            animation: lift3d 0.6s ease-out forwards;
-          }
-          .icon-glow {
-            animation: glow-pulse 2s ease-in-out infinite;
-          }
-          .icon-glow-green {
-            animation: glow-pulse-green 2s ease-in-out infinite;
-          }
-          .shimmer-effect {
-            position: relative;
-            overflow: hidden;
-          }
-          .shimmer-effect::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 3s infinite;
+          .button-simple:hover {
+            animation: hoverLift 0.3s ease-out forwards;
           }
         `}</style>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          {/* Contribute Button - 4D Left */}
+          {/* Contribute Button */}
           <Link href="/participant/dashboard/contribute">
             <button
               onClick={createRipple}
-              className="button-4d group relative overflow-hidden transition-all duration-300 active:scale-[0.96] rounded-2xl p-4 text-white h-auto min-h-[120px] flex flex-col items-center justify-center"
+              className="button-simple group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-2xl p-3 text-white"
               style={{
-                background: "linear-gradient(135deg, rgba(255, 140, 60, 0.95) 0%, rgba(255, 100, 80, 0.85) 50%, rgba(200, 120, 200, 0.9) 100%)",
-                boxShadow: "0 20px 60px rgba(255, 100, 50, 0.4), 0 10px 30px rgba(150, 80, 200, 0.3), inset 0 1px 20px rgba(255,255,255,0.2)",
-                backdropFilter: "blur(16px)",
+                background: "linear-gradient(90deg, rgba(255, 140, 80, 0.9) 0%, rgba(255, 100, 100, 0.7) 40%, rgba(150, 100, 200, 0.8) 100%)",
+                boxShadow: "0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)",
+                minHeight: "100px",
               }}
             >
-              {/* Shimmer overlay */}
-              <div className="shimmer-effect absolute inset-0 z-0" />
-              
-              <div className="relative z-10 flex flex-col items-center justify-center gap-2 w-full">
-                {/* Icon with orbit animation */}
-                <div className="relative w-16 h-16 mb-2">
-                  <div className="icon-glow absolute inset-0 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
-                    style={{boxShadow: "0 8px 24px rgba(255, 100, 50, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), 0 0 30px rgba(255, 100, 50, 0.5)"}}>
-                    <Send className="w-8 h-8 text-white" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }} />
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                {/* Left Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
+                    style={{boxShadow: "0 6px 20px rgba(255, 100, 50, 0.4), inset 0 1px 0 rgba(255,255,255,0.3)"}}>
+                    <Send className="w-7 h-7 text-white" />
                   </div>
                 </div>
-                
-                {/* Text */}
-                <h3 className="font-bold text-lg tracking-widest text-white leading-none" style={{textShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>CONTRIBUTE</h3>
-                <p className="text-xs text-white/85 text-center font-medium">+$50</p>
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base tracking-wide text-white leading-none">CONTRIBUTE</h3>
+                  <p className="text-xs text-white/80 font-medium">Join Now</p>
+                  <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-[10px]">
+                    <span className="text-white font-bold">+$50</span>
+                  </div>
+                </div>
+
+                {/* Right Arrow */}
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg group-hover:scale-110 transition-transform">
+                  <ChevronRight className="w-5 h-5 text-blue-600" />
+                </div>
               </div>
             </button>
           </Link>
 
-          {/* Payout Button - 4D Right */}
+          {/* Payout Button */}
           <Link href="/participant/dashboard/payout">
             <button
               onClick={createRipple}
-              className="button-4d group relative overflow-hidden transition-all duration-300 active:scale-[0.96] rounded-2xl p-4 text-white h-auto min-h-[120px] flex flex-col items-center justify-center"
+              className="button-simple group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-2xl p-3 text-white"
               style={{
-                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(52, 211, 153, 0.85) 50%, rgba(5, 150, 100, 0.9) 100%)",
-                boxShadow: "0 20px 60px rgba(16, 185, 129, 0.4), 0 10px 30px rgba(52, 211, 153, 0.3), inset 0 1px 20px rgba(255,255,255,0.2)",
-                backdropFilter: "blur(16px)",
+                background: "linear-gradient(90deg, rgba(16, 185, 129, 0.9) 0%, rgba(52, 211, 153, 0.7) 40%, rgba(5, 150, 100, 0.8) 100%)",
+                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)",
+                minHeight: "100px",
               }}
             >
-              {/* Shimmer overlay */}
-              <div className="shimmer-effect absolute inset-0 z-0" />
-              
-              <div className="relative z-10 flex flex-col items-center justify-center gap-2 w-full">
-                {/* Icon with orbit animation */}
-                <div className="relative w-16 h-16 mb-2">
-                  <div className="icon-glow-green absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center"
-                    style={{boxShadow: "0 8px 24px rgba(16, 185, 129, 0.6), inset 0 1px 0 rgba(255,255,255,0.4), 0 0 30px rgba(16, 185, 129, 0.5)"}}>
-                    <ArrowUpRight className="w-8 h-8 text-white" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }} />
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                {/* Left Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center"
+                    style={{boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.3)"}}>
+                    <ArrowUpRight className="w-7 h-7 text-white" />
                   </div>
                 </div>
-                
-                {/* Text */}
-                <h3 className="font-bold text-lg tracking-widest text-white leading-none" style={{textShadow: "0 2px 8px rgba(0,0,0,0.3)"}}>PAYOUT</h3>
-                <p className="text-xs text-white/85 text-center font-medium">Instant</p>
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base tracking-wide text-white leading-none">PAYOUT</h3>
+                  <p className="text-xs text-white/80 font-medium">Instant Claim</p>
+                  <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-[10px]">
+                    <span className="text-white font-bold">Crypto</span>
+                  </div>
+                </div>
+
+                {/* Right Arrow */}
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg group-hover:scale-110 transition-transform">
+                  <ChevronRight className="w-5 h-5 text-emerald-600" />
+                </div>
               </div>
             </button>
           </Link>
