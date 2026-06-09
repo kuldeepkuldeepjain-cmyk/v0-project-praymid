@@ -1524,6 +1524,65 @@ export default function DashboardHome() {
           </div>
         </div>
 
+        {/* Action Buttons - Above Staking */}
+        <div className="space-y-3">
+          {/* Contribute Button */}
+          <Link href="/participant/dashboard/contribute">
+            <button
+              onClick={createRipple}
+              className="group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-3xl p-4 sm:p-5 text-white"
+              style={{
+                background: "linear-gradient(135deg, rgba(251, 146, 60, 0.95) 0%, rgba(168, 85, 247, 0.85) 100%)",
+                boxShadow: "0 12px 40px rgba(251, 146, 60, 0.4), 0 6px 12px rgba(168, 85, 247, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur">
+                    <Send className="w-6 h-6" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }} />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-bold text-lg tracking-wide">CONTRIBUTE</h3>
+                    <p className="text-xs text-white/75">Join Now & Grow Your Earnings</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center justify-center bg-white/20 backdrop-blur px-3 py-2 rounded-xl">
+                  <span className="text-xs text-white/70">REWARD</span>
+                  <span className="font-bold text-sm text-white">$50</span>
+                </div>
+                <ChevronRight className="w-6 h-6 text-white/80" />
+              </div>
+            </button>
+          </Link>
+
+          {/* Payout Button */}
+          <Link href="/participant/dashboard/payout">
+            <button
+              onClick={createRipple}
+              className="group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-3xl p-4 sm:p-5 text-white"
+              style={{
+                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(52, 211, 153, 0.85) 100%)",
+                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.4), 0 6px 12px rgba(52, 211, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+              }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur">
+                    <ArrowUpRight className="w-6 h-6" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }} />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-bold text-lg tracking-wide">PAYOUT</h3>
+                    <p className="text-xs text-white/75">Get directly into your crypto wallet</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-6 h-6 text-white/80" />
+              </div>
+            </button>
+          </Link>
+        </div>
+
         {/* Staking Banner - New Feature */}
         <StakingBanner
           currentBalance={walletBalance}
@@ -1535,56 +1594,6 @@ export default function DashboardHome() {
             }))
           }}
         />
-
-        <div className="grid grid-cols-2 gap-4">
-          <Link href="/participant/dashboard/contribute">
-            <button
-              onClick={createRipple}
-              className="group w-full h-28 text-white flex flex-col items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 active:scale-[0.97] leading-7 rounded-3xl"
-              style={{
-                background: "linear-gradient(145deg, rgba(217, 119, 6, 0.9) 0%, rgba(245, 158, 11, 0.95) 50%, rgba(217, 119, 6, 0.9) 100%)",
-                boxShadow:
-                  "0 8px 32px rgba(217, 119, 6, 0.6), 0 4px 8px rgba(217, 119, 6, 0.5), inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.2), 0 0 20px rgba(245, 158, 11, 0.3)",
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              {/* Icon with animation */}
-              <Send
-                className="transition-transform group-hover:scale-110 group-hover:-rotate-12 w-9 h-9"
-                style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }}
-              />
-              <span className="font-bold text-lg tracking-wide leading-6" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
-                CONTRIBUTE
-              </span>
-              <span className="text-xs text-white/80">Join $100</span>
-            </button>
-          </Link>
-          <Link href="/participant/dashboard/payout">
-            <button
-              onClick={createRipple}
-              className="group w-full h-28 text-white flex flex-col items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-4xl"
-              style={{
-                background: "linear-gradient(145deg, #10b981 0%, #34d399 50%, #10b981 100%)",
-                boxShadow:
-                  "0 8px 32px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0,0,0,0.1)",
-              }}
-            >
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              {/* Icon with animation */}
-              <ArrowUpRight
-                className="h-10 w-10 transition-transform group-hover:scale-110 group-hover:translate-x-1 group-hover:-translate-y-1"
-                style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }}
-              />
-              <span className="font-bold text-lg tracking-wide leading-6" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
-                PAYOUT
-              </span>
-              <span className="text-xs text-white/80">Claim Funds</span>
-            </button>
-          </Link>
-        </div>
 
         {/* Lucky Spin Card - Mobile Optimized */}
         <button
