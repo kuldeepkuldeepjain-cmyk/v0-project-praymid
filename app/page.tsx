@@ -28,6 +28,7 @@ import {
 import { useState } from "react"
 import { LearnMoreDialog } from "@/components/learn-more-dialog"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
+import { AnimatedSphere } from "@/components/animated-sphere"
 
 export default function LandingPage() {
   const router = useRouter()
@@ -253,94 +254,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Column - Globe and Live Activity */}
+            {/* Right Column - Animated Sphere */}
             <div className="relative h-full">
-              {/* Globe/3D Sphere Container */}
-              <div className="relative h-96 lg:h-full flex items-center justify-center">
-                {/* Animated Globe Background */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-80 h-80 lg:w-96 lg:h-96">
-                    {/* Purple glow sphere */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-400 via-purple-500 to-blue-600 rounded-full blur-2xl opacity-40 animate-pulse"></div>
-                    
-                    {/* Glowing rings */}
-                    <div className="absolute inset-0 rounded-full border-4 border-purple-400/30 animate-spin" style={{ animationDuration: "20s" }}></div>
-                    <div className="absolute inset-4 rounded-full border-2 border-blue-400/20 animate-spin" style={{ animationDuration: "30s", animationDirection: "reverse" }}></div>
-                    
-                    {/* Center content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6">
-                      {/* Main reward card */}
-                      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white text-center shadow-2xl w-64">
-                        <div className="text-3xl mb-2">🎁</div>
-                        <p className="text-sm text-purple-100">Instant Bonus</p>
-                        <p className="text-3xl font-bold">$50 USDT</p>
-                      </div>
-
-                      {/* Spin wheel card */}
-                      <div className="bg-purple-700 rounded-xl p-4 text-white text-center shadow-xl">
-                        <div className="text-2xl mb-1">⚙️</div>
-                        <p className="text-sm font-semibold">SPIN & WIN</p>
-                        <p className="text-2xl font-bold text-yellow-300">UP TO 20x</p>
-                        <p className="text-xs text-purple-200">REWARDS</p>
-                      </div>
-
-                      {/* Zero fees badge */}
-                      <div className="bg-slate-800/80 backdrop-blur rounded-lg px-4 py-2 text-white text-center flex items-center gap-2">
-                        <span className="text-xl">🛡️</span>
-                        <span className="text-sm font-semibold">0% PLATFORM FEES</span>
-                      </div>
-                    </div>
-
-                    {/* Floating coins */}
-                    <div className="absolute top-10 left-10 text-3xl animate-bounce" style={{ animationDelay: "0s" }}>
-                      💚
-                    </div>
-                    <div className="absolute top-20 right-5 text-3xl animate-bounce" style={{ animationDelay: "0.5s" }}>
-                      🔴
-                    </div>
-                    <div className="absolute bottom-20 left-5 text-3xl animate-bounce" style={{ animationDelay: "1s" }}>
-                      ₿
-                    </div>
-                    <div className="absolute bottom-10 right-10 text-3xl animate-bounce" style={{ animationDelay: "1.5s" }}>
-                      💰
-                    </div>
-                  </div>
-                </div>
-
-                {/* Live Activity Feed */}
-                <div className="absolute top-0 right-0 bg-white/95 backdrop-blur rounded-2xl p-6 w-72 shadow-2xl border border-slate-200 space-y-4 max-h-96 overflow-y-auto">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-slate-900">LIVE ACTIVITY</h3>
-                    <span className="flex items-center gap-1 text-xs text-red-600 font-semibold">
-                      <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
-                      Live
-                    </span>
-                  </div>
-
-                  {/* Activity items */}
-                  {[
-                    { user: "Rahul received", action: "$50 Bonus", time: "2 sec ago", icon: "🎁", amount: "+$50" },
-                    { user: "Sneha unlocked", action: "10x Multiplier", time: "8 sec ago", icon: "⚙️", amount: "10x" },
-                    { user: "Priya earned", action: "Community Reward", time: "12 sec ago", icon: "🎉", amount: "+$230" },
-                    { user: "Vikram achieved", action: "Gold Rank", time: "19 sec ago", icon: "👑", amount: "👑" },
-                    { user: "New member", action: "joined from India", time: "25 sec ago", icon: "🌍", amount: "" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0">
-                      <div className="text-2xl flex-shrink-0">{item.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 truncate">{item.user}</p>
-                        <p className="text-xs text-slate-600">{item.action}</p>
-                        <p className="text-xs text-slate-500 mt-1">{item.time}</p>
-                      </div>
-                      {item.amount && <div className="text-sm font-bold text-green-600 flex-shrink-0">{item.amount}</div>}
-                    </div>
-                  ))}
-
-                  <button className="w-full text-center text-blue-600 font-semibold text-sm hover:text-blue-700 mt-2">
-                    View All Activity →
-                  </button>
-                </div>
-              </div>
+              <AnimatedSphere />
             </div>
           </div>
         </div>
