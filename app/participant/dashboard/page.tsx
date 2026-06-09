@@ -1525,7 +1525,16 @@ export default function DashboardHome() {
         </div>
 
         {/* Staking Banner - New Feature */}
-        <StakingBanner />
+        <StakingBanner
+          currentBalance={walletBalance}
+          participantEmail={participantData?.email || ""}
+          onBalanceUpdated={(newBalance) => {
+            setParticipantData((prev: any) => ({
+              ...prev,
+              account_balance: newBalance,
+            }))
+          }}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <Link href="/participant/dashboard/contribute">
