@@ -1774,58 +1774,63 @@ export default function DashboardHome() {
       </main>
 
       {/* Footer Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-[100]">
-        <nav className="grid grid-cols-5 h-16 max-w-lg mx-auto">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t-2 border-slate-100 dark:border-slate-700 z-[100] shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
+        <div className="flex items-stretch h-16 w-full">
+
           {/* Home */}
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400"}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400 hover:text-slate-600"}`}
           >
-            <Home className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Home</span>
-            {activeTab === "dashboard" && <span className="w-4 h-0.5 rounded-full bg-[#7c3aed]" />}
+            <Home className={`h-5 w-5 transition-transform ${activeTab === "dashboard" ? "scale-110" : ""}`} />
+            <span className="text-[9px] font-semibold tracking-wide uppercase">Home</span>
+            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "dashboard" ? "bg-[#7c3aed]" : "bg-transparent"}`} />
           </button>
 
           {/* Staking */}
           <button
             onClick={() => setActiveTab("staking")}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "staking" ? "text-blue-600" : "text-slate-400"}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 relative ${activeTab === "staking" ? "text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
           >
-            <TrendingUp className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Staking</span>
-            {activeTab === "staking" && <span className="w-4 h-0.5 rounded-full bg-blue-600" />}
+            {activeTab !== "staking" && (
+              <span className="absolute top-2 right-[calc(50%-14px)] h-1.5 w-1.5 rounded-full bg-blue-500" />
+            )}
+            <TrendingUp className={`h-5 w-5 transition-transform ${activeTab === "staking" ? "scale-110" : ""}`} />
+            <span className="text-[9px] font-semibold tracking-wide uppercase">Staking</span>
+            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "staking" ? "bg-blue-600" : "bg-transparent"}`} />
           </button>
 
           {/* Luck Wheel */}
           <button
             onClick={() => setActiveTab("wheel")}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "wheel" ? "text-orange-500" : "text-slate-400"}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "wheel" ? "text-orange-500" : "text-slate-400 hover:text-slate-600"}`}
           >
-            <Sparkles className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Luck Wheel</span>
-            {activeTab === "wheel" && <span className="w-4 h-0.5 rounded-full bg-orange-500" />}
+            <Sparkles className={`h-5 w-5 transition-transform ${activeTab === "wheel" ? "scale-110" : ""}`} />
+            <span className="text-[9px] font-semibold tracking-wide uppercase">Wheel</span>
+            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "wheel" ? "bg-orange-500" : "bg-transparent"}`} />
           </button>
 
           {/* Contribute */}
           <button
             onClick={() => setActiveTab("activity")}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "activity" ? "text-amber-600" : "text-slate-400"}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "activity" ? "text-amber-600" : "text-slate-400 hover:text-slate-600"}`}
           >
-            <Send className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Contribute</span>
-            {activeTab === "activity" && <span className="w-4 h-0.5 rounded-full bg-amber-600" />}
+            <Send className={`h-5 w-5 transition-transform ${activeTab === "activity" ? "scale-110" : ""}`} />
+            <span className="text-[9px] font-semibold tracking-wide uppercase">Contribute</span>
+            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "activity" ? "bg-amber-600" : "bg-transparent"}`} />
           </button>
 
           {/* Leaderboard */}
           <button
             onClick={() => setActiveTab("leaderboard")}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400"}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400 hover:text-slate-600"}`}
           >
-            <Trophy className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Ranks</span>
-            {activeTab === "leaderboard" && <span className="w-4 h-0.5 rounded-full bg-yellow-500" />}
+            <Trophy className={`h-5 w-5 transition-transform ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
+            <span className="text-[9px] font-semibold tracking-wide uppercase">Ranks</span>
+            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "leaderboard" ? "bg-yellow-500" : "bg-transparent"}`} />
           </button>
-        </nav>
+
+        </div>
       </footer>
 
       {/* Floating AI Chat Button */}
