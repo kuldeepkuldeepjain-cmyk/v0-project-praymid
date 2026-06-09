@@ -36,11 +36,46 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState("all")
 
   const rewards = [
-    { icon: "🎁", amount: "$50", label: "BONUS", color: "from-orange-100 to-red-100" },
-    { icon: "⚙️", multiplier: "5x", label: "REWARD", color: "from-pink-100 to-purple-100" },
-    { icon: "🎡", multiplier: "20x", label: "REWARD", color: "from-amber-100 to-orange-100", featured: true },
-    { icon: "⚙️", multiplier: "10x", label: "REWARD", color: "from-purple-100 to-pink-100" },
-    { icon: "👑", label: "GOLD RANK", color: "from-yellow-100 to-amber-100" },
+    {
+      icon: "🤲💰",
+      title: "$50",
+      label: "REWARD",
+      description: "For Contributing",
+      color: "from-orange-100 to-orange-50",
+      titleColor: "text-orange-600",
+    },
+    {
+      icon: "🎡",
+      title: "Spin Wheel",
+      label: "UP TO 20X REWARD",
+      description: "Try your luck daily",
+      color: "from-pink-100 to-pink-50",
+      titleColor: "text-purple-600",
+    },
+    {
+      icon: "📦",
+      title: "Mystery Chest",
+      label: "UP TO $1000 REWARD",
+      description: "Unbox big surprises",
+      color: "from-yellow-100 to-yellow-50",
+      titleColor: "text-yellow-600",
+    },
+    {
+      icon: "📊",
+      title: "Binary Trading",
+      label: "TRADE & EARN",
+      description: "Predict and profit",
+      color: "from-blue-100 to-blue-50",
+      titleColor: "text-blue-600",
+    },
+    {
+      icon: "💰",
+      title: "Stacking",
+      label: "PASSIVE REWARDS",
+      description: "Stack and grow your wealth",
+      color: "from-green-100 to-green-50",
+      titleColor: "text-green-600",
+    },
   ]
 
   const stats = [
@@ -271,25 +306,41 @@ export default function LandingPage() {
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">Flexible options to earn what works best for you</p>
           </div>
 
-          {/* Reward Cards Carousel */}
-          <div className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory scroll-smooth">
+          {/* Reward Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
             {rewards.map((reward, idx) => (
               <div
                 key={idx}
-                className={`flex-shrink-0 w-44 sm:w-56 group relative animate-stagger-scale overflow-hidden rounded-2xl transition-all duration-300 hover:scale-105 ${
-                  reward.featured
-                    ? "ring-2 ring-purple-500 shadow-2xl bg-gradient-to-br from-amber-50 via-orange-50 to-red-50"
-                    : `bg-gradient-to-br ${reward.color} shadow-lg hover:shadow-2xl`
-                }`}
+                className="group relative animate-stagger-scale overflow-hidden rounded-3xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:-translate-y-2"
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <div className="relative p-8 h-full flex flex-col items-center justify-center text-center">
-                  {reward.featured && <div className="absolute top-3 right-3 inline-flex items-center gap-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold px-3 py-1 rounded-full">⭐ Featured</div>}
-                  <div className="text-6xl mb-4 group-hover:scale-125 transition-transform duration-300">{reward.icon}</div>
-                  {reward.amount && <div className="text-3xl font-bold text-orange-600 mb-2">{reward.amount}</div>}
-                  {reward.multiplier && <div className="text-3xl font-bold text-purple-600 mb-2">{reward.multiplier}</div>}
-                  <div className="text-sm font-bold text-slate-700">{reward.label}</div>
+                <div
+                  className={`relative bg-gradient-to-br ${reward.color} shadow-lg p-8 h-full flex flex-col items-center justify-center text-center min-h-[280px]`}
+                >
+                  {/* Card shine effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl pointer-events-none"></div>
+
+                  <div className="relative z-10 flex flex-col items-center justify-center h-full gap-4">
+                    {/* Icon */}
+                    <div className="text-6xl sm:text-7xl group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300">
+                      {reward.icon}
+                    </div>
+
+                    {/* Title */}
+                    <h3 className={`text-2xl sm:text-3xl font-bold ${reward.titleColor}`}>
+                      {reward.title}
+                    </h3>
+
+                    {/* Label */}
+                    <p className="text-xs sm:text-sm font-bold text-slate-500 tracking-wider">
+                      {reward.label}
+                    </p>
+
+                    {/* Description */}
+                    <p className="text-sm text-slate-600 leading-relaxed max-w-xs">
+                      {reward.description}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
