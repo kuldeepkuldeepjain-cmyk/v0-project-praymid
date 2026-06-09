@@ -3,12 +3,39 @@
 import React, { useEffect, useRef } from "react"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 
-// ─── Sparkle Particle ─────────────────────────────────────────────────────────
+// ─── Glowing Orb Light Spot ───────────────────────────────────────────────────
+function OrbLightSpot({ angle, distance, delay }: { angle: number; distance: number; delay: number }) {
+  const x = Math.cos((angle * Math.PI) / 180) * distance
+  const y = Math.sin((angle * Math.PI) / 180) * distance
+
+  return (
+    <div
+      className="absolute rounded-full pointer-events-none"
+      style={{
+        width: 6,
+        height: 6,
+        background: "radial-gradient(circle, rgba(255,200,100,0.9) 0%, rgba(255,150,80,0.4) 100%)",
+        boxShadow: "0 0 12px 2px rgba(255,150,80,0.6)",
+        left: "50%",
+        top: "50%",
+        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+        animation: `lightPulse 3s ease-in-out ${delay}s infinite`,
+      }}
+    />
+  )
+}
+
+// ─── Sparkle Particle ─────────────────────────────────────────────────────────────
 function Sparkle({ style }: { style: React.CSSProperties }) {
   return (
     <div
       className="absolute rounded-full bg-white pointer-events-none"
-      style={{ width: 3, height: 3, ...style }}
+      style={{
+        width: 3,
+        height: 3,
+        boxShadow: "0 0 6px 1px rgba(255,255,255,0.8)",
+        ...style,
+      }}
     />
   )
 }
@@ -53,15 +80,28 @@ function CryptoCoin({
           left: orbitRadius,
           top: -size / 2,
           transform: "translateX(-50%)",
-          boxShadow: `0 0 16px 4px ${color}55`,
+          boxShadow: `0 0 20px 6px ${color}66, inset -2px -2px 8px rgba(0,0,0,0.3), inset 2px 2px 8px rgba(255,255,255,0.4)`,
           fontSize: size * 0.36,
           animation: `coinBob 2.5s ease-in-out infinite alternate`,
           animationDelay: `${orbitDelay}s`,
+          position: "relative",
         }}
       >
-        {symbol}
+        <div style={{ position: "relative", zIndex: 2 }}>{symbol}</div>
+        {/* Inner highlight for 3D effect */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: size * 0.6,
+            height: size * 0.6,
+            background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 70%)`,
+            top: size * 0.1,
+            left: size * 0.1,
+            pointerEvents: "none",
+          }}
+        />
         <span
-          className="absolute -bottom-5 whitespace-nowrap text-white font-bold"
+          className="absolute -bottom-6 whitespace-nowrap text-white font-bold drop-shadow-md"
           style={{ fontSize: 9, letterSpacing: "0.04em" }}
         >
           {label}
@@ -199,8 +239,24 @@ export function AnimatedSphere() {
           to   { transform: rotateY(360deg); }
         }
         @keyframes dotPulse {
-          from { opacity: 0.4; r: 2; }
-          to   { opacity: 1;   r: 4; }
+          from { r: 2.5; fill: "rgba(220,180,255,0.6)"; }
+          to   { r: 4; fill: "rgba(220,180,255,1)"; }
+        }
+        @keyframes lightPulse {
+          0%, 100% { opacity: 0.4; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.8); }
+          50% { opacity: 1; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.2); }
+        }
+        @keyframes orbitSparkle {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+        @keyframes orbitRingSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes orbitNodePulse {
+          0%, 100% { r: 2; opacity: 0.6; }
+          50% { r: 3.5; opacity: 1; }
         }
         @keyframes sparkleTwinkle {
           from { opacity: 0.2; transform: scale(0.5); }
@@ -350,6 +406,34 @@ export function AnimatedSphere() {
             orbitDelay={-4}
             size={46}
           />
+
+          {/* Equatorial glowing ring with nodes */}
+          <div
+            className="absolute rounded-full border-2"
+            style={{
+              width: 280,
+              height: 280,
+              borderColor: "rgba(168,85,247,0.4)",
+              boxShadow: "0 0 20px 2px rgba(168,85,247,0.5)",
+              animation: "orbitRingSpin 30s linear infinite",
+            }}
+          >
+            {/* Bright nodes on ring */}
+            {[0, 60, 120, 180, 240, 300].map((angle) => (
+              <div
+                key={angle}
+                className="absolute w-2 h-2 rounded-full"
+                style={{
+                  background: "radial-gradient(circle, rgba(244,114,182,0.9) 0%, rgba(168,85,247,0.6) 100%)",
+                  boxShadow: "0 0 8px 1.5px rgba(244,114,182,0.7)",
+                  left: "50%",
+                  top: "50%",
+                  transform: `rotate(${angle}deg) translateX(140px) translate(-50%, -50%)`,
+                  animation: `orbitNodePulse 1.5s ease-in-out ${angle / 60}s infinite`,
+                }}
+              />
+            ))}
+          </div>
         </div>
 
         {/* ── Main orb shell ───────────────────────────────────── */}
@@ -383,6 +467,16 @@ export function AnimatedSphere() {
                   "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.18) 0%, transparent 70%)",
               }}
             />
+
+            {/* Glowing light spots on orb surface */}
+            <OrbLightSpot angle={45} distance={140} delay={0} />
+            <OrbLightSpot angle={135} distance={145} delay={0.3} />
+            <OrbLightSpot angle={225} distance={140} delay={0.6} />
+            <OrbLightSpot angle={315} distance={145} delay={0.9} />
+            <OrbLightSpot angle={90} distance={148} delay={1.2} />
+            <OrbLightSpot angle={180} distance={142} delay={1.5} />
+            <OrbLightSpot angle={270} distance={146} delay={1.8} />
+            <OrbLightSpot angle={0} distance={144} delay={0.15} />
 
             {/* ── FlowChain branding with logo ── */}
             <div className="flex flex-col items-center gap-6" style={{ marginTop: -12 }}>
@@ -423,55 +517,84 @@ export function AnimatedSphere() {
           }}
         >
           <div
-            className="rounded-xl flex items-center justify-center shadow-xl"
+            className="rounded-xl flex items-center justify-center shadow-xl relative"
             style={{
               width: 54,
               height: 54,
               background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)",
               border: "3px solid rgba(255,255,255,0.4)",
-              boxShadow: "0 8px 24px rgba(124,58,237,0.5)",
+              boxShadow: "0 8px 24px rgba(124,58,237,0.5), inset -2px -2px 6px rgba(0,0,0,0.2), inset 2px 2px 6px rgba(255,255,255,0.2)",
               fontSize: 28,
             }}
           >
             🎁
+            {/* Gift box highlight */}
+            <div
+              className="absolute rounded-xl"
+              style={{
+                inset: 0,
+                background: "radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)",
+                pointerEvents: "none",
+              }}
+            />
           </div>
-          {/* Ribbon */}
+          {/* Gold ribbon bow */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 -top-2"
+            className="absolute left-1/2 -translate-x-1/2 -top-3 rounded-full"
             style={{
-              width: 54,
-              height: 6,
-              background: "rgba(255,255,255,0.7)",
-              borderRadius: 99,
+              width: 12,
+              height: 12,
+              background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+              boxShadow: "0 0 8px 1.5px rgba(251,191,36,0.7)",
             }}
           />
+          {/* Horizontal ribbon */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 left-0"
+            className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 rounded-full"
             style={{
-              width: 6,
+              width: 54,
+              height: 5,
+              background: "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)",
+              boxShadow: "0 2px 6px rgba(251,191,36,0.5)",
+            }}
+          />
+          {/* Vertical ribbon */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 rounded-full"
+            style={{
+              width: 5,
               height: 54,
-              background: "rgba(255,255,255,0.7)",
-              borderRadius: 99,
+              background: "linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%)",
+              boxShadow: "0 2px 6px rgba(251,191,36,0.5)",
             }}
           />
         </div>
 
         {/* ── Small floating mini coin (bottom left) ────────────── */}
         <div
-          className="absolute pointer-events-none rounded-full flex items-center justify-center font-black shadow-lg"
+          className="absolute pointer-events-none rounded-full flex items-center justify-center font-black shadow-xl relative"
           style={{
             left: "8%",
             bottom: "22%",
-            width: 38,
-            height: 38,
+            width: 42,
+            height: 42,
             background: "linear-gradient(135deg, #78350f 0%, #f59e0b 100%)",
             color: "#fde68a",
-            fontSize: 18,
-            boxShadow: "0 0 12px 4px rgba(245,158,11,0.5)",
+            fontSize: 20,
+            boxShadow: "0 0 16px 4px rgba(245,158,11,0.6), inset -1.5px -1.5px 6px rgba(0,0,0,0.4), inset 1.5px 1.5px 6px rgba(255,255,255,0.3)",
             animation: "giftBounce 2.8s ease-in-out 0.4s infinite",
           }}
         >
           ₿
+          {/* Coin highlight */}
+          <div
+            className="absolute rounded-full"
+            style={{
+              inset: 0,
+              background: "radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%)",
+              pointerEvents: "none",
+            }}
+          />
         </div>
 
         {/* ── Bottom ambient ground glow ────────────────────────── */}
