@@ -1360,7 +1360,7 @@ export default function DashboardHome() {
         }}
       />
 
-      <header className="bg-white sticky top-0 z-40 border-b border-slate-100 h-14 shadow-sm">
+      <header className="bg-gradient-to-r from-slate-50 to-purple-50 sticky top-0 z-40 border-b border-purple-100 h-14 shadow-sm">
         <div className="px-4 h-full flex items-center justify-between">
           {/* Left side - Profile Avatar */}
           <div className="flex items-center gap-2">
@@ -1370,7 +1370,7 @@ export default function DashboardHome() {
                   <img
                     src={participantData.profile_image || "/placeholder.svg"}
                     alt="Profile"
-                    className="h-9 w-9 rounded-full object-cover border-2 border-purple-500"
+                    className="h-9 w-9 rounded-full object-cover border-2 border-purple-400"
                   />
                 ) : (
                   <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] flex items-center justify-center border-2 border-white shadow-md">
@@ -1388,12 +1388,12 @@ export default function DashboardHome() {
               onClick={() => setActiveTab("wheel")}
               className="relative group px-3 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
               style={{
-                background: "linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%)",
-                boxShadow: "0 2px 8px rgba(249, 115, 22, 0.3)",
+                background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+                boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
               }}
             >
                 <Sparkles className="h-4 w-4 text-white" />
-                <span className="text-white text-xs font-bold tracking-wide">Luck Wheel</span>
+                <span className="text-white text-xs font-bold tracking-wide">Spin</span>
               {/* Shine effect */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
@@ -1407,14 +1407,14 @@ export default function DashboardHome() {
         </div>
       </header>
 
-      <main className="px-3 sm:px-4 py-3 sm:py-4 pb-20 space-y-3 sm:space-y-5">
+      <main className="px-3 sm:px-4 py-3 sm:py-4 pb-20 space-y-3 sm:space-y-5 bg-gradient-to-b from-white via-purple-50/30 to-slate-50">
         {activeTab === "dashboard" && (
           <>
             {/* Welcome Banner - Mobile Optimized */}
-        <div className="bg-gradient-to-r from-purple-50 to-transparent rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2">
+        <div className="bg-gradient-to-r from-purple-600/10 via-purple-500/5 to-transparent rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2 border border-purple-200/40">
           <div className="flex-1 min-w-0">
             <p className="text-base sm:text-lg font-bold text-slate-800 truncate">Welcome back, {displayName}</p>
-            <p className="text-xs sm:text-sm text-slate-500">Let's grow your network today</p>
+            <p className="text-xs sm:text-sm text-slate-600">Let's grow your network today</p>
           </div>
           <Link href="/participant/dashboard/profile">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] p-[2px] flex-shrink-0">
@@ -1426,39 +1426,39 @@ export default function DashboardHome() {
         </div>
 
         <div
-          className="relative py-6 px-4 sm:py-8 sm:px-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/20"
+          className="relative py-6 px-4 sm:py-8 sm:px-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-purple-200/40"
           style={{
             background:
-              "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(232, 93, 59, 0.08) 35%, rgba(34, 211, 238, 0.08) 70%, rgba(16, 185, 129, 0.06) 100%)",
+              "linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(232, 93, 59, 0.04) 35%, rgba(16, 185, 129, 0.04) 100%)",
           }}
         >
           {/* Enhanced animated background with multiple orbs - Responsive */}
           <div className="absolute inset-0 overflow-hidden">
           {/* Top right purple orb */}
-          <div className="absolute -top-8 -right-8 sm:-top-16 sm:-right-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#7c3aed]/20 via-purple-400/10 to-transparent rounded-full blur-2xl sm:blur-3xl" />
+          <div className="absolute -top-8 -right-8 sm:-top-16 sm:-right-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#7c3aed]/15 via-purple-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl" />
           
           {/* Bottom left orange orb */}
           <div
-            className="absolute -bottom-8 -left-8 sm:-bottom-16 sm:-left-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#E85D3B]/20 via-orange-400/10 to-transparent rounded-full blur-2xl sm:blur-3xl"
+            className="absolute -bottom-8 -left-8 sm:-bottom-16 sm:-left-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#E85D3B]/15 via-orange-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl"
           />
           
-          {/* Middle cyan orb */}
+          {/* Middle emerald orb */}
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 bg-gradient-to-br from-[#22d3ee]/15 via-cyan-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 bg-gradient-to-br from-[#10b981]/12 via-emerald-400/6 to-transparent rounded-full blur-2xl sm:blur-3xl"
           />
             
-            {/* Top left emerald accent */}
+            {/* Top left cyan accent */}
             <div
-              className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-emerald-400/15 to-transparent rounded-full blur-2xl"
+              className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-2xl"
             />
             
-            {/* Bottom right pink accent */}
+            {/* Bottom right accent */}
             <div
-              className="absolute bottom-10 right-10 w-32 h-32 bg-gradient-to-br from-pink-400/15 to-transparent rounded-full blur-2xl"
+              className="absolute bottom-10 right-10 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl"
             />
             
             {/* Animated gradient lines */}
-            <div className="absolute inset-0 opacity-30">
+            <div className="absolute inset-0 opacity-20">
               <div
                 className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent"
                 style={{
@@ -1476,7 +1476,7 @@ export default function DashboardHome() {
             
             {/* Subtle grid pattern overlay */}
             <div
-              className="absolute inset-0 opacity-5"
+              className="absolute inset-0 opacity-3"
               style={{
                 backgroundImage: `linear-gradient(rgba(124, 58, 237, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px)`,
                 backgroundSize: "20px 20px",
@@ -1492,7 +1492,7 @@ export default function DashboardHome() {
                 onClick={() => setShowTopUpModal(true)}
                 className="absolute -top-1 sm:-top-2 right-0 rounded-lg sm:rounded-xl font-bold text-white flex flex-col items-center gap-0.5 sm:gap-1 transition-all hover:scale-105 active:scale-95 shadow-lg text-[10px] sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5"
                 style={{
-                  background: "linear-gradient(135deg, #7c3aed, #6366f1)",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
                   boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
                 }}
               >
@@ -1501,10 +1501,10 @@ export default function DashboardHome() {
               </button>
 
               <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
-                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-slate-800" />
-                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider font-bold">Wallet Balance</span>
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                <span className="text-xs sm:text-sm text-slate-600 uppercase tracking-wider font-bold">Wallet Balance</span>
               </div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-600 to-orange-600 bg-clip-text text-transparent">
                 <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
               </div>
             </div>
@@ -1512,8 +1512,8 @@ export default function DashboardHome() {
             {/* Referral Earnings - Below Wallet Balance */}
             <div className="text-center relative">
               <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
-                <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-slate-800" />
-                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider font-bold">Referral Earnings</span>
+                <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                <span className="text-xs sm:text-sm text-slate-600 uppercase tracking-wider font-bold">Referral Earnings</span>
               </div>
               <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
                 <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
