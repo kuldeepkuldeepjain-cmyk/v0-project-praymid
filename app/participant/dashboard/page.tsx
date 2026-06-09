@@ -1774,64 +1774,54 @@ export default function DashboardHome() {
       </main>
 
       {/* Footer Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t-2 border-slate-100 dark:border-slate-700 z-[100] shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
-        <div className="flex items-stretch h-16 w-full">
+      <nav style={{position:"fixed",bottom:0,left:0,right:0,zIndex:9999,background:"#ffffff",borderTop:"2px solid #e2e8f0",display:"flex",height:"60px",boxShadow:"0 -4px 12px rgba(0,0,0,0.08)"}}>
 
           {/* Home */}
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400 hover:text-slate-600"}`}
+            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",color: activeTab === "dashboard" ? "#7c3aed" : "#94a3b8"}}
           >
-            <Home className={`h-5 w-5 transition-transform ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-            <span className="text-[9px] font-semibold tracking-wide uppercase">Home</span>
-            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "dashboard" ? "bg-[#7c3aed]" : "bg-transparent"}`} />
+            <Home style={{width:20,height:20}} />
+            <span style={{fontSize:"9px",fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase"}}>Home</span>
           </button>
 
           {/* Staking */}
           <button
             onClick={() => setActiveTab("staking")}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 relative ${activeTab === "staking" ? "text-blue-600" : "text-slate-400 hover:text-slate-600"}`}
+            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px",background: activeTab === "staking" ? "#eff6ff" : "none",border:"none",cursor:"pointer",color: activeTab === "staking" ? "#2563eb" : "#94a3b8",borderTop: activeTab === "staking" ? "2px solid #2563eb" : "2px solid transparent"}}
           >
-            {activeTab !== "staking" && (
-              <span className="absolute top-2 right-[calc(50%-14px)] h-1.5 w-1.5 rounded-full bg-blue-500" />
-            )}
-            <TrendingUp className={`h-5 w-5 transition-transform ${activeTab === "staking" ? "scale-110" : ""}`} />
-            <span className="text-[9px] font-semibold tracking-wide uppercase">Staking</span>
-            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "staking" ? "bg-blue-600" : "bg-transparent"}`} />
+            <TrendingUp style={{width:20,height:20}} />
+            <span style={{fontSize:"9px",fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase"}}>Staking</span>
           </button>
 
           {/* Luck Wheel */}
           <button
             onClick={() => setActiveTab("wheel")}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "wheel" ? "text-orange-500" : "text-slate-400 hover:text-slate-600"}`}
+            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",color: activeTab === "wheel" ? "#f97316" : "#94a3b8"}}
           >
-            <Sparkles className={`h-5 w-5 transition-transform ${activeTab === "wheel" ? "scale-110" : ""}`} />
-            <span className="text-[9px] font-semibold tracking-wide uppercase">Wheel</span>
-            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "wheel" ? "bg-orange-500" : "bg-transparent"}`} />
+            <Sparkles style={{width:20,height:20}} />
+            <span style={{fontSize:"9px",fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase"}}>Wheel</span>
           </button>
 
           {/* Contribute */}
           <button
             onClick={() => setActiveTab("activity")}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "activity" ? "text-amber-600" : "text-slate-400 hover:text-slate-600"}`}
+            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",color: activeTab === "activity" ? "#d97706" : "#94a3b8"}}
           >
-            <Send className={`h-5 w-5 transition-transform ${activeTab === "activity" ? "scale-110" : ""}`} />
-            <span className="text-[9px] font-semibold tracking-wide uppercase">Contribute</span>
-            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "activity" ? "bg-amber-600" : "bg-transparent"}`} />
+            <Send style={{width:20,height:20}} />
+            <span style={{fontSize:"9px",fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase"}}>Contribute</span>
           </button>
 
           {/* Leaderboard */}
           <button
             onClick={() => setActiveTab("leaderboard")}
-            className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 ${activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400 hover:text-slate-600"}`}
+            style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"2px",background:"none",border:"none",cursor:"pointer",color: activeTab === "leaderboard" ? "#eab308" : "#94a3b8"}}
           >
-            <Trophy className={`h-5 w-5 transition-transform ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
-            <span className="text-[9px] font-semibold tracking-wide uppercase">Ranks</span>
-            <span className={`h-0.5 w-5 rounded-full transition-all ${activeTab === "leaderboard" ? "bg-yellow-500" : "bg-transparent"}`} />
+            <Trophy style={{width:20,height:20}} />
+            <span style={{fontSize:"9px",fontWeight:700,letterSpacing:"0.05em",textTransform:"uppercase"}}>Ranks</span>
           </button>
 
-        </div>
-      </footer>
+      </nav>
 
       {/* Floating AI Chat Button */}
       <Button
