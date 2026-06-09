@@ -164,38 +164,183 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-20 pb-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center space-y-8">
-            <div className="inline-block px-4 py-2 rounded-full bg-blue-100/50 border border-blue-200">
-              <span className="text-sm font-semibold text-blue-700">
-                ⭐ Trusted by 50,000+ participants worldwide
-              </span>
+      <section className="relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/30 overflow-hidden pt-24 pb-12">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 right-10 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-20 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Left Column */}
+            <div className="space-y-8">
+              {/* Trust Badge */}
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-2xl">⭐</span>
+                <span className="text-slate-700 font-medium">Trusted by 50,000+ participants worldwide</span>
+              </div>
+
+              {/* Main Heading */}
+              <div className="space-y-4">
+                <h1 className="text-5xl sm:text-6xl font-bold leading-tight">
+                  <span className="text-slate-900">Your Next</span>
+                  <br />
+                  <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Reward</span>
+                  <br />
+                  <span className="text-slate-900">Is Waiting.</span>
+                </h1>
+                <p className="text-lg text-slate-600 leading-relaxed">
+                  Join a global community, earn instant bonuses, spin for bigger rewards, and grow together with zero platform fees.
+                </p>
+              </div>
+
+              {/* Key Features */}
+              <div className="flex flex-wrap gap-4 pt-4">
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-3 rounded-lg border border-slate-200">
+                  <span className="text-2xl">🎁</span>
+                  <div>
+                    <p className="text-xs text-slate-500">Instant Bonus</p>
+                    <p className="font-bold text-slate-900">$50 USDT</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-3 rounded-lg border border-slate-200">
+                  <span className="text-2xl">⚙️</span>
+                  <div>
+                    <p className="text-xs text-slate-500">Up To</p>
+                    <p className="font-bold text-slate-900">20x Rewards</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 bg-white/80 backdrop-blur px-4 py-3 rounded-lg border border-slate-200">
+                  <span className="text-2xl">🛡️</span>
+                  <div>
+                    <p className="text-xs text-slate-500">Platform</p>
+                    <p className="font-bold text-slate-900">0% Fees</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap gap-4 pt-6">
+                <button
+                  onClick={() => router.push("/participant/register")}
+                  className="px-8 py-4 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white font-semibold shadow-lg hover:shadow-xl transition-all transform hover:scale-105"
+                >
+                  Reveal My Reward →
+                </button>
+                <button className="px-8 py-4 rounded-full bg-white border-2 border-slate-200 hover:border-slate-300 text-slate-900 font-semibold flex items-center gap-2 transition-all hover:bg-slate-50">
+                  <span className="text-red-600">▶</span>
+                  Watch Video
+                </button>
+              </div>
+
+              {/* Social Proof */}
+              <div className="flex items-center gap-3 pt-4">
+                <div className="flex -space-x-2">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold">
+                      {i}
+                    </div>
+                  ))}
+                </div>
+                <div>
+                  <p className="text-slate-900 font-semibold">2,847 people joined today</p>
+                  <div className="flex gap-1 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-xs text-slate-500">Live</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-slate-900 via-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Unlock Financial Growth with Community Rewards
-            </h1>
+            {/* Right Column - Globe and Live Activity */}
+            <div className="relative h-full">
+              {/* Globe/3D Sphere Container */}
+              <div className="relative h-96 lg:h-full flex items-center justify-center">
+                {/* Animated Globe Background */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-80 h-80 lg:w-96 lg:h-96">
+                    {/* Purple glow sphere */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-400 via-purple-500 to-blue-600 rounded-full blur-2xl opacity-40 animate-pulse"></div>
+                    
+                    {/* Glowing rings */}
+                    <div className="absolute inset-0 rounded-full border-4 border-purple-400/30 animate-spin" style={{ animationDuration: "20s" }}></div>
+                    <div className="absolute inset-4 rounded-full border-2 border-blue-400/20 animate-spin" style={{ animationDuration: "30s", animationDirection: "reverse" }}></div>
+                    
+                    {/* Center content */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center space-y-6">
+                      {/* Main reward card */}
+                      <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-6 text-white text-center shadow-2xl w-64">
+                        <div className="text-3xl mb-2">🎁</div>
+                        <p className="text-sm text-purple-100">Instant Bonus</p>
+                        <p className="text-3xl font-bold">$50 USDT</p>
+                      </div>
 
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Earn passive income, spin to win rewards up to 20x, and grow with a global community of 50,000+ members.
-            </p>
+                      {/* Spin wheel card */}
+                      <div className="bg-purple-700 rounded-xl p-4 text-white text-center shadow-xl">
+                        <div className="text-2xl mb-1">⚙️</div>
+                        <p className="text-sm font-semibold">SPIN & WIN</p>
+                        <p className="text-2xl font-bold text-yellow-300">UP TO 20x</p>
+                        <p className="text-xs text-purple-200">REWARDS</p>
+                      </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white h-12 px-8 text-lg"
-                onClick={() => router.push("/participant/register")}
-              >
-                Start Earning Now <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 border-blue-200 hover:bg-blue-50 h-12 px-8 text-lg"
-              >
-                Learn More
-              </Button>
+                      {/* Zero fees badge */}
+                      <div className="bg-slate-800/80 backdrop-blur rounded-lg px-4 py-2 text-white text-center flex items-center gap-2">
+                        <span className="text-xl">🛡️</span>
+                        <span className="text-sm font-semibold">0% PLATFORM FEES</span>
+                      </div>
+                    </div>
+
+                    {/* Floating coins */}
+                    <div className="absolute top-10 left-10 text-3xl animate-bounce" style={{ animationDelay: "0s" }}>
+                      💚
+                    </div>
+                    <div className="absolute top-20 right-5 text-3xl animate-bounce" style={{ animationDelay: "0.5s" }}>
+                      🔴
+                    </div>
+                    <div className="absolute bottom-20 left-5 text-3xl animate-bounce" style={{ animationDelay: "1s" }}>
+                      ₿
+                    </div>
+                    <div className="absolute bottom-10 right-10 text-3xl animate-bounce" style={{ animationDelay: "1.5s" }}>
+                      💰
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Activity Feed */}
+                <div className="absolute top-0 right-0 bg-white/95 backdrop-blur rounded-2xl p-6 w-72 shadow-2xl border border-slate-200 space-y-4 max-h-96 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-bold text-slate-900">LIVE ACTIVITY</h3>
+                    <span className="flex items-center gap-1 text-xs text-red-600 font-semibold">
+                      <span className="w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                      Live
+                    </span>
+                  </div>
+
+                  {/* Activity items */}
+                  {[
+                    { user: "Rahul received", action: "$50 Bonus", time: "2 sec ago", icon: "🎁", amount: "+$50" },
+                    { user: "Sneha unlocked", action: "10x Multiplier", time: "8 sec ago", icon: "⚙️", amount: "10x" },
+                    { user: "Priya earned", action: "Community Reward", time: "12 sec ago", icon: "🎉", amount: "+$230" },
+                    { user: "Vikram achieved", action: "Gold Rank", time: "19 sec ago", icon: "👑", amount: "👑" },
+                    { user: "New member", action: "joined from India", time: "25 sec ago", icon: "🌍", amount: "" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-start gap-3 pb-3 border-b border-slate-100 last:border-0">
+                      <div className="text-2xl flex-shrink-0">{item.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-slate-900 truncate">{item.user}</p>
+                        <p className="text-xs text-slate-600">{item.action}</p>
+                        <p className="text-xs text-slate-500 mt-1">{item.time}</p>
+                      </div>
+                      {item.amount && <div className="text-sm font-bold text-green-600 flex-shrink-0">{item.amount}</div>}
+                    </div>
+                  ))}
+
+                  <button className="w-full text-center text-blue-600 font-semibold text-sm hover:text-blue-700 mt-2">
+                    View All Activity →
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
