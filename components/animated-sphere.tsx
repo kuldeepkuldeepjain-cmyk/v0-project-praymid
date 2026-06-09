@@ -3,6 +3,70 @@
 import React, { useEffect, useRef } from "react"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 
+// ─── Reward Card Component ───────────────────────────────────────────────────────
+function RewardCard({
+  icon,
+  title,
+  value,
+  sub,
+  bg,
+  delay,
+  dark = false,
+}: {
+  icon: React.ReactNode
+  title?: string
+  value: string
+  sub?: string
+  bg: string
+  delay: number
+  dark?: boolean
+}) {
+  return (
+    <div
+      className="flex items-center gap-3 rounded-xl px-4 py-3 shadow-xl"
+      style={{
+        background: bg,
+        border: dark ? "1.5px solid rgba(255,255,255,0.15)" : "1.5px solid rgba(255,255,255,0.6)",
+        backdropFilter: "blur(12px)",
+        animation: `cardFloat 3.5s ease-in-out ${delay}s infinite alternate`,
+        boxShadow: dark
+          ? "0 8px 32px 0 rgba(100,60,200,0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
+          : "0 8px 32px 0 rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.7)",
+        width: "220px",
+      }}
+    >
+      <div className="flex-shrink-0 text-2xl">{icon}</div>
+      <div className="flex-1 min-w-0">
+        {title && (
+          <div
+            className="text-xs font-semibold mb-0.5"
+            style={{ color: dark ? "rgba(255,255,255,0.7)" : "#64748b" }}
+          >
+            {title}
+          </div>
+        )}
+        <div
+          className="font-black leading-tight"
+          style={{
+            fontSize: "1.15rem",
+            color: dark ? "#fbbf24" : "#c2410c",
+          }}
+        >
+          {value}
+        </div>
+        {sub && (
+          <div
+            className="text-xs font-medium"
+            style={{ color: dark ? "rgba(255,255,255,0.6)" : "#64748b" }}
+          >
+            {sub}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Glowing Orb Light Spot ───────────────────────────────────────────────────
 function OrbLightSpot({ angle, distance, delay }: { angle: number; distance: number; delay: number }) {
   const x = Math.cos((angle * Math.PI) / 180) * distance
@@ -12,10 +76,10 @@ function OrbLightSpot({ angle, distance, delay }: { angle: number; distance: num
     <div
       className="absolute rounded-full pointer-events-none"
       style={{
-        width: 6,
-        height: 6,
-        background: "radial-gradient(circle, rgba(255,200,100,0.9) 0%, rgba(255,150,80,0.4) 100%)",
-        boxShadow: "0 0 12px 2px rgba(255,150,80,0.6)",
+        width: 8,
+        height: 8,
+        background: "radial-gradient(circle, rgba(255,220,120,0.95) 0%, rgba(255,150,80,0.5) 100%)",
+        boxShadow: "0 0 16px 3px rgba(255,150,80,0.7)",
         left: "50%",
         top: "50%",
         transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
@@ -33,7 +97,7 @@ function Sparkle({ style }: { style: React.CSSProperties }) {
       style={{
         width: 3,
         height: 3,
-        boxShadow: "0 0 6px 1px rgba(255,255,255,0.8)",
+        boxShadow: "0 0 8px 1.5px rgba(255,255,255,0.9)",
         ...style,
       }}
     />
@@ -49,7 +113,7 @@ function CryptoCoin({
   orbitRadius,
   orbitDuration,
   orbitDelay,
-  size = 52,
+  size = 56,
 }: {
   label: string
   bg: string
@@ -71,7 +135,7 @@ function CryptoCoin({
     >
       {/* Coin placed at orbit radius */}
       <div
-        className="absolute flex flex-col items-center justify-center rounded-full shadow-lg font-black text-center border-2 border-white/30"
+        className="absolute flex flex-col items-center justify-center rounded-full shadow-lg font-black text-center border-2 border-white/40"
         style={{
           width: size,
           height: size,
@@ -80,7 +144,7 @@ function CryptoCoin({
           left: orbitRadius,
           top: -size / 2,
           transform: "translateX(-50%)",
-          boxShadow: `0 0 20px 6px ${color}66, inset -2px -2px 8px rgba(0,0,0,0.3), inset 2px 2px 8px rgba(255,255,255,0.4)`,
+          boxShadow: `0 0 24px 8px ${color}77, inset -2px -2px 8px rgba(0,0,0,0.4), inset 2px 2px 8px rgba(255,255,255,0.5)`,
           fontSize: size * 0.36,
           animation: `coinBob 2.5s ease-in-out infinite alternate`,
           animationDelay: `${orbitDelay}s`,
@@ -94,7 +158,7 @@ function CryptoCoin({
           style={{
             width: size * 0.6,
             height: size * 0.6,
-            background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 70%)`,
+            background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.5) 0%, transparent 70%)`,
             top: size * 0.1,
             left: size * 0.1,
             pointerEvents: "none",
@@ -102,7 +166,7 @@ function CryptoCoin({
         />
         <span
           className="absolute -bottom-6 whitespace-nowrap text-white font-bold drop-shadow-md"
-          style={{ fontSize: 9, letterSpacing: "0.04em" }}
+          style={{ fontSize: 10, letterSpacing: "0.04em" }}
         >
           {label}
         </span>
@@ -112,447 +176,430 @@ function CryptoCoin({
 }
 
 // ─── Network Globe Lines (SVG) ────────────────────────────────────────────────
-function NetworkGlobe() {
+function NetworkGlobeLines() {
   return (
     <svg
-      viewBox="0 0 320 320"
-      className="w-full h-full opacity-70"
-      style={{ animation: "globeSpin 18s linear infinite" }}
+      viewBox="0 0 100 100"
+      width={320}
+      height={320}
+      className="absolute pointer-events-none"
+      style={{
+        left: "50%",
+        top: "50%",
+        transform: "translate(-50%, -50%)",
+        animation: "globeSpin 20s linear infinite",
+        opacity: 0.7,
+      }}
     >
-      {/* Globe outline */}
-      <ellipse cx="160" cy="160" rx="130" ry="130" fill="none" stroke="rgba(147,112,219,0.4)" strokeWidth="1.5" />
       {/* Latitude lines */}
-      {[0.35, 0.6, 0.82].map((ry, i) => (
-        <ellipse key={i} cx="160" cy="160" rx="130" ry={130 * ry} fill="none" stroke="rgba(100,150,255,0.25)" strokeWidth="0.8" />
-      ))}
-      {/* Longitude arcs */}
-      {[0, 30, 60, 90, 120, 150].map((angle, i) => (
-        <ellipse
-          key={i}
-          cx="160"
-          cy="160"
-          rx={130 * Math.abs(Math.cos((angle * Math.PI) / 180))}
-          ry="130"
-          fill="none"
-          stroke="rgba(147,112,219,0.2)"
-          strokeWidth="0.8"
-          transform={`rotate(${angle} 160 160)`}
-        />
-      ))}
-      {/* Connection dots */}
-      {[
-        [100, 90], [190, 75], [230, 140], [200, 210],
-        [120, 230], [70, 175], [155, 50], [255, 170],
-      ].map(([cx, cy], i) => (
-        <circle key={i} cx={cx} cy={cy} r="3" fill="rgba(220,180,255,0.8)" style={{ animation: `dotPulse 2s ease-in-out ${i * 0.25}s infinite alternate` }} />
-      ))}
-      {/* Connection lines between dots */}
-      <line x1="100" y1="90" x2="190" y2="75" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="190" y1="75" x2="230" y2="140" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="230" y1="140" x2="200" y2="210" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="200" y1="210" x2="120" y2="230" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="120" y1="230" x2="70" y2="175" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="70" y1="175" x2="100" y2="90" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="155" y1="50" x2="255" y2="170" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
-      <line x1="100" y1="90" x2="255" y2="170" stroke="rgba(180,130,255,0.3)" strokeWidth="0.8" />
+      <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(147,51,234,0.3)" strokeWidth="0.4" />
+      <circle cx="50" cy="50" r="35" fill="none" stroke="rgba(147,51,234,0.25)" strokeWidth="0.4" />
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(147,51,234,0.2)" strokeWidth="0.4" />
+
+      {/* Longitude lines */}
+      <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(147,51,234,0.2)" strokeWidth="0.4" />
+      <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(147,51,234,0.2)" strokeWidth="0.4" />
+      <line x1="25" y1="14" x2="75" y2="86" stroke="rgba(147,51,234,0.15)" strokeWidth="0.4" />
+      <line x1="75" y1="14" x2="25" y2="86" stroke="rgba(147,51,234,0.15)" strokeWidth="0.4" />
+
+      {/* Connection dots and nodes */}
+      {[20, 50, 80].map((x) =>
+        [20, 50, 80].map((y) => (
+          <circle
+            key={`${x}-${y}`}
+            cx={x}
+            cy={y}
+            r="1.5"
+            fill="rgba(220,180,255,0.7)"
+            className="animate-pulse"
+          />
+        ))
+      )}
+
+      {/* Glowing connection lines */}
+      <line x1="20" y1="20" x2="80" y2="80" stroke="rgba(168,85,247,0.4)" strokeWidth="0.5" />
+      <line x1="80" y1="20" x2="20" y2="80" stroke="rgba(168,85,247,0.4)" strokeWidth="0.5" />
     </svg>
   )
 }
 
-// ─── Pedestal ─────────────────────────────────────────────────────────────────
-function Pedestal() {
-  return (
-    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-none" style={{ zIndex: 2 }}>
-      {/* Glow pool at base */}
-      <div
-        className="rounded-full"
-        style={{
-          width: 180,
-          height: 18,
-          background: "radial-gradient(ellipse, rgba(168,85,247,0.7) 0%, transparent 80%)",
-          filter: "blur(8px)",
-          marginBottom: -6,
-        }}
-      />
-      {/* Step 1 – widest */}
-      <div
-        className="rounded-full"
-        style={{
-          width: 200,
-          height: 20,
-          background: "linear-gradient(180deg, #a78bfa 0%, #7c3aed 60%, #4c1d95 100%)",
-          boxShadow: "0 4px 20px rgba(124,58,237,0.5)",
-        }}
-      />
-      {/* Step 2 */}
-      <div
-        className="rounded-full"
-        style={{
-          width: 160,
-          height: 18,
-          background: "linear-gradient(180deg, #c4b5fd 0%, #8b5cf6 60%, #5b21b6 100%)",
-          boxShadow: "0 4px 16px rgba(139,92,246,0.4)",
-        }}
-      />
-      {/* Step 3 – narrowest */}
-      <div
-        className="rounded-full"
-        style={{
-          width: 120,
-          height: 16,
-          background: "linear-gradient(180deg, #ddd6fe 0%, #a78bfa 60%, #7c3aed 100%)",
-          boxShadow: "0 4px 12px rgba(167,139,250,0.4)",
-        }}
-      />
-    </div>
-  )
-}
-
-// ─── Main Component ────────────────────────────────────────────────────────────
+// ─── Main AnimatedSphere Component ────────────────────────────────────────────
 export function AnimatedSphere() {
-  const sparkles = Array.from({ length: 24 }, (_, i) => ({
-    top: `${Math.random() * 100}%`,
-    left: `${Math.random() * 100}%`,
-    opacity: Math.random() * 0.7 + 0.3,
-    animation: `sparkleTwinkle ${1.2 + Math.random() * 2}s ease-in-out ${Math.random() * 2}s infinite alternate`,
-    scale: 0.5 + Math.random() * 1.5,
-  }))
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth * window.devicePixelRatio
+      canvas.height = canvas.offsetHeight * window.devicePixelRatio
+      ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    }
+
+    resize()
+    window.addEventListener("resize", resize)
+
+    let animationId: number
+    const startTime = Date.now()
+
+    const animate = () => {
+      const elapsed = (Date.now() - startTime) / 1000
+      const width = canvas.offsetWidth
+      const height = canvas.offsetHeight
+      const centerX = width / 2
+      const centerY = height / 2
+
+      ctx.clearRect(0, 0, width, height)
+
+      // Draw dynamic sparkles
+      const sparkleCount = 32
+      for (let i = 0; i < sparkleCount; i++) {
+        const angle = (i / sparkleCount) * Math.PI * 2 + elapsed * 0.3
+        const distance = 200 + Math.sin(elapsed * 0.8 + i) * 40
+        const x = centerX + Math.cos(angle) * distance
+        const y = centerY + Math.sin(angle) * distance
+
+        const opacity = Math.sin(elapsed * 2 + i) * 0.3 + 0.5
+        ctx.fillStyle = `rgba(255,255,255,${opacity})`
+        ctx.beginPath()
+        ctx.arc(x, y, 1.5, 0, Math.PI * 2)
+        ctx.fill()
+
+        // Sparkle glow
+        ctx.strokeStyle = `rgba(255,255,255,${opacity * 0.4})`
+        ctx.lineWidth = 0.5
+        ctx.beginPath()
+        ctx.arc(x, y, 3, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+
+      animationId = requestAnimationFrame(animate)
+    }
+
+    animate()
+
+    return () => {
+      window.removeEventListener("resize", resize)
+      cancelAnimationFrame(animationId)
+    }
+  }, [])
 
   return (
-    <>
-      {/* CSS keyframes injected once */}
+    <div className="w-full h-full flex items-center justify-center relative">
       <style>{`
         @keyframes orbit {
           from { transform: rotate(0deg); }
           to   { transform: rotate(360deg); }
         }
-        @keyframes orbitReverse {
-          from { transform: rotate(0deg); }
-          to   { transform: rotate(-360deg); }
-        }
         @keyframes coinBob {
           from { transform: translateX(-50%) translateY(0px) scale(1); }
-          to   { transform: translateX(-50%) translateY(-10px) scale(1.08); }
+          to   { transform: translateX(-50%) translateY(-12px) scale(1.1); }
+        }
+        @keyframes cardFloat {
+          from { transform: translateY(0px); }
+          to   { transform: translateY(-10px); }
         }
         @keyframes globeSpin {
-          from { transform: rotateY(0deg); }
-          to   { transform: rotateY(360deg); }
-        }
-        @keyframes dotPulse {
-          from { r: 2.5; fill: "rgba(220,180,255,0.6)"; }
-          to   { r: 4; fill: "rgba(220,180,255,1)"; }
-        }
-        @keyframes lightPulse {
-          0%, 100% { opacity: 0.4; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.8); }
-          50% { opacity: 1; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.2); }
-        }
-        @keyframes orbitSparkle {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 1; }
+          from { transform: translate(-50%, -50%) rotateZ(0deg); }
+          to   { transform: translate(-50%, -50%) rotateZ(360deg); }
         }
         @keyframes orbitRingSpin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
         @keyframes orbitNodePulse {
-          0%, 100% { r: 2; opacity: 0.6; }
-          50% { r: 3.5; opacity: 1; }
+          0%, 100% { r: 2.5; opacity: 0.6; }
+          50% { r: 4; opacity: 1; }
         }
-        @keyframes sparkleTwinkle {
-          from { opacity: 0.2; transform: scale(0.5); }
-          to   { opacity: 1;   transform: scale(1.5); }
+        @keyframes lightPulse {
+          0%, 100% { opacity: 0.4; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0.8); }
+          50% { opacity: 1; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.2); }
         }
         @keyframes orbPulse {
-          0%, 100% { box-shadow: 0 0 60px 20px rgba(168,85,247,0.35), 0 0 120px 40px rgba(109,40,217,0.2), inset 0 0 60px rgba(216,180,254,0.1); }
-          50%       { box-shadow: 0 0 80px 30px rgba(168,85,247,0.55), 0 0 160px 60px rgba(109,40,217,0.3), inset 0 0 80px rgba(216,180,254,0.18); }
-        }
-        @keyframes ringRotate1 {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to   { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        @keyframes ringRotate2 {
-          from { transform: translate(-50%, -50%) rotate(0deg); }
-          to   { transform: translate(-50%, -50%) rotate(-360deg); }
+          0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 40px 15px rgba(239,68,68,0.3); }
+          50% { transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 0 60px 25px rgba(239,68,68,0.5); }
         }
         @keyframes giftBounce {
-          0%, 100% { transform: translateY(0px) rotate(-6deg); }
-          50%       { transform: translateY(-14px) rotate(6deg); }
-        }
-        @keyframes outerGlow {
-          0%, 100% { opacity: 0.4; }
-          50%       { opacity: 0.8; }
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-15px); }
+          100% { transform: translateY(0px); }
         }
       `}</style>
 
-      <div className="relative w-full h-full min-h-[520px] flex items-center justify-center select-none">
+      {/* Canvas for dynamic sparkles */}
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 pointer-events-none"
+        style={{ width: "100%", height: "100%" }}
+      />
 
-        {/* ── Far background globe ─────────────────────────────── */}
+      {/* Main sphere container */}
+      <div
+        className="relative w-full h-full flex items-center justify-center"
+        style={{ perspective: "1000px" }}
+      >
+        {/* Network Globe background */}
+        <NetworkGlobeLines />
+
+        {/* Orbiting crypto coins */}
+        {/* USDT — green, fast inner */}
+        <CryptoCoin
+          label="USDT"
+          bg="linear-gradient(135deg, #065f46 0%, #10b981 100%)"
+          color="#d1fae5"
+          symbol="₮"
+          orbitRadius={140}
+          orbitDuration={20}
+          orbitDelay={0}
+          size={52}
+        />
+
+        {/* TRX — red, medium-fast */}
+        <CryptoCoin
+          label="TRX"
+          bg="linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%)"
+          color="#fecaca"
+          symbol="⟡"
+          orbitRadius={165}
+          orbitDuration={24}
+          orbitDelay={-2}
+          size={54}
+        />
+
+        {/* BTC — gold, medium-slow */}
+        <CryptoCoin
+          label="BTC"
+          bg="linear-gradient(135deg, #78350f 0%, #f59e0b 100%)"
+          color="#fde68a"
+          symbol="₿"
+          orbitRadius={175}
+          orbitDuration={26}
+          orbitDelay={-3}
+          size={56}
+        />
+
+        {/* ETH — blue, slow outer */}
+        <CryptoCoin
+          label="ETH"
+          bg="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)"
+          color="#bfdbfe"
+          symbol="Ξ"
+          orbitRadius={195}
+          orbitDuration={28}
+          orbitDelay={-4}
+          size={54}
+        />
+
+        {/* Equatorial glowing ring with nodes */}
         <div
-          className="absolute pointer-events-none"
+          className="absolute rounded-full border-2"
           style={{
-            width: 280,
-            height: 280,
-            top: "10%",
-            right: "2%",
-            opacity: 0.5,
+            width: 300,
+            height: 300,
+            borderColor: "rgba(168,85,247,0.5)",
+            boxShadow: "0 0 24px 3px rgba(168,85,247,0.6)",
+            animation: "orbitRingSpin 30s linear infinite",
           }}
         >
-          <NetworkGlobe />
-          <div
-            className="absolute inset-0 rounded-full"
-            style={{
-              background: "radial-gradient(circle at 40% 35%, rgba(100,149,255,0.18) 0%, transparent 70%)",
-              animation: "outerGlow 4s ease-in-out infinite",
-            }}
-          />
-        </div>
-
-        {/* ── Outer ambient glow rings ──────────────────────────── */}
-        <div
-          className="absolute rounded-full pointer-events-none border border-purple-400/20"
-          style={{
-            width: 520,
-            height: 520,
-            left: "50%",
-            top: "50%",
-            transform: "translate(-50%, -50%)",
-            animation: "orbPulse 4s ease-in-out infinite",
-          }}
-        />
-        {/* Rotating dashed ring 1 */}
-        <div
-          className="absolute pointer-events-none rounded-full"
-          style={{
-            width: 460,
-            height: 460,
-            left: "50%",
-            top: "50%",
-            border: "1.5px dashed rgba(192,132,252,0.25)",
-            animation: "ringRotate1 22s linear infinite",
-          }}
-        />
-        {/* Rotating dashed ring 2 */}
-        <div
-          className="absolute pointer-events-none rounded-full"
-          style={{
-            width: 380,
-            height: 380,
-            left: "50%",
-            top: "50%",
-            border: "1px dashed rgba(147,197,253,0.2)",
-            animation: "ringRotate2 34s linear infinite",
-          }}
-        />
-
-        {/* ── Sparkle particles ────────────────────────────────── */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {sparkles.map((s, i) => (
-            <Sparkle
-              key={i}
+          {/* Bright nodes on ring */}
+          {[0, 60, 120, 180, 240, 300].map((angle) => (
+            <div
+              key={angle}
+              className="absolute w-3 h-3 rounded-full"
               style={{
-                top: s.top,
-                left: s.left,
-                opacity: s.opacity,
-                transform: `scale(${s.scale})`,
-                animation: s.animation,
+                background: "radial-gradient(circle, rgba(244,114,182,1) 0%, rgba(168,85,247,0.7) 100%)",
+                boxShadow: "0 0 12px 2px rgba(244,114,182,0.8)",
+                left: "50%",
+                top: "50%",
+                transform: `rotate(${angle}deg) translateX(150px) translate(-50%, -50%)`,
+                animation: `orbitNodePulse 1.8s ease-in-out ${angle / 60}s infinite`,
               }}
             />
           ))}
         </div>
 
-        {/* ── Orbiting crypto coins ─────────────────────────────── */}
-        <div className="absolute" style={{ width: 0, height: 0, left: "50%", top: "50%" }}>
-          {/* USDT — green, outer orbit */}
-          <CryptoCoin
-            label="USDT"
-            bg="linear-gradient(135deg, #064e3b 0%, #059669 100%)"
-            color="#6ee7b7"
-            symbol="₮"
-            orbitRadius={200}
-            orbitDuration={14}
-            orbitDelay={0}
-            size={52}
-          />
-          {/* TRX — red, medium orbit */}
-          <CryptoCoin
-            label="TRX"
-            bg="linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%)"
-            color="#fca5a5"
-            symbol="◈"
-            orbitRadius={175}
-            orbitDuration={18}
-            orbitDelay={-6}
-            size={48}
-          />
-          {/* BTC — gold, inner orbit */}
-          <CryptoCoin
-            label="BTC"
-            bg="linear-gradient(135deg, #78350f 0%, #f59e0b 100%)"
-            color="#fde68a"
-            symbol="₿"
-            orbitRadius={210}
-            orbitDuration={22}
-            orbitDelay={-12}
-            size={54}
-          />
-          {/* ETH — blue, slow outer */}
-          <CryptoCoin
-            label="ETH"
-            bg="linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)"
-            color="#bfdbfe"
-            symbol="Ξ"
-            orbitRadius={190}
-            orbitDuration={28}
-            orbitDelay={-4}
-            size={46}
-          />
-
-          {/* Equatorial glowing ring with nodes */}
-          <div
-            className="absolute rounded-full border-2"
-            style={{
-              width: 280,
-              height: 280,
-              borderColor: "rgba(168,85,247,0.4)",
-              boxShadow: "0 0 20px 2px rgba(168,85,247,0.5)",
-              animation: "orbitRingSpin 30s linear infinite",
-            }}
-          >
-            {/* Bright nodes on ring */}
-            {[0, 60, 120, 180, 240, 300].map((angle) => (
-              <div
-                key={angle}
-                className="absolute w-2 h-2 rounded-full"
-                style={{
-                  background: "radial-gradient(circle, rgba(244,114,182,0.9) 0%, rgba(168,85,247,0.6) 100%)",
-                  boxShadow: "0 0 8px 1.5px rgba(244,114,182,0.7)",
-                  left: "50%",
-                  top: "50%",
-                  transform: `rotate(${angle}deg) translateX(140px) translate(-50%, -50%)`,
-                  animation: `orbitNodePulse 1.5s ease-in-out ${angle / 60}s infinite`,
-                }}
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* ── Main orb shell ───────────────────────────────────── */}
+        {/* Main orb shell */}
         <div
-          className="relative flex flex-col items-center"
-          style={{ zIndex: 10, marginBottom: 54 }}
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            width: 280,
+            height: 280,
+            background:
+              "radial-gradient(circle at 35% 35%, rgba(200,100,255,0.8) 0%, rgba(100,50,200,0.6) 40%, rgba(50,20,150,0.4) 100%)",
+            boxShadow:
+              "0 0 60px 20px rgba(168,85,247,0.5), inset -20px -20px 60px rgba(0,0,0,0.4), inset 20px 20px 60px rgba(255,255,255,0.2)",
+            animation: "orbPulse 4s ease-in-out infinite",
+          }}
         >
+          {/* Inner highlight */}
           <div
-            className="relative flex flex-col items-center justify-center rounded-full"
+            className="absolute rounded-full pointer-events-none"
             style={{
-              width: 310,
-              height: 310,
+              width: "70%",
+              height: "55%",
+              top: "8%",
+              left: "15%",
               background:
-                "radial-gradient(ellipse at 35% 28%, rgba(216,180,254,0.22) 0%, rgba(139,92,246,0.18) 35%, rgba(109,40,217,0.28) 70%, rgba(76,29,149,0.4) 100%)",
-              border: "2px solid rgba(216,180,254,0.35)",
-              backdropFilter: "blur(2px)",
-              boxShadow:
-                "0 0 60px 20px rgba(168,85,247,0.35), 0 0 120px 40px rgba(109,40,217,0.2), inset 0 0 60px rgba(216,180,254,0.1)",
-              animation: "orbPulse 4s ease-in-out infinite",
+                "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.22) 0%, transparent 70%)",
             }}
-          >
-            {/* Inner highlight */}
+          />
+
+          {/* Glowing light spots on orb surface */}
+          <OrbLightSpot angle={45} distance={130} delay={0} />
+          <OrbLightSpot angle={135} distance={135} delay={0.3} />
+          <OrbLightSpot angle={225} distance={132} delay={0.6} />
+          <OrbLightSpot angle={315} distance={136} delay={0.9} />
+          <OrbLightSpot angle={90} distance={138} delay={1.2} />
+          <OrbLightSpot angle={180} distance={134} delay={1.5} />
+          <OrbLightSpot angle={270} distance={137} delay={1.8} />
+          <OrbLightSpot angle={0} distance={135} delay={0.15} />
+
+          {/* ── FlowChain branding with logo and reward cards ── */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4" style={{ marginTop: -16 }}>
+            {/* FlowChain Logo Component */}
+            <div className="filter drop-shadow-[0_0_16px_rgba(239,68,68,0.5)] transform scale-110">
+              <FlowChainLogo variant="icon" size="lg" />
+            </div>
+
+            {/* Reward cards stacked inside orb */}
+            <div className="flex flex-col gap-2">
+              {/* Card 1: Instant Bonus */}
+              <RewardCard
+                icon="🎁"
+                title="Instant Bonus"
+                value="$50 USDT"
+                bg="rgba(255,248,235,0.94)"
+                delay={0}
+              />
+              {/* Card 2: Spin & Win */}
+              <RewardCard
+                icon="🎡"
+                title="Spin & Win Up To"
+                value="20x REWARDS"
+                bg="linear-gradient(135deg, rgba(76,29,149,0.94) 0%, rgba(109,40,217,0.94) 100%)"
+                delay={0.5}
+                dark
+              />
+              {/* Card 3: 0% Fees */}
+              <RewardCard
+                icon="🛡️"
+                value="0% PLATFORM FEES"
+                bg="linear-gradient(135deg, rgba(15,23,42,0.88) 0%, rgba(30,58,138,0.88) 100%)"
+                delay={1}
+                dark
+              />
+            </div>
+
+            {/* Central glow point */}
             <div
               className="absolute rounded-full pointer-events-none"
               style={{
-                width: "70%",
-                height: "55%",
-                top: "8%",
-                left: "15%",
-                background:
-                  "radial-gradient(ellipse at 50% 30%, rgba(255,255,255,0.18) 0%, transparent 70%)",
+                width: 14,
+                height: 14,
+                background: "radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(239,68,68,0.7) 100%)",
+                boxShadow: "0 0 24px 10px rgba(239,68,68,0.6)",
+                animation: "orbPulse 4s ease-in-out infinite",
+                bottom: 20,
               }}
             />
-
-            {/* Glowing light spots on orb surface */}
-            <OrbLightSpot angle={45} distance={140} delay={0} />
-            <OrbLightSpot angle={135} distance={145} delay={0.3} />
-            <OrbLightSpot angle={225} distance={140} delay={0.6} />
-            <OrbLightSpot angle={315} distance={145} delay={0.9} />
-            <OrbLightSpot angle={90} distance={148} delay={1.2} />
-            <OrbLightSpot angle={180} distance={142} delay={1.5} />
-            <OrbLightSpot angle={270} distance={146} delay={1.8} />
-            <OrbLightSpot angle={0} distance={144} delay={0.15} />
-
-            {/* ── FlowChain branding with logo ── */}
-            <div className="flex flex-col items-center gap-6" style={{ marginTop: -12 }}>
-              {/* FlowChain Logo Component */}
-              <div className="filter drop-shadow-[0_0_12px_rgba(239,68,68,0.4)]">
-                <FlowChainLogo variant="icon" size="lg" />
-              </div>
-
-              {/* Central glow point */}
-              <div
-                className="absolute rounded-full pointer-events-none"
-                style={{
-                  width: 12,
-                  height: 12,
-                  background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(239,68,68,0.6) 100%)",
-                  boxShadow: "0 0 20px 8px rgba(239,68,68,0.5)",
-                  animation: "orbPulse 3s ease-in-out infinite",
-                  top: "50%",
-                  left: "50%",
-                  transform: "translate(-50%, -50%)",
-                }}
-              />
-            </div>
           </div>
-
-          {/* ── Pedestal ── */}
-          <Pedestal />
         </div>
 
-        {/* ── Floating gift box ─────────────────────────────────── */}
+        {/* Pedestal with multiple rings */}
+        <div className="absolute bottom-0 pointer-events-none">
+          {/* Base ring 1 */}
+          <div
+            className="rounded-full border-4"
+            style={{
+              width: 200,
+              height: 60,
+              borderColor: "rgba(200,150,255,0.6)",
+              boxShadow: "0 8px 20px rgba(168,85,247,0.4), inset 0 2px 8px rgba(255,255,255,0.2)",
+              transform: "skewY(-3deg) translateZ(0)",
+            }}
+          />
+          {/* Base ring 2 */}
+          <div
+            className="rounded-full border-4 absolute"
+            style={{
+              width: 240,
+              height: 70,
+              borderColor: "rgba(168,85,247,0.5)",
+              boxShadow: "0 12px 30px rgba(168,85,247,0.3), inset 0 2px 8px rgba(255,255,255,0.15)",
+              transform: "translateY(8px) skewY(-3deg) translateZ(0)",
+              left: "-20px",
+            }}
+          />
+          {/* Base ring 3 */}
+          <div
+            className="rounded-full border-4 absolute"
+            style={{
+              width: 280,
+              height: 80,
+              borderColor: "rgba(139,92,246,0.4)",
+              boxShadow: "0 16px 40px rgba(139,92,246,0.3), inset 0 2px 8px rgba(255,255,255,0.1)",
+              transform: "translateY(16px) skewY(-3deg) translateZ(0)",
+              left: "-40px",
+            }}
+          />
+          {/* Ground glow */}
+          <div
+            className="rounded-full pointer-events-none"
+            style={{
+              width: 320,
+              height: 80,
+              background:
+                "radial-gradient(ellipse at center, rgba(168,85,247,0.4) 0%, rgba(168,85,247,0.2) 40%, transparent 100%)",
+              filter: "blur(20px)",
+              transform: "translateY(30px)",
+            }}
+          />
+        </div>
+
+        {/* Gift box (bottom right) */}
         <div
-          className="absolute pointer-events-none"
+          className="absolute pointer-points-none rounded-xl flex items-center justify-center font-black shadow-xl relative"
           style={{
-            right: "6%",
-            bottom: "10%",
-            animation: "giftBounce 3.5s ease-in-out infinite",
-            zIndex: 12,
+            right: "8%",
+            bottom: "12%",
+            width: 56,
+            height: 56,
+            background: "linear-gradient(135deg, #9333ea 0%, #ec4899 100%)",
+            border: "3px solid rgba(255,255,255,0.4)",
+            boxShadow: "0 8px 24px rgba(147,51,234,0.6), inset -2px -2px 6px rgba(0,0,0,0.2), inset 2px 2px 6px rgba(255,255,255,0.3)",
+            fontSize: 28,
+            animation: "giftBounce 2.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite",
           }}
         >
+          🎁
+          {/* Gift box highlight */}
           <div
-            className="rounded-xl flex items-center justify-center shadow-xl relative"
+            className="absolute rounded-xl"
             style={{
-              width: 54,
-              height: 54,
-              background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)",
-              border: "3px solid rgba(255,255,255,0.4)",
-              boxShadow: "0 8px 24px rgba(124,58,237,0.5), inset -2px -2px 6px rgba(0,0,0,0.2), inset 2px 2px 6px rgba(255,255,255,0.2)",
-              fontSize: 28,
+              inset: 0,
+              background: "radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)",
+              pointerEvents: "none",
             }}
-          >
-            🎁
-            {/* Gift box highlight */}
-            <div
-              className="absolute rounded-xl"
-              style={{
-                inset: 0,
-                background: "radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 60%)",
-                pointerEvents: "none",
-              }}
-            />
-          </div>
+          />
           {/* Gold ribbon bow */}
           <div
             className="absolute left-1/2 -translate-x-1/2 -top-3 rounded-full"
             style={{
-              width: 12,
-              height: 12,
+              width: 14,
+              height: 14,
               background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
               boxShadow: "0 0 8px 1.5px rgba(251,191,36,0.7)",
             }}
           />
           {/* Horizontal ribbon */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 rounded-full"
+            className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2"
             style={{
-              width: 54,
+              width: 56,
               height: 5,
               background: "linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%)",
               boxShadow: "0 2px 6px rgba(251,191,36,0.5)",
@@ -560,28 +607,28 @@ export function AnimatedSphere() {
           />
           {/* Vertical ribbon */}
           <div
-            className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 rounded-full"
+            className="absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2"
             style={{
               width: 5,
-              height: 54,
+              height: 56,
               background: "linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%)",
               boxShadow: "0 2px 6px rgba(251,191,36,0.5)",
             }}
           />
         </div>
 
-        {/* ── Small floating mini coin (bottom left) ────────────── */}
+        {/* Small floating mini coin (bottom left) */}
         <div
           className="absolute pointer-events-none rounded-full flex items-center justify-center font-black shadow-xl relative"
           style={{
-            left: "8%",
-            bottom: "22%",
-            width: 42,
-            height: 42,
+            left: "6%",
+            bottom: "14%",
+            width: 46,
+            height: 46,
             background: "linear-gradient(135deg, #78350f 0%, #f59e0b 100%)",
             color: "#fde68a",
-            fontSize: 20,
-            boxShadow: "0 0 16px 4px rgba(245,158,11,0.6), inset -1.5px -1.5px 6px rgba(0,0,0,0.4), inset 1.5px 1.5px 6px rgba(255,255,255,0.3)",
+            fontSize: 22,
+            boxShadow: "0 0 18px 5px rgba(245,158,11,0.7), inset -1.5px -1.5px 6px rgba(0,0,0,0.4), inset 1.5px 1.5px 6px rgba(255,255,255,0.3)",
             animation: "giftBounce 2.8s ease-in-out 0.4s infinite",
           }}
         >
@@ -596,20 +643,7 @@ export function AnimatedSphere() {
             }}
           />
         </div>
-
-        {/* ── Bottom ambient ground glow ────────────────────────── */}
-        <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 pointer-events-none rounded-full"
-          style={{
-            width: 300,
-            height: 30,
-            background:
-              "radial-gradient(ellipse, rgba(168,85,247,0.45) 0%, transparent 70%)",
-            filter: "blur(12px)",
-            animation: "outerGlow 3s ease-in-out infinite",
-          }}
-        />
       </div>
-    </>
+    </div>
   )
 }
