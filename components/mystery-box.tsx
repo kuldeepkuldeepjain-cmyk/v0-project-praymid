@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import { Sparkles, Lock, Loader2 } from "lucide-react"
+import { Sparkles, Loader2 } from "lucide-react"
 
 interface MysteryBoxProps {
   currentBalance: number
@@ -22,19 +23,38 @@ const REWARD_TIERS = [
 
 const COST_TO_OPEN = 10
 const NUMBER_OF_BOXES = 10
+const CHEST_IMAGE = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/chest%201-f2PpAqlqkVDMjeMwAr5KC20nylScuT.png"
 
 export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, participantEmail }: MysteryBoxProps) {
   const [selectedBox, setSelectedBox] = useState<number | null>(null)
-  const [openedBoxes, setOpenedBoxes] = useState<Set<number>>(new Set())
+  const [openedBoxIndex, setOpenedBoxIndex] = useState<number | null>(null)
   const [isOpening, setIsOpening] = useState(false)
   const [reward, setReward] = useState<number | null>(null)
   const [newBalance, setNewBalance] = useState<number | null>(null)
   const [showReward, setShowReward] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [openingBoxIndex, setOpeningBoxIndex] = useState<number | null>(null)
+  const [chestOrder, setChestOrder] = useState<number[]>([])
   const { toast } = useToast()
 
-  const canOpen = currentBalance >= COST_TO_OPEN && selectedBox !== null && !openedBoxes.has(selectedBox)
+  // Initialize shuffled chest order on mount
+  useEffect(() => {
+    reshuffleChests()
+  }, [])
+
+  const reshuffleChests = () => {
+    // Create array [0, 1, 2, ..., 9]
+    const indices = Array.from({ length: NUMBER_OF_BOXES }, (_, i) => i)
+    // Fisher-Yates shuffle
+    for (let i = indices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[indices[i], indices[j]] = [indices[j], indices[i]]
+    }
+    setChestOrder(indices)
+    setSelectedBox(null)
+    setOpenedBoxIndex(null)
+  }
+
+  const canOpen = currentBalance >= COST_TO_OPEN && selectedBox !== null && openedBoxIndex === null
 
   const generateReward = (): number => {
     const random = Math.random()
@@ -51,7 +71,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
   }
 
   const handleSelectBox = (boxIndex: number) => {
-    if (!openedBoxes.has(boxIndex)) {
+    if (openedBoxIndex === null) {
       setSelectedBox(selectedBox === boxIndex ? null : boxIndex)
     }
   }
@@ -60,8 +80,6 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
     if (!canOpen) {
       if (selectedBox === null || selectedBox === undefined) {
         toast({ title: "Select a Box", description: "Please select a mystery box to open.", variant: "destructive" })
-      } else if (openedBoxes.has(selectedBox)) {
-        toast({ title: "Already Opened", description: "This box has already been opened.", variant: "destructive" })
       } else {
         toast({
           title: "Insufficient Balance",
@@ -73,7 +91,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
     }
 
     setIsOpening(true)
-    setOpeningBoxIndex(selectedBox)
+    setOpenedBoxIndex(selectedBox)
     setError(null)
 
     try {
@@ -99,17 +117,12 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
       const data = await response.json()
       const updatedBalance = data.newBalance
 
-      // Animate opening - wait for 3D flip animation
+      // Animate opening - wait for chest animation
       await new Promise((resolve) => setTimeout(resolve, 1200))
 
       setReward(generatedReward)
       setNewBalance(updatedBalance)
       setShowReward(true)
-
-      // Mark box as opened
-      const newOpenedBoxes = new Set(openedBoxes)
-      newOpenedBoxes.add(selectedBox!)
-      setOpenedBoxes(newOpenedBoxes)
 
       // Determine reward rarity
       const rarity =
@@ -123,49 +136,40 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
       onRewardWon?.(generatedReward)
       onBalanceUpdated?.(updatedBalance)
 
-      // Reset after 4 seconds
+      // Reset and reshuffle after 3 seconds
       setTimeout(() => {
         setShowReward(false)
         setReward(null)
         setNewBalance(null)
-        setSelectedBox(null)
-        setOpeningBoxIndex(null)
-      }, 4000)
+        reshuffleChests()
+      }, 3000)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred"
       console.error("[v0] Mystery box error:", errorMsg)
       setError(errorMsg)
       toast({ title: "Error", description: errorMsg, variant: "destructive" })
-      setOpeningBoxIndex(null)
+      setOpenedBoxIndex(null)
     } finally {
       setIsOpening(false)
     }
   }
 
   return (
-    <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900">
+    <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <CardContent className="p-8">
         <style>{`
-          @keyframes boxBounce {
+          @keyframes chestBounce {
             0%, 100% { transform: translateY(0) scale(1); }
-            50% { transform: translateY(-12px) scale(1.05); }
+            50% { transform: translateY(-8px) scale(1.02); }
           }
-          @keyframes boxRotate3d {
-            0% { transform: perspective(1000px) rotateY(0deg) rotateX(0deg); }
-            50% { transform: perspective(1000px) rotateY(180deg) rotateX(10deg); }
-            100% { transform: perspective(1000px) rotateY(360deg) rotateX(0deg); }
+          @keyframes chestGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.3), 0 0 30px rgba(168, 85, 247, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.6), 0 0 40px rgba(168, 85, 247, 0.4); }
           }
-          @keyframes boxFlip {
-            0% { transform: perspective(1000px) rotateY(0deg); }
-            100% { transform: perspective(1000px) rotateY(180deg); }
-          }
-          @keyframes glow {
-            0%, 100% { box-shadow: 0 0 10px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.1); }
-            50% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), inset 0 0 20px rgba(168, 85, 247, 0.3); }
-          }
-          @keyframes shimmer {
-            0%, 100% { opacity: 0.6; }
-            50% { opacity: 1; }
+          @keyframes chestOpen {
+            0% { transform: perspective(1000px) rotateY(0deg) scale(1); }
+            50% { transform: perspective(1000px) rotateY(90deg) scale(1.05); }
+            100% { transform: perspective(1000px) rotateY(180deg) scale(0.95); }
           }
           @keyframes confetti {
             0% { opacity: 1; transform: translateY(0) rotate(0deg); }
@@ -178,10 +182,10 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
           <div className="text-center">
             <h3 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
               <Sparkles className="h-7 w-7 text-yellow-400" />
-              Mystery Boxes
+              Mystery Chests
               <Sparkles className="h-7 w-7 text-yellow-400" />
             </h3>
-            <p className="text-purple-200 text-sm">Choose one box and win rewards up to $1000</p>
+            <p className="text-purple-200 text-sm">Choose one chest and win rewards up to $1000</p>
           </div>
 
           {/* Info Section */}
@@ -198,77 +202,69 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
             </div>
           </div>
 
-          {/* Boxes Grid */}
-          <div className="grid grid-cols-5 gap-4 w-full max-w-2xl">
-            {Array.from({ length: NUMBER_OF_BOXES }).map((_, index) => {
-              const isSelected = selectedBox === index
-              const isOpened = openedBoxes.has(index)
-              const isCurrentlyOpening = openingBoxIndex === index
+          {/* Chests Grid */}
+          <div className="grid grid-cols-5 gap-4 w-full max-w-3xl">
+            {Array.from({ length: NUMBER_OF_BOXES }).map((_, idx) => {
+              const isSelected = selectedBox === idx
+              const isCurrentlyOpening = openedBoxIndex === idx
 
               return (
-                <div key={index} className="flex justify-center">
-                  <button
-                    onClick={() => handleSelectBox(index)}
-                    disabled={isOpened || isOpening}
-                    className={`
-                      relative w-24 h-28 rounded-lg transition-all duration-300 
-                      transform cursor-pointer disabled:cursor-not-allowed
-                      ${isOpened ? "opacity-40" : "hover:scale-105"}
-                      ${isSelected && !isOpened ? "scale-110" : "scale-100"}
-                    `}
-                    style={{
-                      animation:
-                        isSelected && !isOpened
-                          ? "boxBounce 0.6s ease-in-out infinite"
-                          : isCurrentlyOpening
-                            ? "boxFlip 1.2s ease-in-out forwards"
-                            : "none",
-                    }}
-                  >
-                    {/* Box Front */}
-                    <div
-                      className={`
-                        absolute inset-0 rounded-lg flex flex-col items-center justify-center
-                        bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500
-                        border-2 border-yellow-300 shadow-lg
-                        transition-all duration-300
-                        ${isCurrentlyOpening ? "opacity-0" : "opacity-100"}
-                        ${isOpened ? "from-gray-400 to-gray-500" : ""}
-                      `}
-                      style={{
-                        backfaceVisibility: "hidden",
-                        animation: isSelected && !isOpened && !isCurrentlyOpening ? "glow 2s ease-in-out infinite" : "none",
-                      }}
-                    >
-                      {!isOpened && (
-                        <>
-                          <Lock className="h-6 w-6 text-amber-900 mb-1" />
-                          <span className="text-xs font-bold text-amber-900">$10</span>
-                        </>
-                      )}
-                      {isOpened && (
-                        <div className="text-xl">✓</div>
-                      )}
-                    </div>
+                <button
+                  key={idx}
+                  onClick={() => handleSelectBox(idx)}
+                  disabled={isOpening || openedBoxIndex !== null}
+                  className={`
+                    relative w-full aspect-square rounded-lg overflow-hidden transition-all duration-300 
+                    transform cursor-pointer disabled:cursor-not-allowed
+                    ${isSelected && !isCurrentlyOpening ? "scale-110" : "scale-100"}
+                    ${!isCurrentlyOpening && !isOpening ? "hover:scale-105" : ""}
+                  `}
+                  style={{
+                    animation:
+                      isSelected && !isCurrentlyOpening && !isOpening
+                        ? "chestBounce 0.6s ease-in-out infinite"
+                        : isCurrentlyOpening
+                          ? "chestOpen 1.2s ease-in-out forwards"
+                          : "none",
+                  }}
+                >
+                  {/* Chest Image */}
+                  <img
+                    src={CHEST_IMAGE}
+                    alt="Mystery Chest"
+                    className="w-full h-full object-cover"
+                  />
 
-                    {/* Box Back - Opened State */}
+                  {/* Selection Glow Overlay */}
+                  {isSelected && !isCurrentlyOpening && !isOpening && (
                     <div
-                      className={`
-                        absolute inset-0 rounded-lg flex items-center justify-center
-                        bg-gradient-to-br from-green-400 to-emerald-500
-                        border-2 border-green-300 shadow-lg
-                        transition-all duration-300
-                        ${isCurrentlyOpening ? "opacity-100" : "opacity-0"}
-                      `}
+                      className="absolute inset-0 rounded-lg"
                       style={{
-                        backfaceVisibility: "hidden",
-                        transform: "rotateY(180deg)",
+                        animation: "chestGlow 2s ease-in-out infinite",
+                        boxShadow: "inset 0 0 15px rgba(251, 191, 36, 0.5)",
                       }}
-                    >
-                      <Loader2 className="h-6 w-6 text-green-900 animate-spin" />
+                    />
+                  )}
+
+                  {/* Selection Border */}
+                  {isSelected && !isCurrentlyOpening && !isOpening && (
+                    <div className="absolute inset-0 rounded-lg border-3 border-yellow-400" />
+                  )}
+
+                  {/* Opening Overlay */}
+                  {isCurrentlyOpening && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-green-500/50 to-transparent flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 text-white animate-spin" />
                     </div>
-                  </button>
-                </div>
+                  )}
+
+                  {/* Price Tag */}
+                  {!isCurrentlyOpening && (
+                    <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm rounded px-1 py-0.5 text-center">
+                      <p className="text-xs font-bold text-yellow-300">$10</p>
+                    </div>
+                  )}
+                </button>
               )
             })}
           </div>
@@ -277,8 +273,8 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
           {showReward && (
             <div className="relative w-full max-w-md">
               <div className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 rounded-lg p-6 text-center shadow-2xl border-2 border-yellow-200">
-                <p className="text-purple-900 font-bold text-sm mb-2">You Won!</p>
-                <p className="text-5xl font-black text-white" style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}>
+                <p className="text-purple-900 font-bold text-sm mb-2">🎉 You Won! 🎉</p>
+                <p className="text-6xl font-black text-white" style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}>
                   ${reward}
                 </p>
                 <p className="text-purple-900 font-semibold text-sm mt-2">New Balance: ${newBalance?.toFixed(2)}</p>
@@ -297,6 +293,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
                   />
                 ))}
               </div>
+              <p className="text-center text-gray-400 text-sm mt-3">Reshuffling new chests...</p>
             </div>
           )}
 
@@ -313,7 +310,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
               onClick={() => setSelectedBox(null)}
               variant="outline"
               className="flex-1 border-purple-400 text-purple-300 hover:bg-purple-800"
-              disabled={isOpening}
+              disabled={isOpening || openedBoxIndex !== null}
             >
               Clear Selection
             </Button>
@@ -328,7 +325,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
                   Opening...
                 </>
               ) : (
-                `Open Box ($${COST_TO_OPEN})`
+                `Open Chest ($${COST_TO_OPEN})`
               )}
             </Button>
           </div>
