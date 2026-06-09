@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useEffect, useRef } from "react"
+import { FlowChainLogo } from "@/components/flowchain-logo"
 
 // ─── Sparkle Particle ─────────────────────────────────────────────────────────
 function Sparkle({ style }: { style: React.CSSProperties }) {
@@ -65,69 +66,6 @@ function CryptoCoin({
         >
           {label}
         </span>
-      </div>
-    </div>
-  )
-}
-
-// ─── Reward Card ──────────────────────────────────────────────────────────────
-function RewardCard({
-  icon,
-  title,
-  value,
-  sub,
-  bg,
-  delay,
-  dark = false,
-}: {
-  icon: React.ReactNode
-  title?: string
-  value: string
-  sub?: string
-  bg: string
-  delay: number
-  dark?: boolean
-}) {
-  return (
-    <div
-      className="flex items-center gap-3 rounded-xl px-4 py-3 shadow-xl w-full"
-      style={{
-        background: bg,
-        border: dark ? "1.5px solid rgba(255,255,255,0.15)" : "1.5px solid rgba(255,255,255,0.6)",
-        backdropFilter: "blur(12px)",
-        animation: `cardFloat 3s ease-in-out ${delay}s infinite alternate`,
-        boxShadow: dark
-          ? "0 8px 32px 0 rgba(100,60,200,0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
-          : "0 8px 32px 0 rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.7)",
-      }}
-    >
-      <div className="flex-shrink-0 text-2xl">{icon}</div>
-      <div className="flex-1 min-w-0">
-        {title && (
-          <div
-            className="text-xs font-semibold mb-0.5"
-            style={{ color: dark ? "rgba(255,255,255,0.7)" : "#64748b" }}
-          >
-            {title}
-          </div>
-        )}
-        <div
-          className="font-black leading-tight"
-          style={{
-            fontSize: "1.15rem",
-            color: dark ? "#fbbf24" : "#c2410c",
-          }}
-        >
-          {value}
-        </div>
-        {sub && (
-          <div
-            className="text-xs font-medium"
-            style={{ color: dark ? "rgba(255,255,255,0.6)" : "#64748b" }}
-          >
-            {sub}
-          </div>
-        )}
       </div>
     </div>
   )
@@ -255,10 +193,6 @@ export function AnimatedSphere() {
         @keyframes coinBob {
           from { transform: translateX(-50%) translateY(0px) scale(1); }
           to   { transform: translateX(-50%) translateY(-10px) scale(1.08); }
-        }
-        @keyframes cardFloat {
-          from { transform: translateY(0px); }
-          to   { transform: translateY(-8px); }
         }
         @keyframes globeSpin {
           from { transform: rotateY(0deg); }
@@ -450,62 +384,26 @@ export function AnimatedSphere() {
               }}
             />
 
-            {/* ── FlowChain branding ── */}
-            <div className="flex flex-col items-center mb-3" style={{ marginTop: -8 }}>
-              {/* Logo mark */}
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center mb-1 shadow-lg"
-                style={{
-                  background: "linear-gradient(135deg, #ef4444 0%, #f97316 50%, #3b82f6 100%)",
-                  boxShadow: "0 0 12px 4px rgba(239,68,68,0.4)",
-                }}
-              >
-                <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
-                  <circle cx="10" cy="11" r="5" fill="#fff" opacity="0.9" />
-                  <circle cx="22" cy="11" r="5" fill="#fff" opacity="0.9" />
-                  <path d="M10 11 Q16 20 22 11" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-                  <path d="M8 14 Q16 24 24 14" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-                </svg>
+            {/* ── FlowChain branding with logo ── */}
+            <div className="flex flex-col items-center gap-6" style={{ marginTop: -12 }}>
+              {/* FlowChain Logo Component */}
+              <div className="filter drop-shadow-[0_0_12px_rgba(239,68,68,0.4)]">
+                <FlowChainLogo variant="icon" size="lg" />
               </div>
-              <span
-                className="font-black tracking-widest"
-                style={{
-                  fontSize: 11,
-                  color: "#ef4444",
-                  letterSpacing: "0.22em",
-                  textShadow: "0 0 8px rgba(239,68,68,0.5)",
-                }}
-              >
-                FLOWCHAIN
-              </span>
-            </div>
 
-            {/* ── Reward cards stacked ── */}
-            <div className="flex flex-col gap-2 w-56 px-1">
-              {/* Card 1: Instant Bonus */}
-              <RewardCard
-                icon="🎁"
-                title="Instant Bonus"
-                value="$50 USDT"
-                bg="rgba(255,248,235,0.92)"
-                delay={0}
-              />
-              {/* Card 2: Spin & Win */}
-              <RewardCard
-                icon="🎡"
-                title="Spin & Win Up To"
-                value="20x REWARDS"
-                bg="linear-gradient(135deg, rgba(76,29,149,0.92) 0%, rgba(109,40,217,0.92) 100%)"
-                delay={0.5}
-                dark
-              />
-              {/* Card 3: 0% Fees */}
-              <RewardCard
-                icon="🛡️"
-                value="0% PLATFORM FEES"
-                bg="linear-gradient(135deg, rgba(15,23,42,0.85) 0%, rgba(30,58,138,0.85) 100%)"
-                delay={1}
-                dark
+              {/* Central glow point */}
+              <div
+                className="absolute rounded-full pointer-events-none"
+                style={{
+                  width: 12,
+                  height: 12,
+                  background: "radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(239,68,68,0.6) 100%)",
+                  boxShadow: "0 0 20px 8px rgba(239,68,68,0.5)",
+                  animation: "orbPulse 3s ease-in-out infinite",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                }}
               />
             </div>
           </div>
