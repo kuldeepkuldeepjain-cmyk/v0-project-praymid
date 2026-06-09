@@ -1778,10 +1778,10 @@ export default function DashboardHome() {
         <nav className="flex items-center h-16 overflow-x-auto scrollbar-none px-1">
           {[
             { id: "dashboard",   label: "Home",        icon: <Home       className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard"   ? "scale-110" : ""}`} />, color: "text-[#7c3aed]"   },
+            { id: "staking",     label: "Staking",     icon: <TrendingUp className={`h-5 w-5 mb-0.5 ${activeTab === "staking"     ? "scale-110" : ""}`} />, color: "text-blue-600"    },
             { id: "wheel",       label: "Luck Wheel",  icon: <Sparkles   className={`h-5 w-5 mb-0.5 ${activeTab === "wheel"       ? "scale-110" : ""}`} />, color: "text-orange-500"  },
             { id: "activity",    label: "Contribute",  icon: <Send       className={`h-5 w-5 mb-0.5 ${activeTab === "activity"    ? "scale-110" : ""}`} />, color: "text-amber-600"   },
             { id: "leaderboard", label: "Leaderboard", icon: <Trophy     className={`h-5 w-5 mb-0.5 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />, color: "text-yellow-500"  },
-            { id: "staking",     label: "Staking",     icon: <TrendingUp className={`h-5 w-5 mb-0.5 ${activeTab === "staking"     ? "scale-110" : ""}`} />, color: "text-blue-600"    },
           ].map((tab) => (
             <button
               key={tab.id}
