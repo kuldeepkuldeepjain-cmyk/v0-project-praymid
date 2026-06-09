@@ -1525,59 +1525,89 @@ export default function DashboardHome() {
         </div>
 
         {/* Action Buttons - Above Staking */}
-        <div className="space-y-3">
-          {/* Contribute Button */}
+        <div className="space-y-4 mb-6">
+          {/* Contribute Button - Exact Design Match */}
           <Link href="/participant/dashboard/contribute">
             <button
               onClick={createRipple}
-              className="group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-3xl p-4 sm:p-5 text-white"
+              className="group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.98] hover:scale-[1.02] rounded-3xl p-0 text-white"
               style={{
-                background: "linear-gradient(135deg, rgba(251, 146, 60, 0.95) 0%, rgba(168, 85, 247, 0.85) 100%)",
-                boxShadow: "0 12px 40px rgba(251, 146, 60, 0.4), 0 6px 12px rgba(168, 85, 247, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+                background: "linear-gradient(90deg, rgba(255, 150, 90, 0.9) 0%, rgba(255, 180, 120, 0.5) 25%, rgba(200, 150, 255, 0.6) 75%, rgba(120, 100, 200, 0.9) 100%)",
+                boxShadow: "0 20px 60px rgba(255, 100, 50, 0.35), 0 8px 16px rgba(150, 80, 200, 0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+                backdropFilter: "blur(16px)",
+                height: "140px",
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              <div className="relative z-10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur">
-                    <Send className="w-6 h-6" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }} />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-bold text-lg tracking-wide">CONTRIBUTE</h3>
-                    <p className="text-xs text-white/75">Join Now & Grow Your Earnings</p>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              
+              <div className="relative z-10 flex items-center justify-between h-full px-5 gap-4">
+                {/* Left Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-lg relative"
+                    style={{boxShadow: "0 8px 24px rgba(255, 100, 50, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)"}}>
+                    <Send className="w-10 h-10 text-white" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }} />
                   </div>
                 </div>
-                <div className="flex flex-col items-center justify-center bg-white/20 backdrop-blur px-3 py-2 rounded-xl">
-                  <span className="text-xs text-white/70">REWARD</span>
-                  <span className="font-bold text-sm text-white">$50</span>
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-2xl tracking-wider text-slate-900 leading-none mb-1">CONTRIBUTE</h3>
+                  <p className="text-sm text-slate-600 font-medium">Join Now & Grow Your Earnings</p>
+                  <div className="mt-2 inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Gift className="w-4 h-4 text-blue-600" />
+                    <span className="text-xs font-bold text-slate-900">INSTANT REWARD</span>
+                    <span className="text-xs font-bold text-blue-600">$50 on Contribution</span>
+                  </div>
                 </div>
-                <ChevronRight className="w-6 h-6 text-white/80" />
+
+                {/* Right Arrow */}
+                <div className="flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-full bg-white shadow-lg group-hover:scale-110 transition-transform"
+                  style={{boxShadow: "0 4px 16px rgba(255,255,255,0.8)"}}>
+                  <ChevronRight className="w-7 h-7 text-blue-600" />
+                </div>
               </div>
             </button>
           </Link>
 
-          {/* Payout Button */}
+          {/* Payout Button - Green Variant */}
           <Link href="/participant/dashboard/payout">
             <button
               onClick={createRipple}
-              className="group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-3xl p-4 sm:p-5 text-white"
+              className="group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.98] hover:scale-[1.02] rounded-3xl p-0 text-white"
               style={{
-                background: "linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(52, 211, 153, 0.85) 100%)",
-                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.4), 0 6px 12px rgba(52, 211, 153, 0.3), inset 0 1px 0 rgba(255,255,255,0.2)",
+                background: "linear-gradient(90deg, rgba(16, 185, 129, 0.9) 0%, rgba(52, 211, 153, 0.5) 25%, rgba(100, 200, 150, 0.6) 75%, rgba(5, 150, 100, 0.9) 100%)",
+                boxShadow: "0 20px 60px rgba(16, 185, 129, 0.35), 0 8px 16px rgba(52, 211, 153, 0.25), inset 0 1px 0 rgba(255,255,255,0.3)",
+                backdropFilter: "blur(16px)",
+                height: "140px",
               }}
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              <div className="relative z-10 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur">
-                    <ArrowUpRight className="w-6 h-6" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }} />
-                  </div>
-                  <div className="text-left">
-                    <h3 className="font-bold text-lg tracking-wide">PAYOUT</h3>
-                    <p className="text-xs text-white/75">Get directly into your crypto wallet</p>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              
+              <div className="relative z-10 flex items-center justify-between h-full px-5 gap-4">
+                {/* Left Icon */}
+                <div className="flex-shrink-0">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg relative"
+                    style={{boxShadow: "0 8px 24px rgba(16, 185, 129, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)"}}>
+                    <ArrowUpRight className="w-10 h-10 text-white" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }} />
                   </div>
                 </div>
-                <ChevronRight className="w-6 h-6 text-white/80" />
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-2xl tracking-wider text-slate-900 leading-none mb-1">PAYOUT</h3>
+                  <p className="text-sm text-slate-600 font-medium">Get directly into your crypto wallet</p>
+                  <div className="mt-2 inline-flex items-center gap-2 bg-white/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                    <Wallet className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs font-bold text-slate-900">CLAIM REWARDS</span>
+                    <span className="text-xs font-bold text-emerald-600">Instant Transfer</span>
+                  </div>
+                </div>
+
+                {/* Right Arrow */}
+                <div className="flex-shrink-0 flex items-center justify-center w-14 h-14 rounded-full bg-white shadow-lg group-hover:scale-110 transition-transform"
+                  style={{boxShadow: "0 4px 16px rgba(255,255,255,0.8)"}}>
+                  <ChevronRight className="w-7 h-7 text-emerald-600" />
+                </div>
               </div>
             </button>
           </Link>
