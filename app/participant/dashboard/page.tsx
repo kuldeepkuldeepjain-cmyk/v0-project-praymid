@@ -1786,15 +1786,12 @@ export default function DashboardHome() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex flex-col items-center justify-center flex-shrink-0 w-[20%] min-w-[64px] h-full transition-all ${
-                activeTab === tab.id ? tab.color : "text-slate-400 hover:text-slate-600"
+              className={`flex flex-col items-center justify-center flex-shrink-0 w-[20%] min-w-[64px] h-full transition-all relative border-b-2 ${
+                activeTab === tab.id ? `${tab.color} border-current` : "text-slate-400 hover:text-slate-600 border-transparent"
               }`}
             >
               {tab.icon}
               <span className="text-[10px] font-medium whitespace-nowrap">{tab.label}</span>
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 w-8 h-0.5 rounded-full bg-current" />
-              )}
             </button>
           ))}
         </nav>
