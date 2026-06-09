@@ -337,6 +337,64 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
               </CardContent>
             </Card>
           )}
+
+          {/* Available Coins Section - Display all coins with selection */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Available Coins</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{coins.length} coins available</p>
+            </div>
+
+            {loading ? (
+              <Card className="border border-slate-700 dark:border-slate-700 bg-slate-800 dark:bg-slate-800 shadow-lg">
+                <CardContent className="p-8 flex items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
+                </CardContent>
+              </Card>
+            ) : coins.length === 0 ? (
+              <Card className="border border-slate-700 dark:border-slate-700 bg-slate-800 dark:bg-slate-800 shadow-lg">
+                <CardContent className="p-8 flex flex-col items-center justify-center gap-3">
+                  <AlertCircle className="h-8 w-8 text-slate-500 dark:text-slate-400" />
+                  <p className="text-slate-500 dark:text-slate-400 text-center">No staking coins available yet. Please check back soon.</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {coins.map((coin) => (
+                  <button
+                    key={coin.id}
+                    onClick={() => {
+                      setSelectedCoin(coin)
+                      setView("input")
+                      setStakeAmount("")
+                    }}
+                    className="group bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-slate-600 dark:border-slate-600 hover:border-blue-600 dark:hover:border-blue-600 hover:bg-gradient-to-br hover:from-slate-600 hover:to-slate-700 dark:hover:from-slate-600 dark:hover:to-slate-700 transition-all cursor-pointer"
+                  >
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white font-bold mb-2 group-hover:scale-110 transition-transform">
+                      {COIN_LOGOS[coin.coin_symbol] || coin.coin_symbol[0]}
+                    </div>
+                    <p className="font-bold text-slate-900 dark:text-white text-sm mb-1">{coin.coin_symbol}</p>
+                    <p className="text-slate-400 dark:text-slate-400 text-xs mb-2">{coin.coin_name}</p>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">{coin.apy}% APY</p>
+                      <ChevronRight className="h-3 w-3 text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    <span
+                      className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded-full ${
+                        coin.risk_level === "Low"
+                          ? "bg-green-600 text-green-100 dark:bg-green-600 dark:text-green-100"
+                          : coin.risk_level === "Medium"
+                            ? "bg-yellow-600 text-yellow-100 dark:bg-yellow-600 dark:text-yellow-100"
+                            : "bg-red-600 text-red-100 dark:bg-red-600 dark:text-red-100"
+                      }`}
+                    >
+                      {coin.risk_level}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
 
