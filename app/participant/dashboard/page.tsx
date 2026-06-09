@@ -1775,66 +1775,28 @@ export default function DashboardHome() {
 
       {/* Footer Navigation */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
-        <nav className="flex items-center justify-around h-16 max-w-2xl mx-auto px-2">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "dashboard"
-                ? "text-[#7c3aed]"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Home className={`h-6 w-6 mb-1 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Home</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab("wheel")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "wheel"
-                ? "text-orange-500"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-              <Sparkles className={`h-6 w-6 mb-1 ${activeTab === "wheel" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Luck Wheel</span>
-          </button>
-          
-          <button
-            onClick={() => setActiveTab("activity")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "activity"
-                ? "text-amber-600"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Send className={`h-6 w-6 mb-1 ${activeTab === "activity" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Contribute</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("leaderboard")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "leaderboard"
-                ? "text-yellow-500"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Trophy className={`h-6 w-6 mb-1 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Leaderboard</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("staking")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "staking"
-                ? "text-blue-600"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <TrendingUp className={`h-6 w-6 mb-1 ${activeTab === "staking" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Staking</span>
-          </button>
+        <nav className="flex items-center h-16 overflow-x-auto scrollbar-none px-1">
+          {[
+            { id: "dashboard",   label: "Home",        icon: <Home       className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard"   ? "scale-110" : ""}`} />, color: "text-[#7c3aed]"   },
+            { id: "wheel",       label: "Luck Wheel",  icon: <Sparkles   className={`h-5 w-5 mb-0.5 ${activeTab === "wheel"       ? "scale-110" : ""}`} />, color: "text-orange-500"  },
+            { id: "activity",    label: "Contribute",  icon: <Send       className={`h-5 w-5 mb-0.5 ${activeTab === "activity"    ? "scale-110" : ""}`} />, color: "text-amber-600"   },
+            { id: "leaderboard", label: "Leaderboard", icon: <Trophy     className={`h-5 w-5 mb-0.5 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />, color: "text-yellow-500"  },
+            { id: "staking",     label: "Staking",     icon: <TrendingUp className={`h-5 w-5 mb-0.5 ${activeTab === "staking"     ? "scale-110" : ""}`} />, color: "text-blue-600"    },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex flex-col items-center justify-center flex-shrink-0 w-[20%] min-w-[64px] h-full transition-all ${
+                activeTab === tab.id ? tab.color : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              {tab.icon}
+              <span className="text-[10px] font-medium whitespace-nowrap">{tab.label}</span>
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 w-8 h-0.5 rounded-full bg-current" />
+              )}
+            </button>
+          ))}
         </nav>
       </footer>
 
