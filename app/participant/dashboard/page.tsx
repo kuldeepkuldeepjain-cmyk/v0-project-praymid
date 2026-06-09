@@ -44,7 +44,6 @@ import { MessageCircle } from "lucide-react"
 import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { StakingBanner } from "@/components/staking-banner"
-import { StakingModule } from "@/components/staking-module"
 import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
 
@@ -1117,7 +1116,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard" | "staking">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1525,7 +1524,17 @@ export default function DashboardHome() {
           </div>
         </div>
 
-
+        {/* Staking Banner - New Feature */}
+        <StakingBanner
+          currentBalance={walletBalance}
+          participantEmail={participantData?.email || ""}
+          onBalanceUpdated={(newBalance) => {
+            setParticipantData((prev: any) => ({
+              ...prev,
+              account_balance: newBalance,
+            }))
+          }}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <Link href="/participant/dashboard/contribute">
@@ -1752,94 +1761,63 @@ export default function DashboardHome() {
         </div>
       )}
       
-      {/* Staking Tab Content */}
-      {activeTab === "staking" && (
-        <div className="space-y-4 pb-24">
-          <StakingModule
-            currentBalance={walletBalance}
-            participantEmail={participantData?.email || ""}
-            onBalanceUpdated={(newBalance: number) => {
-              setParticipantData((prev: any) => ({
-                ...prev,
-                account_balance: newBalance,
-              }))
-            }}
-          />
-        </div>
-      )}
-
       {/* Notice Board - Display important announcements */}
       <NoticeBoard />
       
       </main>
 
-      {/* Footer Navigation - 3D Glassmorphism */}
-      <nav style={{
-        position:"fixed", bottom:0, left:0, right:0, zIndex:9999,
-        background:"linear-gradient(135deg,rgba(15,15,35,0.97) 0%,rgba(20,20,50,0.97) 100%)",
-        borderTop:"1px solid rgba(255,255,255,0.08)",
-        display:"flex", height:"68px",
-        boxShadow:"0 -8px 32px rgba(0,0,0,0.45), 0 -2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)",
-        backdropFilter:"blur(20px)",
-      }}>
-        {[
-          { id:"dashboard",   label:"Home",       Icon:Home,       color:"#a78bfa", glow:"rgba(167,139,250,0.45)", bg:"rgba(167,139,250,0.15)" },
-          { id:"staking",     label:"Staking",    Icon:TrendingUp, color:"#38bdf8", glow:"rgba(56,189,248,0.45)",  bg:"rgba(56,189,248,0.15)"  },
-          { id:"wheel",       label:"Wheel",      Icon:Sparkles,   color:"#fb923c", glow:"rgba(251,146,60,0.45)",  bg:"rgba(251,146,60,0.15)"  },
-          { id:"activity",    label:"Contribute", Icon:Send,       color:"#4ade80", glow:"rgba(74,222,128,0.45)",  bg:"rgba(74,222,128,0.15)"  },
-          { id:"leaderboard", label:"Ranks",      Icon:Trophy,     color:"#fbbf24", glow:"rgba(251,191,36,0.45)",  bg:"rgba(251,191,36,0.15)"  },
-        ].map(({ id, label, Icon, color, glow, bg }) => {
-          const active = activeTab === id
-          return (
-            <button
-              key={id}
-              onClick={() => setActiveTab(id as any)}
-              style={{
-                flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                gap:"3px", background:"none", border:"none", cursor:"pointer",
-                transition:"transform 0.18s cubic-bezier(0.34,1.56,0.64,1)",
-                transform: active ? "translateY(-6px) scale(1.08)" : "translateY(0) scale(1)",
-                position:"relative",
-              }}
-            >
-              {/* Active top glow bar */}
-              {active && (
-                <span style={{
-                  position:"absolute", top:0, left:"50%", transform:"translateX(-50%)",
-                  width:"32px", height:"3px", borderRadius:"0 0 4px 4px",
-                  background:color,
-                  boxShadow:`0 0 12px 2px ${glow}`,
-                }} />
-              )}
+      {/* Footer Navigation */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
+        <nav className="flex items-center justify-around h-16 max-w-2xl mx-auto px-2">
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
+              activeTab === "dashboard"
+                ? "text-[#7c3aed]"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            <Home className={`h-6 w-6 mb-1 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
+            <span className="text-xs font-medium">Home</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("wheel")}
+            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
+              activeTab === "wheel"
+                ? "text-orange-500"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+              <Sparkles className={`h-6 w-6 mb-1 ${activeTab === "wheel" ? "scale-110" : ""}`} />
+            <span className="text-xs font-medium">Luck Wheel</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab("activity")}
+            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
+              activeTab === "activity"
+                ? "text-amber-600"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            <Send className={`h-6 w-6 mb-1 ${activeTab === "activity" ? "scale-110" : ""}`} />
+            <span className="text-xs font-medium">Contribute</span>
+          </button>
 
-              {/* Icon bubble */}
-              <span style={{
-                display:"flex", alignItems:"center", justifyContent:"center",
-                width:"38px", height:"38px", borderRadius:"12px",
-                background: active ? bg : "rgba(255,255,255,0.04)",
-                boxShadow: active
-                  ? `0 4px 16px ${glow}, 0 1px 0 rgba(255,255,255,0.1) inset, 0 -1px 0 rgba(0,0,0,0.2) inset`
-                  : "0 1px 0 rgba(255,255,255,0.05) inset",
-                border: active ? `1px solid ${color}33` : "1px solid rgba(255,255,255,0.06)",
-                transition:"all 0.18s ease",
-              }}>
-                <Icon style={{ width:18, height:18, color: active ? color : "rgba(255,255,255,0.35)", transition:"color 0.15s" }} />
-              </span>
-
-              {/* Label */}
-              <span style={{
-                fontSize:"9px", fontWeight:700, letterSpacing:"0.04em",
-                textTransform:"uppercase",
-                color: active ? color : "rgba(255,255,255,0.3)",
-                transition:"color 0.15s",
-                lineHeight:1,
-              }}>
-                {label}
-              </span>
-            </button>
-          )
-        })}
-      </nav>
+          <button
+            onClick={() => setActiveTab("leaderboard")}
+            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
+              activeTab === "leaderboard"
+                ? "text-yellow-500"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+              <Trophy className={`h-6 w-6 mb-1 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
+            <span className="text-xs font-medium">Leaderboard</span>
+          </button>
+        </nav>
+      </footer>
 
       {/* Floating AI Chat Button */}
       <Button
