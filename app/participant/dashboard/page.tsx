@@ -1524,94 +1524,136 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Action Buttons - Side by Side with Simple Animations */}
+        {/* Action Buttons - Side by Side with Professional 3D Effects */}
         <style>{`
           @keyframes slideUp {
             from { transform: translateY(4px); opacity: 0.95; }
             to { transform: translateY(0); opacity: 1; }
           }
-          @keyframes hoverLift {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-4px); }
+          @keyframes lift3d {
+            0% { transform: translateY(0) perspective(1200px) rotateX(0deg) rotateY(0deg); }
+            100% { transform: translateY(-8px) perspective(1200px) rotateX(4deg) rotateY(0deg); }
           }
-          .button-simple {
+          @keyframes shadowShift {
+            0% { box-shadow: 0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
+            100% { box-shadow: 0 24px 60px rgba(255, 100, 50, 0.5), 0 12px 30px rgba(150, 80, 200, 0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
+          }
+          @keyframes shadowShiftGreen {
+            0% { box-shadow: 0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
+            100% { box-shadow: 0 24px 60px rgba(16, 185, 129, 0.5), 0 12px 30px rgba(52, 211, 153, 0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
+          }
+          @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+          }
+          .button-3d {
             animation: slideUp 0.4s ease-out;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
           }
-          .button-simple:hover {
-            animation: hoverLift 0.3s ease-out forwards;
+          .button-3d:hover {
+            animation: lift3d 0.4s ease-out forwards;
+          }
+          .button-3d-orange:hover {
+            animation: lift3d 0.4s ease-out forwards, shadowShift 0.4s ease-out forwards;
+          }
+          .button-3d-green:hover {
+            animation: lift3d 0.4s ease-out forwards, shadowShiftGreen 0.4s ease-out forwards;
+          }
+          .icon-animated {
+            animation: iconBounce 2s ease-in-out infinite;
+          }
+          .button-3d:hover .icon-animated {
+            animation: none;
+            transform: scale(1.1);
           }
         `}</style>
 
         <div className="grid grid-cols-2 gap-4 mb-6">
-          {/* Contribute Button */}
+          {/* Contribute Button - 3D Orange */}
           <Link href="/participant/dashboard/contribute">
             <button
               onClick={createRipple}
-              className="button-simple group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-2xl p-3 text-white"
+              className="button-3d button-3d-orange group w-full relative overflow-hidden active:scale-[0.96] rounded-2xl p-3 text-white"
               style={{
                 background: "linear-gradient(90deg, rgba(255, 140, 80, 0.9) 0%, rgba(255, 100, 100, 0.7) 40%, rgba(150, 100, 200, 0.8) 100%)",
-                boxShadow: "0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)",
+                boxShadow: "0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15), -4px 8px 20px rgba(255, 100, 50, 0.15)",
                 minHeight: "100px",
+                transformStyle: "preserve-3d",
               }}
             >
+              {/* Top highlight layer */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              
               <div className="relative z-10 flex items-center justify-between gap-3">
                 {/* Left Icon */}
                 <div className="flex-shrink-0">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
-                    style={{boxShadow: "0 6px 20px rgba(255, 100, 50, 0.4), inset 0 1px 0 rgba(255,255,255,0.3)"}}>
-                    <Send className="w-7 h-7 text-white" />
+                  <div className="icon-animated w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
+                    style={{
+                      boxShadow: "0 6px 20px rgba(255, 100, 50, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset -1px -1px 8px rgba(0,0,0,0.2)",
+                      transition: "transform 0.3s ease"
+                    }}>
+                    <Send className="w-7 h-7 text-white" style={{filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}} />
                   </div>
                 </div>
 
                 {/* Center Content */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base tracking-wide text-white leading-none">CONTRIBUTE</h3>
-                  <p className="text-xs text-white/80 font-medium">Join Now</p>
-                  <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-[10px]">
+                  <h3 className="font-bold text-base tracking-wide text-white leading-none drop-shadow-lg">CONTRIBUTE</h3>
+                  <p className="text-xs text-white/85 font-medium drop-shadow-md">Join Now</p>
+                  <div className="mt-1 inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] border border-white/20 shadow-lg">
                     <span className="text-white font-bold">+$50</span>
                   </div>
                 </div>
 
-                {/* Right Arrow */}
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg group-hover:scale-110 transition-transform">
-                  <ChevronRight className="w-5 h-5 text-blue-600" />
+                {/* Right Arrow Button */}
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-xl group-hover:shadow-2xl transition-all group-hover:scale-125 group-hover:bg-orange-100"
+                  style={{boxShadow: "0 6px 20px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
+                  <ChevronRight className="w-5 h-5 text-orange-600 group-hover:text-orange-700 transition-colors" />
                 </div>
               </div>
             </button>
           </Link>
 
-          {/* Payout Button */}
+          {/* Payout Button - 3D Green */}
           <Link href="/participant/dashboard/payout">
             <button
               onClick={createRipple}
-              className="button-simple group w-full relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-2xl p-3 text-white"
+              className="button-3d button-3d-green group w-full relative overflow-hidden active:scale-[0.96] rounded-2xl p-3 text-white"
               style={{
                 background: "linear-gradient(90deg, rgba(16, 185, 129, 0.9) 0%, rgba(52, 211, 153, 0.7) 40%, rgba(5, 150, 100, 0.8) 100%)",
-                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15)",
+                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15), -4px 8px 20px rgba(16, 185, 129, 0.15)",
                 minHeight: "100px",
+                transformStyle: "preserve-3d",
               }}
             >
+              {/* Top highlight layer */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              
               <div className="relative z-10 flex items-center justify-between gap-3">
                 {/* Left Icon */}
                 <div className="flex-shrink-0">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center"
-                    style={{boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.3)"}}>
-                    <ArrowUpRight className="w-7 h-7 text-white" />
+                  <div className="icon-animated w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center"
+                    style={{
+                      boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset -1px -1px 8px rgba(0,0,0,0.2)",
+                      transition: "transform 0.3s ease"
+                    }}>
+                    <ArrowUpRight className="w-7 h-7 text-white" style={{filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}} />
                   </div>
                 </div>
 
                 {/* Center Content */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base tracking-wide text-white leading-none">PAYOUT</h3>
-                  <p className="text-xs text-white/80 font-medium">Instant Claim</p>
-                  <div className="mt-1 inline-flex items-center gap-1 bg-white/20 backdrop-blur px-2 py-1 rounded-lg text-[10px]">
+                  <h3 className="font-bold text-base tracking-wide text-white leading-none drop-shadow-lg">PAYOUT</h3>
+                  <p className="text-xs text-white/85 font-medium drop-shadow-md">Instant Claim</p>
+                  <div className="mt-1 inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] border border-white/20 shadow-lg">
                     <span className="text-white font-bold">Crypto</span>
                   </div>
                 </div>
 
-                {/* Right Arrow */}
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-lg group-hover:scale-110 transition-transform">
-                  <ChevronRight className="w-5 h-5 text-emerald-600" />
+                {/* Right Arrow Button */}
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-xl group-hover:shadow-2xl transition-all group-hover:scale-125 group-hover:bg-emerald-100"
+                  style={{boxShadow: "0 6px 20px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
+                  <ChevronRight className="w-5 h-5 text-emerald-600 group-hover:text-emerald-700 transition-colors" />
                 </div>
               </div>
             </button>
