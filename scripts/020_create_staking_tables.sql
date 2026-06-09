@@ -70,13 +70,13 @@ INSERT INTO staking_coins (coin_symbol, coin_name, apy, risk_level) VALUES
 ('BTC', 'Bitcoin', 8, 'Low'),
 ('ETH', 'Ethereum', 9, 'Low'),
 ('BNB', 'Binance Coin', 10, 'Low'),
+('DOGE', 'Dogecoin', 11, 'Low'),
 ('SOL', 'Solana', 12, 'Medium'),
 ('XRP', 'XRP', 13, 'Medium'),
-('DOGE', 'Dogecoin', 11, 'Medium'),
 ('ADA', 'Cardano', 14, 'Medium'),
-('AVAX', 'Avalanche', 17, 'Medium'),
 ('LINK', 'Chainlink', 15, 'Medium'),
 ('DOT', 'Polkadot', 16, 'Medium'),
+('AVAX', 'Avalanche', 17, 'Medium'),
 ('TRX', 'Tron', 18, 'High'),
 ('LTC', 'Litecoin', 19, 'High'),
 ('ATOM', 'Cosmos', 20, 'High'),
@@ -85,6 +85,6 @@ INSERT INTO staking_coins (coin_symbol, coin_name, apy, risk_level) VALUES
 ('APT', 'Aptos', 23, 'High'),
 ('SUI', 'Sui', 24, 'High'),
 ('TON', 'Ton', 24, 'High'),
-('NEAR', 'Near Protocol', 25, 'High'),
-('FLOW', 'Flow', 25, 'High')
+('FLOW', 'Flow', 25, 'High'),
+('NEAR', 'Near Protocol', 25, 'High')
 ON CONFLICT (coin_symbol) DO NOTHING;

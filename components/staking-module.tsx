@@ -243,6 +243,10 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
               </h2>
               <p className="text-slate-600 dark:text-slate-300 text-sm">Lock your assets and earn passive income</p>
             </div>
+            {/* APY Range Badge */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-600 dark:to-blue-700 rounded-lg px-4 py-2 text-white font-bold text-lg shadow-lg">
+              8-25% APY
+            </div>
           </div>
 
           {/* Stats Cards - Professional Dark Theme */}
@@ -341,7 +345,10 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
           {/* Available Coins Section - Display all coins with selection */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Available Coins</h3>
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Available Coins</h3>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mt-1">Earn 8-25% APY on your cryptocurrency</p>
+              </div>
               <p className="text-sm text-slate-500 dark:text-slate-400">{coins.length} coins available</p>
             </div>
 
