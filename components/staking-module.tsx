@@ -409,7 +409,10 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
       {view === "select" && (
         <Card className="border border-slate-700 dark:border-slate-700 bg-slate-800 dark:bg-slate-800 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between border-b border-slate-700 dark:border-slate-700">
-            <CardTitle className="text-slate-900 dark:text-white">Select Cryptocurrency</CardTitle>
+            <div>
+              <CardTitle className="text-slate-900 dark:text-white">Select Cryptocurrency</CardTitle>
+              <p className="text-slate-400 dark:text-slate-400 text-sm mt-1">Choose a coin to start earning 8-25% APY</p>
+            </div>
             <button
               onClick={() => {
                 setView("dashboard")
@@ -420,59 +423,72 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
               <X className="h-5 w-5" />
             </button>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 dark:text-slate-500" />
-              <Input
-                placeholder="Search coins..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-slate-700 dark:bg-slate-700 border border-slate-600 dark:border-slate-600 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-slate-500"
-              />
-            </div>
-
-            {/* Coins Grid */}
+          <CardContent className="space-y-4 p-6">
+            {/* Coins Grid - All 20 coins displayed */}
             {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
               </div>
-            ) : filteredCoins.length === 0 ? (
-              <div className="flex items-center justify-center py-8">
-                <p className="text-slate-500 dark:text-slate-400">No coins found</p>
+            ) : coins.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-slate-500 dark:text-slate-400">No coins available yet</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {filteredCoins.map((coin) => (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {coins.map((coin) => (
                   <button
                     key={coin.id}
                     onClick={() => {
                       console.log("[v0] Selected coin:", coin)
                       handleCoinSelect(coin)
                     }}
-                    className="group bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-slate-600 dark:border-slate-600 hover:border-blue-600 dark:hover:border-blue-600 hover:bg-gradient-to-br hover:from-slate-600 hover:to-slate-700 dark:hover:from-slate-600 dark:hover:to-slate-700 transition-all cursor-pointer"
+                    className="group relative bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border-2 border-slate-600 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 active:scale-95"
                   >
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white font-bold mb-2 group-hover:scale-110 transition-transform">
-                      {COIN_LOGOS[coin.coin_symbol] || coin.coin_symbol[0]}
+                    {/* Hover glow effect */}
+                    <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-blue-500/10 to-transparent" />
+                    
+                    {/* Content */}
+                    <div className="relative space-y-2">
+                      {/* Coin Icon */}
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform">
+                        {COIN_LOGOS[coin.coin_symbol] || coin.coin_symbol[0]}
+                      </div>
+                      
+                      {/* Coin Symbol */}
+                      <p className="font-bold text-slate-900 dark:text-white text-base">{coin.coin_symbol}</p>
+                      
+                      {/* Coin Name */}
+                      <p className="text-slate-400 dark:text-slate-400 text-xs line-clamp-1">{coin.coin_name}</p>
+                      
+                      {/* APY */}
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">{coin.apy}% APY</span>
+                      </div>
+                      
+                      {/* Risk Badge */}
+                      <span
+                        className={`inline-block text-xs font-bold px-2 py-1 rounded-full w-full text-center ${
+                          coin.risk_level === "Low"
+                            ? "bg-green-600 text-green-100 dark:bg-green-600 dark:text-green-100"
+                            : coin.risk_level === "Medium"
+                              ? "bg-yellow-600 text-yellow-100 dark:bg-yellow-600 dark:text-yellow-100"
+                              : "bg-red-600 text-red-100 dark:bg-red-600 dark:text-red-100"
+                        }`}
+                      >
+                        {coin.risk_level} Risk
+                      </span>
                     </div>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm">{coin.coin_symbol}</p>
-                    <p className="text-slate-400 dark:text-slate-400 text-xs">{coin.coin_name}</p>
-                    <p className="text-blue-600 dark:text-blue-400 font-bold text-sm mt-2">{coin.apy}% APY</p>
-                    <span
-                      className={`inline-block text-xs font-bold px-2 py-0.5 rounded-full mt-1 ${
-                        coin.risk_level === "Low"
-                          ? "bg-green-600 text-green-100 dark:bg-green-600 dark:text-green-100"
-                          : coin.risk_level === "Medium"
-                            ? "bg-yellow-600 text-yellow-100 dark:bg-yellow-600 dark:text-yellow-100"
-                            : "bg-red-600 text-red-100 dark:bg-red-600 dark:text-red-100"
-                      }`}
-                    >
-                      {coin.risk_level}
-                    </span>
                   </button>
                 ))}
               </div>
             )}
+            
+            {/* Info Footer */}
+            <div className="bg-gradient-to-r from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-slate-600 dark:border-slate-600 mt-4">
+              <p className="text-slate-300 dark:text-slate-300 text-sm">
+                <span className="font-semibold">💡 Tip:</span> Lower APY coins have lower risk, higher APY coins have higher risk. Select based on your risk tolerance.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
