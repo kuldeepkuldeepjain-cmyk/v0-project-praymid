@@ -155,7 +155,11 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
   }
 
   return (
-    <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <Card className="overflow-hidden border-0 shadow-lg" style={{
+      background: "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(232, 93, 59, 0.06) 35%, rgba(16, 185, 129, 0.05) 100%)",
+      border: "1px solid rgba(124, 58, 237, 0.15)",
+      boxShadow: "0 12px 40px rgba(124, 58, 237, 0.15), 0 4px 12px rgba(232, 93, 59, 0.1)"
+    }}>
       <CardContent className="p-8">
         <style>{`
           @keyframes chestBounce {
@@ -180,23 +184,23 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
         <div className="flex flex-col items-center gap-8">
           {/* Title */}
           <div className="text-center">
-            <h3 className="text-3xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-              <Sparkles className="h-7 w-7 text-yellow-400" />
+            <h3 className="text-3xl font-bold text-purple-700 mb-2 flex items-center justify-center gap-2">
+              <Sparkles className="h-7 w-7 text-orange-500" />
               Mystery Chests
-              <Sparkles className="h-7 w-7 text-yellow-400" />
+              <Sparkles className="h-7 w-7 text-orange-500" />
             </h3>
-            <p className="text-purple-200 text-sm">Choose one chest and win rewards up to $1000</p>
+            <p className="text-slate-600 text-sm">Choose one chest and win rewards up to $1000</p>
           </div>
 
           {/* Info Section */}
           <div className="grid grid-cols-2 gap-4 w-full max-w-md">
-            <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-              <p className="text-purple-200 text-xs mb-1">Cost to Open</p>
-              <p className="text-yellow-300 font-bold text-lg">${COST_TO_OPEN}</p>
+            <div className="bg-gradient-to-br from-purple-100 to-purple-50 backdrop-blur rounded-lg p-3 text-center border border-purple-200">
+              <p className="text-purple-600 text-xs mb-1 font-semibold">Cost to Open</p>
+              <p className="text-purple-700 font-bold text-lg">${COST_TO_OPEN}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
-              <p className="text-purple-200 text-xs mb-1">Your Balance</p>
-              <p className={`font-bold text-lg ${currentBalance >= COST_TO_OPEN ? "text-green-300" : "text-red-300"}`}>
+            <div className="bg-gradient-to-br from-emerald-100 to-emerald-50 backdrop-blur rounded-lg p-3 text-center border border-emerald-200">
+              <p className="text-emerald-600 text-xs mb-1 font-semibold">Your Balance</p>
+              <p className={`font-bold text-lg ${currentBalance >= COST_TO_OPEN ? "text-emerald-600" : "text-red-500"}`}>
                 ${currentBalance.toFixed(2)}
               </p>
             </div>
@@ -309,7 +313,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
             <Button
               onClick={() => setSelectedBox(null)}
               variant="outline"
-              className="flex-1 border-purple-400 text-purple-300 hover:bg-purple-800"
+              className="flex-1 border-purple-300 text-purple-700 hover:bg-purple-100"
               disabled={isOpening || openedBoxIndex !== null}
             >
               Clear Selection
@@ -317,7 +321,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
             <Button
               onClick={handleOpenBox}
               disabled={!canOpen || isOpening}
-              className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-bold hover:from-yellow-300 hover:to-yellow-400 disabled:opacity-50"
+              className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-bold hover:from-purple-700 hover:to-purple-800 disabled:opacity-50"
             >
               {isOpening ? (
                 <>
