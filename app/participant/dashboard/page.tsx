@@ -1774,26 +1774,57 @@ export default function DashboardHome() {
       </main>
 
       {/* Footer Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
-        <nav className="flex items-center h-16 overflow-x-auto scrollbar-none px-1">
-          {[
-            { id: "dashboard",   label: "Home",        icon: <Home       className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard"   ? "scale-110" : ""}`} />, color: "text-[#7c3aed]"   },
-            { id: "staking",     label: "Staking",     icon: <TrendingUp className={`h-5 w-5 mb-0.5 ${activeTab === "staking"     ? "scale-110" : ""}`} />, color: "text-blue-600"    },
-            { id: "wheel",       label: "Luck Wheel",  icon: <Sparkles   className={`h-5 w-5 mb-0.5 ${activeTab === "wheel"       ? "scale-110" : ""}`} />, color: "text-orange-500"  },
-            { id: "activity",    label: "Contribute",  icon: <Send       className={`h-5 w-5 mb-0.5 ${activeTab === "activity"    ? "scale-110" : ""}`} />, color: "text-amber-600"   },
-            { id: "leaderboard", label: "Leaderboard", icon: <Trophy     className={`h-5 w-5 mb-0.5 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />, color: "text-yellow-500"  },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex flex-col items-center justify-center flex-shrink-0 w-[20%] min-w-[64px] h-full transition-all relative border-b-2 ${
-                activeTab === tab.id ? `${tab.color} border-current` : "text-slate-400 hover:text-slate-600 border-transparent"
-              }`}
-            >
-              {tab.icon}
-              <span className="text-[10px] font-medium whitespace-nowrap">{tab.label}</span>
-            </button>
-          ))}
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-[100]">
+        <nav className="grid grid-cols-5 h-16 max-w-lg mx-auto">
+          {/* Home */}
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400"}`}
+          >
+            <Home className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Home</span>
+            {activeTab === "dashboard" && <span className="w-4 h-0.5 rounded-full bg-[#7c3aed]" />}
+          </button>
+
+          {/* Staking */}
+          <button
+            onClick={() => setActiveTab("staking")}
+            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "staking" ? "text-blue-600" : "text-slate-400"}`}
+          >
+            <TrendingUp className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Staking</span>
+            {activeTab === "staking" && <span className="w-4 h-0.5 rounded-full bg-blue-600" />}
+          </button>
+
+          {/* Luck Wheel */}
+          <button
+            onClick={() => setActiveTab("wheel")}
+            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "wheel" ? "text-orange-500" : "text-slate-400"}`}
+          >
+            <Sparkles className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Luck Wheel</span>
+            {activeTab === "wheel" && <span className="w-4 h-0.5 rounded-full bg-orange-500" />}
+          </button>
+
+          {/* Contribute */}
+          <button
+            onClick={() => setActiveTab("activity")}
+            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "activity" ? "text-amber-600" : "text-slate-400"}`}
+          >
+            <Send className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Contribute</span>
+            {activeTab === "activity" && <span className="w-4 h-0.5 rounded-full bg-amber-600" />}
+          </button>
+
+          {/* Leaderboard */}
+          <button
+            onClick={() => setActiveTab("leaderboard")}
+            className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400"}`}
+          >
+            <Trophy className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Ranks</span>
+            {activeTab === "leaderboard" && <span className="w-4 h-0.5 rounded-full bg-yellow-500" />}
+          </button>
         </nav>
       </footer>
 
