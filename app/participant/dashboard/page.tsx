@@ -1410,14 +1410,14 @@ export default function DashboardHome() {
         {activeTab === "dashboard" && (
           <>
             {/* Welcome Banner - Mobile Optimized */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-lg sm:rounded-2xl p-4 sm:p-6 flex items-center justify-between gap-3 border border-slate-700/50">
+        <div className="bg-gradient-to-r from-purple-50 to-transparent rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-sm text-slate-400 mb-1">Welcome back,</p>
-            <p className="text-xl sm:text-2xl font-bold text-slate-100 truncate">{displayName}</p>
+            <p className="text-base sm:text-lg font-bold text-slate-800 truncate">Welcome back, {displayName}</p>
+            <p className="text-xs sm:text-sm text-slate-500">Let's grow your network today</p>
           </div>
           <Link href="/participant/dashboard/profile">
-            <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 p-0.5 flex-shrink-0 shadow-lg shadow-cyan-500/30">
-              <div className="h-full w-full rounded-[10px] bg-slate-900 flex items-center justify-center text-cyan-400 font-bold text-lg">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] p-[2px] flex-shrink-0">
+              <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-[#7c3aed] font-bold text-base sm:text-lg">
                 {displayName.charAt(0).toUpperCase()}
               </div>
             </div>
@@ -1425,57 +1425,108 @@ export default function DashboardHome() {
         </div>
 
         <div
-          className="relative py-8 px-5 sm:py-10 sm:px-7 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/50"
+          className="relative py-6 px-4 sm:py-8 sm:px-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/20"
           style={{
-            background: "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+            background:
+              "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(232, 93, 59, 0.08) 35%, rgba(34, 211, 238, 0.08) 70%, rgba(16, 185, 129, 0.06) 100%)",
           }}
         >
-          {/* Gradient background orbs */}
+          {/* Enhanced animated background with multiple orbs - Responsive */}
           <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl" />
-            <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-emerald-500/15 to-transparent rounded-full blur-3xl" />
+          {/* Top right purple orb */}
+          <div className="absolute -top-8 -right-8 sm:-top-16 sm:-right-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#7c3aed]/20 via-purple-400/10 to-transparent rounded-full blur-2xl sm:blur-3xl" />
+          
+          {/* Bottom left orange orb */}
+          <div
+            className="absolute -bottom-8 -left-8 sm:-bottom-16 sm:-left-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#E85D3B]/20 via-orange-400/10 to-transparent rounded-full blur-2xl sm:blur-3xl"
+          />
+          
+          {/* Middle cyan orb */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 bg-gradient-to-br from-[#22d3ee]/15 via-cyan-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl"
+          />
+            
+            {/* Top left emerald accent */}
+            <div
+              className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-emerald-400/15 to-transparent rounded-full blur-2xl"
+            />
+            
+            {/* Bottom right pink accent */}
+            <div
+              className="absolute bottom-10 right-10 w-32 h-32 bg-gradient-to-br from-pink-400/15 to-transparent rounded-full blur-2xl"
+            />
+            
+            {/* Animated gradient lines */}
+            <div className="absolute inset-0 opacity-30">
+              <div
+                className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent"
+                style={{
+                  animation: "shimmer 3s ease-in-out infinite",
+                }}
+              />
+              <div
+                className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent"
+                style={{
+                  animation: "shimmer 3s ease-in-out infinite",
+                  animationDelay: "1.5s",
+                }}
+              />
+            </div>
+            
+            {/* Subtle grid pattern overlay */}
+            <div
+              className="absolute inset-0 opacity-5"
+              style={{
+                backgroundImage: `linear-gradient(rgba(124, 58, 237, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px)`,
+                backgroundSize: "20px 20px",
+              }}
+            />
           </div>
 
-          <div className="relative space-y-4">
-            {/* Header with Add Fund button */}
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm text-slate-400 mb-2">Total Balance</p>
-                <h2 className="text-4xl sm:text-5xl font-bold text-slate-100">
-                  ${totalBalance.toFixed(2)}
-                </h2>
-              </div>
+          <div className="relative space-y-2 sm:space-y-3">
+            {/* Wallet Balance - Mobile Optimized */}
+            <div className="text-center relative">
+              {/* Top Up Button - Right Upper Side - Responsive */}
               <button
                 onClick={() => setShowTopUpModal(true)}
-                className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg font-semibold text-white text-sm bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-cyan-500/30"
+                className="absolute -top-1 sm:-top-2 right-0 rounded-lg sm:rounded-xl font-bold text-white flex flex-col items-center gap-0.5 sm:gap-1 transition-all hover:scale-105 active:scale-95 shadow-lg text-[10px] sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5"
+                style={{
+                  background: "linear-gradient(135deg, #7c3aed, #6366f1)",
+                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
+                }}
               >
-                + Add Fund
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="text-[8px] sm:text-[10px] font-bold tracking-wider">ADD FUND</span>
               </button>
+
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-slate-800" />
+                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider font-bold">Wallet Balance</span>
+              </div>
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900">
+                <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+              </div>
             </div>
 
-            {/* Balance breakdown grid */}
-            <div className="grid grid-cols-3 gap-3 mt-6">
-              <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                <p className="text-xs text-slate-400 mb-1">Wallet</p>
-                <p className="text-lg font-bold text-cyan-400">${walletBalance.toFixed(2)}</p>
+            {/* Referral Earnings - Below Wallet Balance */}
+            <div className="text-center relative">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
+                <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-slate-800" />
+                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider font-bold">Referral Earnings</span>
               </div>
-              <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                <p className="text-xs text-slate-400 mb-1">Bonus</p>
-                <p className="text-lg font-bold text-emerald-400">${bonusBalance.toFixed(2)}</p>
-              </div>
-              <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
-                <p className="text-xs text-slate-400 mb-1">Earnings</p>
-                <p className="text-lg font-bold text-amber-400">${totalEarnings.toFixed(2)}</p>
-              </div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
+                <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
             </div>
+
+          </div>
+
           </div>
         </div>
-              </button>
 
         {/* Staking Banner - New Feature */}
         <StakingBanner />
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <Link href="/participant/dashboard/contribute">
             <button
               onClick={createRipple}
