@@ -45,6 +45,7 @@ import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { StakingBanner } from "@/components/staking-banner"
 import { NoticeBoard } from "@/components/notice-board"
+import { MysteryBox } from "@/components/mystery-box"
 
 interface LeaderboardEntry {
   position: number
@@ -1644,6 +1645,27 @@ export default function DashboardHome() {
               </CardContent>
             </Card>
           </Link>
+
+          {/* Mystery Box Card - New Feature */}
+          <MysteryBox
+            currentBalance={walletBalance}
+            participantEmail={participantData?.email || ""}
+            onRewardWon={(amount) => {
+              // Notify user of reward
+              toast({
+                title: "Mystery Box Reward!",
+                description: `You won $${amount}!`,
+              })
+            }}
+            onBalanceUpdated={(newBalance) => {
+              // Update participant data with new balance
+              setParticipantData((prev: any) => {
+                const updated = { ...prev, account_balance: newBalance }
+                localStorage.setItem("participantData", JSON.stringify(updated))
+                return updated
+              })
+            }}
+          />
 
           <Card
             className="border-0 overflow-hidden relative"
