@@ -46,7 +46,7 @@ export async function POST(request: Request) {
         (full_name, username, email, password_hash, plain_password, wallet_address,
          referral_code, referred_by, account_balance, status, is_active,
          whatsapp_otp, otp_verified, mobile_number)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'pending',false,$9,false,$10)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10)
        RETURNING *`,
       [
         fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
@@ -66,8 +66,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      pendingVerification: true,
-      message: "Registration successful! Please wait for admin to verify your mobile OTP before logging in.",
+      pendingVerification: false,
+      message: "Registration successful! Your account is now active. You can log in immediately.",
       participantId: newParticipant.id,
       walletAddress,
       username: usernameKey,
