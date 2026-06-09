@@ -31,7 +31,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
   const [newBalance, setNewBalance] = useState<number | null>(null)
   const [showReward, setShowReward] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isAnimating, setIsAnimating] = useState(false)
+  const [openingBoxIndex, setOpeningBoxIndex] = useState<number | null>(null)
   const { toast } = useToast()
 
   const canOpen = currentBalance >= COST_TO_OPEN && selectedBox !== null && !openedBoxes.has(selectedBox)
@@ -58,23 +58,23 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
 
   const handleOpenBox = async () => {
     if (!canOpen) {
-      if (!selectedBox && selectedBox !== 0) {
+      if (selectedBox === null || selectedBox === undefined) {
         toast({ title: "Select a Box", description: "Please select a mystery box to open.", variant: "destructive" })
       } else if (openedBoxes.has(selectedBox)) {
         toast({ title: "Already Opened", description: "This box has already been opened.", variant: "destructive" })
       } else {
-        toast({ 
-          title: "Insufficient Balance", 
-          description: `You need $${COST_TO_OPEN} to open a mystery box.`, 
-          variant: "destructive" 
+        toast({
+          title: "Insufficient Balance",
+          description: `You need $${COST_TO_OPEN} to open a mystery box.`,
+          variant: "destructive",
         })
       }
       return
     }
 
     setIsOpening(true)
+    setOpeningBoxIndex(selectedBox)
     setError(null)
-    setIsAnimating(true)
 
     try {
       const generatedReward = generateReward()
@@ -92,15 +92,15 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
       })
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || "Failed to process mystery box")
+        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+        throw new Error(errorData.error || "Failed to process mystery box")
       }
 
       const data = await response.json()
       const updatedBalance = data.newBalance
 
-      // Animate opening
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      // Animate opening - wait for 3D flip animation
+      await new Promise((resolve) => setTimeout(resolve, 1200))
 
       setReward(generatedReward)
       setNewBalance(updatedBalance)
@@ -112,11 +112,8 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
       setOpenedBoxes(newOpenedBoxes)
 
       // Determine reward rarity
-      const rarity = 
-        generatedReward === 50 ? "Legendary" : 
-        generatedReward === 20 ? "Rare" : 
-        generatedReward === 10 ? "Uncommon" : 
-        "Common"
+      const rarity =
+        generatedReward === 50 ? "Legendary" : generatedReward === 20 ? "Rare" : generatedReward === 10 ? "Uncommon" : "Common"
 
       toast({
         title: `🎉 ${rarity} Reward!`,
@@ -131,14 +128,15 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
         setShowReward(false)
         setReward(null)
         setNewBalance(null)
-        setIsAnimating(false)
         setSelectedBox(null)
+        setOpeningBoxIndex(null)
       }, 4000)
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "An error occurred"
+      console.error("[v0] Mystery box error:", errorMsg)
       setError(errorMsg)
       toast({ title: "Error", description: errorMsg, variant: "destructive" })
-      setIsAnimating(false)
+      setOpeningBoxIndex(null)
     } finally {
       setIsOpening(false)
     }
@@ -147,6 +145,34 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
   return (
     <Card className="overflow-hidden border-0 shadow-lg bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900">
       <CardContent className="p-8">
+        <style>{`
+          @keyframes boxBounce {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-12px) scale(1.05); }
+          }
+          @keyframes boxRotate3d {
+            0% { transform: perspective(1000px) rotateY(0deg) rotateX(0deg); }
+            50% { transform: perspective(1000px) rotateY(180deg) rotateX(10deg); }
+            100% { transform: perspective(1000px) rotateY(360deg) rotateX(0deg); }
+          }
+          @keyframes boxFlip {
+            0% { transform: perspective(1000px) rotateY(0deg); }
+            100% { transform: perspective(1000px) rotateY(180deg); }
+          }
+          @keyframes glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(168, 85, 247, 0.4), inset 0 0 10px rgba(168, 85, 247, 0.1); }
+            50% { box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), inset 0 0 20px rgba(168, 85, 247, 0.3); }
+          }
+          @keyframes shimmer {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+          }
+          @keyframes confetti {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+            100% { opacity: 0; transform: translateY(-60px) rotate(360deg); }
+          }
+        `}</style>
+
         <div className="flex flex-col items-center gap-8">
           {/* Title */}
           <div className="text-center">
@@ -158,157 +184,156 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
             <p className="text-purple-200 text-sm">Choose one box and win rewards up to $1000</p>
           </div>
 
+          {/* Info Section */}
+          <div className="grid grid-cols-2 gap-4 w-full max-w-md">
+            <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+              <p className="text-purple-200 text-xs mb-1">Cost to Open</p>
+              <p className="text-yellow-300 font-bold text-lg">${COST_TO_OPEN}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur rounded-lg p-3 text-center">
+              <p className="text-purple-200 text-xs mb-1">Your Balance</p>
+              <p className={`font-bold text-lg ${currentBalance >= COST_TO_OPEN ? "text-green-300" : "text-red-300"}`}>
+                ${currentBalance.toFixed(2)}
+              </p>
+            </div>
+          </div>
+
           {/* Boxes Grid */}
-          <div className="w-full grid grid-cols-5 gap-4 md:gap-3">
-            {[...Array(NUMBER_OF_BOXES)].map((_, boxIndex) => {
-              const isSelected = selectedBox === boxIndex
-              const isOpened = openedBoxes.has(boxIndex)
+          <div className="grid grid-cols-5 gap-4 w-full max-w-2xl">
+            {Array.from({ length: NUMBER_OF_BOXES }).map((_, index) => {
+              const isSelected = selectedBox === index
+              const isOpened = openedBoxes.has(index)
+              const isCurrentlyOpening = openingBoxIndex === index
 
               return (
-                <button
-                  key={boxIndex}
-                  onClick={() => handleSelectBox(boxIndex)}
-                  disabled={isOpened || isAnimating}
-                  className={`relative aspect-square transition-all duration-300 transform ${
-                    isOpened 
-                      ? "opacity-30 cursor-not-allowed" 
-                      : isSelected 
-                      ? "scale-110 -translate-y-2" 
-                      : "hover:scale-105 hover:-translate-y-1"
-                  }`}
-                >
-                  {/* Box Container */}
-                  <div
-                    className={`w-full h-full rounded-lg flex flex-col items-center justify-center relative shadow-lg transition-all duration-300 ${
-                      isOpened
-                        ? "bg-gray-600 border-2 border-gray-700"
-                        : isSelected
-                        ? "bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 border-4 border-yellow-200 shadow-2xl"
-                        : "bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 border-3 border-amber-300 hover:shadow-2xl"
-                    }`}
+                <div key={index} className="flex justify-center">
+                  <button
+                    onClick={() => handleSelectBox(index)}
+                    disabled={isOpened || isOpening}
+                    className={`
+                      relative w-24 h-28 rounded-lg transition-all duration-300 
+                      transform cursor-pointer disabled:cursor-not-allowed
+                      ${isOpened ? "opacity-40" : "hover:scale-105"}
+                      ${isSelected && !isOpened ? "scale-110" : "scale-100"}
+                    `}
+                    style={{
+                      animation:
+                        isSelected && !isOpened
+                          ? "boxBounce 0.6s ease-in-out infinite"
+                          : isCurrentlyOpening
+                            ? "boxFlip 1.2s ease-in-out forwards"
+                            : "none",
+                    }}
                   >
-                    {/* Gold shine effect */}
-                    <div className={`absolute inset-1 rounded-lg border border-amber-200 opacity-40 ${isSelected ? "opacity-60" : ""}`} />
+                    {/* Box Front */}
+                    <div
+                      className={`
+                        absolute inset-0 rounded-lg flex flex-col items-center justify-center
+                        bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500
+                        border-2 border-yellow-300 shadow-lg
+                        transition-all duration-300
+                        ${isCurrentlyOpening ? "opacity-0" : "opacity-100"}
+                        ${isOpened ? "from-gray-400 to-gray-500" : ""}
+                      `}
+                      style={{
+                        backfaceVisibility: "hidden",
+                        animation: isSelected && !isOpened && !isCurrentlyOpening ? "glow 2s ease-in-out infinite" : "none",
+                      }}
+                    >
+                      {!isOpened && (
+                        <>
+                          <Lock className="h-6 w-6 text-amber-900 mb-1" />
+                          <span className="text-xs font-bold text-amber-900">$10</span>
+                        </>
+                      )}
+                      {isOpened && (
+                        <div className="text-xl">✓</div>
+                      )}
+                    </div>
 
-                    {/* Box content */}
-                    {isOpened ? (
-                      <div className="relative z-10 text-center">
-                        <div className="text-2xl">✓</div>
-                        <div className="text-xs text-gray-800 font-bold mt-1">Opened</div>
-                      </div>
-                    ) : (
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        {isSelected && <Sparkles className="h-5 w-5 text-amber-900 animate-spin" />}
-                        <Lock className={`h-6 w-6 transition-all duration-300 ${isSelected ? "text-amber-900 scale-125" : "text-amber-900"}`} />
-                        <div className="text-xs font-bold text-amber-900 text-center leading-tight">
-                          ${COST_TO_OPEN}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Top shine */}
-                    <div className="absolute top-0 left-0 right-0 h-1/3 bg-gradient-to-b from-yellow-200 to-transparent rounded-t-lg opacity-40" />
-                  </div>
-
-                  {/* Selection glow */}
-                  {isSelected && (
-                    <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-400 rounded-lg blur-md opacity-50 animate-pulse -z-10" />
-                  )}
-                </button>
+                    {/* Box Back - Opened State */}
+                    <div
+                      className={`
+                        absolute inset-0 rounded-lg flex items-center justify-center
+                        bg-gradient-to-br from-green-400 to-emerald-500
+                        border-2 border-green-300 shadow-lg
+                        transition-all duration-300
+                        ${isCurrentlyOpening ? "opacity-100" : "opacity-0"}
+                      `}
+                      style={{
+                        backfaceVisibility: "hidden",
+                        transform: "rotateY(180deg)",
+                      }}
+                    >
+                      <Loader2 className="h-6 w-6 text-green-900 animate-spin" />
+                    </div>
+                  </button>
+                </div>
               )
             })}
           </div>
 
-          {/* Info Box */}
-          <div className="w-full bg-purple-700/30 rounded-lg p-4 border border-purple-600">
-            <div className="text-sm text-purple-100 space-y-2">
-              <p>
-                <span className="font-semibold">Current Balance:</span> ${currentBalance.toFixed(2)}
-              </p>
-              <p>
-                <span className="font-semibold">Boxes Opened:</span> {openedBoxes.size} / {NUMBER_OF_BOXES}
-              </p>
-              {selectedBox !== null && (
-                <p>
-                  <span className="font-semibold">Selected Box:</span> #{selectedBox + 1}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="w-full text-sm text-red-400 bg-red-900/20 border border-red-700 rounded p-3">
-              {error}
-            </div>
-          )}
-
           {/* Reward Display */}
-          {showReward && reward !== null && (
-            <div className="w-full bg-gradient-to-r from-yellow-400/20 to-amber-400/20 border-2 border-yellow-400 rounded-lg p-6 text-center animate-pulse">
-              <p className="text-purple-200 text-sm mb-2">You Won!</p>
-              <div className="text-6xl font-bold text-yellow-400 drop-shadow-lg mb-2">${reward}</div>
-              <p className="text-xs text-purple-300">New Balance: ${newBalance?.toFixed(2)}</p>
-              
-              {/* Confetti */}
-              <div className="mt-4 flex justify-center gap-2 text-2xl">
-                {["🎉", "✨", "⭐"].map((emoji, i) => (
+          {showReward && (
+            <div className="relative w-full max-w-md">
+              <div className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 rounded-lg p-6 text-center shadow-2xl border-2 border-yellow-200">
+                <p className="text-purple-900 font-bold text-sm mb-2">You Won!</p>
+                <p className="text-5xl font-black text-white" style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}>
+                  ${reward}
+                </p>
+                <p className="text-purple-900 font-semibold text-sm mt-2">New Balance: ${newBalance?.toFixed(2)}</p>
+
+                {/* Confetti */}
+                {Array.from({ length: 12 }).map((_, i) => (
                   <div
                     key={i}
-                    className="animate-bounce"
-                    style={{ animationDelay: `${i * 0.1}s` }}
-                  >
-                    {emoji}
-                  </div>
+                    className="absolute w-2 h-2 bg-yellow-300 rounded-full"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: "0",
+                      animation: `confetti 2s ease-out forwards`,
+                      animationDelay: `${Math.random() * 0.3}s`,
+                    }}
+                  />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Open Button */}
-          <Button
-            onClick={handleOpenBox}
-            disabled={!canOpen || isOpening}
-            className={`w-full h-12 font-bold text-lg transition-all duration-300 ${
-              canOpen
-                ? "bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-slate-900"
-                : "bg-slate-400 text-slate-600 cursor-not-allowed"
-            }`}
-          >
-            {isOpening ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                Opening...
-              </>
-            ) : !selectedBox && selectedBox !== 0 ? (
-              <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                Select a Box
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-5 w-5 mr-2" />
-                Open Box #{selectedBox! + 1} (${COST_TO_OPEN})
-              </>
-            )}
-          </Button>
+          {/* Error Display */}
+          {error && (
+            <div className="w-full max-w-md bg-red-500/20 border border-red-500 rounded-lg p-3 text-center text-red-300 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 w-full max-w-md">
+            <Button
+              onClick={() => setSelectedBox(null)}
+              variant="outline"
+              className="flex-1 border-purple-400 text-purple-300 hover:bg-purple-800"
+              disabled={isOpening}
+            >
+              Clear Selection
+            </Button>
+            <Button
+              onClick={handleOpenBox}
+              disabled={!canOpen || isOpening}
+              className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 font-bold hover:from-yellow-300 hover:to-yellow-400 disabled:opacity-50"
+            >
+              {isOpening ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Opening...
+                </>
+              ) : (
+                `Open Box ($${COST_TO_OPEN})`
+              )}
+            </Button>
+          </div>
         </div>
       </CardContent>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.7;
-          }
-        }
-
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
     </Card>
   )
 }
