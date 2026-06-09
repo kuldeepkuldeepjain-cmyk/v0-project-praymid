@@ -53,7 +53,7 @@ export default function LandingPage() {
       titleColor: "text-purple-600",
     },
     {
-      icon: "📦",
+      image: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/chest-0MObWtt3QP2xSvdNPzuxqFThC1xnnV.png",
       title: "Mystery Chest",
       label: "UP TO $1000 REWARD",
       description: "Unbox big surprises",
@@ -321,10 +321,20 @@ export default function LandingPage() {
                   <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl pointer-events-none"></div>
 
                   <div className="relative z-10 flex flex-col items-center justify-center h-full gap-4">
-                    {/* Icon */}
-                    <div className="text-6xl sm:text-7xl group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300">
-                      {reward.icon}
-                    </div>
+                    {/* Icon or Image */}
+                    {reward.image ? (
+                      <div className="group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center h-32 w-full">
+                        <img
+                          src={reward.image}
+                          alt={reward.title}
+                          className="h-full w-auto object-contain drop-shadow-lg group-hover:drop-shadow-2xl transition-all duration-300"
+                        />
+                      </div>
+                    ) : (
+                      <div className="text-6xl sm:text-7xl group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300">
+                        {reward.icon}
+                      </div>
+                    )}
 
                     {/* Title */}
                     <h3 className={`text-2xl sm:text-3xl font-bold ${reward.titleColor}`}>
