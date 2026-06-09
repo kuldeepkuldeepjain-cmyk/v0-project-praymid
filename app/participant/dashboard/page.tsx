@@ -44,6 +44,7 @@ import { MessageCircle } from "lucide-react"
 import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { StakingBanner } from "@/components/staking-banner"
+import { StakingModule } from "@/components/staking-module"
 import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
 
@@ -1116,7 +1117,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard" | "staking">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1524,17 +1525,7 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        {/* Staking Banner - New Feature */}
-        <StakingBanner
-          currentBalance={walletBalance}
-          participantEmail={participantData?.email || ""}
-          onBalanceUpdated={(newBalance) => {
-            setParticipantData((prev: any) => ({
-              ...prev,
-              account_balance: newBalance,
-            }))
-          }}
-        />
+
 
         <div className="grid grid-cols-2 gap-4">
           <Link href="/participant/dashboard/contribute">
@@ -1761,6 +1752,22 @@ export default function DashboardHome() {
         </div>
       )}
       
+      {/* Staking Tab Content */}
+      {activeTab === "staking" && (
+        <div className="space-y-4 pb-24">
+          <StakingModule
+            currentBalance={walletBalance}
+            participantEmail={participantData?.email || ""}
+            onBalanceUpdated={(newBalance: number) => {
+              setParticipantData((prev: any) => ({
+                ...prev,
+                account_balance: newBalance,
+              }))
+            }}
+          />
+        </div>
+      )}
+
       {/* Notice Board - Display important announcements */}
       <NoticeBoard />
       
@@ -1813,8 +1820,20 @@ export default function DashboardHome() {
                 : "text-slate-400 hover:text-slate-600"
             }`}
           >
-              <Trophy className={`h-6 w-6 mb-1 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
+            <Trophy className={`h-6 w-6 mb-1 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
             <span className="text-xs font-medium">Leaderboard</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("staking")}
+            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
+              activeTab === "staking"
+                ? "text-blue-600"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            <TrendingUp className={`h-6 w-6 mb-1 ${activeTab === "staking" ? "scale-110" : ""}`} />
+            <span className="text-xs font-medium">Staking</span>
           </button>
         </nav>
       </footer>
