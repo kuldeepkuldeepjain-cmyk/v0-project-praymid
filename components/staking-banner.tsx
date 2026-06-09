@@ -26,14 +26,15 @@ export function StakingBanner({
         isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
       }`}
       style={{
-        background: "linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(59, 130, 246, 0.15) 50%, rgba(99, 102, 241, 0.15) 100%)",
-        border: "1px solid rgba(168, 85, 247, 0.3)",
+        background: "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(232, 93, 59, 0.06) 35%, rgba(16, 185, 129, 0.05) 100%)",
+        border: "1px solid rgba(124, 58, 237, 0.15)",
+        boxShadow: "0 12px 40px rgba(124, 58, 237, 0.15), 0 4px 12px rgba(232, 93, 59, 0.1)"
       }}
     >
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-purple-400/20 via-blue-400/10 to-transparent rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gradient-to-br from-indigo-400/20 via-purple-400/10 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-purple-400/15 via-purple-300/8 to-transparent rounded-full blur-3xl animate-pulse" />
+        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gradient-to-br from-orange-400/15 via-orange-300/8 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
       {/* Content */}

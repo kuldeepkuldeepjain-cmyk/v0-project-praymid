@@ -50,26 +50,26 @@ interface StakingModuleProps {
 }
 
 const COIN_LOGOS: Record<string, string> = {
-  BTC: "₿",
-  ETH: "Ξ",
-  BNB: "⬡",
-  SOL: "◎",
-  XRP: "✕",
-  DOGE: "Ð",
-  ADA: "₳",
-  AVAX: "▲",
-  LINK: "⛓",
-  DOT: "●",
-  TRX: "⧉",
-  LTC: "Ł",
-  ATOM: "⚛",
-  MATIC: "M",
-  ARB: "Ⓐ",
-  APT: "A",
-  SUI: "S",
-  TON: "◆",
-  NEAR: "N",
-  FLOW: "F",
+  BTC: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/bitcoin/default.svg",
+  ETH: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/ethereum/default.svg",
+  BNB: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/binancecoin/default.svg",
+  SOL: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/solana/default.svg",
+  XRP: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/ripple/default.svg",
+  DOGE: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/dogecoin/default.svg",
+  ADA: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cardano/default.svg",
+  AVAX: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/avalanche-2/default.svg",
+  LINK: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/chainlink/default.svg",
+  DOT: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/polkadot/default.svg",
+  TRX: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/tron/default.svg",
+  LTC: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/litecoin/default.svg",
+  ATOM: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cosmos/default.svg",
+  MATIC: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/polygon/default.svg",
+  ARB: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/arbitrum/default.svg",
+  APT: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/aptos/default.svg",
+  SUI: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/sui/default.svg",
+  TON: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/ton/default.svg",
+  NEAR: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/near-protocol/default.svg",
+  FLOW: "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/flow/default.svg",
 }
 
 export function StakingModule({ currentBalance, participantEmail, onBalanceUpdated }: StakingModuleProps) {
@@ -335,21 +335,29 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
                   .map((stake) => (
                     <div
                       key={stake.id}
-                      className="bg-gradient-to-r from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-slate-600 dark:border-slate-600 hover:border-slate-500 dark:hover:border-slate-500 transition-all"
+                      className="bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-purple-200 dark:border-slate-600 hover:border-purple-300 dark:hover:border-slate-500 transition-all shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white font-bold">
-                            {COIN_LOGOS[stake.coin_symbol] || stake.coin_symbol[0]}
+                          <div className="h-10 w-10 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={COIN_LOGOS[stake.coin_symbol]} 
+                              alt={stake.coin_symbol}
+                              className="h-8 w-8 object-contain"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none'
+                                e.currentTarget.parentElement!.textContent = stake.coin_symbol[0]
+                              }}
+                            />
                           </div>
                           <div>
                             <p className="font-bold text-slate-900 dark:text-white">{stake.coin_name}</p>
-                            <p className="text-slate-400 dark:text-slate-400 text-sm">${stake.amount.toFixed(2)} at {stake.apy}% APY</p>
+                            <p className="text-slate-600 dark:text-slate-400 text-sm">${stake.amount.toFixed(2)} at {stake.apy}% APY</p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-green-600 dark:text-green-400">+${stake.daily_reward.toFixed(4)}/day</p>
-                          <p className="text-slate-400 dark:text-slate-400 text-sm">Total: ${stake.total_earned.toFixed(2)}</p>
+                          <p className="font-bold text-emerald-600 dark:text-emerald-400">+${stake.daily_reward.toFixed(4)}/day</p>
+                          <p className="text-slate-600 dark:text-slate-400 text-sm">Total: ${stake.total_earned.toFixed(2)}</p>
                         </div>
                       </div>
                       <div className="h-1 bg-slate-700 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -404,23 +412,32 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
                       setView("input")
                       setStakeAmount("")
                     }}
-                    className="group bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-slate-600 dark:border-slate-600 hover:border-blue-600 dark:hover:border-blue-600 hover:bg-gradient-to-br hover:from-slate-600 hover:to-slate-700 dark:hover:from-slate-600 dark:hover:to-slate-700 transition-all cursor-pointer"
+                    className="group bg-gradient-to-br from-purple-100 to-purple-50 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-purple-300 dark:border-slate-600 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-200 hover:to-purple-100 dark:hover:from-slate-600 dark:hover:to-slate-700 transition-all cursor-pointer shadow-sm"
                   >
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white font-bold mb-2 group-hover:scale-110 transition-transform">
-                      {COIN_LOGOS[coin.coin_symbol] || coin.coin_symbol[0]}
+                    <div className="h-12 w-12 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform overflow-hidden">
+                      <img 
+                        src={COIN_LOGOS[coin.coin_symbol]} 
+                        alt={coin.coin_symbol}
+                        className="h-10 w-10 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          e.currentTarget.parentElement!.textContent = coin.coin_symbol[0]
+                          e.currentTarget.parentElement!.className = 'h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center mb-2 text-white font-bold'
+                        }}
+                      />
                     </div>
                     <p className="font-bold text-slate-900 dark:text-white text-sm mb-1">{coin.coin_symbol}</p>
-                    <p className="text-slate-400 dark:text-slate-400 text-xs mb-2">{coin.coin_name}</p>
+                    <p className="text-slate-600 dark:text-slate-400 text-xs mb-2">{coin.coin_name}</p>
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-blue-600 dark:text-blue-400 font-bold text-sm">{coin.apy}% APY</p>
-                      <ChevronRight className="h-3 w-3 text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform" />
+                      <p className="text-purple-600 dark:text-purple-400 font-bold text-sm">{coin.apy}% APY</p>
+                      <ChevronRight className="h-3 w-3 text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition-transform" />
                     </div>
                     <span
                       className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded-full ${
                         coin.risk_level === "Low"
-                          ? "bg-green-600 text-green-100 dark:bg-green-600 dark:text-green-100"
+                          ? "bg-emerald-600 text-emerald-100 dark:bg-emerald-600 dark:text-emerald-100"
                           : coin.risk_level === "Medium"
-                            ? "bg-yellow-600 text-yellow-100 dark:bg-yellow-600 dark:text-yellow-100"
+                            ? "bg-orange-600 text-orange-100 dark:bg-orange-600 dark:text-orange-100"
                             : "bg-red-600 text-red-100 dark:bg-red-600 dark:text-red-100"
                       }`}
                     >
@@ -471,16 +488,25 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
                       console.log("[v0] Selected coin:", coin)
                       handleCoinSelect(coin)
                     }}
-                    className="group relative bg-gradient-to-br from-slate-700 to-slate-800 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border-2 border-slate-600 dark:border-slate-600 hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20 transition-all duration-300 active:scale-95"
+                    className="group relative bg-gradient-to-br from-purple-100 to-purple-50 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border-2 border-purple-300 dark:border-slate-600 hover:border-purple-500 dark:hover:border-purple-500 hover:shadow-lg hover:shadow-purple-500/20 transition-all duration-300 active:scale-95"
                   >
                     {/* Hover glow effect */}
-                    <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-blue-500/10 to-transparent" />
+                    <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-br from-purple-500/10 to-transparent" />
                     
                     {/* Content */}
                     <div className="relative space-y-2">
                       {/* Coin Icon */}
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 dark:from-blue-600 dark:to-blue-800 flex items-center justify-center text-white font-bold group-hover:scale-110 transition-transform">
-                        {COIN_LOGOS[coin.coin_symbol] || coin.coin_symbol[0]}
+                      <div className="h-12 w-12 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center group-hover:scale-110 transition-transform overflow-hidden">
+                        <img 
+                          src={COIN_LOGOS[coin.coin_symbol]} 
+                          alt={coin.coin_symbol}
+                          className="h-10 w-10 object-contain"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                            e.currentTarget.parentElement!.textContent = coin.coin_symbol[0]
+                            e.currentTarget.parentElement!.className = 'h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-bold'
+                          }}
+                        />
                       </div>
                       
                       {/* Coin Symbol */}
