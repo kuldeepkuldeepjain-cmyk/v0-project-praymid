@@ -35,7 +35,7 @@ export default function LandingPage() {
   const [activeTab, setActiveTab] = useState("all")
 
   const rewards = [
-    { icon: "🎁", amount: "₹50", label: "BONUS", color: "from-orange-100 to-red-100" },
+    { icon: "🎁", amount: "$50", label: "BONUS", color: "from-orange-100 to-red-100" },
     { icon: "⚙️", multiplier: "5x", label: "REWARD", color: "from-pink-100 to-purple-100" },
     { icon: "🎡", multiplier: "20x", label: "REWARD", color: "from-amber-100 to-orange-100", featured: true },
     { icon: "⚙️", multiplier: "10x", label: "REWARD", color: "from-purple-100 to-pink-100" },
@@ -43,10 +43,10 @@ export default function LandingPage() {
   ]
 
   const stats = [
-    { icon: "🎁", title: "Bonuses Unlocked Today", value: "₹1,45,230", growth: "15.6%" },
+    { icon: "🎁", title: "Bonuses Unlocked Today", value: "$145,230 USDT", growth: "15.6%" },
     { icon: "⚙️", title: "Spins Activated Today", value: "9,842", growth: "12.8%" },
     { icon: "👥", title: "New Members Today", value: "3,257", growth: "18.3%" },
-    { icon: "💰", title: "Rewards Distributed Today", value: "₹29,84,520", growth: "16.7%" },
+    { icon: "💰", title: "Rewards Distributed Today", value: "$2,984,520 USDT", growth: "16.7%" },
   ]
 
   const benefits = [
@@ -59,7 +59,7 @@ export default function LandingPage() {
 
   const journey = [
     { num: "1", title: "Create Account", desc: "Sign up in 30 seconds and join the community" },
-    { num: "2", title: "Get ₹50 Bonus", desc: "Instant bonus on your first contribution" },
+    { num: "2", title: "Get $50 USDT Bonus", desc: "Instant bonus on your first contribution" },
     { num: "3", title: "Spin The Wheel", desc: "Spin and win up to 20x rewards" },
     { num: "4", title: "Unlock Rewards", desc: "More contributions unlock bigger rewards" },
     { num: "5", title: "Grow Together", desc: "Rank up, earn more and grow with community" },
@@ -70,7 +70,7 @@ export default function LandingPage() {
     { symbol: "ETH/USDT", name: "Ethereum", price: "$1,675.42", change: "+0.00%", icon: "Ξ" },
     { symbol: "SOL/USDT", name: "Solana", price: "$66.61", change: "+1.64%", icon: "◆" },
     { symbol: "XRP/USDT", name: "Ripple", price: "$1.17", change: "+2.64%", icon: "✕" },
-    { symbol: "USDT/INR", name: "Tether", price: "₹83.25", change: "+0.01%", icon: "₮" },
+    { symbol: "USDT/USD", name: "Tether", price: "$1.00", change: "+0.01%", icon: "₮" },
   ]
 
   const testimonials = [
@@ -82,7 +82,7 @@ export default function LandingPage() {
     },
     {
       name: "Neha Gupta",
-      text: "Transparent, zero fees, and real rewards. The ₹50 bonus is a great start for everyone!",
+      text: "Transparent, zero fees, and real rewards. The $50 USDT bonus is a great start for everyone!",
       avatar: "👩",
       rating: 5,
     },
