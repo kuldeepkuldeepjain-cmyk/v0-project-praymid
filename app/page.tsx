@@ -175,42 +175,42 @@ export default function LandingPage() {
             {/* Left Column */}
             <div className="space-y-8">
               {/* Trust Badge */}
-              <div className="flex items-center gap-2 text-sm animate-stagger-fade-in opacity-0 delay-100">
+              <div className="flex items-center gap-2 text-sm animate-stagger-fade-in delay-100">
                 <span className="text-2xl">⭐</span>
                 <span className="text-slate-700 font-medium">Trusted by 50,000+ participants worldwide</span>
               </div>
 
               {/* Main Heading */}
               <div className="space-y-4">
-                <h1 className="text-5xl sm:text-6xl font-bold leading-tight animate-bounce-in-down opacity-0 delay-200">
+                <h1 className="text-5xl sm:text-6xl font-bold leading-tight animate-bounce-in-down delay-200">
                   <span className="text-slate-900">Your Next</span>
                   <br />
                   <span className="bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">Reward</span>
                   <br />
                   <span className="text-slate-900">Is Waiting.</span>
                 </h1>
-                <p className="text-lg text-slate-600 leading-relaxed animate-stagger-fade-in opacity-0 delay-300">
+                <p className="text-lg text-slate-600 leading-relaxed animate-stagger-fade-in delay-300">
                   Join a global community, earn instant bonuses, spin for bigger rewards, and grow together with zero platform fees.
                 </p>
               </div>
 
               {/* Key Features */}
               <div className="flex flex-wrap gap-4 pt-4">
-                <div className="flex items-center gap-3 glass-card px-5 py-3.5 rounded-full border border-white/50 hover:border-white/70 transition-all hover:shadow-lg hover:scale-105 duration-300 animate-stagger-scale opacity-0 delay-400">
+                <div className="flex items-center gap-3 glass-card px-5 py-3.5 rounded-full border border-white/50 hover:border-white/70 transition-all hover:shadow-lg hover:scale-105 duration-300 animate-stagger-scale delay-400">
                   <span className="text-2xl">🎁</span>
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Instant Bonus</p>
                     <p className="font-bold text-slate-900">$50 USDT</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 glass-card px-5 py-3.5 rounded-full border border-white/50 hover:border-white/70 transition-all hover:shadow-lg hover:scale-105 duration-300 animate-stagger-scale opacity-0 delay-500">
+                <div className="flex items-center gap-3 glass-card px-5 py-3.5 rounded-full border border-white/50 hover:border-white/70 transition-all hover:shadow-lg hover:scale-105 duration-300 animate-stagger-scale delay-500">
                   <span className="text-2xl">⚙️</span>
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Up To</p>
                     <p className="font-bold text-slate-900">20x Rewards</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 glass-card px-5 py-3.5 rounded-full border border-white/50 hover:border-white/70 transition-all hover:shadow-lg hover:scale-105 duration-300 animate-stagger-scale opacity-0 delay-600">
+                <div className="flex items-center gap-3 glass-card px-5 py-3.5 rounded-full border border-white/50 hover:border-white/70 transition-all hover:shadow-lg hover:scale-105 duration-300 animate-stagger-scale delay-600">
                   <span className="text-2xl">🛡️</span>
                   <div>
                     <p className="text-xs text-slate-500 font-medium">Platform</p>
@@ -223,18 +223,18 @@ export default function LandingPage() {
               <div className="flex flex-wrap gap-4 pt-6">
                 <button
                   onClick={() => router.push("/participant/register")}
-                  className="px-8 py-4 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white font-semibold shadow-lg hover:shadow-2xl hover:shadow-pink-400/50 transition-all duration-300 hover:scale-110 active:scale-95 animate-bounce-in-down opacity-0 delay-700"
+                  className="px-8 py-4 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white font-semibold shadow-lg hover:shadow-2xl hover:shadow-pink-400/50 transition-all duration-300 hover:scale-110 active:scale-95 animate-bounce-in-down delay-700"
                 >
                   Reveal My Reward →
                 </button>
-                <button className="px-8 py-4 rounded-full glass-card border border-white/50 text-slate-900 font-semibold flex items-center gap-2 transition-all hover:border-white/70 hover:shadow-lg hover:scale-105 active:scale-95 duration-300 animate-bounce-in-down opacity-0 delay-800">
+                <button className="px-8 py-4 rounded-full glass-card border border-white/50 text-slate-900 font-semibold flex items-center gap-2 transition-all hover:border-white/70 hover:shadow-lg hover:scale-105 active:scale-95 duration-300 animate-bounce-in-down delay-800">
                   <span className="text-red-600">▶</span>
                   Watch Video
                 </button>
               </div>
 
               {/* Social Proof */}
-              <div className="flex items-center gap-3 pt-4 animate-stagger-fade-in opacity-0 delay-900">
+              <div className="flex items-center gap-3 pt-4 animate-stagger-fade-in delay-900">
                 <div className="flex -space-x-2">
                   {[1, 2, 3, 4, 5].map((i) => (
                     <div key={i} className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold hover:scale-125 transition-transform" style={{ transitionDelay: `${i * 50}ms` }}>
@@ -277,7 +277,7 @@ export default function LandingPage() {
             {rewards.map((reward, idx) => (
               <div
                 key={idx}
-                className={`flex-shrink-0 w-40 sm:w-48 rounded-2xl p-6 text-center transition-all animate-stagger-scale opacity-0 ${
+                className={`flex-shrink-0 w-40 sm:w-48 rounded-2xl p-6 text-center transition-all animate-stagger-scale ${
                   reward.featured
                     ? "ring-2 ring-purple-500 scale-105 shadow-2xl bg-gradient-to-br from-amber-100 via-orange-100 to-red-100"
                     : `bg-gradient-to-br ${reward.color} shadow-lg hover:shadow-xl`
@@ -295,12 +295,12 @@ export default function LandingPage() {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
             {stats.map((stat, idx) => (
-              <div key={idx} className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-all border border-blue-100/50 animate-stagger-fade-in opacity-0 hover:scale-105 duration-300" style={{ animationDelay: `${idx * 150}ms` }}>
+              <div key={idx} className="glass-card rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all border border-white/50 hover:border-white/70 animate-stagger-fade-in hover:scale-105 duration-300" style={{ animationDelay: `${idx * 150}ms` }}>
                 <div className="flex items-start justify-between mb-4">
-                  <div className="text-4xl group-hover:scale-110 transition-transform duration-300">{stat.icon}</div>
+                  <div className="text-4xl hover:scale-110 transition-transform duration-300">{stat.icon}</div>
                   <div className="text-green-600 text-sm font-semibold bg-green-100/50 px-2 py-1 rounded-full">▲ {stat.growth}</div>
                 </div>
-                <h4 className="text-sm text-slate-600 mb-2">{stat.title}</h4>
+                <h4 className="text-sm text-slate-600 mb-2 font-medium">{stat.title}</h4>
                 <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
               </div>
             ))}
@@ -319,7 +319,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 md:gap-0 group">
             {journey.map((step, idx) => (
-              <div key={idx} className="relative animate-bounce-in-down opacity-0" style={{ animationDelay: `${idx * 150}ms` }}>
+              <div key={idx} className="relative animate-bounce-in-down" style={{ animationDelay: `${idx * 150}ms` }}>
                 {idx < journey.length - 1 && (
                   <div className="hidden md:block absolute top-12 left-[50%] w-full h-1 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400"></div>
                 )}
@@ -374,7 +374,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
             {benefits.map((benefit, idx) => (
-              <div key={idx} className="text-center glass-card rounded-2xl p-6 border border-white/50 hover:border-white/70 transition-all duration-300 hover:shadow-xl hover:scale-105 animate-stagger-scale opacity-0" style={{ animationDelay: `${idx * 120}ms` }}>
+              <div key={idx} className="text-center glass-card rounded-2xl p-6 border border-white/50 hover:border-white/70 transition-all duration-300 hover:shadow-xl hover:scale-105 animate-stagger-scale" style={{ animationDelay: `${idx * 120}ms` }}>
                 <div className="text-5xl mb-4 hover:scale-125 transition-transform duration-300">{benefit.icon}</div>
                 <h4 className="font-bold text-slate-900 mb-2">{benefit.title}</h4>
                 <p className="text-sm text-slate-600 leading-relaxed">{benefit.desc}</p>
@@ -385,18 +385,18 @@ export default function LandingPage() {
       </section>
 
       {/* Rewards Hero CTA */}
-      <section className="py-20 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 rounded-3xl mx-4 sm:mx-auto sm:max-w-6xl my-20 relative overflow-hidden animate-stagger-slide-right opacity-0 delay-300">
+      <section className="py-20 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 rounded-3xl mx-4 sm:mx-auto sm:max-w-6xl my-20 relative overflow-hidden animate-stagger-slide-right delay-300">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full -mr-48 -mt-48 animate-float-slow"></div>
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/10 rounded-full -ml-36 -mb-36 animate-float-slow" style={{ animationDelay: '-5s' }}></div>
         
         <div className="relative z-10 max-w-4xl mx-auto px-8 text-center">
-          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 animate-stagger-fade-in opacity-0 delay-400">
+          <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 animate-stagger-fade-in delay-400">
             Ready to Unlock Your First Reward?
           </h2>
-          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto animate-stagger-fade-in opacity-0 delay-500">
+          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto animate-stagger-fade-in delay-500">
             Join FlowChain today and unlock financial growth, community rewards, and endless opportunities.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-bounce-in-down opacity-0 delay-600">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-bounce-in-down delay-600">
             <Button
               size="lg"
               className="bg-white text-purple-600 hover:bg-gray-100 h-12 px-8 font-bold hover:scale-105 transition-transform duration-300"
@@ -405,7 +405,7 @@ export default function LandingPage() {
               Enter FlowChain Now <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
-          <div className="mt-8 flex items-center justify-center gap-3 animate-stagger-fade-in opacity-0 delay-700">
+          <div className="mt-8 flex items-center justify-center gap-3 animate-stagger-fade-in delay-700">
             <div className="flex -space-x-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="w-8 h-8 rounded-full bg-white/30 border border-white hover:scale-125 transition-transform" style={{ transitionDelay: `${i * 50}ms` }}></div>
@@ -425,7 +425,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, idx) => (
-              <div key={idx} className="glass-card rounded-2xl p-8 border border-white/50 hover:border-white/70 transition-all duration-300 hover:shadow-xl hover:scale-105 animate-stagger-scale opacity-0" style={{ animationDelay: `${idx * 150}ms` }}>
+              <div key={idx} className="glass-card rounded-2xl p-8 border border-white/50 hover:border-white/70 transition-all duration-300 hover:shadow-xl hover:scale-105 animate-stagger-scale" style={{ animationDelay: `${idx * 150}ms` }}>
                 <div className="flex items-center gap-1 mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
                     <span key={i} className="text-yellow-400 hover:scale-110 transition-transform" style={{ transitionDelay: `${i * 50}ms` }}>
