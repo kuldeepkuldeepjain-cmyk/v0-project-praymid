@@ -278,46 +278,46 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
             </div>
           </div>
 
-          {/* Stats Cards - Professional Dark Theme */}
+          {/* Stats Cards - Professional Theme */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Total Locked */}
-            <Card className="border border-slate-700 dark:border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-800 dark:to-slate-900 shadow-lg">
+            <Card className="border border-purple-300 dark:border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
               <CardContent className="p-4">
-                <p className="text-slate-400 dark:text-slate-400 text-sm font-semibold mb-1">Total Locked</p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white">${dashboardStats.totalLocked.toFixed(2)}</p>
+                <p className="text-purple-700 dark:text-purple-300 text-sm font-semibold mb-1">Total Locked</p>
+                <p className="text-3xl font-bold text-purple-900 dark:text-white">${dashboardStats.totalLocked.toFixed(2)}</p>
               </CardContent>
             </Card>
 
             {/* Total Earned */}
-            <Card className="border border-slate-700 dark:border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-800 dark:to-slate-900 shadow-lg">
+            <Card className="border border-emerald-300 dark:border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
               <CardContent className="p-4">
-                <p className="text-slate-400 dark:text-slate-400 text-sm font-semibold mb-1">Total Earned</p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white">${dashboardStats.totalEarned.toFixed(2)}</p>
+                <p className="text-emerald-700 dark:text-emerald-300 text-sm font-semibold mb-1">Total Earned</p>
+                <p className="text-3xl font-bold text-emerald-900 dark:text-white">${dashboardStats.totalEarned.toFixed(2)}</p>
               </CardContent>
             </Card>
 
             {/* Active Stakes */}
-            <Card className="border border-slate-700 dark:border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-800 dark:to-slate-900 shadow-lg">
+            <Card className="border border-orange-300 dark:border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
               <CardContent className="p-4">
-                <p className="text-slate-400 dark:text-slate-400 text-sm font-semibold mb-1">Active Stakes</p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white">{dashboardStats.activeStakes}</p>
+                <p className="text-orange-700 dark:text-orange-300 text-sm font-semibold mb-1">Active Stakes</p>
+                <p className="text-3xl font-bold text-orange-900 dark:text-white">{dashboardStats.activeStakes}</p>
               </CardContent>
             </Card>
 
             {/* Average APY */}
-            <Card className="border border-slate-700 dark:border-slate-700 bg-gradient-to-br from-slate-800 to-slate-900 dark:from-slate-800 dark:to-slate-900 shadow-lg">
+            <Card className="border border-cyan-300 dark:border-cyan-500 bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
               <CardContent className="p-4">
-                <p className="text-slate-400 dark:text-slate-400 text-sm font-semibold mb-1">Average APY</p>
-                <p className="text-3xl font-bold text-slate-900 dark:text-white">{dashboardStats.averageApy}%</p>
+                <p className="text-cyan-700 dark:text-cyan-300 text-sm font-semibold mb-1">Average APY</p>
+                <p className="text-3xl font-bold text-cyan-900 dark:text-white">{dashboardStats.averageApy}%</p>
               </CardContent>
             </Card>
 
             {/* Start Staking Button */}
-            <Card className="border border-blue-600 dark:border-blue-600 bg-gradient-to-br from-blue-700 to-blue-900 dark:from-blue-700 dark:to-blue-900 cursor-pointer hover:from-blue-600 hover:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-800 transition-all shadow-lg" onClick={() => setView("select")}>
+            <Card className="border border-purple-500 dark:border-purple-600 bg-gradient-to-br from-purple-600 to-purple-700 dark:from-purple-700 dark:to-purple-800 cursor-pointer hover:from-purple-700 hover:to-purple-800 dark:hover:from-purple-600 dark:hover:to-purple-700 transition-all shadow-lg hover:shadow-xl" onClick={() => setView("select")}>
               <CardContent className="p-4 h-full flex items-center justify-center">
                 <button className="flex flex-col items-center gap-2 w-full">
-                  <Zap className="h-6 w-6 text-blue-200 dark:text-blue-300" />
-                  <span className="text-sm font-bold text-blue-100 dark:text-blue-200">Start Staking</span>
+                  <Zap className="h-6 w-6 text-white" />
+                  <span className="text-sm font-bold text-white">Start Staking</span>
                 </button>
               </CardContent>
             </Card>
