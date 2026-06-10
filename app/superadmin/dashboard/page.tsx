@@ -22,6 +22,8 @@ import {
 } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
+import { StakingAdminPanel } from "@/components/admin/staking-admin-panel"
+import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 
 interface ApprovedWallet {
   id: string
@@ -357,6 +359,28 @@ export default function SuperAdminDashboard() {
                 })
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Participants Management Panel */}
+        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Participants Management</CardTitle>
+            <CardDescription>View and manage all participant accounts and balances</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ParticipantsAdminPanel />
+          </CardContent>
+        </Card>
+
+        {/* Staking Management Panel */}
+        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Staking Management</CardTitle>
+            <CardDescription>View and manage all staking records, rewards, and claims</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StakingAdminPanel />
           </CardContent>
         </Card>
 
