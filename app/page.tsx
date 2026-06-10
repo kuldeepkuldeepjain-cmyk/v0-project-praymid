@@ -205,35 +205,35 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/30 overflow-hidden pt-10 sm:pt-16 lg:pt-24 pb-8 sm:pb-12">
+      <section className="relative bg-gradient-to-br from-purple-50 via-pink-50/50 to-purple-100/30 overflow-hidden pt-10 sm:pt-16 lg:pt-24 pb-8 sm:pb-12">
         {/* Ambient background elements */}
-        <div className="absolute top-20 right-[10%] w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-br from-orange-200/20 via-pink-200/20 to-transparent rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute top-20 right-[10%] w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-br from-purple-200/20 via-pink-200/20 to-transparent rounded-full blur-3xl animate-float-slow"></div>
         <div className="absolute bottom-20 left-[5%] w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-tr from-blue-200/20 via-purple-200/20 to-transparent rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '-5s' }}></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
             <div className="space-y-5 sm:space-y-8 animate-fadeIn">
-              {/* Trust Badge */}
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200/50 rounded-full px-4 py-2 animate-bounce-in-down delay-100">
-                <span className="text-lg">⭐</span>
-                <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">Trusted by 50,000+ participants</span>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 text-purple-600 font-bold text-sm animate-bounce-in-down delay-100">
+                <span className="text-lg">✨</span>
+                <span>Trade • Earn • Win Instantly</span>
               </div>
 
               {/* Main Heading */}
               <div className="space-y-3 sm:space-y-6">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight animate-bounce-in-down delay-200">
-                  <span className="text-slate-900">Your Next</span>
+                  <span className="text-slate-900">Trade Smarter,</span>
                   <br />
                   <span className="relative">
-                    <span className="bg-gradient-to-r from-orange-600 via-pink-600 to-red-600 bg-clip-text text-transparent">Reward</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-orange-600 via-pink-600 to-red-600 opacity-20 blur-2xl -z-10"></div>
+                    <span className="bg-gradient-to-r from-orange-500 via-pink-500 to-red-500 bg-clip-text text-transparent">Earn More,</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-500 to-red-500 opacity-20 blur-2xl -z-10"></div>
                   </span>
                   <br />
-                  <span className="text-slate-900">Is Waiting.</span>
+                  <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">Win Bigger!</span>
                 </h1>
                 <p className="text-base sm:text-lg lg:text-xl text-slate-600 leading-relaxed max-w-lg animate-stagger-fade-in delay-300">
-                  Join a global community, earn instant bonuses, spin for bigger rewards, and grow together with zero platform fees.
+                  FlowChain is your all-in-one platform to trade binary options, earn rewards, unlock mystery prizes, and grow your crypto effortlessly.
                 </p>
               </div>
 
@@ -242,22 +242,22 @@ export default function LandingPage() {
                 <div className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-white/60 border border-white/70 shadow-lg backdrop-blur-sm">
                   <span className="text-base sm:text-xl">🎁</span>
                   <div>
-                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Instant Bonus</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Instant Reward</p>
                     <p className="font-bold text-slate-900 text-sm sm:text-base">$50 USDT</p>
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-white/60 border border-white/70 shadow-lg backdrop-blur-sm">
-                  <span className="text-base sm:text-xl">⚙️</span>
+                  <span className="text-base sm:text-xl">⚡</span>
                   <div>
-                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Up To</p>
-                    <p className="font-bold text-slate-900 text-sm sm:text-base">20x Rewards</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Zero Platform</p>
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">0% Fees</p>
                   </div>
                 </div>
                 <div className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-white/60 border border-white/70 shadow-lg backdrop-blur-sm">
                   <span className="text-base sm:text-xl">🛡️</span>
                   <div>
-                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Platform</p>
-                    <p className="font-bold text-slate-900 text-sm sm:text-base">0% Fees</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Secure & Transparent</p>
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">100%</p>
                   </div>
                 </div>
               </div>
@@ -269,11 +269,11 @@ export default function LandingPage() {
                   className="group relative w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white font-bold shadow-lg hover:shadow-2xl hover:shadow-pink-400/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
-                  <span className="relative flex items-center justify-center gap-2">Reveal My Reward <ArrowRight className="w-4 h-4" /></span>
+                  <span className="relative flex items-center justify-center gap-2">Start Trading Now <ArrowRight className="w-4 h-4" /></span>
                 </button>
                 <button className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white/60 hover:bg-white/80 border border-white/70 text-slate-900 font-bold flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg active:scale-95 backdrop-blur-sm">
-                  <span className="text-red-600">▶</span>
-                  Watch Video
+                  <span className="text-orange-600">▶</span>
+                  Explore Features
                 </button>
               </div>
 
@@ -296,10 +296,94 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Content - Animated Sphere - hidden on small screens */}
+            {/* Right Content - Mystery Chest & Spin Wheel */}
             <div className="relative hidden sm:flex h-[300px] sm:h-[400px] lg:h-[600px] items-center justify-center animate-fadeIn delay-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-orange-100/30 to-pink-100/30 rounded-3xl blur-2xl"></div>
-              <AnimatedSphere />
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 to-pink-100/30 rounded-3xl blur-2xl"></div>
+              
+              {/* Spin Wheel */}
+              <div className="absolute right-12 top-10 sm:right-20 sm:top-20 animate-spin-slow">
+                <svg width="280" height="280" viewBox="0 0 280 280" className="filter drop-shadow-2xl">
+                  {/* Outer circle ring */}
+                  <circle cx="140" cy="140" r="135" fill="none" stroke="url(#wheelGradient)" strokeWidth="3" opacity="0.8"/>
+                  {/* Inner circles */}
+                  <circle cx="140" cy="140" r="120" fill="url(#wheelBg)"/>
+                  
+                  <defs>
+                    <linearGradient id="wheelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#9b59b6"/>
+                      <stop offset="50%" stopColor="#e74c3c"/>
+                      <stop offset="100%" stopColor="#3498db"/>
+                    </linearGradient>
+                    <radialGradient id="wheelBg">
+                      <stop offset="0%" stopColor="#f5f3ff"/>
+                      <stop offset="100%" stopColor="#e8d5f2"/>
+                    </radialGradient>
+                  </defs>
+                  
+                  {/* Segments with text */}
+                  <g textAnchor="middle" dominantBaseline="middle" fontSize="20" fontWeight="bold">
+                    {/* 3.0x - top */}
+                    <text x="140" y="35" fill="#f97316">3.0x</text>
+                    {/* 2.5x - top right */}
+                    <text x="210" y="80" fill="#ec4899">2.5x</text>
+                    {/* 5.0x - right */}
+                    <text x="235" y="140" fill="#8b5cf6">5.0x</text>
+                    {/* 0.5x - bottom right */}
+                    <text x="210" y="200" fill="#06b6d4">0.5x</text>
+                    {/* 2.0x - bottom */}
+                    <text x="140" y="240" fill="#22c55e">2.0x</text>
+                    {/* 1.5x - bottom left */}
+                    <text x="70" y="200" fill="#f59e0b">1.5x</text>
+                    {/* 4.0x - left */}
+                    <text x="45" y="140" fill="#ec4899">4.0x</text>
+                    {/* 10.0x - top left */}
+                    <text x="70" y="80" fill="#22c55e">10.0x</text>
+                  </g>
+                </svg>
+                
+                {/* Center button */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative w-24 h-24 sm:w-32 sm:h-32">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-black rounded-full flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-300">
+                      <div className="text-center">
+                        <p className="text-white font-bold text-xs sm:text-sm">SPIN</p>
+                        <p className="text-white font-bold text-lg sm:text-2xl">WIN BIG</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pointer triangle at top */}
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
+                  <div className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-pink-500"></div>
+                </div>
+              </div>
+
+              {/* Mystery Chest */}
+              <div className="absolute left-0 bottom-10 sm:bottom-20 w-32 sm:w-48 h-24 sm:h-32 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-lg shadow-2xl overflow-hidden animate-bounce-slow">
+                {/* Chest shine effect */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent"></div>
+                {/* Chest interior */}
+                <div className="absolute inset-2 bg-gradient-to-b from-purple-500 to-purple-700 rounded">
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                    <div className="text-2xl sm:text-4xl">💰</div>
+                    <p className="text-white font-bold text-xs sm:text-sm">Mystery Chest</p>
+                    <p className="text-orange-300 font-bold text-sm sm:text-xl">Win upto</p>
+                    <p className="text-orange-300 font-bold text-lg sm:text-2xl">$1000</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Crypto coin decorations */}
+              <div className="absolute top-20 right-8 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg text-2xl sm:text-3xl">
+                ₿
+              </div>
+              <div className="absolute bottom-32 right-12 w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg text-xl sm:text-2xl">
+                ₿
+              </div>
+              <div className="absolute bottom-40 left-8 w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg text-xl sm:text-2xl">
+                ◆
+              </div>
             </div>
           </div>
         </div>
