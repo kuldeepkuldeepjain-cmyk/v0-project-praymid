@@ -297,92 +297,56 @@ export default function LandingPage() {
             </div>
 
             {/* Right Content - Mystery Chest & Spin Wheel */}
-            <div className="relative hidden sm:flex h-[300px] sm:h-[400px] lg:h-[600px] items-center justify-center animate-fadeIn delay-200">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-100/30 to-pink-100/30 rounded-3xl blur-2xl"></div>
-              
-              {/* Spin Wheel */}
-              <div className="absolute right-12 top-10 sm:right-20 sm:top-20 animate-spin-slow">
-                <svg width="280" height="280" viewBox="0 0 280 280" className="filter drop-shadow-2xl">
-                  {/* Outer circle ring */}
-                  <circle cx="140" cy="140" r="135" fill="none" stroke="url(#wheelGradient)" strokeWidth="3" opacity="0.8"/>
-                  {/* Inner circles */}
-                  <circle cx="140" cy="140" r="120" fill="url(#wheelBg)"/>
-                  
-                  <defs>
-                    <linearGradient id="wheelGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#9b59b6"/>
-                      <stop offset="50%" stopColor="#e74c3c"/>
-                      <stop offset="100%" stopColor="#3498db"/>
-                    </linearGradient>
-                    <radialGradient id="wheelBg">
-                      <stop offset="0%" stopColor="#f5f3ff"/>
-                      <stop offset="100%" stopColor="#e8d5f2"/>
-                    </radialGradient>
-                  </defs>
-                  
-                  {/* Segments with text */}
-                  <g textAnchor="middle" dominantBaseline="middle" fontSize="20" fontWeight="bold">
-                    {/* 3.0x - top */}
-                    <text x="140" y="35" fill="#f97316">3.0x</text>
-                    {/* 2.5x - top right */}
-                    <text x="210" y="80" fill="#ec4899">2.5x</text>
-                    {/* 5.0x - right */}
-                    <text x="235" y="140" fill="#8b5cf6">5.0x</text>
-                    {/* 0.5x - bottom right */}
-                    <text x="210" y="200" fill="#06b6d4">0.5x</text>
-                    {/* 2.0x - bottom */}
-                    <text x="140" y="240" fill="#22c55e">2.0x</text>
-                    {/* 1.5x - bottom left */}
-                    <text x="70" y="200" fill="#f59e0b">1.5x</text>
-                    {/* 4.0x - left */}
-                    <text x="45" y="140" fill="#ec4899">4.0x</text>
-                    {/* 10.0x - top left */}
-                    <text x="70" y="80" fill="#22c55e">10.0x</text>
-                  </g>
-                </svg>
-                
-                {/* Center button */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="relative w-24 h-24 sm:w-32 sm:h-32">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600 to-black rounded-full flex items-center justify-center cursor-pointer hover:shadow-2xl transition-all duration-300">
-                      <div className="text-center">
-                        <p className="text-white font-bold text-xs sm:text-sm">SPIN</p>
-                        <p className="text-white font-bold text-lg sm:text-2xl">WIN BIG</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+            <div className="relative hidden lg:flex h-[540px] items-end justify-center animate-fadeIn delay-200">
 
-                {/* Pointer triangle at top */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-2">
-                  <div className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-pink-500"></div>
+              {/* Floating Mystery Chest card (top-center) */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3 bg-white/90 backdrop-blur-sm border border-purple-100 rounded-2xl px-5 py-3 shadow-xl">
+                <img
+                  src="/images/mystery-chest-hero.png"
+                  alt="Mystery Chest"
+                  className="w-12 h-12 object-contain"
+                />
+                <div>
+                  <p className="text-slate-700 font-semibold text-sm">Mystery Chest</p>
+                  <p className="text-slate-500 text-xs">Win upto</p>
+                  <p className="text-orange-500 font-bold text-lg leading-tight">$1000</p>
                 </div>
               </div>
 
-              {/* Mystery Chest */}
-              <div className="absolute left-0 bottom-10 sm:bottom-20 w-32 sm:w-48 h-24 sm:h-32 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-lg shadow-2xl overflow-hidden animate-bounce-slow">
-                {/* Chest shine effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent"></div>
-                {/* Chest interior */}
-                <div className="absolute inset-2 bg-gradient-to-b from-purple-500 to-purple-700 rounded">
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                    <div className="text-2xl sm:text-4xl">💰</div>
-                    <p className="text-white font-bold text-xs sm:text-sm">Mystery Chest</p>
-                    <p className="text-orange-300 font-bold text-sm sm:text-xl">Win upto</p>
-                    <p className="text-orange-300 font-bold text-lg sm:text-2xl">$1000</p>
-                  </div>
-                </div>
+              {/* Mystery Chest image - left/center bottom */}
+              <div className="absolute left-0 bottom-0 z-10 w-[220px] animate-bounce-slow">
+                <img
+                  src="/images/mystery-chest-hero.png"
+                  alt="Open mystery chest with coins and gems"
+                  className="w-full h-auto object-contain drop-shadow-2xl"
+                />
               </div>
 
-              {/* Crypto coin decorations */}
-              <div className="absolute top-20 right-8 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-full flex items-center justify-center shadow-lg text-2xl sm:text-3xl">
-                ₿
+              {/* Spin Wheel image - right, vertically centered */}
+              <div className="absolute right-0 bottom-8 z-10 w-[320px]">
+                {/* Glowing platform under wheel */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-10 bg-gradient-to-r from-purple-400/60 via-pink-400/60 to-purple-400/60 rounded-full blur-xl"></div>
+                <img
+                  src="/images/spin-wheel-hero.png"
+                  alt="Spin wheel with reward multipliers"
+                  className="relative w-full h-auto object-contain drop-shadow-2xl"
+                  style={{ filter: "drop-shadow(0 0 32px rgba(168,85,247,0.45))" }}
+                />
               </div>
-              <div className="absolute bottom-32 right-12 w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg text-xl sm:text-2xl">
-                ₿
+
+              {/* Crypto coin — USDT green (top right) */}
+              <div className="absolute top-16 right-4 z-20 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 border-4 border-white shadow-xl flex items-center justify-center animate-bounce-slow" style={{ animationDelay: "0.3s" }}>
+                <span className="text-white font-black text-lg">₮</span>
               </div>
-              <div className="absolute bottom-40 left-8 w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg text-xl sm:text-2xl">
-                ◆
+
+              {/* Crypto coin — BTC orange (mid right) */}
+              <div className="absolute top-1/2 -translate-y-1/2 right-0 z-20 w-14 h-14 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 border-4 border-white shadow-xl flex items-center justify-center animate-bounce-slow" style={{ animationDelay: "0.7s" }}>
+                <span className="text-white font-black text-xl">₿</span>
+              </div>
+
+              {/* Crypto coin — ETH silver (bottom right) */}
+              <div className="absolute bottom-20 right-2 z-20 w-12 h-12 rounded-full bg-gradient-to-br from-slate-400 to-slate-700 border-4 border-white shadow-xl flex items-center justify-center animate-bounce-slow" style={{ animationDelay: "1.1s" }}>
+                <span className="text-white font-black text-base">Ξ</span>
               </div>
             </div>
           </div>
