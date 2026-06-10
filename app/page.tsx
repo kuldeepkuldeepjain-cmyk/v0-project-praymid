@@ -131,13 +131,13 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-b from-white via-blue-50 to-purple-50 overflow-x-hidden">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 backdrop-blur-lg bg-white/80 border-b border-blue-100/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FlowChainLogo variant="icon" size="sm" />
-            <span className="font-bold text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               FlowChain
             </span>
           </div>
@@ -170,52 +170,59 @@ export default function LandingPage() {
             </Button>
           </div>
 
-          <button
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {isMenuOpen && (
-          <div className="md:hidden absolute top-16 left-0 right-0 bg-white border-b border-blue-100 p-4 space-y-3">
+          {/* Mobile nav buttons */}
+          <div className="flex md:hidden items-center gap-2">
             <Button
+              size="sm"
               variant="outline"
-              className="w-full"
               onClick={() => router.push("/participant/login")}
+              className="border-blue-200 hover:bg-blue-50 h-8 px-3 text-xs"
             >
               Login
             </Button>
             <Button
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600"
+              size="sm"
               onClick={() => router.push("/participant/register")}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 h-8 px-3 text-xs"
             >
-              Get Started
+              Join
             </Button>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
+        </div>
+
+        {isMenuOpen && (
+          <div className="md:hidden absolute top-14 left-0 right-0 bg-white border-b border-blue-100 p-4 space-y-2">
+            <a href="#rewards" className="block text-slate-600 font-medium py-2 border-b border-slate-100" onClick={() => setIsMenuOpen(false)}>Rewards</a>
+            <a href="#benefits" className="block text-slate-600 font-medium py-2 border-b border-slate-100" onClick={() => setIsMenuOpen(false)}>Benefits</a>
+            <a href="#trading" className="block text-slate-600 font-medium py-2" onClick={() => setIsMenuOpen(false)}>Trading</a>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/30 overflow-hidden pt-24 pb-12">
+      <section className="relative bg-gradient-to-br from-slate-50 via-blue-50/50 to-purple-50/30 overflow-hidden pt-10 sm:pt-16 lg:pt-24 pb-8 sm:pb-12">
         {/* Ambient background elements */}
-        <div className="absolute top-20 right-[10%] w-72 h-72 bg-gradient-to-br from-orange-200/20 via-pink-200/20 to-transparent rounded-full blur-3xl animate-float-slow"></div>
-        <div className="absolute bottom-20 left-[5%] w-96 h-96 bg-gradient-to-tr from-blue-200/20 via-purple-200/20 to-transparent rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '-5s' }}></div>
+        <div className="absolute top-20 right-[10%] w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-br from-orange-200/20 via-pink-200/20 to-transparent rounded-full blur-3xl animate-float-slow"></div>
+        <div className="absolute bottom-20 left-[5%] w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-tr from-blue-200/20 via-purple-200/20 to-transparent rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '-5s' }}></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center min-h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-8 animate-fadeIn">
+            <div className="space-y-5 sm:space-y-8 animate-fadeIn">
               {/* Trust Badge */}
-              <div className="inline-flex items-center gap-3 bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200/50 rounded-full px-6 py-3 animate-bounce-in-down delay-100">
-                <span className="text-2xl">⭐</span>
-                <span className="text-sm font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">Trusted by 50,000+ participants</span>
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-50 to-pink-50 border border-orange-200/50 rounded-full px-4 py-2 animate-bounce-in-down delay-100">
+                <span className="text-lg">⭐</span>
+                <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">Trusted by 50,000+ participants</span>
               </div>
 
               {/* Main Heading */}
-              <div className="space-y-6">
-                <h1 className="text-6xl sm:text-7xl font-bold leading-tight animate-bounce-in-down delay-200">
+              <div className="space-y-3 sm:space-y-6">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight animate-bounce-in-down delay-200">
                   <span className="text-slate-900">Your Next</span>
                   <br />
                   <span className="relative">
@@ -225,63 +232,63 @@ export default function LandingPage() {
                   <br />
                   <span className="text-slate-900">Is Waiting.</span>
                 </h1>
-                <p className="text-xl text-slate-600 leading-relaxed max-w-lg animate-stagger-fade-in delay-300">
+                <p className="text-base sm:text-lg lg:text-xl text-slate-600 leading-relaxed max-w-lg animate-stagger-fade-in delay-300">
                   Join a global community, earn instant bonuses, spin for bigger rewards, and grow together with zero platform fees.
                 </p>
               </div>
 
               {/* Key Features Badges */}
-              <div className="flex flex-wrap gap-3 pt-4 animate-stagger-fade-in delay-400">
-                <div className="group relative inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/60 hover:bg-white/80 border border-white/70 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
-                  <span className="text-xl">🎁</span>
+              <div className="flex flex-wrap gap-2 sm:gap-3 animate-stagger-fade-in delay-400">
+                <div className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-white/60 border border-white/70 shadow-lg backdrop-blur-sm">
+                  <span className="text-base sm:text-xl">🎁</span>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">Instant Bonus</p>
-                    <p className="font-bold text-slate-900">$50 USDT</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Instant Bonus</p>
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">$50 USDT</p>
                   </div>
                 </div>
-                <div className="group relative inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/60 hover:bg-white/80 border border-white/70 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
-                  <span className="text-xl">⚙️</span>
+                <div className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-white/60 border border-white/70 shadow-lg backdrop-blur-sm">
+                  <span className="text-base sm:text-xl">⚙️</span>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">Up To</p>
-                    <p className="font-bold text-slate-900">20x Rewards</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Up To</p>
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">20x Rewards</p>
                   </div>
                 </div>
-                <div className="group relative inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/60 hover:bg-white/80 border border-white/70 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 backdrop-blur-sm">
-                  <span className="text-xl">🛡️</span>
+                <div className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-3 rounded-full bg-white/60 border border-white/70 shadow-lg backdrop-blur-sm">
+                  <span className="text-base sm:text-xl">🛡️</span>
                   <div>
-                    <p className="text-xs text-slate-500 font-medium">Platform</p>
-                    <p className="font-bold text-slate-900">0% Fees</p>
+                    <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Platform</p>
+                    <p className="font-bold text-slate-900 text-sm sm:text-base">0% Fees</p>
                   </div>
                 </div>
               </div>
 
               {/* CTA Buttons */}
-              <div className="flex flex-wrap gap-4 pt-6 animate-bounce-in-down delay-500">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 animate-bounce-in-down delay-500">
                 <button
                   onClick={() => router.push("/participant/register")}
-                  className="group relative px-8 py-4 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white font-bold shadow-lg hover:shadow-2xl hover:shadow-pink-400/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
+                  className="group relative w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white font-bold shadow-lg hover:shadow-2xl hover:shadow-pink-400/30 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
-                  <span className="relative flex items-center gap-2">Reveal My Reward <ArrowRight className="w-4 h-4" /></span>
+                  <span className="relative flex items-center justify-center gap-2">Reveal My Reward <ArrowRight className="w-4 h-4" /></span>
                 </button>
-                <button className="px-8 py-4 rounded-full bg-white/60 hover:bg-white/80 border border-white/70 text-slate-900 font-bold flex items-center gap-2 transition-all duration-300 hover:shadow-lg hover:scale-105 active:scale-95 backdrop-blur-sm">
+                <button className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white/60 hover:bg-white/80 border border-white/70 text-slate-900 font-bold flex items-center justify-center gap-2 transition-all duration-300 hover:shadow-lg active:scale-95 backdrop-blur-sm">
                   <span className="text-red-600">▶</span>
                   Watch Video
                 </button>
               </div>
 
               {/* Social Proof */}
-              <div className="flex items-center gap-4 pt-4 animate-stagger-fade-in delay-600">
-                <div className="flex -space-x-3">
+              <div className="flex items-center gap-3 sm:gap-4 animate-stagger-fade-in delay-600">
+                <div className="flex -space-x-2 sm:-space-x-3">
                   {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold hover:scale-125 hover:z-10 transition-transform shadow-md hover:shadow-lg">
+                    <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 border-2 border-white flex items-center justify-center text-white text-xs font-bold shadow-md">
                       {i}
                     </div>
                   ))}
                 </div>
                 <div>
-                  <p className="text-slate-900 font-semibold">2,847 people joined today</p>
-                  <div className="flex gap-2 mt-1">
+                  <p className="text-slate-900 font-semibold text-sm sm:text-base">2,847 people joined today</p>
+                  <div className="flex items-center gap-2 mt-1">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
                     <span className="text-xs text-slate-500">Live and growing</span>
                   </div>
@@ -289,8 +296,8 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right Content - Animated Sphere */}
-            <div className="relative h-full min-h-[400px] lg:min-h-[600px] flex items-center justify-center animate-fadeIn delay-200">
+            {/* Right Content - Animated Sphere - hidden on small screens */}
+            <div className="relative hidden sm:flex h-[300px] sm:h-[400px] lg:h-[600px] items-center justify-center animate-fadeIn delay-200">
               <div className="absolute inset-0 bg-gradient-to-br from-orange-100/30 to-pink-100/30 rounded-3xl blur-2xl"></div>
               <AnimatedSphere />
             </div>
@@ -299,31 +306,31 @@ export default function LandingPage() {
       </section>
 
       {/* Rewards Showcase Section */}
-      <section id="rewards" className="py-32 bg-gradient-to-b from-transparent via-blue-50/50 to-transparent">
+      <section id="rewards" className="py-12 sm:py-20 lg:py-32 bg-gradient-to-b from-transparent via-blue-50/50 to-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20 animate-fadeIn">
-            <h2 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6">Choose Your Reward</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">Flexible options to earn what works best for you</p>
+          <div className="text-center mb-8 sm:mb-12 lg:mb-20 animate-fadeIn">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-3 sm:mb-6">Choose Your Reward</h2>
+            <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto">Flexible options to earn what works best for you</p>
           </div>
 
           {/* Reward Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
             {rewards.map((reward, idx) => (
               <div
                 key={idx}
-                className="group relative animate-stagger-scale overflow-hidden rounded-3xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:-translate-y-2"
+                className="group relative animate-stagger-scale overflow-hidden rounded-2xl sm:rounded-3xl transition-all duration-300 hover:shadow-2xl hover:scale-105 hover:-translate-y-2"
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
                 <div
-                  className={`relative bg-gradient-to-br ${reward.color} shadow-lg p-8 h-full flex flex-col items-center justify-center text-center min-h-[280px]`}
+                  className={`relative bg-gradient-to-br ${reward.color} shadow-lg p-4 sm:p-6 lg:p-8 h-full flex flex-col items-center justify-center text-center min-h-[180px] sm:min-h-[220px] lg:min-h-[280px]`}
                 >
                   {/* Card shine effect */}
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl pointer-events-none"></div>
 
-                  <div className="relative z-10 flex flex-col items-center justify-center h-full gap-4">
+                  <div className="relative z-10 flex flex-col items-center justify-center h-full gap-2 sm:gap-4">
                     {/* Icon or Image */}
                     {reward.image ? (
-                      <div className="group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center h-32 w-full">
+                      <div className="group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center h-16 sm:h-24 lg:h-32 w-full">
                         <img
                           src={reward.image}
                           alt={reward.title}
@@ -331,23 +338,23 @@ export default function LandingPage() {
                         />
                       </div>
                     ) : (
-                      <div className="text-6xl sm:text-7xl group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300">
+                      <div className="text-4xl sm:text-5xl lg:text-7xl group-hover:scale-110 group-hover:-translate-y-1 transition-all duration-300">
                         {reward.icon}
                       </div>
                     )}
 
                     {/* Title */}
-                    <h3 className={`text-2xl sm:text-3xl font-bold ${reward.titleColor}`}>
+                    <h3 className={`text-base sm:text-xl lg:text-3xl font-bold ${reward.titleColor}`}>
                       {reward.title}
                     </h3>
 
                     {/* Label */}
-                    <p className="text-xs sm:text-sm font-bold text-slate-500 tracking-wider">
+                    <p className="text-[10px] sm:text-xs font-bold text-slate-500 tracking-wider text-center">
                       {reward.label}
                     </p>
 
-                    {/* Description */}
-                    <p className="text-sm text-slate-600 leading-relaxed max-w-xs">
+                    {/* Description - hidden on mobile */}
+                    <p className="hidden sm:block text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs text-center">
                       {reward.description}
                     </p>
                   </div>
@@ -359,11 +366,11 @@ export default function LandingPage() {
       </section>
 
       {/* Journey Section */}
-      <section className="py-32 px-4">
+      <section className="py-12 sm:py-20 lg:py-32 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-20 animate-fadeIn">
-            <h2 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6">Your FlowChain Journey</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">5 simple steps to unlock unlimited rewards</p>
+          <div className="text-center mb-8 sm:mb-12 lg:mb-20 animate-fadeIn">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-3 sm:mb-6">Your FlowChain Journey</h2>
+            <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto">5 simple steps to unlock unlimited rewards</p>
           </div>
 
           {/* Timeline */}
@@ -373,20 +380,20 @@ export default function LandingPage() {
               <div className="h-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 w-0 animate-[slide-right_3s_ease-out_forwards]"></div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 lg:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6 lg:gap-4">
               {journey.map((step, idx) => (
-                <div key={idx} className="relative animate-bounce-in-down" style={{ animationDelay: `${idx * 150}ms` }}>
+                <div key={idx} className="relative animate-bounce-in-down flex sm:block items-center sm:items-start gap-4 sm:gap-0" style={{ animationDelay: `${idx * 150}ms` }}>
                   {/* Step Circle */}
-                  <div className="flex justify-center mb-8">
-                    <div className="relative z-10 w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center font-bold text-2xl shadow-lg hover:shadow-2xl hover:scale-110 transition-all duration-300 group cursor-pointer">
-                      <span className="text-3xl font-bold">{step.num}</span>
+                  <div className="flex justify-center sm:mb-8 flex-shrink-0">
+                    <div className="relative z-10 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center font-bold text-xl sm:text-2xl shadow-lg hover:shadow-2xl hover:scale-110 transition-all duration-300 group cursor-pointer">
+                      <span className="text-xl sm:text-2xl lg:text-3xl font-bold">{step.num}</span>
                       <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 opacity-0 group-hover:opacity-100 blur transition-opacity duration-300"></div>
                     </div>
                   </div>
 
                   {/* Step Content */}
-                  <div className="text-center">
-                    <h4 className="font-bold text-lg text-slate-900 mb-2">{step.title}</h4>
+                  <div className="text-left sm:text-center flex-1">
+                    <h4 className="font-bold text-base sm:text-lg text-slate-900 mb-1 sm:mb-2">{step.title}</h4>
                     <p className="text-sm text-slate-600 leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
@@ -397,13 +404,13 @@ export default function LandingPage() {
       </section>
 
       {/* Premium Stats Section */}
-      <section className="py-32 px-4">
+      <section className="py-12 sm:py-20 lg:py-32 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
             {stats.map((stat, idx) => (
               <div key={idx} className="group relative animate-stagger-scale overflow-hidden rounded-2xl" style={{ animationDelay: `${idx * 150}ms` }}>
                 {/* Premium card with gradient background */}
-                <div className="relative p-8 h-full bg-gradient-to-br from-white/60 to-white/40 hover:from-white/80 hover:to-white/60 border border-white/70 hover:border-white/90 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
+                <div className="relative p-5 sm:p-6 lg:p-8 h-full bg-gradient-to-br from-white/60 to-white/40 hover:from-white/80 hover:to-white/60 border border-white/70 hover:border-white/90 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
                   {/* Animated background accent */}
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
 
@@ -432,29 +439,23 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Mystery Crate & Benefits Section */}
-      <section id="benefits" className="py-32 bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50">
+      {/* Benefits Section */}
+      <section id="benefits" className="py-12 sm:py-20 lg:py-32 bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20 animate-fadeIn">
-            <h2 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6">Why FlowChain?</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">Everything you need to maximize your rewards</p>
+          <div className="text-center mb-8 sm:mb-12 lg:mb-20 animate-fadeIn">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-3 sm:mb-6">Why FlowChain?</h2>
+            <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto">Everything you need to maximize your rewards</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5 lg:gap-8">
             {benefits.map((benefit, idx) => (
               <div key={idx} className="group relative animate-stagger-scale overflow-hidden rounded-2xl" style={{ animationDelay: `${idx * 120}ms` }}>
-                <div className="relative p-8 h-full text-center bg-white/40 hover:bg-white/60 border border-white/60 hover:border-white/80 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
-                  
-                  <div className="relative">
-                    <div className="text-5xl sm:text-6xl font-bold bg-gradient-to-br from-orange-500 to-pink-600 bg-clip-text text-transparent mb-4 group-hover:scale-110 transition-transform duration-300">
-                      {benefit.icon}
-                    </div>
-                    <h4 className="font-bold text-lg text-slate-900 mb-3">{benefit.title}</h4>
-                    <p className="text-sm text-slate-600 leading-relaxed">{benefit.desc}</p>
+                <div className="relative p-4 sm:p-6 lg:p-8 h-full text-center bg-white/40 hover:bg-white/60 border border-white/60 hover:border-white/80 shadow-sm hover:shadow-lg transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
+                  <div className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-br from-orange-500 to-pink-600 bg-clip-text text-transparent mb-2 sm:mb-4 group-hover:scale-110 transition-transform duration-300">
+                    {benefit.icon}
                   </div>
-
-                  {/* Hover accent */}
+                  <h4 className="font-bold text-sm sm:text-base lg:text-lg text-slate-900 mb-1 sm:mb-3">{benefit.title}</h4>
+                  <p className="hidden sm:block text-xs sm:text-sm text-slate-600 leading-relaxed">{benefit.desc}</p>
                   <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl pointer-events-none"></div>
                 </div>
               </div>
@@ -463,94 +464,72 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Rewards Hero CTA */}
       {/* Premium CTA Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto relative overflow-hidden rounded-3xl animate-stagger-slide-right delay-300">
-          {/* Premium gradient background */}
+      <section className="py-10 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto relative overflow-hidden rounded-2xl sm:rounded-3xl animate-stagger-slide-right delay-300">
           <div className="absolute inset-0 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600"></div>
+          <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-white/10 rounded-full blur-3xl -mr-32 sm:-mr-48 -mt-32 sm:-mt-48 animate-float-slow"></div>
+          <div className="absolute bottom-0 left-0 w-48 sm:w-72 h-48 sm:h-72 bg-white/10 rounded-full blur-3xl -ml-24 sm:-ml-36 -mb-24 sm:-mb-36 animate-float-slow" style={{ animationDelay: '-5s' }}></div>
 
-          {/* Floating ambient elements */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl -mr-48 -mt-48 animate-float-slow"></div>
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-white/10 rounded-full blur-3xl -ml-36 -mb-36 animate-float-slow" style={{ animationDelay: '-5s' }}></div>
-
-          {/* Content */}
-          <div className="relative z-10 px-8 sm:px-12 py-20 text-center">
-            <h2 className="text-4xl sm:text-5xl font-bold text-white mb-6 animate-stagger-fade-in delay-400">
+          <div className="relative z-10 px-6 sm:px-10 lg:px-12 py-10 sm:py-16 lg:py-20 text-center">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-3 sm:mb-6">
               Ready to Unlock Your First Reward?
             </h2>
-            <p className="text-lg sm:text-xl text-white/90 mb-12 max-w-2xl mx-auto animate-stagger-fade-in delay-500">
+            <p className="text-sm sm:text-base lg:text-xl text-white/90 mb-6 sm:mb-10 max-w-2xl mx-auto">
               Join FlowChain today and unlock financial growth, community rewards, and endless opportunities.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-bounce-in-down delay-600">
+            <div className="flex justify-center">
               <button
                 onClick={() => router.push("/participant/register")}
-                className="group relative px-8 py-4 rounded-full bg-white text-purple-600 font-bold hover:bg-gray-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
+                className="group relative px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-white text-purple-600 font-bold hover:bg-gray-100 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500 rounded-full"></div>
-                <span className="relative flex items-center justify-center gap-2">
+                <span className="relative flex items-center justify-center gap-2 text-sm sm:text-base">
                   Enter FlowChain Now <ArrowRight className="w-4 h-4" />
                 </span>
               </button>
             </div>
 
-            {/* Stats line */}
-            <div className="mt-12 flex items-center justify-center gap-4 animate-stagger-fade-in delay-700">
-              <div className="flex -space-x-3">
+            <div className="mt-6 sm:mt-10 flex items-center justify-center gap-3 sm:gap-4">
+              <div className="flex -space-x-2 sm:-space-x-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="w-10 h-10 rounded-full bg-white/30 border-2 border-white hover:scale-125 transition-transform hover:z-10 hover:bg-white/40"></div>
+                  <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/30 border-2 border-white"></div>
                 ))}
               </div>
-              <span className="text-white font-semibold">50,000+ Active Participants</span>
+              <span className="text-white font-semibold text-sm sm:text-base">50,000+ Active Participants</span>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-32">
+      <section className="py-12 sm:py-20 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-20 animate-fadeIn">
-            <h2 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-6">Loved by Our Community</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">Real experiences from real users</p>
+          <div className="text-center mb-8 sm:mb-12 lg:mb-20 animate-fadeIn">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-3 sm:mb-6">Loved by Our Community</h2>
+            <p className="text-base sm:text-xl text-slate-600 max-w-2xl mx-auto">Real experiences from real users</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
             {testimonials.map((testimonial, idx) => (
               <div key={idx} className="group relative animate-stagger-scale overflow-hidden rounded-2xl" style={{ animationDelay: `${idx * 150}ms` }}>
-                {/* Premium card background */}
-                <div className="relative p-8 h-full bg-white/50 hover:bg-white/70 border border-white/70 hover:border-white/90 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
-
-                  <div className="relative">
-                    {/* Star Rating */}
-                    <div className="flex items-center gap-1 mb-6">
-                      {[...Array(testimonial.rating)].map((_, i) => (
-                        <span key={i} className="text-yellow-400 text-lg hover:scale-110 transition-transform" style={{ transitionDelay: `${i * 50}ms` }}>
-                          ★
-                        </span>
-                      ))}
+                <div className="relative p-5 sm:p-6 lg:p-8 h-full bg-white/50 hover:bg-white/70 border border-white/70 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
+                  <div className="flex items-center gap-1 mb-3 sm:mb-6">
+                    {[...Array(testimonial.rating)].map((_, i) => (
+                      <span key={i} className="text-yellow-400 text-base sm:text-lg">★</span>
+                    ))}
+                  </div>
+                  <p className="text-slate-700 mb-4 sm:mb-8 leading-relaxed italic text-sm sm:text-base lg:text-lg">{testimonial.text}</p>
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-xl sm:text-2xl shadow-md">
+                      {testimonial.avatar}
                     </div>
-
-                    {/* Testimonial Text */}
-                    <p className="text-slate-700 mb-8 leading-relaxed italic text-lg">{testimonial.text}</p>
-
-                    {/* User Info */}
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-2xl shadow-md group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                          {testimonial.avatar}
-                        </div>
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">{testimonial.name}</p>
-                        <p className="text-xs text-slate-500">Verified Participant</p>
-                      </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm sm:text-base">{testimonial.name}</p>
+                      <p className="text-xs text-slate-500">Verified Participant</p>
                     </div>
                   </div>
-
-                  {/* Accent line */}
                   <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
                 </div>
               </div>
@@ -559,174 +538,132 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Live Prediction Market Section - Premium Trading Dashboard */}
-      <section id="trading" className="py-32 bg-gradient-to-b from-slate-50 via-blue-50/50 to-slate-50">
+      {/* Live Trading Dashboard */}
+      <section id="trading" className="py-12 sm:py-20 lg:py-32 bg-gradient-to-b from-slate-50 via-blue-50/50 to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="mb-20 animate-fadeIn">
-            <div className="inline-flex items-center gap-3 mb-6 px-4 py-2 rounded-full bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/50">
-              <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
-              <span className="text-sm font-bold text-red-700">Live Market</span>
+          <div className="mb-8 sm:mb-12 lg:mb-20 animate-fadeIn">
+            <div className="inline-flex items-center gap-2 mb-4 sm:mb-6 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/50">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500 animate-pulse"></div>
+              <span className="text-xs sm:text-sm font-bold text-red-700">Live Market</span>
             </div>
-            <h2 className="text-5xl sm:text-6xl font-bold text-slate-900 mb-4">Live Trading Dashboard</h2>
-            <p className="text-xl text-slate-600">Monitor real-time crypto prices and market movements</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-2 sm:mb-4">Live Trading Dashboard</h2>
+            <p className="text-base sm:text-xl text-slate-600">Monitor real-time crypto prices and market movements</p>
           </div>
 
           {/* Trading Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-12">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-10 lg:mb-12">
             {cryptoAssets.map((asset, idx) => (
               <div key={idx} className="group relative animate-stagger-scale overflow-hidden rounded-2xl" style={{ animationDelay: `${idx * 120}ms` }}>
-                {/* Premium trading card */}
-                <div className="relative p-6 h-full bg-white/50 hover:bg-white/70 border border-white/70 hover:border-white/90 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl"></div>
-
-                  <div className="relative space-y-4">
-                    {/* Asset Header */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 text-white flex items-center justify-center text-xl font-bold shadow-md group-hover:scale-110 transition-transform">
-                        {asset.icon}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900">{asset.symbol}</p>
-                        <p className="text-xs text-slate-500">{asset.name}</p>
-                      </div>
+                <div className="relative p-4 sm:p-5 lg:p-6 h-full bg-white/50 hover:bg-white/70 border border-white/70 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 text-white flex items-center justify-center text-sm sm:text-lg lg:text-xl font-bold shadow-md flex-shrink-0">
+                      {asset.icon}
                     </div>
-
-                    {/* Price */}
-                    <div>
-                      <p className="text-3xl font-bold text-slate-900 mb-2">{asset.price}</p>
-                    </div>
-
-                    {/* Change indicators */}
-                    <div className="flex gap-2">
-                      <div className={`flex-1 py-2 rounded-lg font-bold text-white text-center text-sm transition-all ${asset.change.startsWith('+') ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:shadow-lg' : 'bg-gradient-to-r from-red-500 to-pink-600 hover:shadow-lg'}`}>
-                        {asset.change.startsWith('+') ? '↑ UP' : '↓ DOWN'}
-                      </div>
-                      <div className={`flex-1 py-2 rounded-lg font-bold text-center text-sm border-2 transition-all ${asset.change.startsWith('+') ? 'text-green-600 border-green-300 bg-green-50/50' : 'text-red-600 border-red-300 bg-red-50/50'}`}>
-                        {asset.change}
-                      </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">{asset.symbol}</p>
+                      <p className="text-[10px] sm:text-xs text-slate-500 truncate">{asset.name}</p>
                     </div>
                   </div>
-
-                  {/* Bottom accent line */}
+                  <p className="text-lg sm:text-xl lg:text-3xl font-bold text-slate-900 mb-2 sm:mb-3">{asset.price}</p>
+                  <div className="flex gap-1 sm:gap-2">
+                    <div className={`flex-1 py-1 sm:py-2 rounded-lg font-bold text-white text-center text-[10px] sm:text-sm ${asset.change.startsWith('+') ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-pink-600'}`}>
+                      {asset.change.startsWith('+') ? '↑ UP' : '↓ DN'}
+                    </div>
+                    <div className={`flex-1 py-1 sm:py-2 rounded-lg font-bold text-center text-[10px] sm:text-sm border ${asset.change.startsWith('+') ? 'text-green-600 border-green-300 bg-green-50/50' : 'text-red-600 border-red-300 bg-red-50/50'}`}>
+                      {asset.change}
+                    </div>
+                  </div>
                   <div className={`absolute bottom-0 left-0 right-0 h-1 ${asset.change.startsWith('+') ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-red-400 to-pink-500'} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`}></div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Premium Features Badge Section */}
-          <div className="relative overflow-hidden rounded-3xl p-12 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-stagger-slide-right delay-200">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent"></div>
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -mr-48 -mt-48 animate-float-slow"></div>
-
-            <div className="relative z-10">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 text-white">
-                <div className="group">
-                  <div className="flex items-center gap-3 mb-3 hover:scale-110 transition-transform">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Shield className="w-5 h-5" />
+          {/* Features Badge Section */}
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-12 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-stagger-slide-right delay-200">
+            <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-white/5 rounded-full blur-3xl -mr-32 sm:-mr-48 -mt-32 sm:-mt-48 animate-float-slow"></div>
+            <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8 text-white">
+              {[
+                { icon: Shield, title: "Secure & Safe", desc: "Bank-level security protocols protect all transactions" },
+                { icon: Lock, title: "Transparent", desc: "100% transparent operations with real-time tracking" },
+                { icon: Zap, title: "Fast & Automated", desc: "Instant tracking and automated payouts every second" },
+                { icon: Users, title: "Community Driven", desc: "Built for members, by members with collective growth" },
+              ].map((item, i) => {
+                const Icon = item.icon
+                return (
+                  <div key={i} className="group">
+                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </div>
+                      <p className="font-bold text-sm sm:text-base lg:text-lg">{item.title}</p>
                     </div>
-                    <p className="font-bold text-lg">Secure & Safe</p>
+                    <p className="text-white/80 text-xs sm:text-sm leading-relaxed">{item.desc}</p>
                   </div>
-                  <p className="text-white/80 text-sm leading-relaxed">Bank-level security protocols protect all transactions and data</p>
-                </div>
-
-                <div className="group">
-                  <div className="flex items-center gap-3 mb-3 hover:scale-110 transition-transform">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Lock className="w-5 h-5" />
-                    </div>
-                    <p className="font-bold text-lg">Transparent System</p>
-                  </div>
-                  <p className="text-white/80 text-sm leading-relaxed">100% transparent operations with real-time tracking and verification</p>
-                </div>
-
-                <div className="group">
-                  <div className="flex items-center gap-3 mb-3 hover:scale-110 transition-transform">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Zap className="w-5 h-5" />
-                    </div>
-                    <p className="font-bold text-lg">Fast & Automated</p>
-                  </div>
-                  <p className="text-white/80 text-sm leading-relaxed">Instant tracking and automated payouts every second</p>
-                </div>
-
-                <div className="group">
-                  <div className="flex items-center gap-3 mb-3 hover:scale-110 transition-transform">
-                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <p className="font-bold text-lg">Community Driven</p>
-                  </div>
-                  <p className="text-white/80 text-sm leading-relaxed">Built for members, by members with collective growth</p>
-                </div>
-              </div>
+                )
+              })}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Premium Footer */}
-      <footer className="bg-gradient-to-b from-slate-900 via-slate-900 to-black text-white py-20">
+      {/* Footer */}
+      <footer className="bg-gradient-to-b from-slate-900 via-slate-900 to-black text-white py-10 sm:py-14 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Main Footer Content */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-12 lg:mb-16">
             {/* Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-4">
+            <div className="col-span-2 sm:col-span-2 lg:col-span-1 space-y-3 sm:space-y-4">
+              <div className="flex items-center gap-2 mb-2 sm:mb-4">
                 <FlowChainLogo variant="icon" size="sm" />
-                <span className="font-bold text-xl">FlowChain</span>
+                <span className="font-bold text-lg sm:text-xl">FlowChain</span>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed">Building a community-driven financial platform with zero fees and unlimited rewards.</p>
-              <div className="flex gap-2 pt-2">
-                <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
-                <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
-                <div className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
+              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">Building a community-driven financial platform with zero fees and unlimited rewards.</p>
+              <div className="flex gap-2 pt-1 sm:pt-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
               </div>
             </div>
 
             {/* Product Links */}
-            <div className="space-y-4">
-              <h4 className="font-bold text-lg">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#rewards" className="text-slate-400 hover:text-white transition-colors">Rewards</a></li>
-                <li><a href="#benefits" className="text-slate-400 hover:text-white transition-colors">Benefits</a></li>
-                <li><a href="#trading" className="text-slate-400 hover:text-white transition-colors">Trading</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Pricing</a></li>
+            <div className="space-y-2 sm:space-y-4">
+              <h4 className="font-bold text-sm sm:text-base lg:text-lg">Product</h4>
+              <ul className="space-y-1 sm:space-y-2">
+                <li><a href="#rewards" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Rewards</a></li>
+                <li><a href="#benefits" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Benefits</a></li>
+                <li><a href="#trading" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Trading</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Pricing</a></li>
               </ul>
             </div>
 
             {/* Company Links */}
-            <div className="space-y-4">
-              <h4 className="font-bold text-lg">Company</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">About</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Careers</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Contact</a></li>
+            <div className="space-y-2 sm:space-y-4">
+              <h4 className="font-bold text-sm sm:text-base lg:text-lg">Company</h4>
+              <ul className="space-y-1 sm:space-y-2">
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">About</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Blog</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Careers</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Contact</a></li>
               </ul>
             </div>
 
             {/* Legal */}
-            <div className="space-y-4">
-              <h4 className="font-bold text-lg">Legal</h4>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Privacy</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Terms</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Security</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors">Cookies</a></li>
+            <div className="space-y-2 sm:space-y-4">
+              <h4 className="font-bold text-sm sm:text-base lg:text-lg">Legal</h4>
+              <ul className="space-y-1 sm:space-y-2">
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Privacy</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Terms</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Security</a></li>
+                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Cookies</a></li>
               </ul>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-8"></div>
+          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6 sm:mb-8"></div>
 
-          {/* Bottom Footer */}
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <p className="text-slate-500 text-sm">&copy; 2025 FlowChain. All rights reserved.</p>
-            <p className="text-slate-500 text-sm">Made with ❤️ for the community</p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
+            <p className="text-slate-500 text-xs sm:text-sm">&copy; 2025 FlowChain. All rights reserved.</p>
+            <p className="text-slate-500 text-xs sm:text-sm">Made with love for the community</p>
           </div>
         </div>
       </footer>
