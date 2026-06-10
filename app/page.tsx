@@ -325,12 +325,12 @@ export default function LandingPage() {
               {/* Spin Wheel image - right, vertically centered */}
               <div className="absolute right-0 bottom-8 z-10 w-[320px]">
                 {/* Glowing platform under wheel */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-10 bg-gradient-to-r from-purple-400/60 via-pink-400/60 to-purple-400/60 rounded-full blur-xl"></div>
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-10 bg-gradient-to-r from-orange-400/60 via-pink-400/60 to-purple-400/60 rounded-full blur-xl"></div>
                 <img
-                  src="/images/spin-wheel-hero.png"
+                  src="/images/spin-wheel-colorful.png"
                   alt="Spin wheel with reward multipliers"
                   className="relative w-full h-auto object-contain drop-shadow-2xl"
-                  style={{ filter: "drop-shadow(0 0 32px rgba(168,85,247,0.45))" }}
+                  style={{ filter: "drop-shadow(0 0 40px rgba(249,115,22,0.35))" }}
                 />
               </div>
 
