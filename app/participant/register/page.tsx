@@ -251,14 +251,13 @@ export default function ParticipantRegisterPage() {
 
         toast({
           title: "Account Created!",
-          description: `Welcome @${formData.username}! Please share your OTP for admin approval.`,
+          description: `Welcome @${formData.username}! Redirecting to your dashboard...`,
         })
 
-        // Show pending approval screen instead of redirecting immediately
-        setPendingParticipantId(data.participantId)
-        setPendingEmail(data.email || formData.email)
-        setPendingOtp(otp)
-        setPendingApproval(true)
+        // Redirect to dashboard after short delay to show success message
+        setTimeout(() => {
+          router.push("/participant/dashboard")
+        }, 1500)
       } else {
         toast({
           title: "Registration Failed",
