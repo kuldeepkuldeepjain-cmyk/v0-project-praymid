@@ -586,70 +586,278 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Live Trading Dashboard */}
-      <section id="trading" className="py-12 sm:py-20 lg:py-32 bg-gradient-to-b from-slate-50 via-blue-50/50 to-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-8 sm:mb-12 lg:mb-20 animate-fadeIn">
-            <div className="inline-flex items-center gap-2 mb-4 sm:mb-6 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r from-red-50 to-orange-50 border border-red-200/50">
-              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-red-500 animate-pulse"></div>
-              <span className="text-xs sm:text-sm font-bold text-red-700">Live Market</span>
+      {/* Live Prediction Market Section */}
+      <section id="trading" className="py-12 sm:py-20 lg:py-32 bg-gradient-to-br from-slate-950 via-slate-900 to-black relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -mr-48 -mt-48"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl -ml-48 -mb-48"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Header */}
+          <div className="mb-10 sm:mb-14 lg:mb-20 animate-fadeIn text-center">
+            <div className="inline-flex items-center gap-2 mb-4 sm:mb-6 px-4 sm:px-6 py-2 sm:py-3 rounded-full bg-gradient-to-r from-pink-500/20 to-red-500/20 border border-pink-500/50">
+              <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-pink-500 animate-pulse"></div>
+              <span className="text-xs sm:text-sm font-bold text-pink-400">Live Prediction Market</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-slate-900 mb-2 sm:mb-4">Live Trading Dashboard</h2>
-            <p className="text-base sm:text-xl text-slate-600">Monitor real-time crypto prices and market movements</p>
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 sm:mb-6">
+              Predict the Next Market <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Move</span>
+            </h2>
+            <p className="text-base sm:text-lg text-slate-300 max-w-2xl mx-auto">Choose whether the market will go <span className="text-green-400 font-semibold">UP</span> or <span className="text-red-400 font-semibold">DOWN</span> before the timer ends.</p>
           </div>
 
-          {/* Trading Cards Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-10 lg:mb-12">
-            {cryptoAssets.map((asset, idx) => (
-              <div key={idx} className="group relative animate-stagger-scale overflow-hidden rounded-2xl" style={{ animationDelay: `${idx * 120}ms` }}>
-                <div className="relative p-4 sm:p-5 lg:p-6 h-full bg-white/50 hover:bg-white/70 border border-white/70 shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 backdrop-blur-sm rounded-2xl">
-                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 text-white flex items-center justify-center text-sm sm:text-lg lg:text-xl font-bold shadow-md flex-shrink-0">
-                      {asset.icon}
+          {/* Prediction Cards Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-8 sm:mb-12 lg:mb-16">
+            {[
+              {
+                icon: "₿",
+                title: "Bitcoin",
+                symbol: "BTC/USDT",
+                change: "+1.64%",
+                changeColor: "text-green-400",
+                question: "Will BTC be above $108,500 in 5 minutes?",
+                target: "$108,500",
+                timer: "02:14",
+                upPercent: 72,
+                downPercent: 28,
+              },
+              {
+                icon: "🟡",
+                title: "Gold",
+                symbol: "XAU/USD",
+                change: "+0.92%",
+                changeColor: "text-green-400",
+                question: "Will Gold close higher than current price?",
+                target: "Current",
+                timer: "01:42",
+                upPercent: 61,
+                downPercent: 39,
+              },
+              {
+                icon: "€",
+                title: "EUR/USD",
+                symbol: "Forex",
+                change: "+0.71%",
+                changeColor: "text-green-400",
+                question: "Will EUR/USD be above 1.0850 in 5 minutes?",
+                target: "1.0850",
+                timer: "03:05",
+                upPercent: 68,
+                downPercent: 32,
+              },
+              {
+                icon: "⬫",
+                title: "Crude Oil",
+                symbol: "WTI/USDT",
+                change: "+1.23%",
+                changeColor: "text-green-400",
+                question: "Will Crude Oil be above $78.50 in 5 minutes?",
+                target: "$78.50",
+                timer: "02:33",
+                upPercent: 57,
+                downPercent: 43,
+              },
+            ].map((card, idx) => (
+              <div key={idx} className="group relative animate-bounce-in-down overflow-hidden rounded-3xl" style={{ animationDelay: `${idx * 100}ms` }}>
+                {/* Card background with gradient border effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 rounded-3xl"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-pink-600/10 to-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl"></div>
+
+                <div className="relative p-5 sm:p-6 lg:p-7 h-full flex flex-col gap-4 sm:gap-5">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-lg sm:text-xl font-bold text-white shadow-lg">
+                        {card.icon}
+                      </div>
+                      <div>
+                        <p className="font-bold text-white text-sm sm:text-base">{card.title}</p>
+                        <p className="text-slate-400 text-xs">{card.symbol}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 text-xs sm:text-sm truncate">{asset.symbol}</p>
-                      <p className="text-[10px] sm:text-xs text-slate-500 truncate">{asset.name}</p>
+                    <div className={`text-sm sm:text-base font-bold ${card.changeColor}`}>
+                      ↑ {card.change}
                     </div>
                   </div>
-                  <p className="text-lg sm:text-xl lg:text-3xl font-bold text-slate-900 mb-2 sm:mb-3">{asset.price}</p>
-                  <div className="flex gap-1 sm:gap-2">
-                    <div className={`flex-1 py-1 sm:py-2 rounded-lg font-bold text-white text-center text-[10px] sm:text-sm ${asset.change.startsWith('+') ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-pink-600'}`}>
-                      {asset.change.startsWith('+') ? '↑ UP' : '↓ DN'}
-                    </div>
-                    <div className={`flex-1 py-1 sm:py-2 rounded-lg font-bold text-center text-[10px] sm:text-sm border ${asset.change.startsWith('+') ? 'text-green-600 border-green-300 bg-green-50/50' : 'text-red-600 border-red-300 bg-red-50/50'}`}>
-                      {asset.change}
+
+                  {/* Question */}
+                  <div className="space-y-2">
+                    <p className="text-slate-300 text-xs sm:text-sm font-medium">Will {card.title.toLowerCase()} be above</p>
+                    <p className="text-green-400 font-bold text-sm sm:text-base">{card.target} in 5 minutes?</p>
+                  </div>
+
+                  {/* Timer */}
+                  <div className="flex items-center gap-2 text-slate-400 text-xs sm:text-sm">
+                    <span>⏱️</span>
+                    <span>{card.timer} Remaining</span>
+                  </div>
+
+                  {/* UP/DOWN Buttons */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-green-500/30 active:scale-95 flex items-center justify-center gap-2">
+                      <span>↑</span>
+                      <span>UP</span>
+                    </button>
+                    <button className="py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold text-sm transition-all duration-300 hover:shadow-lg hover:shadow-red-500/30 active:scale-95 flex items-center justify-center gap-2">
+                      <span>↓</span>
+                      <span>DOWN</span>
+                    </button>
+                  </div>
+
+                  {/* Community Prediction Bars */}
+                  <div className="space-y-2 pt-2 border-t border-slate-700/50">
+                    <p className="text-slate-400 text-xs font-semibold">Community Prediction</p>
+                    <div className="space-y-1.5">
+                      {/* UP bar */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-green-400 to-emerald-500 rounded-full"
+                            style={{ width: `${card.upPercent}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-green-400 font-bold text-xs w-10 text-right">{card.upPercent}% UP</span>
+                      </div>
+                      {/* DOWN bar */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-red-400 to-pink-500 rounded-full"
+                            style={{ width: `${card.downPercent}%` }}
+                          ></div>
+                        </div>
+                        <span className="text-red-400 font-bold text-xs w-10 text-right">{card.downPercent}% DOWN</span>
+                      </div>
                     </div>
                   </div>
-                  <div className={`absolute bottom-0 left-0 right-0 h-1 ${asset.change.startsWith('+') ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-red-400 to-pink-500'} transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left`}></div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Features Badge Section */}
-          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-12 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-stagger-slide-right delay-200">
-            <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-white/5 rounded-full blur-3xl -mr-32 sm:-mr-48 -mt-32 sm:-mt-48 animate-float-slow"></div>
-            <div className="relative z-10 grid grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 lg:gap-8 text-white">
+          {/* Trade Across Markets Section */}
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 mb-8 sm:mb-12 lg:mb-16 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-stagger-slide-right delay-300">
+            <div className="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-white/5 rounded-full blur-3xl -mr-32 sm:-mr-48 -mt-32 sm:-mt-48"></div>
+            <div className="relative z-10 grid grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8 text-white">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg sm:text-xl">
+                  🌍
+                </div>
+                <div>
+                  <p className="font-bold text-sm sm:text-base">Trade Across Multiple Markets</p>
+                  <p className="text-white/70 text-xs">Simple. Fast. Transparent.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                  ₿
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Crypto</p>
+                  <p className="text-white/70 text-xs">Predict Bitcoin & Altcoins</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                  🔄
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Forex</p>
+                  <p className="text-white/70 text-xs">Major Currency Pairs</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                  🟡
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Commodities</p>
+                  <p className="text-white/70 text-xs">Gold, Silver & Oil</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-lg">
+                  ⚡
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Live Binary</p>
+                  <p className="text-white/70 text-xs">Just UP or DOWN</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA Section */}
+          <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl p-8 sm:p-10 lg:p-16 bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 animate-bounce-in-down delay-400">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-full blur-3xl -mr-48 -mt-48"></div>
+            <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full blur-3xl -ml-48 -mb-48"></div>
+            
+            <div className="relative z-10 flex flex-col items-center text-center gap-6 sm:gap-8">
+              {/* Crypto icons floating animation */}
+              <div className="relative w-full h-32 sm:h-40 lg:h-48 flex items-center justify-center">
+                {/* Up arrow */}
+                <div className="absolute left-8 sm:left-16 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold animate-bounce-slow" style={{ animationDelay: "0s" }}>
+                  ↑
+                </div>
+                {/* Down arrow */}
+                <div className="absolute right-8 sm:right-16 w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-red-400 to-pink-600 flex items-center justify-center text-white text-2xl sm:text-3xl font-bold animate-bounce-slow" style={{ animationDelay: "0.5s" }}>
+                  ↓
+                </div>
+              </div>
+
+              <div className="space-y-2 sm:space-y-4">
+                <p className="text-slate-300 text-sm sm:text-base flex items-center justify-center gap-2">
+                  <span>👥</span>
+                  <span>Thousands of predictions are being placed every minute.</span>
+                </p>
+                <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white">
+                  Can you predict the next move?
+                </h3>
+              </div>
+
+              <button
+                onClick={() => router.push("/participant/register")}
+                className="group relative px-6 sm:px-10 py-3 sm:py-4 rounded-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 hover:from-blue-600 hover:via-purple-600 hover:to-pink-600 text-white font-bold text-sm sm:text-base shadow-lg hover:shadow-2xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-105 active:scale-95 overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500"></div>
+                <span className="relative flex items-center justify-center gap-2">
+                  <span>🚀</span>
+                  Start Predicting Now
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {/* Live Activity Ticker */}
+          <div className="mt-8 sm:mt-12 lg:mt-16 p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-slate-800/50 to-slate-900/50 border border-slate-700/50 overflow-hidden animate-fade-in delay-500">
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-green-500/20 border border-green-500/50 flex-shrink-0">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-green-400 font-bold text-xs sm:text-sm">LIVE ACTIVITY</span>
+              </div>
+
               {[
-                { icon: Shield, title: "Secure & Safe", desc: "Bank-level security protocols protect all transactions" },
-                { icon: Lock, title: "Transparent", desc: "100% transparent operations with real-time tracking" },
-                { icon: Zap, title: "Fast & Automated", desc: "Instant tracking and automated payouts every second" },
-                { icon: Users, title: "Community Driven", desc: "Built for members, by members with collective growth" },
-              ].map((item, i) => {
-                const Icon = item.icon
-                return (
-                  <div key={i} className="group">
-                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      </div>
-                      <p className="font-bold text-sm sm:text-base lg:text-lg">{item.title}</p>
-                    </div>
-                    <p className="text-white/80 text-xs sm:text-sm leading-relaxed">{item.desc}</p>
-                  </div>
-                )
-              })}
+                { user: "Rahul", action: "predicted", asset: "BTC", direction: "↑", color: "text-green-400" },
+                { user: "Aman", action: "predicted", asset: "GOLD", direction: "↓", color: "text-red-400" },
+                { user: "Sneha", action: "predicted", asset: "EUR/USD", direction: "↑", color: "text-green-400" },
+                { user: "Vikram", action: "predicted", asset: "CRUDE", direction: "↑", color: "text-green-400" },
+                { user: "Priya", action: "predicted", asset: "ETH", direction: "↓", color: "text-red-400" },
+              ].map((activity, idx) => (
+                <div key={idx} className="flex items-center gap-2 px-3 py-2 text-white text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 border border-slate-600/50 rounded-full">
+                  <span className="text-yellow-400">●</span>
+                  <span>{activity.user}</span>
+                  <span className="text-slate-500">predicted</span>
+                  <span className="font-bold">{activity.asset}</span>
+                  <span className={`font-bold ${activity.color}`}>{activity.direction}</span>
+                  {idx < 4 && <span className="text-slate-500 mx-2">•</span>}
+                </div>
+              ))}
+
+              <div className="flex items-center gap-2 px-3 py-2 text-slate-300 text-xs sm:text-sm whitespace-nowrap flex-shrink-0">
+                <span>👥</span>
+                <span className="font-bold">+12.4K</span>
+                <span>online</span>
+              </div>
             </div>
           </div>
         </div>
