@@ -136,7 +136,8 @@ async function createStake(payload: any) {
     )
   } catch (error) {
     console.error("[v0] Create stake error:", error)
-    return NextResponse.json({ error: "Failed to create stake" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
+    return NextResponse.json({ error: `Failed to create stake: ${errorMessage}` }, { status: 500 })
   }
 }
 
