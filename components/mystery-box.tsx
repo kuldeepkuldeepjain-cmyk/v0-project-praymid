@@ -167,8 +167,8 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
             50% { transform: translateY(-8px) scale(1.02); }
           }
           @keyframes chestGlow {
-            0%, 100% { box-shadow: 0 0 15px rgba(251, 191, 36, 0.3), 0 0 30px rgba(168, 85, 247, 0.2); }
-            50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.6), 0 0 40px rgba(168, 85, 247, 0.4); }
+            0%, 100% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.4), 0 0 30px rgba(232, 93, 59, 0.2); }
+            50% { box-shadow: 0 0 28px rgba(124, 58, 237, 0.7), 0 0 50px rgba(232, 93, 59, 0.4); }
           }
           @keyframes chestOpen {
             0% { transform: perspective(1000px) rotateY(0deg) scale(1); }
@@ -245,27 +245,27 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
                       className="absolute inset-0 rounded-lg"
                       style={{
                         animation: "chestGlow 2s ease-in-out infinite",
-                        boxShadow: "inset 0 0 15px rgba(251, 191, 36, 0.5)",
+                        boxShadow: "inset 0 0 18px rgba(124, 58, 237, 0.55)",
                       }}
                     />
                   )}
 
                   {/* Selection Border */}
                   {isSelected && !isCurrentlyOpening && !isOpening && (
-                    <div className="absolute inset-0 rounded-lg border-3 border-yellow-400" />
+                    <div className="absolute inset-0 rounded-lg border-2 border-purple-500" />
                   )}
 
                   {/* Opening Overlay */}
                   {isCurrentlyOpening && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-green-500/50 to-transparent flex items-center justify-center">
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-600/60 to-orange-400/30 flex items-center justify-center">
                       <Loader2 className="h-8 w-8 text-white animate-spin" />
                     </div>
                   )}
 
                   {/* Price Tag */}
                   {!isCurrentlyOpening && (
-                    <div className="absolute bottom-2 left-2 right-2 bg-black/70 backdrop-blur-sm rounded px-1 py-0.5 text-center">
-                      <p className="text-xs font-bold text-yellow-300">$10</p>
+                    <div className="absolute bottom-2 left-2 right-2 bg-purple-700/80 backdrop-blur-sm rounded px-1 py-0.5 text-center">
+                      <p className="text-xs font-bold text-white">$10</p>
                     </div>
                   )}
                 </button>
@@ -276,19 +276,24 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
           {/* Reward Display */}
           {showReward && (
             <div className="relative w-full max-w-md">
-              <div className="bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 rounded-lg p-6 text-center shadow-2xl border-2 border-yellow-200">
-                <p className="text-purple-900 font-bold text-sm mb-2">🎉 You Won! 🎉</p>
-                <p className="text-6xl font-black text-white" style={{ textShadow: "2px 2px 4px rgba(0,0,0,0.3)" }}>
+              <div className="rounded-2xl p-6 text-center shadow-2xl border border-purple-300 overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(232, 93, 59, 0.10) 50%, rgba(16, 185, 129, 0.08) 100%)",
+                  boxShadow: "0 12px 40px rgba(124, 58, 237, 0.25), 0 4px 16px rgba(232, 93, 59, 0.15)"
+                }}>
+                <p className="text-purple-700 font-bold text-sm mb-2 tracking-wide uppercase">You Won!</p>
+                <p className="text-6xl font-black bg-gradient-to-r from-purple-600 to-orange-500 bg-clip-text text-transparent">
                   ${reward}
                 </p>
-                <p className="text-purple-900 font-semibold text-sm mt-2">New Balance: ${newBalance?.toFixed(2)}</p>
+                <p className="text-slate-600 font-semibold text-sm mt-2">New Balance: <span className="text-emerald-600 font-bold">${newBalance?.toFixed(2)}</span></p>
 
                 {/* Confetti */}
                 {Array.from({ length: 12 }).map((_, i) => (
                   <div
                     key={i}
-                    className="absolute w-2 h-2 bg-yellow-300 rounded-full"
+                    className="absolute w-2 h-2 rounded-full"
                     style={{
+                      background: i % 3 === 0 ? "#7c3aed" : i % 3 === 1 ? "#E85D3B" : "#10b981",
                       left: `${Math.random() * 100}%`,
                       top: "0",
                       animation: `confetti 2s ease-out forwards`,
@@ -297,7 +302,7 @@ export function MysteryBox({ currentBalance, onRewardWon, onBalanceUpdated, part
                   />
                 ))}
               </div>
-              <p className="text-center text-gray-400 text-sm mt-3">Reshuffling new chests...</p>
+              <p className="text-center text-slate-500 text-sm mt-3">Reshuffling new chests...</p>
             </div>
           )}
 
