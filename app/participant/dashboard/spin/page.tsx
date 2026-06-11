@@ -40,195 +40,279 @@ const WHEEL_SEGMENTS = [
 
 const AMOUNT_PRESETS = [10, 25, 50, 100, 250, 500]
 
-// Draw the icon for each segment
-function SegmentIcon({ type, x, y }: { type: string; x: number; y: number }) {
-  const size = 10
+// Icon paths drawn inline in SVG for each segment type
+function SegmentIconSVG({ type, color }: { type: string; color: string }) {
   switch (type) {
     case "trophy":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#D97706">🏆</text>
+      // simple trophy cup
+      return (
+        <g fill={color}>
+          <rect x="-3" y="7" width="6" height="1.5" rx="0.5" />
+          <rect x="-2" y="5.5" width="4" height="2" rx="0.3" />
+          <path d="M-4,-5 Q-5,2 -2,4 Q0,5 2,4 Q5,2 4,-5 Z" />
+          <path d="M-4,-5 Q-7,-4 -6,0 Q-5,2 -3,2" fill="none" stroke={color} strokeWidth="1" />
+          <path d="M4,-5 Q7,-4 6,0 Q5,2 3,2" fill="none" stroke={color} strokeWidth="1" />
+        </g>
+      )
     case "rocket":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#7C3AED">🚀</text>
+      return (
+        <g fill={color}>
+          <path d="M0,-7 C-3,-4 -3,2 0,5 C3,2 3,-4 0,-7Z" />
+          <path d="M-3,2 L-5,6 L-1,5Z" />
+          <path d="M3,2 L5,6 L1,5Z" />
+          <circle cx="0" cy="0" r="1.2" fill="white" />
+        </g>
+      )
     case "lightning":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#16A34A">⚡</text>
+      return (
+        <g fill={color}>
+          <polygon points="2,-7 -2,0 1,0 -2,7 4,-1 0,-1 3,-7" />
+        </g>
+      )
     case "target":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#BE185D">🎯</text>
+      return (
+        <g>
+          <circle cx="0" cy="0" r="6" fill="none" stroke={color} strokeWidth="1.5" />
+          <circle cx="0" cy="0" r="3.5" fill="none" stroke={color} strokeWidth="1.5" />
+          <circle cx="0" cy="0" r="1.2" fill={color} />
+          <line x1="4" y1="-4" x2="7" y2="-7" stroke={color} strokeWidth="1.2" />
+          <polygon points="7,-7 4,-6 6,-4" fill={color} />
+        </g>
+      )
     case "bars":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#B45309">📊</text>
+      return (
+        <g fill={color}>
+          <rect x="-5" y="2"  width="2.5" height="5" rx="0.5" />
+          <rect x="-1.5" y="-1" width="2.5" height="8" rx="0.5" />
+          <rect x="2" y="-4" width="2.5" height="11" rx="0.5" />
+        </g>
+      )
     case "diamond":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#1D4ED8">💎</text>
+      return (
+        <g fill={color}>
+          <polygon points="0,-7 6,0 0,7 -6,0" />
+          <polygon points="0,-7 6,0 0,-1 -6,0" fill="rgba(255,255,255,0.35)" />
+        </g>
+      )
     case "coins":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#15803D">💰</text>
+      return (
+        <g>
+          <ellipse cx="0" cy="-4" rx="4" ry="1.5" fill={color} />
+          <rect x="-4" y="-4" width="8" height="3" fill={color} />
+          <ellipse cx="0" cy="-1" rx="4" ry="1.5" fill={color} />
+          <ellipse cx="2" cy="-1" rx="4" ry="1.5" fill={color} opacity="0.7" />
+          <ellipse cx="2" cy="3" rx="4" ry="1.5" fill={color} opacity="0.7" />
+          <rect x="-2" y="-1" width="8" height="4" fill={color} opacity="0.7" />
+          <text x="0" y="-2" textAnchor="middle" fontSize="3.5" fill="white" fontWeight="bold">$</text>
+        </g>
+      )
     case "gift":
-      return <text x={x} y={y} textAnchor="middle" fontSize={size + 2} fill="#DB2777">🎁</text>
+      return (
+        <g fill={color}>
+          <rect x="-5" y="-1" width="10" height="8" rx="0.8" />
+          <rect x="-5" y="-3.5" width="10" height="3" rx="0.8" />
+          <rect x="-1" y="-6" width="2" height="11" rx="0.8" />
+          <path d="M0,-3.5 C-1,-5 -4,-6 -3,-3.5" fill="none" stroke="white" strokeWidth="1" />
+          <path d="M0,-3.5 C1,-5 4,-6 3,-3.5" fill="none" stroke="white" strokeWidth="1" />
+        </g>
+      )
     default:
       return null
   }
 }
 
 function SpinWheel({ wheelRef }: { wheelRef: React.RefObject<HTMLDivElement> }) {
-  const size = 340
-  const cx = size / 2
-  const cy = size / 2
-  const outerR = 158
-  const innerR = 50
-  const rimR = 168
-  const n = WHEEL_SEGMENTS.length
-  const angleStep = (2 * Math.PI) / n
+  const SIZE   = 360
+  const CX     = SIZE / 2
+  const CY     = SIZE / 2
+  const OUTER  = 155   // outer edge of segments
+  const INNER  = 52    // center button radius
+  const RIM    = 170   // rim circle radius
+  const N      = WHEEL_SEGMENTS.length
+  const STEP   = 360 / N  // degrees per segment
 
-  // LED dot positions on rim
-  const ledAngles = Array.from({ length: 16 }, (_, i) => (i * 2 * Math.PI) / 16)
+  // Build one pie slice as an SVG arc path, in absolute coords
+  function slicePath(index: number): string {
+    const startDeg = index * STEP - 90        // -90 so first segment points up
+    const endDeg   = startDeg + STEP
+    const toRad    = (d: number) => (d * Math.PI) / 180
+    const x1 = CX + OUTER * Math.cos(toRad(startDeg))
+    const y1 = CY + OUTER * Math.sin(toRad(startDeg))
+    const x2 = CX + OUTER * Math.cos(toRad(endDeg))
+    const y2 = CY + OUTER * Math.sin(toRad(endDeg))
+    return `M${CX},${CY} L${x1},${y1} A${OUTER},${OUTER} 0 0,1 ${x2},${y2} Z`
+  }
+
+  // LED dots
+  const ledAngles = Array.from({ length: 16 }, (_, i) => (i * 360) / 16)
 
   return (
     <div
       ref={wheelRef}
-      style={{ width: size, height: size, transformOrigin: "center center", willChange: "transform" }}
+      style={{ width: SIZE, height: SIZE, transformOrigin: "50% 50%", willChange: "transform" }}
     >
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: "visible" }}>
+      <svg
+        width={SIZE}
+        height={SIZE}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        style={{ overflow: "visible" }}
+      >
         <defs>
-          {/* Rainbow rim gradient */}
-          <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          {/* Conic-style rim: we fake it with a thick stroke + conicGradient via stops */}
+          <linearGradient id="rimGrad" x1="1" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor="#f97316" />
-            <stop offset="30%"  stopColor="#ec4899" />
+            <stop offset="25%"  stopColor="#ec4899" />
             <stop offset="60%"  stopColor="#a855f7" />
             <stop offset="100%" stopColor="#6366f1" />
           </linearGradient>
-          {/* Center button gradient */}
-          <radialGradient id="centerGrad" cx="50%" cy="35%" r="65%">
+          <radialGradient id="centerGrad" cx="50%" cy="30%" r="70%">
             <stop offset="0%"   stopColor="#fb923c" />
+            <stop offset="55%"  stopColor="#ef4444" />
             <stop offset="100%" stopColor="#dc2626" />
           </radialGradient>
-          {/* Center glow */}
-          <radialGradient id="glowGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="0%"   stopColor="rgba(251,146,60,0.3)" />
-            <stop offset="100%" stopColor="rgba(251,146,60,0)" />
+          <radialGradient id="rimGlowGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="60%"  stopColor="transparent" />
+            <stop offset="100%" stopColor="rgba(249,115,22,0.18)" />
           </radialGradient>
-          {/* Drop shadow */}
-          <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-            <feDropShadow dx="0" dy="4" stdDeviation="8" floodColor="rgba(0,0,0,0.25)" />
+          <filter id="wheelShadow">
+            <feDropShadow dx="0" dy="6" stdDeviation="12" floodColor="rgba(0,0,0,0.22)" />
           </filter>
-          <filter id="centerShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="rgba(0,0,0,0.35)" />
+          <filter id="btnShadow">
+            <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="rgba(0,0,0,0.4)" />
           </filter>
         </defs>
 
-        {/* Outer glow ring */}
-        <circle cx={cx} cy={cy} r={rimR + 14} fill="url(#glowGrad)" />
+        {/* Outer glow */}
+        <circle cx={CX} cy={CY} r={RIM + 18} fill="url(#rimGlowGrad)" />
 
-        {/* Thick rainbow rim */}
-        <circle cx={cx} cy={cy} r={rimR} fill="none" stroke="url(#rimGrad)" strokeWidth={20} filter="url(#shadow)" />
-        <circle cx={cx} cy={cy} r={rimR} fill="none" stroke="white"           strokeWidth={2.5} opacity={0.6} />
-
-        {/* Segments */}
+        {/* ── SEGMENTS ── each drawn in its own rotated coordinate system */}
         {WHEEL_SEGMENTS.map((seg, i) => {
-          const startAngle = i * angleStep - Math.PI / 2
-          const endAngle   = startAngle + angleStep
-          const midAngle   = startAngle + angleStep / 2
+          const midDeg = i * STEP + STEP / 2 - 90  // degrees to midpoint, 0° = right
+          // Text anchor sits at 68% of the outer radius, pointing away from center
+          const textDist  = OUTER * 0.66
+          const subDist   = OUTER * 0.80
+          const sub2Dist  = OUTER * 0.91
+          const iconDist  = OUTER * 0.47
 
-          const x1 = cx + outerR * Math.cos(startAngle)
-          const y1 = cy + outerR * Math.sin(startAngle)
-          const x2 = cx + outerR * Math.cos(endAngle)
-          const y2 = cy + outerR * Math.sin(endAngle)
+          const toRad = (d: number) => (d * Math.PI) / 180
+          const tx  = CX + textDist  * Math.cos(toRad(midDeg))
+          const ty  = CY + textDist  * Math.sin(toRad(midDeg))
+          const sx  = CX + subDist   * Math.cos(toRad(midDeg))
+          const sy  = CY + subDist   * Math.sin(toRad(midDeg))
+          const s2x = CX + sub2Dist  * Math.cos(toRad(midDeg))
+          const s2y = CY + sub2Dist  * Math.sin(toRad(midDeg))
+          const ix  = CX + iconDist  * Math.cos(toRad(midDeg))
+          const iy  = CY + iconDist  * Math.sin(toRad(midDeg))
 
-          const path = [
-            `M ${cx} ${cy}`,
-            `L ${x1} ${y1}`,
-            `A ${outerR} ${outerR} 0 0 1 ${x2} ${y2}`,
-            "Z",
-          ].join(" ")
-
-          // Text positions
-          const textR1 = outerR * 0.62
-          const textR2 = outerR * 0.78
-          const textR3 = outerR * 0.90
-          const iconR  = outerR * 0.45
-
-          const tx1 = cx + textR1 * Math.cos(midAngle)
-          const ty1 = cy + textR1 * Math.sin(midAngle)
-          const tx2 = cx + textR2 * Math.cos(midAngle)
-          const ty2 = cy + textR2 * Math.sin(midAngle)
-          const tx3 = cx + textR3 * Math.cos(midAngle)
-          const ty3 = cy + textR3 * Math.sin(midAngle)
-          const ix  = cx + iconR  * Math.cos(midAngle)
-          const iy  = cy + iconR  * Math.sin(midAngle)
-
-          const rotateDeg = (midAngle * 180) / Math.PI + 90
+          // rotation so text reads from inner→outer (pointing outward)
+          const textRot = midDeg + 90   // +90 makes text perpendicular to radius
 
           return (
             <g key={i}>
-              {/* Segment fill */}
-              <path d={path} fill={seg.bgColor} stroke="white" strokeWidth={2} />
+              {/* Segment */}
+              <path d={slicePath(i)} fill={seg.bgColor} stroke="white" strokeWidth={2} />
 
-              {/* Rotated text group */}
-              <g transform={`rotate(${rotateDeg}, ${cx + outerR * 0.68 * Math.cos(midAngle)}, ${cy + outerR * 0.68 * Math.sin(midAngle)})`}>
+              {/* All labels + icon, rotated around midpoint so they read outward */}
+              <g transform={`rotate(${textRot}, ${tx}, ${ty})`}>
                 {/* Icon */}
-                <SegmentIcon type={seg.icon} x={ix} y={iy + 4} />
-                {/* Multiplier label - big bold */}
+                <g transform={`translate(${ix}, ${iy}) rotate(${-textRot})`} style={{ pointerEvents: "none" }}>
+                  <SegmentIconSVG type={seg.icon} color={seg.textColor} />
+                </g>
+                {/* Big multiplier */}
                 <text
-                  x={tx1} y={ty1}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={13}
-                  fontWeight="900"
+                  x={tx} y={ty}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={14} fontWeight="900"
                   fill={seg.textColor}
-                  fontFamily="system-ui, sans-serif"
+                  fontFamily="Arial, sans-serif"
+                  letterSpacing="-0.3"
                 >
                   {seg.label}
                 </text>
-                {/* Sublabel line 1 */}
+              </g>
+              {/* "You get" + "NX" — rotate around their own positions */}
+              <g transform={`rotate(${textRot}, ${sx}, ${sy})`}>
                 <text
-                  x={tx2} y={ty2 - 5}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={7}
-                  fontWeight="600"
-                  fill={seg.textColor}
-                  opacity={0.85}
-                  fontFamily="system-ui, sans-serif"
+                  x={sx} y={sy - 4}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={7} fontWeight="600"
+                  fill={seg.textColor} opacity={0.85}
+                  fontFamily="Arial, sans-serif"
                 >
                   You get
                 </text>
-                {/* Sublabel line 2 */}
+              </g>
+              <g transform={`rotate(${textRot}, ${s2x}, ${s2y})`}>
                 <text
-                  x={tx3} y={ty3 - 6}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={7.5}
-                  fontWeight="800"
+                  x={s2x} y={s2y - 4}
+                  textAnchor="middle" dominantBaseline="middle"
+                  fontSize={8} fontWeight="800"
                   fill={seg.textColor}
-                  fontFamily="system-ui, sans-serif"
+                  fontFamily="Arial, sans-serif"
                 >
-                  {seg.multiplier >= 1 ? `${seg.multiplier % 1 === 0 ? seg.multiplier.toFixed(0) : seg.multiplier}X` : `${seg.multiplier}X`}
+                  {seg.multiplier % 1 === 0 ? `${seg.multiplier.toFixed(0)}X` : `${seg.multiplier}X`}
                 </text>
               </g>
             </g>
           )
         })}
 
-        {/* Inner separator circle */}
-        <circle cx={cx} cy={cy} r={innerR + 2} fill="white" />
+        {/* ── RIM ── thick gradient ring on top of segments */}
+        <circle
+          cx={CX} cy={CY} r={RIM}
+          fill="none"
+          stroke="url(#rimGrad)"
+          strokeWidth={22}
+          filter="url(#wheelShadow)"
+        />
+        {/* White inner rim edge */}
+        <circle cx={CX} cy={CY} r={RIM - 11} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
+        {/* White outer rim edge */}
+        <circle cx={CX} cy={CY} r={RIM + 11} fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth={1.5} />
 
-        {/* LED dots on rim */}
-        {ledAngles.map((a, i) => {
-          const lx = cx + rimR * Math.cos(a)
-          const ly = cy + rimR * Math.sin(a)
+        {/* ── LED DOTS ── */}
+        {ledAngles.map((deg, i) => {
+          const rad = (deg * Math.PI) / 180
+          const lx  = CX + RIM * Math.cos(rad)
+          const ly  = CY + RIM * Math.sin(rad)
           return (
-            <circle key={i} cx={lx} cy={ly} r={4}
+            <circle key={i} cx={lx} cy={ly} r={5}
               fill="white"
-              stroke="rgba(255,255,255,0.5)"
-              strokeWidth={1}
-              style={{ filter: "drop-shadow(0 0 3px rgba(255,255,255,0.9))" }}
+              style={{ filter: "drop-shadow(0 0 4px rgba(255,255,255,1))" }}
             />
           )
         })}
 
-        {/* Center button */}
-        <circle cx={cx} cy={cy} r={innerR} fill="url(#centerGrad)" filter="url(#centerShadow)" />
-        {/* Center highlight */}
-        <ellipse cx={cx} cy={cy - 10} rx={28} ry={16} fill="rgba(255,255,255,0.25)" />
-        {/* Spin icon - circular arrow */}
-        <text x={cx} y={cy - 10} textAnchor="middle" fontSize={18} fill="white" fontWeight="bold">↻</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fontSize={13} fill="white" fontWeight="900" fontFamily="system-ui, sans-serif">SPIN</text>
-        <text x={cx} y={cy + 22} textAnchor="middle" fontSize={8} fill="rgba(255,255,255,0.85)" fontFamily="system-ui, sans-serif">Good luck!</text>
+        {/* ── WHITE INNER SEPARATOR ── */}
+        <circle cx={CX} cy={CY} r={INNER + 4} fill="white" stroke="rgba(255,255,255,0.9)" strokeWidth={3} />
+
+        {/* ── CENTER BUTTON ── */}
+        <circle cx={CX} cy={CY} r={INNER} fill="url(#centerGrad)" filter="url(#btnShadow)" />
+        {/* Highlight gloss */}
+        <ellipse cx={CX} cy={CY - 13} rx={30} ry={18} fill="rgba(255,255,255,0.22)" />
+        {/* Circular arrow icon */}
+        <path
+          d="M -14,-4 A 14,14 0 1 1 14,-4"
+          transform={`translate(${CX},${CY - 8})`}
+          fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"
+        />
+        <polygon points="14,-4 10,-9 18,-9" transform={`translate(${CX},${CY - 8})`} fill="white" />
+        <text
+          x={CX} y={CY + 10}
+          textAnchor="middle" dominantBaseline="middle"
+          fontSize={15} fontWeight="900" fill="white"
+          fontFamily="Arial, sans-serif" letterSpacing="1"
+        >
+          SPIN
+        </text>
+        <text
+          x={CX} y={CY + 26}
+          textAnchor="middle" dominantBaseline="middle"
+          fontSize={8.5} fill="rgba(255,255,255,0.82)"
+          fontFamily="Arial, sans-serif"
+        >
+          Good luck!
+        </text>
       </svg>
     </div>
   )
