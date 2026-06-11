@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Sparkles, Trophy, TrendingUp, Volume2, VolumeX, Wallet, Info, X } from "lucide-react"
+import { ArrowLeft, Sparkles, Trophy, TrendingUp, Volume2, VolumeX, Wallet, Info, X, ChevronDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/client"
@@ -28,38 +28,43 @@ interface SpinResult {
   error?: string
 }
 
-// Wheel configuration - 8 segments
+// Wheel configuration - 8 colorful segments with multipliers
 const WHEEL_SEGMENTS = [
-  { label: "$2",     color: "#3B82F6", gradientEnd: "#2563EB", amount: 2  },
-  { label: "$1",     color: "#F5F5F5", gradientEnd: "#E5E5E5", amount: 1  },
-  { label: "$5",     color: "#FBBF24", gradientEnd: "#F59E0B", amount: 5  },
-  { label: "Oops!",  color: "#EF4444", gradientEnd: "#DC2626", amount: 0  },
-  { label: "$3",     color: "#8B5CF6", gradientEnd: "#7C3AED", amount: 3  },
-  { label: "$10",    color: "#10B981", gradientEnd: "#059669", amount: 10 },
-  { label: "Refer",  color: "#EC4899", gradientEnd: "#DB2777", amount: 10 },
-  { label: "JACKPOT",color: "#F97316", gradientEnd: "#EA580C", amount: 50 },
+  { label: "2.5x", color: "#EC4899", gradientEnd: "#DB2777", amount: 2.5, icon: "🎁" },
+  { label: "3.0x", color: "#FCD34D", gradientEnd: "#FBBF24", amount: 3.0, icon: "👑" },
+  { label: "5.0x", color: "#A78BFA", gradientEnd: "#8B5CF6", amount: 5.0, icon: "🚀" },
+  { label: "10.0x", color: "#86EFAC", gradientEnd: "#22C55E", amount: 10.0, icon: "💰" },
+  { label: "0.5x", color: "#A5F3FC", gradientEnd: "#06B6D4", amount: 0.5, icon: "⚡" },
+  { label: "4.0x", color: "#F472B6", gradientEnd: "#EC4899", amount: 4.0, icon: "🎯" },
+  { label: "1.5x", color: "#FED7AA", gradientEnd: "#FDBA74", amount: 1.5, icon: "📊" },
+  { label: "2.0x", color: "#93C5FD", gradientEnd: "#3B82F6", amount: 2.0, icon: "💎" },
 ]
 
-const SPIN_COST = 5
+const AMOUNT_PRESETS = [10, 25, 50, 100, 250, 500]
 
 export default function SpinWheelPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
 
-  // Separate participant data from winners to avoid re-rendering the wheel
-  const [balance, setBalance]           = useState(0)
-  const [availableSpins, setAvailableSpins] = useState(0)
+  // Participant data
+  const [balance, setBalance] = useState(0)
   const [participantEmail, setParticipantEmail] = useState("")
-  const [isActive, setIsActive]         = useState(false)
+  const [isActive, setIsActive] = useState(false)
 
-  const [isSpinning, setIsSpinning]     = useState(false)
-  const [lastWinners, setLastWinners]   = useState<Winner[]>([])
+  // Spin amount and selection
+  const [spinAmount, setSpinAmount] = useState(100)
+  const [selectedPreset, setSelectedPreset] = useState(100)
+  const [showAmountDropdown, setShowAmountDropdown] = useState(false)
+
+  // Spin state
+  const [isSpinning, setIsSpinning] = useState(false)
+  const [lastWinners, setLastWinners] = useState<Winner[]>([])
   const [showWinModal, setShowWinModal] = useState(false)
-  const [winResult, setWinResult]       = useState<SpinResult | null>(null)
+  const [winResult, setWinResult] = useState<SpinResult | null>(null)
   const [soundEnabled, setSoundEnabled] = useState(true)
 
-  // Use a ref for the wheel element so rotation never causes React re-render
+  // Wheel ref
   const wheelRef = useRef<HTMLDivElement>(null)
   const currentRotation = useRef(0)
   const winnersIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -92,15 +97,13 @@ export default function SpinWheelPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from("participants")
-        .select("email, account_balance, available_spins, is_active")
+        .select("email, account_balance, is_active")
         .eq("email", parsed.email)
         .single()
 
       if (error) {
-        // Fallback to cached
         setParticipantEmail(parsed.email || "")
         setBalance(parsed.account_balance || 0)
-        setAvailableSpins(parsed.available_spins || 0)
         setIsActive(parsed.is_active || false)
         return
       }
@@ -109,7 +112,6 @@ export default function SpinWheelPage() {
         const d = data as any
         setParticipantEmail(d.email)
         setBalance(d.account_balance ?? 0)
-        setAvailableSpins(d.available_spins ?? 0)
         setIsActive(d.is_active ?? false)
         localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...d }))
       }
@@ -130,37 +132,34 @@ export default function SpinWheelPage() {
         setLastWinners(data.winners)
       }
     } catch {
-      // silently fail — winners list is not critical
+      // silently fail
     }
   }, [])
 
-  // Rotate the wheel imperatively via the DOM ref — never causes React re-render
   const spinWheel = useCallback((segmentIndex: number): Promise<void> => {
     return new Promise((resolve) => {
       const el = wheelRef.current
-      if (!el) { resolve(); return }
+      if (!el) {
+        resolve()
+        return
+      }
 
       const segmentAngle = 360 / WHEEL_SEGMENTS.length
-      const targetAngle  = segmentIndex * segmentAngle
-      // Always spin at least 8 full rotations forward, land on target
-      const spinAmount   = 360 * 8 + (360 - (currentRotation.current % 360)) + (360 - targetAngle)
+      const targetAngle = segmentIndex * segmentAngle
+      const spinAmount = 360 * 8 + (360 - (currentRotation.current % 360)) + (360 - targetAngle)
       const finalRotation = currentRotation.current + spinAmount
 
-      // Apply transition directly on the DOM element — no React state involved
       el.style.transition = "transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)"
-      el.style.transform  = `rotate(${finalRotation}deg)`
+      el.style.transform = `rotate(${finalRotation}deg)`
 
       currentRotation.current = finalRotation
 
       const onEnd = () => {
         el.removeEventListener("transitionend", onEnd)
-        // Remove transition so future renders don't re-trigger it
         el.style.transition = "none"
         resolve()
       }
       el.addEventListener("transitionend", onEnd)
-
-      // Fallback timeout in case transitionend doesn't fire
       setTimeout(resolve, 5500)
     })
   }, [])
@@ -168,19 +167,10 @@ export default function SpinWheelPage() {
   const handleSpin = useCallback(async () => {
     if (!participantEmail) return
 
-    if (availableSpins <= 0) {
-      toast({
-        title: "No Spins Available",
-        description: "You have no spins left. Earn more by referring friends!",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (balance < SPIN_COST) {
+    if (balance < spinAmount) {
       toast({
         title: "Insufficient Balance",
-        description: `You need $${SPIN_COST} to spin the wheel!`,
+        description: `You need ${spinAmount} USDT to spin the wheel!`,
         variant: "destructive",
       })
       return
@@ -192,7 +182,7 @@ export default function SpinWheelPage() {
       const response = await fetch("/api/participant/spin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: participantEmail }),
+        body: JSON.stringify({ email: participantEmail, spinAmount: spinAmount }),
       })
 
       if (!response.ok) {
@@ -206,13 +196,11 @@ export default function SpinWheelPage() {
         throw new Error(result.error || "Spin was not successful")
       }
 
-      // Spin wheel imperatively — does NOT trigger React re-renders
       await spinWheel(result.prize.segmentIndex)
 
       setWinResult(result)
       setIsSpinning(false)
       setShowWinModal(true)
-      // Refresh balance silently after spin completes
       loadParticipantData()
       loadLastWinners()
     } catch {
@@ -223,327 +211,288 @@ export default function SpinWheelPage() {
         variant: "destructive",
       })
     }
-  }, [participantEmail, availableSpins, balance, spinWheel, loadParticipantData, loadLastWinners, toast])
+  }, [participantEmail, balance, spinAmount, spinWheel, loadParticipantData, loadLastWinners, toast])
 
   if (!mounted || !participantEmail) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4" />
-          <p className="text-amber-900 font-semibold">Loading Lucky Wheel...</p>
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-purple-900 font-semibold">Loading Spin & Win...</p>
         </div>
       </div>
     )
   }
 
-  const canSpin = !isSpinning && balance >= SPIN_COST && availableSpins > 0
+  const canSpin = !isSpinning && balance >= spinAmount
+  const minWinnings = Math.round(spinAmount * Math.min(...WHEEL_SEGMENTS.map(s => s.amount)))
+  const maxWinnings = Math.round(spinAmount * Math.max(...WHEEL_SEGMENTS.map(s => s.amount)))
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-rose-50">
-
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pb-20">
       {/* Header */}
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white sticky top-0 z-40 shadow-lg">
-        <div className="container mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+      <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white sticky top-0 z-40 shadow-lg">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <Link href="/participant/dashboard">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 rounded-lg"
-              >
+              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 rounded-lg">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
             <div className="min-w-0 flex-1">
-              <h1 className="text-sm sm:text-base md:text-lg font-bold truncate">Lucky Wheel</h1>
-              <p className="text-[10px] sm:text-xs text-amber-100 hidden sm:block">Spin to win amazing prizes!</p>
+              <h1 className="text-base sm:text-lg font-bold truncate">Spin & Win</h1>
+              <p className="text-[10px] sm:text-xs text-white/80 hidden sm:block">Multiply your amount</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <div className="bg-white/20 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg border border-white/30 text-center">
-              <div className="text-[9px] sm:text-[10px] text-amber-100">Spins Left</div>
-              <div className="text-base sm:text-lg font-black leading-tight">{availableSpins}</div>
-            </div>
+          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-white/30 backdrop-blur-sm flex-shrink-0">
+            <Wallet className="h-4 w-4" />
+            <span className="font-bold text-sm">${balance.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
-      {/* Balance + Sound row */}
-      <div className="flex items-center justify-center gap-3 mt-4">
-        <button
-          onClick={() => setSoundEnabled((v) => !v)}
-          className="rounded-full h-8 w-8 flex items-center justify-center text-amber-700 hover:bg-amber-100 transition-colors"
-          aria-label="Toggle sound"
-        >
-          {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-        </button>
-        <div className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1.5 rounded-xl font-bold text-sm shadow-lg">
-          <Wallet className="h-4 w-4" />
-          ${balance.toFixed(2)}
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="container mx-auto px-3 sm:px-4 py-4 max-w-4xl">
-
-        {/* Info banner */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 shadow-sm">
-          <div className="flex items-start gap-2">
-            <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Info className="h-3.5 w-3.5 text-amber-600" />
+      <div className="container mx-auto max-w-6xl px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-start">
+          {/* Left: Spin Wheel */}
+          <div className="flex flex-col items-center gap-6">
+            {/* Pointer */}
+            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 lg:static lg:translate-x-0" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }}>
+              <svg width="28" height="35" viewBox="0 0 28 35">
+                <polygon points="14,0 0,35 28,35" fill="#EC4899" stroke="white" strokeWidth="2" />
+              </svg>
             </div>
+
+            {/* Wheel */}
+            <div className="relative flex items-center justify-center">
+              <div ref={wheelRef} className="w-64 h-64 sm:w-80 sm:h-80" style={{ willChange: "transform", transform: "rotate(0deg)", transition: "none" }}>
+                <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
+                  <defs>
+                    {WHEEL_SEGMENTS.map((seg, i) => (
+                      <linearGradient key={`grad-${i}`} id={`segGrad${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor={seg.color} />
+                        <stop offset="100%" stopColor={seg.gradientEnd} />
+                      </linearGradient>
+                    ))}
+                    <radialGradient id="shine" cx="30%" cy="30%" r="60%">
+                      <stop offset="0%" stopColor="white" stopOpacity="0.3" />
+                      <stop offset="100%" stopColor="white" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Outer colored rim */}
+                  <circle cx="100" cy="100" r="98" fill="url(#rimGrad)" />
+
+                  {/* Segments */}
+                  {WHEEL_SEGMENTS.map((segment, i) => {
+                    const angle = 45
+                    const startAngle = i * angle - 90 - 22.5
+                    const endAngle = startAngle + angle
+                    const startRad = (startAngle * Math.PI) / 180
+                    const endRad = (endAngle * Math.PI) / 180
+                    const x1 = 100 + 88 * Math.cos(startRad)
+                    const y1 = 100 + 88 * Math.sin(startRad)
+                    const x2 = 100 + 88 * Math.cos(endRad)
+                    const y2 = 100 + 88 * Math.sin(endRad)
+                    const midAngle = startAngle + angle / 2
+                    const midRad = (midAngle * Math.PI) / 180
+                    const textX = 100 + 62 * Math.cos(midRad)
+                    const textY = 100 + 62 * Math.sin(midRad)
+
+                    return (
+                      <g key={i}>
+                        <path d={`M 100 100 L ${x1} ${y1} A 88 88 0 0 1 ${x2} ${y2} Z`} fill={`url(#segGrad${i})`} stroke="white" strokeWidth="2" />
+                        <text x={textX} y={textY} fill="white" fontSize="13" fontWeight="bold" textAnchor="middle" dominantBaseline="middle" transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}>
+                          {segment.label}
+                        </text>
+                      </g>
+                    )
+                  })}
+
+                  {/* Center button */}
+                  <circle cx="100" cy="100" r="32" fill="url(#spinGrad)" stroke="white" strokeWidth="3" />
+                  <circle cx="100" cy="100" r="28" fill="#FF4757" />
+                  <text x="100" y="103" fontSize="22" fontWeight="bold" textAnchor="middle" dominantBaseline="middle" fill="white">
+                    SPIN
+                  </text>
+
+                  {/* Shine */}
+                  <circle cx="100" cy="100" r="88" fill="url(#shine)" />
+
+                  <defs>
+                    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#F97316" />
+                      <stop offset="25%" stopColor="#EC4899" />
+                      <stop offset="50%" stopColor="#8B5CF6" />
+                      <stop offset="75%" stopColor="#3B82F6" />
+                      <stop offset="100%" stopColor="#06B6D4" />
+                    </linearGradient>
+                    <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#FF6B6B" />
+                      <stop offset="100%" stopColor="#FF4757" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+
+            {/* Sound toggle */}
+            <button onClick={() => setSoundEnabled(v => !v)} className="rounded-full h-10 w-10 flex items-center justify-center text-purple-600 hover:bg-purple-100 transition-colors border border-purple-200">
+              {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+            </button>
+          </div>
+
+          {/* Right: Amount Selection & Info */}
+          <div className="space-y-6">
+            {/* Title */}
             <div>
-              <h3 className="font-bold text-xs sm:text-sm text-amber-900 mb-0.5">How to Play</h3>
-              <p className="text-[10px] sm:text-xs text-amber-800 leading-relaxed">
-                Each spin costs ${SPIN_COST}. You have{" "}
-                <span className="font-bold">{availableSpins}</span>{" "}
-                {availableSpins === 1 ? "spin" : "spins"} available.
-                Win cash prizes instantly credited to your wallet.
-              </p>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">
+                Spin & <span className="text-orange-500">Win</span>
+              </h2>
+              <p className="text-slate-600">Spin the wheel and <span className="text-orange-500 font-semibold">multiply</span> your amount!</p>
             </div>
-          </div>
-        </div>
 
-        {/* Wheel — wrapped in a stable outer div, inner div moved by DOM ref only */}
-        <div className="relative flex items-center justify-center mb-6">
-          {/* Pointer / indicator at top */}
-          <div
-            className="absolute top-0 left-1/2 z-10 -translate-x-1/2 -translate-y-1"
-            style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.4))" }}
-          >
-            <svg width="24" height="30" viewBox="0 0 24 30">
-              <polygon points="12,0 0,28 24,28" fill="#F59E0B" stroke="white" strokeWidth="2" />
-            </svg>
-          </div>
+            {/* Amount Selection */}
+            <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">SELECT AMOUNT</h3>
 
-          {/* The wheel — rotated via ref, NEVER via React state */}
-          <div
-            ref={wheelRef}
-            className="w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80"
-            style={{ willChange: "transform", transform: "rotate(0deg)", transition: "none" }}
-          >
-            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
-              <defs>
-                <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stopColor="#FDE68A" />
-                  <stop offset="50%"  stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#FDE68A" />
-                </linearGradient>
-                <linearGradient id="centerGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%"   stopColor="#FDE68A" />
-                  <stop offset="50%"  stopColor="#FBBF24" />
-                  <stop offset="100%" stopColor="#F59E0B" />
-                </linearGradient>
-                {WHEEL_SEGMENTS.map((seg, i) => (
-                  <linearGradient key={`grad-${i}`} id={`segGrad${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%"   stopColor={seg.color} />
-                    <stop offset="100%" stopColor={seg.gradientEnd} />
-                  </linearGradient>
-                ))}
-                <radialGradient id="shine" cx="30%" cy="30%" r="60%">
-                  <stop offset="0%"   stopColor="white" stopOpacity="0.25" />
-                  <stop offset="100%" stopColor="white" stopOpacity="0" />
-                </radialGradient>
-              </defs>
+              {/* Amount Display */}
+              <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center text-white font-bold">Ⓣ</div>
+                <div className="flex-1">
+                  <input
+                    type="number"
+                    value={spinAmount}
+                    onChange={(e) => setSpinAmount(Math.max(1, parseFloat(e.target.value) || 0))}
+                    className="text-3xl font-bold text-slate-900 bg-transparent border-none outline-none w-full"
+                  />
+                </div>
+                <select className="px-4 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 bg-white">
+                  <option>USDT</option>
+                </select>
+              </div>
 
-              {/* Outer ring */}
-              <circle cx="100" cy="100" r="98" fill="url(#goldRing)" />
-              <circle cx="100" cy="100" r="94" fill="white" />
-              <circle cx="100" cy="100" r="92" fill="none" stroke="#F59E0B" strokeWidth="1" strokeDasharray="4 4" opacity="0.4" />
-
-              {/* Segments */}
-              {WHEEL_SEGMENTS.map((segment, i) => {
-                const angle      = 45
-                const startAngle = i * angle - 90 - 22.5
-                const endAngle   = startAngle + angle
-                const startRad   = (startAngle * Math.PI) / 180
-                const endRad     = (endAngle   * Math.PI) / 180
-                const x1 = 100 + 88 * Math.cos(startRad)
-                const y1 = 100 + 88 * Math.sin(startRad)
-                const x2 = 100 + 88 * Math.cos(endRad)
-                const y2 = 100 + 88 * Math.sin(endRad)
-                const midAngle = startAngle + angle / 2
-                const midRad   = (midAngle * Math.PI) / 180
-                const textX    = 100 + 62 * Math.cos(midRad)
-                const textY    = 100 + 62 * Math.sin(midRad)
-                const isLight  = segment.color === "#F5F5F5"
-
-                return (
-                  <g key={i}>
-                    <path
-                      d={`M 100 100 L ${x1} ${y1} A 88 88 0 0 1 ${x2} ${y2} Z`}
-                      fill={`url(#segGrad${i})`}
-                      stroke="white"
-                      strokeWidth="1.5"
-                    />
-                    <text
-                      x={textX}
-                      y={textY}
-                      fill={isLight ? "#374151" : "white"}
-                      fontSize={segment.label === "JACKPOT" || segment.label === "Refer" ? "8" : "13"}
-                      fontWeight="bold"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}
-                    >
-                      {segment.label}
-                    </text>
-                  </g>
-                )
-              })}
-
-              {/* Center piece */}
-              <circle cx="100" cy="100" r="28" fill="url(#centerGold)" stroke="#F59E0B" strokeWidth="3" />
-              <circle cx="100" cy="100" r="22" fill="#FBBF24" />
-              <circle cx="100" cy="100" r="18" fill="url(#centerGold)" />
-              <text x="100" y="103" fontSize="20" textAnchor="middle" dominantBaseline="middle" fill="#F97316">★</text>
-
-              {/* Shine */}
-              <circle cx="100" cy="100" r="88" fill="url(#shine)" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Spin button */}
-        <div className="flex flex-col items-center gap-2">
-          <button
-            onClick={handleSpin}
-            disabled={!canSpin}
-            className="relative h-12 sm:h-14 px-8 sm:px-10 text-sm sm:text-base font-bold rounded-2xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden transition-transform active:scale-95"
-            style={{
-              background: canSpin
-                ? "linear-gradient(135deg, #FDE68A 0%, #FBBF24 30%, #F59E0B 70%, #D97706 100%)"
-                : "linear-gradient(135deg, #D1D5DB 0%, #9CA3AF 100%)",
-              color: canSpin ? "#92400E" : "#ffffff",
-              boxShadow: canSpin
-                ? "0 6px 0 #B45309, 0 10px 20px rgba(251,191,36,0.35)"
-                : "0 4px 0 #6B7280",
-            }}
-          >
-            {isSpinning ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full" />
-                Spinning...
-              </span>
-            ) : (
-              <span className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                SPIN FOR ${SPIN_COST}
-              </span>
-            )}
-          </button>
-
-          <p className="text-xs sm:text-sm text-gray-500">
-            {balance < SPIN_COST
-              ? `Need $${(SPIN_COST - balance).toFixed(2)} more to spin`
-              : availableSpins <= 0
-              ? "No spins left — earn more by referring friends!"
-              : "Win prizes up to $50 JACKPOT!"}
-          </p>
-        </div>
-
-        {/* Prize table + Winners */}
-        <div className="grid md:grid-cols-2 gap-3 mt-6">
-          {/* Prize table */}
-          <div className="bg-white rounded-xl p-4 shadow-md border border-amber-100">
-            <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-amber-500" />
-              Prize Table
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {WHEEL_SEGMENTS.map((segment, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-gray-50"
-                >
-                  <span className="font-medium text-xs text-gray-700">{segment.label}</span>
-                  <span
-                    className="font-bold text-[10px] px-1.5 py-0.5 rounded-full text-white"
-                    style={{
-                      background:
-                        segment.color === "#F5F5F5"
-                          ? "linear-gradient(135deg, #8B5CF6, #7C3AED)"
-                          : `linear-gradient(135deg, ${segment.color}, ${segment.gradientEnd})`,
+              {/* Preset amounts */}
+              <div className="grid grid-cols-6 gap-2 mb-4">
+                {AMOUNT_PRESETS.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => {
+                      setSpinAmount(amount)
+                      setSelectedPreset(amount)
                     }}
+                    className={`py-2 px-2 rounded-lg font-bold text-sm transition-all ${
+                      selectedPreset === amount
+                        ? "bg-orange-500 text-white border-2 border-orange-500"
+                        : "bg-white text-slate-900 border-2 border-slate-300 hover:border-orange-300"
+                    }`}
                   >
-                    {segment.amount > 0 ? `$${segment.amount}` : "0"}
-                  </span>
+                    {amount}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Possible Winnings */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
+              <h3 className="text-sm font-bold text-slate-900 mb-4">POSSIBLE WINNINGS</h3>
+
+              <div className="flex items-end justify-between mb-4">
+                <div>
+                  <p className="text-xs text-slate-600">Min</p>
+                  <p className="text-2xl font-bold text-green-600">{minWinnings} USDT</p>
+                </div>
+                <div className="text-center">
+                  <span className="text-2xl">—</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-slate-600">Max</p>
+                  <p className="text-2xl font-bold text-purple-600">{maxWinnings} USDT</p>
+                </div>
+              </div>
+
+              {/* Multiplier scale */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-600">0.5x</span>
+                  <span className="text-slate-600">10x</span>
+                </div>
+                <div className="h-2 bg-gradient-to-r from-slate-300 via-orange-400 to-purple-600 rounded-full"></div>
+              </div>
+            </div>
+
+            {/* Spin Button */}
+            <button
+              onClick={handleSpin}
+              disabled={!canSpin}
+              className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg shadow-lg transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+                canSpin
+                  ? "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 hover:shadow-xl"
+                  : "bg-gradient-to-r from-slate-400 to-slate-500"
+              }`}
+            >
+              <span className="flex items-center justify-center gap-2">
+                {isSpinning ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Spinning...
+                  </>
+                ) : (
+                  <>
+                    🚀 SPIN NOW
+                  </>
+                )}
+              </span>
+            </button>
+
+            {/* Info */}
+            {balance < spinAmount && (
+              <div className="text-center text-sm text-red-600 font-semibold">
+                Need {(spinAmount - balance).toFixed(2)} more USDT
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Winners - Bottom */}
+        {lastWinners.length > 0 && (
+          <div className="mt-12 pt-8 border-t border-purple-200">
+            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
+              Live Activity
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {lastWinners.slice(0, 4).map((winner, idx) => (
+                <div key={idx} className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
+                  <p className="text-xs text-slate-600 mb-1">User {idx + 1}</p>
+                  <p className="text-sm font-bold text-slate-900 mb-2">{winner.email.split("@")[0]}</p>
+                  <p className="text-lg font-bold text-green-600">+${winner.amount.toFixed(2)}</p>
+                  <p className="text-xs text-slate-500 mt-2">Just now</p>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Recent Winners */}
-          <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-xl p-4 shadow-md text-white">
-            <h3 className="text-sm font-bold mb-3 flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Recent Winners
-            </h3>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {lastWinners.length > 0 ? (
-                lastWinners.slice(0, 6).map((winner, idx) => (
-                  <div key={idx} className="bg-white/20 rounded-lg px-3 py-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium truncate max-w-[130px]">
-                        {winner.email.replace(/(.{3}).*(@.*)/, "$1***$2")}
-                      </span>
-                      <span className="text-sm font-bold text-yellow-200 flex-shrink-0">
-                        +${winner.amount}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-xs text-white/70 text-center py-4">
-                  No recent winners yet. Be the first!
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Win Modal */}
       {showWinModal && winResult && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
-            <div className="bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 p-6 text-center">
-              <div className="w-16 h-16 mx-auto mb-3 bg-white rounded-full flex items-center justify-center shadow-lg">
-                {winResult.prize.amount > 0 ? (
-                  <Trophy className="h-8 w-8 text-amber-500" />
-                ) : (
-                  <X className="h-8 w-8 text-gray-400" />
-                )}
-              </div>
-              <h2 className="text-2xl font-black text-white mb-1">
-                {winResult.prize.amount > 0 ? "Congratulations!" : "Try Again!"}
-              </h2>
-              <p className="text-white/90 text-base">
-                {winResult.prize.amount > 0
-                  ? `You won $${winResult.prize.amount}!`
-                  : "Better luck next time!"}
-              </p>
-            </div>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-bounce-in">
+            <button onClick={() => setShowWinModal(false)} className="ml-auto block text-slate-400 hover:text-slate-600 mb-4">
+              <X className="w-6 h-6" />
+            </button>
+            <div className="text-center">
+              <p className="text-6xl mb-4">🎉</p>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">Congratulations!</h3>
+              <p className="text-slate-600 mb-6">You won on {winResult.prize.label}</p>
 
-            <div className="p-5">
-              <div className="bg-gray-50 rounded-xl p-3 mb-4 text-sm">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-gray-500">Previous Balance:</span>
-                  <span className="font-bold">${winResult.balanceBefore.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">New Balance:</span>
-                  <span className="font-bold text-green-600">${winResult.balanceAfter.toFixed(2)}</span>
-                </div>
+              <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl p-4 mb-6">
+                <p className="text-sm text-slate-600 mb-1">You Won</p>
+                <p className="text-4xl font-bold text-green-600">${(winResult.prize.amount * spinAmount).toFixed(2)}</p>
               </div>
-              <Button
-                onClick={() => {
-                  setShowWinModal(false)
-                  setWinResult(null)
-                }}
-                className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl"
-              >
-                {winResult.prize.amount > 0 ? "Spin Again" : "Try Again"}
+
+              <Button onClick={() => setShowWinModal(false)} className="w-full">
+                Spin Again
               </Button>
             </div>
           </div>
