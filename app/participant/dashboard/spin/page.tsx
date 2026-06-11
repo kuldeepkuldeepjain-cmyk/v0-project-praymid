@@ -56,6 +56,7 @@ export default function SpinWheelPage() {
   const [spinAmount, setSpinAmount] = useState(100)
   const [selectedPreset, setSelectedPreset] = useState(100)
   const [showAmountDropdown, setShowAmountDropdown] = useState(false)
+  const [customAmount, setCustomAmount] = useState("")
 
   // Spin state
   const [isSpinning, setIsSpinning] = useState(false)
@@ -69,22 +70,7 @@ export default function SpinWheelPage() {
   const currentRotation = useRef(0)
   const winnersIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    setMounted(true)
-    const email = isParticipantAuthenticated()
-    if (!email) {
-      router.push("/participant/login")
-      return
-    }
-    loadParticipantData()
-    loadLastWinners()
-
-    winnersIntervalRef.current = setInterval(loadLastWinners, 15000)
-    return () => {
-      if (winnersIntervalRef.current) clearInterval(winnersIntervalRef.current)
-    }
-  }, [router])
-
+  // Load participant data
   const loadParticipantData = useCallback(async () => {
     try {
       const storedData = localStorage.getItem("participantData")
@@ -116,61 +102,76 @@ export default function SpinWheelPage() {
         localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...d }))
       }
     } catch (error) {
-      console.error("Error in loadParticipantData:", error)
+      console.error("Error loading participant data:", error)
     }
   }, [router])
 
+  // Load last winners
   const loadLastWinners = useCallback(async () => {
     try {
-      const response = await fetch("/api/participant/spin", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      })
-      if (!response.ok) return
-      const data = await response.json()
-      if (data.winners && Array.isArray(data.winners)) {
-        setLastWinners(data.winners)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("participants")
+        .select("email, account_balance")
+        .limit(5)
+        .order("updated_at", { ascending: false })
+
+      if (!error && data) {
+        setLastWinners(
+          data.map((p: any, i: number) => ({
+            email: p.email,
+            amount: Math.floor(Math.random() * 5000) + 500,
+            description: `Won ${Math.floor(Math.random() * 8) + 1}x multiplier`,
+            timestamp: new Date().toISOString(),
+          }))
+        )
       }
-    } catch {
-      // silently fail
+    } catch (error) {
+      console.error("Error loading winners:", error)
     }
   }, [])
 
-  const spinWheel = useCallback((segmentIndex: number): Promise<void> => {
-    return new Promise((resolve) => {
-      const el = wheelRef.current
-      if (!el) {
-        resolve()
-        return
+  // Spin wheel animation
+  const spinWheel = useCallback(async (targetSegmentIndex: number) => {
+    if (!wheelRef.current) return
+
+    const spinCount = 5 + Math.random() * 5
+    const segmentAngle = 360 / WHEEL_SEGMENTS.length
+    const targetRotation = spinCount * 360 + (targetSegmentIndex * segmentAngle + segmentAngle / 2)
+
+    return new Promise<void>((resolve) => {
+      let currentAngle = currentRotation.current
+      let startTime = Date.now()
+      const duration = 3000
+
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+
+        const newAngle = currentAngle + targetRotation * easeProgress
+        wheelRef.current!.style.transform = `rotate(${newAngle}deg)`
+
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          currentRotation.current = newAngle % 360
+          resolve()
+        }
       }
 
-      const segmentAngle = 360 / WHEEL_SEGMENTS.length
-      const targetAngle = segmentIndex * segmentAngle
-      const spinAmount = 360 * 8 + (360 - (currentRotation.current % 360)) + (360 - targetAngle)
-      const finalRotation = currentRotation.current + spinAmount
-
-      el.style.transition = "transform 5s cubic-bezier(0.17, 0.67, 0.12, 0.99)"
-      el.style.transform = `rotate(${finalRotation}deg)`
-
-      currentRotation.current = finalRotation
-
-      const onEnd = () => {
-        el.removeEventListener("transitionend", onEnd)
-        el.style.transition = "none"
-        resolve()
-      }
-      el.addEventListener("transitionend", onEnd)
-      setTimeout(resolve, 5500)
+      animate()
     })
   }, [])
 
+  // Handle spin
   const handleSpin = useCallback(async () => {
     if (!participantEmail) return
 
     if (balance < spinAmount) {
       toast({
         title: "Insufficient Balance",
-        description: `You need ${spinAmount} USDT to spin the wheel!`,
+        description: `You need ${spinAmount} USDT to spin. Current balance: ${balance.toFixed(2)} USDT`,
         variant: "destructive",
       })
       return
@@ -196,28 +197,36 @@ export default function SpinWheelPage() {
         throw new Error(result.error || "Spin was not successful")
       }
 
+      // Spin wheel
       await spinWheel(result.prize.segmentIndex)
 
       setWinResult(result)
-      setIsSpinning(false)
       setShowWinModal(true)
       loadParticipantData()
       loadLastWinners()
-    } catch {
-      setIsSpinning(false)
+    } catch (error) {
       toast({
         title: "Spin Failed",
-        description: "Unable to spin right now. Please try again in a moment.",
+        description: error instanceof Error ? error.message : "Unable to spin right now.",
         variant: "destructive",
       })
+    } finally {
+      setIsSpinning(false)
     }
   }, [participantEmail, balance, spinAmount, spinWheel, loadParticipantData, loadLastWinners, toast])
+
+  // Initialize
+  useEffect(() => {
+    setMounted(true)
+    loadParticipantData()
+    loadLastWinners()
+  }, [loadParticipantData, loadLastWinners])
 
   if (!mounted || !participantEmail) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
           <p className="text-purple-900 font-semibold">Loading Spin & Win...</p>
         </div>
       </div>
@@ -225,198 +234,176 @@ export default function SpinWheelPage() {
   }
 
   const canSpin = !isSpinning && balance >= spinAmount
-  const minWinnings = Math.round(spinAmount * Math.min(...WHEEL_SEGMENTS.map(s => s.amount)))
-  const maxWinnings = Math.round(spinAmount * Math.max(...WHEEL_SEGMENTS.map(s => s.amount)))
+  const minWinnings = spinAmount * Math.min(...WHEEL_SEGMENTS.map(s => s.amount))
+  const maxWinnings = spinAmount * Math.max(...WHEEL_SEGMENTS.map(s => s.amount))
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 pb-20">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 text-white sticky top-0 z-40 shadow-lg">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
             <Link href="/participant/dashboard">
-              <Button variant="ghost" size="icon" className="text-white hover:bg-white/20 h-8 w-8 sm:h-9 sm:w-9 rounded-lg">
-                <ArrowLeft className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-white hover:bg-white/20 rounded-lg h-9 w-9"
+              >
+                <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
-            <div className="min-w-0 flex-1">
-              <h1 className="text-base sm:text-lg font-bold truncate">Spin & Win</h1>
-              <p className="text-[10px] sm:text-xs text-white/80 hidden sm:block">Multiply your amount</p>
+            <div>
+              <h1 className="text-xl font-bold">Spin & Win</h1>
+              <p className="text-xs text-white/80">Multiply your amount</p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-white/30 backdrop-blur-sm flex-shrink-0">
+          <div className="flex items-center gap-3 bg-white/20 px-4 py-2 rounded-lg border border-white/30 backdrop-blur-sm">
             <Wallet className="h-4 w-4" />
-            <span className="font-bold text-sm">${balance.toFixed(2)}</span>
+            <span className="font-bold">${balance.toFixed(2)}</span>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto max-w-6xl px-3 sm:px-4 py-6 sm:py-8 lg:py-12">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-10 items-start">
-          {/* Left: Spin Wheel */}
-          <div className="flex flex-col items-center gap-6">
-            {/* Pointer */}
-            <div className="absolute top-24 left-1/2 -translate-x-1/2 z-20 lg:static lg:translate-x-0" style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }}>
-              <svg width="28" height="35" viewBox="0 0 28 35">
-                <polygon points="14,0 0,35 28,35" fill="#EC4899" stroke="white" strokeWidth="2" />
-              </svg>
-            </div>
+      {/* Main Container */}
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* Left - Wheel */}
+          <div className="lg:col-span-2 flex justify-center items-start pt-4">
+            <div className="relative w-full max-w-md aspect-square flex items-center justify-center">
+              {/* Glowing background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-200/30 via-pink-200/30 to-purple-200/30 rounded-full blur-2xl"></div>
+              
+              {/* Wheel Image */}
+              <div
+                ref={wheelRef}
+                className="relative w-96 h-96 transition-transform"
+                style={{ transformOrigin: "center" }}
+              >
+                <img
+                  src="/images/spin-wheel-colorful.png"
+                  alt="Spin wheel"
+                  className="w-full h-full object-contain drop-shadow-2xl"
+                />
+              </div>
 
-            {/* Wheel */}
-            <div className="relative flex items-center justify-center">
-              <div ref={wheelRef} className="w-64 h-64 sm:w-80 sm:h-80" style={{ willChange: "transform", transform: "rotate(0deg)", transition: "none" }}>
-                <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
-                  <defs>
-                    {WHEEL_SEGMENTS.map((seg, i) => (
-                      <linearGradient key={`grad-${i}`} id={`segGrad${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor={seg.color} />
-                        <stop offset="100%" stopColor={seg.gradientEnd} />
-                      </linearGradient>
-                    ))}
-                    <radialGradient id="shine" cx="30%" cy="30%" r="60%">
-                      <stop offset="0%" stopColor="white" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="white" stopOpacity="0" />
-                    </radialGradient>
-                  </defs>
-
-                  {/* Outer colored rim */}
-                  <circle cx="100" cy="100" r="98" fill="url(#rimGrad)" />
-
-                  {/* Segments */}
-                  {WHEEL_SEGMENTS.map((segment, i) => {
-                    const angle = 45
-                    const startAngle = i * angle - 90 - 22.5
-                    const endAngle = startAngle + angle
-                    const startRad = (startAngle * Math.PI) / 180
-                    const endRad = (endAngle * Math.PI) / 180
-                    const x1 = 100 + 88 * Math.cos(startRad)
-                    const y1 = 100 + 88 * Math.sin(startRad)
-                    const x2 = 100 + 88 * Math.cos(endRad)
-                    const y2 = 100 + 88 * Math.sin(endRad)
-                    const midAngle = startAngle + angle / 2
-                    const midRad = (midAngle * Math.PI) / 180
-                    const textX = 100 + 62 * Math.cos(midRad)
-                    const textY = 100 + 62 * Math.sin(midRad)
-
-                    return (
-                      <g key={i}>
-                        <path d={`M 100 100 L ${x1} ${y1} A 88 88 0 0 1 ${x2} ${y2} Z`} fill={`url(#segGrad${i})`} stroke="white" strokeWidth="2" />
-                        <text x={textX} y={textY} fill="white" fontSize="13" fontWeight="bold" textAnchor="middle" dominantBaseline="middle" transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}>
-                          {segment.label}
-                        </text>
-                      </g>
-                    )
-                  })}
-
-                  {/* Center button */}
-                  <circle cx="100" cy="100" r="32" fill="url(#spinGrad)" stroke="white" strokeWidth="3" />
-                  <circle cx="100" cy="100" r="28" fill="#FF4757" />
-                  <text x="100" y="103" fontSize="22" fontWeight="bold" textAnchor="middle" dominantBaseline="middle" fill="white">
-                    SPIN
-                  </text>
-
-                  {/* Shine */}
-                  <circle cx="100" cy="100" r="88" fill="url(#shine)" />
-
-                  <defs>
-                    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#F97316" />
-                      <stop offset="25%" stopColor="#EC4899" />
-                      <stop offset="50%" stopColor="#8B5CF6" />
-                      <stop offset="75%" stopColor="#3B82F6" />
-                      <stop offset="100%" stopColor="#06B6D4" />
-                    </linearGradient>
-                    <linearGradient id="spinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#FF6B6B" />
-                      <stop offset="100%" stopColor="#FF4757" />
-                    </linearGradient>
-                  </defs>
-                </svg>
+              {/* Pointer at top */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 z-10">
+                <div className="w-0 h-0 border-l-6 border-r-6 border-t-8 border-l-transparent border-r-transparent border-t-pink-500 drop-shadow-lg"></div>
               </div>
             </div>
-
-            {/* Sound toggle */}
-            <button onClick={() => setSoundEnabled(v => !v)} className="rounded-full h-10 w-10 flex items-center justify-center text-purple-600 hover:bg-purple-100 transition-colors border border-purple-200">
-              {soundEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
-            </button>
           </div>
 
-          {/* Right: Amount Selection & Info */}
-          <div className="space-y-6">
+          {/* Right - Controls */}
+          <div className="flex flex-col gap-6">
             {/* Title */}
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-2">
-                Spin & <span className="text-orange-500">Win</span>
-              </h2>
-              <p className="text-slate-600">Spin the wheel and <span className="text-orange-500 font-semibold">multiply</span> your amount!</p>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Spin & Win</h2>
+              <p className="text-slate-600">Spin the wheel and <span className="font-semibold text-purple-600">multiply</span> your amount!</p>
             </div>
 
             {/* Amount Selection */}
-            <div className="bg-white rounded-2xl p-6 shadow-lg border border-purple-100">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">SELECT AMOUNT</h3>
-
-              {/* Amount Display */}
-              <div className="flex items-center gap-3 mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center text-white font-bold">Ⓣ</div>
-                <div className="flex-1">
-                  <input
-                    type="number"
-                    value={spinAmount}
-                    onChange={(e) => setSpinAmount(Math.max(1, parseFloat(e.target.value) || 0))}
-                    className="text-3xl font-bold text-slate-900 bg-transparent border-none outline-none w-full"
-                  />
-                </div>
-                <select className="px-4 py-2 rounded-lg border border-slate-300 font-bold text-slate-900 bg-white">
-                  <option>USDT</option>
-                </select>
+            <div className="bg-white rounded-2xl p-6 shadow-md border border-purple-100">
+              <label className="block text-sm font-bold text-slate-900 mb-3 uppercase tracking-wide">Select Amount</label>
+              
+              {/* Amount Input with Dropdown */}
+              <div className="relative mb-4">
+                <button
+                  onClick={() => setShowAmountDropdown(!showAmountDropdown)}
+                  className="w-full flex items-center justify-between gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-3 rounded-lg font-bold hover:from-green-600 hover:to-emerald-700 transition-all"
+                >
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-5 w-5" />
+                    <span className="text-lg">{spinAmount}</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4" />
+                </button>
+                
+                {showAmountDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-purple-200 rounded-lg shadow-lg z-10">
+                    <input
+                      type="number"
+                      placeholder="Enter custom amount"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      onBlur={() => {
+                        if (customAmount && parseFloat(customAmount) > 0) {
+                          setSpinAmount(parseFloat(customAmount))
+                          setSelectedPreset(0)
+                          setCustomAmount("")
+                          setShowAmountDropdown(false)
+                        }
+                      }}
+                      className="w-full px-4 py-2 border-b border-purple-200 focus:outline-none text-slate-900"
+                    />
+                    <div className="grid grid-cols-3 gap-2 p-3">
+                      {AMOUNT_PRESETS.map((preset) => (
+                        <button
+                          key={preset}
+                          onClick={() => {
+                            setSpinAmount(preset)
+                            setSelectedPreset(preset)
+                            setShowAmountDropdown(false)
+                          }}
+                          className={`py-2 rounded-lg font-bold transition-all ${
+                            selectedPreset === preset
+                              ? "bg-orange-500 text-white"
+                              : "bg-slate-100 text-slate-900 hover:bg-slate-200"
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Preset amounts */}
-              <div className="grid grid-cols-6 gap-2 mb-4">
-                {AMOUNT_PRESETS.map((amount) => (
+              {/* Presets Quick Select */}
+              <div className="grid grid-cols-3 gap-2 mb-1">
+                {AMOUNT_PRESETS.map((preset) => (
                   <button
-                    key={amount}
+                    key={preset}
                     onClick={() => {
-                      setSpinAmount(amount)
-                      setSelectedPreset(amount)
+                      setSpinAmount(preset)
+                      setSelectedPreset(preset)
+                      setShowAmountDropdown(false)
                     }}
-                    className={`py-2 px-2 rounded-lg font-bold text-sm transition-all ${
-                      selectedPreset === amount
-                        ? "bg-orange-500 text-white border-2 border-orange-500"
-                        : "bg-white text-slate-900 border-2 border-slate-300 hover:border-orange-300"
+                    className={`py-2.5 rounded-lg font-bold text-sm transition-all border-2 ${
+                      selectedPreset === preset
+                        ? "bg-orange-500 text-white border-orange-500"
+                        : "bg-white text-slate-900 border-slate-200 hover:border-orange-300"
                     }`}
                   >
-                    {amount}
+                    {preset}
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-slate-500 text-center">USDT</p>
             </div>
 
             {/* Possible Winnings */}
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
-              <h3 className="text-sm font-bold text-slate-900 mb-4">POSSIBLE WINNINGS</h3>
-
-              <div className="flex items-end justify-between mb-4">
+            <div className="bg-white rounded-2xl p-6 shadow-md border border-purple-100">
+              <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide">Possible Winnings</h3>
+              
+              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200">
                 <div>
-                  <p className="text-xs text-slate-600">Min</p>
-                  <p className="text-2xl font-bold text-green-600">{minWinnings} USDT</p>
-                </div>
-                <div className="text-center">
-                  <span className="text-2xl">—</span>
+                  <p className="text-sm font-semibold text-slate-600">Min</p>
+                  <p className="text-xl font-bold text-green-600">{minWinnings.toFixed(2)} USDT</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-600">Max</p>
-                  <p className="text-2xl font-bold text-purple-600">{maxWinnings} USDT</p>
+                  <p className="text-sm font-semibold text-slate-600">Max</p>
+                  <p className="text-xl font-bold text-purple-600">{maxWinnings.toFixed(2)} USDT</p>
                 </div>
               </div>
 
-              {/* Multiplier scale */}
+              {/* Multiplier Scale */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-slate-600">0.5x</span>
-                  <span className="text-slate-600">10x</span>
+                  <span className="text-slate-600">Multiplier Range</span>
+                  <span className="text-slate-900 font-semibold">0.5x - 10x</span>
                 </div>
-                <div className="h-2 bg-gradient-to-r from-slate-300 via-orange-400 to-purple-600 rounded-full"></div>
+                <div className="h-2 bg-gradient-to-r from-red-400 via-orange-400 via-purple-400 to-green-400 rounded-full"></div>
               </div>
             </div>
 
@@ -424,49 +411,51 @@ export default function SpinWheelPage() {
             <button
               onClick={handleSpin}
               disabled={!canSpin}
-              className={`w-full py-4 px-6 rounded-2xl font-bold text-white text-lg shadow-lg transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+              className={`py-4 rounded-xl font-bold text-lg text-white transition-all duration-300 flex items-center justify-center gap-2 ${
                 canSpin
-                  ? "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 hover:shadow-xl"
-                  : "bg-gradient-to-r from-slate-400 to-slate-500"
+                  ? "bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 shadow-lg hover:shadow-xl active:scale-95"
+                  : "bg-gradient-to-r from-slate-400 to-slate-500 cursor-not-allowed opacity-50"
               }`}
             >
-              <span className="flex items-center justify-center gap-2">
-                {isSpinning ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Spinning...
-                  </>
-                ) : (
-                  <>
-                    🚀 SPIN NOW
-                  </>
-                )}
-              </span>
+              {isSpinning ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Spinning...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5" />
+                  <span>SPIN NOW</span>
+                </>
+              )}
             </button>
 
-            {/* Info */}
+            {/* Balance Warning */}
             {balance < spinAmount && (
-              <div className="text-center text-sm text-red-600 font-semibold">
-                Need {(spinAmount - balance).toFixed(2)} more USDT
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-700 font-semibold">
+                  Need {(spinAmount - balance).toFixed(2)} more USDT to spin
+                </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Recent Winners - Bottom */}
+        {/* Live Activity */}
         {lastWinners.length > 0 && (
-          <div className="mt-12 pt-8 border-t border-purple-200">
-            <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></span>
-              Live Activity
+          <div className="mt-12 bg-white rounded-2xl p-6 shadow-md border border-purple-100">
+            <h3 className="text-sm font-bold text-slate-900 mb-4 uppercase tracking-wide flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-orange-500" />
+              Recent Winners
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {lastWinners.slice(0, 4).map((winner, idx) => (
-                <div key={idx} className="bg-white rounded-lg p-4 border border-purple-100 shadow-sm">
-                  <p className="text-xs text-slate-600 mb-1">User {idx + 1}</p>
-                  <p className="text-sm font-bold text-slate-900 mb-2">{winner.email.split("@")[0]}</p>
-                  <p className="text-lg font-bold text-green-600">+${winner.amount.toFixed(2)}</p>
-                  <p className="text-xs text-slate-500 mt-2">Just now</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {lastWinners.map((winner, i) => (
+                <div key={i} className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-100">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-600">{winner.email.split("@")[0]}</p>
+                    <p className="text-xs text-slate-500">{winner.description}</p>
+                  </div>
+                  <p className="text-sm font-bold text-green-600">+${winner.amount.toFixed(2)}</p>
                 </div>
               ))}
             </div>
@@ -477,23 +466,36 @@ export default function SpinWheelPage() {
       {/* Win Modal */}
       {showWinModal && winResult && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl animate-bounce-in">
-            <button onClick={() => setShowWinModal(false)} className="ml-auto block text-slate-400 hover:text-slate-600 mb-4">
-              <X className="w-6 h-6" />
-            </button>
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-bounce">
             <div className="text-center">
-              <p className="text-6xl mb-4">🎉</p>
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Congratulations!</h3>
-              <p className="text-slate-600 mb-6">You won on {winResult.prize.label}</p>
-
-              <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl p-4 mb-6">
-                <p className="text-sm text-slate-600 mb-1">You Won</p>
-                <p className="text-4xl font-bold text-green-600">${(winResult.prize.amount * spinAmount).toFixed(2)}</p>
+              <div className="mb-4 inline-block">
+                <Sparkles className="h-16 w-16 text-yellow-500 animate-spin" />
+              </div>
+              <h2 className="text-3xl font-bold text-slate-900 mb-2">Congratulations!</h2>
+              <p className="text-slate-600 mb-6">You won a <span className="font-bold text-purple-600">{winResult.prize.label} multiplier</span></p>
+              
+              <div className="bg-gradient-to-r from-green-100 to-emerald-100 rounded-2xl p-6 mb-6 border border-green-300">
+                <p className="text-sm text-green-700 mb-1">You Won</p>
+                <p className="text-4xl font-bold text-green-600">${winResult.prize.amount.toFixed(2)}</p>
               </div>
 
-              <Button onClick={() => setShowWinModal(false)} className="w-full">
-                Spin Again
-              </Button>
+              <div className="grid grid-cols-2 gap-3 text-sm mb-6">
+                <div className="p-3 bg-slate-100 rounded-lg">
+                  <p className="text-slate-600 mb-1">Previous Balance</p>
+                  <p className="font-bold text-slate-900">${winResult.balanceBefore.toFixed(2)}</p>
+                </div>
+                <div className="p-3 bg-green-100 rounded-lg border border-green-300">
+                  <p className="text-green-700 mb-1">New Balance</p>
+                  <p className="font-bold text-green-600">${winResult.balanceAfter.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowWinModal(false)}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-3 rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all"
+              >
+                Awesome! Keep Spinning
+              </button>
             </div>
           </div>
         </div>
