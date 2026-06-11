@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Wallet, RotateCw, Trophy, Shield, Gem, ChevronDown } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { createClient } from "@/lib/supabase/client"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 interface Winner {
   email: string
@@ -255,28 +255,25 @@ export default function SpinWheelPage() {
 
   // ── data loaders ──────────────────────────────────────────────────────────
   const loadParticipantData = useCallback(async () => {
+    if (!isParticipantAuthenticated()) { router.push("/participant/login"); return }
+
+    const storedData = localStorage.getItem("participantData")
+    if (!storedData) { router.push("/participant/login"); return }
+
     try {
-      const storedData = localStorage.getItem("participantData")
-      if (!storedData) { router.push("/participant/login"); return }
       const parsed = JSON.parse(storedData)
+      // Optimistically show cached values while we fetch fresh data
+      setParticipantEmail(parsed.email || "")
+      setBalance(Number(parsed.account_balance) || 0)
 
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("email, account_balance, is_active")
-        .eq("email", parsed.email)
-        .single()
-
-      if (error) {
-        setParticipantEmail(parsed.email || "")
-        setBalance(parsed.account_balance || 0)
-        return
-      }
-      if (data) {
-        const d = data as any
-        setParticipantEmail(d.email)
-        setBalance(d.account_balance ?? 0)
-        localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...d }))
+      if (!parsed.email) return
+      const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(parsed.email)}`)
+      if (!res.ok) return
+      const json = await res.json()
+      if (json.participant) {
+        setParticipantEmail(json.participant.email)
+        setBalance(Number(json.participant.account_balance) || 0)
+        localStorage.setItem("participantData", JSON.stringify({ ...parsed, ...json.participant }))
       }
     } catch (e) {
       console.error("loadParticipantData:", e)
@@ -285,23 +282,10 @@ export default function SpinWheelPage() {
 
   const loadLastWinners = useCallback(async () => {
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("participants")
-        .select("email, account_balance")
-        .limit(5)
-        .order("updated_at", { ascending: false })
-
-      if (!error && data) {
-        const multipliers = ["2.5x", "3.0x", "5.0x", "10.0x", "0.5x"]
-        setLastWinners(
-          data.map((p: any, i: number) => ({
-            email: p.email,
-            amount: Math.floor(Math.random() * 5000) + 500,
-            multiplier: multipliers[i % multipliers.length],
-          }))
-        )
-      }
+      const res = await participantFetch("/api/participant/spin")
+      if (!res.ok) return
+      const json = await res.json()
+      setLastWinners(json.winners || [])
     } catch (e) {
       console.error("loadLastWinners:", e)
     }
@@ -363,9 +347,8 @@ export default function SpinWheelPage() {
     setIsSpinning(true)
 
     try {
-      const response = await fetch("/api/participant/spin", {
+      const response = await participantFetch("/api/participant/spin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: participantEmail, spinAmount }),
       })
 
@@ -400,16 +383,7 @@ export default function SpinWheelPage() {
     loadLastWinners()
   }, [loadParticipantData, loadLastWinners])
 
-  if (!mounted || !participantEmail) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full mx-auto mb-4 animate-spin" />
-          <p className="text-slate-700 font-semibold">Loading Spin & Win...</p>
-        </div>
-      </div>
-    )
-  }
+  if (!mounted) return null
 
   const canSpin      = !isSpinning && balance >= spinAmount
   const minWinnings  = +(spinAmount * Math.min(...WHEEL_SEGMENTS.map(s => s.multiplier))).toFixed(2)
