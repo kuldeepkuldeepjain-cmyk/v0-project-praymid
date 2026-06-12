@@ -863,6 +863,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* WhatsApp Support Banner */}
+      <section className="bg-gradient-to-r from-green-600 via-emerald-600 to-green-700 py-4 sm:py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-white">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+                <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm sm:text-base">Need Support & Guidance?</p>
+                <p className="text-green-100 text-xs sm:text-sm">Our experts are available on WhatsApp — get instant help 24/7</p>
+              </div>
+            </div>
+            <a
+              href="https://wa.me/237651528626"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-white text-green-700 font-bold text-sm sm:text-base px-5 sm:px-6 py-2.5 sm:py-3 rounded-full shadow-lg hover:shadow-xl hover:bg-green-50 transition-all duration-200 hover:scale-105 active:scale-95 flex-shrink-0"
+            >
+              <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+              Chat on WhatsApp
+              <span className="text-green-500 font-normal hidden sm:inline">+237 651 528 626</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href="https://wa.me/237651528626"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-50 group flex items-center gap-0 hover:gap-3 w-14 h-14 hover:w-auto hover:px-4 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-2xl hover:shadow-green-500/40 transition-all duration-300 overflow-hidden"
+        title="Chat with us on WhatsApp — +237 651 528 626"
+      >
+        <MessageCircle className="w-7 h-7 flex-shrink-0 mx-auto group-hover:mx-0" />
+        <span className="text-sm font-semibold whitespace-nowrap max-w-0 group-hover:max-w-xs opacity-0 group-hover:opacity-100 transition-all duration-300 overflow-hidden">
+          +237 651 528 626
+        </span>
+      </a>
+
       {/* Footer */}
       <footer className="bg-gradient-to-b from-slate-900 via-slate-900 to-black text-white py-10 sm:py-14 lg:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -899,7 +940,17 @@ export default function LandingPage() {
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">About</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Blog</a></li>
                 <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Careers</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Contact</a></li>
+                <li>
+                  <a
+                    href="https://wa.me/237651528626"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-400 hover:text-green-400 transition-colors text-xs sm:text-sm flex items-center gap-1"
+                  >
+                    <MessageCircle className="w-3 h-3" />
+                    WhatsApp Support
+                  </a>
+                </li>
               </ul>
             </div>
 
