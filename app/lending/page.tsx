@@ -17,6 +17,7 @@ import {
   Lock,
   Shield,
   Users,
+  MessageCircle,
 } from "lucide-react"
 
 export default function LendingPage() {
@@ -421,6 +422,34 @@ export default function LendingPage() {
         </div>
       </section>
 
+      {/* Support & Guidance Section */}
+      <section className="py-8 sm:py-12 px-4 bg-gradient-to-r from-emerald-900/30 to-cyan-900/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="bg-slate-800/60 border border-emerald-500/30 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="space-y-2">
+                <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
+                  Need Support & Guidance?
+                </h3>
+                <p className="text-sm sm:text-base text-slate-300">Connect with our expert team on WhatsApp for instant assistance and personalized guidance</p>
+              </div>
+              <a
+                href="https://wa.me/237651528626"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-shrink-0"
+              >
+                <Button className="h-11 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold text-sm sm:text-base flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+                  Chat on WhatsApp
+                </Button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-12 sm:py-24 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
@@ -445,6 +474,20 @@ export default function LendingPage() {
           </div>
         </div>
       </section>
+
+      {/* Floating WhatsApp Support Button */}
+      <a
+        href="https://wa.me/237651528626"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full flex items-center justify-center shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-110 group"
+        title="Chat with us on WhatsApp"
+      >
+        <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 group-hover:rotate-12 transition-transform" />
+        <span className="absolute -top-12 right-0 bg-slate-900 text-white text-xs sm:text-sm px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          +237 651 528 626
+        </span>
+      </a>
 
       {/* Footer */}
       <footer className="py-8 sm:py-12 px-4 border-t border-slate-700/50 bg-slate-900">
