@@ -905,72 +905,142 @@ export default function LandingPage() {
       </a>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-b from-slate-900 via-slate-900 to-black text-white py-10 sm:py-14 lg:py-20">
+      <footer className="bg-gradient-to-b from-slate-900 via-slate-900 to-black text-white pt-14 sm:pt-20 pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 lg:gap-12 mb-8 sm:mb-12 lg:mb-16">
-            {/* Brand */}
-            <div className="col-span-2 sm:col-span-2 lg:col-span-1 space-y-3 sm:space-y-4">
-              <div className="flex items-center gap-2 mb-2 sm:mb-4">
+
+          {/* Top: brand block + stats row */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10 lg:gap-16 mb-12 lg:mb-16">
+
+            {/* Brand — spans 2 cols on large */}
+            <div className="lg:col-span-2 space-y-5">
+              <div className="flex items-center gap-2.5">
                 <FlowChainLogo variant="icon" size="sm" />
-                <span className="font-bold text-lg sm:text-xl">FlowChain</span>
+                <span className="font-bold text-xl tracking-tight">FlowChain</span>
               </div>
-              <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">Building a community-driven financial platform with zero fees and unlimited rewards.</p>
-              <div className="flex gap-2 pt-1 sm:pt-2">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 transition-colors"></div>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
+                FlowChain is a community-driven financial ecosystem built on blockchain transparency. We empower everyday people to grow wealth through referrals, smart trading, and daily rewards — with zero hidden fees.
+              </p>
+
+              {/* Key stats */}
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                {[
+                  { value: "50K+", label: "Active Members" },
+                  { value: "$2M+", label: "Rewards Paid" },
+                  { value: "0%",   label: "Platform Fees" },
+                ].map((s) => (
+                  <div key={s.label} className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
+                    <div className="text-base sm:text-lg font-bold text-cyan-400">{s.value}</div>
+                    <div className="text-[10px] sm:text-xs text-slate-500 mt-0.5">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Social icons */}
+              <div className="flex gap-2 pt-1">
+                {/* Telegram */}
+                <a href="#" aria-label="Telegram" className="w-9 h-9 rounded-full bg-white/10 hover:bg-cyan-500/30 border border-white/10 hover:border-cyan-500/40 flex items-center justify-center transition-all">
+                  <svg className="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                </a>
+                {/* Twitter / X */}
+                <a href="#" aria-label="Twitter" className="w-9 h-9 rounded-full bg-white/10 hover:bg-sky-500/30 border border-white/10 hover:border-sky-500/40 flex items-center justify-center transition-all">
+                  <svg className="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                {/* WhatsApp */}
+                <a href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" className="w-9 h-9 rounded-full bg-white/10 hover:bg-green-500/30 border border-white/10 hover:border-green-500/40 flex items-center justify-center transition-all">
+                  <MessageCircle className="w-4 h-4 text-slate-300" />
+                </a>
               </div>
             </div>
 
-            {/* Product Links */}
-            <div className="space-y-2 sm:space-y-4">
-              <h4 className="font-bold text-sm sm:text-base lg:text-lg">Product</h4>
-              <ul className="space-y-1 sm:space-y-2">
-                <li><a href="#rewards" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Rewards</a></li>
-                <li><a href="#benefits" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Benefits</a></li>
-                <li><a href="#trading" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Trading</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Pricing</a></li>
-              </ul>
-            </div>
+            {/* Links grid — 3 cols */}
+            <div className="lg:col-span-3 grid grid-cols-3 gap-6 sm:gap-8">
 
-            {/* Company Links */}
-            <div className="space-y-2 sm:space-y-4">
-              <h4 className="font-bold text-sm sm:text-base lg:text-lg">Company</h4>
-              <ul className="space-y-1 sm:space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">About</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Blog</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Careers</a></li>
-                <li>
-                  <a
-                    href="https://wa.me/237651528626"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-slate-400 hover:text-green-400 transition-colors text-xs sm:text-sm flex items-center gap-1"
-                  >
-                    <MessageCircle className="w-3 h-3" />
-                    WhatsApp Support
-                  </a>
-                </li>
-              </ul>
-            </div>
+              {/* Platform */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-sm text-white uppercase tracking-wider">Platform</h4>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: "Earn Rewards",      href: "#rewards"  },
+                    { label: "Refer & Earn",       href: "#referral" },
+                    { label: "Lucky Spin Wheel",   href: "#spin"     },
+                    { label: "Trading Simulator",  href: "#trading"  },
+                    { label: "Mystery Box",        href: "#mystery"  },
+                    { label: "Leaderboard",        href: "#leaders"  },
+                  ].map((l) => (
+                    <li key={l.label}>
+                      <a href={l.href} className="text-slate-400 hover:text-cyan-400 transition-colors text-xs sm:text-sm">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-            {/* Legal */}
-            <div className="space-y-2 sm:space-y-4">
-              <h4 className="font-bold text-sm sm:text-base lg:text-lg">Legal</h4>
-              <ul className="space-y-1 sm:space-y-2">
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Privacy</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Terms</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Security</a></li>
-                <li><a href="#" className="text-slate-400 hover:text-white transition-colors text-xs sm:text-sm">Cookies</a></li>
-              </ul>
+              {/* Company */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-sm text-white uppercase tracking-wider">Company</h4>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: "About FlowChain", href: "#about"   },
+                    { label: "How It Works",    href: "#how"     },
+                    { label: "Community",       href: "#community"},
+                    { label: "Blog",            href: "#"        },
+                    { label: "Careers",         href: "#"        },
+                  ].map((l) => (
+                    <li key={l.label}>
+                      <a href={l.href} className="text-slate-400 hover:text-cyan-400 transition-colors text-xs sm:text-sm">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                  <li>
+                    <a
+                      href="https://wa.me/237651528626"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-slate-400 hover:text-green-400 transition-colors text-xs sm:text-sm flex items-center gap-1.5"
+                    >
+                      <MessageCircle className="w-3 h-3 flex-shrink-0" />
+                      WhatsApp Support
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Legal */}
+              <div className="space-y-4">
+                <h4 className="font-bold text-sm text-white uppercase tracking-wider">Legal</h4>
+                <ul className="space-y-2.5">
+                  {[
+                    { label: "Privacy Policy",    href: "#" },
+                    { label: "Terms of Service",  href: "#" },
+                    { label: "Security",          href: "#" },
+                    { label: "Cookie Policy",     href: "#" },
+                    { label: "Risk Disclaimer",   href: "#" },
+                  ].map((l) => (
+                    <li key={l.label}>
+                      <a href={l.href} className="text-slate-400 hover:text-cyan-400 transition-colors text-xs sm:text-sm">
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
             </div>
           </div>
 
-          <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent mb-6 sm:mb-8"></div>
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-white/15 to-transparent mb-6" />
 
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0">
-            <p className="text-slate-500 text-xs sm:text-sm">&copy; 2025 FlowChain. All rights reserved.</p>
-            <p className="text-slate-500 text-xs sm:text-sm">Made with love for the community</p>
+          {/* Bottom bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+            <p>&copy; 2025 FlowChain. All rights reserved.</p>
+            <p className="text-center">
+              Built on blockchain. Powered by community.{" "}
+              <span className="text-cyan-600">Zero fees. Unlimited potential.</span>
+            </p>
+            <p>Made with care for the community</p>
           </div>
         </div>
       </footer>
