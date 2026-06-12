@@ -264,12 +264,22 @@ function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           </p>
 
           <div className="space-y-3">
-            <Link href="/participant/dashboard/settings/help" className="block">
-              <Button className="w-full h-12 bg-[#7c3aed] hover:bg-[#6d28d9] btn-premium">
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Support
-              </Button>
-            </Link>
+            <a
+              href="https://wa.me/995574450590"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp Support
+            </a>
+            <a
+              href="mailto:support@flowchain.club"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-semibold rounded-lg transition-colors"
+            >
+              <Mail className="h-4 w-4" />
+              Email Support
+            </a>
             <Button
               variant="outline"
               className="w-full h-12 bg-transparent border-2 border-slate-300 hover:bg-slate-50"
@@ -464,6 +474,35 @@ function HamburgerMenu({
               <span className="text-slate-700">Help & Support</span>
             </div>
           </Link>
+
+          {/* Support contacts */}
+          <div className="mx-1 mt-2 rounded-xl bg-green-50 border border-green-100 overflow-hidden">
+            <p className="text-[11px] font-semibold text-green-700 uppercase tracking-wide px-3 pt-2.5 pb-1">Contact Support</p>
+            <a
+              href="https://wa.me/995574450590"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-green-100 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">WhatsApp</p>
+                <p className="text-xs text-green-600">+995 574 450 590</p>
+              </div>
+            </a>
+            <a
+              href="mailto:support@flowchain.club"
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-green-100 transition-colors border-t border-green-100"
+            >
+              <Mail className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Email</p>
+                <p className="text-xs text-green-600">support@flowchain.club</p>
+              </div>
+            </a>
+          </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100">
@@ -1904,6 +1943,22 @@ export default function DashboardHome() {
           </button>
         </nav>
       </footer>
+
+      {/* Floating WhatsApp Support Button */}
+      <a
+        href="https://wa.me/995574450590"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="WhatsApp Support: +995 574 450 590"
+        className="fixed bottom-40 right-6 z-50 h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-2xl hover:shadow-green-500/40 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 group"
+      >
+        <MessageCircle className="h-6 w-6 text-white" />
+        {/* Tooltip */}
+        <span className="absolute right-16 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+          <span className="block">WhatsApp Support</span>
+          <span className="block text-green-400">+995 574 450 590</span>
+        </span>
+      </a>
 
       {/* Floating AI Chat Button */}
       <Button
