@@ -346,87 +346,167 @@ export default function LandingPage() {
                 />
               </div>
 
-              {/* Spin Wheel SVG Component - Interactive & Eye-Catching */}
-              <div className="absolute right-0 bottom-8 z-10 w-[320px] animate-spin-slow-hero">
-                {/* Glowing platform under wheel */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-10 bg-gradient-to-r from-orange-400/60 via-pink-400/60 to-purple-400/60 rounded-full blur-xl"></div>
+              {/* Spin Wheel SVG Component - Realistic 3D with Advanced Effects */}
+              <div className="absolute right-0 bottom-8 z-10 w-[320px] animate-spin-slow-hero group cursor-pointer">
+                {/* Multiple layered glow effects */}
+                <div className="absolute -inset-16 bg-gradient-to-br from-orange-500/20 via-pink-500/10 to-transparent rounded-full blur-3xl group-hover:from-orange-500/40 group-hover:via-pink-500/20 transition-all duration-700"></div>
+                <div className="absolute -inset-12 bg-gradient-to-t from-purple-500/15 to-transparent rounded-full blur-2xl group-hover:from-purple-500/30 transition-all duration-700"></div>
                 
-                {/* Hero Spin Wheel SVG */}
+                {/* Glowing platform under wheel */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-12 bg-gradient-to-r from-orange-400/80 via-pink-400/80 to-purple-400/80 rounded-full blur-2xl group-hover:blur-3xl group-hover:from-orange-400 group-hover:to-purple-400 transition-all duration-700"></div>
+                
+                {/* Hero Spin Wheel SVG - High Detail */}
                 <svg
                   width="320"
                   height="320"
                   viewBox="0 0 360 360"
-                  className="relative w-full h-auto object-contain drop-shadow-2xl animate-pulse-glow"
-                  style={{ filter: "drop-shadow(0 0 40px rgba(249,115,22,0.45))" }}
+                  className="relative w-full h-auto object-contain drop-shadow-2xl animate-pulse-glow group-hover:animate-shimmer-wheel transition-all duration-700"
+                  style={{ filter: "drop-shadow(0 0 50px rgba(249,115,22,0.6))" }}
                 >
                   <defs>
-                    {/* Rainbow rim gradient */}
+                    {/* Enhanced gradients for 3D effect */}
                     <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#f97316" />
-                      <stop offset="25%" stopColor="#ec4899" />
+                      <stop offset="0%" stopColor="#ff6b35" />
+                      <stop offset="15%" stopColor="#f97316" />
+                      <stop offset="35%" stopColor="#ec4899" />
                       <stop offset="60%" stopColor="#a855f7" />
-                      <stop offset="100%" stopColor="#6366f1" />
+                      <stop offset="85%" stopColor="#6366f1" />
+                      <stop offset="100%" stopColor="#3b82f6" />
                     </linearGradient>
-                    {/* Center button gradient */}
-                    <radialGradient id="centerGrad" cx="50%" cy="35%" r="65%">
-                      <stop offset="0%" stopColor="#fb923c" />
+
+                    {/* Rim shine gradient */}
+                    <linearGradient id="rimShine" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.6)" />
+                      <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+                      <stop offset="100%" stopColor="rgba(0,0,0,0.2)" />
+                    </linearGradient>
+
+                    {/* Center button 3D gradient */}
+                    <radialGradient id="centerGrad" cx="45%" cy="35%" r="70%">
+                      <stop offset="0%" stopColor="#fbbf24" />
+                      <stop offset="40%" stopColor="#fb923c" />
                       <stop offset="100%" stopColor="#dc2626" />
                     </radialGradient>
-                    {/* Glow effect */}
+
+                    {/* Inner center glow */}
+                    <radialGradient id="centerGlow" cx="50%" cy="50%" r="100%">
+                      <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+                      <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                    </radialGradient>
+
+                    {/* Segment shadows */}
+                    <filter id="segmentShadow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feDropShadow dx="0" dy="3" stdDeviation="2" floodColor="rgba(0,0,0,0.3)" />
+                    </filter>
+
+                    {/* Enhanced wheel glow */}
                     <filter id="wheelGlow">
-                      <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                      <feGaussianBlur stdDeviation="3" result="coloredBlur" />
                       <feMerge>
                         <feMergeNode in="coloredBlur" />
                         <feMergeNode in="SourceGraphic" />
                       </feMerge>
                     </filter>
+
+                    {/* LED glow filter */}
+                    <filter id="ledGlow">
+                      <feGaussianBlur stdDeviation="2" />
+                      <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.8" />
+                      </feComponentTransfer>
+                    </filter>
                   </defs>
 
-                  {/* Outer glow circle */}
-                  <circle cx="180" cy="180" r="172" fill="rgba(249,115,22,0.08)" filter="url(#wheelGlow)" />
+                  {/* Deep shadow layer for 3D depth */}
+                  <ellipse cx="180" cy="200" rx="160" ry="30" fill="rgba(0,0,0,0.3)" filter="url(#wheelGlow)" />
 
-                  {/* Rainbow rim - thick gradient ring */}
-                  <circle cx="180" cy="180" r="168" fill="none" stroke="url(#rimGrad)" strokeWidth="24" />
-                  <circle cx="180" cy="180" r="168" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+                  {/* Outer glow circles - multiple layers */}
+                  <circle cx="180" cy="180" r="180" fill="none" stroke="rgba(249,115,22,0.15)" strokeWidth="3" />
+                  <circle cx="180" cy="180" r="176" fill="none" stroke="rgba(236,72,153,0.1)" strokeWidth="2" />
+                  <circle cx="180" cy="180" r="172" fill="rgba(249,115,22,0.06)" />
 
-                  {/* Segments - 8 colorful pieces */}
+                  {/* Segments - 8 with realistic depth & shadow */}
                   {[
-                    { color: "#FCD34D", text: "2.5x", mult: "2.5X" },
-                    { color: "#FBBF24", text: "3.0x", mult: "3X" },
-                    { color: "#A78BFA", text: "5.0x", mult: "5X" },
-                    { color: "#86EFAC", text: "10.0x", mult: "10X" },
-                    { color: "#A5F3FC", text: "0.5x", mult: "0.5X" },
-                    { color: "#F472B6", text: "4.0x", mult: "4X" },
-                    { color: "#FED7AA", text: "1.5x", mult: "1.5X" },
-                    { color: "#93C5FD", text: "2.0x", mult: "2X" },
+                    { color: "#fcd34d", darkColor: "#d4a547", text: "2.5x", icon: "🎁" },
+                    { color: "#fbbf24", darkColor: "#c4941b", text: "3.0x", icon: "🏆" },
+                    { color: "#a78bfa", darkColor: "#8b5cf6", text: "5.0x", icon: "🚀" },
+                    { color: "#86efac", darkColor: "#22c55e", text: "10.0x", icon: "💰" },
+                    { color: "#a5f3fc", darkColor: "#0891b2", text: "0.5x", icon: "⚡" },
+                    { color: "#f472b6", darkColor: "#db2777", text: "4.0x", icon: "🎯" },
+                    { color: "#fed7aa", darkColor: "#d97706", text: "1.5x", icon: "📊" },
+                    { color: "#93c5fd", darkColor: "#3b82f6", text: "2.0x", icon: "💎" },
                   ].map((seg, i) => {
                     const startDeg = i * 45 - 90;
                     const endDeg = startDeg + 45;
                     const midRad = ((startDeg + 22.5) * Math.PI) / 180;
-                    const x1 = 180 + 144 * Math.cos((startDeg * Math.PI) / 180);
-                    const y1 = 180 + 144 * Math.sin((startDeg * Math.PI) / 180);
-                    const x2 = 180 + 144 * Math.cos((endDeg * Math.PI) / 180);
-                    const y2 = 180 + 144 * Math.sin((endDeg * Math.PI) / 180);
-                    const tx = 180 + 100 * Math.cos(midRad);
-                    const ty = 180 + 100 * Math.sin(midRad);
+                    const x1 = 180 + 148 * Math.cos((startDeg * Math.PI) / 180);
+                    const y1 = 180 + 148 * Math.sin((startDeg * Math.PI) / 180);
+                    const x2 = 180 + 148 * Math.cos((endDeg * Math.PI) / 180);
+                    const y2 = 180 + 148 * Math.sin((endDeg * Math.PI) / 180);
+                    const textR = 102;
+                    const tx = 180 + textR * Math.cos(midRad);
+                    const ty = 180 + textR * Math.sin(midRad);
                     
                     return (
                       <g key={i}>
+                        {/* Segment shadow for depth */}
                         <path
-                          d={`M 180 180 L ${x1} ${y1} A 144 144 0 0 1 ${x2} ${y2} Z`}
-                          fill={seg.color}
-                          stroke="white"
-                          strokeWidth="2"
+                          d={`M 180 180 L ${x1} ${y1} A 148 148 0 0 1 ${x2} ${y2} Z`}
+                          fill={seg.darkColor}
+                          opacity="0.25"
+                          filter="url(#segmentShadow)"
                         />
+                        
+                        {/* Main segment with gradient */}
+                        <defs>
+                          <linearGradient id={`seg${i}`} x1="50%" y1="0%" x2="50%" y2="100%">
+                            <stop offset="0%" stopColor={seg.color} />
+                            <stop offset="50%" stopColor={seg.color} />
+                            <stop offset="100%" stopColor={seg.darkColor} />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          d={`M 180 180 L ${x1} ${y1} A 148 148 0 0 1 ${x2} ${y2} Z`}
+                          fill={`url(#seg${i})`}
+                          stroke="rgba(255,255,255,0.5)"
+                          strokeWidth="2.5"
+                          strokeLinejoin="round"
+                        />
+
+                        {/* Segment shine - top edge highlight */}
+                        <path
+                          d={`M 180 180 L ${x1} ${y1} A 148 148 0 0 1 ${x2} ${y2} Z`}
+                          fill="url(#rimShine)"
+                          opacity="0.15"
+                        />
+
+                        {/* Text label with shadow */}
+                        <text
+                          x={tx}
+                          y={ty - 2}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize="18"
+                          fontWeight="900"
+                          fill="rgba(0,0,0,0.15)"
+                          fontFamily="Arial, sans-serif"
+                          letterSpacing="-0.5"
+                          transform={`rotate(${startDeg + 22.5}, ${tx}, ${ty})`}
+                        >
+                          {seg.text}
+                        </text>
+                        
+                        {/* Text label - main */}
                         <text
                           x={tx}
                           y={ty}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          fontSize="16"
+                          fontSize="18"
                           fontWeight="900"
                           fill="#1e293b"
                           fontFamily="Arial, sans-serif"
+                          letterSpacing="-0.5"
                           transform={`rotate(${startDeg + 22.5}, ${tx}, ${ty})`}
                         >
                           {seg.text}
@@ -435,55 +515,102 @@ export default function LandingPage() {
                     );
                   })}
 
-                  {/* Center button - glowing red/orange */}
-                  <circle cx="180" cy="180" r="52" fill="url(#centerGrad)" filter="url(#wheelGlow)" />
-                  <ellipse cx="180" cy="160" rx="32" ry="18" fill="rgba(255,255,255,0.25)" />
+                  {/* Rainbow rim - thick gradient with inner/outer shine */}
+                  <circle cx="180" cy="180" r="165" fill="none" stroke="url(#rimGrad)" strokeWidth="26" strokeLinecap="round" filter="url(#wheelGlow)" />
+                  <circle cx="180" cy="180" r="165" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
+                  <circle cx="180" cy="180" r="155" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                  <circle cx="180" cy="180" r="192" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1" />
 
-                  {/* SPIN text */}
+                  {/* Center button - 3D with depth */}
+                  <circle cx="180" cy="180" r="54" fill="#000000" opacity="0.15" filter="url(#wheelGlow)" />
+                  <circle cx="180" cy="180" r="52" fill="url(#centerGrad)" filter="url(#wheelGlow)" />
+                  <circle cx="180" cy="180" r="52" fill="url(#centerGlow)" />
+                  
+                  {/* Center highlight - glossy effect */}
+                  <ellipse cx="177" cy="165" rx="28" ry="16" fill="rgba(255,255,255,0.35)" />
+                  <ellipse cx="180" cy="162" rx="20" ry="10" fill="rgba(255,255,255,0.5)" />
+
+                  {/* Circular arrow icon on center */}
+                  <path
+                    d="M 160,180 A 20,20 0 0 1 200,180 M 200,180 L 195,175 M 200,180 L 195,185"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    opacity="0.7"
+                  />
+
+                  {/* SPIN text with shadow */}
                   <text
                     x="180"
-                    y="175"
+                    y="176"
                     textAnchor="middle"
-                    fontSize="18"
+                    dominantBaseline="middle"
+                    fontSize="20"
                     fontWeight="900"
-                    fill="white"
+                    fill="rgba(0,0,0,0.2)"
                     fontFamily="Arial, sans-serif"
-                    letterSpacing="1"
+                    letterSpacing="2"
                   >
                     SPIN
                   </text>
                   <text
                     x="180"
-                    y="195"
+                    y="174"
                     textAnchor="middle"
-                    fontSize="9"
-                    fill="rgba(255,255,255,0.85)"
+                    dominantBaseline="middle"
+                    fontSize="20"
+                    fontWeight="900"
+                    fill="white"
+                    fontFamily="Arial, sans-serif"
+                    letterSpacing="2"
+                  >
+                    SPIN
+                  </text>
+
+                  {/* Good luck text */}
+                  <text
+                    x="180"
+                    y="196"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="10"
+                    fill="rgba(255,255,255,0.9)"
                     fontFamily="Arial, sans-serif"
                   >
                     Good luck!
                   </text>
 
-                  {/* LED dots around rim - glowing effect */}
+                  {/* LED dots - enhanced glow with multiple layers */}
                   {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => {
                     const rad = (deg * Math.PI) / 180;
-                    const cx = 180 + 168 * Math.cos(rad);
-                    const cy = 180 + 168 * Math.sin(rad);
+                    const cx = 180 + 172 * Math.cos(rad);
+                    const cy = 180 + 172 * Math.sin(rad);
                     return (
-                      <circle
-                        key={i}
-                        cx={cx}
-                        cy={cy}
-                        r="5"
-                        fill="white"
-                        style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.9))" }}
-                      />
+                      <g key={i}>
+                        {/* LED shadow */}
+                        <circle cx={cx} cy={cy + 1} r="5.5" fill="rgba(0,0,0,0.4)" />
+                        {/* LED outer glow */}
+                        <circle cx={cx} cy={cy} r="7" fill="rgba(255,255,255,0.3)" filter="url(#ledGlow)" />
+                        {/* LED main */}
+                        <circle cx={cx} cy={cy} r="5.5" fill="white" />
+                        {/* LED inner highlight */}
+                        <circle cx={cx - 1.5} cy={cy - 1.5} r="2" fill="rgba(255,255,255,0.8)" />
+                      </g>
                     );
                   })}
 
-                  {/* Diamond gem pointer at top */}
-                  <g transform="translate(180, 20)">
-                    <polygon points="0,-12 8,0 0,12 -8,0" fill="#ec4899" stroke="white" strokeWidth="1.5" />
-                    <polygon points="0,-12 8,0 0,4 -8,0" fill="rgba(255,255,255,0.3)" />
+                  {/* Diamond gem pointer at top - Enhanced 3D */}
+                  <g transform="translate(180, 22)">
+                    {/* Gem shadow */}
+                    <polygon points="0,-10 7,2 0,10 -7,2" fill="rgba(0,0,0,0.4)" opacity="0.8" />
+                    {/* Gem main */}
+                    <polygon points="0,-12 8,0 0,12 -8,0" fill="#ec4899" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" />
+                    {/* Gem top highlight */}
+                    <polygon points="0,-12 8,0 0,-2 -8,0" fill="rgba(255,255,255,0.4)" />
+                    {/* Gem bottom reflection */}
+                    <polygon points="0,0 8,0 0,8 -8,0" fill="rgba(255,200,240,0.3)" />
                   </g>
                 </svg>
               </div>
