@@ -413,37 +413,37 @@ function PredictPageContent() {
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-blue-600/5 rounded-full blur-3xl" />
       </div>
       
-      {/* Professional Header */}
-      <div className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 shadow-2xl">
+      {/* Professional Header - Light Theme */}
+      <div className="border-b border-purple-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm relative">
         {/* Top Bar - Navigation & Quick Stats */}
         <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center gap-3">
             {/* Left: Back button & Title */}
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <Link href="/participant/dashboard">
-                <Button variant="ghost" size="icon" className="rounded-lg hover:bg-slate-800 h-9 w-9 text-slate-300 hover:text-white transition-colors">
+                <Button variant="ghost" size="icon" className="rounded-lg hover:bg-slate-100 h-9 w-9 text-slate-600 hover:text-slate-900 transition-colors">
                   <ArrowLeft className="h-5 w-5" />
                 </Button>
               </Link>
               <div className="hidden sm:flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
+                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-purple-600 to-orange-600 flex items-center justify-center shadow-md">
                   <BarChart3 className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">Prediction Market</h1>
-                  <p className="text-xs text-slate-400">Trade crypto, commodities & forex with live prices</p>
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-600 to-orange-600 bg-clip-text text-transparent">Prediction Market</h1>
+                  <p className="text-xs text-slate-500">Trade crypto, commodities & forex with live prices</p>
                 </div>
               </div>
               <div className="sm:hidden">
-                <h2 className="text-base font-bold text-white">Prediction</h2>
+                <h2 className="text-base font-bold text-slate-900">Prediction</h2>
               </div>
             </div>
 
-            {/* Right: Metrics */}
+            {/* Right: History Button */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               <Button
                 onClick={() => setShowHistoryModal(true)}
-                className="rounded-lg font-semibold gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-3 py-2 h-auto text-white"
+                className="rounded-lg font-semibold gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-3 py-2 h-auto text-white"
               >
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">History</span>
@@ -453,51 +453,51 @@ function PredictPageContent() {
         </div>
 
         {/* Portfolio Metrics Bar */}
-        <div className="border-t border-slate-700 bg-gradient-to-r from-slate-900/50 to-slate-950/50 backdrop-blur-sm">
+        <div className="border-t border-purple-100 bg-gradient-to-r from-white/50 to-purple-50/50 backdrop-blur-sm">
           <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
             {/* Balance */}
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
+            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-white/60 border border-purple-100">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 flex items-center justify-center">
-                <PieChart className="h-4 w-4 text-purple-400" />
+                <PieChart className="h-4 w-4 text-purple-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium truncate">Wallet</p>
-                <p className="text-xs sm:text-sm font-bold text-white truncate">${walletBalance.toFixed(2)}</p>
+                <p className="text-[10px] text-slate-500 font-medium truncate">Wallet</p>
+                <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">${walletBalance.toFixed(2)}</p>
               </div>
             </div>
 
             {/* Referral Balance */}
             {referralBalance > 0 && (
-              <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
+              <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-white/60 border border-emerald-100">
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 flex items-center justify-center">
-                  <Award className="h-4 w-4 text-emerald-400" />
+                  <Award className="h-4 w-4 text-emerald-600" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[10px] text-slate-400 font-medium truncate">Referral</p>
-                  <p className="text-xs sm:text-sm font-bold text-white truncate">${referralBalance.toFixed(2)}</p>
+                  <p className="text-[10px] text-slate-500 font-medium truncate">Referral</p>
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">${referralBalance.toFixed(2)}</p>
                 </div>
               </div>
             )}
 
             {/* Win Rate */}
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
+            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-white/60 border border-green-100">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-600/20 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-green-400" />
+                <TrendingUp className="h-4 w-4 text-green-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium truncate">Win Rate</p>
-                <p className="text-xs sm:text-sm font-bold text-white truncate">--</p>
+                <p className="text-[10px] text-slate-500 font-medium truncate">Win Rate</p>
+                <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">--</p>
               </div>
             </div>
 
             {/* Active Trades */}
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
+            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-white/60 border border-blue-100">
               <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-600/20 flex items-center justify-center">
-                <Zap className="h-4 w-4 text-blue-400" />
+                <Zap className="h-4 w-4 text-blue-600" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium truncate">Active</p>
-                <p className="text-xs sm:text-sm font-bold text-white truncate">{Object.keys(activeTrades).length}</p>
+                <p className="text-[10px] text-slate-500 font-medium truncate">Active</p>
+                <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{Object.keys(activeTrades).length}</p>
               </div>
             </div>
           </div>
@@ -506,8 +506,8 @@ function PredictPageContent() {
 
       {/* Main Content Area */}
       <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 relative z-10">
-        {/* Professional Filter Tabs */}
-        <div className="mb-4 sm:mb-6 flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700 p-1.5 overflow-x-auto shadow-lg">
+        {/* Professional Filter Tabs - Light Theme */}
+        <div className="mb-4 sm:mb-6 flex items-center gap-2 bg-white/70 backdrop-blur-sm rounded-xl border border-purple-200 p-1.5 overflow-x-auto shadow-md">
           {([
             { key: 'all',       label: 'All Assets',  icon: '📊' },
             { key: 'crypto',    label: 'Crypto',      icon: '₿' },
@@ -519,8 +519,8 @@ function PredictPageContent() {
               onClick={() => setAssetFilter(key)}
               className={`flex-none px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
                 assetFilter === key
-                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               {label}
@@ -552,10 +552,11 @@ function PredictPageContent() {
               const priceData = cryptoPrices[asset.symbol]
               
               if (!priceData) {
+              if (!priceData) {
                 return (
                   <div
                     key={asset.symbol}
-                    className="relative overflow-hidden bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700 p-4 shadow-lg hover:shadow-xl transition-all"
+                    className="relative overflow-hidden bg-white/70 backdrop-blur-sm rounded-xl border border-slate-200 p-4 shadow-md"
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <AssetLogo
@@ -567,11 +568,11 @@ function PredictPageContent() {
                         className="rounded-lg"
                       />
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-sm text-white truncate">{asset.displayName}</h3>
-                        <p className="text-xs text-slate-400 truncate">{asset.name}</p>
+                        <h3 className="font-bold text-sm text-slate-900 truncate">{asset.displayName}</h3>
+                        <p className="text-xs text-slate-500 truncate">{asset.name}</p>
                       </div>
                     </div>
-                    <div className="text-xs text-slate-400 animate-pulse">Loading price...</div>
+                    <div className="text-xs text-slate-500 animate-pulse">Loading price...</div>
                   </div>
                 )
               }
@@ -584,19 +585,19 @@ function PredictPageContent() {
                 <div
                   key={asset.symbol}
                   onClick={() => setSelectedAssetSymbol(asset.symbol)}
-                  className={`relative overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] shadow-lg cursor-pointer backdrop-blur-sm p-4 ${
+                  className={`relative overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer backdrop-blur-sm p-4 ${
                     flashColor === 'green' 
-                      ? 'bg-green-500/10 border-green-500/50' 
+                      ? 'bg-green-50/70 border-green-300' 
                       : flashColor === 'red' 
-                      ? 'bg-red-500/10 border-red-500/50' 
+                      ? 'bg-red-50/70 border-red-300' 
                       : hasActiveTrade
-                      ? 'bg-cyan-500/10 border-cyan-500/50'
-                      : 'bg-slate-800/40 border-slate-700'
+                      ? 'bg-blue-50/70 border-blue-300'
+                      : 'bg-white/70 border-slate-200'
                   }`}
                 >
                   {/* Active Trade Badge */}
                   {hasActiveTrade && (
-                    <div className="absolute top-2 right-2 px-2 py-1 bg-cyan-600/80 text-xs font-bold text-white rounded-lg">
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-blue-600 text-xs font-bold text-white rounded-lg">
                       ACTIVE
                     </div>
                   )}
@@ -612,15 +613,15 @@ function PredictPageContent() {
                       className="rounded-lg"
                     />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-sm text-white truncate">{asset.displayName}</h3>
-                      <p className="text-xs text-slate-400 truncate">{asset.name}</p>
+                      <h3 className="font-bold text-sm text-slate-900 truncate">{asset.displayName}</h3>
+                      <p className="text-xs text-slate-500 truncate">{asset.name}</p>
                     </div>
                   </div>
 
                   {/* Price Display */}
                   <div className="mb-3">
-                    <p className="text-2xl font-black text-white mb-1">${priceData.price.toFixed(2)}</p>
-                    <div className={`flex items-center gap-1 text-sm font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                    <p className="text-2xl font-black text-slate-900 mb-1">${priceData.price.toFixed(2)}</p>
+                    <div className={`flex items-center gap-1 text-sm font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
                       {isPositive ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
                       <span>{Math.abs(priceData.change).toFixed(2)}%</span>
                     </div>
@@ -629,8 +630,8 @@ function PredictPageContent() {
                   {/* CTA Button */}
                   <Button className={`w-full text-xs sm:text-sm font-bold h-9 rounded-lg transition-all ${
                     isPositive 
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
-                      : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700'
+                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white' 
+                      : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white'
                   }`}>
                     <Target className="h-3.5 w-3.5 mr-1.5" />
                     Predict
