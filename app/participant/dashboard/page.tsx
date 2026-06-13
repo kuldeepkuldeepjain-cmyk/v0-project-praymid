@@ -654,7 +654,7 @@ function DailySpinWheel({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden" style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fce7f3 30%, #e0e7ff 60%, #f0fdf4 100%)' }}>
+    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f0720 0%, #1a0533 30%, #200a3e 60%, #0d1526 100%)' }}>
       {/* Premium CSS Animations */}
       <style jsx>{`
         @keyframes float {
@@ -696,17 +696,28 @@ function DailySpinWheel({
         }
       `}</style>
       
-      {/* Floating Background Decorations - Hidden on mobile for performance */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
-        <div className="absolute top-5 left-5 w-64 h-64 bg-orange-300/40 rounded-full blur-3xl" style={{ animation: 'float 4s ease-in-out infinite', willChange: 'transform' }} />
-        <div className="absolute top-20 right-10 w-52 h-52 bg-pink-300/35 rounded-full blur-3xl" style={{ animation: 'float-reverse 5s ease-in-out infinite', willChange: 'transform' }} />
-        <div className="absolute bottom-32 left-10 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
-        <div className="absolute bottom-10 right-5 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" style={{ animation: 'float-reverse 4.5s ease-in-out infinite', animationDelay: '0.5s', willChange: 'transform' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-200/25 rounded-full blur-3xl" />
+      {/* Starfield & Floating Background Decorations */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Stars */}
+        {[...Array(22)].map((_, i) => (
+          <div key={i} className="absolute rounded-full bg-white"
+            style={{
+              width: `${1.5 + (i % 3)}px`, height: `${1.5 + (i % 3)}px`,
+              top: `${(i * 41 + 9) % 96}%`, left: `${(i * 57 + 5) % 96}%`,
+              opacity: 0.12 + (i % 4) * 0.07,
+              animation: `pulse ${2 + (i % 3)}s ease-in-out infinite`,
+              animationDelay: `${(i * 0.35) % 3}s`,
+            }}
+          />
+        ))}
+        <div className="absolute top-5 left-5 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 4s ease-in-out infinite', willChange: 'transform' }} />
+        <div className="absolute top-20 right-10 w-52 h-52 bg-pink-500/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float-reverse 5s ease-in-out infinite', willChange: 'transform' }} />
+        <div className="absolute bottom-32 left-10 w-72 h-72 bg-purple-600/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/12 rounded-full blur-3xl" />
       </div>
 
       {/* Header - Mobile Optimized */}
-      <div className="relative z-10 flex items-center justify-between p-3 sm:p-5 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+      <div className="relative z-10 flex items-center justify-between p-3 sm:p-5 border-b border-white/10 bg-white/5 backdrop-blur-md">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           <div 
             className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -719,22 +730,22 @@ function DailySpinWheel({
             <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg sm:text-2xl font-black bg-gradient-to-r from-[#e85d3b] via-[#f59e0b] to-[#fbbf24] bg-clip-text text-transparent">LUCK WHEEL</h2>
-            <p className="text-[10px] sm:text-xs text-slate-600 font-semibold tracking-wide truncate">Spin to win amazing rewards!</p>
+            <h2 className="text-lg sm:text-2xl font-black bg-gradient-to-r from-[#fb923c] via-[#f59e0b] to-[#fbbf24] bg-clip-text text-transparent">LUCK WHEEL</h2>
+            <p className="text-[10px] sm:text-xs text-orange-200/80 font-semibold tracking-wide truncate">Spin to win amazing rewards!</p>
           </div>
         </div>
         <button 
           onClick={onClose} 
-          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0"
+          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors flex-shrink-0"
         >
-          <X className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
+          <X className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
         </button>
       </div>
 
       {/* Content Container with Gradient Background - Mobile Optimized */}
       <div className="relative z-10 flex-1 flex flex-col items-center px-3 sm:px-4 py-4 sm:py-6 overflow-y-auto">
         {/* Animated Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-orange-50 to-pink-50 opacity-60" 
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-orange-900/10 to-pink-900/20 opacity-60" 
           style={{
             backgroundSize: '400% 400%',
             animation: 'gradient-shift 15s ease infinite'
@@ -745,118 +756,242 @@ function DailySpinWheel({
         <div className="relative w-full max-w-4xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-8">
             
-            {/* Wheel Section with Glow Effect */}
-            <div className="relative">
-          {/* Glowing Ring Behind Wheel */}
-          <div className="absolute inset-0 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(249, 115, 22, 0.3) 0%, transparent 70%)',
-              filter: 'blur(30px)',
-            }}
-          />
-              
-              {/* Enhanced Triangle Pointer with Glow */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 z-30 animate-bounce">
-                <div 
-                  className="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[36px] border-l-transparent border-r-transparent"
-                  style={{
-                    borderTopColor: '#f97316',
-                    filter: 'drop-shadow(0 4px 12px rgba(249, 115, 22, 0.8)) drop-shadow(0 0 20px rgba(249, 115, 22, 0.4))',
-                  }}
-                />
-          {/* Golden circle under pointer */}
-          <div
-            className="absolute top-[34px] left-1/2 -translate-x-1/2 w-6 h-6 rounded-full"
-            style={{
-              background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-              boxShadow: '0 0 20px rgba(251, 191, 36, 0.8)',
-              filter: 'blur(2px)'
-            }}
-          />
+            {/* Wheel Section — 3D Premium */}
+            <div className="relative flex flex-col items-center">
+
+              {/* Ambient glow layers behind wheel */}
+              <div className="absolute inset-0 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(168,85,247,0.15) 55%, transparent 75%)', filter: 'blur(32px)' }}
+              />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-16 pointer-events-none"
+                style={{ background: 'linear-gradient(to right, rgba(249,115,22,0.5), rgba(236,72,153,0.4), rgba(168,85,247,0.4))', borderRadius: '50%', filter: 'blur(28px)' }}
+              />
+
+              {/* Premium Diamond Pointer */}
+              <div className="relative z-30 mb-[-20px]" style={{ filter: 'drop-shadow(0 6px 14px rgba(236,72,153,0.55))' }}>
+                <svg width="52" height="64" viewBox="0 0 52 64">
+                  <defs>
+                    <linearGradient id="dPtrBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff"/>
+                      <stop offset="100%" stopColor="#e2e8f0"/>
+                    </linearGradient>
+                    <linearGradient id="dPtrGem" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%"   stopColor="#fda4af"/>
+                      <stop offset="40%"  stopColor="#ec4899"/>
+                      <stop offset="100%" stopColor="#9d174d"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="26" cy="22" rx="20" ry="20" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="1.8"/>
+                  <polygon points="6,34 46,34 26,64" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <polygon points="26,6 38,20 26,34 14,20" fill="url(#dPtrGem)"/>
+                  <polygon points="26,6 38,20 26,15 14,20" fill="rgba(255,255,255,0.42)"/>
+                  <polygon points="26,34 38,20 26,26 14,20" fill="rgba(0,0,0,0.14)"/>
+                  <line x1="14" y1="20" x2="38" y2="20" stroke="rgba(255,255,255,0.45)" strokeWidth="0.9"/>
+                  <circle cx="21" cy="13" r="2.8" fill="rgba(255,255,255,0.58)"/>
+                </svg>
               </div>
 
-              {/* Wheel with SVG segments - Mobile Optimized */}
+              {/* Spinning Wheel */}
               <div
-                className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"
+                className="relative"
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transition: isSpinning ? "transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
-                  filter: isSpinning 
-                    ? 'drop-shadow(0 20px 50px rgba(249, 115, 22, 0.4)) blur(0.5px)' 
-                    : 'drop-shadow(0 20px 50px rgba(0,0,0,0.2))',
+                  willChange: "transform",
                 }}
               >
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              {/* Golden outer ring */}
-              <defs>
-                <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="50%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#fbbf24" />
-                </linearGradient>
-                <linearGradient id="centerGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="100%" stopColor="#f59e0b" />
-                </linearGradient>
-                <filter id="segmentShadow">
-                  <feDropShadow dx="0" dy="0.5" stdDeviation="0.3" floodOpacity="0.3"/>
-                </filter>
-              </defs>
-              
-              {/* Outer golden ring */}
-              <circle cx="50" cy="50" r="49" fill="url(#goldRing)" />
-              <circle cx="50" cy="50" r="46" fill="white" />
-              
-              {/* Wheel segments - 8 segments from SPIN_SEGMENTS */}
-              {SPIN_SEGMENTS.map((segment, i) => {
-                const angle = 360 / SPIN_SEGMENTS.length
-                const startAngle = i * angle - 90 - angle / 2
-                const endAngle = startAngle + angle
-                const startRad = (startAngle * Math.PI) / 180
-                const endRad = (endAngle * Math.PI) / 180
-                const x1 = 50 + 44 * Math.cos(startRad)
-                const y1 = 50 + 44 * Math.sin(startRad)
-                const x2 = 50 + 44 * Math.cos(endRad)
-                const y2 = 50 + 44 * Math.sin(endRad)
-                const midAngle = startAngle + angle / 2
-                const midRad = (midAngle * Math.PI) / 180
-                const textX = 50 + 30 * Math.cos(midRad)
-                const textY = 50 + 30 * Math.sin(midRad)
+                {(() => {
+                  const SIZE = 320
+                  const CX = SIZE / 2
+                  const CY = SIZE / 2
+                  const OUTER = 138
+                  const INNER = 46
+                  const RIM   = 152
+                  const N     = SPIN_SEGMENTS.length
+                  const STEP  = 360 / N
+                  const toRad = (d: number) => (d * Math.PI) / 180
 
-                return (
-                  <g key={i}>
-                    <path
-                      d={`M 50 50 L ${x1} ${y1} A 44 44 0 0 1 ${x2} ${y2} Z`}
-                      fill={segment.color}
-                      stroke="rgba(255,255,255,0.5)"
-                      strokeWidth="0.5"
-                      filter="url(#segmentShadow)"
-                    />
-                    <text
-                      x={textX}
-                      y={textY}
-                      fill={segment.textColor || "#ffffff"}
-                      fontSize="6"
-                      fontWeight="900"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}
-                      style={{ textShadow: segment.textColor === "#64748b" ? "0 1px 3px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.6)", letterSpacing: "0.5px" }}
+                  const slicePath = (i: number) => {
+                    const s = i * STEP - 90
+                    const e = s + STEP
+                    const x1 = CX + OUTER * Math.cos(toRad(s))
+                    const y1 = CY + OUTER * Math.sin(toRad(s))
+                    const x2 = CX + OUTER * Math.cos(toRad(e))
+                    const y2 = CY + OUTER * Math.sin(toRad(e))
+                    return `M${CX},${CY} L${x1},${y1} A${OUTER},${OUTER} 0 0,1 ${x2},${y2} Z`
+                  }
+
+                  const ledAngles = Array.from({ length: 16 }, (_, i) => (i * 360) / 16)
+
+                  return (
+                    <svg
+                      width={SIZE} height={SIZE}
+                      viewBox={`0 0 ${SIZE} ${SIZE}`}
+                      style={{ overflow: "visible", filter: isSpinning ? "drop-shadow(0 0 28px rgba(249,115,22,0.7))" : "drop-shadow(0 8px 32px rgba(0,0,0,0.35))" }}
                     >
-                      {segment.type === 'cash' ? `$${segment.value}` : segment.icon}
-                    </text>
-                  </g>
-                )
-              })}
-              
-              {/* Center golden circle */}
-              <circle cx="50" cy="50" r="12" fill="url(#centerGold)" stroke="#f59e0b" strokeWidth="2" />
-              <circle cx="50" cy="50" r="9" fill="#fbbf24" />
-              {/* Star in center */}
-              <text x="50" y="51" fontSize="10" textAnchor="middle" dominantBaseline="middle" fill="#f97316">★</text>
-            </svg>
-          </div>
-        </div>
+                      <defs>
+                        {/* Per-segment radial gradient for 3D depth */}
+                        {SPIN_SEGMENTS.map((seg, i) => (
+                          <radialGradient key={i} id={`dseg${i}`} cx="30%" cy="28%" r="82%">
+                            <stop offset="0%"   stopColor={seg.color} stopOpacity="1"/>
+                            <stop offset="55%"  stopColor={seg.color} stopOpacity="1"/>
+                            <stop offset="100%" stopColor={seg.darkColor} stopOpacity="1"/>
+                          </radialGradient>
+                        ))}
+                        {/* Chrome rim gradient */}
+                        <linearGradient id="dRimChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%"   stopColor="#ff7e36"/>
+                          <stop offset="20%"  stopColor="#f97316"/>
+                          <stop offset="38%"  stopColor="#f43f5e"/>
+                          <stop offset="55%"  stopColor="#ec4899"/>
+                          <stop offset="72%"  stopColor="#a855f7"/>
+                          <stop offset="88%"  stopColor="#6366f1"/>
+                          <stop offset="100%" stopColor="#3b82f6"/>
+                        </linearGradient>
+                        {/* Rim shine */}
+                        <linearGradient id="dRimShine" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%"   stopColor="rgba(255,255,255,0.55)"/>
+                          <stop offset="45%"  stopColor="rgba(255,255,255,0.12)"/>
+                          <stop offset="100%" stopColor="rgba(0,0,0,0.18)"/>
+                        </linearGradient>
+                        {/* Center button gradient */}
+                        <radialGradient id="dCenterGrad" cx="38%" cy="30%" r="75%">
+                          <stop offset="0%"   stopColor="#fcd34d"/>
+                          <stop offset="30%"  stopColor="#fb923c"/>
+                          <stop offset="65%"  stopColor="#ef4444"/>
+                          <stop offset="100%" stopColor="#991b1b"/>
+                        </radialGradient>
+                        {/* Center gloss */}
+                        <radialGradient id="dCenterGloss" cx="50%" cy="22%" r="58%">
+                          <stop offset="0%"   stopColor="rgba(255,255,255,0.5)"/>
+                          <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
+                        </radialGradient>
+                        {/* Hub ring metallic */}
+                        <radialGradient id="dHubRing" cx="30%" cy="25%" r="80%">
+                          <stop offset="0%"   stopColor="#f8fafc"/>
+                          <stop offset="45%"  stopColor="#e2e8f0"/>
+                          <stop offset="100%" stopColor="#94a3b8"/>
+                        </radialGradient>
+                        {/* Outer ambient glow */}
+                        <radialGradient id="dOuterGlow" cx="50%" cy="50%" r="50%">
+                          <stop offset="55%"  stopColor="transparent"/>
+                          <stop offset="100%" stopColor="rgba(249,115,22,0.2)"/>
+                        </radialGradient>
+                        {/* Filters */}
+                        <filter id="dWheelDrop" x="-15%" y="-15%" width="130%" height="145%">
+                          <feDropShadow dx="0" dy="10" stdDeviation="16" floodColor="rgba(0,0,0,0.35)"/>
+                        </filter>
+                        <filter id="dRimShadow" x="-5%" y="-5%" width="110%" height="110%">
+                          <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="rgba(0,0,0,0.28)"/>
+                        </filter>
+                        <filter id="dHubDrop" x="-30%" y="-30%" width="160%" height="160%">
+                          <feDropShadow dx="0" dy="5" stdDeviation="7" floodColor="rgba(0,0,0,0.45)"/>
+                        </filter>
+                        <filter id="dLedBloom" x="-150%" y="-150%" width="400%" height="400%">
+                          <feGaussianBlur stdDeviation="2" result="blur"/>
+                          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                        <filter id="dTextShadow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.3)"/>
+                        </filter>
+                      </defs>
+
+                      {/* Ambient outer glow */}
+                      <circle cx={CX} cy={CY} r={RIM + 20} fill="url(#dOuterGlow)"/>
+
+                      {/* Wheel drop shadow */}
+                      <ellipse cx={CX} cy={CY + 10} rx={OUTER + 6} ry={16} fill="rgba(0,0,0,0.18)" filter="url(#dWheelDrop)"/>
+
+                      {/* === SEGMENTS === */}
+                      {SPIN_SEGMENTS.map((seg, i) => {
+                        const midDeg  = i * STEP + STEP / 2 - 90
+                        const textRot = midDeg + 90
+                        const toR = (d: number) => (d * Math.PI) / 180
+
+                        const labelDist = OUTER * 0.62
+                        const iconDist  = OUTER * 0.84
+                        const lx = CX + labelDist * Math.cos(toR(midDeg))
+                        const ly = CY + labelDist * Math.sin(toR(midDeg))
+                        const ix = CX + iconDist  * Math.cos(toR(midDeg))
+                        const iy = CY + iconDist  * Math.sin(toR(midDeg))
+                        const textColor = seg.textColor || "#ffffff"
+
+                        return (
+                          <g key={i}>
+                            {/* Segment with radial gradient for 3D depth */}
+                            <path d={slicePath(i)} fill={`url(#dseg${i})`} stroke="rgba(255,255,255,0.6)" strokeWidth={2}/>
+                            {/* Subtle inner bevel */}
+                            <path d={slicePath(i)} fill="rgba(255,255,255,0.1)"
+                              style={{ transform: `scale(0.38)`, transformOrigin: `${CX}px ${CY}px` }}
+                            />
+                            {/* Dollar / label text */}
+                            <g transform={`rotate(${textRot},${lx},${ly})`} filter="url(#dTextShadow)">
+                              <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={13} fontWeight="900" fill={textColor}
+                                fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.3">
+                                {seg.type === "cash" ? (seg.value > 0 ? `$${seg.value}` : seg.label) : seg.label}
+                              </text>
+                            </g>
+                            {/* Icon near rim */}
+                            <g transform={`rotate(${textRot},${ix},${iy})`}>
+                              <text x={ix} y={iy} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={11} fontFamily="Arial, sans-serif">
+                                {seg.icon}
+                              </text>
+                            </g>
+                          </g>
+                        )
+                      })}
+
+                      {/* === CHROME RIM === */}
+                      <circle cx={CX} cy={CY} r={RIM + 12} fill="none" stroke="rgba(0,0,0,0.16)" strokeWidth={4}/>
+                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimChrome)" strokeWidth={26} filter="url(#dRimShadow)"/>
+                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimShine)" strokeWidth={26} opacity={0.5}/>
+                      <circle cx={CX} cy={CY} r={RIM - 13} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={1.5}/>
+                      <circle cx={CX} cy={CY} r={RIM + 13} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1}/>
+
+                      {/* === LED BULBS === */}
+                      {ledAngles.map((deg, i) => {
+                        const r   = toRad(deg)
+                        const lx  = CX + RIM * Math.cos(r)
+                        const ly  = CY + RIM * Math.sin(r)
+                        const isA = i % 2 === 0
+                        return (
+                          <g key={i} filter="url(#dLedBloom)">
+                            <circle cx={lx} cy={ly + 1.5} r={6}   fill="rgba(0,0,0,0.32)"/>
+                            <circle cx={lx} cy={ly}        r={7.5} fill={isA ? "rgba(255,200,80,0.22)" : "rgba(180,210,255,0.22)"}/>
+                            <circle cx={lx} cy={ly}        r={5.5} fill={isA ? "rgba(255,240,180,1)" : "rgba(220,240,255,1)"}/>
+                            <circle cx={lx} cy={ly}        r={5.5} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={0.9}/>
+                            <circle cx={lx - 1.8} cy={ly - 1.8} r={1.8} fill="rgba(255,255,255,0.82)"/>
+                          </g>
+                        )
+                      })}
+
+                      {/* === HUB RING (metallic separator) === */}
+                      <circle cx={CX} cy={CY} r={INNER + 7} fill="url(#dHubRing)"/>
+                      <circle cx={CX} cy={CY} r={INNER + 7} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth={1.5}/>
+                      <circle cx={CX} cy={CY} r={INNER + 2} fill="none" stroke="rgba(0,0,0,0.1)"        strokeWidth={2}/>
+
+                      {/* === CENTER BUTTON === */}
+                      <circle cx={CX} cy={CY + 4} r={INNER + 1} fill="rgba(0,0,0,0.28)" filter="url(#dHubDrop)"/>
+                      <circle cx={CX} cy={CY}     r={INNER}     fill="url(#dCenterGrad)"/>
+                      <circle cx={CX} cy={CY}     r={INNER}     fill="url(#dCenterGloss)"/>
+                      <circle cx={CX} cy={CY}     r={INNER}     fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth={1.5}/>
+                      <ellipse cx={CX}     cy={CY - 12} rx={24} ry={13} fill="rgba(255,255,255,0.28)"/>
+                      <ellipse cx={CX - 1} cy={CY - 14} rx={15} ry={8}  fill="rgba(255,255,255,0.2)"/>
+
+                      {/* SPIN text */}
+                      <text x={CX} y={CY + 2}  textAnchor="middle" dominantBaseline="middle"
+                        fontSize={14} fontWeight="900" fill="rgba(0,0,0,0.22)"
+                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="2">SPIN</text>
+                      <text x={CX} y={CY}      textAnchor="middle" dominantBaseline="middle"
+                        fontSize={14} fontWeight="900" fill="white"
+                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="2">SPIN</text>
+                    </svg>
+                  )
+                })()}
+              </div>
+            </div>
         
         {/* Action Section - Enhanced */}
         <div className="space-y-4 w-full max-w-sm relative">
