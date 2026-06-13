@@ -128,6 +128,30 @@ export default function LandingPage() {
       avatar: "👨",
       rating: 5,
     },
+    {
+      name: "Wei Chen",
+      text: "Amazing platform! The trading tools are professional-grade and the rewards are incredible.",
+      avatar: "👨",
+      rating: 5,
+    },
+    {
+      name: "Liu Mei",
+      text: "I've earned over 500 USDT in just two weeks. FlowChain is truly revolutionary!",
+      avatar: "👩",
+      rating: 5,
+    },
+    {
+      name: "Ahmed Khan",
+      text: "Best investment decision ever. The community here is so supportive and helpful.",
+      avatar: "👨",
+      rating: 5,
+    },
+    {
+      name: "Fatima Hassan",
+      text: "Security, transparency, and real profits. Everything I was looking for in one platform!",
+      avatar: "👩",
+      rating: 5,
+    },
   ]
 
   return (
@@ -842,6 +866,11 @@ export default function LandingPage() {
                 { user: "Sneha", action: "predicted", asset: "EUR/USD", direction: "↑", color: "text-green-600" },
                 { user: "Vikram", action: "predicted", asset: "CRUDE", direction: "↑", color: "text-green-600" },
                 { user: "Priya", action: "predicted", asset: "ETH", direction: "↓", color: "text-red-600" },
+                { user: "Wei", action: "predicted", asset: "SOL", direction: "↑", color: "text-green-600" },
+                { user: "Lin", action: "predicted", asset: "BNB", direction: "↑", color: "text-green-600" },
+                { user: "Xiao", action: "predicted", asset: "ADA", direction: "↓", color: "text-red-600" },
+                { user: "Hassan", action: "predicted", asset: "XRP", direction: "↑", color: "text-green-600" },
+                { user: "Yasmin", action: "predicted", asset: "DOT", direction: "↓", color: "text-red-600" },
               ].map((activity, idx) => (
                 <div key={idx} className="flex items-center gap-2 px-3 py-2 text-slate-700 text-xs sm:text-sm font-medium whitespace-nowrap flex-shrink-0 border border-slate-300/50 rounded-full bg-white/50">
                   <span className="text-orange-500">●</span>
