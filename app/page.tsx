@@ -346,16 +346,146 @@ export default function LandingPage() {
                 />
               </div>
 
-              {/* Spin Wheel image - right, vertically centered */}
-              <div className="absolute right-0 bottom-8 z-10 w-[320px]">
+              {/* Spin Wheel SVG Component - Interactive & Eye-Catching */}
+              <div className="absolute right-0 bottom-8 z-10 w-[320px] animate-spin-slow-hero">
                 {/* Glowing platform under wheel */}
                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-48 h-10 bg-gradient-to-r from-orange-400/60 via-pink-400/60 to-purple-400/60 rounded-full blur-xl"></div>
-                <img
-                  src="/images/spin-wheel-colorful.png"
-                  alt="Spin wheel with reward multipliers"
-                  className="relative w-full h-auto object-contain drop-shadow-2xl"
-                  style={{ filter: "drop-shadow(0 0 40px rgba(249,115,22,0.35))" }}
-                />
+                
+                {/* Hero Spin Wheel SVG */}
+                <svg
+                  width="320"
+                  height="320"
+                  viewBox="0 0 360 360"
+                  className="relative w-full h-auto object-contain drop-shadow-2xl animate-pulse-glow"
+                  style={{ filter: "drop-shadow(0 0 40px rgba(249,115,22,0.45))" }}
+                >
+                  <defs>
+                    {/* Rainbow rim gradient */}
+                    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#f97316" />
+                      <stop offset="25%" stopColor="#ec4899" />
+                      <stop offset="60%" stopColor="#a855f7" />
+                      <stop offset="100%" stopColor="#6366f1" />
+                    </linearGradient>
+                    {/* Center button gradient */}
+                    <radialGradient id="centerGrad" cx="50%" cy="35%" r="65%">
+                      <stop offset="0%" stopColor="#fb923c" />
+                      <stop offset="100%" stopColor="#dc2626" />
+                    </radialGradient>
+                    {/* Glow effect */}
+                    <filter id="wheelGlow">
+                      <feGaussianBlur stdDeviation="2" result="coloredBlur" />
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  {/* Outer glow circle */}
+                  <circle cx="180" cy="180" r="172" fill="rgba(249,115,22,0.08)" filter="url(#wheelGlow)" />
+
+                  {/* Rainbow rim - thick gradient ring */}
+                  <circle cx="180" cy="180" r="168" fill="none" stroke="url(#rimGrad)" strokeWidth="24" />
+                  <circle cx="180" cy="180" r="168" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+
+                  {/* Segments - 8 colorful pieces */}
+                  {[
+                    { color: "#FCD34D", text: "2.5x", mult: "2.5X" },
+                    { color: "#FBBF24", text: "3.0x", mult: "3X" },
+                    { color: "#A78BFA", text: "5.0x", mult: "5X" },
+                    { color: "#86EFAC", text: "10.0x", mult: "10X" },
+                    { color: "#A5F3FC", text: "0.5x", mult: "0.5X" },
+                    { color: "#F472B6", text: "4.0x", mult: "4X" },
+                    { color: "#FED7AA", text: "1.5x", mult: "1.5X" },
+                    { color: "#93C5FD", text: "2.0x", mult: "2X" },
+                  ].map((seg, i) => {
+                    const startDeg = i * 45 - 90;
+                    const endDeg = startDeg + 45;
+                    const midRad = ((startDeg + 22.5) * Math.PI) / 180;
+                    const x1 = 180 + 144 * Math.cos((startDeg * Math.PI) / 180);
+                    const y1 = 180 + 144 * Math.sin((startDeg * Math.PI) / 180);
+                    const x2 = 180 + 144 * Math.cos((endDeg * Math.PI) / 180);
+                    const y2 = 180 + 144 * Math.sin((endDeg * Math.PI) / 180);
+                    const tx = 180 + 100 * Math.cos(midRad);
+                    const ty = 180 + 100 * Math.sin(midRad);
+                    
+                    return (
+                      <g key={i}>
+                        <path
+                          d={`M 180 180 L ${x1} ${y1} A 144 144 0 0 1 ${x2} ${y2} Z`}
+                          fill={seg.color}
+                          stroke="white"
+                          strokeWidth="2"
+                        />
+                        <text
+                          x={tx}
+                          y={ty}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize="16"
+                          fontWeight="900"
+                          fill="#1e293b"
+                          fontFamily="Arial, sans-serif"
+                          transform={`rotate(${startDeg + 22.5}, ${tx}, ${ty})`}
+                        >
+                          {seg.text}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  {/* Center button - glowing red/orange */}
+                  <circle cx="180" cy="180" r="52" fill="url(#centerGrad)" filter="url(#wheelGlow)" />
+                  <ellipse cx="180" cy="160" rx="32" ry="18" fill="rgba(255,255,255,0.25)" />
+
+                  {/* SPIN text */}
+                  <text
+                    x="180"
+                    y="175"
+                    textAnchor="middle"
+                    fontSize="18"
+                    fontWeight="900"
+                    fill="white"
+                    fontFamily="Arial, sans-serif"
+                    letterSpacing="1"
+                  >
+                    SPIN
+                  </text>
+                  <text
+                    x="180"
+                    y="195"
+                    textAnchor="middle"
+                    fontSize="9"
+                    fill="rgba(255,255,255,0.85)"
+                    fontFamily="Arial, sans-serif"
+                  >
+                    Good luck!
+                  </text>
+
+                  {/* LED dots around rim - glowing effect */}
+                  {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => {
+                    const rad = (deg * Math.PI) / 180;
+                    const cx = 180 + 168 * Math.cos(rad);
+                    const cy = 180 + 168 * Math.sin(rad);
+                    return (
+                      <circle
+                        key={i}
+                        cx={cx}
+                        cy={cy}
+                        r="5"
+                        fill="white"
+                        style={{ filter: "drop-shadow(0 0 6px rgba(255,255,255,0.9))" }}
+                      />
+                    );
+                  })}
+
+                  {/* Diamond gem pointer at top */}
+                  <g transform="translate(180, 20)">
+                    <polygon points="0,-12 8,0 0,12 -8,0" fill="#ec4899" stroke="white" strokeWidth="1.5" />
+                    <polygon points="0,-12 8,0 0,4 -8,0" fill="rgba(255,255,255,0.3)" />
+                  </g>
+                </svg>
               </div>
 
               {/* Crypto coin — USDT green (top right) */}
