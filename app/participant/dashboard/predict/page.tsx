@@ -17,10 +17,6 @@ import {
   BarChart3,
   ArrowUp,
   ArrowDown,
-  Zap,
-  Award,
-  Target,
-  PieChart,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -403,124 +399,79 @@ function PredictPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
-      {/* Professional gradient background with accent */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Subtle grid pattern */}
-        <div className="absolute inset-0" style={{backgroundImage: "radial-gradient(circle at 1px 1px, rgba(148,163,184,0.05) 1px, transparent 1px)", backgroundSize: "40px 40px"}} />
-        {/* Accent glows */}
-        <div className="absolute top-0 right-1/3 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-blue-600/5 rounded-full blur-3xl" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-100/80 to-blue-100/80 relative overflow-hidden">
+      {/* Decorative Background Elements - Hidden on mobile */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
+        <div className="absolute top-20 right-10 w-64 h-64 bg-purple-300/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-72 h-72 bg-blue-300/20 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-300/10 rounded-full blur-3xl" />
       </div>
       
-      {/* Professional Header */}
-      <div className="border-b border-slate-700 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-50 shadow-2xl">
-        {/* Top Bar - Navigation & Quick Stats */}
-        <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-          <div className="flex justify-between items-center gap-3">
-            {/* Left: Back button & Title */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
+      {/* Header - Mobile Optimized */}
+      <div className="border-b bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm relative">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 md:py-4">
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
               <Link href="/participant/dashboard">
-                <Button variant="ghost" size="icon" className="rounded-lg hover:bg-slate-800 h-9 w-9 text-slate-300 hover:text-white transition-colors">
-                  <ArrowLeft className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="rounded-lg sm:rounded-xl hover:bg-slate-100 h-8 w-8 sm:h-10 sm:w-10">
+                  <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
-              <div className="hidden sm:flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg">
-                  <BarChart3 className="h-5 w-5 text-white" />
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 sm:gap-2.5">
+                  <div className="hidden sm:flex h-8 w-8 md:h-9 md:w-9 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 items-center justify-center shadow-md flex-shrink-0">
+                    <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-white" />
+                  </div>
+                  <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
+                    Prediction Market
+                  </h1>
                 </div>
-                <div>
-                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-white">Prediction Market</h1>
-                  <p className="text-xs text-slate-400">Trade crypto, commodities & forex with live prices</p>
-                </div>
-              </div>
-              <div className="sm:hidden">
-                <h2 className="text-base font-bold text-white">Prediction</h2>
+                <p className="text-[10px] sm:text-xs md:text-sm text-slate-500 hidden sm:block">Trade crypto, commodities & forex with live prices</p>
               </div>
             </div>
 
-            {/* Right: Metrics */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-purple-200">
+                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Wallet</div>
+                  <div className="text-xs sm:text-sm font-black text-purple-600">${walletBalance.toFixed(2)}</div>
+                </div>
+                {referralBalance > 0 && (
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-emerald-200">
+                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Referral</div>
+                    <div className="text-xs sm:text-sm font-black text-emerald-600">${referralBalance.toFixed(2)}</div>
+                  </div>
+                )}
+              </div>
               <Button
                 onClick={() => setShowHistoryModal(true)}
-                className="rounded-lg font-semibold gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-3 py-2 h-auto text-white"
+                className="rounded-lg sm:rounded-xl font-bold gap-1 sm:gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2 h-auto"
               >
-                <History className="h-4 w-4" />
+                <History className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">History</span>
               </Button>
             </div>
           </div>
         </div>
-
-        {/* Portfolio Metrics Bar */}
-        <div className="border-t border-slate-700 bg-gradient-to-r from-slate-900/50 to-slate-950/50 backdrop-blur-sm">
-          <div className="container mx-auto px-3 sm:px-4 md:px-6 py-3 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
-            {/* Balance */}
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-purple-600/20 flex items-center justify-center">
-                <PieChart className="h-4 w-4 text-purple-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium truncate">Wallet</p>
-                <p className="text-xs sm:text-sm font-bold text-white truncate">${walletBalance.toFixed(2)}</p>
-              </div>
-            </div>
-
-            {/* Referral Balance */}
-            {referralBalance > 0 && (
-              <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 flex items-center justify-center">
-                  <Award className="h-4 w-4 text-emerald-400" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] text-slate-400 font-medium truncate">Referral</p>
-                  <p className="text-xs sm:text-sm font-bold text-white truncate">${referralBalance.toFixed(2)}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Win Rate */}
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500/20 to-emerald-600/20 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-green-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium truncate">Win Rate</p>
-                <p className="text-xs sm:text-sm font-bold text-white truncate">--</p>
-              </div>
-            </div>
-
-            {/* Active Trades */}
-            <div className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-600/20 flex items-center justify-center">
-                <Zap className="h-4 w-4 text-blue-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] text-slate-400 font-medium truncate">Active</p>
-                <p className="text-xs sm:text-sm font-bold text-white truncate">{Object.keys(activeTrades).length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8 relative z-10">
-        {/* Professional Filter Tabs */}
-        <div className="mb-4 sm:mb-6 flex items-center gap-2 bg-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700 p-1.5 overflow-x-auto shadow-lg">
+      {/* Main Content - Mobile Optimized */}
+      <div className="container mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 relative z-10">
+        {/* Filter Tabs - Mobile Optimized */}
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4 md:mb-6 bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-1.5 md:p-2 border border-slate-200 sm:border-2 w-full overflow-x-auto shadow-md">
           {([
-            { key: 'all',       label: 'All Assets',  icon: '📊' },
-            { key: 'crypto',    label: 'Crypto',      icon: '₿' },
-            { key: 'commodity', label: 'Commodities', icon: '⚒️' },
-            { key: 'forex',     label: 'Forex',       icon: '🌍' },
+            { key: 'all',       label: 'All Assets'  },
+            { key: 'crypto',    label: 'Crypto'      },
+            { key: 'commodity', label: 'Commodities' },
+            { key: 'forex',     label: 'Forex'       },
           ] as const).map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setAssetFilter(key)}
-              className={`flex-none px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg font-semibold transition-all text-xs sm:text-sm whitespace-nowrap ${
+              className={`flex-none px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg sm:rounded-xl font-bold transition-all text-xs sm:text-sm md:text-base whitespace-nowrap ${
                 assetFilter === key
-                  ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg'
-                  : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                  : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
               {label}
@@ -541,100 +492,145 @@ function PredictPageContent() {
         )}
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-48 bg-slate-800 rounded-xl border border-slate-700 animate-pulse" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-40 sm:h-44 md:h-48 bg-white/50 rounded-xl sm:rounded-2xl shadow-sm" />
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
             {filteredAssets.map((asset) => {
               const priceData = cryptoPrices[asset.symbol]
               
+              // Show loading state for assets without price data yet
               if (!priceData) {
                 return (
                   <div
                     key={asset.symbol}
-                    className="relative overflow-hidden bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-700 p-4 shadow-lg hover:shadow-xl transition-all"
+                    className="relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-200 sm:border-2 shadow-md"
                   >
-                    <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 mb-3 sm:mb-4">
                       <AssetLogo
                         symbol={asset.symbol}
                         name={asset.name}
                         logoUrl={asset.logo}
                         bgColor={asset.iconBg}
-                        size={40}
-                        className="rounded-lg"
+                        size={44}
+                        className="rounded-xl"
                       />
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-sm text-white truncate">{asset.displayName}</h3>
-                        <p className="text-xs text-slate-400 truncate">{asset.name}</p>
+                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">{asset.displayName}</h3>
+                        <p className="text-[10px] sm:text-xs text-slate-500 truncate">{asset.name}</p>
                       </div>
                     </div>
-                    <div className="text-xs text-slate-400 animate-pulse">Loading price...</div>
+                    <div className="text-xs sm:text-sm text-slate-500">Loading price...</div>
                   </div>
                 )
               }
 
               const flashColor = priceFlash[asset.symbol]
               const isPositive = priceData.change >= 0
+
+              // Check if this asset has an active trade
               const hasActiveTrade = !!activeTrades[asset.symbol]
 
               return (
                 <div
                   key={asset.symbol}
-                  onClick={() => setSelectedAssetSymbol(asset.symbol)}
-                  className={`relative overflow-hidden rounded-xl border transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] shadow-lg cursor-pointer backdrop-blur-sm p-4 ${
+                  onClick={() => {
+                    setSelectedAssetSymbol(asset.symbol)
+                  }}
+                  className={`relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer ${
                     flashColor === 'green' 
-                      ? 'bg-green-500/10 border-green-500/50' 
+                      ? 'border-green-400 bg-green-50/30' 
                       : flashColor === 'red' 
-                      ? 'bg-red-500/10 border-red-500/50' 
+                      ? 'border-red-400 bg-red-50/30' 
                       : hasActiveTrade
-                      ? 'bg-cyan-500/10 border-cyan-500/50'
-                      : 'bg-slate-800/40 border-slate-700'
+                      ? 'border-blue-400 sm:border-2 bg-blue-50/20'
+                      : 'border-slate-200 sm:border-2'
                   }`}
                 >
-                  {/* Active Trade Badge */}
+                  {/* Active Trade Indicator */}
                   {hasActiveTrade && (
-                    <div className="absolute top-2 right-2 px-2 py-1 bg-cyan-600/80 text-xs font-bold text-white rounded-lg">
-                      ACTIVE
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+                      
                     </div>
                   )}
+                  {/* Header - Compact on Mobile */}
+                  <div className="flex justify-between items-start mb-2 sm:mb-3 md:mb-4">
+                    <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-1 min-w-0">
+                      <AssetLogo
+                        symbol={asset.symbol}
+                        name={asset.name}
+                        logoUrl={asset.logo}
+                        bgColor={asset.iconBg}
+                        size={44}
+                        className="rounded-xl"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">{asset.displayName}</h3>
+                        <p className="text-[10px] sm:text-xs text-slate-500 truncate">{asset.name}</p>
+                      </div>
+                    </div>
+                    <a
+                      href={asset.chartUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                    </a>
+                  </div>
 
-                  {/* Asset Header */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <AssetLogo
-                      symbol={asset.symbol}
-                      name={asset.name}
-                      logoUrl={asset.logo}
-                      bgColor={asset.iconBg}
-                      size={40}
-                      className="rounded-lg"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-sm text-white truncate">{asset.displayName}</h3>
-                      <p className="text-xs text-slate-400 truncate">{asset.name}</p>
+                  {/* Price - Responsive Sizing */}
+                  <div className="mb-2 sm:mb-3">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900">
+                      ${priceData?.price ? priceData.price.toFixed(priceData.price < 1 ? 6 : 2) : '0.00'}
+                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3 mt-1">
+                      <span className={`flex items-center gap-0.5 sm:gap-1 text-xs sm:text-sm font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+                        {isPositive ? <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />}
+                        {isPositive ? '+' : ''}{priceData?.change ? priceData.change.toFixed(2) : '0.00'}%
+                      </span>
+                      <span className="text-[10px] sm:text-xs text-slate-500">
+                        Vol: {priceData?.volume ? formatVolume(priceData.volume) : '$0'}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Price Display */}
-                  <div className="mb-3">
-                    <p className="text-2xl font-black text-white mb-1">${priceData.price.toFixed(2)}</p>
-                    <div className={`flex items-center gap-1 text-sm font-bold ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                      {isPositive ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                      <span>{Math.abs(priceData.change).toFixed(2)}%</span>
-                    </div>
+                  {/* Action Buttons - Mobile Optimized */}
+                  <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedAsset(asset)
+                        setBetDirection("up")
+                        setBetAmount("")
+                        setBalanceSource("wallet")
+                        // Reset to appropriate timeframe for asset type
+                        setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
+                        setShowBetDialog(true)
+                      }}
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg text-xs sm:text-sm"
+                    >
+                      <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                      UP
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setSelectedAsset(asset)
+                        setBetDirection("down")
+                        setBetAmount("")
+                        setBalanceSource("wallet")
+                        // Reset to appropriate timeframe for asset type
+                        setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
+                        setShowBetDialog(true)
+                      }}
+                      className="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg text-xs sm:text-sm"
+                    >
+                      <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
+                      DOWN
+                    </Button>
                   </div>
-
-                  {/* CTA Button */}
-                  <Button className={`w-full text-xs sm:text-sm font-bold h-9 rounded-lg transition-all ${
-                    isPositive 
-                      ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700' 
-                      : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700'
-                  }`}>
-                    <Target className="h-3.5 w-3.5 mr-1.5" />
-                    Predict
-                  </Button>
                 </div>
               )
             })}
