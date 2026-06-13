@@ -40,80 +40,87 @@ const WHEEL_SEGMENTS = [
 
 const AMOUNT_PRESETS = [10, 25, 50, 100, 250, 500]
 
-// Icon paths drawn inline in SVG for each segment type
+// Refined inline SVG icons — bolder, more legible at small sizes
 function SegmentIconSVG({ type, color }: { type: string; color: string }) {
+  const s = color
   switch (type) {
     case "trophy":
-      // simple trophy cup
       return (
-        <g fill={color}>
-          <rect x="-3" y="7" width="6" height="1.5" rx="0.5" />
-          <rect x="-2" y="5.5" width="4" height="2" rx="0.3" />
-          <path d="M-4,-5 Q-5,2 -2,4 Q0,5 2,4 Q5,2 4,-5 Z" />
-          <path d="M-4,-5 Q-7,-4 -6,0 Q-5,2 -3,2" fill="none" stroke={color} strokeWidth="1" />
-          <path d="M4,-5 Q7,-4 6,0 Q5,2 3,2" fill="none" stroke={color} strokeWidth="1" />
+        <g>
+          <path d="M-5,-6 Q-5,4 0,6 Q5,4 5,-6Z" fill={s} />
+          <path d="M-5,-6 Q-9,-5 -8,0 Q-7,3 -4,3" fill="none" stroke={s} strokeWidth="1.6" strokeLinecap="round"/>
+          <path d="M5,-6 Q9,-5 8,0 Q7,3 4,3" fill="none" stroke={s} strokeWidth="1.6" strokeLinecap="round"/>
+          <rect x="-2" y="6" width="4" height="2" rx="0.5" fill={s}/>
+          <rect x="-4" y="8" width="8" height="1.8" rx="0.5" fill={s}/>
+          <ellipse cx="0" cy="0" rx="2" ry="2.5" fill="rgba(255,255,255,0.4)"/>
         </g>
       )
     case "rocket":
       return (
-        <g fill={color}>
-          <path d="M0,-7 C-3,-4 -3,2 0,5 C3,2 3,-4 0,-7Z" />
-          <path d="M-3,2 L-5,6 L-1,5Z" />
-          <path d="M3,2 L5,6 L1,5Z" />
-          <circle cx="0" cy="0" r="1.2" fill="white" />
+        <g>
+          <path d="M0,-9 C-4,-4 -4,3 0,7 C4,3 4,-4 0,-9Z" fill={s}/>
+          <path d="M-4,2 L-7,8 L-1,6Z" fill={s}/>
+          <path d="M4,2 L7,8 L1,6Z" fill={s}/>
+          <circle cx="0" cy="-1" r="2" fill="white" opacity="0.6"/>
+          <circle cx="0" cy="-1" r="1" fill={s}/>
         </g>
       )
     case "lightning":
       return (
-        <g fill={color}>
-          <polygon points="2,-7 -2,0 1,0 -2,7 4,-1 0,-1 3,-7" />
+        <g fill={s}>
+          <polygon points="3,-9 -3,1 1.5,1 -3,9 5,-2 0,-2 4,-9"/>
+          <polygon points="3,-9 -3,1 1.5,1 -3,9 5,-2 0,-2 4,-9" fill="rgba(255,255,255,0.25)" transform="translate(-0.5,-0.5)"/>
         </g>
       )
     case "target":
       return (
         <g>
-          <circle cx="0" cy="0" r="6" fill="none" stroke={color} strokeWidth="1.5" />
-          <circle cx="0" cy="0" r="3.5" fill="none" stroke={color} strokeWidth="1.5" />
-          <circle cx="0" cy="0" r="1.2" fill={color} />
-          <line x1="4" y1="-4" x2="7" y2="-7" stroke={color} strokeWidth="1.2" />
-          <polygon points="7,-7 4,-6 6,-4" fill={color} />
+          <circle cx="0" cy="0" r="8" fill="none" stroke={s} strokeWidth="2"/>
+          <circle cx="0" cy="0" r="5" fill="none" stroke={s} strokeWidth="1.5"/>
+          <circle cx="0" cy="0" r="2" fill={s}/>
+          <line x1="5" y1="-5" x2="8" y2="-8" stroke={s} strokeWidth="1.5" strokeLinecap="round"/>
+          <polygon points="8,-8 5,-7 7,-5" fill={s}/>
         </g>
       )
     case "bars":
       return (
-        <g fill={color}>
-          <rect x="-5" y="2"  width="2.5" height="5" rx="0.5" />
-          <rect x="-1.5" y="-1" width="2.5" height="8" rx="0.5" />
-          <rect x="2" y="-4" width="2.5" height="11" rx="0.5" />
+        <g fill={s}>
+          <rect x="-6" y="1"  width="3" height="6" rx="1"/>
+          <rect x="-1.5" y="-2" width="3" height="9" rx="1"/>
+          <rect x="3" y="-6" width="3" height="13" rx="1"/>
+          <rect x="-6" y="1"  width="3" height="6" rx="1" fill="rgba(255,255,255,0.2)"/>
         </g>
       )
     case "diamond":
       return (
-        <g fill={color}>
-          <polygon points="0,-7 6,0 0,7 -6,0" />
-          <polygon points="0,-7 6,0 0,-1 -6,0" fill="rgba(255,255,255,0.35)" />
+        <g>
+          <polygon points="0,-9 7,0 0,9 -7,0" fill={s}/>
+          <polygon points="0,-9 7,0 0,-1 -7,0" fill="rgba(255,255,255,0.45)"/>
+          <polygon points="0,9 7,0 0,1 -7,0" fill="rgba(0,0,0,0.15)"/>
+          <line x1="-7" y1="0" x2="7" y2="0" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8"/>
         </g>
       )
     case "coins":
       return (
         <g>
-          <ellipse cx="0" cy="-4" rx="4" ry="1.5" fill={color} />
-          <rect x="-4" y="-4" width="8" height="3" fill={color} />
-          <ellipse cx="0" cy="-1" rx="4" ry="1.5" fill={color} />
-          <ellipse cx="2" cy="-1" rx="4" ry="1.5" fill={color} opacity="0.7" />
-          <ellipse cx="2" cy="3" rx="4" ry="1.5" fill={color} opacity="0.7" />
-          <rect x="-2" y="-1" width="8" height="4" fill={color} opacity="0.7" />
-          <text x="0" y="-2" textAnchor="middle" fontSize="3.5" fill="white" fontWeight="bold">$</text>
+          <ellipse cx="0" cy="-5" rx="5" ry="2" fill={s}/>
+          <rect x="-5" y="-5" width="10" height="4" fill={s}/>
+          <ellipse cx="0" cy="-1" rx="5" ry="2" fill={s}/>
+          <ellipse cx="1.5" cy="2" rx="5" ry="2" fill={s} opacity="0.8"/>
+          <rect x="-3.5" y="0" width="10" height="4" fill={s} opacity="0.8"/>
+          <ellipse cx="1.5" cy="4" rx="5" ry="2" fill={s} opacity="0.8"/>
+          <text x="0" y="-3" textAnchor="middle" fontSize="4" fill="white" fontWeight="bold">$</text>
         </g>
       )
     case "gift":
       return (
-        <g fill={color}>
-          <rect x="-5" y="-1" width="10" height="8" rx="0.8" />
-          <rect x="-5" y="-3.5" width="10" height="3" rx="0.8" />
-          <rect x="-1" y="-6" width="2" height="11" rx="0.8" />
-          <path d="M0,-3.5 C-1,-5 -4,-6 -3,-3.5" fill="none" stroke="white" strokeWidth="1" />
-          <path d="M0,-3.5 C1,-5 4,-6 3,-3.5" fill="none" stroke="white" strokeWidth="1" />
+        <g>
+          <rect x="-6" y="-1" width="12" height="9" rx="1" fill={s}/>
+          <rect x="-6" y="-4" width="12" height="3.5" rx="1" fill={s}/>
+          <rect x="-1.2" y="-7" width="2.4" height="13" rx="1" fill={s}/>
+          <rect x="-6" y="-4" width="12" height="3.5" rx="1" fill="rgba(255,255,255,0.2)"/>
+          <path d="M0,-4 C-1,-6 -5,-8 -4,-4" fill="none" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+          <path d="M0,-4 C1,-6 5,-8 4,-4" fill="none" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
         </g>
       )
     default:
@@ -122,29 +129,40 @@ function SegmentIconSVG({ type, color }: { type: string; color: string }) {
 }
 
 function SpinWheel({ wheelRef }: { wheelRef: React.RefObject<HTMLDivElement> }) {
-  const SIZE   = 360
-  const CX     = SIZE / 2
-  const CY     = SIZE / 2
-  const OUTER  = 155   // outer edge of segments
-  const INNER  = 52    // center button radius
-  const RIM    = 170   // rim circle radius
-  const N      = WHEEL_SEGMENTS.length
-  const STEP   = 360 / N  // degrees per segment
+  const SIZE  = 380
+  const CX    = SIZE / 2
+  const CY    = SIZE / 2
+  const OUTER = 158   // segment outer radius
+  const INNER = 55    // center hub radius
+  const RIM   = 175   // rim circle radius
+  const STEP  = 360 / WHEEL_SEGMENTS.length
 
-  // Build one pie slice as an SVG arc path, in absolute coords
-  function slicePath(index: number): string {
-    const startDeg = index * STEP - 90        // -90 so first segment points up
-    const endDeg   = startDeg + STEP
-    const toRad    = (d: number) => (d * Math.PI) / 180
-    const x1 = CX + OUTER * Math.cos(toRad(startDeg))
-    const y1 = CY + OUTER * Math.sin(toRad(startDeg))
-    const x2 = CX + OUTER * Math.cos(toRad(endDeg))
-    const y2 = CY + OUTER * Math.sin(toRad(endDeg))
+  const toRad = (d: number) => (d * Math.PI) / 180
+
+  function slicePath(i: number): string {
+    const s = i * STEP - 90
+    const e = s + STEP
+    const x1 = CX + OUTER * Math.cos(toRad(s))
+    const y1 = CY + OUTER * Math.sin(toRad(s))
+    const x2 = CX + OUTER * Math.cos(toRad(e))
+    const y2 = CY + OUTER * Math.sin(toRad(e))
     return `M${CX},${CY} L${x1},${y1} A${OUTER},${OUTER} 0 0,1 ${x2},${y2} Z`
   }
 
-  // LED dots
+  // 16 LED positions on the rim
   const ledAngles = Array.from({ length: 16 }, (_, i) => (i * 360) / 16)
+
+  // Per-segment tint pairs: [light fill, dark shading, text color]
+  const SEG_COLORS: [string, string, string][] = [
+    ["#FFFBCF","#F6D860","#B45309"],  // 3.0x warm yellow
+    ["#EDE9FE","#C4B5FD","#6D28D9"],  // 5.0x violet
+    ["#DCFCE7","#86EFAC","#15803D"],  // 0.5x green
+    ["#FCE7F3","#F9A8D4","#BE185D"],  // 4.0x pink
+    ["#FFF9C4","#FDE047","#92400E"],  // 1.5x yellow
+    ["#DBEAFE","#93C5FD","#1D4ED8"],  // 2.0x blue
+    ["#D1FAE5","#6EE7B7","#065F46"],  // 10.0x emerald
+    ["#FCE7F3","#F472B6","#9D174D"],  // 2.5x pink
+  ]
 
   return (
     <div
@@ -158,98 +176,157 @@ function SpinWheel({ wheelRef }: { wheelRef: React.RefObject<HTMLDivElement> }) 
         style={{ overflow: "visible" }}
       >
         <defs>
-          {/* Conic-style rim: we fake it with a thick stroke + conicGradient via stops */}
-          <linearGradient id="rimGrad" x1="1" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="#f97316" />
-            <stop offset="25%"  stopColor="#ec4899" />
-            <stop offset="60%"  stopColor="#a855f7" />
-            <stop offset="100%" stopColor="#6366f1" />
+          {/* ── Per-segment radial shading (center bright → outer dark for 3D depth) ── */}
+          {SEG_COLORS.map(([light, dark], i) => (
+            <radialGradient key={i} id={`seg${i}`} cx="28%" cy="28%" r="85%">
+              <stop offset="0%"   stopColor={light}/>
+              <stop offset="60%"  stopColor={light}/>
+              <stop offset="100%" stopColor={dark}/>
+            </radialGradient>
+          ))}
+
+          {/* ── Chrome / metallic rim gradient ── */}
+          <linearGradient id="rimChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stopColor="#ff7e36"/>
+            <stop offset="18%"  stopColor="#f97316"/>
+            <stop offset="36%"  stopColor="#f43f5e"/>
+            <stop offset="54%"  stopColor="#ec4899"/>
+            <stop offset="72%"  stopColor="#a855f7"/>
+            <stop offset="90%"  stopColor="#6366f1"/>
+            <stop offset="100%" stopColor="#3b82f6"/>
           </linearGradient>
-          <radialGradient id="centerGrad" cx="50%" cy="30%" r="70%">
-            <stop offset="0%"   stopColor="#fb923c" />
-            <stop offset="55%"  stopColor="#ef4444" />
-            <stop offset="100%" stopColor="#dc2626" />
+
+          {/* Rim shine overlay */}
+          <linearGradient id="rimShine" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%"   stopColor="rgba(255,255,255,0.55)"/>
+            <stop offset="40%"  stopColor="rgba(255,255,255,0.15)"/>
+            <stop offset="100%" stopColor="rgba(0,0,0,0.18)"/>
+          </linearGradient>
+
+          {/* ── Center button 3D gradient ── */}
+          <radialGradient id="centerGrad" cx="38%" cy="30%" r="75%">
+            <stop offset="0%"   stopColor="#fcd34d"/>
+            <stop offset="30%"  stopColor="#fb923c"/>
+            <stop offset="65%"  stopColor="#ef4444"/>
+            <stop offset="100%" stopColor="#991b1b"/>
           </radialGradient>
-          <radialGradient id="rimGlowGrad" cx="50%" cy="50%" r="50%">
-            <stop offset="60%"  stopColor="transparent" />
-            <stop offset="100%" stopColor="rgba(249,115,22,0.18)" />
+
+          {/* Center top gloss */}
+          <radialGradient id="centerGloss" cx="50%" cy="20%" r="60%">
+            <stop offset="0%"   stopColor="rgba(255,255,255,0.55)"/>
+            <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
           </radialGradient>
-          <filter id="wheelShadow">
-            <feDropShadow dx="0" dy="6" stdDeviation="12" floodColor="rgba(0,0,0,0.22)" />
+
+          {/* Ambient outer glow */}
+          <radialGradient id="outerGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="55%"  stopColor="transparent"/>
+            <stop offset="100%" stopColor="rgba(249,115,22,0.22)"/>
+          </radialGradient>
+
+          {/* Hub ring metallic */}
+          <radialGradient id="hubRing" cx="30%" cy="25%" r="80%">
+            <stop offset="0%"   stopColor="#f8fafc"/>
+            <stop offset="40%"  stopColor="#e2e8f0"/>
+            <stop offset="100%" stopColor="#94a3b8"/>
+          </radialGradient>
+
+          {/* ── Filters ── */}
+          {/* Realistic drop shadow beneath entire wheel */}
+          <filter id="wheelDrop" x="-15%" y="-15%" width="130%" height="145%">
+            <feDropShadow dx="0" dy="10" stdDeviation="18" floodColor="rgba(0,0,0,0.35)" floodOpacity="1"/>
           </filter>
-          <filter id="btnShadow">
-            <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor="rgba(0,0,0,0.4)" />
+          {/* Soft inner shadow on rim */}
+          <filter id="rimShadow" x="-5%" y="-5%" width="110%" height="110%">
+            <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="rgba(0,0,0,0.28)"/>
           </filter>
+          {/* Center button shadow */}
+          <filter id="hubDrop" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="5" stdDeviation="8" floodColor="rgba(0,0,0,0.45)"/>
+          </filter>
+          {/* LED glow bloom */}
+          <filter id="ledBloom" x="-150%" y="-150%" width="400%" height="400%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          {/* Text legibility shadow */}
+          <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.25)"/>
+          </filter>
+
+          {/* Segment divider lines clip */}
+          <clipPath id="wheelClip">
+            <circle cx={CX} cy={CY} r={OUTER}/>
+          </clipPath>
         </defs>
 
-        {/* Outer glow */}
-        <circle cx={CX} cy={CY} r={RIM + 18} fill="url(#rimGlowGrad)" />
+        {/* ── Ambient outer glow ── */}
+        <circle cx={CX} cy={CY} r={RIM + 24} fill="url(#outerGlow)"/>
 
-        {/* ── SEGMENTS ── each drawn in its own rotated coordinate system */}
+        {/* ── SHADOW beneath whole wheel ── */}
+        <ellipse cx={CX} cy={CY + 12} rx={OUTER + 8} ry={18} fill="rgba(0,0,0,0.18)" filter="url(#wheelDrop)"/>
+
+        {/* ══ SEGMENTS ════════════════════════════════════════════════════════════ */}
         {WHEEL_SEGMENTS.map((seg, i) => {
-          const midDeg = i * STEP + STEP / 2 - 90  // degrees to midpoint, 0° = right
-          // Text anchor sits at 68% of the outer radius, pointing away from center
-          const textDist  = OUTER * 0.66
-          const subDist   = OUTER * 0.80
-          const sub2Dist  = OUTER * 0.91
-          const iconDist  = OUTER * 0.47
+          const midDeg    = i * STEP + STEP / 2 - 90
+          const textRot   = midDeg + 90
 
-          const toRad = (d: number) => (d * Math.PI) / 180
-          const tx  = CX + textDist  * Math.cos(toRad(midDeg))
-          const ty  = CY + textDist  * Math.sin(toRad(midDeg))
-          const sx  = CX + subDist   * Math.cos(toRad(midDeg))
-          const sy  = CY + subDist   * Math.sin(toRad(midDeg))
-          const s2x = CX + sub2Dist  * Math.cos(toRad(midDeg))
-          const s2y = CY + sub2Dist  * Math.sin(toRad(midDeg))
+          const iconDist  = OUTER * 0.43
+          const labelDist = OUTER * 0.65
+          const sub1Dist  = OUTER * 0.79
+          const sub2Dist  = OUTER * 0.91
+
+          const [, , tc] = SEG_COLORS[i]
+
           const ix  = CX + iconDist  * Math.cos(toRad(midDeg))
           const iy  = CY + iconDist  * Math.sin(toRad(midDeg))
-
-          // rotation so text reads from inner→outer (pointing outward)
-          const textRot = midDeg + 90   // +90 makes text perpendicular to radius
+          const lx  = CX + labelDist * Math.cos(toRad(midDeg))
+          const ly  = CY + labelDist * Math.sin(toRad(midDeg))
+          const s1x = CX + sub1Dist  * Math.cos(toRad(midDeg))
+          const s1y = CY + sub1Dist  * Math.sin(toRad(midDeg))
+          const s2x = CX + sub2Dist  * Math.cos(toRad(midDeg))
+          const s2y = CY + sub2Dist  * Math.sin(toRad(midDeg))
 
           return (
             <g key={i}>
-              {/* Segment */}
-              <path d={slicePath(i)} fill={seg.bgColor} stroke="white" strokeWidth={2} />
+              {/* Base fill with radial gradient giving 3D depth */}
+              <path d={slicePath(i)} fill={`url(#seg${i})`} stroke="rgba(255,255,255,0.75)" strokeWidth={2.5}/>
 
-              {/* All labels + icon, rotated around midpoint so they read outward */}
-              <g transform={`rotate(${textRot}, ${tx}, ${ty})`}>
-                {/* Icon */}
-                <g transform={`translate(${ix}, ${iy}) rotate(${-textRot})`} style={{ pointerEvents: "none" }}>
-                  <SegmentIconSVG type={seg.icon} color={seg.textColor} />
-                </g>
-                {/* Big multiplier */}
-                <text
-                  x={tx} y={ty}
-                  textAnchor="middle" dominantBaseline="middle"
-                  fontSize={14} fontWeight="900"
-                  fill={seg.textColor}
-                  fontFamily="Arial, sans-serif"
-                  letterSpacing="-0.3"
-                >
+              {/* Subtle inner bevel: a lighter wedge close to center */}
+              <path
+                d={slicePath(i)}
+                fill="rgba(255,255,255,0.12)"
+                clipPath="url(#wheelClip)"
+                style={{ transform: `scale(0.42)`, transformOrigin: `${CX}px ${CY}px` }}
+              />
+
+              {/* Icon — translated & counter-rotated so it stays upright */}
+              <g transform={`translate(${ix},${iy}) rotate(${textRot})`}>
+                <SegmentIconSVG type={seg.icon} color={tc}/>
+              </g>
+
+              {/* Big multiplier label */}
+              <g transform={`rotate(${textRot},${lx},${ly})`} filter="url(#textShadow)">
+                <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={15} fontWeight="900" fill={tc}
+                  fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.4">
                   {seg.label}
                 </text>
               </g>
-              {/* "You get" + "NX" — rotate around their own positions */}
-              <g transform={`rotate(${textRot}, ${sx}, ${sy})`}>
-                <text
-                  x={sx} y={sy - 4}
-                  textAnchor="middle" dominantBaseline="middle"
-                  fontSize={7} fontWeight="600"
-                  fill={seg.textColor} opacity={0.85}
-                  fontFamily="Arial, sans-serif"
-                >
+
+              {/* "You get" sub-line */}
+              <g transform={`rotate(${textRot},${s1x},${s1y})`}>
+                <text x={s1x} y={s1y - 3} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={7} fontWeight="600" fill={tc} opacity={0.8}
+                  fontFamily="Arial, sans-serif">
                   You get
                 </text>
               </g>
-              <g transform={`rotate(${textRot}, ${s2x}, ${s2y})`}>
-                <text
-                  x={s2x} y={s2y - 4}
-                  textAnchor="middle" dominantBaseline="middle"
-                  fontSize={8} fontWeight="800"
-                  fill={seg.textColor}
-                  fontFamily="Arial, sans-serif"
-                >
+
+              {/* "NX" sub-line */}
+              <g transform={`rotate(${textRot},${s2x},${s2y})`}>
+                <text x={s2x} y={s2y - 3} textAnchor="middle" dominantBaseline="middle"
+                  fontSize={8.5} fontWeight="900" fill={tc}
+                  fontFamily="'Arial Black', Arial, sans-serif">
                   {seg.multiplier % 1 === 0 ? `${seg.multiplier.toFixed(0)}X` : `${seg.multiplier}X`}
                 </text>
               </g>
@@ -257,60 +334,87 @@ function SpinWheel({ wheelRef }: { wheelRef: React.RefObject<HTMLDivElement> }) 
           )
         })}
 
-        {/* ── RIM ── thick gradient ring on top of segments */}
-        <circle
-          cx={CX} cy={CY} r={RIM}
-          fill="none"
-          stroke="url(#rimGrad)"
-          strokeWidth={22}
-          filter="url(#wheelShadow)"
-        />
-        {/* White inner rim edge */}
-        <circle cx={CX} cy={CY} r={RIM - 11} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={2} />
-        {/* White outer rim edge */}
-        <circle cx={CX} cy={CY} r={RIM + 11} fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth={1.5} />
+        {/* ══ CHROME RIM ══════════════════════════════════════════════════════════ */}
+        {/* Outer shadow ring */}
+        <circle cx={CX} cy={CY} r={RIM + 14} fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth={5}/>
+        {/* Main thick gradient ring */}
+        <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#rimChrome)" strokeWidth={28}
+          filter="url(#rimShadow)"/>
+        {/* Shine overlay on rim */}
+        <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#rimShine)" strokeWidth={28} opacity={0.55}/>
+        {/* Inner crisp edge */}
+        <circle cx={CX} cy={CY} r={RIM - 14} fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={1.5}/>
+        {/* Outer crisp edge */}
+        <circle cx={CX} cy={CY} r={RIM + 14} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={1}/>
 
-        {/* ── LED DOTS ── */}
+        {/* ══ LED BULBS ════════════════════════════════════════════════════════════
+             Each bulb has: shadow, outer bloom, white body, specular highlight       */}
         {ledAngles.map((deg, i) => {
-          const rad = (deg * Math.PI) / 180
-          const lx  = CX + RIM * Math.cos(rad)
-          const ly  = CY + RIM * Math.sin(rad)
+          const r   = toRad(deg)
+          const lx  = CX + RIM * Math.cos(r)
+          const ly  = CY + RIM * Math.sin(r)
+          const isAlt = i % 2 === 0   // alternate warm/cool tint
+          const tint  = isAlt ? "rgba(255,240,180,1)" : "rgba(220,240,255,1)"
           return (
-            <circle key={i} cx={lx} cy={ly} r={5}
-              fill="white"
-              style={{ filter: "drop-shadow(0 0 4px rgba(255,255,255,1))" }}
-            />
+            <g key={i} filter="url(#ledBloom)">
+              {/* Shadow beneath bulb */}
+              <circle cx={lx} cy={ly + 1.5} r={7} fill="rgba(0,0,0,0.35)"/>
+              {/* Bloom halo */}
+              <circle cx={lx} cy={ly} r={8.5} fill={isAlt ? "rgba(255,200,80,0.25)" : "rgba(180,210,255,0.25)"}/>
+              {/* Main bulb */}
+              <circle cx={lx} cy={ly} r={6} fill={tint}/>
+              {/* Glass dome ring */}
+              <circle cx={lx} cy={ly} r={6} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={1}/>
+              {/* Specular highlight */}
+              <circle cx={lx - 2} cy={ly - 2} r={2} fill="rgba(255,255,255,0.85)"/>
+            </g>
           )
         })}
 
-        {/* ── WHITE INNER SEPARATOR ── */}
-        <circle cx={CX} cy={CY} r={INNER + 4} fill="white" stroke="rgba(255,255,255,0.9)" strokeWidth={3} />
+        {/* ══ HUB RING (metallic separator) ═══════════════════════════════════════ */}
+        <circle cx={CX} cy={CY} r={INNER + 8}  fill="url(#hubRing)"/>
+        <circle cx={CX} cy={CY} r={INNER + 8}  fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth={1.5}/>
+        <circle cx={CX} cy={CY} r={INNER + 3}  fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth={2}/>
 
-        {/* ── CENTER BUTTON ── */}
-        <circle cx={CX} cy={CY} r={INNER} fill="url(#centerGrad)" filter="url(#btnShadow)" />
-        {/* Highlight gloss */}
-        <ellipse cx={CX} cy={CY - 13} rx={30} ry={18} fill="rgba(255,255,255,0.22)" />
-        {/* Circular arrow icon */}
+        {/* ══ CENTER BUTTON ════════════════════════════════════════════════════════ */}
+        {/* Drop shadow */}
+        <circle cx={CX} cy={CY + 4} r={INNER + 1} fill="rgba(0,0,0,0.3)" filter="url(#hubDrop)"/>
+        {/* Body */}
+        <circle cx={CX} cy={CY} r={INNER} fill="url(#centerGrad)"/>
+        {/* Gloss highlight */}
+        <circle cx={CX} cy={CY} r={INNER} fill="url(#centerGloss)"/>
+        {/* Inner bevel ring */}
+        <circle cx={CX} cy={CY} r={INNER}     fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}/>
+        <circle cx={CX} cy={CY} r={INNER - 4} fill="none" stroke="rgba(0,0,0,0.15)"       strokeWidth={1}/>
+        {/* Oval gloss shape */}
+        <ellipse cx={CX} cy={CY - 15} rx={28} ry={16} fill="rgba(255,255,255,0.3)"/>
+        <ellipse cx={CX} cy={CY - 17} rx={18} ry={9}  fill="rgba(255,255,255,0.2)"/>
+
+        {/* Refresh/spin circular arrow */}
         <path
-          d="M -14,-4 A 14,14 0 1 1 14,-4"
-          transform={`translate(${CX},${CY - 8})`}
-          fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"
+          d="M-15,-3 A 15,15 0 1 1 15,-3"
+          transform={`translate(${CX},${CY - 10})`}
+          fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2.8" strokeLinecap="round"
         />
-        <polygon points="14,-4 10,-9 18,-9" transform={`translate(${CX},${CY - 8})`} fill="white" />
-        <text
-          x={CX} y={CY + 10}
-          textAnchor="middle" dominantBaseline="middle"
-          fontSize={15} fontWeight="900" fill="white"
-          fontFamily="Arial, sans-serif" letterSpacing="1"
-        >
+        <polygon
+          points="15,-3 11,-9 19,-9"
+          transform={`translate(${CX},${CY - 10})`}
+          fill="rgba(255,255,255,0.9)"
+        />
+
+        {/* SPIN text — with tight shadow for legibility */}
+        <text x={CX} y={CY + 12} textAnchor="middle" dominantBaseline="middle"
+          fontSize={17} fontWeight="900" fill="rgba(0,0,0,0.25)"
+          fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="2">
           SPIN
         </text>
-        <text
-          x={CX} y={CY + 26}
-          textAnchor="middle" dominantBaseline="middle"
-          fontSize={8.5} fill="rgba(255,255,255,0.82)"
-          fontFamily="Arial, sans-serif"
-        >
+        <text x={CX} y={CY + 10} textAnchor="middle" dominantBaseline="middle"
+          fontSize={17} fontWeight="900" fill="white"
+          fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="2">
+          SPIN
+        </text>
+        <text x={CX} y={CY + 28} textAnchor="middle" dominantBaseline="middle"
+          fontSize={9} fill="rgba(255,255,255,0.85)" fontFamily="Arial, sans-serif">
           Good luck!
         </text>
       </svg>
@@ -375,7 +479,7 @@ export default function SpinWheelPage() {
     }
   }, [])
 
-  // ── wheel animation ────────────────────────────────────────────────────────
+  // ── wheel animation ─────────────────────────────���──────────────────────────
   const spinWheelAnim = useCallback((targetSegmentIndex: number): Promise<void> => {
     return new Promise((resolve) => {
       if (!wheelRef.current) { resolve(); return }
@@ -505,28 +609,53 @@ export default function SpinWheelPage() {
           <div className="flex flex-col lg:flex-row">
 
             {/* ── LEFT: Wheel ── */}
-            <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-12 bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50 relative">
-              {/* Decorative glow */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(251,146,60,0.15)_0%,transparent_70%)] pointer-events-none" />
+            <div className="flex-1 flex flex-col items-center justify-center p-8 lg:p-12 bg-gradient-to-br from-[#1a0533] via-[#2d0a4e] to-[#0f172a] relative overflow-hidden">
+              {/* Starfield dots */}
+              {[...Array(18)].map((_, i) => (
+                <div key={i} className="absolute rounded-full bg-white opacity-20 animate-pulse"
+                  style={{
+                    width: `${2 + (i % 3)}px`, height: `${2 + (i % 3)}px`,
+                    top: `${(i * 37 + 11) % 95}%`, left: `${(i * 53 + 7) % 95}%`,
+                    animationDelay: `${(i * 0.4) % 3}s`, animationDuration: `${2 + (i % 3)}s`,
+                  }}
+                />
+              ))}
+              {/* Centre radial glow behind wheel */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(251,146,60,0.25)_0%,rgba(168,85,247,0.12)_45%,transparent_70%)] pointer-events-none" />
+              {/* Bottom floor glow */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-20 bg-gradient-to-r from-orange-500/30 via-pink-500/20 to-purple-500/30 rounded-full blur-3xl pointer-events-none" />
 
-              {/* Diamond pointer */}
-              <div className="relative z-10 mb-[-16px] flex flex-col items-center">
-                <div className="w-12 h-14 flex items-center justify-center">
-                  <svg width="48" height="56" viewBox="0 0 48 56">
-                    <defs>
-                      <linearGradient id="pointerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#f472b6" />
-                        <stop offset="100%" stopColor="#ec4899" />
-                      </linearGradient>
-                    </defs>
-                    {/* Teardrop / gem pointer shape */}
-                    <ellipse cx="24" cy="22" rx="20" ry="20" fill="white" stroke="#f9a8d4" strokeWidth="2" />
-                    <polygon points="8,36 40,36 24,56" fill="white" stroke="#f9a8d4" strokeWidth="1.5" />
-                    {/* Diamond gem */}
-                    <polygon points="24,8 34,20 24,32 14,20" fill="url(#pointerGrad)" />
-                    <polygon points="24,8 34,20 24,14" fill="rgba(255,255,255,0.4)" />
-                  </svg>
-                </div>
+              {/* Premium 3D Diamond pointer */}
+              <div className="relative z-10 mb-[-18px] flex flex-col items-center drop-shadow-2xl">
+                <svg width="56" height="68" viewBox="0 0 56 68">
+                  <defs>
+                    <linearGradient id="ptrBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%"   stopColor="#ffffff"/>
+                      <stop offset="100%" stopColor="#e2e8f0"/>
+                    </linearGradient>
+                    <linearGradient id="ptrGem" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%"   stopColor="#f9a8d4"/>
+                      <stop offset="40%"  stopColor="#ec4899"/>
+                      <stop offset="100%" stopColor="#9d174d"/>
+                    </linearGradient>
+                    <filter id="ptrShadow">
+                      <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="rgba(236,72,153,0.45)"/>
+                    </filter>
+                  </defs>
+                  {/* White teardrop body */}
+                  <ellipse cx="28" cy="24" rx="22" ry="22" fill="url(#ptrBody)" stroke="#f9a8d4" strokeWidth="2" filter="url(#ptrShadow)"/>
+                  <polygon points="6,38 50,38 28,68" fill="url(#ptrBody)" stroke="#f9a8d4" strokeWidth="1.5" strokeLinejoin="round"/>
+                  {/* Inner gem — 4-facet diamond */}
+                  <polygon points="28,7 40,22 28,37 16,22" fill="url(#ptrGem)"/>
+                  {/* Top facet highlight */}
+                  <polygon points="28,7 40,22 28,16 16,22" fill="rgba(255,255,255,0.45)"/>
+                  {/* Bottom facet shadow */}
+                  <polygon points="28,37 40,22 28,28 16,22" fill="rgba(0,0,0,0.15)"/>
+                  {/* Horizontal facet line */}
+                  <line x1="16" y1="22" x2="40" y2="22" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
+                  {/* Specular dot */}
+                  <circle cx="23" cy="14" r="3" fill="rgba(255,255,255,0.6)"/>
+                </svg>
               </div>
 
               {/* Wheel */}
