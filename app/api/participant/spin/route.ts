@@ -1,17 +1,13 @@
 import { query, execute } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 
-// 8 segments — indexes must match WHEEL_SEGMENTS order in page.tsx
-// Order: 3.0x, 5.0x, 0.5x, 4.0x, 1.5x, 2.0x, 10.0x, 2.5x
+// 5 segments with weighted probabilities — order must match WHEEL_SEGMENTS in frontend
 const SPIN_SEGMENTS = [
-  { label: "3.0x",  multiplier: 3.0,  segmentIndex: 0, probability: 0.15 },
-  { label: "5.0x",  multiplier: 5.0,  segmentIndex: 1, probability: 0.07 },
-  { label: "0.5x",  multiplier: 0.5,  segmentIndex: 2, probability: 0.20 },
-  { label: "4.0x",  multiplier: 4.0,  segmentIndex: 3, probability: 0.12 },
-  { label: "1.5x",  multiplier: 1.5,  segmentIndex: 4, probability: 0.18 },
-  { label: "2.0x",  multiplier: 2.0,  segmentIndex: 5, probability: 0.15 },
-  { label: "10.0x", multiplier: 10.0, segmentIndex: 6, probability: 0.03 },
-  { label: "2.5x",  multiplier: 2.5,  segmentIndex: 7, probability: 0.10 },
+  { label: "0.5x", multiplier: 0.5,  segmentIndex: 0, probability: 0.72 },
+  { label: "1x",   multiplier: 1.0,  segmentIndex: 1, probability: 0.20 },
+  { label: "1.5x", multiplier: 1.5,  segmentIndex: 2, probability: 0.04 },
+  { label: "2x",   multiplier: 2.0,  segmentIndex: 3, probability: 0.03 },
+  { label: "3x",   multiplier: 3.0,  segmentIndex: 4, probability: 0.01 },
 ]
 // probabilities sum = 1.00
 
@@ -22,7 +18,7 @@ function selectSegment() {
     cumulative += seg.probability
     if (r <= cumulative) return seg
   }
-  return SPIN_SEGMENTS[4] // fallback: 1.5x
+  return SPIN_SEGMENTS[1] // fallback: 1x
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +59,7 @@ export async function POST(request: NextRequest) {
       [email.toLowerCase().trim(), amount, `Spin Wheel — bet ${amount} USDT`, currentBalance, balanceAfterDeduct]
     )
 
-    // Pick winner segment
+    // Pick winner segment using weighted probability
     const segment = selectSegment()
     const winAmount = parseFloat((amount * segment.multiplier).toFixed(2))
     const finalBalance = parseFloat((balanceAfterDeduct + winAmount).toFixed(2))

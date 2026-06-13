@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Wallet, RotateCw, Trophy, Shield, Gem, ChevronDown } from "lucide-react"
+import { ArrowLeft, Wallet, RotateCw, Trophy, Shield, Gem, ChevronDown, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
@@ -17,6 +17,7 @@ interface SpinResult {
   success: boolean
   prize: {
     label: string
+    multiplier: number
     amount: number
     segmentIndex: number
   }
@@ -25,21 +26,17 @@ interface SpinResult {
   error?: string
 }
 
-// 8 segments — MUST match server-side order exactly
-// index 0 = first segment starting from top (12 o'clock), going clockwise
+// 5 segments — MUST match server-side order and probabilities
 const WHEEL_SEGMENTS = [
-  { label: "3.0x",  multiplier: 3.0,  light: "#FFFBCF", dark: "#F6D860", text: "#B45309", icon: "trophy"    },
-  { label: "5.0x",  multiplier: 5.0,  light: "#EDE9FE", dark: "#C4B5FD", text: "#6D28D9", icon: "rocket"    },
-  { label: "0.5x",  multiplier: 0.5,  light: "#DCFCE7", dark: "#86EFAC", text: "#15803D", icon: "lightning" },
-  { label: "4.0x",  multiplier: 4.0,  light: "#FCE7F3", dark: "#F9A8D4", text: "#BE185D", icon: "target"    },
-  { label: "1.5x",  multiplier: 1.5,  light: "#FFF9C4", dark: "#FDE047", text: "#92400E", icon: "bars"      },
-  { label: "2.0x",  multiplier: 2.0,  light: "#DBEAFE", dark: "#93C5FD", text: "#1D4ED8", icon: "diamond"   },
-  { label: "10.0x", multiplier: 10.0, light: "#D1FAE5", dark: "#6EE7B7", text: "#065F46", icon: "coins"     },
-  { label: "2.5x",  multiplier: 2.5,  light: "#FCE7F3", dark: "#F472B6", text: "#9D174D", icon: "gift"      },
+  { label: "0.5x", multiplier: 0.5, light: "#DCFCE7", dark: "#86EFAC", text: "#15803D", icon: "lightning", probability: "72%" },
+  { label: "1x",   multiplier: 1.0, light: "#FFF9C4", dark: "#FDE047", text: "#92400E", icon: "target",    probability: "20%" },
+  { label: "1.5x", multiplier: 1.5, light: "#DBEAFE", dark: "#93C5FD", text: "#1D4ED8", icon: "diamond",   probability: "4%" },
+  { label: "2x",   multiplier: 2.0, light: "#FCE7F3", dark: "#F9A8D4", text: "#BE185D", icon: "bars",      probability: "3%" },
+  { label: "3x",   multiplier: 3.0, light: "#FFFBCF", dark: "#F6D860", text: "#B45309", icon: "trophy",    probability: "1%" },
 ]
 
 const N     = WHEEL_SEGMENTS.length
-const STEP  = 360 / N          // 45° per segment
+const STEP  = 360 / N          // 72° per segment
 const AMOUNT_PRESETS = [10, 25, 50, 100, 250, 500]
 
 // ─── Segment icons ────────────────────────────────────────────────────────────
@@ -56,23 +53,6 @@ function Icon({ type, color }: { type: string; color: string }) {
           <ellipse cx="0" cy="0" rx="2" ry="2.5" fill="rgba(255,255,255,0.4)"/>
         </g>
       )
-    case "rocket":
-      return (
-        <g>
-          <path d="M0,-9 C-4,-4 -4,3 0,7 C4,3 4,-4 0,-9Z" fill={color}/>
-          <path d="M-4,2 L-7,8 L-1,6Z" fill={color}/>
-          <path d="M4,2 L7,8 L1,6Z"   fill={color}/>
-          <circle cx="0" cy="-1" r="2" fill="white" opacity="0.6"/>
-          <circle cx="0" cy="-1" r="1" fill={color}/>
-        </g>
-      )
-    case "lightning":
-      return (
-        <g fill={color}>
-          <polygon points="3,-9 -3,1 1.5,1 -3,9 5,-2 0,-2 4,-9"/>
-          <polygon points="3,-9 -3,1 1.5,1 -3,9 5,-2 0,-2 4,-9" fill="rgba(255,255,255,0.25)" transform="translate(-0.5,-0.5)"/>
-        </g>
-      )
     case "target":
       return (
         <g>
@@ -81,15 +61,6 @@ function Icon({ type, color }: { type: string; color: string }) {
           <circle cx="0" cy="0" r="2" fill={color}/>
           <line x1="5" y1="-5" x2="8" y2="-8" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
           <polygon points="8,-8 5,-7 7,-5" fill={color}/>
-        </g>
-      )
-    case "bars":
-      return (
-        <g fill={color}>
-          <rect x="-6" y="1"   width="3" height="6"  rx="1"/>
-          <rect x="-1.5" y="-2" width="3" height="9" rx="1"/>
-          <rect x="3" y="-6"   width="3" height="13" rx="1"/>
-          <rect x="-6" y="1"   width="3" height="6"  rx="1" fill="rgba(255,255,255,0.2)"/>
         </g>
       )
     case "diamond":
@@ -101,27 +72,20 @@ function Icon({ type, color }: { type: string; color: string }) {
           <line x1="-7" y1="0" x2="7" y2="0" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8"/>
         </g>
       )
-    case "coins":
+    case "bars":
       return (
-        <g>
-          <ellipse cx="0" cy="-5" rx="5" ry="2" fill={color}/>
-          <rect x="-5" y="-5" width="10" height="4" fill={color}/>
-          <ellipse cx="0" cy="-1" rx="5" ry="2" fill={color}/>
-          <ellipse cx="1.5" cy="2" rx="5" ry="2" fill={color} opacity="0.8"/>
-          <rect x="-3.5" y="0" width="10" height="4" fill={color} opacity="0.8"/>
-          <ellipse cx="1.5" cy="4" rx="5" ry="2" fill={color} opacity="0.8"/>
-          <text x="0" y="-3" textAnchor="middle" fontSize="4" fill="white" fontWeight="bold">$</text>
+        <g fill={color}>
+          <rect x="-6" y="1"   width="3" height="6"  rx="1"/>
+          <rect x="-1.5" y="-2" width="3" height="9" rx="1"/>
+          <rect x="3" y="-6"   width="3" height="13" rx="1"/>
+          <rect x="-6" y="1"   width="3" height="6"  rx="1" fill="rgba(255,255,255,0.2)"/>
         </g>
       )
-    case "gift":
+    case "lightning":
       return (
-        <g>
-          <rect x="-6" y="-1" width="12" height="9"   rx="1" fill={color}/>
-          <rect x="-6" y="-4" width="12" height="3.5" rx="1" fill={color}/>
-          <rect x="-1.2" y="-7" width="2.4" height="13" rx="1" fill={color}/>
-          <rect x="-6" y="-4" width="12" height="3.5" rx="1" fill="rgba(255,255,255,0.2)"/>
-          <path d="M0,-4 C-1,-6 -5,-8 -4,-4" fill="none" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-          <path d="M0,-4 C1,-6 5,-8 4,-4"   fill="none" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+        <g fill={color}>
+          <polygon points="3,-9 -3,1 1.5,1 -3,9 5,-2 0,-2 4,-9"/>
+          <polygon points="3,-9 -3,1 1.5,1 -3,9 5,-2 0,-2 4,-9" fill="rgba(255,255,255,0.25)" transform="translate(-0.5,-0.5)"/>
         </g>
       )
     default:
@@ -129,19 +93,19 @@ function Icon({ type, color }: { type: string; color: string }) {
   }
 }
 
-// ─── Wheel SVG (static — rotation applied by parent div) ─────────────────────
+// ─── Wheel SVG ────────────────────────────────────────────────────────────────
 function WheelSVG() {
-  const SIZE  = 380
-  const CX    = SIZE / 2
-  const CY    = SIZE / 2
-  const OUTER = 158
-  const INNER = 55
-  const RIM   = 175
-  const toRad = (d: number) => (d * Math.PI) / 180
+  const SIZE   = 340
+  const CX     = SIZE / 2
+  const CY     = SIZE / 2
+  const OUTER  = 138
+  const INNER  = 46
+  const RIM    = 152
+  const toRad  = (d: number) => (d * Math.PI) / 180
 
-  const slicePath = (i: number) => {
-    const s  = i * STEP - 90
-    const e  = s + STEP
+  function slicePath(i: number): string {
+    const s = i * STEP - 90
+    const e = s + STEP
     const x1 = CX + OUTER * Math.cos(toRad(s))
     const y1 = CY + OUTER * Math.sin(toRad(s))
     const x2 = CX + OUTER * Math.cos(toRad(e))
@@ -152,48 +116,60 @@ function WheelSVG() {
   const ledAngles = Array.from({ length: 16 }, (_, i) => (i * 360) / 16)
 
   return (
-    <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} style={{ overflow: "visible" }}>
+    <svg
+      width={SIZE} height={SIZE}
+      viewBox={`0 0 ${SIZE} ${SIZE}`}
+      style={{ overflow: "visible" }}
+    >
       <defs>
+        {/* Per-segment radial gradient for 3D depth */}
         {WHEEL_SEGMENTS.map((seg, i) => (
-          <radialGradient key={i} id={`wg${i}`} cx="28%" cy="28%" r="85%">
-            <stop offset="0%"   stopColor={seg.light}/>
-            <stop offset="60%"  stopColor={seg.light}/>
-            <stop offset="100%" stopColor={seg.dark}/>
+          <radialGradient key={i} id={`wg${i}`} cx="30%" cy="28%" r="82%">
+            <stop offset="0%"   stopColor={seg.light} stopOpacity="1"/>
+            <stop offset="55%"  stopColor={seg.light} stopOpacity="1"/>
+            <stop offset="100%" stopColor={seg.dark} stopOpacity="1"/>
           </radialGradient>
         ))}
+        {/* Chrome rim gradient */}
         <linearGradient id="wRimChr" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%"   stopColor="#ff7e36"/>
-          <stop offset="18%"  stopColor="#f97316"/>
-          <stop offset="36%"  stopColor="#f43f5e"/>
-          <stop offset="54%"  stopColor="#ec4899"/>
+          <stop offset="20%"  stopColor="#f97316"/>
+          <stop offset="38%"  stopColor="#f43f5e"/>
+          <stop offset="55%"  stopColor="#ec4899"/>
           <stop offset="72%"  stopColor="#a855f7"/>
-          <stop offset="90%"  stopColor="#6366f1"/>
+          <stop offset="88%"  stopColor="#6366f1"/>
           <stop offset="100%" stopColor="#3b82f6"/>
         </linearGradient>
+        {/* Rim shine */}
         <linearGradient id="wRimSh" x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%"   stopColor="rgba(255,255,255,0.55)"/>
           <stop offset="45%"  stopColor="rgba(255,255,255,0.12)"/>
           <stop offset="100%" stopColor="rgba(0,0,0,0.18)"/>
         </linearGradient>
+        {/* Center button gradient */}
         <radialGradient id="wCtrGr" cx="38%" cy="30%" r="75%">
           <stop offset="0%"   stopColor="#fcd34d"/>
           <stop offset="30%"  stopColor="#fb923c"/>
           <stop offset="65%"  stopColor="#ef4444"/>
           <stop offset="100%" stopColor="#991b1b"/>
         </radialGradient>
+        {/* Center gloss */}
         <radialGradient id="wCtrGl" cx="50%" cy="22%" r="58%">
           <stop offset="0%"   stopColor="rgba(255,255,255,0.5)"/>
           <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
         </radialGradient>
+        {/* Hub ring */}
         <radialGradient id="wHub" cx="30%" cy="25%" r="80%">
           <stop offset="0%"   stopColor="#f8fafc"/>
           <stop offset="45%"  stopColor="#e2e8f0"/>
           <stop offset="100%" stopColor="#94a3b8"/>
         </radialGradient>
+        {/* Outer glow */}
         <radialGradient id="wOGlow" cx="50%" cy="50%" r="50%">
           <stop offset="55%"  stopColor="transparent"/>
-          <stop offset="100%" stopColor="rgba(249,115,22,0.22)"/>
+          <stop offset="100%" stopColor="rgba(249,115,22,0.2)"/>
         </radialGradient>
+        {/* Filters */}
         <filter id="wDrop"  x="-15%" y="-15%" width="130%" height="145%">
           <feDropShadow dx="0" dy="10" stdDeviation="16" floodColor="rgba(0,0,0,0.35)"/>
         </filter>
@@ -225,14 +201,14 @@ function WheelSVG() {
 
         const labelDist = OUTER * 0.62
         const iconDist  = OUTER * 0.84
-        const subDist   = OUTER * 0.76
+        const probDist  = OUTER * 0.76
 
         const lx  = CX + labelDist * Math.cos(toR(midDeg))
         const ly  = CY + labelDist * Math.sin(toR(midDeg))
         const ix  = CX + iconDist  * Math.cos(toR(midDeg))
         const iy  = CY + iconDist  * Math.sin(toR(midDeg))
-        const sx  = CX + subDist   * Math.cos(toR(midDeg))
-        const sy  = CY + subDist   * Math.sin(toR(midDeg))
+        const px  = CX + probDist  * Math.cos(toR(midDeg))
+        const py  = CY + probDist  * Math.sin(toR(midDeg))
 
         return (
           <g key={i}>
@@ -249,12 +225,12 @@ function WheelSVG() {
                 {seg.label}
               </text>
             </g>
-            {/* Sublabel */}
-            <g transform={`rotate(${textRot},${sx},${sy})`}>
-              <text x={sx} y={sy} textAnchor="middle" dominantBaseline="middle"
+            {/* Probability label */}
+            <g transform={`rotate(${textRot},${px},${py})`}>
+              <text x={px} y={py} textAnchor="middle" dominantBaseline="middle"
                 fontSize={7} fontWeight="600" fill={seg.text} opacity={0.75}
                 fontFamily="Arial, sans-serif">
-                {seg.multiplier % 1 === 0 ? `You get ${seg.multiplier.toFixed(0)}X` : `You get ${seg.multiplier}X`}
+                {seg.probability}
               </text>
             </g>
             {/* Icon near rim */}
@@ -320,7 +296,6 @@ function WheelSVG() {
 export default function SpinWheelPage() {
   const router      = useRouter()
   const { toast }   = useToast()
-  const [mounted, setMounted] = useState(false)
 
   const [balance, setBalance]                     = useState(0)
   const [participantEmail, setParticipantEmail]   = useState("")
@@ -334,6 +309,11 @@ export default function SpinWheelPage() {
 
   // Accumulated rotation so the wheel never "resets" visually
   const totalRotation = useRef(0)
+
+  // ── Derived values ────────────────────────────────────────────────────────
+  const minWinnings = spinAmount * 0.5 // min multiplier
+  const maxWinnings = spinAmount * 3   // max multiplier
+  const canSpin = balance >= spinAmount && !isSpinning
 
   // ── data loaders ──────────────────────────────────────────────────────────
   const loadParticipantData = useCallback(async () => {
@@ -376,7 +356,7 @@ export default function SpinWheelPage() {
     if (balance < spinAmount) {
       toast({
         title: "Insufficient Balance",
-        description: `You need ${spinAmount} USDT to spin. Current balance: ${balance.toFixed(2)} USDT`,
+        description: `You need ${spinAmount} USDT to spin.`,
         variant: "destructive",
       })
       return
@@ -398,76 +378,66 @@ export default function SpinWheelPage() {
       const result: SpinResult = await response.json()
       if (!result.success) throw new Error(result.error || "Spin failed")
 
-      // ── Rotation math ────────────────────────────────────────────────────
-      // Segment i occupies the arc from (i * STEP - 90) to ((i+1) * STEP - 90).
-      // Segment i = 0 starts at -90° (top). The pointer is fixed at the top.
-      // We want the mid-point of the winning segment to stop under the pointer.
-      //
-      // Mid-angle of segment i (wheel-local, 0° = right) = i * STEP + STEP/2 - 90
-      // To bring that mid-angle to the top (pointer at 0° = 12 o'clock relative to
-      // the wheel SVG after rotation), we need:
-      //   finalAngle mod 360 such that (mid + finalAngle) mod 360 ≡ 0°  (top)
-      //
-      // => finalAngle = -mid  (mod 360)  = 360 - (mid mod 360)  when mid > 0
-      //
-      // We add extra full rotations (5-7) for visual effect.
+      // Update balance immediately
+      setBalance(result.balanceAfter)
+      localStorage.setItem("participantData", JSON.stringify({
+        email: participantEmail,
+        account_balance: result.balanceAfter
+      }))
 
-      const idx      = result.prize.segmentIndex
-      const mid      = ((idx * STEP + STEP / 2 - 90) % 360 + 360) % 360
-      const stopAt   = (360 - mid) % 360                             // how much MORE to rotate
-      const extraSpins = (5 + Math.floor(Math.random() * 3)) * 360  // 5-7 full spins
-      const delta    = extraSpins + stopAt
-
-      totalRotation.current += delta
-      setRotation(totalRotation.current)
-
-      // Wait for the CSS transition to finish (4 s) before showing the modal
-      await new Promise<void>((res) => setTimeout(res, 4200))
-
+      // Store result for display
       setWinResult(result)
-      setShowWinModal(true)
-      loadParticipantData()
-      loadLastWinners()
-    } catch (e) {
+
+      // Animate wheel to landing position
+      const segmentIndex = result.prize.segmentIndex
+      const segmentAngle = 360 / WHEEL_SEGMENTS.length
+      const spins = 5 + Math.floor(Math.random() * 3)
+
+      // Correct rotation math: bring winning segment to top pointer
+      const mid = ((segmentIndex * segmentAngle + segmentAngle / 2 - 90) % 360 + 360) % 360
+      const stopAt = (360 - mid) % 360
+      const finalRotation = totalRotation.current + spins * 360 + stopAt
+
+      // Update rotation with smooth animation
+      totalRotation.current = finalRotation
+      setRotation(finalRotation)
+
+      // Show result after animation
+      setTimeout(() => {
+        setShowWinModal(true)
+        setIsSpinning(false)
+        loadLastWinners()
+      }, 4200)
+
+    } catch (error: any) {
+      console.error("handleSpin error:", error)
       toast({
-        title: "Spin Failed",
-        description: e instanceof Error ? e.message : "Unable to spin right now.",
+        title: "Spin Error",
+        description: error.message || "Failed to spin",
         variant: "destructive",
       })
-    } finally {
       setIsSpinning(false)
     }
-  }, [participantEmail, isSpinning, balance, spinAmount, loadParticipantData, loadLastWinners, toast])
+  }, [participantEmail, spinAmount, balance, isSpinning, toast, loadLastWinners])
 
+  // ── effects ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    setMounted(true)
     loadParticipantData()
     loadLastWinners()
   }, [loadParticipantData, loadLastWinners])
 
-  if (!mounted) return null
-
-  const canSpin     = !isSpinning && balance >= spinAmount
-  const minWinnings = +(spinAmount * Math.min(...WHEEL_SEGMENTS.map(s => s.multiplier))).toFixed(2)
-  const maxWinnings = +(spinAmount * Math.max(...WHEEL_SEGMENTS.map(s => s.multiplier))).toFixed(2)
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0720] via-[#1a0533] to-[#0d1526]">
-
-      {/* ── Header ── */}
-      <header className="sticky top-0 z-40 bg-white/5 backdrop-blur border-b border-white/10 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/participant/dashboard"
-              className="inline-flex items-center justify-center w-9 h-9 rounded-lg hover:bg-white/10 transition-colors text-white/80"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <div>
-              <h1 className="font-bold text-white leading-tight">Spin &amp; Win</h1>
-              <p className="text-[11px] text-orange-300/80">Multiply your amount</p>
-            </div>
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#0f0720] via-[#1a0533] to-[#0d1526]">
+      {/* Header */}
+      <header className="relative z-10 flex items-center justify-between p-3 sm:p-5 border-b border-white/10 bg-white/5 backdrop-blur-md">
+        <Link href="/participant/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <ArrowLeft className="h-5 w-5 text-white" />
+          <span className="text-white font-bold hidden sm:inline">Dashboard</span>
+        </Link>
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 text-sm">
+            <RotateCw className="h-4 w-4 text-purple-400 animate-spin" />
+            <span className="font-bold text-white">Spin Wheel</span>
           </div>
           <div className="flex items-center gap-2 bg-white/10 rounded-xl px-4 py-2">
             <Wallet className="h-4 w-4 text-orange-300" />
@@ -477,8 +447,8 @@ export default function SpinWheelPage() {
         </div>
       </header>
 
-      {/* ── Main ── */}
-      <main className="max-w-6xl mx-auto px-4 py-8 lg:py-12">
+      {/* Main */}
+      <main className="max-w-6xl mx-auto px-4 py-8 lg:py-12 flex-1">
         <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-2xl overflow-hidden border border-white/10">
           <div className="flex flex-col lg:flex-row">
 
@@ -623,14 +593,14 @@ export default function SpinWheelPage() {
                   <p className="text-xs font-black text-white/80 uppercase tracking-widest mb-3">Possible Winnings</p>
                   <div className="bg-white/5 border border-white/20 rounded-2xl p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-black text-emerald-400">{minWinnings} USDT</span>
+                      <span className="text-2xl font-black text-emerald-400">${minWinnings.toFixed(0)} USDT</span>
                       <span className="text-white/40 font-semibold">—</span>
-                      <span className="text-2xl font-black text-purple-400">{maxWinnings} USDT</span>
+                      <span className="text-2xl font-black text-purple-400">${maxWinnings.toFixed(0)} USDT</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-white/50 font-semibold w-8">0.5x</span>
                       <div className="flex-1 h-2 rounded-full overflow-hidden bg-gradient-to-r from-orange-400 via-pink-400 to-purple-500"/>
-                      <span className="text-xs text-white/50 font-semibold w-6">10x</span>
+                      <span className="text-xs text-white/50 font-semibold w-6">3x</span>
                     </div>
                   </div>
                 </div>
@@ -648,119 +618,101 @@ export default function SpinWheelPage() {
                   {canSpin && (
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer_2s_infinite]"/>
                   )}
-                  <RotateCw className={`h-5 w-5 ${isSpinning ? "animate-spin" : ""}`}/>
-                  <span>{isSpinning ? "Spinning..." : "Spin Now"}</span>
+                  <span className="relative">
+                    {isSpinning ? "Spinning..." : `SPIN NOW (${spinAmount})`}
+                  </span>
                 </button>
 
-                {balance < spinAmount && (
-                  <p className="text-center text-sm text-red-400 font-semibold -mt-4">
-                    Need {(spinAmount - balance).toFixed(2)} more USDT
-                  </p>
-                )}
-              </div>
-
-              {/* Social proof */}
-              <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                <div className="flex -space-x-2">
-                  {["bg-orange-400","bg-pink-400","bg-purple-400","bg-blue-400"].map((c, i) => (
-                    <div key={i} className={`w-8 h-8 rounded-full border-2 border-white/20 ${c} flex items-center justify-center text-white text-xs font-bold`}>
-                      {["R","A","S","V"][i]}
-                    </div>
-                  ))}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-white">50,000+ users spinning</p>
-                  <p className="text-xs text-emerald-400 font-semibold flex items-center justify-end gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block animate-pulse"/>
-                    Live
-                  </p>
+                {/* Probabilities */}
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <p className="text-xs font-bold text-white/70 mb-3 uppercase tracking-wider">Win Probabilities</p>
+                  <div className="space-y-2">
+                    {WHEEL_SEGMENTS.map((seg) => (
+                      <div key={seg.label} className="flex items-center justify-between">
+                        <span className="text-sm text-white/80 font-semibold">{seg.label}</span>
+                        <div className="flex items-center gap-2 flex-1 ml-3">
+                          <div className="h-1.5 rounded-full bg-white/20 flex-1" style={{ background: `linear-gradient(90deg, ${seg.light}, ${seg.dark})` }}>
+                            <div style={{ width: seg.probability, height: '100%', borderRadius: '9999px', background: `linear-gradient(90deg, ${seg.light}, ${seg.dark})` }} />
+                          </div>
+                          <span className="text-xs text-white/60 font-bold w-10 text-right">{seg.probability}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Winners */}
-        {lastWinners.length > 0 && (
-          <div className="mt-8 bg-white/5 backdrop-blur rounded-2xl shadow-md border border-white/10 p-6">
-            <h3 className="text-sm font-black text-white/90 uppercase tracking-widest mb-4 flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-orange-400"/>
-              Recent Winners
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-              {lastWinners.map((w, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-xl border border-orange-500/20">
-                  <div>
-                    <p className="text-xs font-bold text-white truncate">{w.email.split("@")[0]}</p>
-                    <p className="text-[10px] text-white/50">Won {w.multiplier}</p>
-                  </div>
-                  <span className="text-sm font-black text-emerald-400">+${w.amount}</span>
-                </div>
-              ))}
-            </div>
+        {/* Recent winners */}
+        <div className="mt-8 bg-white/5 backdrop-blur-md rounded-3xl border border-white/10 p-8">
+          <h3 className="text-2xl font-black text-white mb-6">Recent Winners</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {lastWinners.map((winner, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <p className="text-xs text-white/50 mb-2">User</p>
+                <p className="text-white font-bold text-sm mb-3">{winner.email}</p>
+                <p className="text-emerald-400 text-2xl font-black">${winner.amount.toFixed(0)} USDT</p>
+              </div>
+            ))}
           </div>
-        )}
+        </div>
       </main>
 
-      {/* ── Win Modal ── */}
+      {/* Win Modal */}
       {showWinModal && winResult && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#1a0533] border border-white/10 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center"
-            style={{ animation: "bounceIn 0.4s ease" }}>
-            <div className="text-5xl mb-4">🎉</div>
-            <h2 className="text-3xl font-black text-white mb-2">Congratulations!</h2>
-            <p className="text-white/60 mb-6">
-              You won a{" "}
-              <span className="font-black text-orange-400">{winResult.prize.label} multiplier</span>
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-gradient-to-br from-white/10 via-white/5 to-white/10 border-2 border-white/20 rounded-3xl shadow-2xl max-w-sm w-full p-8 backdrop-blur-xl">
+            {/* Close button */}
+            <button
+              onClick={() => setShowWinModal(false)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="h-5 w-5 text-white" />
+            </button>
 
-            <div className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30 rounded-2xl p-6 mb-6">
-              <p className="text-sm text-emerald-400 mb-1 font-semibold">You Won</p>
-              <p className="text-5xl font-black text-emerald-400">${winResult.prize.amount.toFixed(2)}</p>
-              <p className="text-sm text-emerald-500/70 mt-1">USDT</p>
+            {/* Trophy icon */}
+            <div className="flex justify-center mb-6">
+              <Trophy className="h-16 w-16 text-yellow-400 animate-pulse" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
-              <div className="bg-white/5 rounded-xl p-3 text-left">
-                <p className="text-white/40 text-xs mb-1">Previous Balance</p>
-                <p className="font-black text-white">${winResult.balanceBefore.toFixed(2)}</p>
+            {/* Title */}
+            <h2 className="text-center text-3xl font-black text-white mb-2">Congratulations!</h2>
+            <p className="text-center text-white/60 mb-8">You won with a lucky spin!</p>
+
+            {/* Results */}
+            <div className="space-y-4 mb-8">
+              <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                <p className="text-xs text-white/50 mb-1 uppercase tracking-wider">Multiplier</p>
+                <p className="text-3xl font-black text-orange-400">{winResult.prize.label}</p>
               </div>
-              <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3 text-left">
-                <p className="text-emerald-400 text-xs mb-1">New Balance</p>
-                <p className="font-black text-emerald-400">${winResult.balanceAfter.toFixed(2)}</p>
+              <div className="bg-white/10 rounded-xl p-4 border border-white/20">
+                <p className="text-xs text-white/50 mb-1 uppercase tracking-wider">Bet Amount</p>
+                <p className="text-3xl font-black text-white">${spinAmount.toFixed(2)} USDT</p>
+              </div>
+              <div className="bg-gradient-to-r from-emerald-500/20 to-emerald-400/20 rounded-xl p-4 border-2 border-emerald-400/50">
+                <p className="text-xs text-emerald-300 mb-1 uppercase tracking-wider font-bold">You Won</p>
+                <p className="text-4xl font-black text-emerald-400">${winResult.prize.amount.toFixed(2)} USDT</p>
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowWinModal(false)}
-                className="flex-1 py-3 rounded-xl border-2 border-white/20 text-white/80 font-bold hover:bg-white/10 transition-colors"
-              >
-                Close
-              </button>
-              <button
-                onClick={() => { setShowWinModal(false); handleSpin() }}
-                disabled={!canSpin}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-purple-600 text-white font-bold hover:from-orange-600 hover:to-purple-700 transition-all disabled:opacity-50"
-              >
-                Spin Again
-              </button>
+            {/* New balance */}
+            <div className="text-center mb-6">
+              <p className="text-white/60 text-sm mb-1">New Balance</p>
+              <p className="text-2xl font-black text-white">${balance.toFixed(2)} USDT</p>
             </div>
+
+            {/* Action button */}
+            <button
+              onClick={() => setShowWinModal(false)}
+              className="w-full py-4 bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white font-black rounded-xl transition-all hover:shadow-lg active:scale-95"
+            >
+              Spin Again
+            </button>
           </div>
         </div>
       )}
-
-      <style jsx global>{`
-        @keyframes shimmer {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(200%); }
-        }
-        @keyframes bounceIn {
-          0%   { opacity: 0; transform: scale(0.7); }
-          60%  { transform: scale(1.08); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-      `}</style>
     </div>
   )
 }
