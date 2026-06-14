@@ -556,17 +556,17 @@ function DailySpinWheel({
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
+  const [spinAmount, setSpinAmount] = useState(10) // Default spin amount
   const { toast } = useToast()
-  const SPIN_COST = 5
 
   const spinWheel = async () => {
     if (isSpinning) return
 
     // Check if user has enough balance
-    if (currentBalance < SPIN_COST) {
+    if (currentBalance < spinAmount || spinAmount <= 0) {
       toast({
         title: "Insufficient Balance",
-        description: "You need $" + SPIN_COST + " to spin the wheel. Please top up your wallet.",
+        description: `You need $${spinAmount.toFixed(2)} USDT to spin. Please top up your wallet or select a lower amount.`,
         variant: "destructive",
       })
       return
@@ -575,16 +575,14 @@ function DailySpinWheel({
     setIsSpinning(true)
     setShowResult(false)
     setResult(null)
-
-    // Reset wheel to 0° before each spin to ensure full animation
     setRotation(0)
 
-    // Call the spin API ONCE — it handles deduction, prize selection, and crediting all atomically
-    let apiResult: { prize: { label: string; amount: number; segmentIndex: number }; balanceAfter: number; balanceBefore: number } | null = null
+    // Call the spin API with the selected amount
+    let apiResult: { prize: { label: string; amount: number; multiplier: number; segmentIndex: number }; balanceAfter: number; balanceBefore: number } | null = null
     try {
       const res = await participantFetch("/api/participant/spin", {
         method: "POST",
-        body: JSON.stringify({ email: userEmail }),
+        body: JSON.stringify({ email: userEmail, spinAmount }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -593,9 +591,7 @@ function DailySpinWheel({
         return
       }
       apiResult = data
-      // Immediately show $5 deducted balance (balanceBefore - 5 = balanceAfter when no prize yet)
-      // The server already deducted it; update UI right away so user sees deduction
-      const balanceAfterDeduct = parseFloat((data.balanceBefore - 5).toFixed(2))
+      const balanceAfterDeduct = parseFloat((data.balanceBefore - spinAmount).toFixed(2))
       onWin(0, "", "deduct", balanceAfterDeduct, balanceAfterDeduct)
     } catch {
       toast({ title: "Spin Failed", description: "Network error. Please try again.", variant: "destructive" })
@@ -1061,7 +1057,73 @@ function DailySpinWheel({
         
         {/* Action Section - Enhanced */}
         <div className="space-y-4 w-full max-w-sm relative">
-          {/* Wallet Balance Display - New */}
+          {/* Amount Selector - Professional with Custom Input */}
+          <div className="relative rounded-2xl p-5 overflow-hidden border-2 border-blue-400"
+            style={{
+              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)',
+              boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
+            }}
+          >
+            <p className="text-slate-800 font-black text-sm mb-3">Select or Enter Spin Amount</p>
+            
+            {/* Preset Amount Buttons */}
+            <div className="grid grid-cols-3 gap-2 mb-3">
+              {[10, 25, 50, 100, 250, 500].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setSpinAmount(amt)}
+                  className={`py-2 px-2 rounded-lg font-black text-sm transition-all ${
+                    spinAmount === amt && typeof spinAmount === 'number'
+                      ? 'bg-blue-600 text-white scale-105 shadow-lg' 
+                      : 'bg-white text-slate-800 hover:scale-105'
+                  }`}
+                >
+                  ${amt}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Amount Input */}
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700 font-black">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={currentBalance}
+                  value={typeof spinAmount === 'number' && spinAmount > 0 && ![10, 25, 50, 100, 250, 500].includes(spinAmount) ? spinAmount : ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0
+                    if (val > 0 && val <= currentBalance) {
+                      setSpinAmount(val)
+                    }
+                  }}
+                  onFocus={() => {
+                    // Clear when focusing to enter custom amount
+                    if ([10, 25, 50, 100, 250, 500].includes(spinAmount)) {
+                      setSpinAmount(0)
+                    }
+                  }}
+                  placeholder="Custom"
+                  className="w-full pl-7 pr-3 py-2 rounded-lg bg-white text-slate-800 font-black border-2 border-blue-300 focus:border-blue-600 focus:outline-none transition-colors"
+                />
+              </div>
+              <button
+                onClick={() => setSpinAmount(currentBalance)}
+                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-lg transition-colors text-sm"
+                title="Set to maximum available balance"
+              >
+                MAX
+              </button>
+            </div>
+
+            {/* Amount Info */}
+            <div className="mt-2 text-xs text-slate-700 font-semibold">
+              Min: $1 | Max: ${Math.floor(currentBalance)}
+            </div>
+          </div>
+
+          {/* Wallet Balance Display */}
           <div 
             className="relative rounded-2xl p-4 overflow-hidden border-2 border-emerald-400 transform hover:scale-105 transition-transform"
             style={{
@@ -1085,48 +1147,40 @@ function DailySpinWheel({
             </div>
           </div>
 
-          {/* Spin Cost Info - Enhanced with Animation */}
-          <div 
-            className="relative rounded-2xl p-4 overflow-hidden border-2 border-amber-400 transform hover:scale-105 transition-transform"
+          {/* Possible Winnings Display */}
+          <div className="relative rounded-2xl p-4 overflow-hidden border-2 border-purple-400"
             style={{
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%)',
-              boxShadow: '0 4px 20px rgba(251, 191, 36, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
+              background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #d8b4fe 100%)',
+              boxShadow: '0 4px 20px rgba(168, 85, 247, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
             }}
           >
-            <div className="absolute inset-0 opacity-30"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer-bg 2s infinite'
-              }}
-            />
-            <div className="relative flex items-center justify-center gap-3">
-                <Sparkles className="h-5 w-5 text-orange-600" />
-                <p className="text-slate-800 text-base font-black">
-                  Spin Cost: <span className="text-orange-600 text-2xl">${SPIN_COST}</span>
-                </p>
-                <Sparkles className="h-5 w-5 text-orange-600" />
+            <div className="relative space-y-2">
+              <p className="text-slate-800 text-xs font-black">Possible Winnings</p>
+              <p className="text-purple-700 font-black text-lg">
+                ${(spinAmount * 0.5).toFixed(2)} - ${(spinAmount * 3).toFixed(2)}
+              </p>
+              <p className="text-xs text-slate-600">Based on 0.5x - 3x multiplier</p>
             </div>
           </div>
 
           {/* Spin Button - Enhanced with Better Effects */}
           <button
             onClick={spinWheel}
-            disabled={isSpinning || currentBalance < SPIN_COST}
+            disabled={isSpinning || currentBalance < spinAmount || spinAmount <= 0}
             className="w-full h-16 text-lg font-black rounded-2xl transition-all disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden transform hover:scale-105 active:scale-95"
             style={{
-              background: !isSpinning && currentBalance >= SPIN_COST
+              background: !isSpinning && currentBalance >= spinAmount && spinAmount > 0
                 ? 'linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%)' 
                 : 'linear-gradient(135deg, #94a3b8, #cbd5e1)',
-              boxShadow: !isSpinning && currentBalance >= SPIN_COST
+              boxShadow: !isSpinning && currentBalance >= spinAmount && spinAmount > 0
                 ? '0 6px 0 #ea580c, 0 12px 30px rgba(249, 115, 22, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)' 
                 : '0 3px 0 #64748b',
               color: 'white',
               textShadow: '0 2px 4px rgba(0,0,0,0.4)',
-              border: !isSpinning && currentBalance >= SPIN_COST ? '2px solid rgba(255,255,255,0.3)' : 'none'
+              border: !isSpinning && currentBalance >= spinAmount && spinAmount > 0 ? '2px solid rgba(255,255,255,0.3)' : 'none'
             }}
           >
-            {!isSpinning && currentBalance >= SPIN_COST && (
+            {!isSpinning && currentBalance >= spinAmount && spinAmount > 0 && (
               <>
                 <div 
                   className="absolute inset-0"
@@ -1152,15 +1206,15 @@ function DailySpinWheel({
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
                   <span className="font-black text-xl tracking-wider">SPINNING...</span>
                 </>
-              ) : currentBalance < SPIN_COST ? (
+              ) : currentBalance < spinAmount || spinAmount <= 0 ? (
               <>
                 <AlertCircle className="h-6 w-6" />
-                <span className="font-black text-lg">NEED ${SPIN_COST}</span>
+                <span className="font-black text-lg">NEED ${spinAmount > currentBalance ? (spinAmount - currentBalance).toFixed(2) : 'Valid Amount'}</span>
               </>
               ) : (
                 <>
                   <Sparkles className="h-6 w-6 animate-bounce" />
-                  <span className="font-black text-xl tracking-wider">SPIN NOW!</span>
+                  <span className="font-black text-xl tracking-wider">SPIN ${spinAmount.toFixed(2)}</span>
                   <Sparkles className="h-6 w-6 animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </>
               )}
