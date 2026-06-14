@@ -526,11 +526,13 @@ function HamburgerMenu({
 // Segments ordered starting from TOP (12 o'clock) going CLOCKWISE
 // This array order MUST match the visual wheel layout
 const SPIN_SEGMENTS = [
-  { label: "0.5x", multiplier: 0.5, color: "#fef3c7", darkColor: "#f59e0b", icon: "🎲", type: "multiplier", probability: 0.72, textColor: "#92400e", subtext: "Start Small" },   // 72%
-  { label: "1x", multiplier: 1.0, color: "#dbeafe", darkColor: "#3b82f6", icon: "⭐", type: "multiplier", probability: 0.20, textColor: "#1e40af", subtext: "Break Even" },    // 20%
+  { label: "0.5x", multiplier: 0.5, color: "#fef3c7", darkColor: "#f59e0b", icon: "🎲", type: "multiplier", probability: 0.68, textColor: "#92400e", subtext: "Start Small" },   // 68%
+  { label: "1x", multiplier: 1.0, color: "#dbeafe", darkColor: "#3b82f6", icon: "⭐", type: "multiplier", probability: 0.18, textColor: "#1e40af", subtext: "Break Even" },    // 18%
   { label: "1.5x", multiplier: 1.5, color: "#dcfce7", darkColor: "#22c55e", icon: "🌟", type: "multiplier", probability: 0.04, textColor: "#15803d", subtext: "Good Win" },  // 4%
   { label: "2x", multiplier: 2.0, color: "#f5e5ff", darkColor: "#a855f7", icon: "💫", type: "multiplier", probability: 0.03, textColor: "#6d28d9", subtext: "Great!" },     // 3%
-  { label: "3x", multiplier: 3.0, color: "#fee2e2", darkColor: "#ef4444", icon: "🎯", type: "multiplier", probability: 0.01, textColor: "#991b1b", subtext: "JACKPOT!" },  // 1%
+  { label: "3x", multiplier: 3.0, color: "#fee2e2", darkColor: "#ef4444", icon: "🎯", type: "multiplier", probability: 0.015, textColor: "#991b1b", subtext: "JACKPOT!" },  // 1.5%
+  { label: "5x", multiplier: 5.0, color: "#fca5a5", darkColor: "#dc2626", icon: "💎", type: "multiplier", probability: 0.01, textColor: "#7f1d1d", subtext: "MEGA WIN!" },   // 1%
+  { label: "10x", multiplier: 10.0, color: "#fecaca", darkColor: "#b91c1c", icon: "👑", type: "multiplier", probability: 0.005, textColor: "#4c0519", subtext: "LEGEND!" },  // 0.5%
 ]
 
 function DailySpinWheel({
@@ -629,11 +631,23 @@ function DailySpinWheel({
       // Determine if it's a win based on multiplier value
       const isWin = won.multiplier >= 1.0
       const isLowMultiplier = won.multiplier < 1.0
+      const isMegaJackpot = won.multiplier >= 10.0
+      const isUltraJackpot = won.multiplier >= 5.0
       const isJackpot = won.multiplier >= 3.0
       const winAmount = spinAmount * won.multiplier
 
       // Display appropriate toast message
-      if (isJackpot) {
+      if (isMegaJackpot) {
+        toast({
+          title: "👑 LEGENDARY WIN! 👑",
+          description: `YOU HIT THE 10X MULTIPLIER! You won $${winAmount.toFixed(2)}! 🚀✨🎊`,
+        })
+      } else if (isUltraJackpot) {
+        toast({
+          title: "💎 MEGA JACKPOT! 💎",
+          description: `You hit the 5x multiplier! You won $${winAmount.toFixed(2)}! 🎉`,
+        })
+      } else if (isJackpot) {
         toast({
           title: "🎊 JACKPOT! 🎊",
           description: `You hit the 3x multiplier! You won $${winAmount.toFixed(2)}!`,
@@ -1320,7 +1334,11 @@ function DailySpinWheel({
                   }}
                 >
                   {result.type === 'multiplier' ? (
-                    result.multiplier >= 3.0 ? (
+                    result.multiplier >= 10.0 ? (
+                      `👑 LEGENDARY 10X! 👑`
+                    ) : result.multiplier >= 5.0 ? (
+                      `💎 MEGA 5X JACKPOT! 💎`
+                    ) : result.multiplier >= 3.0 ? (
                       `🎊 JACKPOT 3X! 🎊`
                     ) : result.multiplier >= 2.0 ? (
                       `🎉 AMAZING ${result.multiplier}X WIN! 🎉`
