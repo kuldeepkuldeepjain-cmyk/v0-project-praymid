@@ -526,16 +526,11 @@ function HamburgerMenu({
 // Segments ordered starting from TOP (12 o'clock) going CLOCKWISE
 // This array order MUST match the visual wheel layout
 const SPIN_SEGMENTS = [
-  { label: "$10", value: 10, color: "#eab308", darkColor: "#ca8a04", icon: "💎", type: "cash", probability: 1 },           // Index 0: TOP
-  { label: "BETTER LUCK", value: 0, color: "#f5f5f5", darkColor: "#e5e5e5", icon: "🍀", type: "luck", textColor: "#64748b", probability: 1 }, // Index 1
-  { label: "$4", value: 4, color: "#3b82f6", darkColor: "#2563eb", icon: "🎟️", type: "cash", probability: 1 },           // Index 2
-  { label: "$1", value: 1, color: "#f97316", darkColor: "#ea580c", icon: "💵", type: "cash", probability: 1 },           // Index 3
-  { label: "$50", value: 50, color: "#14b8a6", darkColor: "#0d9488", icon: "💰", type: "cash", probability: 0 },         // Index 4: JACKPOT (0% chance)
-  { label: "$5", value: 5, color: "#ef4444", darkColor: "#dc2626", icon: "💰", type: "cash", probability: 1 },           // Index 5
-  { label: "TRY AGAIN", value: 0, color: "#8b5cf6", darkColor: "#7c3aed", icon: "🔄", type: "luck", probability: 1 },   // Index 6
-  { label: "$2", value: 2, color: "#10b981", darkColor: "#059669", icon: "💸", type: "cash", probability: 1 },           // Index 7
-  { label: "$100", value: 100, color: "#f59e0b", darkColor: "#d97706", icon: "💎", type: "cash", probability: 0 },       // Index 8: MEGA JACKPOT (0% chance)
-  { label: "$3", value: 3, color: "#ec4899", darkColor: "#db2777", icon: "🎁", type: "cash", probability: 1 },           // Index 9
+  { label: "0.5x", multiplier: 0.5, color: "#fef3c7", darkColor: "#f59e0b", icon: "🎲", type: "multiplier", probability: 0.72, textColor: "#92400e", subtext: "Start Small" },   // 72%
+  { label: "1x", multiplier: 1.0, color: "#dbeafe", darkColor: "#3b82f6", icon: "⭐", type: "multiplier", probability: 0.20, textColor: "#1e40af", subtext: "Break Even" },    // 20%
+  { label: "1.5x", multiplier: 1.5, color: "#dcfce7", darkColor: "#22c55e", icon: "🌟", type: "multiplier", probability: 0.04, textColor: "#15803d", subtext: "Good Win" },  // 4%
+  { label: "2x", multiplier: 2.0, color: "#f5e5ff", darkColor: "#a855f7", icon: "💫", type: "multiplier", probability: 0.03, textColor: "#6d28d9", subtext: "Great!" },     // 3%
+  { label: "3x", multiplier: 3.0, color: "#fee2e2", darkColor: "#ef4444", icon: "🎯", type: "multiplier", probability: 0.01, textColor: "#991b1b", subtext: "JACKPOT!" },  // 1%
 ]
 
 function DailySpinWheel({
@@ -905,6 +900,31 @@ function DailySpinWheel({
                       {/* Ambient outer glow */}
                       <circle cx={CX} cy={CY} r={RIM + 20} fill="url(#dOuterGlow)"/>
 
+                      {/* === PROFESSIONAL SEGMENT NUMBER INDICATORS === */}
+                      {SPIN_SEGMENTS.map((seg, i) => {
+                        const deg = i * STEP - 90
+                        const r = toRad(deg)
+                        const indicatorR = RIM + 32
+                        const ix_num = CX + indicatorR * Math.cos(r)
+                        const iy_num = CY + indicatorR * Math.sin(r)
+                        const labelColor = seg.textColor || "#ffffff"
+                        
+                        return (
+                          <g key={`seg-num-${i}`}>
+                            {/* Segment number background circle */}
+                            <circle cx={ix_num} cy={iy_num} r={11} fill={seg.darkColor} opacity="0.9"/>
+                            <circle cx={ix_num} cy={iy_num} r={11} fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5"/>
+                            {/* Segment number */}
+                            <text x={ix_num} y={iy_num + 0.5} textAnchor="middle" dominantBaseline="middle"
+                              fontSize={12} fontWeight="900" fill="white"
+                              fontFamily="'Arial Black', Arial, sans-serif"
+                              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
+                              {i + 1}
+                            </text>
+                          </g>
+                        )
+                      })}
+
                       {/* Wheel drop shadow */}
                       <ellipse cx={CX} cy={CY + 10} rx={OUTER + 6} ry={16} fill="rgba(0,0,0,0.18)" filter="url(#dWheelDrop)"/>
 
@@ -930,18 +950,45 @@ function DailySpinWheel({
                             <path d={slicePath(i)} fill="rgba(255,255,255,0.1)"
                               style={{ transform: `scale(0.38)`, transformOrigin: `${CX}px ${CY}px` }}
                             />
-                            {/* Dollar / label text */}
-                            <g transform={`rotate(${textRot},${lx},${ly})`} filter="url(#dTextShadow)">
-                              <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
-                                fontSize={13} fontWeight="900" fill={textColor}
-                                fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.3">
-                                {seg.type === "cash" ? (seg.value > 0 ? `$${seg.value}` : seg.label) : seg.label}
+                            
+                            {/* === PROFESSIONAL LABEL LAYOUT === */}
+                            {/* Main multiplier label with enhanced styling */}
+                            <g transform={`rotate(${textRot},${lx},${ly - 6})`} filter="url(#dTextShadow)">
+                              {/* Label shadow for depth */}
+                              <text x={lx} y={ly - 6 + 1.5} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={16} fontWeight="900" fill="rgba(0,0,0,0.3)"
+                                fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.5">
+                                {seg.label}
+                              </text>
+                              {/* Main label */}
+                              <text x={lx} y={ly - 6} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={16} fontWeight="900" fill={textColor}
+                                fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.5"
+                                style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
+                                {seg.label}
                               </text>
                             </g>
-                            {/* Icon near rim */}
+                            
+                            {/* Lucky message / motivation text below main label */}
+                            {seg.subtext && (
+                              <g transform={`rotate(${textRot},${lx},${ly + 5})`} filter="url(#dTextShadow)">
+                                <text x={lx} y={ly + 5} textAnchor="middle" dominantBaseline="middle"
+                                  fontSize={9} fontWeight="700" fill={textColor}
+                                  fontFamily="'Arial', sans-serif" opacity="0.85"
+                                  style={{ letterSpacing: '0.3px' }}>
+                                  {seg.subtext}
+                                </text>
+                              </g>
+                            )}
+                            
+                            {/* Icon near rim with glow */}
                             <g transform={`rotate(${textRot},${ix},${iy})`}>
                               <text x={ix} y={iy} textAnchor="middle" dominantBaseline="middle"
-                                fontSize={11} fontFamily="Arial, sans-serif">
+                                fontSize={20} fontFamily="Arial, sans-serif" fontWeight="bold"
+                                style={{ 
+                                  filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3)) drop-shadow(0 0 8px rgba(255,255,255,0.4))',
+                                  textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                                }}>
                                 {seg.icon}
                               </text>
                             </g>
@@ -978,7 +1025,7 @@ function DailySpinWheel({
                       <circle cx={CX} cy={CY} r={INNER + 7} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth={1.5}/>
                       <circle cx={CX} cy={CY} r={INNER + 2} fill="none" stroke="rgba(0,0,0,0.1)"        strokeWidth={2}/>
 
-                      {/* === CENTER BUTTON === */}
+                      {/* === CENTER BUTTON WITH LUCK THEME === */}
                       <circle cx={CX} cy={CY + 4} r={INNER + 1} fill="rgba(0,0,0,0.28)" filter="url(#dHubDrop)"/>
                       <circle cx={CX} cy={CY}     r={INNER}     fill="url(#dCenterGrad)"/>
                       <circle cx={CX} cy={CY}     r={INNER}     fill="url(#dCenterGloss)"/>
@@ -986,13 +1033,26 @@ function DailySpinWheel({
                       <ellipse cx={CX}     cy={CY - 12} rx={24} ry={13} fill="rgba(255,255,255,0.28)"/>
                       <ellipse cx={CX - 1} cy={CY - 14} rx={15} ry={8}  fill="rgba(255,255,255,0.2)"/>
 
-                      {/* SPIN text */}
+                      {/* Decorative luck symbols around center */}
+                      <g style={{ opacity: 0.7 }}>
+                        <text x={CX - 28} y={CY} textAnchor="middle" dominantBaseline="middle" fontSize={14}>✨</text>
+                        <text x={CX + 28} y={CY} textAnchor="middle" dominantBaseline="middle" fontSize={14}>✨</text>
+                        <text x={CX} y={CY - 28} textAnchor="middle" dominantBaseline="middle" fontSize={14}>🍀</text>
+                      </g>
+
+                      {/* SPIN text with professional styling */}
                       <text x={CX} y={CY + 2}  textAnchor="middle" dominantBaseline="middle"
-                        fontSize={14} fontWeight="900" fill="rgba(0,0,0,0.22)"
-                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="2">SPIN</text>
-                      <text x={CX} y={CY}      textAnchor="middle" dominantBaseline="middle"
-                        fontSize={14} fontWeight="900" fill="white"
-                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="2">SPIN</text>
+                        fontSize={16} fontWeight="900" fill="rgba(0,0,0,0.25)"
+                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="3"
+                        style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+                        SPIN
+                      </text>
+                      <text x={CX} y={CY - 2}      textAnchor="middle" dominantBaseline="middle"
+                        fontSize={16} fontWeight="900" fill="white"
+                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="3"
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
+                        SPIN
+                      </text>
                     </svg>
                   )
                 })()}
