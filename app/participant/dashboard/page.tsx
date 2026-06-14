@@ -626,25 +626,42 @@ function DailySpinWheel({
       setResult(won)
       setShowResult(true)
 
-      if (won.type === "ticket") {
+      // Determine if it's a win based on multiplier value
+      const isWin = won.multiplier >= 1.0
+      const isLowMultiplier = won.multiplier < 1.0
+      const isJackpot = won.multiplier >= 3.0
+      const winAmount = spinAmount * won.multiplier
+
+      // Display appropriate toast message
+      if (isJackpot) {
         toast({
-          title: "Free Ticket Won!",
-          description: "You can use this $5 free bet in predictions within 24 hours!",
+          title: "🎊 JACKPOT! 🎊",
+          description: `You hit the 3x multiplier! You won $${winAmount.toFixed(2)}!`,
         })
-      } else if (won.type === "cash" && won.value > 0) {
+      } else if (isWin && won.multiplier >= 2.0) {
         toast({
-          title: won.value >= 10 ? "Jackpot!" : "Congratulations!",
-          description: `You won $${won.value}! It has been added to your wallet.`,
+          title: "🎉 AMAZING WIN! 🎉",
+          description: `You won ${won.multiplier}x! You earned $${winAmount.toFixed(2)}!`,
+        })
+      } else if (isWin) {
+        toast({
+          title: "✨ Congratulations! ✨",
+          description: `You won ${won.multiplier}x! You earned $${winAmount.toFixed(2)}!`,
+        })
+      } else if (isLowMultiplier) {
+        toast({
+          title: "Better Luck Next Time! 🍀",
+          description: `You got ${won.multiplier}x. Your spin cost you $${spinAmount.toFixed(2)}. Try again!`,
         })
       } else {
         toast({
-          title: "Better Luck Next Time!",
-          description: "Try spinning again for a chance to win!",
+          title: "Better Luck Next Time! 🍀",
+          description: "Keep spinning! The next one could be a winner.",
         })
       }
 
       // Notify parent with the final server-confirmed balance (after winnings added)
-      onWin(won.value, won.label, won.type, capturedResult.balanceAfter, capturedResult.balanceAfter)
+      onWin(winAmount, won.label, won.type, capturedResult.balanceAfter, capturedResult.balanceAfter)
     }, 3000)
   }
 
@@ -1239,7 +1256,7 @@ function DailySpinWheel({
             onClick={(e) => e.stopPropagation()}
           >
             {/* Confetti Effect for Wins */}
-            {result.type === 'cash' && result.value > 0 && (
+            {result.type === 'multiplier' && result.multiplier >= 1.0 && (
               <div className="absolute inset-0 pointer-events-none">
                 {[...Array(20)].map((_, i) => (
                   <div
@@ -1260,10 +1277,10 @@ function DailySpinWheel({
             <div 
               className="relative w-full rounded-2xl p-10 text-center overflow-hidden"
               style={{
-                background: result.type === 'cash' && result.value > 0
-                  ? 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)' 
-                  : result.type === 'ticket'
-                  ? 'linear-gradient(135deg, #e85d3b 0%, #f59e0b 50%, #fbbf24 100%)'
+                background: result.type === 'multiplier' 
+                  ? result.multiplier >= 1.0
+                    ? 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)'
+                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6366f1 100%)'
                   : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #4f46e5 100%)',
                 boxShadow: 'inset 0 2px 30px rgba(255,255,255,0.3), 0 10px 40px rgba(0,0,0,0.3)',
               }}
@@ -1280,14 +1297,14 @@ function DailySpinWheel({
               {/* Glowing Ring */}
               <div className="absolute inset-0 rounded-2xl"
                 style={{
-                  boxShadow: result.type === 'cash' && result.value > 0 
+                  boxShadow: result.type === 'multiplier' && result.multiplier >= 1.0
                     ? 'inset 0 0 60px rgba(16, 185, 129, 0.5)' 
                     : 'inset 0 0 60px rgba(124, 58, 237, 0.5)',
                   animation: 'pulse 2s ease-in-out infinite'
                 }}
               />
               
-              <div className="relative z-10">
+            <div className="relative z-10">
                 <div className="text-7xl mb-6 animate-bounce" 
                   style={{ 
                     filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.3))',
@@ -1302,33 +1319,47 @@ function DailySpinWheel({
                     animation: 'text-glow 2s ease-in-out infinite'
                   }}
                 >
-                  {result.type === 'cash' && result.value > 0 
-                    ? result.value >= 10 
-                      ? `🎊 JACKPOT! YOU WON $${result.value}! 🎊`
-                      : `🎉 AWESOME! YOU WON $${result.value}! 🎉`
-                    : result.type === 'ticket' 
-                    ? '🎟️ FREE TICKET WON! 🎟️' 
-                    : '🍀 BETTER LUCK NEXT TIME! 🍀'}
+                  {result.type === 'multiplier' ? (
+                    result.multiplier >= 3.0 ? (
+                      `🎊 JACKPOT 3X! 🎊`
+                    ) : result.multiplier >= 2.0 ? (
+                      `🎉 AMAZING ${result.multiplier}X WIN! 🎉`
+                    ) : result.multiplier >= 1.0 ? (
+                      `✨ YOU WON ${result.multiplier}X! ✨`
+                    ) : (
+                      `🍀 BETTER LUCK NEXT TIME! 🍀`
+                    )
+                  ) : (
+                    `🍀 BETTER LUCK NEXT TIME! 🍀`
+                  )}
                 </h3>
-                {result.type === 'cash' && result.value > 0 && (
-                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                    <p className="text-white text-base font-bold">
-                      💰 ${result.value} has been added to your wallet!
-                    </p>
-                  </div>
-                )}
-                {result.type === 'ticket' && (
-                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                    <p className="text-white/95 text-sm font-semibold">
-                      ⏰ Use your $5 free bet within 24 hours!
-                    </p>
-                  </div>
-                )}
-                {result.type === 'luck' && (
-                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                    <p className="text-white/95 text-sm font-semibold">
-                      Try spinning again for another chance to win!
-                    </p>
+                
+                {/* Winnings calculation for multiplier */}
+                {result.type === 'multiplier' && (
+                  <div className="mt-4 space-y-3">
+                    {result.multiplier >= 1.0 ? (
+                      <>
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                          <p className="text-white text-base font-bold">
+                            💰 You won ${(spinAmount * result.multiplier).toFixed(2)}!
+                          </p>
+                        </div>
+                        <div className="text-white/90 text-sm">
+                          Spin: ${spinAmount.toFixed(2)} × {result.multiplier}x = ${(spinAmount * result.multiplier).toFixed(2)}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                          <p className="text-white text-base font-bold">
+                            You lost your ${spinAmount.toFixed(2)} spin
+                          </p>
+                        </div>
+                        <div className="text-white/90 text-sm">
+                          Better luck on your next spin!
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
