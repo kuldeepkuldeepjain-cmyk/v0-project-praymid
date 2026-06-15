@@ -1,13 +1,17 @@
 import { query, execute } from "@/lib/db"
 import { NextRequest, NextResponse } from "next/server"
 
-// 5 segments with weighted probabilities — order must match WHEEL_SEGMENTS in frontend
+// 9 segments with weighted probabilities — MUST match SPIN_SEGMENTS in frontend (dashboard/page.tsx)
 const SPIN_SEGMENTS = [
-  { label: "0.5x", multiplier: 0.5,  segmentIndex: 0, probability: 0.72 },
-  { label: "1x",   multiplier: 1.0,  segmentIndex: 1, probability: 0.20 },
-  { label: "1.5x", multiplier: 1.5,  segmentIndex: 2, probability: 0.04 },
-  { label: "2x",   multiplier: 2.0,  segmentIndex: 3, probability: 0.03 },
-  { label: "3x",   multiplier: 3.0,  segmentIndex: 4, probability: 0.01 },
+  { label: "0x",    multiplier: 0.0,  segmentIndex: 0, probability: 0.45 },   // 45% - Full loss
+  { label: "0.25x", multiplier: 0.25, segmentIndex: 1, probability: 0.25 },   // 25% - Quarter loss
+  { label: "0.5x",  multiplier: 0.5,  segmentIndex: 2, probability: 0.10 },   // 10% - Half loss
+  { label: "1x",    multiplier: 1.0,  segmentIndex: 3, probability: 0.08 },   // 8% - Break even
+  { label: "1.5x",  multiplier: 1.5,  segmentIndex: 4, probability: 0.04 },   // 4% - Good win
+  { label: "2x",    multiplier: 2.0,  segmentIndex: 5, probability: 0.03 },   // 3% - Great win
+  { label: "3x",    multiplier: 3.0,  segmentIndex: 6, probability: 0.02 },   // 2% - Jackpot
+  { label: "5x",    multiplier: 5.0,  segmentIndex: 7, probability: 0.02 },   // 2% - Mega
+  { label: "10x",   multiplier: 10.0, segmentIndex: 8, probability: 0.01 },   // 1% - Legendary
 ]
 // probabilities sum = 1.00
 
@@ -18,7 +22,7 @@ function selectSegment() {
     cumulative += seg.probability
     if (r <= cumulative) return seg
   }
-  return SPIN_SEGMENTS[1] // fallback: 1x
+  return SPIN_SEGMENTS[3] // fallback: 1x (segment index 3)
 }
 
 export async function POST(request: NextRequest) {

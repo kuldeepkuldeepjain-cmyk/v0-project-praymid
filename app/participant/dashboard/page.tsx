@@ -556,7 +556,7 @@ function DailySpinWheel({
 }) {
   const [isSpinning, setIsSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
-  const [result, setResult] = useState<{ label: string; value: number; icon: string; type: string } | null>(null)
+  const [result, setResult] = useState<{ label: string; multiplier: number; icon: string; type: string; probability?: number; darkColor?: string; color?: string } | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
@@ -1394,6 +1394,12 @@ function DailySpinWheel({
                 >
                   {result.icon}
                 </div>
+                
+                {/* Segment Position Verification Badge */}
+                <div className="mb-3 inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-1 text-xs font-bold text-white">
+                  ✓ Pointer Hit: {result.label} Segment
+                </div>
+
                 <h3 className="text-white font-black text-3xl mb-3 tracking-wide" 
                   style={{ 
                     textShadow: '0 3px 10px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3)',
