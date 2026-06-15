@@ -1192,19 +1192,67 @@ function DailySpinWheel({
             </div>
           </div>
 
-          {/* Possible Winnings Display */}
+          {/* Possible Winnings Display - All 9 Multipliers */}
           <div className="relative rounded-2xl p-4 overflow-hidden border-2 border-purple-400"
             style={{
               background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #d8b4fe 100%)',
               boxShadow: '0 4px 20px rgba(168, 85, 247, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
             }}
           >
-            <div className="relative space-y-2">
-              <p className="text-slate-800 text-xs font-black">Possible Winnings</p>
-              <p className="text-purple-700 font-black text-lg">
-                ${(spinAmount * 0.5).toFixed(2)} - ${(spinAmount * 3).toFixed(2)}
-              </p>
-              <p className="text-xs text-slate-600">Based on 0.5x - 3x multiplier</p>
+            <div className="relative space-y-3">
+              <p className="text-slate-800 text-xs font-black">Possible Winnings (All Multipliers)</p>
+              
+              {/* Compact Grid of All 9 Outcomes */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {/* Loss Tiers */}
+                <div className="bg-red-50 rounded-lg p-2 border border-red-200">
+                  <p className="text-xs font-bold text-red-700">0x</p>
+                  <p className="text-sm font-black text-red-600">$0.00</p>
+                </div>
+                <div className="bg-orange-50 rounded-lg p-2 border border-orange-200">
+                  <p className="text-xs font-bold text-orange-700">0.25x</p>
+                  <p className="text-sm font-black text-orange-600">${(spinAmount * 0.25).toFixed(2)}</p>
+                </div>
+                <div className="bg-yellow-50 rounded-lg p-2 border border-yellow-200">
+                  <p className="text-xs font-bold text-yellow-700">0.5x</p>
+                  <p className="text-sm font-black text-yellow-600">${(spinAmount * 0.5).toFixed(2)}</p>
+                </div>
+
+                {/* Break Even & Win Tiers */}
+                <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
+                  <p className="text-xs font-bold text-blue-700">1x</p>
+                  <p className="text-sm font-black text-blue-600">${(spinAmount * 1).toFixed(2)}</p>
+                </div>
+                <div className="bg-green-50 rounded-lg p-2 border border-green-200">
+                  <p className="text-xs font-bold text-green-700">1.5x</p>
+                  <p className="text-sm font-black text-green-600">${(spinAmount * 1.5).toFixed(2)}</p>
+                </div>
+                <div className="bg-emerald-50 rounded-lg p-2 border border-emerald-200">
+                  <p className="text-xs font-bold text-emerald-700">2x</p>
+                  <p className="text-sm font-black text-emerald-600">${(spinAmount * 2).toFixed(2)}</p>
+                </div>
+
+                {/* High Multiplier Tiers */}
+                <div className="bg-red-50 rounded-lg p-2 border border-red-300">
+                  <p className="text-xs font-bold text-red-800">3x</p>
+                  <p className="text-sm font-black text-red-700">${(spinAmount * 3).toFixed(2)}</p>
+                </div>
+                <div className="bg-pink-50 rounded-lg p-2 border border-pink-300">
+                  <p className="text-xs font-bold text-pink-800">5x</p>
+                  <p className="text-sm font-black text-pink-700">${(spinAmount * 5).toFixed(2)}</p>
+                </div>
+                <div className="bg-purple-50 rounded-lg p-2 border border-purple-300">
+                  <p className="text-xs font-bold text-purple-800">10x</p>
+                  <p className="text-sm font-black text-purple-700">${(spinAmount * 10).toFixed(2)}</p>
+                </div>
+              </div>
+
+              {/* Summary Stats */}
+              <div className="pt-2 border-t border-purple-300 space-y-1">
+                <p className="text-xs text-slate-600">Min Return: <span className="font-bold text-red-600">$0.00</span> (0x)</p>
+                <p className="text-xs text-slate-600">Max Return: <span className="font-bold text-purple-700">${(spinAmount * 10).toFixed(2)}</span> (10x)</p>
+                <p className="text-xs text-slate-600">Spin Amount: <span className="font-bold text-purple-700">${spinAmount.toFixed(2)}</span></p>
+              </div>
             </div>
           </div>
 
@@ -1372,51 +1420,115 @@ function DailySpinWheel({
                   )}
                 </h3>
                 
-                {/* Winnings calculation for multiplier */}
+                {/* Winnings calculation for multiplier - Enhanced Display */}
                 {result.type === 'multiplier' && (
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-6 space-y-4">
                     {result.multiplier >= 1.0 ? (
                       <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
                           <p className="text-white text-base font-bold">
                             💰 You won ${(spinAmount * result.multiplier).toFixed(2)}!
                           </p>
                         </div>
-                        <div className="text-white/90 text-sm">
-                          Spin: ${spinAmount.toFixed(2)} × {result.multiplier}x = ${(spinAmount * result.multiplier).toFixed(2)}
+                        
+                        {/* Detailed Calculation Breakdown */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
+                          <div className="text-white/90 text-sm font-semibold">Calculation Breakdown:</div>
+                          <div className="text-white/80 text-xs space-y-1">
+                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
+                            <p>• Multiplier: <span className="font-bold text-yellow-200">{result.multiplier}x</span></p>
+                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × {result.multiplier} = ${(spinAmount * result.multiplier).toFixed(2)}</span></p>
+                            <p>• Profit: <span className="font-bold text-green-200">+${((spinAmount * result.multiplier) - spinAmount).toFixed(2)}</span></p>
+                          </div>
+                        </div>
+
+                        {/* Final Result Summary */}
+                        <div className="bg-gradient-to-r from-green-400/20 to-emerald-400/20 rounded-xl p-3 border border-green-300/40">
+                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
+                          <div className="text-white text-sm font-black">
+                            ${spinAmount.toFixed(2)} → ${(spinAmount * result.multiplier).toFixed(2)} (WIN!)
+                          </div>
                         </div>
                       </>
                     ) : result.multiplier === 0.0 ? (
                       <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
                           <p className="text-white text-base font-bold">
                             💔 You lost your entire ${spinAmount.toFixed(2)} spin!
                           </p>
                         </div>
-                        <div className="text-white/90 text-sm">
-                          Spin: ${spinAmount.toFixed(2)} × 0x = $0.00 | Loss: $${spinAmount.toFixed(2)}
+                        
+                        {/* Loss Calculation Breakdown */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
+                          <div className="text-white/90 text-sm font-semibold">Loss Details:</div>
+                          <div className="text-white/80 text-xs space-y-1">
+                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
+                            <p>• Multiplier: <span className="font-bold text-red-200">0x (Total Loss)</span></p>
+                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × 0 = $0.00</span></p>
+                            <p>• Loss: <span className="font-bold text-red-200">-${spinAmount.toFixed(2)}</span></p>
+                          </div>
+                        </div>
+
+                        {/* Final Result Summary */}
+                        <div className="bg-gradient-to-r from-red-400/20 to-pink-400/20 rounded-xl p-3 border border-red-300/40">
+                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
+                          <div className="text-white text-sm font-black">
+                            ${spinAmount.toFixed(2)} → $0.00 (LOSS)
+                          </div>
                         </div>
                       </>
                     ) : result.multiplier === 0.25 ? (
                       <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
                           <p className="text-white text-base font-bold">
                             You got 0.25x - Lost ${(spinAmount * 0.75).toFixed(2)}
                           </p>
                         </div>
-                        <div className="text-white/90 text-sm">
-                          Spin: ${spinAmount.toFixed(2)} × 0.25x = ${(spinAmount * 0.25).toFixed(2)} | Loss: $${(spinAmount * 0.75).toFixed(2)}
+                        
+                        {/* Quarter Loss Breakdown */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
+                          <div className="text-white/90 text-sm font-semibold">Loss Details:</div>
+                          <div className="text-white/80 text-xs space-y-1">
+                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
+                            <p>• Multiplier: <span className="font-bold text-orange-200">0.25x (Quarter Return)</span></p>
+                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × 0.25 = ${(spinAmount * 0.25).toFixed(2)}</span></p>
+                            <p>• Loss: <span className="font-bold text-orange-200">-${(spinAmount * 0.75).toFixed(2)} (75% gone)</span></p>
+                          </div>
+                        </div>
+
+                        {/* Final Result Summary */}
+                        <div className="bg-gradient-to-r from-orange-400/20 to-yellow-400/20 rounded-xl p-3 border border-orange-300/40">
+                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
+                          <div className="text-white text-sm font-black">
+                            ${spinAmount.toFixed(2)} → ${(spinAmount * 0.25).toFixed(2)} (Lost: ${(spinAmount * 0.75).toFixed(2)})
+                          </div>
                         </div>
                       </>
                     ) : (
                       <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
                           <p className="text-white text-base font-bold">
                             You got 0.5x - Lost ${(spinAmount * 0.5).toFixed(2)}
                           </p>
                         </div>
-                        <div className="text-white/90 text-sm">
-                          Spin: ${spinAmount.toFixed(2)} × 0.5x = ${(spinAmount * 0.5).toFixed(2)} | Loss: $${(spinAmount * 0.5).toFixed(2)}
+                        
+                        {/* Half Loss Breakdown */}
+                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
+                          <div className="text-white/90 text-sm font-semibold">Loss Details:</div>
+                          <div className="text-white/80 text-xs space-y-1">
+                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
+                            <p>• Multiplier: <span className="font-bold text-yellow-200">0.5x (Half Return)</span></p>
+                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × 0.5 = ${(spinAmount * 0.5).toFixed(2)}</span></p>
+                            <p>• Loss: <span className="font-bold text-yellow-200">-${(spinAmount * 0.5).toFixed(2)} (50% gone)</span></p>
+                          </div>
+                        </div>
+
+                        {/* Final Result Summary */}
+                        <div className="bg-gradient-to-r from-yellow-400/20 to-amber-400/20 rounded-xl p-3 border border-yellow-300/40">
+                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
+                          <div className="text-white text-sm font-black">
+                            ${spinAmount.toFixed(2)} → ${(spinAmount * 0.5).toFixed(2)} (Lost: ${(spinAmount * 0.5).toFixed(2)})
+                          </div>
                         </div>
                       </>
                     )}
