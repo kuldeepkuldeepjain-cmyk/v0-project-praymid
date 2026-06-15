@@ -798,44 +798,55 @@ function DailySpinWheel({
         <div className="relative w-full max-w-4xl mx-auto">
           <div className="flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-8">
             
-            {/* Wheel Section — 3D Premium */}
-            <div className="relative flex flex-col items-center">
+            {/* Wheel Section — Professional Premium Design */}
+            <div className="relative flex flex-col items-center justify-center py-8">
+              {/* Background card container for professional framing */}
+              <div className="absolute inset-0 rounded-3xl opacity-0" />
 
-              {/* Ambient glow layers behind wheel */}
+              {/* Ambient glow layers - enhanced theatrical lighting */}
               <div className="absolute inset-0 rounded-full pointer-events-none"
-                style={{ background: 'radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(168,85,247,0.15) 55%, transparent 75%)', filter: 'blur(32px)' }}
+                style={{ 
+                  background: 'radial-gradient(circle, rgba(249,115,22,0.4) 0%, rgba(168,85,247,0.2) 45%, rgba(59,130,246,0.1) 65%, transparent 85%)', 
+                  filter: 'blur(40px)',
+                  transform: 'scale(1.1)'
+                }}
               />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-56 h-16 pointer-events-none"
-                style={{ background: 'linear-gradient(to right, rgba(249,115,22,0.5), rgba(236,72,153,0.4), rgba(168,85,247,0.4))', borderRadius: '50%', filter: 'blur(28px)' }}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-20 pointer-events-none"
+                style={{ 
+                  background: 'linear-gradient(to right, rgba(249,115,22,0.6), rgba(236,72,153,0.5), rgba(168,85,247,0.5))', 
+                  borderRadius: '50%', 
+                  filter: 'blur(35px)',
+                  opacity: 0.8
+                }}
               />
 
-              {/* Premium Diamond Pointer */}
-              <div className="relative z-30 mb-[-20px]" style={{ filter: 'drop-shadow(0 6px 14px rgba(236,72,153,0.55))' }}>
-                <svg width="52" height="64" viewBox="0 0 52 64">
+              {/* Premium Diamond Pointer - Enhanced */}
+              <div className="relative z-30 mb-[-24px]" style={{ filter: 'drop-shadow(0 8px 20px rgba(236,72,153,0.6))' }}>
+                <svg width="56" height="72" viewBox="0 0 52 64">
                   <defs>
                     <linearGradient id="dPtrBody" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#ffffff"/>
-                      <stop offset="100%" stopColor="#e2e8f0"/>
+                      <stop offset="100%" stopColor="#d1d5db"/>
                     </linearGradient>
                     <linearGradient id="dPtrGem" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%"   stopColor="#fda4af"/>
                       <stop offset="40%"  stopColor="#ec4899"/>
-                      <stop offset="100%" stopColor="#9d174d"/>
+                      <stop offset="100%" stopColor="#be123c"/>
                     </linearGradient>
                   </defs>
-                  <ellipse cx="26" cy="22" rx="20" ry="20" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="1.8"/>
-                  <polygon points="6,34 46,34 26,64" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <ellipse cx="26" cy="22" rx="20" ry="20" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="2"/>
+                  <polygon points="6,34 46,34 26,64" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="1.8" strokeLinejoin="round"/>
                   <polygon points="26,6 38,20 26,34 14,20" fill="url(#dPtrGem)"/>
-                  <polygon points="26,6 38,20 26,15 14,20" fill="rgba(255,255,255,0.42)"/>
-                  <polygon points="26,34 38,20 26,26 14,20" fill="rgba(0,0,0,0.14)"/>
-                  <line x1="14" y1="20" x2="38" y2="20" stroke="rgba(255,255,255,0.45)" strokeWidth="0.9"/>
-                  <circle cx="21" cy="13" r="2.8" fill="rgba(255,255,255,0.58)"/>
+                  <polygon points="26,6 38,20 26,15 14,20" fill="rgba(255,255,255,0.5)"/>
+                  <polygon points="26,34 38,20 26,26 14,20" fill="rgba(0,0,0,0.12)"/>
+                  <line x1="14" y1="20" x2="38" y2="20" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
+                  <circle cx="21" cy="13" r="2.8" fill="rgba(255,255,255,0.7)"/>
                 </svg>
               </div>
 
-              {/* Spinning Wheel */}
+              {/* Professional Wheel Container */}
               <div
-                className="relative"
+                className="relative rounded-full"
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transition: isSpinning ? "transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
@@ -941,31 +952,6 @@ function DailySpinWheel({
                       {/* Ambient outer glow */}
                       <circle cx={CX} cy={CY} r={RIM + 20} fill="url(#dOuterGlow)"/>
 
-                      {/* === PROFESSIONAL SEGMENT NUMBER INDICATORS === */}
-                      {SPIN_SEGMENTS.map((seg, i) => {
-                        const deg = i * STEP - 90
-                        const r = toRad(deg)
-                        const indicatorR = RIM + 32
-                        const ix_num = CX + indicatorR * Math.cos(r)
-                        const iy_num = CY + indicatorR * Math.sin(r)
-                        const labelColor = seg.textColor || "#ffffff"
-                        
-                        return (
-                          <g key={`seg-num-${i}`}>
-                            {/* Segment number background circle */}
-                            <circle cx={ix_num} cy={iy_num} r={11} fill={seg.darkColor} opacity="0.9"/>
-                            <circle cx={ix_num} cy={iy_num} r={11} fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth="1.5"/>
-                            {/* Segment number */}
-                            <text x={ix_num} y={iy_num + 0.5} textAnchor="middle" dominantBaseline="middle"
-                              fontSize={12} fontWeight="900" fill="white"
-                              fontFamily="'Arial Black', Arial, sans-serif"
-                              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
-                              {i + 1}
-                            </text>
-                          </g>
-                        )
-                      })}
-
                       {/* Wheel drop shadow */}
                       <ellipse cx={CX} cy={CY + 10} rx={OUTER + 6} ry={16} fill="rgba(0,0,0,0.18)" filter="url(#dWheelDrop)"/>
 
@@ -986,10 +972,14 @@ function DailySpinWheel({
                         return (
                           <g key={i}>
                             {/* Segment with radial gradient for 3D depth */}
-                            <path d={slicePath(i)} fill={`url(#dseg${i})`} stroke="rgba(255,255,255,0.6)" strokeWidth={2}/>
-                            {/* Subtle inner bevel */}
-                            <path d={slicePath(i)} fill="rgba(255,255,255,0.1)"
+                            <path d={slicePath(i)} fill={`url(#dseg${i})`} stroke="rgba(255,255,255,0.75)" strokeWidth={2.5}/>
+                            {/* Subtle inner bevel - enhanced 3D effect */}
+                            <path d={slicePath(i)} fill="rgba(255,255,255,0.15)"
                               style={{ transform: `scale(0.38)`, transformOrigin: `${CX}px ${CY}px` }}
+                            />
+                            {/* Outer segment shadow - adds separation */}
+                            <path d={slicePath(i)} fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth={1.5}
+                              style={{ transform: `scale(1.02)`, transformOrigin: `${CX}px ${CY}px` }}
                             />
                             
                             {/* === PROFESSIONAL LABEL LAYOUT === */}
@@ -1037,12 +1027,27 @@ function DailySpinWheel({
                         )
                       })}
 
-                      {/* === CHROME RIM === */}
-                      <circle cx={CX} cy={CY} r={RIM + 12} fill="none" stroke="rgba(0,0,0,0.16)" strokeWidth={4}/>
-                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimChrome)" strokeWidth={26} filter="url(#dRimShadow)"/>
-                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimShine)" strokeWidth={26} opacity={0.5}/>
-                      <circle cx={CX} cy={CY} r={RIM - 13} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={1.5}/>
-                      <circle cx={CX} cy={CY} r={RIM + 13} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={1}/>
+                      {/* === ENHANCED EMBOSSED CHROME RIM === */}
+                      {/* Outer shadow ring - gives 3D depth */}
+                      <circle cx={CX} cy={CY} r={RIM + 16} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth={3}/>
+                      
+                      {/* Bright outer edge - metallic highlight */}
+                      <circle cx={CX} cy={CY} r={RIM + 14} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={2}/>
+                      
+                      {/* Main gradient rim - chrome metallic effect */}
+                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimChrome)" strokeWidth={28} filter="url(#dRimShadow)"/>
+                      
+                      {/* Shine overlay - reflective surface */}
+                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimShine)" strokeWidth={28} opacity={0.6}/>
+                      
+                      {/* Inner highlight - beveled edge effect */}
+                      <circle cx={CX} cy={CY} r={RIM - 14} fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth={2.5}/>
+                      
+                      {/* Inner shadow ring - adds depth */}
+                      <circle cx={CX} cy={CY} r={RIM - 15} fill="none" stroke="rgba(0,0,0,0.25)" strokeWidth={1.5}/>
+                      
+                      {/* Deep inner shadow - rim depression effect */}
+                      <circle cx={CX} cy={CY} r={RIM - 20} fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth={2}/>
 
                       {/* === LED BULBS === */}
                       {ledAngles.map((deg, i) => {
