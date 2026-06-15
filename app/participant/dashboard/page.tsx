@@ -605,15 +605,26 @@ function DailySpinWheel({
 
     // Use the server-determined segment index so the wheel matches the actual prize
     const segmentIndex = apiResult!.prize.segmentIndex
-    const segmentAngle = 360 / SPIN_SEGMENTS.length
+    const N = SPIN_SEGMENTS.length
+    const STEP = 360 / N  // 40° per segment
     const spins = 5 + Math.floor(Math.random() * 3)
 
-    // Correct rotation math:
-    // Segment i mid-point (wheel-local, from top going clockwise) = i * STEP + STEP/2 - 90
-    // We need to rotate until that mid-point is at the top (pointer position = 0°)
-    // => additional rotation needed = (360 - mid) % 360
-    const mid = ((segmentIndex * segmentAngle + segmentAngle / 2 - 90) % 360 + 360) % 360
-    const stopAt = (360 - mid) % 360
+    // Rotation calculation:
+    // Segments are drawn with: start = i * STEP - 90, end = start + STEP
+    // So visually, segment i spans from (i*STEP - 90°) to ((i+1)*STEP - 90°)
+    // Segment i center = i*STEP - 90 + STEP/2 = i*STEP + STEP/2 - 90
+    //
+    // Pointer is at 0° (top)
+    // To bring segment i center to top, we need CSS rotation such that:
+    // (segment_visual_center + CSS_rotation) mod 360 = 0°
+    // CSS_rotation = (360 - segment_visual_center) mod 360
+    // CSS_rotation = (360 - (i*STEP + STEP/2 - 90)) mod 360
+    // CSS_rotation = (450 - i*STEP - STEP/2) mod 360
+    
+    const segmentVisualCenter = segmentIndex * STEP + STEP / 2 - 90
+    let stopAt = (360 - segmentVisualCenter) % 360
+    if (stopAt < 0) stopAt += 360
+    
     const finalRotation = spins * 360 + stopAt
 
     setTimeout(() => {
