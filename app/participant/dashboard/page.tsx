@@ -526,13 +526,15 @@ function HamburgerMenu({
 // Segments ordered starting from TOP (12 o'clock) going CLOCKWISE
 // This array order MUST match the visual wheel layout
 const SPIN_SEGMENTS = [
-  { label: "0.5x", multiplier: 0.5, color: "#fef3c7", darkColor: "#f59e0b", icon: "🎲", type: "multiplier", probability: 0.68, textColor: "#92400e", subtext: "Start Small" },   // 68%
-  { label: "1x", multiplier: 1.0, color: "#dbeafe", darkColor: "#3b82f6", icon: "⭐", type: "multiplier", probability: 0.18, textColor: "#1e40af", subtext: "Break Even" },    // 18%
-  { label: "1.5x", multiplier: 1.5, color: "#dcfce7", darkColor: "#22c55e", icon: "🌟", type: "multiplier", probability: 0.04, textColor: "#15803d", subtext: "Good Win" },  // 4%
-  { label: "2x", multiplier: 2.0, color: "#f5e5ff", darkColor: "#a855f7", icon: "💫", type: "multiplier", probability: 0.03, textColor: "#6d28d9", subtext: "Great!" },     // 3%
-  { label: "3x", multiplier: 3.0, color: "#fee2e2", darkColor: "#ef4444", icon: "🎯", type: "multiplier", probability: 0.015, textColor: "#991b1b", subtext: "JACKPOT!" },  // 1.5%
-  { label: "5x", multiplier: 5.0, color: "#fca5a5", darkColor: "#dc2626", icon: "💎", type: "multiplier", probability: 0.01, textColor: "#7f1d1d", subtext: "MEGA WIN!" },   // 1%
-  { label: "10x", multiplier: 10.0, color: "#fecaca", darkColor: "#b91c1c", icon: "👑", type: "multiplier", probability: 0.005, textColor: "#4c0519", subtext: "LEGEND!" },  // 0.5%
+  { label: "0x", multiplier: 0.0, color: "#ef4444", darkColor: "#991b1b", icon: "💔", type: "multiplier", probability: 0.45, textColor: "#7f1d1d", subtext: "Better Luck!" },      // 45% - Full loss
+  { label: "0.25x", multiplier: 0.25, color: "#fca5a5", darkColor: "#dc2626", icon: "😅", type: "multiplier", probability: 0.25, textColor: "#7f1d1d", subtext: "Oops!" },         // 25% - Quarter loss
+  { label: "0.5x", multiplier: 0.5, color: "#fef3c7", darkColor: "#f59e0b", icon: "🎲", type: "multiplier", probability: 0.10, textColor: "#92400e", subtext: "Close!" },       // 10% - Half loss
+  { label: "1x", multiplier: 1.0, color: "#dbeafe", darkColor: "#3b82f6", icon: "⭐", type: "multiplier", probability: 0.08, textColor: "#1e40af", subtext: "Even!" },         // 8% - Break even
+  { label: "1.5x", multiplier: 1.5, color: "#dcfce7", darkColor: "#22c55e", icon: "🌟", type: "multiplier", probability: 0.04, textColor: "#15803d", subtext: "Good!" },     // 4% - Good win
+  { label: "2x", multiplier: 2.0, color: "#f5e5ff", darkColor: "#a855f7", icon: "💫", type: "multiplier", probability: 0.03, textColor: "#6d28d9", subtext: "Great!" },      // 3% - Great win
+  { label: "3x", multiplier: 3.0, color: "#fee2e2", darkColor: "#ef4444", icon: "🎯", type: "multiplier", probability: 0.02, textColor: "#991b1b", subtext: "Jackpot!" },    // 2% - Jackpot
+  { label: "5x", multiplier: 5.0, color: "#f87171", darkColor: "#b91c1c", icon: "💎", type: "multiplier", probability: 0.02, textColor: "#4c0519", subtext: "Mega!" },       // 2% - Mega
+  { label: "10x", multiplier: 10.0, color: "#dc2626", darkColor: "#7f1d1d", icon: "👑", type: "multiplier", probability: 0.01, textColor: "#fca5a5", subtext: "Legend!" },    // 1% - Legendary
 ]
 
 function DailySpinWheel({
@@ -630,13 +632,15 @@ function DailySpinWheel({
 
       // Determine if it's a win based on multiplier value
       const isWin = won.multiplier >= 1.0
-      const isLowMultiplier = won.multiplier < 1.0
       const isMegaJackpot = won.multiplier >= 10.0
       const isUltraJackpot = won.multiplier >= 5.0
       const isJackpot = won.multiplier >= 3.0
+      const isFullLoss = won.multiplier === 0.0
+      const isQuarterLoss = won.multiplier === 0.25
+      const isHalfLoss = won.multiplier === 0.5
       const winAmount = spinAmount * won.multiplier
 
-      // Display appropriate toast message
+      // Display appropriate toast message based on outcome
       if (isMegaJackpot) {
         toast({
           title: "👑 LEGENDARY WIN! 👑",
@@ -662,10 +666,20 @@ function DailySpinWheel({
           title: "✨ Congratulations! ✨",
           description: `You won ${won.multiplier}x! You earned $${winAmount.toFixed(2)}!`,
         })
-      } else if (isLowMultiplier) {
+      } else if (isFullLoss) {
         toast({
           title: "Better Luck Next Time! 🍀",
-          description: `You got ${won.multiplier}x. Your spin cost you $${spinAmount.toFixed(2)}. Try again!`,
+          description: `Oh no! You lost your entire $${spinAmount.toFixed(2)} spin. Better luck next time!`,
+        })
+      } else if (isQuarterLoss) {
+        toast({
+          title: "Close One! 😅",
+          description: `You got 0.25x. You lost $${(spinAmount * 0.75).toFixed(2)} on this spin. Try again!`,
+        })
+      } else if (isHalfLoss) {
+        toast({
+          title: "Better Luck Next Time! 🍀",
+          description: `You got 0.5x. You lost $${(spinAmount * 0.5).toFixed(2)} on this spin. Try again!`,
         })
       } else {
         toast({
@@ -1344,6 +1358,12 @@ function DailySpinWheel({
                       `🎉 AMAZING ${result.multiplier}X WIN! 🎉`
                     ) : result.multiplier >= 1.0 ? (
                       `✨ YOU WON ${result.multiplier}X! ✨`
+                    ) : result.multiplier === 0.5 ? (
+                      `🍀 BETTER LUCK NEXT TIME! 🍀`
+                    ) : result.multiplier === 0.25 ? (
+                      `😅 OOPS! ALMOST THERE! 😅`
+                    ) : result.multiplier === 0.0 ? (
+                      `💔 BETTER LUCK NEXT TIME! 💔`
                     ) : (
                       `🍀 BETTER LUCK NEXT TIME! 🍀`
                     )
@@ -1366,15 +1386,37 @@ function DailySpinWheel({
                           Spin: ${spinAmount.toFixed(2)} × {result.multiplier}x = ${(spinAmount * result.multiplier).toFixed(2)}
                         </div>
                       </>
+                    ) : result.multiplier === 0.0 ? (
+                      <>
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                          <p className="text-white text-base font-bold">
+                            💔 You lost your entire ${spinAmount.toFixed(2)} spin!
+                          </p>
+                        </div>
+                        <div className="text-white/90 text-sm">
+                          Spin: ${spinAmount.toFixed(2)} × 0x = $0.00 | Loss: $${spinAmount.toFixed(2)}
+                        </div>
+                      </>
+                    ) : result.multiplier === 0.25 ? (
+                      <>
+                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
+                          <p className="text-white text-base font-bold">
+                            You got 0.25x - Lost ${(spinAmount * 0.75).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="text-white/90 text-sm">
+                          Spin: ${spinAmount.toFixed(2)} × 0.25x = ${(spinAmount * 0.25).toFixed(2)} | Loss: $${(spinAmount * 0.75).toFixed(2)}
+                        </div>
+                      </>
                     ) : (
                       <>
                         <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
                           <p className="text-white text-base font-bold">
-                            You lost your ${spinAmount.toFixed(2)} spin
+                            You got 0.5x - Lost ${(spinAmount * 0.5).toFixed(2)}
                           </p>
                         </div>
                         <div className="text-white/90 text-sm">
-                          Better luck on your next spin!
+                          Spin: ${spinAmount.toFixed(2)} × 0.5x = ${(spinAmount * 0.5).toFixed(2)} | Loss: $${(spinAmount * 0.5).toFixed(2)}
                         </div>
                       </>
                     )}
