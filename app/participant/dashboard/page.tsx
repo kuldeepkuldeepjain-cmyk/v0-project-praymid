@@ -814,14 +814,11 @@ function DailySpinWheel({
         
         {/* Compact Layout with Wheel and Actions - Responsive */}
         <div className="relative w-full max-w-4xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-8">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-6 lg:gap-10">
             
             {/* Wheel Section — Professional Premium Design */}
-            <div className="relative flex flex-col items-center justify-center py-8">
-              {/* Background card container for professional framing */}
-              <div className="absolute inset-0 rounded-3xl opacity-0" />
-
-              {/* Ambient glow layers - enhanced theatrical lighting */}
+            <div className="relative flex flex-col items-center justify-center py-2 sm:py-4 flex-shrink-0">
+              {/* Ambient glow layers */}
               <div className="absolute inset-0 rounded-full pointer-events-none"
                 style={{ 
                   background: 'radial-gradient(circle, rgba(249,115,22,0.4) 0%, rgba(168,85,247,0.2) 45%, rgba(59,130,246,0.1) 65%, transparent 85%)', 
@@ -829,18 +826,10 @@ function DailySpinWheel({
                   transform: 'scale(1.1)'
                 }}
               />
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-64 h-20 pointer-events-none"
-                style={{ 
-                  background: 'linear-gradient(to right, rgba(249,115,22,0.6), rgba(236,72,153,0.5), rgba(168,85,247,0.5))', 
-                  borderRadius: '50%', 
-                  filter: 'blur(35px)',
-                  opacity: 0.8
-                }}
-              />
 
-              {/* Premium Diamond Pointer - Enhanced */}
-              <div className="relative z-30 mb-[-24px]" style={{ filter: 'drop-shadow(0 8px 20px rgba(236,72,153,0.6))' }}>
-                <svg width="56" height="72" viewBox="0 0 52 64">
+              {/* Premium Diamond Pointer - Responsive */}
+              <div className="relative z-30 mb-[-16px] sm:mb-[-20px]" style={{ filter: 'drop-shadow(0 8px 20px rgba(236,72,153,0.6))' }}>
+                <svg width="40" height="52" viewBox="0 0 52 64" className="w-8 h-10 sm:w-10 sm:h-12 md:w-12 md:h-14">
                   <defs>
                     <linearGradient id="dPtrBody" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#ffffff"/>
