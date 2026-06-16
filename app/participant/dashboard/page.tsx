@@ -556,7 +556,8 @@ function DailySpinWheel({
 }) {
   const [isSpinning, setIsSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
-  const [result, setResult] = useState<{ label: string; multiplier: number; icon: string; type: string; probability?: number; darkColor?: string; color?: string } | null>(null)
+  const [spinKey, setSpinKey] = useState(0) // incremented each spin to remount wheel and reset CSS transition
+  const [result, setResult] = useState<{ label: string; multiplier: number; icon: string; type: string; probability?: number; darkColor?: string; color?: string; subtext?: string } | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
@@ -579,6 +580,10 @@ function DailySpinWheel({
     setIsSpinning(true)
     setShowResult(false)
     setResult(null)
+
+    // Reset rotation instantly by remounting the wheel (new key = no CSS transition on mount)
+    const newKey = spinKey + 1
+    setSpinKey(newKey)
     setRotation(0)
 
     // Call the spin API with the selected amount
@@ -609,32 +614,28 @@ function DailySpinWheel({
     const STEP = 360 / N  // 40° per segment
     const spins = 5 + Math.floor(Math.random() * 3)
 
-    // Rotation calculation:
-    // Segments are drawn with: start = i * STEP - 90, end = start + STEP
-    // So visually, segment i spans from (i*STEP - 90°) to ((i+1)*STEP - 90°)
-    // Segment i center = i*STEP - 90 + STEP/2 = i*STEP + STEP/2 - 90
-    //
-    // Pointer is at 0° (top)
-    // To bring segment i center to top, we need CSS rotation such that:
-    // (segment_visual_center + CSS_rotation) mod 360 = 0°
-    // CSS_rotation = (360 - segment_visual_center) mod 360
-    // CSS_rotation = (360 - (i*STEP + STEP/2 - 90)) mod 360
-    // CSS_rotation = (450 - i*STEP - STEP/2) mod 360
-    
-    const segmentVisualCenter = segmentIndex * STEP + STEP / 2 - 90
-    let stopAt = (360 - segmentVisualCenter) % 360
-    if (stopAt < 0) stopAt += 360
-    
+    // Rotation to bring segment i's centre to the top (pointer at 0°):
+    // slicePath draws segment i from angle (i*STEP - 90) to (i*STEP - 90 + STEP).
+    // So the visual centre of segment i = i*STEP - 90 + STEP/2  (in SVG-angle space).
+    // The wheel is then rotated by `rotation` degrees clockwise via CSS.
+    // After CSS rotation, the segment centre sits at:  (i*STEP - 90 + STEP/2 + rotation) mod 360
+    // We want that to equal 0° (pointer at top):
+    //   rotation = 90 - i*STEP - STEP/2   (mod 360, always positive)
+    const rawStop = 90 - segmentIndex * STEP - STEP / 2
+    const stopAt = ((rawStop % 360) + 360) % 360   // normalise to [0, 360)
     const finalRotation = spins * 360 + stopAt
 
-    setTimeout(() => {
-      setRotation(finalRotation)
-    }, 50)
+    // Give React one frame to render rotation=0 (no transition) before we set the target
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setRotation(finalRotation)
+      })
+    })
 
     // Capture for closure use in setTimeout
     const capturedResult = apiResult!
 
-    // After spin animation completes (3 seconds)
+    // After spin animation completes (match the 3.5 s CSS transition)
     setTimeout(() => {
       setIsSpinning(false)
       const won = SPIN_SEGMENTS[segmentIndex]
@@ -701,7 +702,7 @@ function DailySpinWheel({
 
       // Notify parent with the final server-confirmed balance (after winnings added)
       onWin(winAmount, won.label, won.type, capturedResult.balanceAfter, capturedResult.balanceAfter)
-    }, 3000)
+    }, 3600) // slightly after 3.5s CSS animation ends
   }
 
   if (!isOpen) return null
@@ -855,12 +856,13 @@ function DailySpinWheel({
                 </svg>
               </div>
 
-              {/* Professional Wheel Container */}
+              {/* Professional Wheel Container — key forces remount on each spin so CSS transition resets cleanly */}
               <div
+                key={spinKey}
                 className="relative rounded-full"
                 style={{
                   transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? "transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
+                  transition: rotation > 0 ? "transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
                   willChange: "transform",
                 }}
               >
@@ -1334,240 +1336,142 @@ function DailySpinWheel({
         </div>
       </div>
       
-      {/* Result Popup Modal - Enhanced with Better Animations */}
-      {showResult && result && (
-        <div 
-          className="fixed inset-0 bg-gradient-to-br from-black/70 via-purple-900/20 to-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn"
-          onClick={() => setShowResult(false)}
-        >
+      {/* ── Result Modal ── */}
+      {showResult && result && (() => {
+        const m = result.multiplier
+        const bet = spinAmount
+        const returned = parseFloat((bet * m).toFixed(2))
+        const netChange = parseFloat((returned - bet).toFixed(2))
+
+        const isWin       = m >= 1.0
+        const isBreakEven = m === 1.0
+        const isLoss      = m < 1.0 && m > 0
+        const isZero      = m === 0.0
+
+        // Background colour based on outcome
+        const bgGradient = isWin && !isBreakEven
+          ? 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #166534 100%)'   // green – profit
+          : isBreakEven
+          ? 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #1e40af 100%)'   // blue – break even
+          : 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #6b0f0f 100%)'   // red – loss
+
+        // Headline text
+        const headline = (() => {
+          if (m >= 10) return 'LEGENDARY 10X!'
+          if (m >= 5)  return 'MEGA 5X JACKPOT!'
+          if (m >= 3)  return 'JACKPOT — 3X WIN!'
+          if (m >= 2)  return `GREAT WIN — ${m}X!`
+          if (m >= 1.5) return `NICE WIN — ${m}X!`
+          if (m === 1) return 'BREAK EVEN — 1X'
+          if (m === 0.5) return 'HALF BACK — 0.5X'
+          if (m === 0.25) return 'QUARTER BACK — 0.25X'
+          return 'BETTER LUCK NEXT TIME'
+        })()
+
+        // Sub-message
+        const subMessage = (() => {
+          if (m >= 10) return `You turned $${bet.toFixed(2)} into $${returned.toFixed(2)} — incredible!`
+          if (m >= 5)  return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}. Amazing!`
+          if (m >= 3)  return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}. Well done!`
+          if (m >= 2)  return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}.`
+          if (m >= 1.5) return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}.`
+          if (m === 1)  return `Your $${bet.toFixed(2)} was returned in full. No profit, no loss.`
+          if (m === 0.5) return `You got half your bet back. Lost $${Math.abs(netChange).toFixed(2)}.`
+          if (m === 0.25) return `You got a quarter back. Lost $${Math.abs(netChange).toFixed(2)}.`
+          return `Your $${bet.toFixed(2)} bet was lost. Try again!`
+        })()
+
+        return (
           <div
-            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl transform"
-            style={{
-              animation: 'bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-            }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowResult(false)}
           >
-            {/* Confetti Effect for Wins */}
-            {result.type === 'multiplier' && result.multiplier >= 1.0 && (
-              <div className="absolute inset-0 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: '-10px',
-                      background: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
-                      animation: `confetti-fall ${1 + Math.random()}s ease-out forwards`,
-                      animationDelay: `${Math.random() * 0.5}s`
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-            
-            <div 
-              className="relative w-full rounded-2xl p-10 text-center overflow-hidden"
-              style={{
-                background: result.type === 'multiplier' 
-                  ? result.multiplier >= 1.0
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)'
-                    : 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6366f1 100%)'
-                  : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #4f46e5 100%)',
-                boxShadow: 'inset 0 2px 30px rgba(255,255,255,0.3), 0 10px 40px rgba(0,0,0,0.3)',
-              }}
+            <div
+              className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+              style={{ animation: 'bounce-in 0.5s cubic-bezier(0.68,-0.55,0.265,1.55)' }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Animated Background Pattern */}
-              <div className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                  animation: 'float 3s ease-in-out infinite'
-                }}
-              />
-              
-              {/* Glowing Ring */}
-              <div className="absolute inset-0 rounded-2xl"
-                style={{
-                  boxShadow: result.type === 'multiplier' && result.multiplier >= 1.0
-                    ? 'inset 0 0 60px rgba(16, 185, 129, 0.5)' 
-                    : 'inset 0 0 60px rgba(124, 58, 237, 0.5)',
-                  animation: 'pulse 2s ease-in-out infinite'
-                }}
-              />
-              
-            <div className="relative z-10">
-                <div className="text-7xl mb-6 animate-bounce" 
-                  style={{ 
-                    filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.3))',
-                    animation: 'bounce 1s ease-in-out infinite'
-                  }}
-                >
+              {/* Coloured header band */}
+              <div className="relative p-8 text-center" style={{ background: bgGradient }}>
+                {/* Dot-pattern overlay */}
+                <div className="absolute inset-0 opacity-10"
+                  style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+                />
+
+                {/* Icon */}
+                <div className="text-6xl mb-3 relative z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}>
                   {result.icon}
                 </div>
-                
-                {/* Segment Position Verification Badge */}
-                <div className="mb-3 inline-block bg-white/20 backdrop-blur-sm rounded-full px-4 py-1 text-xs font-bold text-white">
-                  ✓ Pointer Hit: {result.label} Segment
+
+                {/* Segment label badge */}
+                <div className="inline-block mb-3 bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold text-white relative z-10">
+                  Pointer landed on: <span className="font-black">{result.label}</span>
                 </div>
 
-                <h3 className="text-white font-black text-3xl mb-3 tracking-wide" 
-                  style={{ 
-                    textShadow: '0 3px 10px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3)',
-                    animation: 'text-glow 2s ease-in-out infinite'
-                  }}
-                >
-                  {result.type === 'multiplier' ? (
-                    result.multiplier >= 10.0 ? (
-                      `👑 LEGENDARY 10X! 👑`
-                    ) : result.multiplier >= 5.0 ? (
-                      `💎 MEGA 5X JACKPOT! 💎`
-                    ) : result.multiplier >= 3.0 ? (
-                      `🎊 JACKPOT 3X! 🎊`
-                    ) : result.multiplier >= 2.0 ? (
-                      `🎉 AMAZING ${result.multiplier}X WIN! 🎉`
-                    ) : result.multiplier >= 1.0 ? (
-                      `✨ YOU WON ${result.multiplier}X! ✨`
-                    ) : result.multiplier === 0.5 ? (
-                      `🍀 BETTER LUCK NEXT TIME! 🍀`
-                    ) : result.multiplier === 0.25 ? (
-                      `😅 OOPS! ALMOST THERE! 😅`
-                    ) : result.multiplier === 0.0 ? (
-                      `💔 BETTER LUCK NEXT TIME! 💔`
-                    ) : (
-                      `🍀 BETTER LUCK NEXT TIME! 🍀`
-                    )
-                  ) : (
-                    `🍀 BETTER LUCK NEXT TIME! 🍀`
-                  )}
+                {/* Headline */}
+                <h3 className="relative z-10 text-white font-black text-2xl leading-tight mb-1"
+                  style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                  {headline}
                 </h3>
-                
-                {/* Winnings calculation for multiplier - Enhanced Display */}
-                {result.type === 'multiplier' && (
-                  <div className="mt-6 space-y-4">
-                    {result.multiplier >= 1.0 ? (
-                      <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
-                          <p className="text-white text-base font-bold">
-                            💰 You won ${(spinAmount * result.multiplier).toFixed(2)}!
-                          </p>
-                        </div>
-                        
-                        {/* Detailed Calculation Breakdown */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
-                          <div className="text-white/90 text-sm font-semibold">Calculation Breakdown:</div>
-                          <div className="text-white/80 text-xs space-y-1">
-                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
-                            <p>• Multiplier: <span className="font-bold text-yellow-200">{result.multiplier}x</span></p>
-                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × {result.multiplier} = ${(spinAmount * result.multiplier).toFixed(2)}</span></p>
-                            <p>• Profit: <span className="font-bold text-green-200">+${((spinAmount * result.multiplier) - spinAmount).toFixed(2)}</span></p>
-                          </div>
-                        </div>
 
-                        {/* Final Result Summary */}
-                        <div className="bg-gradient-to-r from-green-400/20 to-emerald-400/20 rounded-xl p-3 border border-green-300/40">
-                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
-                          <div className="text-white text-sm font-black">
-                            ${spinAmount.toFixed(2)} → ${(spinAmount * result.multiplier).toFixed(2)} (WIN!)
-                          </div>
-                        </div>
-                      </>
-                    ) : result.multiplier === 0.0 ? (
-                      <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
-                          <p className="text-white text-base font-bold">
-                            💔 You lost your entire ${spinAmount.toFixed(2)} spin!
-                          </p>
-                        </div>
-                        
-                        {/* Loss Calculation Breakdown */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
-                          <div className="text-white/90 text-sm font-semibold">Loss Details:</div>
-                          <div className="text-white/80 text-xs space-y-1">
-                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
-                            <p>• Multiplier: <span className="font-bold text-red-200">0x (Total Loss)</span></p>
-                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × 0 = $0.00</span></p>
-                            <p>• Loss: <span className="font-bold text-red-200">-${spinAmount.toFixed(2)}</span></p>
-                          </div>
-                        </div>
+                {/* Sub-message */}
+                <p className="relative z-10 text-white/85 text-sm font-medium">
+                  {subMessage}
+                </p>
+              </div>
 
-                        {/* Final Result Summary */}
-                        <div className="bg-gradient-to-r from-red-400/20 to-pink-400/20 rounded-xl p-3 border border-red-300/40">
-                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
-                          <div className="text-white text-sm font-black">
-                            ${spinAmount.toFixed(2)} → $0.00 (LOSS)
-                          </div>
-                        </div>
-                      </>
-                    ) : result.multiplier === 0.25 ? (
-                      <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
-                          <p className="text-white text-base font-bold">
-                            You got 0.25x - Lost ${(spinAmount * 0.75).toFixed(2)}
-                          </p>
-                        </div>
-                        
-                        {/* Quarter Loss Breakdown */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
-                          <div className="text-white/90 text-sm font-semibold">Loss Details:</div>
-                          <div className="text-white/80 text-xs space-y-1">
-                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
-                            <p>• Multiplier: <span className="font-bold text-orange-200">0.25x (Quarter Return)</span></p>
-                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × 0.25 = ${(spinAmount * 0.25).toFixed(2)}</span></p>
-                            <p>• Loss: <span className="font-bold text-orange-200">-${(spinAmount * 0.75).toFixed(2)} (75% gone)</span></p>
-                          </div>
-                        </div>
+              {/* White body */}
+              <div className="bg-white px-6 py-5 space-y-3">
 
-                        {/* Final Result Summary */}
-                        <div className="bg-gradient-to-r from-orange-400/20 to-yellow-400/20 rounded-xl p-3 border border-orange-300/40">
-                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
-                          <div className="text-white text-sm font-black">
-                            ${spinAmount.toFixed(2)} → ${(spinAmount * 0.25).toFixed(2)} (Lost: ${(spinAmount * 0.75).toFixed(2)})
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/40">
-                          <p className="text-white text-base font-bold">
-                            You got 0.5x - Lost ${(spinAmount * 0.5).toFixed(2)}
-                          </p>
-                        </div>
-                        
-                        {/* Half Loss Breakdown */}
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
-                          <div className="text-white/90 text-sm font-semibold">Loss Details:</div>
-                          <div className="text-white/80 text-xs space-y-1">
-                            <p>• Initial Spin: <span className="font-bold text-white">${spinAmount.toFixed(2)}</span></p>
-                            <p>• Multiplier: <span className="font-bold text-yellow-200">0.5x (Half Return)</span></p>
-                            <p>• Formula: <span className="font-bold text-white">${spinAmount.toFixed(2)} × 0.5 = ${(spinAmount * 0.5).toFixed(2)}</span></p>
-                            <p>• Loss: <span className="font-bold text-yellow-200">-${(spinAmount * 0.5).toFixed(2)} (50% gone)</span></p>
-                          </div>
-                        </div>
-
-                        {/* Final Result Summary */}
-                        <div className="bg-gradient-to-r from-yellow-400/20 to-amber-400/20 rounded-xl p-3 border border-yellow-300/40">
-                          <p className="text-white/80 text-xs mb-1">Result Summary:</p>
-                          <div className="text-white text-sm font-black">
-                            ${spinAmount.toFixed(2)} → ${(spinAmount * 0.5).toFixed(2)} (Lost: ${(spinAmount * 0.5).toFixed(2)})
-                          </div>
-                        </div>
-                      </>
-                    )}
+                {/* Bet / Returned / Net row */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Bet</p>
+                    <p className="font-black text-slate-800 text-base">${bet.toFixed(2)}</p>
                   </div>
-                )}
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Multiplier</p>
+                    <p className="font-black text-slate-800 text-base">{m}x</p>
+                  </div>
+                  <div className={`rounded-xl p-3 ${isWin && !isBreakEven ? 'bg-green-50' : isBreakEven ? 'bg-blue-50' : 'bg-red-50'}`}>
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Returned</p>
+                    <p className={`font-black text-base ${isWin && !isBreakEven ? 'text-green-700' : isBreakEven ? 'text-blue-700' : 'text-red-700'}`}>
+                      ${returned.toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Net change bar */}
+                <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                  isWin && !isBreakEven ? 'bg-green-50 border border-green-200'
+                  : isBreakEven ? 'bg-blue-50 border border-blue-200'
+                  : 'bg-red-50 border border-red-200'
+                }`}>
+                  <span className="text-sm font-semibold text-slate-600">
+                    {isWin && !isBreakEven ? 'Profit' : isBreakEven ? 'Net Change' : 'Loss'}
+                  </span>
+                  <span className={`text-lg font-black ${
+                    isWin && !isBreakEven ? 'text-green-700'
+                    : isBreakEven ? 'text-blue-700'
+                    : 'text-red-700'
+                  }`}>
+                    {isWin && !isBreakEven ? '+' : ''}{netChange.toFixed(2)} USDT
+                  </span>
+                </div>
+
+                {/* Dismiss button */}
+                <button
+                  onClick={() => setShowResult(false)}
+                  className="w-full py-3.5 rounded-2xl font-black text-white text-base transition-all active:scale-95"
+                  style={{ background: bgGradient, boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
+                >
+                  {isWin && !isBreakEven ? 'Collect Winnings' : isBreakEven ? 'Noted' : 'Try Again'}
+                </button>
               </div>
             </div>
-            
-            <button
-              onClick={() => setShowResult(false)}
-              className="w-full mt-6 py-4 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 rounded-2xl font-black text-slate-800 transition-all text-lg shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            >
-              AWESOME! 🎊
-            </button>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
