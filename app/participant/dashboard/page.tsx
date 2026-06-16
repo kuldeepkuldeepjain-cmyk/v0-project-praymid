@@ -614,15 +614,21 @@ function DailySpinWheel({
     const STEP = 360 / N  // 40° per segment
     const spins = 5 + Math.floor(Math.random() * 3)
 
-    // Rotation to bring segment i's centre to the top (pointer at 0°):
-    // slicePath draws segment i from angle (i*STEP - 90) to (i*STEP - 90 + STEP).
-    // So the visual centre of segment i = i*STEP - 90 + STEP/2  (in SVG-angle space).
-    // The wheel is then rotated by `rotation` degrees clockwise via CSS.
-    // After CSS rotation, the segment centre sits at:  (i*STEP - 90 + STEP/2 + rotation) mod 360
-    // We want that to equal 0° (pointer at top):
-    //   rotation = 90 - i*STEP - STEP/2   (mod 360, always positive)
-    const rawStop = 90 - segmentIndex * STEP - STEP / 2
-    const stopAt = ((rawStop % 360) + 360) % 360   // normalise to [0, 360)
+    // Rotation to bring segment i's centre under the pointer (top of wheel).
+    //
+    // slicePath(i) draws from angle (i*STEP - 90) clockwise, so the visual
+    // centre of segment i in SVG-angle space is:
+    //   midDeg = i*STEP + STEP/2 - 90
+    //
+    // "Top of circle" in SVG-angle convention (0°=right, 90°=down) is 270°.
+    //
+    // After applying CSS rotate(R deg) clockwise the segment centre lands at:
+    //   (midDeg + R) mod 360
+    //
+    // Set that equal to 270°:
+    //   R = (270 - midDeg + 360*k) mod 360   → always positive
+    const midDeg = segmentIndex * STEP + STEP / 2 - 90
+    const stopAt = ((270 - midDeg) % 360 + 360) % 360
     const finalRotation = spins * 360 + stopAt
 
     // Give React one frame to render rotation=0 (no transition) before we set the target
