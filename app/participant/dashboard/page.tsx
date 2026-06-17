@@ -802,8 +802,8 @@ function DailySpinWheel({
         </button>
       </div>
 
-      {/* Content Container with Gradient Background - Mobile Optimized */}
-      <div className="relative z-10 flex-1 flex flex-col items-center px-3 sm:px-4 py-4 sm:py-6 overflow-y-auto">
+      {/* Content Container */}
+      <div className="relative z-10 flex-1 flex flex-col items-center px-3 sm:px-6 py-3 sm:py-5 overflow-y-auto min-h-0">
         {/* Animated Background Gradient */}
         <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-orange-900/10 to-pink-900/20 opacity-60" 
           style={{
@@ -812,24 +812,22 @@ function DailySpinWheel({
           }}
         />
         
-        {/* Compact Layout with Wheel and Actions - Responsive */}
-        <div className="relative w-full max-w-4xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-3 sm:gap-6 lg:gap-10">
+        {/* Main layout: wheel left, controls right */}
+        <div className="relative w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-8">
             
-            {/* Wheel Section — Professional Premium Design */}
-            <div className="relative flex flex-col items-center justify-center py-2 sm:py-4 flex-shrink-0">
-              {/* Ambient glow layers */}
+            {/* Wheel Section */}
+            <div className="relative flex flex-col items-center justify-center flex-shrink-0 w-full lg:w-auto">
+              {/* Ambient glow */}
               <div className="absolute inset-0 rounded-full pointer-events-none"
                 style={{ 
-                  background: 'radial-gradient(circle, rgba(249,115,22,0.4) 0%, rgba(168,85,247,0.2) 45%, rgba(59,130,246,0.1) 65%, transparent 85%)', 
+                  background: 'radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(168,85,247,0.18) 50%, transparent 80%)', 
                   filter: 'blur(40px)',
-                  transform: 'scale(1.1)'
                 }}
               />
 
-              {/* Premium Diamond Pointer - Responsive */}
-              <div className="relative z-30 mb-[-16px] sm:mb-[-20px]" style={{ filter: 'drop-shadow(0 8px 20px rgba(236,72,153,0.6))' }}>
-                <svg width="40" height="52" viewBox="0 0 52 64" className="w-8 h-10 sm:w-10 sm:h-12 md:w-12 md:h-14">
+              {/* Diamond Pointer — scales with the wheel wrapper */}
+              <div className="relative z-30" style={{ marginBottom: '-5%', filter: 'drop-shadow(0 6px 16px rgba(236,72,153,0.7))' }}>
+                <svg viewBox="0 0 52 64" className="w-8 h-10 sm:w-10 sm:h-12">
                   <defs>
                     <linearGradient id="dPtrBody" x1="0%" y1="0%" x2="100%" y2="100%">
                       <stop offset="0%" stopColor="#ffffff"/>
@@ -851,10 +849,12 @@ function DailySpinWheel({
                 </svg>
               </div>
 
-              {/* Professional Wheel Container — key forces remount on each spin so CSS transition resets cleanly */}
+              {/* Responsive wheel wrapper: 280px on small phones → 340px on sm → 380px on md+ */}
+              <div className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] md:w-[380px] md:h-[380px]">
+              {/* Spinning div — key forces remount so CSS transition resets cleanly each spin */}
               <div
                 key={spinKey}
-                className="relative rounded-full"
+                className="absolute inset-0 rounded-full"
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   transition: rotation > 0 ? "transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
@@ -886,7 +886,7 @@ function DailySpinWheel({
 
                   return (
                     <svg
-                      width={SIZE} height={SIZE}
+                      width="100%" height="100%"
                       viewBox={`0 0 ${SIZE} ${SIZE}`}
                       style={{ overflow: "visible", filter: isSpinning ? "drop-shadow(0 0 28px rgba(249,115,22,0.7))" : "drop-shadow(0 8px 32px rgba(0,0,0,0.35))" }}
                     >
@@ -1110,30 +1110,40 @@ function DailySpinWheel({
                     </svg>
                   )
                 })()}
-              </div>
-            </div>
+              </div>{/* end spinning div */}
+              </div>{/* end responsive wrapper */}
+            </div>{/* end wheel section */}
         
-        {/* Action Section - Enhanced */}
-        <div className="space-y-4 w-full max-w-sm relative">
-          {/* Amount Selector - Professional with Custom Input */}
-          <div className="relative rounded-2xl p-5 overflow-hidden border-2 border-blue-400"
-            style={{
-              background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 50%, #93c5fd 100%)',
-              boxShadow: '0 4px 20px rgba(59, 130, 246, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
-            }}
+            {/* Action Section */}
+            <div className="space-y-3 w-full max-w-sm lg:max-w-xs xl:max-w-sm relative flex-shrink-0">
+          {/* Balance */}
+          <div className="relative rounded-xl px-4 py-3 overflow-hidden border border-emerald-400/60"
+            style={{ background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 60%, #34d399 100%)' }}
           >
-            <p className="text-slate-800 font-black text-sm mb-3">Select or Enter Spin Amount</p>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-slate-700 flex-shrink-0" />
+                <span className="text-slate-700 text-xs font-bold">Balance</span>
+              </div>
+              <span className="text-slate-900 text-xl font-black">${currentBalance.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Amount Selector */}
+          <div className="relative rounded-xl p-3 overflow-hidden border border-blue-400/60"
+            style={{ background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 60%, #93c5fd 100%)' }}
+          >
+            <p className="text-slate-800 font-bold text-xs mb-2">Spin Amount</p>
             
-            {/* Preset Amount Buttons */}
-            <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
               {[10, 25, 50, 100, 250, 500].map((amt) => (
                 <button
                   key={amt}
                   onClick={() => setSpinAmount(amt)}
-                  className={`py-2 px-2 rounded-lg font-black text-sm transition-all ${
-                    spinAmount === amt && typeof spinAmount === 'number'
-                      ? 'bg-blue-600 text-white scale-105 shadow-lg' 
-                      : 'bg-white text-slate-800 hover:scale-105'
+                  className={`py-1.5 rounded-lg font-black text-xs transition-all ${
+                    spinAmount === amt
+                      ? 'bg-blue-600 text-white shadow-md scale-105' 
+                      : 'bg-white text-slate-800 hover:bg-blue-50'
                   }`}
                 >
                   ${amt}
@@ -1141,10 +1151,9 @@ function DailySpinWheel({
               ))}
             </div>
 
-            {/* Custom Amount Input */}
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <div className="flex-1 relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-700 font-black">$</span>
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 font-black text-sm">$</span>
                 <input
                   type="number"
                   min="1"
@@ -1152,128 +1161,55 @@ function DailySpinWheel({
                   value={typeof spinAmount === 'number' && spinAmount > 0 && ![10, 25, 50, 100, 250, 500].includes(spinAmount) ? spinAmount : ''}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value) || 0
-                    if (val > 0 && val <= currentBalance) {
-                      setSpinAmount(val)
-                    }
+                    if (val > 0 && val <= currentBalance) setSpinAmount(val)
                   }}
                   onFocus={() => {
-                    // Clear when focusing to enter custom amount
-                    if ([10, 25, 50, 100, 250, 500].includes(spinAmount)) {
-                      setSpinAmount(0)
-                    }
+                    if ([10, 25, 50, 100, 250, 500].includes(spinAmount)) setSpinAmount(0)
                   }}
                   placeholder="Custom"
-                  className="w-full pl-7 pr-3 py-2 rounded-lg bg-white text-slate-800 font-black border-2 border-blue-300 focus:border-blue-600 focus:outline-none transition-colors"
+                  className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-white text-slate-800 font-bold text-sm border border-blue-300 focus:border-blue-600 focus:outline-none"
                 />
               </div>
               <button
                 onClick={() => setSpinAmount(currentBalance)}
-                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-lg transition-colors text-sm"
-                title="Set to maximum available balance"
+                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-lg text-xs transition-colors"
               >
                 MAX
               </button>
             </div>
-
-            {/* Amount Info */}
-            <div className="mt-2 text-xs text-slate-700 font-semibold">
-              Min: $1 | Max: ${Math.floor(currentBalance)}
-            </div>
+            <p className="mt-1.5 text-[10px] text-slate-600 font-medium">Min $1 — Max ${Math.floor(currentBalance)}</p>
           </div>
 
-          {/* Wallet Balance Display */}
-          <div 
-            className="relative rounded-2xl p-4 overflow-hidden border-2 border-emerald-400 transform hover:scale-105 transition-transform"
-            style={{
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #34d399 100%)',
-              boxShadow: '0 4px 20px rgba(52, 211, 153, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
-            }}
+          {/* Possible Winnings */}
+          <div className="relative rounded-xl p-3 overflow-hidden border border-purple-400/60"
+            style={{ background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 60%, #d8b4fe 100%)' }}
           >
-            <div className="absolute inset-0 opacity-30"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer-bg 2s infinite'
-              }}
-            />
-            <div className="relative flex items-center justify-center gap-3">
-                <Wallet className="h-5 w-5 text-slate-800" />
-                <p className="text-slate-800 text-base font-black">
-                  Your Balance: <span className="text-slate-900 text-2xl">${currentBalance.toFixed(2)}</span>
-                </p>
-                <Wallet className="h-5 w-5 text-slate-800" />
+            <p className="text-slate-800 text-xs font-bold mb-2">Possible Winnings</p>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              {[
+                { mult: 0,    label: '0x',    bg: 'bg-red-50',     border: 'border-red-200',    text: 'text-red-600' },
+                { mult: 0.25, label: '0.25x', bg: 'bg-orange-50',  border: 'border-orange-200', text: 'text-orange-600' },
+                { mult: 0.5,  label: '0.5x',  bg: 'bg-yellow-50',  border: 'border-yellow-200', text: 'text-yellow-700' },
+                { mult: 1,    label: '1x',    bg: 'bg-blue-50',    border: 'border-blue-200',   text: 'text-blue-600' },
+                { mult: 1.5,  label: '1.5x',  bg: 'bg-green-50',   border: 'border-green-200',  text: 'text-green-600' },
+                { mult: 2,    label: '2x',    bg: 'bg-emerald-50', border: 'border-emerald-200',text: 'text-emerald-700' },
+                { mult: 3,    label: '3x',    bg: 'bg-pink-50',    border: 'border-pink-300',   text: 'text-pink-700' },
+                { mult: 5,    label: '5x',    bg: 'bg-rose-50',    border: 'border-rose-300',   text: 'text-rose-700' },
+                { mult: 10,   label: '10x',   bg: 'bg-purple-50',  border: 'border-purple-300', text: 'text-purple-700' },
+              ].map(({ mult, label, bg, border, text }) => (
+                <div key={label} className={`${bg} rounded-lg p-1.5 border ${border}`}>
+                  <p className={`text-[10px] font-bold ${text}`}>{label}</p>
+                  <p className={`text-xs font-black ${text}`}>${(spinAmount * mult).toFixed(2)}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Possible Winnings Display - All 9 Multipliers */}
-          <div className="relative rounded-2xl p-4 overflow-hidden border-2 border-purple-400"
-            style={{
-              background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 50%, #d8b4fe 100%)',
-              boxShadow: '0 4px 20px rgba(168, 85, 247, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
-            }}
-          >
-            <div className="relative space-y-3">
-              <p className="text-slate-800 text-xs font-black">Possible Winnings (All Multipliers)</p>
-              
-              {/* Compact Grid of All 9 Outcomes */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                {/* Loss Tiers */}
-                <div className="bg-red-50 rounded-lg p-2 border border-red-200">
-                  <p className="text-xs font-bold text-red-700">0x</p>
-                  <p className="text-sm font-black text-red-600">$0.00</p>
-                </div>
-                <div className="bg-orange-50 rounded-lg p-2 border border-orange-200">
-                  <p className="text-xs font-bold text-orange-700">0.25x</p>
-                  <p className="text-sm font-black text-orange-600">${(spinAmount * 0.25).toFixed(2)}</p>
-                </div>
-                <div className="bg-yellow-50 rounded-lg p-2 border border-yellow-200">
-                  <p className="text-xs font-bold text-yellow-700">0.5x</p>
-                  <p className="text-sm font-black text-yellow-600">${(spinAmount * 0.5).toFixed(2)}</p>
-                </div>
-
-                {/* Break Even & Win Tiers */}
-                <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
-                  <p className="text-xs font-bold text-blue-700">1x</p>
-                  <p className="text-sm font-black text-blue-600">${(spinAmount * 1).toFixed(2)}</p>
-                </div>
-                <div className="bg-green-50 rounded-lg p-2 border border-green-200">
-                  <p className="text-xs font-bold text-green-700">1.5x</p>
-                  <p className="text-sm font-black text-green-600">${(spinAmount * 1.5).toFixed(2)}</p>
-                </div>
-                <div className="bg-emerald-50 rounded-lg p-2 border border-emerald-200">
-                  <p className="text-xs font-bold text-emerald-700">2x</p>
-                  <p className="text-sm font-black text-emerald-600">${(spinAmount * 2).toFixed(2)}</p>
-                </div>
-
-                {/* High Multiplier Tiers */}
-                <div className="bg-red-50 rounded-lg p-2 border border-red-300">
-                  <p className="text-xs font-bold text-red-800">3x</p>
-                  <p className="text-sm font-black text-red-700">${(spinAmount * 3).toFixed(2)}</p>
-                </div>
-                <div className="bg-pink-50 rounded-lg p-2 border border-pink-300">
-                  <p className="text-xs font-bold text-pink-800">5x</p>
-                  <p className="text-sm font-black text-pink-700">${(spinAmount * 5).toFixed(2)}</p>
-                </div>
-                <div className="bg-purple-50 rounded-lg p-2 border border-purple-300">
-                  <p className="text-xs font-bold text-purple-800">10x</p>
-                  <p className="text-sm font-black text-purple-700">${(spinAmount * 10).toFixed(2)}</p>
-                </div>
-              </div>
-
-              {/* Summary Stats */}
-              <div className="pt-2 border-t border-purple-300 space-y-1">
-                <p className="text-xs text-slate-600">Min Return: <span className="font-bold text-red-600">$0.00</span> (0x)</p>
-                <p className="text-xs text-slate-600">Max Return: <span className="font-bold text-purple-700">${(spinAmount * 10).toFixed(2)}</span> (10x)</p>
-                <p className="text-xs text-slate-600">Spin Amount: <span className="font-bold text-purple-700">${spinAmount.toFixed(2)}</span></p>
-              </div>
-            </div>
-          </div>
-
-          {/* Spin Button - Enhanced with Better Effects */}
+          {/* Spin Button */}
           <button
             onClick={spinWheel}
             disabled={isSpinning || currentBalance < spinAmount || spinAmount <= 0}
-            className="w-full h-16 text-lg font-black rounded-2xl transition-all disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden transform hover:scale-105 active:scale-95"
+            className="w-full h-14 text-base font-black rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden active:scale-95"
             style={{
               background: !isSpinning && currentBalance >= spinAmount && spinAmount > 0
                 ? 'linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%)' 
@@ -1326,10 +1262,9 @@ function DailySpinWheel({
               )}
             </span>
           </button>
-        </div>
-          </div>
-        </div>
-      </div>
+        </div>{/* end action section */}
+        </div>{/* end flex row */}
+      </div>{/* end content container */}
       
       {/* ── Result Modal ── */}
       {showResult && result && (() => {
