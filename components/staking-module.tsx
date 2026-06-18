@@ -78,6 +78,7 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
   const [coins, setCoins] = useState<StakingCoin[]>([])
   const [stakes, setStakes] = useState<Stake[]>([])
   const [selectedCoin, setSelectedCoin] = useState<StakingCoin | null>(null)
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set())
   const [stakeAmount, setStakeAmount] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(false)
@@ -340,15 +341,18 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center overflow-hidden">
-                            <img 
-                              src={COIN_LOGOS[stake.coin_symbol]} 
-                              alt={stake.coin_symbol}
-                              className="h-8 w-8 object-contain"
-                              onError={(e) => {
-                                e.currentTarget.style.display = 'none'
-                                e.currentTarget.parentElement!.textContent = stake.coin_symbol[0]
-                              }}
-                            />
+                            {failedLogos.has(stake.coin_symbol) ? (
+                              <span className="text-sm font-bold text-purple-600">{stake.coin_symbol[0]}</span>
+                            ) : (
+                              <img 
+                                src={COIN_LOGOS[stake.coin_symbol]} 
+                                alt={stake.coin_symbol}
+                                className="h-8 w-8 object-contain"
+                                onError={() => {
+                                  setFailedLogos(prev => new Set([...prev, stake.coin_symbol]))
+                                }}
+                              />
+                            )}
                           </div>
                           <div>
                             <p className="font-bold text-slate-900 dark:text-white">{stake.coin_name}</p>
@@ -415,16 +419,20 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
                     className="group bg-gradient-to-br from-purple-100 to-purple-50 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-purple-300 dark:border-slate-600 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-200 hover:to-purple-100 dark:hover:from-slate-600 dark:hover:to-slate-700 transition-all cursor-pointer shadow-sm"
                   >
                     <div className="h-12 w-12 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform overflow-hidden">
-                      <img 
-                        src={COIN_LOGOS[coin.coin_symbol]} 
-                        alt={coin.coin_symbol}
-                        className="h-10 w-10 object-contain"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none'
-                          e.currentTarget.parentElement!.textContent = coin.coin_symbol[0]
-                          e.currentTarget.parentElement!.className = 'h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center mb-2 text-white font-bold'
-                        }}
-                      />
+                      {failedLogos.has(coin.coin_symbol) ? (
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-bold text-sm">
+                          {coin.coin_symbol[0]}
+                        </div>
+                      ) : (
+                        <img 
+                          src={COIN_LOGOS[coin.coin_symbol]} 
+                          alt={coin.coin_symbol}
+                          className="h-10 w-10 object-contain"
+                          onError={() => {
+                            setFailedLogos(prev => new Set([...prev, coin.coin_symbol]))
+                          }}
+                        />
+                      )}
                     </div>
                     <p className="font-bold text-slate-900 dark:text-white text-sm mb-1">{coin.coin_symbol}</p>
                     <p className="text-slate-600 dark:text-slate-400 text-xs mb-2">{coin.coin_name}</p>
@@ -497,16 +505,20 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
                     <div className="relative space-y-2">
                       {/* Coin Icon */}
                       <div className="h-12 w-12 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center group-hover:scale-110 transition-transform overflow-hidden">
-                        <img 
-                          src={COIN_LOGOS[coin.coin_symbol]} 
-                          alt={coin.coin_symbol}
-                          className="h-10 w-10 object-contain"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
-                            e.currentTarget.parentElement!.textContent = coin.coin_symbol[0]
-                            e.currentTarget.parentElement!.className = 'h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-bold'
-                          }}
-                        />
+                        {failedLogos.has(coin.coin_symbol) ? (
+                          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-bold text-sm">
+                            {coin.coin_symbol[0]}
+                          </div>
+                        ) : (
+                          <img 
+                            src={COIN_LOGOS[coin.coin_symbol]} 
+                            alt={coin.coin_symbol}
+                            className="h-10 w-10 object-contain"
+                            onError={() => {
+                              setFailedLogos(prev => new Set([...prev, coin.coin_symbol]))
+                            }}
+                          />
+                        )}
                       </div>
                       
                       {/* Coin Symbol */}
