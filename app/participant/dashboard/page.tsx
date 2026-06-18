@@ -33,6 +33,7 @@ import {
   Home,
   Trophy,
   Plus,
+  Star,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -1479,6 +1480,8 @@ export default function DashboardHome() {
     activation_fee_paid?: boolean
     account_balance?: number
     bonus_balance?: number
+    unclaimed_bonus?: number
+    bonus_claimed?: boolean
     contributed_amount?: number
     participation_count?: number
     referral_code?: string
@@ -1871,8 +1874,26 @@ export default function DashboardHome() {
               <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
                 <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
             </div>
+            </div>
 
-          </div>
+            {/* Unclaimed Welcome Bonus - Only show if not claimed */}
+            {(participantData?.unclaimed_bonus || 0) > 0 && !participantData?.bonus_claimed && (
+              <div className="text-center relative bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg p-3 sm:p-4 border-2 border-yellow-300 shadow-md">
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500 animate-pulse" />
+                  <span className="text-xs sm:text-sm text-slate-700 uppercase tracking-wider font-bold">Unclaimed Welcome Bonus</span>
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-yellow-600 mb-2">
+                  ${(participantData?.unclaimed_bonus || 0).toFixed(2)}
+                </div>
+                <p className="text-[10px] sm:text-xs text-slate-600 mb-2">Claim by making your first contribution</p>
+                <Link href="/participant/dashboard/contribute">
+                  <button className="w-full px-3 py-1.5 sm:py-2 bg-yellow-500 hover:bg-yellow-600 text-white text-xs sm:text-sm font-bold rounded-lg transition-colors">
+                    Start Contributing
+                  </button>
+                </Link>
+              </div>
+            )}
 
           </div>
         </div>
