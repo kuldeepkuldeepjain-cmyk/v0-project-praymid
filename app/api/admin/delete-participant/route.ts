@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { sql } from "@/lib/db"
+import { getPool } from "@/lib/db"
 
 export async function DELETE(request: NextRequest) {
   const auth = await requireAdminSession(request)
@@ -8,58 +8,51 @@ export async function DELETE(request: NextRequest) {
 
   try {
     const { participantId } = await request.json()
-
     if (!participantId) {
       return NextResponse.json({ error: "Participant ID is required" }, { status: 400 })
     }
 
-    // Get participant email first before deleting
-    const rows = await sql`SELECT email, id FROM participants WHERE id = ${participantId} LIMIT 1`
-    const participant = rows[0]
+    const db = getPool()!
 
-    if (!participant) {
+    const res = await db.query("SELECT id, email FROM participants WHERE id = $1", [participantId])
+    if (!res.rows.length) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
+    const { email } = res.rows[0]
 
-    // Delete related records (each step is wrapped so missing tables are skipped gracefully)
-    const deletionSteps = [
-      sql`DELETE FROM activity_logs WHERE actor_id::text = ${participantId}`,
-      sql`DELETE FROM support_tickets WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM payment_submissions WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM payout_requests WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM transactions WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM invite_logs WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM gas_approvals WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM spin_coupons WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM topup_requests WHERE participant_id = ${participantId}`,
-      sql`DELETE FROM notifications WHERE user_email = ${participant.email}`,
+    // Hard delete from ALL related tables
+    const relatedTables = [
+      { table: "transactions",        col: "participant_id" },
+      { table: "transactions",        col: "participant_email", isEmail: true },
+      { table: "payment_submissions", col: "participant_id" },
+      { table: "payout_requests",     col: "participant_id" },
+      { table: "predictions",         col: "participant_id" },
+      { table: "topup_requests",      col: "participant_id" },
+      { table: "contribution_ledger", col: "participant_id" },
+      { table: "gas_approvals",       col: "participant_id" },
+      { table: "invite_logs",         col: "participant_id" },
+      { table: "spin_coupons",        col: "participant_id" },
+      { table: "support_tickets",     col: "participant_id" },
+      { table: "wallet_pool",         col: "assigned_to" },
     ]
 
-    for (const step of deletionSteps) {
-      try {
-        await step
-      } catch {
-        // Continue even if one step fails (table may not exist yet)
-      }
+    for (const { table, col, isEmail } of relatedTables) {
+      const val = isEmail ? email : participantId
+      await db.query(`DELETE FROM ${table} WHERE ${col} = $1`, [val]).catch(() => {})
     }
 
-    // Finally delete the participant record
-    await sql`DELETE FROM participants WHERE id = ${participantId}`
+    // Hard delete the participant itself
+    await db.query("DELETE FROM participants WHERE id = $1", [participantId])
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Participant and all related data have been permanently deleted",
-        participantId,
-        email: participant.email,
-      },
-      { status: 200 }
-    )
+    return NextResponse.json({
+      success: true,
+      message: `Participant ${email} and all related data permanently deleted`,
+      participantId,
+      email,
+    })
   } catch (error) {
-    console.error("Error in delete participant API:", error)
-    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: "Failed to delete participant", details: errorMessage },
+      { error: "Failed to delete participant", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

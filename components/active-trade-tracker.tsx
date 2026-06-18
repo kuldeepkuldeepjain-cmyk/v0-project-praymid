@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { TrendingUp, TrendingDown, Clock } from "lucide-react"
+import { TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, RefreshCw } from "lucide-react"
 import { Card } from "@/components/ui/card"
 
 interface ActiveTrade {
@@ -10,8 +10,10 @@ interface ActiveTrade {
   prediction_type: "up" | "down"
   amount: number
   entry_price: number
-  expiry_timestamp: string
+  expiry_timestamp?: string
+  expiry_at?: string
   timeframe_seconds: number
+  status?: string
 }
 
 interface ActiveTradeTrackerProps {
@@ -20,36 +22,26 @@ interface ActiveTradeTrackerProps {
   onTradeSettled: () => void
 }
 
-// Determine display precision for a given pair
 function getPairPrecision(pair: string): number {
   if (!pair) return 2
   const p = pair.toUpperCase()
-  if (p.includes("JPY")) return 3        // USD/JPY, EUR/JPY, GBP/JPY → 3dp
+  if (p.includes("JPY")) return 3
   const forexPairs = ["EURUSD","GBPUSD","AUDUSD","NZDUSD","USDCHF","USDCAD","EURGBP","USDJPY","EURJPY","GBPJPY"]
-  if (forexPairs.some(fp => p.startsWith(fp.substring(0,3)) || p === fp)) return 5
-  const isCommodity = ["XAUUSD","XAGUSD","XCUUSD","USOIL"].includes(p)
-  if (isCommodity) return 2
-  return 2 // crypto
+  if (forexPairs.some(fp => p.includes(fp.substring(0,3)))) return 5
+  if (["XAUUSD","XAGUSD","XCUUSD","USOIL"].includes(p)) return 2
+  return 2
 }
 
-// Pip-aware win/loss/tie determination (mirrors auto-settle logic)
 function getTradeState(pair: string, predType: "up" | "down", entry: number, current: number): "win" | "loss" | "tie" {
   const p = pair.toUpperCase()
   const isJpy = p.includes("JPY")
   const isForex = /^(EUR|GBP|USD|AUD|NZD|CAD|CHF)(USD|EUR|GBP|JPY|CHF|CAD|AUD|NZD)/.test(p)
   const precision = isJpy ? 3 : (isForex ? 5 : 5)
   const scale = Math.pow(10, precision)
-  const roundedEntry = Math.round(entry * scale) / scale
-  const roundedCurrent = Math.round(current * scale) / scale
-  const diff = roundedCurrent - roundedEntry
+  const diff = Math.round(current * scale) / scale - Math.round(entry * scale) / scale
   const minMove = isJpy ? 0.001 : (isForex ? 0.00005 : 0.00001)
-  
-  // No meaningful movement = refund (tie)
   if (Math.abs(diff) < minMove) return "tie"
-  
-  // Determine win/loss based on prediction direction
-  const isCorrectDirection = predType === "up" ? diff > 0 : diff < 0
-  return isCorrectDirection ? "win" : "loss"
+  return (predType === "up" ? diff > 0 : diff < 0) ? "win" : "loss"
 }
 
 export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }: ActiveTradeTrackerProps) {
@@ -57,243 +49,272 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   const [phase, setPhase] = useState<"live" | "settling" | "result" | "hidden">("live")
   const [resultPL, setResultPL] = useState(0)
   const [resultWin, setResultWin] = useState(false)
+  const [resultType, setResultType] = useState<"won" | "lost" | "refunded">("lost")
 
-  // Refs to prevent double-settlement and stale closures
   const settlingRef = useRef(false)
   const currentPriceRef = useRef(currentPrice)
   const currentPLRef = useRef(0)
+  const settleTradeRef = useRef<(() => Promise<void>) | null>(null)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Keep refs updated
   currentPriceRef.current = currentPrice
 
-  // Determine precision for this pair
-  const pricePrecision = activeTrade ? getPairPrecision(activeTrade.crypto_pair) : 2
+  const normalizedTrade = activeTrade ? {
+    ...activeTrade,
+    amount: Number(activeTrade.amount),
+    entry_price: Number(activeTrade.entry_price),
+    expiry_timestamp: activeTrade.expiry_timestamp || activeTrade.expiry_at || "",
+  } : null
 
-  // Calculate P/L using pip-aware comparison with tie detection
-  const tradeState = activeTrade ? getTradeState(
-    activeTrade.crypto_pair,
-    activeTrade.prediction_type,
-    activeTrade.entry_price,
-    currentPrice
-  ) : "tie"
+  const pricePrecision = normalizedTrade ? getPairPrecision(normalizedTrade.crypto_pair) : 2
+
+  const tradeState = normalizedTrade
+    ? getTradeState(normalizedTrade.crypto_pair, normalizedTrade.prediction_type, normalizedTrade.entry_price, currentPrice)
+    : "tie"
 
   const currentPL = (() => {
-    if (!activeTrade) return 0
-    if (tradeState === "tie") return 0  // No movement = no profit/loss (refund)
-    if (tradeState === "win") return activeTrade.amount * 0.80
-    return -activeTrade.amount
+    if (!normalizedTrade) return 0
+    if (tradeState === "tie") return 0
+    if (tradeState === "win") return normalizedTrade.amount * 0.50
+    return -normalizedTrade.amount
   })()
 
   const isWinning = tradeState === "win"
   const isTie = tradeState === "tie"
   currentPLRef.current = currentPL
 
-  // Settle trade via API (called once)
   const settleTrade = useCallback(async () => {
-    if (!activeTrade || settlingRef.current) return
+    if (!normalizedTrade || settlingRef.current) return
     settlingRef.current = true
-
-    setResultPL(currentPLRef.current)
-    setResultWin(currentPLRef.current > 0)
     setPhase("settling")
+
+    // Capture snapshot of P/L at exact settlement moment
+    const snapshotPL = currentPLRef.current
+    const snapshotPrice = currentPriceRef.current
+    setResultPL(snapshotPL)
+    setResultWin(snapshotPL > 0)
 
     try {
       const resp = await fetch("/api/predictions/auto-settle", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          predictionId: activeTrade.id,
-          finalPrice: currentPriceRef.current,
+          predictionId: normalizedTrade.id,
+          finalPrice: snapshotPrice,
         }),
       })
       const res = await resp.json()
       if (res.success) {
-        // Use API result for accuracy
-        setResultWin(res.isWin)
         if (res.isRefund) {
-          // Flat market — full refund, zero P/L
+          setResultType("refunded")
           setResultPL(0)
+          setResultWin(false)
+        } else if (res.isWin) {
+          setResultType("won")
+          setResultPL(res.payout - normalizedTrade.amount)
+          setResultWin(true)
         } else {
-          setResultPL(res.isWin ? res.payout - activeTrade.amount : -activeTrade.amount)
+          setResultType("lost")
+          setResultPL(-normalizedTrade.amount)
+          setResultWin(false)
         }
       }
-    } catch (err) {
-      console.error("[v0] Settlement error:", err)
+    } catch {
+      // Keep snapshot result on network error
     }
-
-    // Show result for 3 seconds, then hide and notify parent
     setPhase("result")
-    setTimeout(() => {
-      setPhase("hidden")
-      settlingRef.current = false
-      onTradeSettled()
-    }, 3000)
-  }, [activeTrade, onTradeSettled]) // Updated dependency list
+  }, [normalizedTrade])
 
-  // Reset state when a NEW trade comes in
   useEffect(() => {
-    if (!activeTrade) return
+    settleTradeRef.current = settleTrade
+  }, [settleTrade])
+
+  // Reset ONLY when trade ID changes
+  useEffect(() => {
+    if (!normalizedTrade?.id) return
     settlingRef.current = false
     setPhase("live")
     setResultPL(0)
     setResultWin(false)
-  }, [activeTrade])
+    setResultType("lost")
+  }, [normalizedTrade?.id])
 
-  // Countdown timer
+  // Countdown — fires settlement exactly once at expiry
   useEffect(() => {
-    if (!activeTrade || phase !== "live") return
+    if (!normalizedTrade?.id || phase !== "live") return
 
-    let iv: NodeJS.Timeout | null = null
+    const expiry = new Date(normalizedTrade.expiry_timestamp).getTime()
+    if (!expiry || isNaN(expiry)) return
+
+    // Already expired on mount → settle immediately
+    if (Date.now() >= expiry && !settlingRef.current) {
+      setTimeRemaining(0)
+      settleTradeRef.current?.()
+      return
+    }
 
     const tick = () => {
-      const now = Date.now()
-      const expiry = new Date(activeTrade.expiry_timestamp).getTime()
-      const remaining = Math.max(0, Math.floor((expiry - now) / 1000))
+      const remaining = Math.max(0, Math.floor((expiry - Date.now()) / 1000))
       setTimeRemaining(remaining)
-
       if (remaining <= 0 && !settlingRef.current) {
-        if (iv) clearInterval(iv)
-        settleTrade()
+        if (timerRef.current) clearInterval(timerRef.current)
+        timerRef.current = null
+        settleTradeRef.current?.()
       }
     }
 
-    tick() // run immediately
-    iv = setInterval(tick, 1000)
+    tick()
+    timerRef.current = setInterval(tick, 500)
     return () => {
-      if (iv) clearInterval(iv)
+      if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [activeTrade, phase, settleTrade])
+  }, [normalizedTrade?.id, phase])
 
-  // --- Render ---
-
-  if (!activeTrade || phase === "hidden") return null
+  if (!normalizedTrade || phase === "hidden") return null
 
   const formatTime = (s: number) => {
-    const m = Math.floor(s / 60)
-    const sec = s % 60
-    return m > 0 ? `${m}m ${sec}s` : `${sec}s`
+    if (s >= 3600) return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`
+    if (s >= 60) return `${Math.floor(s/60)}m ${s%60}s`
+    return `${s}s`
   }
 
-  // Determine if this is a refund (no price movement)
-  const isRefund = !resultWin && resultPL === 0
-
-  // Result card (shown for 3 seconds after settlement)
+  // --- RESULT CARD ---
   if (phase === "result" || phase === "settling") {
+    const isSettling = phase === "settling"
+    const bgColor = resultType === "refunded" ? "bg-amber-500 border-amber-400"
+      : resultType === "won" ? "bg-green-500 border-green-400"
+      : "bg-red-500 border-red-400"
+
+    const Icon = resultType === "refunded" ? RefreshCw
+      : resultType === "won" ? CheckCircle
+      : XCircle
+
     return (
-      <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50 animate-in fade-in zoom-in-95 duration-300">
-        <Card
-          className={`border-2 shadow-xl backdrop-blur-md ${
-            isRefund
-              ? "bg-gradient-to-br from-amber-400/95 to-orange-500/95 border-amber-300"
-              : resultWin
-              ? "bg-gradient-to-br from-green-500/95 to-emerald-600/95 border-green-400"
-              : "bg-gradient-to-br from-red-500/95 to-rose-600/95 border-red-400"
-          }`}
-        >
-          <div className="p-3 text-center text-white">
-            <h3 className="text-base font-bold mb-1">
-              {isRefund ? "Bet Refunded" : resultWin ? "You Won!" : "You Lost"}
-            </h3>
-            <div className="text-xl font-black">
-              {isRefund
-                ? `$${activeTrade.amount.toFixed(2)} returned`
-                : `${resultPL > 0 ? "+" : "-"}$${Math.abs(resultPL).toFixed(2)}`}
-            </div>
-            <p className="text-[10px] mt-1.5 text-white/80">
-              {isRefund ? "Low liquidity — no market movement" : "View in history"}
-            </p>
+      <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-4 w-[calc(100%-24px)] sm:w-72 z-50">
+        <Card className={`border-2 shadow-2xl ${bgColor}`}>
+          <div className="p-4 text-white">
+            {isSettling ? (
+              <div className="flex items-center justify-center gap-2 py-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="text-sm font-semibold">Settling trade...</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-full bg-white/20">
+                    <Icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">
+                      {resultType === "refunded" ? "Trade Refunded" : resultType === "won" ? "Trade Won!" : "Trade Lost"}
+                    </p>
+                    <p className="text-2xl font-black tabular-nums leading-tight">
+                      {resultType === "refunded"
+                        ? `$${normalizedTrade.amount.toFixed(2)} back`
+                        : resultType === "won"
+                        ? `+$${Math.abs(resultPL).toFixed(2)}`
+                        : `-$${Math.abs(resultPL).toFixed(2)}`}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 mb-3 text-center">
+                  <div className="bg-white/10 rounded-lg p-1.5">
+                    <p className="text-[9px] text-white/60 uppercase">Pair</p>
+                    <p className="text-[11px] font-bold">{normalizedTrade.crypto_pair}</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-1.5">
+                    <p className="text-[9px] text-white/60 uppercase">Direction</p>
+                    <p className="text-[11px] font-bold">{normalizedTrade.prediction_type.toUpperCase()}</p>
+                  </div>
+                  <div className="bg-white/10 rounded-lg p-1.5">
+                    <p className="text-[9px] text-white/60 uppercase">Stake</p>
+                    <p className="text-[11px] font-bold">${normalizedTrade.amount.toFixed(2)}</p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setPhase("hidden")
+                    settlingRef.current = false
+                    onTradeSettled()
+                  }}
+                  className="w-full py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-bold transition-colors"
+                >
+                  Dismiss
+                </button>
+              </>
+            )}
           </div>
         </Card>
       </div>
     )
   }
 
-  // Live tracking card
+  // --- LIVE CARD ---
   return (
-    <div className="fixed bottom-20 sm:bottom-24 left-3 right-3 sm:left-auto sm:right-4 sm:w-64 z-50 animate-in slide-in-from-bottom-4 duration-300">
-      <Card
-        className={`border shadow-lg backdrop-blur-lg transition-all duration-200 ${
-          isTie
-            ? "bg-gradient-to-br from-amber-50/95 to-orange-50/95 border-amber-500"
-            : isWinning
-            ? "bg-gradient-to-br from-green-50/95 to-emerald-50/95 border-green-500"
-            : "bg-gradient-to-br from-red-50/95 to-rose-50/95 border-red-500"
-        }`}
-      >
-        <div className="p-2 sm:p-2.5">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-1">
-              <div className={`p-0.5 rounded ${activeTrade.prediction_type === "up" ? "bg-green-500" : "bg-red-500"}`}>
-                {activeTrade.prediction_type === "up" ? (
-                  <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
-                ) : (
-                  <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-white" />
-                )}
+    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-4 w-[calc(100%-24px)] sm:w-72 z-50">
+      <Card className={`border shadow-xl ${
+        isTie ? "bg-amber-50 border-amber-400"
+        : isWinning ? "bg-green-50 border-green-400"
+        : "bg-red-50 border-red-400"
+      }`}>
+        <div className="p-3">
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className={`p-1 rounded ${normalizedTrade.prediction_type === "up" ? "bg-green-500" : "bg-red-500"}`}>
+                {normalizedTrade.prediction_type === "up"
+                  ? <TrendingUp className="h-3 w-3 text-white" />
+                  : <TrendingDown className="h-3 w-3 text-white" />
+                }
               </div>
               <div>
-                <p className="text-[10px] sm:text-xs font-bold text-slate-800 leading-tight">
-                  {activeTrade.crypto_pair}
-                </p>
-                <p className="text-[8px] sm:text-[9px] text-slate-600 leading-tight">
-                  ${activeTrade.amount.toFixed(2)}
-                </p>
+                <p className="text-xs font-bold text-slate-800">{normalizedTrade.crypto_pair}</p>
+                <p className="text-[9px] text-slate-500">${normalizedTrade.amount.toFixed(2)} stake</p>
               </div>
             </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-900 text-white px-1.5 py-0.5 sm:px-2 sm:py-1 rounded">
-              <Clock className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-              <span className="font-mono text-[10px] sm:text-[11px] font-bold tabular-nums">
-                {formatTime(timeRemaining)}
-              </span>
+            <div className="flex items-center gap-1 bg-slate-900 text-white px-2 py-1 rounded-lg">
+              <Clock className="h-3 w-3" />
+              <span className="font-mono text-xs font-bold tabular-nums">{formatTime(timeRemaining)}</span>
             </div>
           </div>
 
-          {/* Live P/L */}
-          <div
-            className={`rounded p-2 sm:p-2.5 mb-1.5 ${
-              isTie
-                ? "bg-gradient-to-r from-amber-500 to-orange-600"
-                : isWinning 
-                ? "bg-gradient-to-r from-green-500 to-emerald-600" 
-                : "bg-gradient-to-r from-red-500 to-rose-600"
-            }`}
-          >
+          {/* P/L bar */}
+          <div className={`rounded-lg p-2.5 mb-2 ${
+            isTie ? "bg-amber-500" : isWinning ? "bg-green-500" : "bg-red-500"
+          }`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[8px] sm:text-[9px] text-white/70 uppercase font-semibold mb-0.5">
-                  {isTie ? "No Movement" : "Live P/L"}
+                <p className="text-[9px] text-white/70 uppercase font-semibold">
+                  {isTie ? "Flat Market" : "Live P/L"}
                 </p>
-                <span className="text-lg sm:text-xl font-black text-white tabular-nums">
-                  {isTie ? "$0.00" : `${currentPL > 0 ? "+" : ""}$${Math.abs(currentPL).toFixed(2)}`}
-                </span>
+                <p className="text-xl font-black text-white tabular-nums">
+                  {isTie ? "$0.00" : `${currentPL >= 0 ? "+" : ""}$${Math.abs(currentPL).toFixed(2)}`}
+                </p>
               </div>
-              <div className="p-1 sm:p-1.5 rounded bg-white/20">
-                {isTie ? (
-                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                ) : isWinning ? (
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                )}
+              <div className="p-1.5 rounded-lg bg-white/20">
+                {isTie ? <Clock className="h-5 w-5 text-white" />
+                  : isWinning ? <TrendingUp className="h-5 w-5 text-white" />
+                  : <TrendingDown className="h-5 w-5 text-white" />
+                }
               </div>
             </div>
           </div>
 
-          {/* Price Info */}
-          <div className="grid grid-cols-2 gap-1">
-            <div className="bg-white/50 rounded p-1 sm:p-1.5">
-              <p className="text-[7px] sm:text-[8px] text-slate-500 uppercase font-semibold">Entry</p>
-              <p className="text-[10px] sm:text-[11px] font-bold text-slate-800 tabular-nums">
-                {activeTrade.entry_price.toFixed(pricePrecision)}
+          {/* Entry / Current prices */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <div className="bg-white/60 rounded-lg p-2">
+              <p className="text-[8px] text-slate-500 uppercase font-semibold">Entry</p>
+              <p className="text-[11px] font-bold text-slate-800 tabular-nums">
+                {normalizedTrade.entry_price.toFixed(pricePrecision)}
               </p>
             </div>
-            <div className="bg-white/50 rounded p-1 sm:p-1.5">
-              <p className="text-[7px] sm:text-[8px] text-slate-500 uppercase font-semibold">Now</p>
-              <p
-                className={`text-[10px] sm:text-[11px] font-bold tabular-nums ${
-                  isTie ? "text-amber-600" : isWinning ? "text-green-600" : "text-red-600"
-                }`}
-              >
+            <div className="bg-white/60 rounded-lg p-2">
+              <p className="text-[8px] text-slate-500 uppercase font-semibold">Current</p>
+              <p className={`text-[11px] font-bold tabular-nums ${
+                isTie ? "text-amber-600" : isWinning ? "text-green-600" : "text-red-600"
+              }`}>
                 {currentPrice.toFixed(pricePrecision)}
               </p>
             </div>

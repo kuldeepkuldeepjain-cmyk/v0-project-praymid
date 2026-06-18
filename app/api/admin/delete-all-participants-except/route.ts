@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -7,57 +7,44 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const PROTECTED_EMAIL = "kuldeepkuldeepjain@gmail.com"
+    const db = getPool()!
 
-    const [protectedParticipant] = await sql`SELECT id, email FROM participants WHERE email = ${PROTECTED_EMAIL} LIMIT 1`
-    if (!protectedParticipant) {
-      return NextResponse.json({ error: "Protected participant not found" }, { status: 404 })
+    const allRes = await db.query("SELECT id, email FROM participants")
+    const participants = allRes.rows
+    if (!participants.length) {
+      return NextResponse.json({ success: true, message: "No participants to delete", deletedParticipants: 0 })
     }
 
-    const allParticipants = await sql`SELECT id, email FROM participants`
-    const toDelete = allParticipants.filter((p: any) => p.email !== PROTECTED_EMAIL)
+    const ids = participants.map((p: any) => p.id)
+    const ph = ids.map((_: any, i: number) => `$${i + 1}`).join(",")
 
-    if (toDelete.length === 0) {
-      return NextResponse.json({ success: true, message: "No participants to delete", deletedCount: 0 })
-    }
-
-    const idsToDelete = toDelete.map((p: any) => p.id)
-
-    // Delete related records in order (respecting foreign keys)
-    const deletionTables = [
-      { table: "transactions", col: "participant_id" },
-      { table: "payment_submissions", col: "participant_id" },
-      { table: "payout_requests", col: "participant_id" },
-      { table: "predictions", col: "participant_id" },
-      { table: "topup_requests", col: "participant_id" },
-      { table: "wallet_pool", col: "assigned_to" },
-      { table: "notifications", col: "user_id" },
-      { table: "activity_logs", col: "actor_id" },
+    const byId = [
+      "transactions", "payment_submissions", "payout_requests", "predictions",
+      "topup_requests", "contribution_ledger", "gas_approvals",
+      "invite_logs", "spin_coupons", "support_tickets",
     ]
-
-    for (const { table, col } of deletionTables) {
-      for (const id of idsToDelete) {
-        await sql`DELETE FROM ${sql(table)} WHERE ${sql(col)} = ${id}`.catch(() => {})
-      }
+    for (const table of byId) {
+      await db.query(`DELETE FROM ${table} WHERE participant_id IN (${ph})`, ids).catch(() => {})
     }
 
-    // Delete p2p_transactions (two FK columns)
-    for (const id of idsToDelete) {
-      await sql`DELETE FROM p2p_transactions WHERE sender_id = ${id} OR receiver_id = ${id}`.catch(() => {})
-    }
+    // wallet_pool uses assigned_to column
+    await db.query(`UPDATE wallet_pool SET assigned_to = NULL WHERE assigned_to IN (${ph})`, ids).catch(() => {})
 
-    await sql`DELETE FROM participants WHERE email != ${PROTECTED_EMAIL}`
+    // Clear shared tables with no participant_id FK
+    await db.query("DELETE FROM notifications").catch(() => {})
+    await db.query("DELETE FROM activity_logs").catch(() => {})
+
+    const deleted = await db.query("DELETE FROM participants RETURNING id")
 
     return NextResponse.json({
       success: true,
-      message: `Deleted all participants except ${PROTECTED_EMAIL}`,
-      deletedParticipants: toDelete.length,
-      protectedEmail: PROTECTED_EMAIL,
+      message: "All participants and related data permanently deleted",
+      deletedParticipants: deleted.rowCount,
     })
   } catch (error) {
     return NextResponse.json(
-      { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown" },
-      { status: 500 },
+      { error: "Internal server error", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 }
     )
   }
 }

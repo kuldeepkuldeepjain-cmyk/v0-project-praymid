@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const { contributionId, action, reason } = await request.json()
-
     if (!contributionId || !action) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
     }
@@ -15,10 +14,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid action" }, { status: 400 })
     }
 
-    const [contribution] = await sql`SELECT * FROM payment_submissions WHERE id = ${contributionId}`
-    if (!contribution) return NextResponse.json({ success: false, error: "Contribution not found" }, { status: 404 })
+    const contribRows = await query("SELECT * FROM payment_submissions WHERE id = $1", [contributionId]) as any[]
+    if (contribRows.length === 0) {
+      return NextResponse.json({ success: false, error: "Contribution not found" }, { status: 404 })
+    }
+    const contribution = contribRows[0]
 
-    const allowedStatuses = action === "approve" ? ["proof_submitted", "pending"] : ["proof_submitted", "in_process", "pending"]
+    const allowedStatuses = action === "approve"
+      ? ["proof_submitted", "in_process", "pending"]
+      : ["proof_submitted", "in_process", "pending"]
     if (!allowedStatuses.includes(contribution.status)) {
       return NextResponse.json({
         success: false,
@@ -27,87 +31,82 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    await execute(
+      "UPDATE payment_submissions SET status = $1, reviewed_at = NOW(), rejection_reason = $2 WHERE id = $3",
+      [action === "approve" ? "approved" : "rejected", action === "reject" ? (reason || "Rejected by admin") : null, contributionId]
+    )
+
     if (action === "approve") {
-      await sql`UPDATE payment_submissions SET status='approved', reviewed_at=NOW(), rejection_reason=NULL WHERE id=${contributionId}`
-
-      const [participant] = await sql`SELECT * FROM participants WHERE email=${contribution.participant_email}`
-      const currentBalance = Number(participant?.account_balance || 0)
-      const currentEarnings = Number(participant?.total_earnings || 0)
-      const creditAmount = Math.round(Number(contribution.amount) * 1.8 * 100) / 100
-
-      await sql`
-        UPDATE participants SET
-          account_balance = ${currentBalance + creditAmount},
-          total_earnings = ${currentEarnings + creditAmount},
-          next_contribution_date = NOW() + INTERVAL '30 days'
-        WHERE email = ${contribution.participant_email}
-      `
-
-      if (contribution.matched_payout_id) {
-        await sql`UPDATE payout_requests SET status='completed', processed_at=NOW() WHERE id=${contribution.matched_payout_id}`
-      }
-
-      await sql`
-        INSERT INTO transactions (participant_id, participant_email, type, amount, balance_before, balance_after, status, reference_id, description)
-        VALUES (${contribution.participant_id}, ${contribution.participant_email}, 'p2p_contribution_reward',
-          ${creditAmount}, ${currentBalance}, ${currentBalance + creditAmount}, 'completed', ${contributionId},
-          'P2P contribution approved — reward credited')
-      `
-
-      // Referral reward — $5 to referrer on first completed cycle only
-      if (participant?.referred_by && !participant?.referral_contribution_rewarded) {
-        const [referrer] = await sql`SELECT * FROM participants WHERE referral_code=${participant.referred_by}`
-        if (referrer) {
-          const rBal = Number(referrer.account_balance || 0)
-          const rEarn = Number(referrer.total_earnings || 0)
-          await sql`UPDATE participants SET account_balance=${rBal + 5}, total_earnings=${rEarn + 5} WHERE id=${referrer.id}`
-          await sql`UPDATE participants SET referral_contribution_rewarded=true WHERE email=${contribution.participant_email}`
-          await sql`
-            INSERT INTO transactions (participant_id, participant_email, type, amount, balance_before, balance_after, status, reference_id, description)
-            VALUES (${referrer.id}, ${referrer.email}, 'referral_reward', 5, ${rBal}, ${rBal + 5}, 'completed', ${contributionId},
-              ${'Referral reward — ' + contribution.participant_email + ' completed first contribution cycle'})
-          `
-          await sql`
-            INSERT INTO notifications (user_email, type, title, message)
-            VALUES (${referrer.email}, 'success', 'Referral Reward Earned',
-              ${'Your referral (' + contribution.participant_email + ') completed their first contribution cycle. $5 credited.'})
-          `
+      const pRows = await query(
+        "SELECT id, account_balance, total_earnings, next_contribution_date FROM participants WHERE email = $1",
+        [contribution.participant_email]
+      ) as any[]
+      const participant = pRows[0]
+      if (participant) {
+        // Check cooldown before approving
+        if (participant.next_contribution_date) {
+          const cooldownUntil = new Date(participant.next_contribution_date)
+          if (cooldownUntil > new Date()) {
+            const daysLeft = Math.ceil((cooldownUntil.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+            console.log(`[v0] Cannot approve P2P contribution for ${contribution.participant_email}: cooldown active, ${daysLeft} days remaining`)
+            return NextResponse.json({
+              success: false,
+              error: `Participant is on cooldown. Next contribution available in ${daysLeft} day${daysLeft !== 1 ? "s" : ""}`,
+              cooldown: true,
+              days_remaining: daysLeft,
+            }, { status: 429 })
+          }
         }
-      }
 
-      await sql`
-        INSERT INTO notifications (user_email, type, title, message)
-        VALUES (${contribution.participant_email}, 'success', 'Contribution Approved',
-          ${'Your P2P contribution of $' + contribution.amount + ' was verified. $' + creditAmount + ' has been credited to your account.'})
-      `
-    } else {
-      await sql`
-        UPDATE payment_submissions SET status='rejected', reviewed_at=NOW(), rejection_reason=${reason || "Rejected by admin"}
-        WHERE id=${contributionId}
-      `
-      if (contribution.matched_payout_id) {
-        await sql`UPDATE payout_requests SET matched_contribution_id=NULL, status='pending' WHERE id=${contribution.matched_payout_id}`
+        const currentBalance = Number(participant.account_balance || 0)
+        const currentEarnings = Number(participant.total_earnings || 0)
+        const creditAmount = Math.round(Number(contribution.amount) * 1.5 * 100) / 100
+
+        // Calculate next contribution date (30 days from now)
+        const nextContributionDate = new Date()
+        nextContributionDate.setDate(nextContributionDate.getDate() + 30)
+
+        await execute(
+          "UPDATE participants SET account_balance = $1, total_earnings = $2, next_contribution_date = $3 WHERE email = $4",
+          [currentBalance + creditAmount, currentEarnings + creditAmount, nextContributionDate.toISOString(), contribution.participant_email]
+        )
+
+        if (contribution.matched_payout_id) {
+          await execute("UPDATE payout_requests SET status = 'completed', processed_at = NOW() WHERE id = $1", [contribution.matched_payout_id])
+        }
+
+        await execute(
+          "INSERT INTO transactions (participant_id, participant_email, type, amount, balance_before, balance_after, status, reference_id, description) VALUES ($1,$2,$3,$4,$5,$6,'completed',$7,$8)",
+          [participant.id, contribution.participant_email, "p2p_contribution_reward", creditAmount, currentBalance, currentBalance + creditAmount, contributionId, "P2P contribution approved — reward credited"]
+        )
+
+        const notifDate = nextContributionDate.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+        await execute(
+          "INSERT INTO notifications (user_email, type, title, message) VALUES ($1,'success','Contribution Approved',$2)",
+          [contribution.participant_email, `Your P2P contribution of $${contribution.amount} has been verified. $${creditAmount} has been credited to your account. Your next contribution will be available on ${notifDate}.`]
+        )
       }
-      await sql`
-        INSERT INTO notifications (user_email, type, title, message)
-        VALUES (${contribution.participant_email}, 'error', 'Contribution Rejected',
-          ${'Your P2P contribution was rejected. Reason: ' + (reason || "Invalid payment proof") + '. Please try again.'})
-      `
+    } else {
+      await execute(
+        "INSERT INTO notifications (user_email, type, title, message) VALUES ($1,'error','Contribution Rejected',$2)",
+        [contribution.participant_email, `Your P2P contribution was rejected. Reason: ${reason || "Invalid payment proof"}. Please try again.`]
+      )
+      if (contribution.matched_payout_id) {
+        await execute("UPDATE payout_requests SET status = 'pending' WHERE id = $1", [contribution.matched_payout_id])
+      }
     }
 
-    await sql`
-      INSERT INTO activity_logs (actor_email, action, target_type, details)
-      VALUES ('admin', ${action === "approve" ? "p2p_contribution_approved" : "p2p_contribution_rejected"},
-        'payment_submission', ${JSON.stringify({ contributionId, reason })})
-    `
+    await execute(
+      "INSERT INTO activity_logs (actor_email, action, target_type, details) VALUES ($1,$2,'payment_submission',$3)",
+      ["admin", action === "approve" ? "p2p_contribution_approved" : "p2p_contribution_rejected", JSON.stringify({ contributionId, reason })]
+    )
 
     return NextResponse.json({
       success: true,
-      message: action === "approve"
-        ? "Contribution approved. Reward credited to contributor."
-        : "Contribution rejected. Payout unlinked and made available again.",
+      message: action === "approve" ? "Contribution approved and reward credited." : "Contribution rejected.",
     })
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+    console.error("[p2p-contributions] error:", err)
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }

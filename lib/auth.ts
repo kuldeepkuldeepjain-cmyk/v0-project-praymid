@@ -78,12 +78,47 @@ export function isSuperAdmin(): boolean {
   return role === "super_admin"
 }
 
+// Returns headers to authenticate admin API requests
+export function getAdminHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {}
+  const token = localStorage.getItem("admin_token")
+  if (!token) return {}
+  return { "X-Admin-Token": token }
+}
+
+// Returns headers to authenticate participant API requests
+export function getParticipantHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {}
+  const email = sessionStorage.getItem("participant_email")
+  if (!email) return {}
+  return { "X-Participant-Token": email }
+}
+
+// Authenticated fetch for admin API calls — automatically injects X-Admin-Token header
+export async function adminFetch(input: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers)
+  const token = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null
+  if (token) headers.set("X-Admin-Token", token)
+  if (init?.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
+  return fetch(input, { ...init, headers })
+}
+
+// Authenticated fetch for participant API calls — automatically injects X-Participant-Token header
+export async function participantFetch(input: string, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers)
+  const email = typeof window !== "undefined" ? sessionStorage.getItem("participant_email") : null
+  if (email) headers.set("X-Participant-Token", email)
+  if (init?.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
+  return fetch(input, { ...init, headers })
+}
+
 // Participant authentication
 export function isParticipantAuthenticated(): boolean {
   if (typeof window === "undefined") return false
   const token = sessionStorage.getItem("participant_token")
-  const wallet = sessionStorage.getItem("participant_wallet")
-  return !!(token && wallet)
+  const email = sessionStorage.getItem("participant_email")
+  // wallet may be empty for new participants — only require token + email
+  return !!(token && email)
 }
 
 export function getParticipantToken(): string | null {
@@ -138,15 +173,16 @@ export function getParticipantData(): {
   is_frozen?: boolean
 } | null {
   if (typeof window === "undefined") return null
-  const wallet = sessionStorage.getItem("participant_wallet")
+  const token = sessionStorage.getItem("participant_token")
   const email = sessionStorage.getItem("participant_email") || undefined
+  // require token + email; wallet may be empty for new participants
+  if (!token || !email) return null
+  const wallet = sessionStorage.getItem("participant_wallet") || ""
   const username = sessionStorage.getItem("participant_username") || undefined
   const name = sessionStorage.getItem("participant_name") || undefined
   const activation_fee_paid = sessionStorage.getItem("participant_activation_fee_paid") === "true"
   const created_at = sessionStorage.getItem("participant_created_at") || undefined
   const is_frozen = sessionStorage.getItem("participant_is_frozen") === "true"
-
-  if (!wallet) return null
   return { wallet, email, username, name, activation_fee_paid, created_at, is_frozen }
 }
 

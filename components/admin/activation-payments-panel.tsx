@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { CheckCircle2, XCircle, Clock, Search, Eye, DollarSign, Wallet, CreditCard, ArrowRight, Users } from "lucide-react"
+import { CheckCircle2, XCircle, Clock, Search, Eye, DollarSign, Wallet, CreditCard, ArrowRight, Users, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Participant {
@@ -75,9 +76,15 @@ export function ActivationPaymentsPanel() {
 
   const fetchParticipants = async () => {
     try {
-      const res = await fetch("/api/admin/all-participants")
-      const data = await res.json()
-      if (data.success) setParticipants(data.participants as any)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("participants")
+        .select("id, username, full_name, email, wallet_address")
+        .order("created_at", { ascending: false })
+      
+      if (!error && data) {
+        setParticipants(data as any)
+      }
     } catch (error) {
       console.error("Error fetching participants:", error)
     }
@@ -85,7 +92,7 @@ export function ActivationPaymentsPanel() {
 
   const fetchPayments = async () => {
     try {
-      const response = await fetch("/api/admin/activation-payments")
+      const response = await adminFetch("/api/admin/activation-payments")
       const data = await response.json()
       if (data.success) {
         setPayments(data.payments)
@@ -105,7 +112,7 @@ export function ActivationPaymentsPanel() {
     setIsProcessing(true)
     setProcessingPaymentId(paymentId)
     try {
-      const response = await fetch("/api/admin/activation-payments", {
+      const response = await adminFetch("/api/admin/activation-payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentId, action, reason }),
@@ -115,7 +122,7 @@ export function ActivationPaymentsPanel() {
         toast({
           title: action === "approve" ? "Payment Approved" : "Payment Rejected",
           description: action === "approve"
-            ? "User account credited with $180"
+            ? "User account credited with $150"
             : data.message,
         })
         
@@ -159,44 +166,60 @@ export function ActivationPaymentsPanel() {
   const handleUpdatePayoutTracker = async (payment: ActivationPayment, newStatus: string, targetUserId?: string) => {
     setIsProcessing(true)
     try {
-      const res = await fetch("/api/admin/bulk-update-submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: [payment.id], status: newStatus }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+      const supabase = createClient()
+      
+      // Update the payment submission with new tracker status
+      const { error: updateError } = await supabase
+        .from("payment_submissions")
+        .update({
+          status: newStatus,
+          reviewed_at: new Date().toISOString(),
+        })
+        .eq("id", payment.id)
 
+      if (updateError) throw updateError
+
+      // If redirecting to specific user, update their wallet address in wallet_pool
       if (targetUserId && newStatus === "redirected") {
         const targetUser = participants.find(p => p.id === targetUserId)
         if (targetUser) {
-          await fetch("/api/admin/wallet-pool", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: targetUser.email, wallet_address: payment.wallet }),
-          })
-          await fetch("/api/admin/send-notification", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              recipientType: "single",
-              recipientEmail: targetUser.email,
-              title: "Contribution Address Assigned",
-              message: `A new contribution address has been assigned to you: ${payment.wallet}`,
-              type: "success",
-            }),
+          // Add to wallet pool as contribution address
+          await supabase.from("wallet_pool").upsert({
+            participant_id: targetUserId,
+            participant_email: targetUser.email,
+            participant_username: targetUser.username,
+            bep20_address: payment.wallet,
+            is_active: true,
+            contribution_amount: payment.amount,
+          }, { onConflict: "participant_id" })
+
+          // Create notification
+          await supabase.from("notifications").insert({
+            user_email: targetUser.email,
+            type: "success",
+            title: "Contribution Address Assigned",
+            message: `A new contribution address has been assigned to you: ${payment.wallet}`,
+            read_status: false,
           })
         }
       }
 
-      toast({ title: "Payout Tracker Updated", description: `Payment status changed to ${newStatus}` })
+      toast({
+        title: "Payout Tracker Updated",
+        description: `Payment status changed to ${newStatus}`,
+      })
+
       setShowTrackerDialog(false)
       setSelectedPayment(null)
       setSelectedTargetUser("")
       fetchPayments()
     } catch (error) {
-      console.error("Error updating tracker:", error)
-      toast({ title: "Error", description: "Failed to update payout tracker", variant: "destructive" })
+      console.error("[v0] Error updating tracker:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update payout tracker",
+        variant: "destructive",
+      })
     } finally {
       setIsProcessing(false)
     }
@@ -207,7 +230,7 @@ export function ActivationPaymentsPanel() {
     try {
       console.log("[v0] Redirecting activation payment to next participant:", payment.id)
       
-      const response = await fetch("/api/admin/redirect-activation-to-new-user", {
+      const response = await adminFetch("/api/admin/redirect-activation-to-new-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -367,7 +390,7 @@ export function ActivationPaymentsPanel() {
                           <p className="font-medium text-white">
                             @{payment.username}
                           </p>
-                          {payment.status === "request_pending" && (
+                          {(payment.status as string) === "request_pending" && (
                             <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
                               <Clock className="h-3 w-3 mr-1" />
                               Contribution Request
@@ -416,7 +439,7 @@ export function ActivationPaymentsPanel() {
                         <p className="text-xs text-[#6b7280]">{formatTime(payment.submittedAt)}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {(payment.status === "pending" || payment.status === "request_pending") ? (
+                        {(payment.status === "pending" || (payment.status as string) === "request_pending") ? (
                           <>
                             <Button
                               size="sm"
@@ -532,7 +555,7 @@ export function ActivationPaymentsPanel() {
                   disabled={isProcessing || processingPaymentId === selectedPayment?.id}
                   className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {processingPaymentId === selectedPayment?.id ? "Approving..." : "Approve & Credit $180"}
+                  {processingPaymentId === selectedPayment?.id ? "Approving..." : "Approve & Credit $150"}
                 </Button>
               </>
             )}

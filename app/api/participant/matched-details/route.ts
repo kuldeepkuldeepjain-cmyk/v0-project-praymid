@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute, queryOne } from "@/lib/db"
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,26 +11,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing params" }, { status: 400 })
     }
 
-    const contributions = await sql`
-      SELECT id, amount, status, created_at, matched_payout_id
-      FROM payment_submissions
-      WHERE id = ${contributionId} AND participant_email = ${email}
-      LIMIT 1
-    `
-    const contribution = contributions[0]
+    const contributions = await query(
+      `SELECT id, amount, status, created_at, matched_payout_id
+       FROM payment_submissions
+       WHERE id = $1 AND participant_email = $2
+       LIMIT 1`,
+      [contributionId, email]
+    )
+    const contribution = contributions?.[0]
     if (!contribution) return NextResponse.json({ success: false, error: "Contribution not found" }, { status: 404 })
     if (!contribution.matched_payout_id) return NextResponse.json({ success: false, error: "Not matched yet" }, { status: 404 })
 
-    const payouts = await sql`
-      SELECT pr.id, pr.participant_email, pr.amount, pr.status, pr.created_at,
-             pr.wallet_address, pr.serial_number,
-             p.full_name, p.username, p.mobile_number, p.bep20_address
-      FROM payout_requests pr
-      LEFT JOIN participants p ON p.email = pr.participant_email
-      WHERE pr.id = ${contribution.matched_payout_id}
-      LIMIT 1
-    `
-    const payout = payouts[0]
+    const payouts = await query(
+      `SELECT pr.id, pr.participant_email, pr.amount, pr.status, pr.created_at,
+              pr.wallet_address, pr.serial_number,
+              p.full_name, p.username, p.mobile_number, p.bep20_address
+       FROM payout_requests pr
+       LEFT JOIN participants p ON p.email = pr.participant_email
+       WHERE pr.id = $1
+       LIMIT 1`,
+      [contribution.matched_payout_id]
+    )
+    const payout = payouts?.[0]
     if (!payout) return NextResponse.json({ success: false, error: "Payout not found" }, { status: 404 })
 
     return NextResponse.json({

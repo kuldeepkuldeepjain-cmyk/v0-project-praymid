@@ -19,19 +19,38 @@ import { Textarea } from "@/components/ui/textarea"
 import { PageLoader } from "@/components/ui/page-loader"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
+
 
 const PAYOUT_PLANS = [
   {
     id: "platinum",
     label: "P2P Payout",
     amount: 100,
+    minAmount: 100,
+    method: "BEP20",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",
     bg: "bg-violet-50",
     badge: "bg-violet-200 text-violet-800",
     ring: "ring-violet-500",
     icon: "💎",
+    description: "Peer-to-peer payout via BEP20 wallet",
+  },
+  {
+    id: "direct",
+    label: "Direct Withdrawal",
+    amount: 300,
+    minAmount: 300,
+    method: "DIRECT",
+    accent: "from-emerald-500 to-teal-600",
+    border: "border-emerald-300",
+    bg: "bg-emerald-50",
+    badge: "bg-emerald-200 text-emerald-800",
+    ring: "ring-emerald-500",
+    icon: "⚡",
+    description: "Direct instant withdrawal when balance exceeds $300",
+    motivation: "If you win you can Direct Withdrawal",
   },
 ] as const
 
@@ -53,12 +72,11 @@ export default function PayoutPage() {
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
   const [disputeReason, setDisputeReason] = useState("")
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
-  const isAuthenticated = isParticipantAuthenticated()
 
   useEffect(() => {
     setMounted(true)
     
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -73,40 +91,32 @@ export default function PayoutPage() {
         }
         
         const parsedData = JSON.parse(storedData)
-        
-        // Fetch fresh participant data from API
-        const meRes = await fetch("/api/participant/me", {
-          headers: { "x-participant-email": parsedData.email },
-        })
-        const meData = await meRes.json()
-        if (meData.success && meData.participant) {
-          setParticipantData(meData.participant)
-          localStorage.setItem("participantData", JSON.stringify(meData.participant))
-          if (meData.participant.bep20_address) setBep20Address(meData.participant.bep20_address)
+
+        // Fetch fresh participant data
+        const meRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
+        const meJson = await meRes.json()
+        const freshData: any = meJson.participant
+        if (freshData) {
+          setParticipantData(freshData)
+          localStorage.setItem("participantData", JSON.stringify(freshData))
+          if (freshData.bep20_address) setBep20Address(freshData.bep20_address)
         } else {
           setParticipantData(parsedData)
           if (parsedData.bep20_address) setBep20Address(parsedData.bep20_address)
         }
 
         // Fetch payout history
-        const histRes = await fetch(`/api/participant/payout-history?email=${encodeURIComponent(parsedData.email)}`)
-        const histData = await histRes.json()
-        if (histData.success) setPayoutHistory(histData.payouts || [])
+        const histRes = await participantFetch(`/api/participant/request-payout?email=${encodeURIComponent(parsedData.email)}`)
+        const histJson = await histRes.json()
+        if (histJson.payouts) setPayoutHistory(histJson.payouts)
 
-        // Poll for real-time payout updates every 15s
-        const pollInterval = setInterval(async () => {
-          const r = await fetch(`/api/participant/payout-history?email=${encodeURIComponent(parsedData.email)}`)
-          const d = await r.json()
-          if (d.success) setPayoutHistory(d.payouts || [])
-        }, 15000)
-        return () => clearInterval(pollInterval)
-      } catch (err) {
-        console.error("Error in fetchData:", err)
-      }
+
+
+      } catch {}
     }
-    
+
     fetchData()
-  }, [router, isAuthenticated, toast])
+  }, [router, toast])
 
   // Check if user has an active (pending/processing/approved) payout
   const hasActivePayout = payoutHistory.some(
@@ -115,7 +125,7 @@ export default function PayoutPage() {
 
   const handleRequestPayout = () => {
     const walletBalance = participantData?.account_balance || 0
-    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[2]
+    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
     if (hasActivePayout) {
       toast({
@@ -139,7 +149,7 @@ export default function PayoutPage() {
   }
 
   const handleWithdrawal = async () => {
-    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[2]
+    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
     if (!bep20Address || bep20Address.trim().length === 0) {
       toast({
@@ -161,13 +171,13 @@ export default function PayoutPage() {
 
     setIsWithdrawing(true)
     try {
-      const response = await fetch("/api/participant/request-payout", {
+      const response = await participantFetch("/api/participant/request-payout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: participantData?.email,
           amount: plan.amount,
           bep20_address: bep20Address,
+          payout_method: plan.method,
         }),
       })
 
@@ -183,21 +193,25 @@ export default function PayoutPage() {
         })
         
         // Refresh payout history
-        const r = await fetch(`/api/participant/payout-history?email=${encodeURIComponent(participantData.email)}`)
-        const d = await r.json()
-        if (d.success) setPayoutHistory(d.payouts || [])
+        const histRes = await participantFetch(`/api/participant/request-payout?email=${encodeURIComponent(participantData.email)}`)
+        const histJson = await histRes.json()
+        if (histJson.payouts) setPayoutHistory(histJson.payouts)
         
         // Update local balance (using account_balance)
         const updatedData = { ...participantData, account_balance: data.newBalance }
         setParticipantData(updatedData)
         localStorage.setItem("participantData", JSON.stringify(updatedData))
       } else {
-        throw new Error(data.error)
+        toast({
+          title: "Request Failed",
+          description: data.error || data.message || "Unable to submit payout request. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        title: "Connection Error",
+        description: "Unable to connect. Please check your connection and try again.",
         variant: "destructive",
       })
     }
@@ -208,9 +222,8 @@ export default function PayoutPage() {
     if (processingPayoutActionId) return
     setProcessingPayoutActionId(payoutId)
     try {
-      const res = await fetch("/api/participant/payout/confirm", {
+      const res = await participantFetch("/api/participant/payout/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payoutId, action: "confirm", participantEmail: participantData.email }),
       })
       const data = await res.json()
@@ -220,10 +233,10 @@ export default function PayoutPage() {
           prev.map((p) => p.id === payoutId ? { ...p, participant_confirmed: true, confirmed_at: new Date().toISOString() } : p)
         )
       } else {
-        toast({ title: "Error", description: data.error, variant: "destructive" })
+        toast({ title: "Unable to Confirm", description: "Could not confirm receipt. Please try again.", variant: "destructive" })
       }
     } catch {
-      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" })
+      toast({ title: "Connection Error", description: "Please check your connection and try again.", variant: "destructive" })
     } finally {
       setProcessingPayoutActionId(null)
     }
@@ -237,9 +250,8 @@ export default function PayoutPage() {
     }
     setProcessingPayoutActionId(disputePayoutId)
     try {
-      const res = await fetch("/api/participant/payout/confirm", {
+      const res = await participantFetch("/api/participant/payout/confirm", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payoutId: disputePayoutId, action: "dispute", disputeReason, participantEmail: participantData.email }),
       })
       const data = await res.json()
@@ -252,10 +264,10 @@ export default function PayoutPage() {
         setDisputeReason("")
         setDisputePayoutId(null)
       } else {
-        toast({ title: "Error", description: data.error, variant: "destructive" })
+        toast({ title: "Unable to Raise Dispute", description: "Could not submit dispute. Please try again.", variant: "destructive" })
       }
     } catch {
-      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" })
+      toast({ title: "Connection Error", description: "Please check your connection and try again.", variant: "destructive" })
     } finally {
       setProcessingPayoutActionId(null)
     }
@@ -265,8 +277,9 @@ export default function PayoutPage() {
     return <PageLoader variant="subpage" />
   }
 
-  const walletBalance = participantData?.account_balance || 0
-  const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[2]
+  const walletBalance = Number(participantData?.account_balance) || 0
+  const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
+
   const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
   
   // Helper function to render horizontal status tracker
@@ -417,6 +430,8 @@ export default function PayoutPage() {
           </div>
         </div>
 
+
+
         {/* Payout Request Card */}
         <Card className="border border-slate-100 shadow-lg rounded-2xl overflow-hidden">
           <CardContent className="p-6">
@@ -443,42 +458,63 @@ export default function PayoutPage() {
               {PAYOUT_PLANS.map((plan) => {
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
+                const isDirectPlan = plan.id === "direct"
+                const isDirectEligible = isDirectPlan && walletBalance >= 300
+                const isDisabled = hasActivePayout || (isDirectPlan && !isDirectEligible)
                 return (
                   <button
                     key={plan.id}
-                    onClick={() => setSelectedPayoutPlanId(plan.id)}
-                    disabled={hasActivePayout}
-                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 ${
-                      isSelected
+                    onClick={() => !isDisabled && setSelectedPayoutPlanId(plan.id)}
+                    disabled={isDisabled}
+                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
+                      isDisabled && isDirectPlan
+                        ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
+                        : isSelected
                         ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
                         : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${hasActivePayout && !isDirectPlan ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
+                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${isDirectPlan && !isDirectEligible ? "from-slate-300 to-slate-400" : plan.accent} flex items-center justify-center text-base shadow-sm`}>
                           {plan.icon}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-900">{plan.label}</span>
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${plan.badge}`}>
-                              {plan.label.toUpperCase()}
-                            </span>
+                            <span className={`text-sm font-bold ${isDirectPlan && !isDirectEligible ? "text-slate-400" : "text-slate-900"}`}>{plan.label}</span>
+                            {isDirectPlan && isDirectEligible && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">
+                                AVAILABLE
+                              </span>
+                            )}
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            Request <span className="font-bold text-slate-700">${plan.amount} USDT</span> payout
-                          </p>
+                          {isDirectPlan && !isDirectEligible ? (
+                            <p className="text-xs text-emerald-500 mt-0.5 font-medium">
+                              Withdraw your winnings
+                            </p>
+                          ) : (
+                            <>
+                              <p className={`text-xs ${isDirectPlan && plan.motivation ? "text-emerald-600 font-medium" : "text-slate-500"} mt-0.5`}>
+                                {plan.motivation || plan.description}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {!canAfford && (
+                        {!isDirectEligible && isDirectPlan ? (
+                          <span className="text-xs text-red-500 font-medium">Need ${(300 - walletBalance).toFixed(2)} more</span>
+                        ) : !canAfford && !isDirectPlan ? (
                           <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
-                        )}
+                        ) : null}
                         <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
+                          isDisabled && isDirectPlan
+                            ? "border-slate-200 bg-slate-100"
+                            : isSelected
+                            ? `${plan.border} bg-gradient-to-br ${plan.accent}`
+                            : "border-slate-300 bg-white"
                         }`}>
-                          {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                          {isSelected && !isDisabled && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                         </div>
                       </div>
                     </div>
@@ -503,7 +539,7 @@ export default function PayoutPage() {
             </button>
 
             {!canWithdraw && (
-              <p className="text-center text-xs text-slate-400 mt-3">
+              <p className="text-center text-xs text-red-400 mt-3 font-medium">
                 {hasActivePayout
                   ? "Complete your current payout request before placing a new one"
                   : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} payout`}
@@ -623,11 +659,11 @@ export default function PayoutPage() {
                     
                     <div className="flex items-center justify-between text-xs pt-2 border-t border-slate-100 mt-3">
                       <span className="text-slate-400">
-                        {new Date(payout.requested_at).toLocaleDateString()}
+                        {new Date(payout.created_at || payout.requested_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </span>
-                      {payout.bep20_address && (
+                      {(payout.wallet_address || payout.bep20_address) && (
                         <span className="text-slate-500 font-mono">
-                          {payout.bep20_address.substring(0, 6)}...{payout.bep20_address.substring(payout.bep20_address.length - 4)}
+                          {(payout.wallet_address || payout.bep20_address).substring(0, 6)}...{(payout.wallet_address || payout.bep20_address).slice(-4)}
                         </span>
                       )}
                     </div>
@@ -728,7 +764,7 @@ export default function PayoutPage() {
               <Input
                 id="bep20Address"
                 type="text"
-                placeholder="0x..."
+                placeholder="Enter your BEP20 wallet address here"
                 value={bep20Address}
                 onChange={(e) => setBep20Address(e.target.value)}
                 className="h-12 text-sm font-mono"

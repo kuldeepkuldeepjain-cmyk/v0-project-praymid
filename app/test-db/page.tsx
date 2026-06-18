@@ -18,18 +18,10 @@ export default function DatabaseTestPage() {
       adminAuth: {}
     }
 
-    // Test 1: Environment Variables (check via health API - env vars not exposed client-side)
-    console.log("[TEST] Checking environment variables...")
-    try {
-      const healthRes = await fetch("/api/health")
-      const healthData = await healthRes.json()
-      testResults.envVars.hasDatabaseUrl = healthData.environment?.hasDatabaseUrl === true
-    } catch {
-      testResults.envVars.hasDatabaseUrl = false
-    }
+    // Test 1: Environment Variables
+    testResults.envVars.postgresUrl = !!process.env.POSTGRES_URL
 
     // Test 2: Health Endpoint
-    console.log("[TEST] Checking health endpoint...")
     try {
       const healthRes = await fetch("/api/health")
       testResults.apiHealth.status = healthRes.status
@@ -41,12 +33,10 @@ export default function DatabaseTestPage() {
     }
 
     // Test 3: Database Query (via participants API)
-    console.log("[TEST] Testing database query...")
     try {
       const dbRes = await fetch("/api/admin/participants")
       testResults.database.status = dbRes.status
       testResults.database.ok = dbRes.ok
-
       if (dbRes.ok) {
         const dbData = await dbRes.json()
         testResults.database.participantCount = dbData.participants?.length || 0
@@ -64,20 +54,14 @@ export default function DatabaseTestPage() {
     }
 
     // Test 4: Admin Authentication
-    console.log("[TEST] Testing admin authentication...")
     try {
       const adminRes = await fetch("/api/auth/secure-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: "admin@123",
-          otp: "111111",
-          loginType: "admin"
-        })
+        body: JSON.stringify({ email: "admin@123", otp: "111111", loginType: "admin" })
       })
       testResults.adminAuth.status = adminRes.status
       testResults.adminAuth.ok = adminRes.ok
-
       if (adminRes.ok) {
         const authData = await adminRes.json()
         testResults.adminAuth.success = authData.success
@@ -90,14 +74,11 @@ export default function DatabaseTestPage() {
       testResults.adminAuth.error = error.message
     }
 
-    console.log("[TEST] All tests complete:", testResults)
     setResults(testResults)
     setLoading(false)
   }
 
-  useEffect(() => {
-    runTests()
-  }, [])
+  useEffect(() => { runTests() }, [])
 
   const StatusIcon = ({ success }: { success: boolean }) =>
     success ? (
@@ -111,9 +92,7 @@ export default function DatabaseTestPage() {
       <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold">Database Connection Test</h1>
-          <p className="text-muted-foreground">
-            Verify your Neon backend is working correctly
-          </p>
+          <p className="text-muted-foreground">Verify your PostgreSQL backend is working correctly</p>
         </div>
 
         <Button onClick={runTests} disabled={loading} className="w-full">
@@ -126,20 +105,15 @@ export default function DatabaseTestPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <StatusIcon success={results.envVars.hasDatabaseUrl} />
+                  <StatusIcon success={results.envVars.postgresUrl} />
                   Environment Variables
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm">DATABASE_URL:</span>
-                  <StatusIcon success={results.envVars.hasDatabaseUrl} />
+                  <span className="text-sm">POSTGRES_URL:</span>
+                  <StatusIcon success={results.envVars.postgresUrl} />
                 </div>
-                {!results.envVars.hasDatabaseUrl && (
-                  <p className="text-xs text-red-500 mt-2">
-                    DATABASE_URL is missing. Add it in Vercel environment variables.
-                  </p>
-                )}
               </CardContent>
             </Card>
 
@@ -222,7 +196,7 @@ export default function DatabaseTestPage() {
                 </div>
                 {results.adminAuth.success && (
                   <div className="text-sm text-green-600 bg-green-50 p-2 rounded">
-                    ✓ Admin login working (Role: {results.adminAuth.role})
+                    Admin login working (Role: {results.adminAuth.role})
                   </div>
                 )}
                 {results.adminAuth.error && (
@@ -235,61 +209,32 @@ export default function DatabaseTestPage() {
 
             {/* Overall Status */}
             <Card className={
-              results.envVars.hasDatabaseUrl &&
-              results.apiHealth.ok &&
-              results.database.ok &&
-              results.adminAuth.ok
-                ? "border-green-500"
-                : "border-red-500"
+              results.apiHealth.ok && results.database.ok && results.adminAuth.ok
+                ? "border-green-500" : "border-red-500"
             }>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  {results.envVars.hasDatabaseUrl &&
-                   results.apiHealth.ok &&
-                   results.database.ok &&
-                   results.adminAuth.ok ? (
-                    <>
-                      <CheckCircle2 className="w-5 h-5 text-green-500" />
-                      All Systems Operational
-                    </>
+                  {results.apiHealth.ok && results.database.ok && results.adminAuth.ok ? (
+                    <><CheckCircle2 className="w-5 h-5 text-green-500" /> All Systems Operational</>
                   ) : (
-                    <>
-                      <AlertCircle className="w-5 h-5 text-red-500" />
-                      Issues Detected
-                    </>
+                    <><AlertCircle className="w-5 h-5 text-red-500" /> Issues Detected</>
                   )}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {results.envVars.hasDatabaseUrl &&
-                 results.apiHealth.ok &&
-                 results.database.ok &&
-                 results.adminAuth.ok ? (
+                {results.apiHealth.ok && results.database.ok && results.adminAuth.ok ? (
                   <p className="text-sm text-green-600">
-                    Your Neon backend is fully operational! All authentication and database operations are working correctly.
+                    Your PostgreSQL backend is fully operational! All authentication and database operations are working correctly.
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-red-600 font-semibold">
-                      Some systems are not working. Common fixes:
-                    </p>
+                    <p className="text-sm text-red-600 font-semibold">Some systems are not working. Common fixes:</p>
                     <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
-                      {!results.envVars.hasDatabaseUrl && (
-                        <li>Set DATABASE_URL in Vercel environment variables</li>
-                      )}
-                      {!results.apiHealth.ok && (
-                        <li>Check Vercel runtime logs for API errors</li>
-                      )}
-                      {!results.database.ok && (
-                        <li>Verify DATABASE_URL is correct and Neon database is accessible</li>
-                      )}
-                      {!results.adminAuth.ok && (
-                        <li>Check admin credentials in /api/auth/secure-login</li>
-                      )}
+                      {!results.envVars.postgresUrl && <li>Set POSTGRES_URL in Vercel environment variables</li>}
+                      {!results.apiHealth.ok && <li>Check Vercel runtime logs for API errors</li>}
+                      {!results.database.ok && <li>Verify PostgreSQL is running and credentials are correct</li>}
+                      {!results.adminAuth.ok && <li>Check admin credentials in /api/auth/secure-login</li>}
                     </ul>
-                    <p className="text-xs text-muted-foreground mt-4">
-                      After making changes, redeploy your app for them to take effect.
-                    </p>
                   </div>
                 )}
               </CardContent>

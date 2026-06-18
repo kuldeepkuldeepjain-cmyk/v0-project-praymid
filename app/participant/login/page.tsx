@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2 } from "lucide-react"
+import { ArrowLeft, Eye, EyeOff, Sparkles, Loader2, ShieldCheck, Clock, HelpCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { setParticipantAuth } from "@/lib/auth"
+import { ForgotPasswordModal } from "@/components/forgot-password-modal"
 
 function AnimatedStar({ top, left, delay, size }: { top: string; left: string; delay: number; size: number }) {
   return (
@@ -56,9 +58,13 @@ export default function ParticipantLoginPage() {
   const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
+  const [mobile_number, setMobileNumber] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [pendingVerification, setPendingVerification] = useState(false)
   const [showDiagnostics, setShowDiagnostics] = useState(false)
+  const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
+  const [loginMode, setLoginMode] = useState<"email" | "mobile">("email")
 
   const runDiagnostics = async () => {
     try {
@@ -84,47 +90,36 @@ export default function ParticipantLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!email || !password) {
+    const identifier = loginMode === "email" ? email : mobile_number
+    if (!identifier || !password) {
       toast({
         title: "Error",
-        description: "Please enter your email and password",
+        description: loginMode === "email" 
+          ? "Please enter your email and password"
+          : "Please enter your mobile number and password",
         variant: "destructive",
       })
       return
     }
 
-    // Superuser shortcut — bypass participant login entirely
-    if (email === "kuldeepjainflow@gmail.com" && password === "kuldeep@flow2026") {
-      setLoading(true)
-      const res = await fetch("/api/auth/secure-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: password, loginType: "superadmin" }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        localStorage.setItem("admin_token", data.token)
-        localStorage.setItem("admin_email", data.email)
-        localStorage.setItem("admin_role", data.role)
-        localStorage.setItem("admin_permissions", JSON.stringify(data.permissions))
-        toast({ title: "Welcome, Superuser!", description: "Redirecting to admin dashboard..." })
-        window.location.href = "/superadmin/dashboard"
-      } else {
-        toast({ title: "Login Failed", description: data.error || "Could not authenticate", variant: "destructive" })
-        setLoading(false)
-      }
-      return
-    }
-
     setLoading(true)
     try {
+      const body = loginMode === "email" 
+        ? { email, password }
+        : { mobile_number, password }
+
       const response = await fetch("/api/auth/participant-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       })
 
       const data = await response.json()
+
+      if (!data.success && data.pendingVerification) {
+        setPendingVerification(true)
+        return
+      }
 
       if (data.success) {
         const participantData = {
@@ -155,8 +150,17 @@ export default function ParticipantLoginPage() {
           status: data.status || "active",
         }
 
-        sessionStorage.setItem("participant_token", data.token)
-        sessionStorage.setItem("participant_wallet", data.walletAddress)
+        // Use setParticipantAuth so isParticipantAuthenticated() returns true
+        setParticipantAuth(
+          data.participantId || `user-${Date.now()}`,
+          data.walletAddress || data.bep20_address || "",
+          data.email,
+          data.username,
+          data.name || data.full_name,
+          data.activation_fee_paid || false,
+          data.created_at,
+          data.is_frozen || false,
+        )
 
         localStorage.setItem("participantData", JSON.stringify(participantData))
 
@@ -167,12 +171,18 @@ export default function ParticipantLoginPage() {
 
         window.location.href = "/participant/dashboard"
       } else {
-        throw new Error(data.error || "Login failed")
+        toast({
+          title: "Login Failed",
+          description: data.pendingVerification
+            ? data.error
+            : "Invalid email or password. Please try again.",
+          variant: "destructive",
+        })
       }
-    } catch (error) {
+    } catch {
       toast({
-        title: "Login Failed",
-        description: error instanceof Error ? error.message : "Invalid email or password",
+        title: "Connection Error",
+        description: "Unable to connect. Please check your connection and try again.",
         variant: "destructive",
       })
     } finally {
@@ -181,6 +191,7 @@ export default function ParticipantLoginPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 -z-10" />
@@ -226,6 +237,41 @@ export default function ParticipantLoginPage() {
           <p className="text-sm text-slate-500 font-medium">Sign in to access your dashboard</p>
         </div>
 
+        {/* Pending Verification Banner */}
+        {pendingVerification && (
+          <Card className="border-0 shadow-xl bg-amber-50/95 backdrop-blur-xl animate-fade-in-up overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-400 to-orange-500" />
+            <CardContent className="p-6 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center mx-auto">
+                <Clock className="h-8 w-8 text-amber-600" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-lg font-bold text-amber-900 flex items-center justify-center gap-2">
+                  <ShieldCheck className="h-5 w-5" />
+                  Awaiting Admin Verification
+                </h3>
+                <p className="text-sm text-amber-700 leading-relaxed">
+                  Your account is registered but your mobile OTP has not been verified by admin yet.
+                  Please contact admin or wait for verification before logging in.
+                </p>
+              </div>
+              <div className="bg-amber-100 rounded-lg px-4 py-3 text-xs text-amber-800 font-medium">
+                Once admin verifies your mobile number, you will be able to log in.
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPendingVerification(false)}
+                className="border-amber-300 text-amber-700 hover:bg-amber-100"
+              >
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Login Card */}
+        {!pendingVerification && (
         <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/90 backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group">
           {/* Animated gradient border */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#E85D3B] via-[#7c3aed] to-[#22d3ee] opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" style={{ padding: "2px" }}>
@@ -241,7 +287,34 @@ export default function ParticipantLoginPage() {
           
           <CardContent className="p-6 relative z-10">
             <form onSubmit={handleLogin} className="space-y-5">
+              {/* Login Mode Toggle */}
+              <div className="flex gap-2 p-2 bg-gray-100 rounded-lg animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode("email")}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    loginMode === "email"
+                      ? "bg-white text-[#E85D3B] shadow-md"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLoginMode("mobile")}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                    loginMode === "mobile"
+                      ? "bg-white text-[#7c3aed] shadow-md"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Mobile
+                </button>
+              </div>
+
               {/* Email Field */}
+              {loginMode === "email" && (
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
                 <Label htmlFor="email" className="text-slate-700 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#E85D3B] to-orange-500 flex items-center justify-center">
@@ -262,6 +335,31 @@ export default function ParticipantLoginPage() {
                   <div className="absolute inset-0 bg-gradient-to-r from-[#E85D3B]/0 via-[#E85D3B]/5 to-[#E85D3B]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                 </div>
               </div>
+              )}
+
+              {/* Mobile Number Field */}
+              {loginMode === "mobile" && (
+              <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+                <Label htmlFor="mobile" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-purple-500 flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">📱</span>
+                  </div>
+                  Mobile Number
+                </Label>
+                <div className="relative group">
+                  <Input
+                    id="mobile"
+                    type="tel"
+                    placeholder="+95 9 123 456 789"
+                    value={mobile_number}
+                    onChange={(e) => setMobileNumber(e.target.value)}
+                    className="h-12 bg-gradient-to-r from-white to-purple-50/30 border-slate-200 focus:border-[#7c3aed] focus:ring-[#7c3aed]/20 transition-all hover:border-[#7c3aed]/50 focus:shadow-lg focus:shadow-[#7c3aed]/10"
+                    required
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#7c3aed]/0 via-[#7c3aed]/5 to-[#7c3aed]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
+                </div>
+              </div>
+              )}
 
               {/* Password Field */}
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
@@ -292,6 +390,18 @@ export default function ParticipantLoginPage() {
                 </div>
               </div>
 
+              {/* Forgot Password Link */}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordOpen(true)}
+                  className="text-sm text-[#7c3aed] hover:text-[#6d28d9] font-medium flex items-center gap-1 transition-colors hover:underline"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  Forgot Password?
+                </button>
+              </div>
+
               {/* Submit Button */}
               <Button
                 type="submit"
@@ -317,6 +427,7 @@ export default function ParticipantLoginPage() {
             </form>
           </CardContent>
         </Card>
+        )}
 
         <div className="text-center space-y-3 animate-fade-in-up-delay-2">
           <p className="text-sm text-slate-500 font-bold">
@@ -338,5 +449,9 @@ export default function ParticipantLoginPage() {
         </div>
       </div>
     </div>
+
+    {/* Forgot Password Modal */}
+    <ForgotPasswordModal open={forgotPasswordOpen} onOpenChange={setForgotPasswordOpen} />
+    </>
   )
 }

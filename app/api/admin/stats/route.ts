@@ -1,90 +1,163 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { sql } from "@/lib/db"
+import { query } from "@/lib/db"
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
+
   try {
-    // Run all queries in parallel for speed
     const [
-      participants,
-      payments,
-      payouts,
-      topups,
-      predictions,
+      participantStats,
+      otpPending,
+      weekNew,
+      monthNew,
+      contributionStats,
+      payoutStats,
+      topupStats,
+      predictionStats,
+      balanceStats,
     ] = await Promise.all([
-      sql`SELECT id, is_active, status, created_at, account_balance, total_earnings FROM participants`,
-      sql`SELECT id, status, amount, created_at FROM payment_submissions`,
-      sql`SELECT id, status, amount, created_at FROM payout_requests`,
-      sql`SELECT id, status, amount, created_at FROM topup_requests`,
-      sql`SELECT id, status, amount, profit_loss, created_at FROM predictions`,
+      // Total + active participants
+      query(`
+        SELECT
+          COUNT(*)::int                                                       AS total,
+          COUNT(*) FILTER (WHERE is_active = true OR status = 'active')::int AS active
+        FROM participants
+        WHERE is_deleted IS NOT TRUE
+      `),
+
+      // OTP not yet verified
+      query(`
+        SELECT COUNT(*)::int AS count
+        FROM participants
+        WHERE (otp_verified = false OR otp_verified IS NULL)
+          AND is_deleted IS NOT TRUE
+      `),
+
+      // New this week
+      query(`
+        SELECT COUNT(*)::int AS count
+        FROM participants
+        WHERE created_at >= NOW() - INTERVAL '7 days'
+          AND is_deleted IS NOT TRUE
+      `),
+
+      // New this month
+      query(`
+        SELECT COUNT(*)::int AS count
+        FROM participants
+        WHERE created_at >= NOW() - INTERVAL '30 days'
+          AND is_deleted IS NOT TRUE
+      `),
+
+      // Contributions (payment_submissions)
+      query(`
+        SELECT
+          COUNT(*)::int                                                           AS total,
+          COUNT(*) FILTER (WHERE status = 'pending')::int                        AS pending,
+          COUNT(*) FILTER (WHERE status IN ('approved','matched'))::int           AS approved,
+          COUNT(*) FILTER (WHERE status = 'in_process')::int                     AS in_process,
+          COALESCE(SUM(amount) FILTER (WHERE status IN ('approved','matched')), 0) AS approved_amount,
+          COALESCE(SUM(amount), 0)                                                AS total_amount
+        FROM payment_submissions
+      `),
+
+      // Payout requests
+      query(`
+        SELECT
+          COUNT(*)::int                                                             AS total,
+          COUNT(*) FILTER (WHERE status = 'pending')::int                          AS pending,
+          COUNT(*) FILTER (WHERE status = 'matched')::int                          AS matched,
+          COUNT(*) FILTER (WHERE status IN ('completed','processed'))::int          AS completed,
+          COALESCE(SUM(amount) FILTER (WHERE status IN ('completed','processed')), 0) AS paid_amount,
+          COALESCE(SUM(amount), 0)                                                  AS total_amount
+        FROM payout_requests
+      `),
+
+      // Top-up requests
+      query(`
+        SELECT
+          COUNT(*)::int                                                              AS total,
+          COUNT(*) FILTER (WHERE status = 'pending')::int                           AS pending,
+          COUNT(*) FILTER (WHERE status IN ('approved','completed'))::int            AS approved,
+          COALESCE(SUM(amount) FILTER (WHERE status IN ('approved','completed')), 0) AS approved_amount
+        FROM topup_requests
+      `).catch(() => [{ total: 0, pending: 0, approved: 0, approved_amount: 0 }]),
+
+      // Predictions
+      query(`
+        SELECT
+          COUNT(*)::int                                                          AS total,
+          COUNT(*) FILTER (WHERE status IN ('active','pending'))::int           AS active,
+          COUNT(*) FILTER (WHERE status IN ('settled','completed','win','loss'))::int AS settled,
+          COALESCE(SUM(profit_loss) FILTER (WHERE profit_loss > 0), 0)         AS total_profit
+        FROM predictions
+      `).catch(() => [{ total: 0, active: 0, settled: 0, total_profit: 0 }]),
+
+      // Total platform balance across all participants
+      query(`
+        SELECT
+          COALESCE(SUM(account_balance), 0) AS total_balance,
+          COALESCE(AVG(account_balance), 0) AS avg_balance,
+          COUNT(*) FILTER (WHERE account_balance > 0)::int AS positive_balance_count
+        FROM participants
+        WHERE is_deleted IS NOT TRUE
+      `),
     ])
 
-    // Participant stats
-    const totalParticipants = participants.length
-    const activeParticipants = participants.filter((p: any) => p.is_active === true || p.status === "active").length
-    const now = new Date()
-    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-    const newThisWeek = participants.filter((p: any) => new Date(p.created_at) > weekAgo).length
-    const newThisMonth = participants.filter((p: any) => new Date(p.created_at) > monthAgo).length
+    const p   = participantStats[0]
+    const c   = contributionStats[0]
+    const pay = payoutStats[0]
+    const top = topupStats[0]
+    const pr  = predictionStats[0]
+    const b   = balanceStats[0]
+    const total = p.total || 0
 
-    // Contribution (payment submission) stats
-    const totalContributions = payments.length
-    const pendingContributions = payments.filter((p: any) => p.status === "pending").length
-    const approvedContributions = payments.filter((p: any) => p.status === "approved" || p.status === "matched").length
-    const totalContributedAmount = payments
-      .filter((p: any) => p.status === "approved" || p.status === "matched")
-      .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0)
+    return NextResponse.json({
+      stats: {
+        // Participants
+        totalParticipants:    total,
+        activeParticipants:   p.active || 0,
+        pendingOtpVerification: otpPending[0]?.count || 0,
+        newThisWeek:          weekNew[0]?.count || 0,
+        newThisMonth:         monthNew[0]?.count || 0,
+        activationRate:       total > 0 ? Math.round(((p.active || 0) / total) * 100) : 0,
 
-    // Payout stats
-    const totalPayouts = payouts.length
-    const pendingPayouts = payouts.filter((p: any) => p.status === "pending").length
-    const completedPayouts = payouts.filter((p: any) => p.status === "completed" || p.status === "processed").length
-    const totalPayoutAmount = payouts
-      .filter((p: any) => p.status === "completed" || p.status === "processed")
-      .reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0)
+        // Contributions
+        totalContributions:     Number(c.total) || 0,
+        pendingContributions:   Number(c.pending) || 0,
+        inProcessContributions: Number(c.in_process) || 0,
+        approvedContributions:  Number(c.approved) || 0,
+        totalContributedAmount: Number(c.approved_amount) || 0,
 
-    // Top-up stats
-    const pendingTopups = topups.filter((t: any) => t.status === "pending").length
-    const totalTopupAmount = topups
-      .filter((t: any) => t.status === "approved" || t.status === "completed")
-      .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0)
+        // Payouts
+        totalPayouts:      Number(pay.total) || 0,
+        pendingPayouts:    Number(pay.pending) || 0,
+        matchedPayouts:    Number(pay.matched) || 0,
+        completedPayouts:  Number(pay.completed) || 0,
+        totalPayoutAmount: Number(pay.paid_amount) || 0,
 
-    // Prediction stats
-    const totalPredictions = predictions.length
-    const activePredictions = predictions.filter((p: any) => p.status === "active" || p.status === "pending").length
-    const settledPredictions = predictions.filter((p: any) => p.status === "settled" || p.status === "completed" || p.status === "win" || p.status === "loss").length
+        // Top-ups
+        totalTopups:      Number(top.total) || 0,
+        pendingTopups:    Number(top.pending) || 0,
+        approvedTopups:   Number(top.approved) || 0,
+        totalTopupAmount: Number(top.approved_amount) || 0,
 
-    // Total platform balance (sum of all participant account balances)
-    const totalPlatformBalance = participants.reduce((sum: number, p: any) => sum + Number(p.account_balance || 0), 0)
+        // Predictions
+        totalPredictions:    Number(pr.total) || 0,
+        activePredictions:   Number(pr.active) || 0,
+        settledPredictions:  Number(pr.settled) || 0,
+        totalPredictionProfit: Number(pr.total_profit) || 0,
 
-    const stats = {
-      totalParticipants,
-      activeParticipants,
-      newThisWeek,
-      newThisMonth,
-      activationRate: totalParticipants > 0 ? Math.round((activeParticipants / totalParticipants) * 100) : 0,
-      totalContributions,
-      pendingContributions,
-      approvedContributions,
-      totalContributedAmount,
-      totalPayouts,
-      pendingPayouts,
-      completedPayouts,
-      totalPayoutAmount,
-      pendingTopups,
-      totalTopupAmount,
-      totalPredictions,
-      activePredictions,
-      settledPredictions,
-      totalPlatformBalance,
-    }
-
-    return NextResponse.json({ stats })
-  } catch (error) {
-    console.error("[API] Error fetching stats:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+        // Platform balance
+        totalPlatformBalance:   Number(b.total_balance) || 0,
+        avgParticipantBalance:  Number(b.avg_balance) || 0,
+        positiveBalanceCount:   Number(b.positive_balance_count) || 0,
+      },
+      generatedAt: new Date().toISOString(),
+    })
+  } catch {
+    return NextResponse.json({ error: "Failed to load stats" }, { status: 500 })
   }
 }

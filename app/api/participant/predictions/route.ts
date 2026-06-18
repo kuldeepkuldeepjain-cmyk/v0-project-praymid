@@ -1,129 +1,130 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-import { sql } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 
-// POST - Create new prediction
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
     const body = await request.json()
-    const {
-      participant_email,
-      crypto_pair,
-      prediction_type,
-      amount,
-      entry_price,
-      target_price,
-      leverage,
-      status,
-      balance_source,
-    } = body
-
-    if (!participant_email || !crypto_pair || !prediction_type || !amount || !entry_price) {
+    
+    const { participant_email, crypto_pair, prediction_type, amount, entry_price, timeframe_seconds, balance_source } = body
+    if (!participant_email || !crypto_pair || !prediction_type || !amount || !timeframe_seconds) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
     const useReferralBalance = balance_source === "referral"
 
-    const rows = await sql`
-      SELECT id, account_balance, bonus_balance
-      FROM participants
-      WHERE email = ${participant_email}
-      LIMIT 1
-    `
+    const rows = await query(
+      "SELECT id, account_balance, bonus_balance FROM participants WHERE email = $1 LIMIT 1",
+      [participant_email]
+    ) as any[]
     const participant = rows[0]
-
-    if (!participant) {
-      return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-    }
+    if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
     const availableBalance = useReferralBalance
       ? Number(participant.bonus_balance ?? 0)
       : Number(participant.account_balance ?? 0)
 
     if (availableBalance < Number(amount)) {
-      return NextResponse.json(
-        { error: useReferralBalance ? "Insufficient referral earnings balance" : "Insufficient wallet balance" },
-        { status: 400 }
-      )
+      return NextResponse.json({
+        error: useReferralBalance ? "Insufficient referral earnings balance" : "Insufficient wallet balance",
+      }, { status: 400 })
     }
 
-    const now = new Date().toISOString()
+    // Calculate expiry timestamp
+    const expiryTimestamp = new Date(Date.now() + timeframe_seconds * 1000).toISOString()
 
-    const predictionRows = await sql`
-      INSERT INTO predictions (
-        participant_id, participant_email, crypto_pair, prediction_type, amount,
-        entry_price, target_price, leverage, status, profit_loss, result, created_at, closed_at
-      ) VALUES (
-        ${participant.id}, ${participant_email}, ${crypto_pair}, ${prediction_type}, ${Number(amount)},
-        ${Number(entry_price)}, ${target_price ? Number(target_price) : null}, ${leverage || 1},
-        ${status || "pending"}, ${0}, ${null}, ${now}, ${null}
-      )
-      RETURNING *
-    `
-    const prediction = predictionRows[0]
+    // Insert prediction with all required fields
+    const predRows = await query(
+      `INSERT INTO predictions
+         (participant_id, participant_email, crypto_pair, prediction_type, amount, entry_price, expiry_at, timeframe_seconds, status, profit_loss, balance_source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending',0,$9)
+       RETURNING id, participant_id, participant_email, crypto_pair, prediction_type, amount, entry_price, expiry_at, timeframe_seconds, status, profit_loss, created_at`,
+      [participant.id, participant_email, crypto_pair, prediction_type, Number(amount), Number(entry_price), expiryTimestamp, timeframe_seconds, balance_source]
+    ) as any[]
+    const prediction = predRows[0]
 
-    if (!prediction) {
-      return NextResponse.json({ error: "Failed to create prediction" }, { status: 500 })
-    }
-
+    const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
+    
+    await execute(
+      `UPDATE participants SET ${balanceField} = $1 WHERE id = $2`,
+      [newBalance, participant.id]
+    )
 
-    if (useReferralBalance) {
-      await sql`UPDATE participants SET bonus_balance = ${newBalance} WHERE id = ${participant.id}`
-    } else {
-      await sql`UPDATE participants SET account_balance = ${newBalance} WHERE id = ${participant.id}`
-    }
-
-    await sql`
-      INSERT INTO transactions (
-        participant_id, participant_email, type, amount, description,
-        reference_id, status, balance_before, balance_after
-      ) VALUES (
-        ${participant.id}, ${participant_email},
-        ${useReferralBalance ? "referral_earning" : "prediction_bet"},
-        ${-Number(amount)},
-        ${`Placed ${prediction_type} trade on ${crypto_pair} using ${useReferralBalance ? "referral earnings" : "wallet balance"}`},
-        ${prediction.id}, ${"completed"}, ${availableBalance}, ${newBalance}
-      )
-    `
+    // Log to transactions
+    await execute(
+      `INSERT INTO transactions
+         (participant_id, participant_email, type, amount, description, reference_id, status, balance_before, balance_after)
+       VALUES ($1,$2,$3,$4,$5,$6,'completed',$7,$8)`,
+      [
+        participant.id,
+        participant_email,
+        useReferralBalance ? "referral_earning" : "prediction_bet",
+        -Number(amount),
+        `Placed ${prediction_type} trade on ${crypto_pair} @ ${entry_price}`,
+        prediction.id,
+        availableBalance,
+        newBalance,
+      ]
+    ).catch(() => {})
 
     return NextResponse.json({
       success: true,
-      prediction,
+      prediction: {
+        ...prediction,
+        expiry_timestamp: expiryTimestamp, // For frontend compatibility
+      },
       new_balance: newBalance,
       balance_source: useReferralBalance ? "referral" : "wallet",
     })
   } catch (error) {
-    console.error("Prediction API error:", error)
+    console.error("[v0] Prediction API error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-// GET - Fetch predictions for a participant
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
     const { searchParams } = new URL(request.url)
     const participant_email = searchParams.get("participant_email")
-    const limit = Number.parseInt(searchParams.get("limit") || "20")
+    const limit = Number.parseInt(searchParams.get("limit") || "1000") // Default to 1000 to show all
+    const status = searchParams.get("status") // Optional filter: pending, won, lost, all
+    
+    if (!participant_email) return NextResponse.json({ error: "participant_email is required" }, { status: 400 })
 
-    if (!participant_email) {
-      return NextResponse.json({ error: "participant_email is required" }, { status: 400 })
+    // Build query with optional status filter
+    let whereClause = "WHERE participant_email = $1"
+    const params = [participant_email]
+    
+    if (status && status !== "all") {
+      whereClause += ` AND status = $${params.length + 1}`
+      params.push(status)
     }
+    
+    const rows = await query(
+      `SELECT id, participant_id, participant_email, crypto_pair, prediction_type, amount, entry_price, expiry_at, timeframe_seconds,
+              result, profit_loss, status, target_price, closed_at, created_at
+       FROM predictions
+       ${whereClause}
+       ORDER BY created_at DESC
+       LIMIT $${params.length + 1}`,
+      [...params, limit]
+    ) as any[]
 
-    const predictions = await sql`
-      SELECT * FROM predictions
-      WHERE participant_email = ${participant_email}
-      ORDER BY created_at DESC
-      LIMIT ${limit}
-    `
-
-    return NextResponse.json({ success: true, predictions })
+    return NextResponse.json({ 
+      success: true, 
+      predictions: rows.map(p => ({
+        ...p,
+        expiry_timestamp: p.expiry_at, // Alias for frontend compatibility
+      })),
+      total: rows.length
+    })
   } catch (error) {
-    console.error("Prediction API error:", error)
+    console.error("Predictions GET error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

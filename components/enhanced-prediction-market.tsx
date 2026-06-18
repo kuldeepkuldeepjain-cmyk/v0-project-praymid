@@ -99,8 +99,8 @@ export function EnhancedPredictionMarket({ participantEmail }: { participantEmai
         if (activeTrade) {
           const priceDiff = newPrice - activeTrade.entry_price
           const profitLoss = activeTrade.direction === "UP" 
-            ? priceDiff > 0 ? activeTrade.bet_amount * 0.9 : -activeTrade.bet_amount
-            : priceDiff < 0 ? activeTrade.bet_amount * 0.9 : -activeTrade.bet_amount
+            ? priceDiff > 0 ? activeTrade.bet_amount * 0.5 : -activeTrade.bet_amount
+            : priceDiff < 0 ? activeTrade.bet_amount * 0.5 : -activeTrade.bet_amount
 
           setActiveTrade(prev => prev ? {
             ...prev,
@@ -232,7 +232,7 @@ export function EnhancedPredictionMarket({ participantEmail }: { participantEmai
     const finalPrice = currentPrice.price
     const priceDiff = finalPrice - activeTrade.entry_price
     const won = activeTrade.direction === "UP" ? priceDiff > 0 : priceDiff < 0
-    const profitLoss = won ? activeTrade.bet_amount * 0.9 : -activeTrade.bet_amount
+    const profitLoss = won ? activeTrade.bet_amount * 0.5 : -activeTrade.bet_amount
 
     // Update trade status
     setActiveTrade(prev => prev ? {

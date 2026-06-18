@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { NextRequest, NextResponse } from "next/server"
+import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -8,22 +8,27 @@ export async function POST(request: NextRequest) {
   try {
     const { email, bep20_address } = await request.json()
 
-    if (!email || !bep20_address) return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    if (!email || !bep20_address) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
 
     if (!/^0x[a-fA-F0-9]{40}$/.test(bep20_address)) {
       return NextResponse.json({ error: "Invalid BEP20 address format" }, { status: 400 })
     }
 
-    const [updated] = await sql`
-      UPDATE participants SET wallet_address=${bep20_address}, bep20_address=${bep20_address}, updated_at=NOW()
-      WHERE email=${email}
-      RETURNING *
-    `
+    const db = getPool()!
+    const result = await db.query(
+      "UPDATE participants SET wallet_address = $1, bep20_address = $1, updated_at = NOW() WHERE email = $2 RETURNING id, email, wallet_address",
+      [bep20_address, email]
+    )
 
-    if (!updated) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
 
-    return NextResponse.json({ success: true, message: "BEP20 address updated successfully", data: updated })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ success: true, message: "BEP20 address updated successfully", data: result.rows[0] })
+  } catch (error) {
+    console.error("Update BEP20 error:", error)
+    return NextResponse.json({ error: "Failed to update BEP20 address" }, { status: 500 })
   }
 }

@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,11 +41,11 @@ import {
   Users,
   Copy,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react"
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { UserRankBadge } from "@/components/user-rank-badge"
-
 export function ParticipantDatabaseView() {
   const { toast } = useToast()
   const [participants, setParticipants] = useState<ParticipantUser[]>([])
@@ -58,22 +59,89 @@ export function ParticipantDatabaseView() {
   const [deletingParticipantId, setDeletingParticipantId] = useState<string | null>(null)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showOtpModal, setShowOtpModal] = useState(false)
+  const [otpParticipant, setOtpParticipant] = useState<ParticipantUser | null>(null)
+  const [otpInput, setOtpInput] = useState("")
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
+  const [activatingId, setActivatingId] = useState<string | null>(null)
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
+
+  const activateParticipant = async (participantId: string, action: "activate" | "deactivate" | "suspend") => {
+    setActivatingId(participantId)
+    try {
+      const res = await adminFetch("/api/admin/activate-participant", {
+        method: "POST",
+        body: JSON.stringify({ participantId, action }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast({ title: "Success", description: data.message })
+        setParticipants(prev =>
+          prev.map(p =>
+            p.id === participantId
+              ? { ...p, status: data.newStatus, is_active: data.newIsActive }
+              : p
+          )
+        )
+      } else {
+        toast({ title: "Failed", description: data.error, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Request failed", variant: "destructive" })
+    } finally {
+      setActivatingId(null)
+    }
+  }
+
+  const fetchParticipants = async () => {
+    try {
+      setLoading(true)
+      const res = await adminFetch("/api/admin/participants")
+      const data = await res.json()
+      if (data.participants) {
+        setParticipants(data.participants)
+      } else {
+        toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
+      }
+    } catch (err) {
+      toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchParticipants() {
-      try {
-        const res = await fetch("/api/admin/participants")
-        const data = await res.json()
-        setParticipants(data.participants || [])
-      } catch (err) {
-        console.error("Error in fetchParticipants:", err)
-        toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchParticipants()
-  }, [toast])
+  }, [])
+
+  const verifyOtp = async () => {
+    if (!otpParticipant || !otpInput.trim()) return
+    setIsVerifyingOtp(true)
+    try {
+      const res = await adminFetch("/api/admin/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          participantId: otpParticipant.id,
+          otp: otpInput.trim(),
+          adminEmail: "admin",
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast({ title: "OTP Verified!", description: data.message })
+        setShowOtpModal(false)
+        setOtpInput("")
+        fetchParticipants()
+      } else {
+        toast({ title: "Verification Failed", description: data.error, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Verification request failed", variant: "destructive" })
+    } finally {
+      setIsVerifyingOtp(false)
+    }
+  }
 
   // Filter participants
   const filteredParticipants = participants.filter((p) => {
@@ -82,8 +150,8 @@ export function ParticipantDatabaseView() {
       p.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.phone?.includes(searchQuery) ||
-      p.participantNumber?.toString().includes(searchQuery) ||
-      p.serial_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.mobile_number?.includes(searchQuery) ||
+      p.participant_number?.toString().includes(searchQuery) ||
       p.country?.toLowerCase().includes(searchQuery.toLowerCase())
 
     const matchesStatus = statusFilter === "all" || p.status === statusFilter
@@ -136,8 +204,8 @@ export function ParticipantDatabaseView() {
     ]
 
     const rows = filteredParticipants.map((p) => [
-      p.participantNumber,
-      p.serial_number || "N/A",
+      p.participant_number || p.id || "N/A",
+      p.participant_number || "N/A",
       p.username,
       p.full_name || p.name || "",
       p.email,
@@ -197,13 +265,13 @@ export function ParticipantDatabaseView() {
   const deleteParticipant = async (participantId: string) => {
     setIsDeleting(true)
     try {
-      console.log("Starting delete for participant:", participantId)
+      console.log("[v0] Starting delete for participant:", participantId)
       
       if (!participantId || participantId.trim() === "") {
         throw new Error("Invalid participant ID")
       }
 
-      const response = await fetch("/api/admin/delete-participant", {
+      const response = await adminFetch("/api/admin/delete-participant", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ participantId }),
@@ -423,23 +491,48 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 font-mono">
-                          {participant.plain_password || "—"}
+                          {visiblePasswords.has(participant.id)
+                            ? participant.plain_password || "—"
+                            : participant.plain_password
+                              ? "••••••••"
+                              : "—"}
                         </code>
                         {participant.plain_password && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 hover:bg-red-100"
-                            onClick={() => {
-                              navigator.clipboard.writeText(participant.plain_password || "")
-                              toast({
-                                title: "Password Copied",
-                                description: "Password copied to clipboard",
-                              })
-                            }}
-                          >
-                            <Copy className="h-3 w-3 text-red-600" />
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-red-100"
+                              onClick={() => {
+                                setVisiblePasswords((prev) => {
+                                  const newSet = new Set(prev)
+                                  if (newSet.has(participant.id)) {
+                                    newSet.delete(participant.id)
+                                  } else {
+                                    newSet.add(participant.id)
+                                  }
+                                  return newSet
+                                })
+                              }}
+                              title={visiblePasswords.has(participant.id) ? "Hide password" : "Show password"}
+                            >
+                              <Eye className="h-3 w-3 text-red-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-red-100"
+                              onClick={() => {
+                                navigator.clipboard.writeText(participant.plain_password || "")
+                                toast({
+                                  title: "Password Copied",
+                                  description: "Password copied to clipboard",
+                                })
+                              }}
+                            >
+                              <Copy className="h-3 w-3 text-red-600" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </TableCell>
@@ -454,7 +547,7 @@ export function ParticipantDatabaseView() {
                         <div className="flex items-center gap-1.5">
                           <Phone className="h-3 w-3 text-slate-400" />
                           <span className="text-xs text-slate-700">
-                            {participant.country_code} {participant.phone || "—"}
+                            {participant.mobile_number || (participant.country_code ? `${participant.country_code} ${participant.phone}` : participant.phone) || "—"}
                           </span>
                         </div>
                       </div>
@@ -465,7 +558,7 @@ export function ParticipantDatabaseView() {
                       <div className="space-y-0.5 text-xs">
                         <div className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-slate-400" />
-                          <span className="font-medium text-slate-900">{participant.country || "—"}</span>
+                          <span className="font-medium text-slate-900">{participant.country || participant.location || "—"}</span>
                         </div>
                         {participant.state && <p className="text-slate-600">{participant.state}</p>}
                         {participant.city && <p className="text-slate-500">{participant.city}</p>}
@@ -485,11 +578,25 @@ export function ParticipantDatabaseView() {
 
                     {/* Wallet */}
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Wallet className="h-3 w-3 text-slate-400" />
-                        <code className="text-xs text-slate-600 font-mono">
-                          {participant.wallet_address.slice(0, 6)}...{participant.wallet_address.slice(-4)}
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-3 w-3 text-slate-400 flex-shrink-0" />
+                        <code className="text-xs text-slate-600 font-mono break-all">
+                          {participant.wallet_address}
                         </code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 hover:bg-slate-100 flex-shrink-0"
+                          onClick={() => {
+                            navigator.clipboard.writeText(participant.wallet_address)
+                            toast({
+                              title: "Wallet Address Copied",
+                              description: "Full wallet address copied to clipboard",
+                            })
+                          }}
+                        >
+                          <Copy className="h-3 w-3 text-slate-400" />
+                        </Button>
                       </div>
                     </TableCell>
 
@@ -529,7 +636,16 @@ export function ParticipantDatabaseView() {
                         >
                           {participant.status}
                         </Badge>
-                        <p className="text-[10px] text-slate-500">Risk: {participant.risk_score}</p>
+                        {participant.otp_verified ? (
+                          <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] flex items-center gap-1">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                            OTP Verified
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
+                            OTP Pending
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
 
@@ -542,9 +658,20 @@ export function ParticipantDatabaseView() {
                         </p>
                         <p className="text-emerald-600 font-semibold">${participant.totalContributed || 0}</p>
                         <p className="text-amber-600">{participant.totalPoints || 0} pts</p>
-                        <p className="text-slate-400 text-[10px]">
-                          Last: {new Date(participant.last_active).toLocaleDateString()}
-                        </p>
+                        <div className="space-y-0.5 text-[10px] text-slate-500 border-t pt-1 mt-1">
+                          {participant.last_seen && (
+                            <p>Seen: {new Date(participant.last_seen).toLocaleString()}</p>
+                          )}
+                          {participant.created_at && (
+                            <p>Joined: {new Date(participant.created_at).toLocaleString()}</p>
+                          )}
+                          {participant.updated_at && (
+                            <p>Updated: {new Date(participant.updated_at).toLocaleString()}</p>
+                          )}
+                          {participant.last_active && (
+                            <p>Active: {new Date(participant.last_active).toLocaleString()}</p>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
 
@@ -566,6 +693,17 @@ export function ParticipantDatabaseView() {
                             <Eye className="h-4 w-4 mr-2" />
                             View Details
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setOtpParticipant(participant)
+                              setOtpInput("")
+                              setShowOtpModal(true)
+                            }}
+                            className={participant.otp_verified ? "text-green-600" : "text-amber-600"}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            {participant.otp_verified ? "OTP Verified" : "Verify WhatsApp OTP"}
+                          </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => {
                             toast({
                               title: "Email Sent",
@@ -576,18 +714,33 @@ export function ParticipantDatabaseView() {
                             Send Email
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem 
+                          {participant.status !== "active" && (
+                            <DropdownMenuItem
+                              className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50"
+                              disabled={activatingId === participant.id}
+                              onClick={() => activateParticipant(participant.id, "activate")}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              {activatingId === participant.id ? "Activating..." : "Activate Account"}
+                            </DropdownMenuItem>
+                          )}
+                          {participant.status === "active" && (
+                            <DropdownMenuItem
+                              className="text-amber-600 focus:text-amber-700 focus:bg-amber-50"
+                              disabled={activatingId === participant.id}
+                              onClick={() => activateParticipant(participant.id, "deactivate")}
+                            >
+                              <XCircle className="h-4 w-4 mr-2" />
+                              {activatingId === participant.id ? "Deactivating..." : "Deactivate Account"}
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
                             className="text-red-600 focus:text-red-700 focus:bg-red-50"
-                            onClick={() => {
-                              toast({
-                                title: "Account Suspended",
-                                description: `${participant.username}'s account has been suspended`,
-                                variant: "destructive",
-                              })
-                            }}
+                            disabled={activatingId === participant.id}
+                            onClick={() => activateParticipant(participant.id, "suspend")}
                           >
                             <Ban className="h-4 w-4 mr-2" />
-                            Suspend Account
+                            {activatingId === participant.id ? "Suspending..." : "Suspend Account"}
                           </DropdownMenuItem>
                           <DropdownMenuItem 
                             className="text-red-700 focus:text-red-700 focus:bg-red-100"
@@ -655,8 +808,10 @@ export function ParticipantDatabaseView() {
                   <p className="font-semibold text-slate-900">{selectedParticipant.email}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Phone</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.phone || "Not provided"}</p>
+                  <p className="text-slate-500">Mobile Number</p>
+                  <p className="font-semibold text-slate-900">
+                    {selectedParticipant.mobile_number || (selectedParticipant.country_code ? `${selectedParticipant.country_code} ${selectedParticipant.phone}` : selectedParticipant.phone) || "Not provided"}
+                  </p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-slate-500">Full Address</p>
@@ -788,6 +943,89 @@ export function ParticipantDatabaseView() {
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* OTP Verification Modal */}
+    <Dialog open={showOtpModal} onOpenChange={setShowOtpModal}>
+      <DialogContent className="max-w-md bg-gradient-to-br from-white to-green-50/40 border-green-200">
+        <DialogHeader>
+          <DialogTitle className="text-xl text-green-700 flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            Verify WhatsApp OTP
+          </DialogTitle>
+          <DialogDescription>
+            Enter the OTP received from participant{" "}
+            <span className="font-semibold text-slate-800">{otpParticipant?.name || otpParticipant?.username}</span>
+          </DialogDescription>
+        </DialogHeader>
+
+        {otpParticipant && (
+          <div className="space-y-4 py-2">
+            {/* Participant Info */}
+            <div className="bg-white rounded-xl p-4 border border-green-200 space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Name</span>
+                <span className="font-semibold text-slate-800">{otpParticipant.full_name || otpParticipant.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Email</span>
+                <span className="font-semibold text-slate-800">{otpParticipant.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Mobile</span>
+                <span className="font-semibold text-slate-800">{otpParticipant.mobile_number || otpParticipant.phone || "N/A"}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-500">OTP Status</span>
+                {otpParticipant.otp_verified ? (
+                  <Badge className="bg-green-100 text-green-700 border-green-200">
+                    <CheckCircle className="h-3 w-3 mr-1" /> Already Verified
+                  </Badge>
+                ) : (
+                  <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                    Pending Verification
+                  </Badge>
+                )}
+              </div>
+
+            </div>
+
+            {/* OTP Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Enter OTP to Verify</label>
+              <Input
+                value={otpInput}
+                onChange={(e) => setOtpInput(e.target.value)}
+                placeholder="Enter 6-digit OTP"
+                maxLength={6}
+                className="text-center text-2xl font-mono tracking-widest h-14 border-green-300 focus:border-green-500 focus:ring-green-500/20"
+                onKeyDown={(e) => e.key === "Enter" && verifyOtp()}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => { setShowOtpModal(false); setOtpInput("") }}
+                className="flex-1 border-slate-300"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={verifyOtp}
+                disabled={isVerifyingOtp || !otpInput.trim() || otpParticipant.otp_verified}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isVerifyingOtp ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
+                ) : (
+                  <><CheckCircle className="h-4 w-4 mr-2" /> Verify OTP</>
+                )}
               </Button>
             </div>
           </div>

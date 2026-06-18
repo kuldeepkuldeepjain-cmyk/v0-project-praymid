@@ -28,8 +28,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated, clearParticipantAuth } from "@/lib/auth"
-
+import { isParticipantAuthenticated, clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { ParticipantLedger } from "@/components/participant-ledger"
 
 export default function ProfilePage() {
@@ -69,23 +68,18 @@ export default function ProfilePage() {
           return
         }
 
-        const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
-        const json = await res.json()
-
-        if (!json.success) {
-          console.error("Error fetching profile data:", json.error)
-          toast({ 
-            title: "Error", 
-            description: "Failed to load profile data", 
-            variant: "destructive" 
-          })
+        const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+        if (!res.ok) {
+          toast({ title: "Error", description: "Failed to load profile data", variant: "destructive" })
           return
         }
-
-        if (json.participant) {
-          setParticipantData(json.participant)
-          setEditedData(json.participant)
-          localStorage.setItem("participantData", JSON.stringify(json.participant))
+        const json = await res.json()
+        const data = json.participant
+        if (data) {
+          const merged = { ...parsedData, ...data }
+          setParticipantData(merged)
+          setEditedData(merged)
+          localStorage.setItem("participantData", JSON.stringify(merged))
         }
       } catch (err) {
         console.error("Exception in profile fetch:", err)
@@ -119,17 +113,16 @@ export default function ProfilePage() {
 
   const uploadImage = async (file: File) => {
     setIsUploading(true)
+
     try {
       const reader = new FileReader()
       reader.onloadend = async () => {
         const base64Image = reader.result as string
-        const res = await fetch("/api/participant/update-profile-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await participantFetch("/api/participant/me", {
+          method: "PATCH",
           body: JSON.stringify({ email: participantData.email, profile_image: base64Image }),
         })
-        const result = await res.json()
-        if (!result.success) throw new Error("Failed to upload image")
+        if (!res.ok) throw new Error("Failed to upload image")
         setParticipantData({ ...participantData, profile_image: base64Image })
         toast({ title: "Success", description: "Profile image updated" })
       }
@@ -143,34 +136,30 @@ export default function ProfilePage() {
 
   const removeImage = async () => {
     try {
-      const res = await fetch("/api/participant/update-profile-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await participantFetch("/api/participant/me", {
+        method: "PATCH",
         body: JSON.stringify({ email: participantData.email, profile_image: null }),
       })
-      const result = await res.json()
-      if (!result.success) throw new Error("Failed to remove image")
+      if (!res.ok) throw new Error("Failed to remove image")
       setParticipantData({ ...participantData, profile_image: null })
       toast({ title: "Success", description: "Profile image removed" })
-    } catch (error) {
+    } catch {
       toast({ title: "Error", description: "Failed to remove image", variant: "destructive" })
     }
   }
 
   const handleSave = async () => {
     try {
-      const res = await fetch("/api/participant/update-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await participantFetch("/api/participant/me", {
+        method: "PATCH",
         body: JSON.stringify({
           email: participantData.email,
           username: editedData.username,
           bep20_address: editedData.bep20_address,
         }),
       })
-      const result = await res.json()
-      if (!result.success) throw new Error(result.error)
-      setParticipantData(editedData)
+      if (!res.ok) throw new Error("Failed to update")
+      setParticipantData({ ...participantData, username: editedData.username, bep20_address: editedData.bep20_address })
       setIsEditing(false)
       toast({ title: "Success", description: "Profile updated successfully" })
     } catch {

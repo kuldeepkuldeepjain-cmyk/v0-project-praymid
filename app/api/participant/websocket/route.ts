@@ -1,33 +1,30 @@
-import { NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { NextRequest } from "next/server"
+import { getPool } from "@/lib/db"
 
-/**
- * WebSocket verification endpoint.
- * Verifies participant exists before upgrade; actual WS handling requires
- * a persistent server (e.g. Socket.io). This route confirms auth only.
- */
 export async function GET(request: NextRequest) {
   const email = request.nextUrl.searchParams.get("email")
   const token = request.nextUrl.searchParams.get("token")
 
   if (!email || !token) {
-    return new NextResponse("Missing email or token", { status: 400 })
+    return new Response("Missing email or token", { status: 400 })
   }
 
-  const rows = await sql`SELECT email FROM participants WHERE email = ${email} LIMIT 1`
-  if (!rows[0]) {
-    return new NextResponse("Unauthorized", { status: 401 })
+  try {
+    const db = getPool()!
+    const result = await db.query("SELECT email FROM participants WHERE email = $1 LIMIT 1", [email])
+    if (result.rows.length === 0) {
+      return new Response("Unauthorized", { status: 401 })
+    }
+  } catch {
+    return new Response("Unauthorized", { status: 401 })
   }
 
   if (request.headers.get("upgrade") !== "websocket") {
-    return new NextResponse("Expected Upgrade: websocket", { status: 426 })
+    return new Response("Expected Upgrade: websocket", { status: 426 })
   }
 
-  return new NextResponse(null, {
+  return new Response(null, {
     status: 101,
-    headers: {
-      Upgrade: "websocket",
-      Connection: "Upgrade",
-    },
+    headers: { Upgrade: "websocket", Connection: "Upgrade" },
   })
 }

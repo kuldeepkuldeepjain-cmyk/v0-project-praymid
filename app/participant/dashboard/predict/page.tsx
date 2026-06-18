@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
@@ -19,8 +19,7 @@ import {
   ArrowDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
-
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import { LivePredictionMonitor } from "@/components/live-prediction-monitor"
 import { ActiveTradeTracker } from "@/components/active-trade-tracker"
 import { AssetLogo } from "@/components/asset-logo"
@@ -90,8 +89,8 @@ const COMMODITY_TIMEFRAMES = [
 // Combined TIMEFRAMES array
 const TIMEFRAMES = [...CRYPTO_TIMEFRAMES, ...COMMODITY_TIMEFRAMES]
 
-// Fixed payout rate: 80% profit (20% platform fee)
-const PROFIT_RATE = 0.80
+// Fixed payout rate: 50% profit (50% platform fee)
+const PROFIT_RATE = 0.50
 
 function PredictPageContent() {
   const router = useRouter()
@@ -164,56 +163,66 @@ function PredictPageContent() {
     }
   }, [router])
 
-  // Refresh participant data from database via service-role API (bypasses RLS)
+  // Stable refs so interval callbacks don't go stale
+  const emailRef = useRef<string>("")
+  if (participantData?.email) emailRef.current = participantData.email
+
+  const fetchParticipantData = useCallback(async () => {
+    const email = emailRef.current
+    if (!email) return
+    try {
+      const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+      if (!res.ok) return
+      const json = await res.json()
+      if (json.success && json.participant) {
+        setParticipantData((prev: any) => {
+          const fresh = { ...prev, ...json.participant }
+          localStorage.setItem("participantData", JSON.stringify(fresh))
+          return fresh
+        })
+      }
+    } catch {}
+  }, [])
+
+  const loadActiveTrades = useCallback(async () => {
+    const email = emailRef.current
+    if (!email) return
+    try {
+      const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(email)}&status=pending`)
+      const json = await res.json()
+      const data: any[] = json.predictions || []
+      // Only keep trades that are still genuinely pending from DB
+      const tradesMap: Record<string, any> = {}
+      data.forEach((trade: any) => {
+        if (trade.status === "pending") tradesMap[trade.crypto_pair] = trade
+      })
+      setActiveTrades(prev => {
+        const next: Record<string, any> = { ...tradesMap }
+        // Keep locally-placed trades not yet confirmed by DB
+        Object.entries(prev).forEach(([pair, t]) => {
+          if (t.status === "pending" && !next[pair]) next[pair] = t
+        })
+        return next
+      })
+    } catch {}
+  }, [])
+
+  // Initial data load — runs once when email is known
   useEffect(() => {
     if (!mounted || !participantData?.email) return
-
-    const fetchParticipantData = async () => {
-      try {
-        const res = await fetch(`/api/participant/me?email=${encodeURIComponent(participantData.email)}`)
-        if (!res.ok) return
-        const json = await res.json()
-        if (json.success && json.participant) {
-          const fresh = { ...participantData, ...json.participant }
-          setParticipantData(fresh)
-          localStorage.setItem("participantData", JSON.stringify(fresh))
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching participant data:", error)
-      }
-    }
-
-    // Load active trades for the user via API
-    const loadActiveTrades = async () => {
-      try {
-        const res = await fetch(`/api/participant/predictions?participant_email=${encodeURIComponent(participantData.email)}&status=pending`)
-        const result = await res.json()
-        if (result.success && result.predictions) {
-          const tradesMap: Record<string, any> = {}
-          result.predictions.forEach((trade: any) => {
-            tradesMap[trade.crypto_pair] = trade
-          })
-          setActiveTrades(tradesMap)
-        }
-      } catch (error) {
-        console.error("Error loading active trades:", error)
-      }
-    }
-
-    // Initial fetch
     fetchParticipantData()
     loadActiveTrades()
-    
-    // Refresh participant data periodically
-    const balanceInterval = setInterval(() => {
+  }, [mounted, participantData?.email, fetchParticipantData, loadActiveTrades])
+
+  // Stable polling interval — never re-registers
+  useEffect(() => {
+    if (!mounted) return
+    const iv = setInterval(() => {
       fetchParticipantData()
       loadActiveTrades()
-    }, 15000) // Check every 15 seconds
-
-    return () => {
-      clearInterval(balanceInterval)
-    }
-  }, [mounted, participantData?.email])
+    }, 15000)
+    return () => clearInterval(iv)
+  }, [mounted, fetchParticipantData, loadActiveTrades])
 
   // Fetch crypto prices
   useEffect(() => {
@@ -264,17 +273,18 @@ function PredictPageContent() {
   const handlePlaceBet = async () => {
     if (isPlacingTrade) return // Prevent double-click
     
-    if (!betAmount || parseFloat(betAmount) <= 0) {
-      toast({ title: "Enter a valid amount", variant: "destructive" })
+    const amount = parseFloat(betAmount)
+    if (!amount || amount <= 0) {
+      toast({ title: "Invalid amount", variant: "destructive" })
       return
     }
 
-    const amount = parseFloat(betAmount)
-    if (amount > activeBalance) {
+    const availableBalance = balanceSource === "referral" ? referralBalance : walletBalance
+    if (availableBalance < amount) {
       toast({
         title: "Insufficient balance",
         description: balanceSource === "referral"
-          ? "Not enough referral earnings. Switch to Wallet Balance or earn more referral rewards."
+          ? "Not enough referral earnings."
           : "Not enough wallet balance.",
         variant: "destructive"
       })
@@ -290,31 +300,35 @@ function PredictPageContent() {
         return
       }
 
-      // Place trade via server API (handles participant lookup, balance deduction, transaction log)
-      const tradeRes = await fetch("/api/participant/predictions", {
+      // Insert prediction record via API
+      const tradeRes = await participantFetch("/api/participant/predictions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           participant_email: userEmail,
           crypto_pair: selectedAsset.symbol,
           prediction_type: betDirection,
           amount,
           entry_price: entryPrice,
-          leverage: 1,
-          status: "pending",
           timeframe_seconds: selectedTimeframe.seconds,
           balance_source: balanceSource,
         }),
       })
+      
+      const tradeJson = await tradeRes.json()
+      const insertedTrade: any = tradeJson.prediction || null
+      const insertError = !tradeRes.ok ? tradeJson.error : null
 
-      const tradeResult = await tradeRes.json()
-
-      if (!tradeRes.ok || tradeResult.error) {
-        toast({ title: "Failed to place trade", description: tradeResult.error, variant: "destructive" })
+      if (insertError || !insertedTrade) {
+        toast({ 
+          title: "Failed to place trade", 
+          description: insertError || "Unknown error",
+          variant: "destructive" 
+        })
         setIsPlacingTrade(false)
         return
       }
 
+      const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
       const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
       const newFieldBalance = currentFieldBalance - amount
 
@@ -337,12 +351,35 @@ function PredictPageContent() {
       // Close dialog immediately - the live tracker card is the feedback
       setShowBetDialog(false)
       setBetAmount("")
+      
+      toast({ title: "Trade placed successfully!", description: "Your bet is now live." })
+      
+      // Refresh participant data from server to sync balance
+      setTimeout(() => {
+        refreshParticipantData()
+      }, 500)
     } catch (error) {
       toast({ title: "Failed to place trade", variant: "destructive" })
     } finally {
       setIsPlacingTrade(false)
     }
   }
+
+  // Refresh participant data from server
+  const refreshParticipantData = async () => {
+    try {
+      const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(userEmail)}`)
+      const data = await res.json()
+      if (data.success && data.participant) {
+        setParticipantData(data.participant)
+        localStorage.setItem("participantData", JSON.stringify(data.participant))
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing participant data:", error)
+    }
+  }
+
+  // PAGE COMPONENT
 
   const formatVolume = (volume: number) => {
     if (volume >= 1e9) return `$${(volume / 1e9).toFixed(2)}B`
@@ -710,12 +747,9 @@ function PredictPageContent() {
               <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
                   <span className="text-emerald-700">Profit Rate</span>
-                  <span className="font-bold text-emerald-800">80%</span>
+                  <span className="font-bold text-emerald-800">50%</span>
                 </div>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-slate-500">Platform Fee</span>
-                  <span className="text-slate-600">20%</span>
-                </div>
+
                 <div className="border-t border-emerald-200 mt-2 pt-1.5 space-y-1">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-emerald-700">Potential Profit</span>
@@ -768,11 +802,9 @@ function PredictPageContent() {
               const parsedData = JSON.parse(storedData)
               const email = parsedData?.email
               if (!email) return
-              const { data } = await supabase
-                .from("participants")
-                .select("*")
-                .eq("email", email)
-                .single()
+              const refreshRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+              const refreshJson = await refreshRes.json()
+              const data: any = refreshJson.participant || null
               if (data) {
                 setParticipantData(data)
                 localStorage.setItem("participantData", JSON.stringify(data))
@@ -782,14 +814,26 @@ function PredictPageContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Active Trade Tracker - Shows for selected asset with active trade */}
-      {selectedAssetSymbol && activeTrades[selectedAssetSymbol] && cryptoPrices[selectedAssetSymbol] && (
-        <ActiveTradeTracker
-          activeTrade={activeTrades[selectedAssetSymbol]}
-          currentPrice={cryptoPrices[selectedAssetSymbol].price}
-          onTradeSettled={() => {}}
-        />
-      )}
+      {/* Active Trade Trackers — one per pending trade, visible regardless of selected asset */}
+      {Object.entries(activeTrades).map(([pair, trade]) => {
+        const price = cryptoPrices[pair]?.price
+        if (!price) return null
+        return (
+          <ActiveTradeTracker
+            key={`trade-${trade.id}`}
+            activeTrade={trade}
+            currentPrice={price}
+            onTradeSettled={() => {
+              setActiveTrades(prev => {
+                const next = { ...prev }
+                delete next[pair]
+                return next
+              })
+              fetchParticipantData()
+            }}
+          />
+        )
+      })}
     </div>
   )
 }

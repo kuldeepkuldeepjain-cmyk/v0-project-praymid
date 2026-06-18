@@ -1,247 +1,395 @@
 "use client"
 
-import React from "react"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import {
-  LayoutDashboard,
-  Users,
-  Coins,
-  BarChart3,
-  Database,
-  MessageSquare,
-  Activity,
-  Shield,
-  Bell,
-  Search,
-  UserPlus,
-  RefreshCw,
-  LogOut,
-  Settings,
-  Loader2,
-  TrendingUp,
-  Crown,
-  Sparkles,
-  Send,
-  ArrowRight,
-  Trash2,
-  Wallet,
-} from "lucide-react"
-import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
-import { ParticipantDatabaseView } from "@/components/admin/participant-database-view"
-import { OverviewAnalytics } from "@/components/admin/overview-analytics"
-import { ComprehensiveDatabaseView } from "@/components/admin/comprehensive-database-view"
-import { SendNotificationPanel } from "@/components/admin/send-notification-panel"
-import { P2PContributionPanel } from "@/components/admin/p2p-contribution-panel"
-import { P2PPayoutQueuePanel } from "@/components/admin/p2p-payout-queue-panel"
+import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
+import {
+  Wallet,
+  Copy,
+  ExternalLink,
+  DollarSign,
+  CheckCircle2,
+  Loader2,
+  LogOut,
+  Shield,
+  RefreshCw,
+} from "lucide-react"
+import { FlowChainLogoCompact } from "@/components/flowchain-logo"
+import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
-import { UserLedgerView } from "@/components/admin/user-ledger-view"
-import { AllParticipantsLedger } from "@/components/admin/all-participants-ledger"
-import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-panel"
-import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
-import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
-import Loading from "./loading"
+import { StakingAdminPanel } from "@/components/admin/staking-admin-panel"
+import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 
-interface NavItem {
+interface ApprovedWallet {
   id: string
-  label: string
-  icon: any
-  section: string
+  walletAddress: string
+  participantEmail: string
+  participantName: string
+  approvedAmount: number
+  txHash: string
+  approvedAt: string
+  collected: boolean
+  collectedAt?: string
 }
 
 export default function AdminDashboard() {
   const router = useRouter()
   const { toast } = useToast()
-  const [activeView, setActiveView] = useState("overview")
-  const [adminEmail, setAdminEmail] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [adminData, setAdminData] = useState<{ email: string; role: string } | null>(null)
+  const [wallets, setWallets] = useState<ApprovedWallet[]>([])
+  const [collectingIds, setCollectingIds] = useState<Set<string>>(new Set())
+  const [searchTerm, setSearchTerm] = useState("")
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 1024)
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
-  }, [])
+    setMounted(true)
+    const data = getAdminData()
 
-  useEffect(() => {
-    const verifyAdminAccess = () => {
-      try {
-        if (!isAdminAuthenticated()) {
-          router.push("/admin/login")
-          return
-        }
-
-        const adminData = getAdminData()
-        if (!adminData?.email) {
-          router.push("/admin/login")
-          return
-        }
-
-        setAdminEmail(adminData.email)
-        setIsLoading(false)
-      } catch (error) {
-        router.push("/admin/login")
-      }
+    if (!isAdminAuthenticated()) {
+      router.push("/admin/login")
+      return
     }
 
-    verifyAdminAccess()
+    setAdminData(data)
+    fetchApprovedWallets()
   }, [router])
 
-  const navItems: NavItem[] = [
-    { id: "overview", label: "Overview", icon: LayoutDashboard, section: "MAIN MENU" },
-    { id: "participants", label: "Participants", icon: Users, section: "MAIN MENU" },
-    { id: "p2p-contributions", label: "P2P Contributions", icon: Coins, section: "MAIN MENU" },
-    { id: "p2p-payout-queue", label: "P2P Payout Queue", icon: UserPlus, section: "MAIN MENU" },
-    { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
-    { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
-    { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
-    { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
-    { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
-    { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
-    { id: "send-notifications", label: "Send Notifications", icon: Bell, section: "SYSTEM" },
-    { id: "p2p-settings", label: "P2P Mode Toggle", icon: Settings, section: "SYSTEM" },
-  ]
-
-  const handleLogout = async () => {
+  const fetchApprovedWallets = async () => {
     try {
-      clearAdminAuth()
-      router.push("/admin/login")
+      const response = await fetch("/api/participant/gas-approval")
+      if (response.ok) {
+        const data = await response.json()
+        setWallets(data.approvals || [])
+      }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to logout",
-        variant: "destructive",
+      console.error("Error fetching wallets:", error)
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    await fetchApprovedWallets()
+    setIsRefreshing(false)
+    toast({ title: "Refreshed", description: "Wallet data updated" })
+  }
+
+  const handleCopyAddress = async (address: string) => {
+    try {
+      await navigator.clipboard.writeText(address)
+      toast({ title: "Copied", description: "Wallet address copied to clipboard" })
+    } catch (err) {
+      toast({ title: "Failed to copy", variant: "destructive" })
+    }
+  }
+
+  const handleCollectFunds = async (walletId: string) => {
+    setCollectingIds((prev) => new Set(prev).add(walletId))
+
+    setTimeout(() => {
+      setWallets((prev) =>
+        prev.map((w) =>
+          w.id === walletId
+            ? {
+                ...w,
+                collected: true,
+                collectedAt: new Date().toISOString(),
+              }
+            : w,
+        ),
+      )
+      setCollectingIds((prev) => {
+        const next = new Set(prev)
+        next.delete(walletId)
+        return next
       })
-    }
+      toast({
+        title: "Funds Collected",
+        description: "Successfully transferred funds from approved wallet",
+      })
+    }, 2000)
   }
 
-  const renderView = () => {
-    switch (activeView) {
-      case "overview":
-        return <OverviewAnalytics />
-      case "participants":
-        return <ParticipantDatabaseView />
-      case "p2p-contributions":
-        return <P2PContributionPanel />
-      case "p2p-payout-queue":
-        return <P2PPayoutQueuePanel />
-      case "database":
-        return <ComprehensiveDatabaseView />
-      case "topup-requests":
-        return <TopUpRequestsPanel />
-      case "revenue-tracker":
-        return <PlatformRevenueTracker />
-      case "all-ledger":
-        return <AllParticipantsLedger />
-      case "user-ledger":
-        return <UserLedgerView />
-      case "delete-participants":
-        return <DeleteParticipantsPanel />
-      case "send-notifications":
-        return <SendNotificationPanel />
-      case "p2p-settings":
-        return <P2PModeTogglePanel />
-      default:
-        return <OverviewAnalytics />
-    }
+  const handleLogout = () => {
+    clearAdminAuth()
+    router.push("/admin/login")
   }
 
-  if (isLoading) {
-    return <Loading />
+  const filteredWallets = wallets.filter(
+    (w) =>
+      w.walletAddress?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.participantEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      w.participantName?.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
+  const stats = {
+    total: wallets.length,
+    pending: wallets.filter((w) => !w.collected).length,
+    collected: wallets.filter((w) => w.collected).length,
+    totalApproved: wallets.reduce((sum, w) => sum + (w.approvedAmount || 0), 0),
+    totalCollected: wallets.filter((w) => w.collected).reduce((sum, w) => sum + (w.approvedAmount || 0), 0),
   }
 
-  const groupedNavItems = navItems.reduce((acc, item) => {
-    const existing = acc.find(g => g.section === item.section)
-    if (existing) {
-      existing.items.push(item)
-    } else {
-      acc.push({ section: item.section, items: [item] })
-    }
-    return acc
-  }, [] as Array<{ section: string; items: NavItem[] }>)
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-purple-300 font-semibold">Loading Dashboard...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-white overflow-hidden">
-      {/* Sidebar */}
-      <aside
-        className={`${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 lg:sticky lg:top-0 w-64 bg-slate-900 border-r border-slate-700 overflow-y-auto transition-transform duration-300 z-50`}
-      >
-        <div className="p-6">
-          <h1 className="text-2xl font-bold text-cyan-500 mb-8">Admin Panel</h1>
-
-          {groupedNavItems.map(group => (
-            <div key={group.section} className="mb-8">
-              <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">
-                {group.section}
-              </p>
-              <nav className="space-y-1">
-                {group.items.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveView(item.id)
-                      if (isMobile) setSidebarOpen(false)
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                      activeView === item.id
-                        ? "bg-cyan-600 text-white"
-                        : "text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          ))}
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="border-b border-slate-700 bg-slate-900 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
+      <header className="border-b border-purple-500/20 bg-black/20 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 hover:bg-slate-800 rounded-lg"
-            >
-              <MessageSquare className="h-5 w-5" />
-            </button>
-            <h2 className="text-xl font-bold text-white">
-              {navItems.find(item => item.id === activeView)?.label || "Dashboard"}
-            </h2>
+            <FlowChainLogoCompact size="sm" />
+            <div>
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-blue-400" />
+                <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
+              </div>
+              <p className="text-sm text-purple-300">Wallet Approval, Revenue Tracking & Security</p>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-400">{adminEmail}</span>
             <Button
-              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 bg-transparent"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30">
+              <Shield className="h-4 w-4 text-purple-400" />
+              <span className="text-sm text-purple-200">{adminData?.email}</span>
+            </div>
+
+            <Button
               variant="ghost"
               size="sm"
-              className="text-slate-300 hover:text-red-400"
+              onClick={handleLogout}
+              className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
           </div>
-        </header>
+        </div>
+      </header>
 
-        {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-6">
-          {renderView()}
-        </main>
-      </div>
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Platform Revenue Tracker */}
+        <PlatformRevenueTracker />
+
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-purple-300">Total Approved</p>
+                  <p className="text-3xl font-bold text-white mt-1">{stats.total}</p>
+                </div>
+                <div className="h-12 w-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                  <Wallet className="h-6 w-6 text-violet-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/10 backdrop-blur-sm border-amber-500/30">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-amber-300">Pending Collection</p>
+                  <p className="text-3xl font-bold text-amber-400 mt-1">{stats.pending}</p>
+                </div>
+                <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-amber-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-cyan-300">Total Approved Value</p>
+                  <p className="text-3xl font-bold text-cyan-400 mt-1">${stats.totalApproved}</p>
+                </div>
+                <div className="h-12 w-12 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-cyan-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/10 backdrop-blur-sm border-emerald-500/30">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-emerald-300">Total Collected</p>
+                  <p className="text-3xl font-bold text-emerald-400 mt-1">${stats.totalCollected}</p>
+                </div>
+                <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-400" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Wallets Table */}
+        <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-xl text-white flex items-center gap-2">
+                  <Wallet className="h-5 w-5 text-purple-400" />
+                  Approved Wallets
+                </CardTitle>
+                <CardDescription className="text-purple-300">
+                  Wallets that have approved gas fee transactions - Ready for token collection
+                </CardDescription>
+              </div>
+              <Input
+                placeholder="Search wallets..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-xs bg-white/10 border-purple-500/30 text-white placeholder:text-purple-400"
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {filteredWallets.length === 0 ? (
+                <div className="text-center py-16">
+                  <Wallet className="h-16 w-16 text-purple-500/50 mx-auto mb-4" />
+                  <p className="text-purple-300 text-lg">No approved wallets yet</p>
+                  <p className="text-purple-400/70 text-sm mt-1">
+                    Wallets will appear here when participants approve gas fees
+                  </p>
+                </div>
+              ) : (
+                filteredWallets.map((wallet) => {
+                  const isCollecting = collectingIds.has(wallet.id)
+                  return (
+                    <div
+                      key={wallet.id}
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-purple-500/30 bg-white/5 hover:bg-white/10 transition-colors"
+                    >
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <p className="font-semibold text-white text-lg">{wallet.participantName}</p>
+                          <Badge
+                            className={
+                              wallet.collected
+                                ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                                : "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                            }
+                          >
+                            {wallet.collected ? "Collected" : "Pending"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-purple-300">{wallet.participantEmail}</p>
+                        <div className="flex items-center gap-3 text-sm">
+                          <code className="text-xs bg-purple-500/20 px-3 py-1.5 rounded-lg font-mono text-purple-200 border border-purple-500/30">
+                            {wallet.walletAddress?.slice(0, 10)}...{wallet.walletAddress?.slice(-8)}
+                          </code>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-purple-400 hover:text-purple-300"
+                            onClick={() => handleCopyAddress(wallet.walletAddress)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <a
+                            href={`https://bscscan.com/tx/${wallet.txHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                          >
+                            View TX <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                        <p className="text-xs text-purple-400/70">
+                          Approved: {new Date(wallet.approvedAt).toLocaleString()}
+                          {wallet.collectedAt && ` | Collected: ${new Date(wallet.collectedAt).toLocaleString()}`}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-3">
+                        <p className="text-2xl font-bold text-emerald-400">${wallet.approvedAmount}</p>
+                        {!wallet.collected && (
+                          <Button
+                            onClick={() => handleCollectFunds(wallet.id)}
+                            disabled={isCollecting}
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25"
+                          >
+                            {isCollecting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Collecting...
+                              </>
+                            ) : (
+                              <>
+                                <DollarSign className="h-4 w-4 mr-2" />
+                                Collect Funds
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Participants Management Panel */}
+        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Participants Management</CardTitle>
+            <CardDescription>View and manage all participant accounts and balances</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ParticipantsAdminPanel />
+          </CardContent>
+        </Card>
+
+        {/* Staking Management Panel */}
+        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Staking Management</CardTitle>
+            <CardDescription>View and manage all staking records, rewards, and claims</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StakingAdminPanel />
+          </CardContent>
+        </Card>
+
+        {/* Two-Factor Authentication Setup */}
+        <AdminTwoFactorSetup />
+      </main>
     </div>
   )
 }

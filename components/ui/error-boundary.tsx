@@ -11,8 +11,7 @@ interface ErrorBoundaryProps {
 
 export function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
   useEffect(() => {
-    // Log error to console for debugging
-    console.error("[v0] Error boundary caught:", error)
+    // Error is surfaced to the user via the UI below
   }, [error])
 
   return (
@@ -31,7 +30,7 @@ export function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
 
           {/* Description */}
           <p className="text-slate-600 mb-6">
-            {error.message || "An unexpected error occurred. Please try again."}
+            We&apos;re having trouble loading this page. Please try again or contact support if the issue persists.
           </p>
 
           {/* Error digest (for tracking) */}

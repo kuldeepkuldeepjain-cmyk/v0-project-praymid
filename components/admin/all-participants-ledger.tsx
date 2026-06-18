@@ -29,19 +29,25 @@ import {
   Download,
   ArrowUpDown,
   Search,
+  Trash2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { adminFetch } from "@/lib/auth"
 
 interface LedgerEntry {
   id: string
   participantEmail: string
   participantName: string
+  participantMobile?: string | null
+  participantSerial?: string | null
   type: "transaction" | "contribution" | "payout" | "prediction" | "topup"
   subType: string
   amount: number
   status: string
   date: string
   description: string
+  balanceBefore?: number | null
+  balanceAfter?: number | null
   [key: string]: any
 }
 
@@ -74,20 +80,26 @@ export function AllParticipantsLedger() {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalEntries, setTotalEntries] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
+  const [clearing, setClearing] = useState(false)
   const limit = 50
   const { toast } = useToast()
 
+  // Reset to page 0 when filters change
+  useEffect(() => { setCurrentPage(0) }, [filterType, filterParticipant, sortOrder])
   useEffect(() => { fetchAllLedgers() }, [filterType, filterParticipant, sortOrder, currentPage])
 
   const fetchAllLedgers = async () => {
     setLoading(true)
     try {
       const offset = currentPage * limit
-      const res = await fetch(
+      const res = await adminFetch(
         `/api/admin/all-ledger?type=${filterType}&participant=${filterParticipant}&sortBy=date&order=${sortOrder}&limit=${limit}&offset=${offset}`
       )
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Failed to fetch ledger")
+      if (!res.ok) {
+        toast({ title: "Error", description: "Failed to load ledger", variant: "destructive" })
+        return
+      }
       setEntries(data.data || [])
       setTotalEntries(data.pagination?.total || 0)
       setTotalPages(data.pagination?.totalPages || 0)
@@ -98,16 +110,54 @@ export function AllParticipantsLedger() {
     }
   }
 
+  const handleClearLedger = async () => {
+    if (!confirm("⚠️ Are you sure you want to delete ALL ledger records? This action cannot be undone.")) {
+      return
+    }
+    if (!confirm("Click OK again to confirm you want to permanently delete all ledger records.")) {
+      return
+    }
+
+    setClearing(true)
+    try {
+      const res = await adminFetch("/api/admin/clear-all-ledger", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: "CLEAR_ALL_LEDGER" }),
+      })
+      const data = await res.json()
+
+      if (data.success) {
+        toast({
+          title: "Ledger Cleared",
+          description: "All ledger records have been permanently deleted.",
+          variant: "destructive",
+        })
+        setEntries([])
+        setTotalEntries(0)
+        setCurrentPage(0)
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to clear ledger", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to clear ledger", variant: "destructive" })
+    } finally {
+      setClearing(false)
+    }
+  }
+
   const exportToCSV = () => {
     const rows = [
-      ["Date", "Participant", "Email", "Type", "Description", "Amount", "Status"],
+      ["Date", "Participant", "Email", "Mobile", "Type", "Description", "Amount", "Balance After", "Status"],
       ...entries.map((e) => [
-        new Date(e.date).toLocaleDateString(),
+        new Date(e.date).toLocaleDateString("en-IN"),
         e.participantName,
         e.participantEmail,
+        e.participantMobile || "",
         e.type,
         e.description,
-        (e.amount >= 0 ? "+" : "") + `$${Math.abs(e.amount).toFixed(2)}`,
+        (e.amount >= 0 ? "+" : "") + `USDT ${Math.abs(e.amount).toFixed(2)}`,
+        e.balanceAfter != null ? `USDT ${Number(e.balanceAfter).toFixed(2)}` : "-",
         e.status,
       ]),
     ]
@@ -121,69 +171,72 @@ export function AllParticipantsLedger() {
   }
 
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    new Date(d).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })
 
   const formatTime = (d: string) =>
-    new Date(d).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    new Date(d).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })
 
   return (
     <Card className="bg-slate-900 border-slate-700/60 shadow-none">
       <CardHeader className="px-5 py-4 border-b border-slate-700/60">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-sm font-semibold text-white">All Participants Ledger</CardTitle>
-            {!loading && (
-              <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
-                {totalEntries} records
-              </span>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-              <Input
-                placeholder="Email or name..."
-                value={filterParticipant}
-                onChange={(e) => { setFilterParticipant(e.target.value); setCurrentPage(0) }}
-                className="pl-8 h-8 w-44 text-xs bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-              />
-            </div>
-
-            <Select value={filterType} onValueChange={(v) => { setFilterType(v); setCurrentPage(0) }}>
-              <SelectTrigger className="h-8 text-xs w-36 bg-slate-800 border-slate-700 text-white">
-                <SelectValue />
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-white">
+                <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
+              <SelectContent className="bg-slate-800 border-slate-600">
                 <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="transaction">Transactions</SelectItem>
                 <SelectItem value="contribution">Contributions</SelectItem>
                 <SelectItem value="payout">Payouts</SelectItem>
-                <SelectItem value="transaction">Transactions</SelectItem>
-                <SelectItem value="prediction">Predictions</SelectItem>
                 <SelectItem value="topup">Top-ups</SelectItem>
               </SelectContent>
             </Select>
 
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <Input
+                placeholder="Search participant email..."
+                value={filterParticipant}
+                onChange={e => setFilterParticipant(e.target.value)}
+                className="pl-10 bg-slate-800 border-slate-600 text-white placeholder:text-slate-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
             <Button
+              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
               variant="outline"
               size="sm"
-              className="h-8 px-2.5 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 gap-1.5"
-              onClick={() => { setSortOrder((o) => o === "desc" ? "asc" : "desc"); setCurrentPage(0) }}
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
             >
-              <ArrowUpDown className="h-3 w-3" />
-              {sortOrder === "desc" ? "Newest" : "Oldest"}
+              <ArrowUpDown className="h-4 w-4 mr-1" />
+              Sort {sortOrder === "desc" ? "▼" : "▲"}
             </Button>
 
             <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-2.5 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 gap-1.5"
               onClick={exportToCSV}
-              disabled={entries.length === 0}
+              size="sm"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold"
             >
-              <Download className="h-3 w-3" />
-              CSV
+              <Download className="h-4 w-4 mr-1" />
+              Export
+            </Button>
+
+            <Button
+              onClick={handleClearLedger}
+              disabled={clearing || loading}
+              size="sm"
+              variant="destructive"
+              className="bg-red-600 hover:bg-red-500 text-white font-semibold"
+            >
+              {clearing ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Clearing...</>
+              ) : (
+                <><Trash2 className="h-4 w-4 mr-1" />Clear All</>
+              )}
             </Button>
           </div>
         </div>
@@ -210,6 +263,7 @@ export function AllParticipantsLedger() {
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5">Type</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5">Description</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5 text-right">Amount</TableHead>
+                    <TableHead className="text-xs font-semibold text-slate-400 py-2.5 text-right">Balance</TableHead>
                     <TableHead className="text-xs font-semibold text-slate-400 py-2.5 pr-5">Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -224,12 +278,17 @@ export function AllParticipantsLedger() {
                         <div className="text-xs text-slate-500">{formatTime(entry.date)}</div>
                       </TableCell>
                       <TableCell className="py-2.5">
-                        <div className="text-xs font-medium text-slate-200 truncate max-w-[120px]">
+                        <div className="text-xs font-medium text-slate-200 truncate max-w-[140px]">
                           {entry.participantName}
                         </div>
-                        <div className="text-xs text-slate-500 truncate max-w-[120px]">
+                        <div className="text-xs text-slate-500 truncate max-w-[140px]">
                           {entry.participantEmail}
                         </div>
+                        {entry.participantMobile && (
+                          <div className="text-xs text-slate-600 truncate max-w-[140px]">
+                            {entry.participantMobile}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="py-2.5">
                         <Badge
@@ -249,9 +308,18 @@ export function AllParticipantsLedger() {
                             : <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
                           }
                           <span className={`text-xs font-bold ${entry.amount >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                            {entry.amount >= 0 ? "+" : ""}${Math.abs(entry.amount).toFixed(2)}
+                            {entry.amount >= 0 ? "+" : ""}USDT {Math.abs(entry.amount).toFixed(2)}
                           </span>
                         </div>
+                      </TableCell>
+                      <TableCell className="py-2.5 text-right">
+                        {entry.balanceAfter != null ? (
+                          <span className="text-xs font-semibold text-cyan-400">
+                            USDT {Number(entry.balanceAfter).toFixed(2)}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-slate-500">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="py-2.5 pr-5">
                         <Badge

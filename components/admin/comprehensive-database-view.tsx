@@ -1,31 +1,24 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+
 import {
   Database,
   Search,
-  Edit,
+
   Wallet,
   User,
   Hash,
   DollarSign,
   CheckCircle2,
-  Save,
-  X,
+
   Copy,
   RefreshCw,
 } from "lucide-react"
@@ -53,8 +46,7 @@ export function ComprehensiveDatabaseView() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedUser, setSelectedUser] = useState<UserDatabaseRecord | null>(null)
-  const [showEditDialog, setShowEditDialog] = useState(false)
-  const [editingContributionAddress, setEditingContributionAddress] = useState("")
+
   const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
@@ -75,24 +67,25 @@ export function ComprehensiveDatabaseView() {
   const fetchUserData = async () => {
     try {
       setIsLoading(true)
-      const [participantsRes, poolRes, payoutsRes] = await Promise.all([
-        fetch("/api/admin/participants-list"),
-        fetch("/api/admin/wallet-pool"),
-        fetch("/api/admin/payout-requests"),
-      ])
-      const [participantsData, poolData, payoutsData] = await Promise.all([
-        participantsRes.json(),
-        poolRes.json(),
-        payoutsRes.json(),
-      ])
 
-      const participants = participantsData.participants || []
-      const walletPool = poolData.pool || []
-      const payouts = payoutsData.payouts || []
+      const [partRes, walletRes, payoutRes] = await Promise.all([
+        adminFetch("/api/admin/participants"),
+        fetch("/api/participant/wallet-pool?admin=1"),
+        adminFetch("/api/admin/all-ledger"),
+      ])
+      const partJson = await partRes.json()
+      const walletJson = await walletRes.json()
+      const payoutJson = await payoutRes.json()
 
+      const participants: any[] = partJson.participants || []
+      const walletPool: any[] = walletJson.walletPool || []
+      const payouts: any[] = payoutJson.ledger || []
+
+      // Combine the data
       const combinedData: UserDatabaseRecord[] = participants.map((participant: any) => {
         const poolEntry = walletPool.find((w: any) => w.assigned_to === participant.email)
         const latestPayout = payouts.find((p: any) => p.participant_email === participant.email)
+
         return {
           ...participant,
           wallet_balance: participant.account_balance || 0,
@@ -105,37 +98,49 @@ export function ComprehensiveDatabaseView() {
 
       setUsers(combinedData)
     } catch (error: any) {
-      if (error?.name === "AbortError") return
+      // Ignore AbortError as it's expected when component unmounts
+      if (error?.name === 'AbortError') return
+      
       console.error("Error loading database:", error)
-      toast({ title: "Error", description: error?.message || "Failed to load user database", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to load user database",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleEditContributionAddress = (user: UserDatabaseRecord) => {
-    setSelectedUser(user)
-    setEditingContributionAddress(user.contribution_address || "")
-    setShowEditDialog(true)
-  }
+
 
   const handleSaveContributionAddress = async () => {
     if (!selectedUser) return
+
     try {
       setIsSaving(true)
-      const res = await fetch("/api/admin/wallet-pool", {
+      const saveRes = await fetch("/api/participant/wallet-pool", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: selectedUser.email, wallet_address: editingContributionAddress }),
+        body: JSON.stringify({ email: selectedUser.email, walletAddress: editingContributionAddress }),
       })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      toast({ title: "Success", description: `Contribution address updated for ${selectedUser.username}` })
+      if (!saveRes.ok) throw new Error("Failed to save wallet pool address")
+
+
+      toast({
+        title: "Success",
+        description: `Contribution address updated for ${selectedUser?.username}`,
+      })
+
       setShowEditDialog(false)
-      fetchUserData()
+      fetchUserData() // Refresh data
     } catch (error) {
       console.error("Error saving contribution address:", error)
-      toast({ title: "Error", description: "Failed to update contribution address", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: "Failed to update contribution address",
+        variant: "destructive",
+      })
     } finally {
       setIsSaving(false)
     }
@@ -377,15 +382,7 @@ export function ComprehensiveDatabaseView() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditContributionAddress(user)}
-                          className="border-orange-300 hover:bg-orange-50"
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit Address
-                        </Button>
+                        <span className="text-xs text-slate-400 italic">Read only</span>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -396,81 +393,7 @@ export function ComprehensiveDatabaseView() {
         </CardContent>
       </Card>
 
-      {/* Edit Contribution Address Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="bg-gradient-to-br from-white via-orange-50/30 to-rose-50/30">
-          <DialogHeader>
-            <DialogTitle className="text-xl bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
-              Edit Contribution Address
-            </DialogTitle>
-            <DialogDescription>
-              Set the wallet address where {selectedUser?.full_name || selectedUser?.username} should send contributions
-            </DialogDescription>
-          </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label className="text-slate-700 font-semibold mb-2 block">User Information</Label>
-              <div className="bg-gradient-to-r from-orange-50 to-rose-50 p-3 rounded-lg border border-orange-200">
-                <p className="text-sm">
-                  <span className="font-semibold">Name:</span> {selectedUser?.full_name || selectedUser?.username}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Username:</span> @{selectedUser?.username}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Email:</span> {selectedUser?.email}
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="contribution-address" className="text-slate-700 font-semibold mb-2 block">
-                Contribution Address (BEP20)
-              </Label>
-              <Input
-                id="contribution-address"
-                placeholder="0x..."
-                value={editingContributionAddress}
-                onChange={(e) => setEditingContributionAddress(e.target.value)}
-                className="font-mono bg-gradient-to-r from-white to-emerald-50/30 border-emerald-200 focus:border-emerald-400"
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                This address will be shown to the user for making contributions
-              </p>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowEditDialog(false)}
-              disabled={isSaving}
-              className="border-slate-300"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveContributionAddress}
-              disabled={isSaving || !editingContributionAddress.trim()}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white"
-            >
-              {isSaving ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Address
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

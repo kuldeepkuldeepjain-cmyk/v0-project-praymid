@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,6 +19,8 @@ import {
   Loader2,
   ExternalLink,
   AlertTriangle,
+  Copy,
+  Check,
 } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
@@ -37,6 +40,7 @@ interface TopupRequest {
   payment_method: string
   status: "pending" | "completed" | "rejected"
   created_at: string
+  bep20_address: string | null
 }
 
 const STATUS_CONFIG = {
@@ -58,20 +62,94 @@ export function TopUpRequestsPanel() {
   const [adminNoteInput, setAdminNoteInput] = useState("")
   const [rejectionInput, setRejectionInput] = useState("")
   const [showRejectConfirm, setShowRejectConfirm] = useState(false)
+  const [bep20Input, setBep20Input] = useState("")
+  const [isSavingBep20, setIsSavingBep20] = useState(false)
+
+  // Admin's global top-up BEP20 address (shown to participants for sending funds)
+  const [topupBep20, setTopupBep20] = useState("")
+  const [topupBep20Input, setTopupBep20Input] = useState("")
+  const [isSavingTopupBep20, setIsSavingTopupBep20] = useState(false)
+  const [topupBep20Copied, setTopupBep20Copied] = useState(false)
 
   const adminData = getAdminData()
+
+  // Load global topup BEP20 address from settings
+  useEffect(() => {
+    adminFetch("/api/admin/settings")
+      .then(r => r.json())
+      .then(data => {
+        const addr = data.topup_bep20_address || ""
+        setTopupBep20(addr)
+        setTopupBep20Input(addr)
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleSaveTopupBep20 = async () => {
+    setIsSavingTopupBep20(true)
+    try {
+      const res = await adminFetch("/api/admin/settings", {
+        method: "POST",
+        body: JSON.stringify({ topup_bep20_address: topupBep20Input.trim() }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setTopupBep20(topupBep20Input.trim())
+        toast({ title: "Saved", description: "Top-up BEP20 address updated successfully." })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to save", variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Request failed", variant: "destructive" })
+    } finally {
+      setIsSavingTopupBep20(false)
+    }
+  }
+
+  const copyTopupBep20 = () => {
+    navigator.clipboard.writeText(topupBep20).then(() => {
+      setTopupBep20Copied(true)
+      setTimeout(() => setTopupBep20Copied(false), 2000)
+    })
+  }
+
+  const handleSaveBep20 = async () => {
+    if (!selectedRequest) return
+    setIsSavingBep20(true)
+    try {
+      const res = await adminFetch("/api/admin/topup-requests", {
+        method: "PATCH",
+        body: JSON.stringify({ requestId: selectedRequest.id, bep20_address: bep20Input }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setRequests(prev =>
+          prev.map(r => r.id === selectedRequest.id ? { ...r, bep20_address: bep20Input.trim() || null } : r)
+        )
+        setSelectedRequest(prev => prev ? { ...prev, bep20_address: bep20Input.trim() || null } : prev)
+        toast({ title: "Saved", description: "BEP20 address saved successfully." })
+      } else {
+        toast({ title: "Error", description: data.message, variant: "destructive" })
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to save address", variant: "destructive" })
+    } finally {
+      setIsSavingBep20(false)
+    }
+  }
 
   const fetchRequests = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true)
     else setIsRefreshing(true)
     try {
-      const res = await fetch("/api/admin/topup-requests")
+      const res = await adminFetch("/api/admin/topup-requests")
       const data = await res.json()
       if (data.success) {
-        setRequests(data.requests || [])
+        const mappedRequests = (data.requests || []).map((r: any) => ({ ...r, amount: Number(r.amount) || 0 }))
+        setRequests(mappedRequests)
       }
     } catch (err) {
-      console.error("Failed to fetch topup requests:", err)
+      // silent fail
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -86,7 +164,7 @@ export function TopUpRequestsPanel() {
     if (!selectedRequest) return
     setIsActioning(true)
     try {
-      const res = await fetch("/api/admin/topup-requests", {
+      const res = await adminFetch("/api/admin/topup-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,7 +192,7 @@ export function TopUpRequestsPanel() {
     if (!selectedRequest) return
     setIsActioning(true)
     try {
-      const res = await fetch("/api/admin/topup-requests", {
+      const res = await adminFetch("/api/admin/topup-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -184,6 +262,52 @@ export function TopUpRequestsPanel() {
           Refresh
         </Button>
       </div>
+
+      {/* Admin Top-Up BEP20 Address — shown to participants for sending funds */}
+      <Card className="bg-slate-800 border-violet-700/50">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-violet-400" />
+            <p className="text-sm font-semibold text-white">Top-Up BEP20 Deposit Address</p>
+            <span className="text-xs text-slate-400 ml-1">(participants send funds to this address)</span>
+          </div>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="0x... paste your BEP20 wallet address here"
+              value={topupBep20Input}
+              onChange={(e) => setTopupBep20Input(e.target.value)}
+              className="flex-1 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs"
+              disabled={isSavingTopupBep20}
+            />
+            {topupBep20 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={copyTopupBep20}
+                className="border-slate-600 text-slate-300 hover:bg-slate-700 flex-shrink-0"
+                title="Copy address"
+              >
+                {topupBep20Copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={handleSaveTopupBep20}
+              disabled={isSavingTopupBep20 || topupBep20Input.trim() === topupBep20}
+              className="bg-violet-600 hover:bg-violet-700 text-white flex-shrink-0"
+            >
+              {isSavingTopupBep20 ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Address"}
+            </Button>
+          </div>
+
+          {topupBep20 && (
+            <p className="text-xs text-violet-300 font-mono bg-violet-950/40 rounded px-3 py-1.5 border border-violet-800/50 truncate">
+              Active: {topupBep20}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Stats cards */}
       <div className="grid grid-cols-3 gap-4">
@@ -283,7 +407,7 @@ export function TopUpRequestsPanel() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => { setSelectedRequest(req); setAdminNoteInput(""); setRejectionInput(""); setShowRejectConfirm(false) }}
+                        onClick={() => { setSelectedRequest(req); setAdminNoteInput(""); setRejectionInput(""); setShowRejectConfirm(false); setBep20Input(req.bep20_address || "") }}
                         className="bg-slate-700 border-slate-600 text-slate-300 hover:bg-slate-600 gap-1"
                       >
                         <Eye className="h-3.5 w-3.5" />
@@ -373,6 +497,36 @@ export function TopUpRequestsPanel() {
                       </a>
                     )}
                   </div>
+                </div>
+
+                {/* BEP20 Address — admin editable */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm text-slate-400">
+                    Participant BEP20 Address
+                    <span className="ml-2 text-xs text-violet-400">(admin can save)</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="0x... participant's BEP20 wallet address"
+                      value={bep20Input}
+                      onChange={(e) => setBep20Input(e.target.value)}
+                      className="flex-1 bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs"
+                      disabled={isSavingBep20}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSaveBep20}
+                      disabled={isSavingBep20 || bep20Input === (selectedRequest.bep20_address || "")}
+                      className="bg-violet-600 hover:bg-violet-700 text-white flex-shrink-0"
+                    >
+                      {isSavingBep20 ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    </Button>
+                  </div>
+                  {selectedRequest.bep20_address && (
+                    <p className="text-xs text-slate-500 font-mono truncate">
+                      Saved: {selectedRequest.bep20_address}
+                    </p>
+                  )}
                 </div>
 
                 {/* Screenshot */}

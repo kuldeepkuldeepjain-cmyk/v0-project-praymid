@@ -42,6 +42,7 @@ type ParticipantWithActivity = ParticipantProfile & {
   participation_count?: number
   activation_fee_paid?: boolean
   wallet_balance?: number
+  account_balance?: number
   contributed_amount?: number
   wallet_address?: string
 }
@@ -402,8 +403,8 @@ export function ParticipantsTable({ participants, onViewDetails, isLoading }: Pa
                     {/* Activity */}
                     <TableCell className="text-right py-4">
                       <div className="flex flex-col items-end gap-0.5">
-                        <span className="text-sm font-semibold text-gray-900">
-                          ${participant.totalGiven.toFixed(0)}
+                        <span className="text-sm font-semibold text-green-700">
+                          ${(participant.account_balance || participant.wallet_balance || 0).toFixed(2)}
                         </span>
                         <span className="text-xs text-gray-600">{participant.completedTransactions} transactions</span>
                         <span className="text-xs text-gray-600">

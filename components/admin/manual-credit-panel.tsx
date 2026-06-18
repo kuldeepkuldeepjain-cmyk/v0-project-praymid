@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +30,7 @@ export function ManualCreditPanel() {
 
     try {
       const token = getAdminToken()
-      const response = await fetch("/api/admin/manual-credit", {
+      const response = await adminFetch("/api/admin/manual-credit", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

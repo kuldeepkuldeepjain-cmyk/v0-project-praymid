@@ -1,61 +1,74 @@
-import { neon } from "@neondatabase/serverless"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
+import { getPool } from "@/lib/db"
+import { requireAdminSession } from "@/lib/auth-middleware"
 
-const sql = neon(process.env.DATABASE_URL!)
-
-export async function GET(req: Request) {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSession(request)
+  if (!auth.ok) return auth.response
   try {
-    const { searchParams } = new URL(req.url)
-    const email = searchParams.get("email")
+    const email = request.nextUrl.searchParams.get("email")
     if (!email) return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
 
-    const [approved, payout] = await Promise.all([
-      sql`
-        SELECT id, amount, status, created_at, participant_email, participant_id
-        FROM payment_submissions
-        WHERE participant_email = ${email} AND status = 'approved'
-        ORDER BY created_at DESC LIMIT 1
-      `,
-      sql`
-        SELECT id, amount, participant_email, participant_id, status, created_at
-        FROM payout_requests
-        WHERE participant_email = ${email} AND status IN ('pending','processing','approved')
-        ORDER BY created_at DESC LIMIT 1
-      `,
-    ])
+    const db = getPool()!
 
-    const targetParticipantId = approved[0]?.participant_id || payout[0]?.participant_id
-    if (!targetParticipantId) {
-      return NextResponse.json({ success: true, contribution: null })
+    // Fetch from contribution_ledger for accurate matching
+    const ledgerRes = await db.query(
+      `SELECT id, participant_id, payment_id, payout_id, payment_amount, payout_amount, match_status, created_at 
+       FROM contribution_ledger WHERE participant_email=$1 ORDER BY created_at DESC LIMIT 1`,
+      [email]
+    )
+
+    const ledgerData = ledgerRes.rows[0]
+    if (!ledgerData) {
+      return NextResponse.json({ success: true, contributionData: null })
     }
 
-    const [participant, wallet] = await Promise.all([
-      sql`
-        SELECT id, full_name, mobile_number, wallet_address, email
-        FROM participants WHERE id = ${targetParticipantId}
-      `,
-      sql`
-        SELECT wallet_address FROM wallet_pool
-        WHERE assigned_to = ${targetParticipantId} LIMIT 1
-      `,
-    ])
+    const targetParticipantId = ledgerData.participant_id
 
-    if (!participant[0]) {
-      return NextResponse.json({ success: true, contribution: null })
-    }
+    // Fetch participant details
+    const partRes = await db.query(
+      `SELECT id, full_name, mobile_number, wallet_address, email FROM participants WHERE id=$1`,
+      [targetParticipantId]
+    )
+    
+    const participantData = partRes.rows[0] || {}
+    
+    // Fetch wallet pool
+    const walletRes = await db.query(
+      `SELECT wallet_address FROM wallet_pool WHERE assigned_to=$1 LIMIT 1`,
+      [targetParticipantId]
+    )
+    
+    const collectionWallet = walletRes.rows[0]?.wallet_address || participantData.wallet_address
 
     return NextResponse.json({
       success: true,
-      contribution: {
-        id: approved[0]?.id || payout[0]?.id,
-        amount: approved[0]?.amount || payout[0]?.amount || 100,
-        status: approved[0] ? "approved" : "matched_payout",
-        created_at: approved[0]?.created_at || payout[0]?.created_at,
-        participants: participant[0],
-        wallet_pool: wallet[0] || { wallet_address: null },
+      contributionData: {
+        id: ledgerData.id,
+        ledger_id: ledgerData.id,
+        payment_id: ledgerData.payment_id,
+        payout_id: ledgerData.payout_id,
+        payment_amount: parseFloat(ledgerData.payment_amount),
+        payout_amount: parseFloat(ledgerData.payout_amount),
+        match_status: ledgerData.match_status,
+        is_matched: ledgerData.match_status === 'matched',
+        difference: Math.abs(parseFloat(ledgerData.payment_amount) - parseFloat(ledgerData.payout_amount)),
+        created_at: ledgerData.created_at,
+        participant_email: email,
+        participants: {
+          id: participantData.id,
+          full_name: participantData.full_name,
+          email: participantData.email,
+          mobile_number: participantData.mobile_number,
+          wallet_address: participantData.wallet_address,
+        },
+        wallet_pool: {
+          wallet_address: collectionWallet,
+        },
       },
     })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  } catch (error) {
+    console.error("[v0] Contribution details error:", error)
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })
   }
 }

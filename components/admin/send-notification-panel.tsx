@@ -42,27 +42,67 @@ export function SendNotificationPanel() {
     setIsSending(true)
 
     try {
-      const res = await fetch("/api/admin/send-notification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ recipientType, recipientEmail, title, message, type: notificationType }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      toast({
-        title: "Success",
-        description: recipientType === "all"
-          ? `Notification sent to ${data.count} users`
-          : `Notification sent to ${recipientEmail}`,
-      })
+      const supabase = createClient()
+
+      if (recipientType === "all") {
+        // Send to all participants
+        const { data: participants, error: fetchError } = await supabase
+          .from("participants")
+          .select("email")
+
+        if (fetchError) throw fetchError
+
+        const notifications = participants.map((p) => ({
+          user_email: p.email,
+          title,
+          message,
+          type: notificationType,
+          read_status: false,
+        }))
+
+        const { error: insertError } = await supabase
+          .from("notifications")
+          .insert(notifications)
+
+        if (insertError) throw insertError
+
+        toast({
+          title: "Success",
+          description: `Notification sent to ${participants.length} users`,
+        })
+      } else {
+        // Send to single user
+        const { error } = await supabase
+          .from("notifications")
+          .insert({
+            user_email: recipientEmail,
+            title,
+            message,
+            type: notificationType,
+            read_status: false,
+          })
+
+        if (error) throw error
+
+        toast({
+          title: "Success",
+          description: `Notification sent to ${recipientEmail}`,
+        })
+      }
+
+      // Reset form
       setTitle("")
       setMessage("")
       setRecipientEmail("")
       setRecipientType("all")
       setNotificationType("info")
     } catch (error) {
-      console.error("Error sending notification:", error)
-      toast({ title: "Error", description: "Failed to send notification", variant: "destructive" })
+      console.error("[v0] Error sending notification:", error)
+      toast({
+        title: "Error",
+        description: "Failed to send notification",
+        variant: "destructive",
+      })
     } finally {
       setIsSending(false)
     }

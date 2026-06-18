@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { query, execute, queryOne } from "@/lib/db"
 
 export async function GET(request: Request) {
   try {
@@ -15,13 +15,22 @@ export async function GET(request: Request) {
 
     let rows
     if (status !== "all" && startDate) {
-      rows = await sql`SELECT * FROM payment_submissions WHERE status = ${status} AND created_at >= ${startDate.toISOString()} ORDER BY created_at DESC LIMIT 100`
+      rows = await query(
+        `SELECT * FROM payment_submissions WHERE status = $1 AND created_at >= $2 ORDER BY created_at DESC LIMIT 100`,
+        [status, startDate.toISOString()]
+      )
     } else if (status !== "all") {
-      rows = await sql`SELECT * FROM payment_submissions WHERE status = ${status} ORDER BY created_at DESC LIMIT 100`
+      rows = await query(
+        `SELECT * FROM payment_submissions WHERE status = $1 ORDER BY created_at DESC LIMIT 100`,
+        [status]
+      )
     } else if (startDate) {
-      rows = await sql`SELECT * FROM payment_submissions WHERE created_at >= ${startDate.toISOString()} ORDER BY created_at DESC LIMIT 100`
+      rows = await query(
+        `SELECT * FROM payment_submissions WHERE created_at >= $1 ORDER BY created_at DESC LIMIT 100`,
+        [startDate.toISOString()]
+      )
     } else {
-      rows = await sql`SELECT * FROM payment_submissions ORDER BY created_at DESC LIMIT 100`
+      rows = await query(`SELECT * FROM payment_submissions ORDER BY created_at DESC LIMIT 100`)
     }
 
     return NextResponse.json({ success: true, submissions: rows })

@@ -3,7 +3,8 @@ import { NextResponse } from "next/server"
 export async function GET() {
   const checks = {
     database: {
-      databaseUrl: !!process.env.DATABASE_URL,
+      postgresUrl: !!process.env.POSTGRES_URL,
+      postgresNonPooling: !!process.env.POSTGRES_URL_NON_POOLING,
     },
     features: {
       qstashToken: !!process.env.QSTASH_TOKEN,
@@ -18,7 +19,7 @@ export async function GET() {
   }
 
   const isHealthy =
-    checks.database.databaseUrl &&
+    checks.database.postgresUrl &&
     checks.features.cronSecret
 
   const hasAutoMatch = checks.features.qstashToken && checks.features.appUrl
@@ -28,9 +29,10 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     requirements: {
       database: {
-        configured: checks.database.databaseUrl,
+        configured: checks.database.postgresUrl,
         details: {
-          databaseUrl: checks.database.databaseUrl ? "✓" : "✗ MISSING",
+          postgresUrl: checks.database.postgresUrl ? "✓" : "✗ MISSING",
+          postgresNonPooling: checks.database.postgresNonPooling ? "✓" : "✗ MISSING",
         },
       },
       features: {
@@ -48,13 +50,13 @@ export async function GET() {
       optional: {
         smsOtp: {
           configured: checks.optional.otpApiKey && checks.optional.otpSenderId,
-          details: checks.optional.otpApiKey ? "✓ SMS OTP available" : "○ Not configured",
+          details: checks.optional.otpApiKey ? "✓ OTP available" : "○ Not configured",
         },
       },
     },
     missingSetting: {
       critical: [
-        !checks.database.databaseUrl && "DATABASE_URL",
+        !checks.database.postgresUrl && "POSTGRES_URL",
         !checks.features.cronSecret && "CRON_SECRET",
       ].filter(Boolean),
       recommended: [

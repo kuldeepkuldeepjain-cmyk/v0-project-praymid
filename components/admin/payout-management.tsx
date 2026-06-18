@@ -1,4 +1,5 @@
 "use client"
+import { adminFetch } from "@/lib/auth"
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -78,19 +79,37 @@ export function PayoutManagement() {
 
   useEffect(() => {
     fetchPayoutRequests()
-    const interval = setInterval(fetchPayoutRequests, 15000)
-    return () => clearInterval(interval)
+    
+    const supabase = createClient()
+    const channel = supabase
+      .channel("payout_changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "payout_requests" }, () => {
+        fetchPayoutRequests()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const fetchPayoutRequests = async () => {
     try {
-      const res = await fetch("/api/admin/payout-requests")
-      const data = await res.json()
-      if (data.success) setPayoutRequests(data.payouts || [])
-      else throw new Error(data.error)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("payout_requests")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      setPayoutRequests(data || [])
     } catch (error) {
       console.error("Error fetching payout requests:", error)
-      toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
+      toast({
+        title: "Error",
+        description: "Failed to fetch payout requests",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -103,14 +122,21 @@ export function PayoutManagement() {
     setShowProofDialog(true)
     setProofData(null)
     try {
-      const params = new URLSearchParams({ email: payout.participant_email })
-      const res = await fetch(`/api/admin/payment-submissions?${params}`)
-      const data = await res.json()
-      const submissions = data.submissions || []
-      const pending = submissions.find((s: any) =>
-        ["pending", "request_pending", "in_process"].includes(s.status)
-      )
-      setProofData(pending || null)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("payment_submissions")
+        .select("id, screenshot_url, transaction_id, amount")
+        .eq("participant_email", payout.participant_email)
+        .in("status", ["pending", "request_pending", "in_process"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+
+      if (!error && data) {
+        setProofData(data)
+      } else {
+        setProofData(null)
+      }
     } catch {
       setProofData(null)
     } finally {
@@ -123,7 +149,7 @@ export function PayoutManagement() {
     if (!selectedPayout || !proofData) return
     setApprovingPayout(true)
     try {
-      const response = await fetch("/api/admin/approve-contribution-payout", {
+      const response = await adminFetch("/api/admin/approve-contribution-payout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -136,7 +162,7 @@ export function PayoutManagement() {
       if (result.success) {
         toast({
           title: "Approved Successfully",
-          description: `Contribution approved — $180 credited. Payout #${selectedPayout.serial_number} marked as completed.`,
+          description: `Contribution approved — $150 credited. Payout #${selectedPayout.serial_number} marked as completed.`,
         })
         setShowProofDialog(false)
         setProofData(null)
@@ -207,7 +233,7 @@ export function PayoutManagement() {
           break
       }
 
-      const response = await fetch("/api/admin/update-payout-status", {
+      const response = await adminFetch("/api/admin/update-payout-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -270,12 +296,23 @@ export function PayoutManagement() {
   const fetchAllParticipants = async () => {
     setLoadingParticipants(true)
     try {
-      const res = await fetch("/api/admin/all-participants")
-      const data = await res.json()
-      setAllParticipants(data.participants || [])
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from("participants")
+        .select("email, username, account_balance, serial_number")
+        .order("serial_number", { ascending: false })
+
+      if (error) throw error
+      
+      console.log("[v0] Fetched participants for redirect:", data?.length || 0)
+      setAllParticipants(data || [])
     } catch (error) {
-      console.error("Error fetching participants:", error)
-      toast({ title: "Error", description: "Failed to fetch participants list", variant: "destructive" })
+      console.error("[v0] Error fetching participants:", error)
+      toast({
+        title: "Error",
+        description: "Failed to fetch participants list",
+        variant: "destructive",
+      })
     } finally {
       setLoadingParticipants(false)
     }
@@ -881,7 +918,7 @@ export function PayoutManagement() {
               Contribution Proof — Payout #{selectedPayout?.serial_number}
             </DialogTitle>
             <DialogDescription className="text-slate-500">
-              Review the payment proof submitted by <strong>{selectedPayout?.participant_name || selectedPayout?.participant_email}</strong> and approve to credit $180 + complete this payout.
+              Review the payment proof submitted by <strong>{selectedPayout?.participant_name || selectedPayout?.participant_email}</strong> and approve to credit $150 + complete this payout.
             </DialogDescription>
           </DialogHeader>
 
@@ -935,7 +972,7 @@ export function PayoutManagement() {
                 <p className="text-green-700 font-medium">On approval:</p>
                 <ul className="text-green-600 text-xs mt-1 space-y-1 ml-3 list-disc">
                   <li>Contribution marked as <strong>approved</strong></li>
-                  <li><strong>$180</strong> credited to participant wallet</li>
+                  <li><strong>$150</strong> credited to participant wallet</li>
                   <li>Payout #{selectedPayout?.serial_number} marked as <strong>completed</strong></li>
                 </ul>
               </div>

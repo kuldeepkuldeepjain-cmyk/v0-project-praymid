@@ -1,7 +1,7 @@
 "use client"
-
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { adminFetch } from "@/lib/auth"
+import { useState, useEffect, useCallback } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -14,225 +14,187 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { CheckCircle2, XCircle, Clock, Search, ImageIcon, ExternalLink, Users, DollarSign } from "lucide-react"
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Search,
+  ImageIcon,
+  ExternalLink,
+  Users,
+  DollarSign,
+  Link2,
+  RefreshCw,
+  Copy,
+} from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-interface ContributionSubmission {
+interface Contribution {
   id: string
-  participant_id: string
   participant_email: string
   participant_name: string
+  participant_mobile: string | null
   amount: number
   payment_method: string
   transaction_id: string
   screenshot_url: string | null
   status: string
   created_at: string
-  matched_payout_id?: string
-  reviewed_at?: string
+  matched_payout_id?: string | null
 }
 
-interface Stats {
-  pending: number
-  proof_submitted: number
-  approved_today: number
-  rejected_today: number
-  total_platform_revenue: number
+interface PayoutRequest {
+  id: string
+  participant_email: string
+  full_name: string
+  amount: number
+  status: string
+  serial_number: number | null
+  payout_method: string | null
+  mobile_number: string
+  bep20_address: string | null
+  participant_serial: number | null
+  created_at: string
 }
 
 export function P2PContributionPanel() {
   const { toast } = useToast()
-  const [contributions, setContributions] = useState<ContributionSubmission[]>([])
-  const [stats, setStats] = useState<Stats>({
-    pending: 0,
-    proof_submitted: 0,
-    approved_today: 0,
-    rejected_today: 0,
-    total_platform_revenue: 0,
-  })
+  const [contributions, setContributions] = useState<Contribution[]>([])
+  const [availablePayouts, setAvailablePayouts] = useState<PayoutRequest[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedContribution, setSelectedContribution] = useState<ContributionSubmission | null>(null)
+  const [statusFilter, setStatusFilter] = useState("pending")
+  const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null)
+  const [selectedPayoutId, setSelectedPayoutId] = useState("")
   const [showRejectDialog, setShowRejectDialog] = useState(false)
   const [showScreenshotDialog, setShowScreenshotDialog] = useState(false)
   const [showMatchDialog, setShowMatchDialog] = useState(false)
   const [rejectReason, setRejectReason] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
-  const [availablePayouts, setAvailablePayouts] = useState<any[]>([])
-  const [selectedPayoutId, setSelectedPayoutId] = useState<string>("")
-  const [processedIds, setProcessedIds] = useState<Set<string>>(() => {
-    // Initialize from LocalStorage to persist across navigation
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("admin_processed_contributions")
-      return stored ? new Set(JSON.parse(stored)) : new Set()
+
+  const fetchContributions = useCallback(async () => {
+    try {
+      const res = await adminFetch("/api/admin/activation-payments")
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Failed to fetch contributions")
+      const submissions: any[] = json.payments || []
+      setContributions(
+        submissions.map((s: any) => ({
+          id: s.id,
+          participant_email: s.email || s.participant_email,
+          participant_name: s.full_name || s.participants?.full_name || s.username || s.participants?.username || s.email?.split("@")[0] || "Unknown",
+          participant_mobile: s.mobile_number || s.participants?.mobile_number || null,
+          amount: Number(s.amount),
+          payment_method: s.payment_method || s.paymentMethod || "BEP20",
+          transaction_id: s.transaction_id || s.transactionHash || "N/A",
+          screenshot_url: s.screenshot_url || s.screenshotUrl || null,
+          status: s.status,
+          created_at: s.created_at || s.submittedAt,
+          matched_payout_id: s.matched_payout_id || null,
+        }))
+      )
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" })
+    } finally {
+      setLoading(false)
     }
-    return new Set()
-  })
-  const [statusFilter, setStatusFilter] = useState<string>("pending") // "pending", "all"
+  }, [toast])
+
+  const fetchAvailablePayouts = useCallback(async (_amount?: number) => {
+    try {
+      // Fetch ALL pending payouts — admin manually chooses which to match
+      const res = await adminFetch(`/api/admin/pending-payout-requests`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Failed to fetch payout requests")
+      setAvailablePayouts(json.payouts || [])
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" })
+    }
+  }, [toast])
 
   useEffect(() => {
     fetchContributions()
-    const interval = setInterval(fetchContributions, 10000)
-    return () => clearInterval(interval)
-  }, [])
+    const iv = setInterval(fetchContributions, 15000)
+    return () => clearInterval(iv)
+  }, [fetchContributions])
 
-  // Sync processedIds to LocalStorage whenever it changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("admin_processed_contributions", JSON.stringify(Array.from(processedIds)))
-    }
-  }, [processedIds])
-
-  const fetchContributions = async () => {
-    try {
-      const res = await fetch("/api/admin/contribution-payout-records")
-      const json = await res.json()
-      if (!json.success) throw new Error(json.error)
-
-      const transformed = (json.contributions || []).map((sub: any) => ({
-        id: sub.id,
-        participant_id: sub.participant_id,
-        participant_email: sub.participant_email,
-        participant_name: sub.full_name || sub.username || "Unknown",
-        amount: sub.amount,
-        payment_method: sub.payment_method,
-        transaction_id: sub.transaction_id || "N/A",
-        screenshot_url: sub.screenshot_url,
-        status: sub.status,
-        created_at: sub.created_at,
-        matched_payout_id: sub.matched_payout_id,
-      }))
-
-
-      setContributions(transformed)
-
-      // Calculate stats
-      const pending = transformed.filter((c) =>
-        c.status === "pending" || c.status === "request_pending" ||
-        c.status === "in_process" || c.status === "proof_submitted"
-      ).length
-      
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      const approvedToday = transformed.filter(
-        (c) => c.status === "approved" && new Date(c.created_at) >= today
-      ).length
-
-      const rejectedToday = transformed.filter(
-        (c) => c.status === "rejected" && new Date(c.created_at) >= today
-      ).length
-
-      const proofSubmitted = transformed.filter((c) => c.status === "proof_submitted").length
-      const totalApproved = transformed.filter((c) => c.status === "approved").length
-      const platformRevenue = totalApproved * 10 // $10 per approved contribution
-
-      setStats({
-        pending,
-        proof_submitted: proofSubmitted,
-        approved_today: approvedToday,
-        rejected_today: rejectedToday,
-        total_platform_revenue: platformRevenue,
-      })
-
-      // Clean up processedIds - sync with database status
-      setProcessedIds((prev) => {
-        const newSet = new Set(prev)
-        let changed = false
-        transformed.forEach((c) => {
-          if ((c.status === "approved" || c.status === "rejected") && !newSet.has(c.id)) {
-            newSet.add(c.id)
-            changed = true
-          }
-        })
-        return changed ? newSet : prev
-      })
-    } catch (error) {
-      console.error("Error fetching contributions:", error)
-      toast({
-        title: "Error",
-        description: "Failed to fetch contributions",
-        variant: "destructive",
-      })
-    }
+  // Stats
+  const stats = {
+    pending: contributions.filter(c => ["pending", "request_pending", "in_process"].includes(c.status)).length,
+    proof_submitted: contributions.filter(c => c.status === "proof_submitted").length,
+    approved_today: contributions.filter(c => {
+      const today = new Date(); today.setHours(0,0,0,0)
+      return c.status === "approved" && new Date(c.created_at) >= today
+    }).length,
+    rejected_today: contributions.filter(c => {
+      const today = new Date(); today.setHours(0,0,0,0)
+      return c.status === "rejected" && new Date(c.created_at) >= today
+    }).length,
   }
 
-  const fetchAvailablePayouts = async () => {
-    try {
-      const res = await fetch("/api/admin/available-payouts")
-      const data = await res.json()
-      if (data.success) setAvailablePayouts(data.payouts || [])
-      else toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
-    } catch (error) {
-      console.error("Error fetching payouts:", error)
-      toast({ title: "Error", description: "Failed to fetch payout requests", variant: "destructive" })
-    }
-  }
+  const filteredContributions = contributions.filter(c => {
+    const matchesStatus =
+      statusFilter === "all" ? true :
+      statusFilter === "pending" ? ["pending", "request_pending"].includes(c.status) :
+      c.status === statusFilter
+
+    const q = searchQuery.toLowerCase()
+    const matchesSearch = !q ||
+      c.participant_name.toLowerCase().includes(q) ||
+      c.participant_email.toLowerCase().includes(q) ||
+      c.transaction_id.toLowerCase().includes(q)
+
+    return matchesStatus && matchesSearch
+  })
 
   const handleMatchWithPayout = async () => {
     if (!selectedContribution || !selectedPayoutId) {
-      toast({
-        title: "Missing Selection",
-        description: "Please select a payout request to match",
-        variant: "destructive",
-      })
+      toast({ title: "Select a payout request first", variant: "destructive" })
       return
     }
-
     setIsProcessing(true)
-
     try {
-      const res = await fetch("/api/admin/match-contribution", {
+      const res = await adminFetch("/api/admin/manual-match-contribution-payout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contributionId: selectedContribution.id, payoutId: selectedPayoutId }),
+        body: JSON.stringify({
+          contributionId: selectedContribution.id,
+          payoutId: selectedPayoutId,
+        }),
       })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      toast({ title: "Successfully Matched", description: "Contribution matched with payout request." })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error || "Match failed")
+      toast({ title: "Matched", description: "Contribution matched with payout request." })
       setShowMatchDialog(false)
       setSelectedPayoutId("")
       setSelectedContribution(null)
       fetchContributions()
-    } catch (error) {
-      console.error("Match error:", error)
-      toast({ title: "Error", description: "Failed to match contribution with payout", variant: "destructive" })
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const handleApprove = async (contributionId: string) => {
-    if (processedIds.has(contributionId) || processingId === contributionId) return
-
+  const handleApprove = async (id: string) => {
+    if (processingId === id) return
     setIsProcessing(true)
-    setProcessingId(contributionId)
-
+    setProcessingId(id)
     try {
-      const response = await fetch("/api/admin/p2p-contributions", {
+      const res = await adminFetch("/api/admin/p2p-contributions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contributionId, action: "approve" }),
+        body: JSON.stringify({ contributionId: id, action: "approve" }),
       })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setProcessedIds((prev) => new Set(prev).add(contributionId))
-        setShowScreenshotDialog(false)
-        toast({
-          title: "Contribution Approved",
-          description: result.message,
-        })
-        setTimeout(() => fetchContributions(), 500)
-      } else if (result.alreadyProcessed) {
-        setProcessedIds((prev) => new Set(prev).add(contributionId))
-        toast({ title: "Already Processed", description: result.error, variant: "destructive" })
-        fetchContributions()
-      } else {
-        throw new Error(result.error || "Failed to approve")
-      }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to approve contribution", variant: "destructive" })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error || "Approval failed")
+      toast({ title: "Approved", description: json.message })
+      setShowScreenshotDialog(false)
+      setSelectedContribution(null)
+      fetchContributions()
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" })
     } finally {
       setIsProcessing(false)
       setProcessingId(null)
@@ -241,493 +203,329 @@ export function P2PContributionPanel() {
 
   const handleReject = async () => {
     if (!selectedContribution || !rejectReason.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide a rejection reason",
-        variant: "destructive",
-      })
+      toast({ title: "Enter a rejection reason", variant: "destructive" })
       return
     }
-
-    // IMMEDIATE STATE LOCK - Prevent double clicks
-    if (processedIds.has(selectedContribution.id)) {
-
-      return
-    }
-
     setIsProcessing(true)
-
     try {
-      const response = await fetch("/api/admin/p2p-contributions", {
+      const res = await adminFetch("/api/admin/p2p-contributions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contributionId: selectedContribution.id,
-          action: "reject",
-          reason: rejectReason,
-        }),
+        body: JSON.stringify({ contributionId: selectedContribution.id, action: "reject", reason: rejectReason }),
       })
-
-      const result = await response.json()
-
-      if (result.success) {
-        setProcessedIds((prev) => new Set(prev).add(selectedContribution.id))
-        toast({ title: "Contribution Rejected", description: result.message })
-        setShowRejectDialog(false)
-        setShowScreenshotDialog(false)
-        setRejectReason("")
-        setSelectedContribution(null)
-        setTimeout(() => fetchContributions(), 500)
-      } else if (result.alreadyProcessed) {
-        setProcessedIds((prev) => new Set(prev).add(selectedContribution.id))
-        toast({ title: "Already Processed", description: result.error, variant: "destructive" })
-        setShowRejectDialog(false)
-        fetchContributions()
-      } else {
-        throw new Error(result.error || "Failed to reject")
-      }
-    } catch (error: any) {
-      toast({ title: "Error", description: error.message || "Failed to reject contribution", variant: "destructive" })
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error || "Rejection failed")
+      toast({ title: "Rejected", description: json.message })
+      setShowRejectDialog(false)
+      setShowScreenshotDialog(false)
+      setRejectReason("")
+      setSelectedContribution(null)
+      fetchContributions()
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" })
     } finally {
       setIsProcessing(false)
     }
   }
 
-  const filterByAmountAndStatus = (amount: number) =>
-    contributions.filter((c) => {
-      if (c.amount !== amount) return false
-
-      let matchesStatus = false
-      if (statusFilter === "all") {
-        matchesStatus = true
-      } else if (statusFilter === "pending") {
-        matchesStatus = c.status === "pending" || c.status === "request_pending"
-      } else if (statusFilter === "proof_submitted") {
-        matchesStatus = c.status === "proof_submitted"
-      } else if (statusFilter === "in_process") {
-        matchesStatus = c.status === "in_process"
-      } else {
-        matchesStatus = c.status === statusFilter
-      }
-
-      const matchesSearch =
-        c.participant_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.participant_email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.transaction_id.toLowerCase().includes(searchQuery.toLowerCase())
-
-      return matchesStatus && matchesSearch
-    })
-
-  const contributions100 = filterByAmountAndStatus(100)
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pending":
-        return (
-          <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-            <Clock className="h-3 w-3 mr-1" />
-            Pending Review
-          </Badge>
-        )
-      case "request_pending":
-        return (
-          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
-            <Clock className="h-3 w-3 mr-1" />
-            Request Only
-          </Badge>
-        )
-      case "in_process":
-        return (
-          <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-            <Users className="h-3 w-3 mr-1" />
-            Matched - In Process
-          </Badge>
-        )
-      case "proof_submitted":
-        return (
-          <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-            <ImageIcon className="h-3 w-3 mr-1" />
-            Proof Submitted
-          </Badge>
-        )
-      case "approved":
-        return (
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-            <CheckCircle2 className="h-3 w-3 mr-1" />
-            Approved
-          </Badge>
-        )
-      case "rejected":
-        return (
-          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-            <XCircle className="h-3 w-3 mr-1" />
-            Rejected
-          </Badge>
-        )
-      default:
-        return <Badge>{status}</Badge>
+  const statusBadge = (status: string) => {
+    const map: Record<string, { label: string; cls: string; icon: React.ReactNode }> = {
+      pending:        { label: "Pending Review",    cls: "bg-blue-500/20 text-blue-400 border-blue-500/30",   icon: <Clock className="h-3 w-3 mr-1" /> },
+      request_pending:{ label: "Request Only",      cls: "bg-amber-500/20 text-amber-400 border-amber-500/30", icon: <Clock className="h-3 w-3 mr-1" /> },
+      in_process:     { label: "Matched — In Process", cls: "bg-purple-500/20 text-purple-400 border-purple-500/30", icon: <Link2 className="h-3 w-3 mr-1" /> },
+      proof_submitted:{ label: "Proof Submitted",   cls: "bg-orange-500/20 text-orange-400 border-orange-500/30", icon: <ImageIcon className="h-3 w-3 mr-1" /> },
+      approved:       { label: "Approved",          cls: "bg-green-500/20 text-green-400 border-green-500/30",   icon: <CheckCircle2 className="h-3 w-3 mr-1" /> },
+      rejected:       { label: "Rejected",          cls: "bg-red-500/20 text-red-400 border-red-500/30",        icon: <XCircle className="h-3 w-3 mr-1" /> },
     }
+    const s = map[status] || { label: status, cls: "bg-slate-500/20 text-slate-400", icon: null }
+    return <Badge className={s.cls}>{s.icon}{s.label}</Badge>
   }
 
   return (
     <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Pending", value: stats.pending, color: "text-blue-400", bg: "bg-blue-500/10", icon: <Clock className="h-5 w-5 text-blue-400" /> },
+          { label: "Proof Submitted", value: stats.proof_submitted, color: "text-orange-400", bg: "bg-orange-500/10", icon: <ImageIcon className="h-5 w-5 text-orange-400" /> },
+          { label: "Approved Today", value: stats.approved_today, color: "text-green-400", bg: "bg-green-500/10", icon: <CheckCircle2 className="h-5 w-5 text-green-400" /> },
+          { label: "Rejected Today", value: stats.rejected_today, color: "text-red-400", bg: "bg-red-500/10", icon: <XCircle className="h-5 w-5 text-red-400" /> },
+        ].map(s => (
+          <Card key={s.label} className="bg-slate-900 border-slate-700">
+            <CardContent className="p-5 flex items-center justify-between">
               <div>
-                <p className="text-sm text-slate-400 mb-1">Pending</p>
-                <p className="text-3xl font-bold text-white">{stats.pending}</p>
+                <p className="text-xs text-slate-400 mb-1">{s.label}</p>
+                <p className={`text-3xl font-bold ${s.color}`}>{s.value}</p>
               </div>
-              <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-blue-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-orange-500/40">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-orange-400 mb-1">Proof Submitted</p>
-                <p className="text-3xl font-bold text-orange-400">{stats.proof_submitted}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center">
-                <ImageIcon className="h-6 w-6 text-orange-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400 mb-1">Approved Today</p>
-                <p className="text-3xl font-bold text-green-400">{stats.approved_today}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400 mb-1">Rejected Today</p>
-                <p className="text-3xl font-bold text-red-400">{stats.rejected_today}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-red-500/20 flex items-center justify-center">
-                <XCircle className="h-6 w-6 text-red-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-slate-400 mb-1">Platform Revenue</p>
-                <p className="text-3xl font-bold text-purple-400">${stats.total_platform_revenue}</p>
-              </div>
-              <div className="h-12 w-12 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-purple-400" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              <div className={`h-11 w-11 rounded-full ${s.bg} flex items-center justify-center`}>{s.icon}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filters bar */}
+      {/* Filters */}
       <div className="flex items-center gap-3">
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={e => setStatusFilter(e.target.value)}
           className="px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
         >
           <option value="pending">Pending Only</option>
           <option value="proof_submitted">Proof Submitted</option>
           <option value="in_process">Matched (In Process)</option>
-          <option value="all">All Contributions</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+          <option value="all">All</option>
         </select>
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Search by name, email, or TxID..."
+            placeholder="Search by name, email or TxID..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={e => setSearchQuery(e.target.value)}
             className="pl-10 bg-slate-800 border-slate-600 text-white"
           />
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={fetchContributions}
+          className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* $100 Matching Pool Section */}
-      {[
-        { amount: 100, label: "$100 ↔ $100", accent: "border-green-500/50", badge: "bg-green-500/20 text-green-300", icon: "💚", list: contributions100 },
-      ].map(({ amount, label, accent, badge, list }) => (
-        <Card key={amount} className={`bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700 border-l-4 ${accent}`}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CardTitle className="text-white text-lg">{label} Matching Pool</CardTitle>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge}`}>
-                  {list.length} request{list.length !== 1 ? "s" : ""}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">Contributor sends ${amount} · Payout recipient gets ${amount}</p>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Contributor</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Transaction ID</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Screenshot</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</th>
-                    <th className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Submitted</th>
-                    <th className="text-right py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Actions</th>
+      {/* Contributions Table */}
+      <Card className="bg-slate-900 border-slate-700">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white text-lg">
+              Contributions
+              <span className="ml-2 text-sm font-normal text-slate-400">
+                ({filteredContributions.length} shown)
+              </span>
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700">
+                  {["Contributor", "Amount", "Transaction ID", "Screenshot", "Status", "Matched Payout", "Date", "Actions"].map(h => (
+                    <th key={h} className="text-left py-3 px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={8} className="text-center py-10 text-slate-500">Loading...</td></tr>
+                ) : filteredContributions.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="text-center py-10">
+                      <Users className="h-10 w-10 text-slate-600 mx-auto mb-2" />
+                      <p className="text-slate-500 text-sm">No contributions found</p>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {list.map((contribution) => (
-                    <tr
-                      key={contribution.id}
-                      className={`border-b border-slate-700/50 hover:bg-slate-800/50 ${
-                        contribution.status === "proof_submitted"
-                          ? "bg-orange-950/20 border-l-2 border-l-orange-500"
-                          : ""
-                      }`}
-                    >
-                      <td className="py-4 px-4">
-                        <p className="text-sm font-medium text-white">{contribution.participant_name}</p>
-                        <p className="text-xs text-slate-400">{contribution.participant_email}</p>
-                      </td>
-                      <td className="py-4 px-4">
-                        <p className="text-sm text-slate-300 font-mono truncate max-w-[160px]">{contribution.transaction_id}</p>
-                      </td>
-                      <td className="py-4 px-4">
-                        {contribution.screenshot_url ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedContribution(contribution)
-                              setShowScreenshotDialog(true)
-                            }}
-                            className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-700"
-                          >
-                            <ImageIcon className="h-4 w-4 mr-1" />
-                            View
-                          </Button>
+                ) : filteredContributions.map(c => (
+                  <tr
+                    key={c.id}
+                    className={`border-b border-slate-700/50 hover:bg-slate-800/40 ${
+                      c.status === "proof_submitted" ? "bg-orange-950/10 border-l-2 border-l-orange-500" : ""
+                    }`}
+                  >
+                    {/* Contributor */}
+                    <td className="py-3 px-4 min-w-[160px]">
+                      <p className="text-sm font-semibold text-white leading-tight">{c.participant_name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">{c.participant_email}</p>
+                      {c.participant_mobile && (
+                        <p className="text-xs text-slate-500 mt-0.5">{c.participant_mobile}</p>
+                      )}
+                    </td>
+                    {/* Amount */}
+                    <td className="py-3 px-4">
+                      <span className="text-green-400 font-bold">${c.amount}</span>
+                    </td>
+                    {/* TxID */}
+                    <td className="py-3 px-4">
+                      <p className="text-xs text-slate-300 font-mono truncate max-w-[140px]">{c.transaction_id}</p>
+                    </td>
+                    {/* Screenshot */}
+                    <td className="py-3 px-4">
+                      {c.screenshot_url ? (
+                        <Button size="sm" variant="outline"
+                          onClick={() => { setSelectedContribution(c); setShowScreenshotDialog(true) }}
+                          className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-700 text-xs"
+                        >
+                          <ImageIcon className="h-3.5 w-3.5 mr-1" /> View
+                        </Button>
+                      ) : <span className="text-xs text-slate-600">None</span>}
+                    </td>
+                    {/* Status */}
+                    <td className="py-3 px-4">{statusBadge(c.status)}</td>
+                    {/* Matched payout */}
+                    <td className="py-3 px-4">
+                      {c.matched_payout_id
+                        ? <div className="flex items-center gap-2">
+                            <span className="text-xs text-purple-400 font-mono">{c.matched_payout_id}</span>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-5 w-5 p-0"
+                              onClick={() => {
+                                navigator.clipboard.writeText(c.matched_payout_id)
+                                toast({ title: "Copied", description: "Payout ID copied" })
+                              }}
+                            >
+                              <Copy className="h-3 w-3 text-purple-400" />
+                            </Button>
+                          </div>
+                        : <span className="text-xs text-slate-600">Not matched</span>}
+                    </td>
+                    {/* Date & Time */}
+                    <td className="py-3 px-4 min-w-[110px]">
+                      <p className="text-xs font-medium text-slate-300 whitespace-nowrap">
+                        {new Date(c.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                      </p>
+                      <p className="text-xs text-slate-500 whitespace-nowrap mt-0.5">
+                        {new Date(c.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                      </p>
+                    </td>
+                    {/* Actions */}
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2 justify-end">
+                        {c.status === "approved" ? (
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Approved
+                          </Badge>
+                        ) : c.status === "rejected" ? (
+                          <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
+                            <XCircle className="h-3 w-3 mr-1" /> Rejected
+                          </Badge>
                         ) : (
-                          <span className="text-xs text-slate-500">No screenshot</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4">{getStatusBadge(contribution.status)}</td>
-                      <td className="py-4 px-4">
-                        <p className="text-xs text-slate-400">{new Date(contribution.created_at).toLocaleString()}</p>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          {processedIds.has(contribution.id) || contribution.status === "approved" ? (
-                            <Button size="sm" disabled className="bg-slate-600 text-slate-300 cursor-not-allowed">
-                              <CheckCircle2 className="h-4 w-4 mr-1" />
-                              Confirmed
-                            </Button>
-                          ) : contribution.status === "rejected" ? (
-                            <Button size="sm" disabled className="bg-slate-600 text-slate-300 cursor-not-allowed">
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Rejected
-                            </Button>
-                          ) : (
-                            contribution.status === "pending" ||
-                            contribution.status === "request_pending" ||
-                            contribution.status === "in_process" ||
-                            contribution.status === "proof_submitted"
-                          ) ? (
-                            <>
-                              {(contribution.status === "pending" || contribution.status === "request_pending") && !contribution.matched_payout_id && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    setSelectedContribution(contribution)
-                                    fetchAvailablePayouts()
-                                    setShowMatchDialog(true)
-                                  }}
-                                  disabled={isProcessing}
-                                  className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
-                                >
-                                  Match
-                                </Button>
-                              )}
-                              {contribution.status === "proof_submitted" && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      setSelectedContribution(contribution)
-                                      setShowScreenshotDialog(true)
-                                    }}
+                          <>
+                            {/* Match button — for any unmatched contribution */}
+                            {["pending", "request_pending", "in_process", "proof_submitted"].includes(c.status) && !c.matched_payout_id && (
+                              <Button size="sm"
+                                onClick={() => {
+                                  setSelectedContribution(c)
+                                  fetchAvailablePayouts(c.amount)
+                                  setShowMatchDialog(true)
+                                }}
+                                disabled={isProcessing}
+                                className="bg-purple-600 hover:bg-purple-700 text-white text-xs"
+                              >
+                                <Link2 className="h-3.5 w-3.5 mr-1" /> Match
+                              </Button>
+                            )}
+                            {/* Approve / Reject for proof_submitted or in_process */}
+                            {["proof_submitted", "in_process", "pending"].includes(c.status) && (
+                              <>
+                                {c.screenshot_url && c.status === "proof_submitted" && (
+                                  <Button size="sm"
+                                    onClick={() => { setSelectedContribution(c); setShowScreenshotDialog(true) }}
                                     className="bg-orange-600 hover:bg-orange-700 text-white text-xs"
                                   >
-                                    <ImageIcon className="h-3.5 w-3.5 mr-1" />
-                                    View Proof
+                                    <ImageIcon className="h-3.5 w-3.5 mr-1" /> Proof
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => handleApprove(contribution.id)}
-                                    disabled={isProcessing || processingId === contribution.id || processedIds.has(contribution.id)}
-                                    className="bg-green-600 hover:bg-green-700 text-white disabled:bg-slate-600 disabled:text-slate-300 text-xs"
-                                  >
-                                    {processingId === contribution.id ? "Processing..." : "Approve"}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    onClick={() => {
-                                      setSelectedContribution(contribution)
-                                      setShowRejectDialog(true)
-                                    }}
-                                    disabled={isProcessing || processedIds.has(contribution.id)}
-                                    className="text-xs"
-                                  >
-                                    Reject
-                                  </Button>
-                                </>
-                              )}
-                              {contribution.status === "in_process" && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  onClick={() => {
-                                    setSelectedContribution(contribution)
-                                    setShowRejectDialog(true)
-                                  }}
-                                  disabled={isProcessing || processedIds.has(contribution.id)}
+                                )}
+                                <Button size="sm"
+                                  onClick={() => handleApprove(c.id)}
+                                  disabled={isProcessing || processingId === c.id}
+                                  className="bg-green-600 hover:bg-green-700 text-white text-xs disabled:bg-slate-600"
+                                >
+                                  {processingId === c.id ? "..." : "Approve"}
+                                </Button>
+                                <Button size="sm" variant="destructive"
+                                  onClick={() => { setSelectedContribution(c); setShowRejectDialog(true) }}
+                                  disabled={isProcessing}
                                   className="text-xs"
                                 >
                                   Reject
                                 </Button>
-                              )}
-                            </>
-                          ) : null}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {list.length === 0 && (
-                <div className="text-center py-10">
-                  <Users className="h-10 w-10 text-slate-600 mx-auto mb-2" />
-                  <p className="text-slate-500 text-sm">No ${amount} contributions found</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+                              </>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Reject Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+      <Dialog open={showRejectDialog} onOpenChange={open => { setShowRejectDialog(open); if (!open) { setRejectReason(""); setSelectedContribution(null) } }}>
         <DialogContent className="bg-slate-900 border-slate-700 text-white">
           <DialogHeader>
             <DialogTitle>Reject Contribution</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Provide a reason for rejecting this contribution. The user will be notified.
+              Provide a reason. The user will be notified.
             </DialogDescription>
           </DialogHeader>
           <Textarea
-            placeholder="Enter rejection reason (e.g., Invalid transaction ID, fake screenshot, etc.)"
+            placeholder="e.g. Invalid transaction ID, fake screenshot..."
             value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
+            onChange={e => setRejectReason(e.target.value)}
             className="bg-slate-800 border-slate-600 text-white min-h-24"
           />
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowRejectDialog(false)
-                setRejectReason("")
-                setSelectedContribution(null)
-              }}
-              className="bg-transparent border-slate-600 text-slate-300"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleReject}
-              disabled={isProcessing || !rejectReason.trim()}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <Button variant="outline" onClick={() => { setShowRejectDialog(false); setRejectReason(""); setSelectedContribution(null) }}
+              className="bg-transparent border-slate-600 text-slate-300">Cancel</Button>
+            <Button variant="destructive" onClick={handleReject} disabled={isProcessing || !rejectReason.trim()}>
               {isProcessing ? "Rejecting..." : "Confirm Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Screenshot / Proof Verification Dialog */}
-      <Dialog open={showScreenshotDialog} onOpenChange={(open) => {
-        setShowScreenshotDialog(open)
-        if (!open) setSelectedContribution(null)
-      }}>
+      {/* Screenshot / Proof Dialog */}
+      <Dialog open={showScreenshotDialog} onOpenChange={open => { setShowScreenshotDialog(open); if (!open) setSelectedContribution(null) }}>
         <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              <ImageIcon className="h-5 w-5 text-orange-400" />
-              Payment Proof Verification
+              <ImageIcon className="h-5 w-5 text-orange-400" /> Payment Proof Verification
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              Review the submitted payment proof and approve or reject this contribution.
+              Review the submitted proof then approve or reject.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 mt-2">
-            {/* Contributor + amount summary */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
-                <p className="text-xs text-slate-400 mb-0.5">Contributor</p>
-                <p className="text-white font-semibold text-sm">{selectedContribution?.participant_name}</p>
-                <p className="text-slate-400 text-xs">{selectedContribution?.participant_email}</p>
+                <p className="text-xs text-slate-400 mb-1">Contributor</p>
+                <p className="text-white font-semibold text-sm leading-tight">{selectedContribution?.participant_name}</p>
+                <p className="text-slate-400 text-xs mt-0.5">{selectedContribution?.participant_email}</p>
+                {selectedContribution?.participant_mobile && (
+                  <p className="text-slate-500 text-xs mt-0.5">{selectedContribution.participant_mobile}</p>
+                )}
+                <p className="text-slate-600 text-[10px] mt-1">
+                  {selectedContribution?.created_at && new Date(selectedContribution.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                  {" "}
+                  {selectedContribution?.created_at && new Date(selectedContribution.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+                </p>
               </div>
               <div className="p-3 bg-slate-800 rounded-lg border border-slate-700">
                 <p className="text-xs text-slate-400 mb-0.5">Amount</p>
                 <p className="text-green-400 font-bold text-xl">${selectedContribution?.amount}</p>
-                <p className="text-xs text-slate-500 mt-0.5 font-mono truncate">
-                  TxID: {selectedContribution?.transaction_id || "N/A"}
-                </p>
+                <p className="text-xs text-slate-500 mt-0.5 font-mono truncate">TxID: {selectedContribution?.transaction_id}</p>
               </div>
             </div>
-
-            {/* Screenshot */}
             {selectedContribution?.screenshot_url ? (
               <div className="rounded-lg overflow-hidden border-2 border-orange-500/40">
                 <div className="bg-orange-500/10 px-3 py-2 flex items-center justify-between border-b border-orange-500/30">
                   <span className="text-xs text-orange-400 font-medium">Payment Screenshot</span>
-                  <a
-                    href={selectedContribution.screenshot_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Open full size
+                  <a href={selectedContribution.screenshot_url} target="_blank" rel="noopener noreferrer"
+                    className="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                    <ExternalLink className="h-3 w-3" /> Open full size
                   </a>
                 </div>
-                <img
-                  src={selectedContribution.screenshot_url}
-                  alt="Payment proof screenshot"
-                  className="w-full h-auto max-h-80 object-contain bg-slate-950"
-                />
+                <img src={selectedContribution.screenshot_url} alt="Payment proof"
+                  className="w-full h-auto max-h-80 object-contain bg-slate-950" />
               </div>
             ) : (
               <div className="flex items-center justify-center h-32 bg-slate-800 rounded-lg border border-slate-700">
@@ -735,127 +533,117 @@ export function P2PContributionPanel() {
               </div>
             )}
           </div>
-
-          {/* Inline Approve / Reject — only for proof_submitted */}
-          {selectedContribution?.status === "proof_submitted" && (
-            <DialogFooter className="mt-4 gap-2 sm:gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowScreenshotDialog(false)
-                  setSelectedContribution(null)
-                }}
-                className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800"
-                disabled={isProcessing}
-              >
-                Close
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => {
-                  setShowScreenshotDialog(false)
-                  setShowRejectDialog(true)
-                }}
-                disabled={isProcessing || (selectedContribution ? processedIds.has(selectedContribution.id) : false)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <XCircle className="h-4 w-4 mr-1.5" />
-                Reject
-              </Button>
-              <Button
-                onClick={() => selectedContribution && handleApprove(selectedContribution.id)}
-                disabled={
-                  isProcessing ||
-                  processingId === selectedContribution?.id ||
-                  (selectedContribution ? processedIds.has(selectedContribution.id) : false)
-                }
-                className="bg-green-600 hover:bg-green-700 text-white"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-1.5" />
-                {processingId === selectedContribution?.id ? "Approving..." : "Approve"}
-              </Button>
-            </DialogFooter>
-          )}
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" onClick={() => { setShowScreenshotDialog(false); setSelectedContribution(null) }}
+              className="bg-transparent border-slate-600 text-slate-300">Close</Button>
+            <Button variant="destructive"
+              onClick={() => { setShowScreenshotDialog(false); setShowRejectDialog(true) }}
+              disabled={isProcessing}>
+              <XCircle className="h-4 w-4 mr-1.5" /> Reject
+            </Button>
+            <Button onClick={() => selectedContribution && handleApprove(selectedContribution.id)}
+              disabled={isProcessing || processingId === selectedContribution?.id}
+              className="bg-green-600 hover:bg-green-700 text-white">
+              <CheckCircle2 className="h-4 w-4 mr-1.5" />
+              {processingId === selectedContribution?.id ? "Approving..." : "Approve"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Match with Payout Dialog */}
-      <Dialog open={showMatchDialog} onOpenChange={setShowMatchDialog}>
+      <Dialog open={showMatchDialog} onOpenChange={open => { setShowMatchDialog(open); if (!open) { setSelectedPayoutId(""); setSelectedContribution(null) } }}>
         <DialogContent className="bg-slate-900 border-slate-700 max-w-3xl">
           <DialogHeader>
             <DialogTitle className="text-white">Match Contribution with Payout Request</DialogTitle>
             <DialogDescription className="text-slate-400">
-              Select a payout request to match with this contribution
+              Select a pending payout request to assign to this contribution.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-4">
-            {/* Current Contribution Info */}
-            <div className="p-4 bg-slate-800 rounded-lg border border-slate-700">
-              <p className="text-sm text-slate-400 mb-2">Contributor</p>
-              <p className="text-white font-semibold">{selectedContribution?.participant_name}</p>
-              <p className="text-slate-400 text-sm">{selectedContribution?.participant_email}</p>
-              <p className="text-green-400 font-bold mt-2">${selectedContribution?.amount}</p>
+          <div className="space-y-4 mt-2">
+            {/* Contribution summary */}
+            <div className="p-4 bg-slate-800 rounded-lg border border-slate-700 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-slate-400 mb-0.5">Contributor</p>
+                <p className="text-white font-semibold">{selectedContribution?.participant_name}</p>
+                <p className="text-slate-400 text-sm">{selectedContribution?.participant_email}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-slate-400 mb-0.5">Contribution Amount</p>
+                <p className="text-green-400 font-bold text-2xl">${selectedContribution?.amount}</p>
+              </div>
             </div>
 
-            {/* Available Payouts */}
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              <p className="text-sm text-slate-300 font-medium">Available Payout Requests:</p>
-              {availablePayouts.length === 0 ? (
-                <p className="text-slate-500 text-sm py-4 text-center">No unmatched payout requests available</p>
-              ) : (
-                availablePayouts.map((payout) => (
+            {/* Pending payout requests */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm text-slate-300 font-medium">
+                  All Pending Payout Requests
+                </p>
+                <Button size="sm" variant="ghost"
+                  onClick={() => fetchAvailablePayouts(selectedContribution?.amount)}
+                  className="text-slate-400 hover:text-white text-xs">
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Refresh
+                </Button>
+              </div>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {availablePayouts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <DollarSign className="h-8 w-8 text-slate-600 mx-auto mb-2" />
+                    <p className="text-slate-500 text-sm">No pending payout requests found</p>
+                  </div>
+                ) : availablePayouts.map(payout => (
                   <div
                     key={payout.id}
                     onClick={() => setSelectedPayoutId(payout.id)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
                       selectedPayoutId === payout.id
                         ? "bg-purple-900/30 border-purple-500"
-                        : "bg-slate-800 border-slate-700 hover:border-slate-600"
+                        : "bg-slate-800 border-slate-700 hover:border-slate-500"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="text-white font-semibold">{payout.participants?.full_name}</p>
-                        <p className="text-slate-400 text-sm">{payout.participants?.email}</p>
-                        <p className="text-slate-400 text-xs mt-1">Mobile: {payout.participants?.mobile_number || "N/A"}</p>
-                        <p className="text-slate-400 text-xs">
-                          Wallet: {
-                            (payout.participants?.bep20_address || payout.participants?.wallet_address)
-                              ? `${(payout.participants.bep20_address || payout.participants.wallet_address).substring(0, 16)}...`
-                              : "N/A"
-                          }
-                        </p>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold truncate">{payout.full_name}</p>
+                        <p className="text-slate-400 text-sm truncate">{payout.participant_email}</p>
+                        <div className="flex gap-4 mt-1.5 flex-wrap">
+                          <p className="text-xs text-slate-500">Mobile: {payout.mobile_number}</p>
+                          {payout.bep20_address && (
+                            <p className="text-xs text-slate-500 font-mono">
+                              Wallet: {payout.bep20_address.slice(0, 16)}...
+                            </p>
+                          )}
+                          {payout.participant_serial && (
+                            <p className="text-xs text-slate-500">Serial: #{payout.participant_serial}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right shrink-0">
                         <p className="text-2xl font-bold text-purple-400">${payout.amount}</p>
-                        <p className="text-xs text-slate-500 mt-1">Serial: {payout.serial_number || "N/A"}</p>
-                        <Badge className="mt-2 bg-amber-500/20 text-amber-400">
+                        <Badge className={`mt-1 text-xs ${
+                          payout.status === "pending"
+                            ? "bg-amber-500/20 text-amber-400 border-amber-500/30"
+                            : "bg-purple-500/20 text-purple-400 border-purple-500/30"
+                        }`}>
                           {payout.status}
                         </Badge>
+                        <p className="text-xs text-slate-500 mt-1">
+                          {new Date(payout.created_at).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowMatchDialog(false)
-                setSelectedPayoutId("")
-              }}
+            <Button variant="outline"
+              onClick={() => { setShowMatchDialog(false); setSelectedPayoutId(""); setSelectedContribution(null) }}
               disabled={isProcessing}
-              className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleMatchWithPayout}
-              disabled={isProcessing || !selectedPayoutId}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
+              className="bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800">Cancel</Button>
+            <Button onClick={handleMatchWithPayout} disabled={isProcessing || !selectedPayoutId}
+              className="bg-purple-600 hover:bg-purple-700 text-white">
               {isProcessing ? "Matching..." : "Confirm Match"}
             </Button>
           </DialogFooter>

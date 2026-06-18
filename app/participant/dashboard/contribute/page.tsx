@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { maskMobileNumber } from "@/lib/format-utils"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
@@ -22,7 +23,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 
 const CONTRIBUTION_WINDOW_HOURS = 24
@@ -32,7 +33,7 @@ const PLANS = [
     id: "platinum",
     label: "P2P Contribution",
     amount: 100,
-    reward: 180,
+    reward: 150,
     color: "violet",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",
@@ -70,25 +71,17 @@ export default function ContributePage() {
 
     setIsRequestingContribution(true)
     try {
-      const res = await fetch("/api/participant/request-contribution", {
+      const res = await participantFetch("/api/participant/submit-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: participantData.email,
-          participantId: participantData.participantId || participantData.id,
           amount: plan.amount,
+          paymentMethod: "request",
+          status: "request_pending",
         }),
       })
-      const data = await res.json()
-
-      if (!data.success) {
-        if (data.duplicate) {
-          setHasPendingSubmission(true)
-          toast({ title: "Request Already Pending", description: "You already have an active contribution request.", variant: "destructive" })
-          return
-        }
-        throw new Error(data.error || "Failed")
-      }
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || "Request failed")
 
       toast({ 
         title: "Request Submitted!", 
@@ -118,9 +111,8 @@ export default function ContributePage() {
   const checkPendingSubmission = useCallback(async () => {
     if (!participantData?.email) return
     try {
-      const res = await fetch(
-        `/api/participant/contributions/matched?email=${encodeURIComponent(participantData.email)}`,
-        { cache: "no-store" }
+      const res = await participantFetch(
+        `/api/participant/contributions/matched?email=${encodeURIComponent(participantData.email)}`
       )
       if (!res.ok) return
       const data = await res.json()
@@ -176,13 +168,13 @@ export default function ContributePage() {
     if (storedData) {
       const parsed = JSON.parse(storedData)
       setParticipantData(parsed)
-      fetch("/api/participant/me", { headers: { "x-participant-email": parsed.email } })
+      participantFetch(`/api/participant/me?email=${encodeURIComponent(parsed.email)}`)
         .then(r => r.json())
-        .then(json => {
-          if (json.participant?.next_contribution_date) {
-            setParticipantData((prev: any) => ({ ...prev, next_contribution_date: json.participant.next_contribution_date }))
+        .then(d => {
+          if (d.participant?.next_contribution_date) {
+            setParticipantData((prev: any) => ({ ...prev, next_contribution_date: d.participant.next_contribution_date }))
           }
-        })
+        }).catch(() => {})
     }
   }, [router, isAuthenticated])
 
@@ -231,18 +223,17 @@ export default function ContributePage() {
         return
       }
 
-      const res = await fetch("/api/participant/submit-proof", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const proofRes = await participantFetch("/api/participant/submit-payment", {
+        method: "PATCH",
         body: JSON.stringify({
-          submissionId: matchedContribution.id,
-          transactionId: transactionHash,
+          contributionId: matchedContribution.id,
+          transactionHash,
           screenshotUrl: base64,
-          adminNotes: paymentNote || null,
+          note: paymentNote || null,
         }),
       })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+      const proofData = await proofRes.json()
+      if (!proofRes.ok) throw new Error(proofData.error || "Submission failed")
 
       toast({ title: "Payment Proof Submitted!", description: "Your proof has been sent. Waiting for system approval." })
       setPaymentProofSubmitted(true)
@@ -357,7 +348,9 @@ export default function ContributePage() {
                   <User className="h-5 w-5 text-slate-500 shrink-0" />
                   <div>
                     <p className="text-xs text-slate-500">Full Name</p>
-                    <p className="font-bold text-slate-900">{matchedContribution.payout?.participants?.full_name || "N/A"}</p>
+                    <p className="font-bold text-slate-900">
+                      {matchedContribution.payout?.participant_name || matchedContribution.payout?.participants?.full_name || "N/A"}
+                    </p>
                   </div>
                 </div>
 
@@ -365,34 +358,35 @@ export default function ContributePage() {
                   <Mail className="h-5 w-5 text-slate-500 shrink-0" />
                   <div>
                     <p className="text-xs text-slate-500">Email Address</p>
-                    <p className="font-semibold text-slate-900 text-sm">{matchedContribution.payout?.participants?.email || "N/A"}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
-                  <Phone className="h-5 w-5 text-slate-500 shrink-0" />
-                  <div>
-                    <p className="text-xs text-slate-500">Mobile Number</p>
-                    <p className="font-bold text-slate-900">
-                      {matchedContribution.payout?.participants?.mobile_number
-                        ? `••••••${String(matchedContribution.payout.participants.mobile_number).slice(-4)}`
-                        : "Not provided"}
+                    <p className="font-semibold text-slate-900 text-sm">
+                      {matchedContribution.payout?.participant_email || matchedContribution.payout?.participants?.email || "N/A"}
                     </p>
                   </div>
                 </div>
 
-                {(matchedContribution.payout?.participants?.bep20_address || matchedContribution.payout?.participants?.wallet_address) && (
+                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-200">
+                  <Phone className="h-5 w-5 text-amber-600 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs text-amber-700 font-semibold">Mobile Number (Last 4 Digits)</p>
+                    <p className="font-bold text-amber-900 text-lg tracking-wide">
+                      {maskMobileNumber(matchedContribution.payout?.mobile_number || matchedContribution.payout?.participants?.mobile_number)}
+                    </p>
+                  </div>
+                </div>
+
+                {(matchedContribution.payout?.wallet_address || matchedContribution.payout?.participants?.bep20_address || matchedContribution.payout?.participants?.wallet_address) && (
                   <div className="p-3 bg-blue-50 rounded-lg border-2 border-blue-200">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Wallet className="h-4 w-4 text-blue-600" />
-                        <p className="text-xs text-blue-700 font-semibold">BEP20 Wallet Address</p>
+                        <p className="text-xs text-blue-700 font-semibold">BEP20 Wallet Address — Send Here</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => copyToClipboard(
+                          matchedContribution.payout?.wallet_address ||
                           matchedContribution.payout?.participants?.bep20_address ||
                           matchedContribution.payout?.participants?.wallet_address,
                           "Wallet address"
@@ -402,7 +396,8 @@ export default function ContributePage() {
                       </Button>
                     </div>
                     <p className="text-xs font-mono font-bold text-blue-900 break-all bg-white p-2 rounded border border-blue-200">
-                      {matchedContribution.payout?.participants?.bep20_address ||
+                      {matchedContribution.payout?.wallet_address ||
+                        matchedContribution.payout?.participants?.bep20_address ||
                         matchedContribution.payout?.participants?.wallet_address}
                     </p>
                   </div>
@@ -413,7 +408,7 @@ export default function ContributePage() {
                     <DollarSign className="h-5 w-5 text-purple-600 shrink-0" />
                     <div>
                       <p className="text-xs text-purple-600 font-medium">Payout Serial Number</p>
-                      <p className="text-lg font-black text-purple-900">{matchedContribution.payout.serial_number}</p>
+                      <p className="text-lg font-black text-purple-900">#{matchedContribution.payout.serial_number}</p>
                     </div>
                   </div>
                 )}
@@ -579,7 +574,7 @@ export default function ContributePage() {
 
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-bold text-slate-900">Choose Your Contribution Plan</h2>
-                <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.8x back upon approval</p>
+                <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.5x back upon approval</p>
               </div>
 
               {/* Plan cards */}
@@ -617,7 +612,7 @@ export default function ContributePage() {
                         {/* Selection indicator + ROI */}
                         <div className="flex flex-col items-end gap-1">
                           <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-                            +80% ROI
+                            +50% ROI
                           </span>
                           <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
                             isSelected ? `${plan.border} bg-gradient-to-br ${plan.accent}` : "border-slate-300 bg-white"
@@ -651,7 +646,7 @@ export default function ContributePage() {
 
               {/* Submit button — disabled during cooldown, otherwise opens proof dialog */}
               {(() => {
-                const plan = PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[2]
+                const plan = PLANS.find((p) => p.id === selectedPlanId) ?? PLANS[0]
                 return (
                   <div className="space-y-2">
                     <Button

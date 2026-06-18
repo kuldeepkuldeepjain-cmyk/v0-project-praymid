@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
-import { setParticipantSession } from "@/lib/session"
-import { sql } from "@/lib/db"
+import { query, execute } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -11,129 +9,112 @@ function generateReferralCode(username: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode } = await request.json()
+    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp } = await request.json()
+
+    console.log("[v0] Registration attempt for email:", email)
 
     if (!firstName || !lastName || !username || !email || !mobileNumber || !password) {
-      return NextResponse.json({ success: false, error: "All required fields must be filled" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "All required fields must be filled" }, { status: 400 })
     }
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`
-
-    // Check for existing email
-    const existingEmail = await sql`SELECT email FROM participants WHERE email = ${email} LIMIT 1`
-    if (existingEmail.length > 0) {
-      return NextResponse.json({ success: false, error: "Email already registered" }, { status: 400 })
-    }
-
-    // Check for existing phone
-    const existingPhone = await sql`SELECT mobile_number FROM participants WHERE mobile_number = ${mobileNumber} LIMIT 1`
-    if (existingPhone.length > 0) {
-      return NextResponse.json({ success: false, error: "Mobile number already registered" }, { status: 400 })
-    }
-
-    // Check for existing username
-    const existingUsername = await sql`SELECT username FROM participants WHERE username = ${username.toLowerCase()} LIMIT 1`
-    if (existingUsername.length > 0) {
-      return NextResponse.json({ success: false, error: "Username already taken" }, { status: 400 })
-    }
-
-    // Validate referral code if provided
-    let referrerData: any = null
-    if (referralCode) {
-      const referrerRows = await sql`
-        SELECT referral_code, email, username, total_referrals, account_balance
-        FROM participants
-        WHERE referral_code = ${referralCode.toUpperCase()}
-        LIMIT 1
-      `
-      if (referrerRows.length === 0) {
-        return NextResponse.json({ success: false, error: "Invalid referral code" }, { status: 400 })
-      }
-      referrerData = referrerRows[0]
-    }
-
-    const walletAddress = `0x${Array.from({ length: 40 }, () => Math.floor(Math.random() * 16).toString(16)).join("")}`
+    const emailKey = email.toLowerCase().trim()
+    const usernameKey = username.toLowerCase().trim()
+    const mobileNumberClean = mobileNumber?.toString().trim() || null
+    const walletAddress = null
     const newReferralCode = generateReferralCode(username)
-    const hashedPassword = await bcrypt.hash(password, 10)
 
-    const newParticipantRows = await sql`
-      INSERT INTO participants (
-        full_name, username, email, mobile_number, password, plain_password,
-        wallet_address, country, country_code, state, pin_code,
-        status, rank, referral_code, referred_by,
-        total_referrals, total_earnings, account_balance, bonus_balance, is_active
-      ) VALUES (
-        ${fullName}, ${username.toLowerCase()}, ${email}, ${mobileNumber},
-        ${hashedPassword}, ${password}, ${walletAddress},
-        ${country || ""}, ${countryCode || ""}, ${state || ""}, ${pinCode || ""},
-        ${"active"}, ${"bronze"}, ${newReferralCode},
-        ${referralCode ? referralCode.toUpperCase() : null},
-        ${0}, ${0}, ${0}, ${0}, ${true}
-      )
-      RETURNING *
-    `
-    const newParticipant = newParticipantRows[0]
-
-    if (!newParticipant) {
-      return NextResponse.json({ success: false, error: "Failed to create account" }, { status: 500 })
-    }
-
-    if (referrerData) {
-      const newReferralCount = (referrerData.total_referrals || 0) + 1
-      await sql`UPDATE participants SET total_referrals = ${newReferralCount} WHERE referral_code = ${referralCode.toUpperCase()}`
-
-      const referrerRows = await sql`SELECT id FROM participants WHERE referral_code = ${referralCode.toUpperCase()} LIMIT 1`
-      const referrerParticipant = referrerRows[0]
-
-      if (referrerParticipant && mobileNumber) {
-        const phoneDigits = mobileNumber.replace(/\D/g, "")
-        const encoder = new TextEncoder()
-        const data = encoder.encode(phoneDigits)
-        const hashBuffer = await crypto.subtle.digest("SHA-256", data)
-        const hashArray = Array.from(new Uint8Array(hashBuffer))
-        const phoneHash = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("")
-
-        await sql`
-          UPDATE invite_logs
-          SET participant_email = ${newParticipant.email}
-          WHERE participant_id = ${referrerParticipant.id}
-            AND contact_hash = ${phoneHash}
-        `
+    try {
+      // Check duplicates
+      const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
+      if (emailRows.length > 0) {
+        console.log("[v0] Email already registered:", email)
+        return NextResponse.json({ success: false, message: "Email already registered" }, { status: 400 })
       }
+
+      const usernameRows = await query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
+      if (usernameRows.length > 0) {
+        console.log("[v0] Username already taken:", username)
+        return NextResponse.json({ success: false, message: "Username already taken" }, { status: 400 })
+      }
+
+      if (referralCode) {
+        const refRows = await query("SELECT id FROM participants WHERE referral_code = $1 LIMIT 1", [referralCode.toUpperCase()])
+        if (refRows.length === 0) {
+          console.log("[v0] Invalid referral code:", referralCode)
+          return NextResponse.json({ success: false, message: "Invalid referral code" }, { status: 400 })
+        }
+      }
+
+      // Insert new participant
+      const inserted = await query<Record<string, any>>(
+        `INSERT INTO participants
+          (full_name, username, email, password_hash, plain_password, wallet_address,
+           referral_code, referred_by, account_balance, status, is_active,
+           whatsapp_otp, otp_verified, mobile_number)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10)
+         RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
+        [
+          fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
+          newReferralCode, referralCode ? referralCode.toUpperCase() : null,
+          whatsappOtp || null, mobileNumberClean,
+        ]
+      )
+
+      if (!inserted || inserted.length === 0) {
+        console.log("[v0] Failed to insert participant")
+        return NextResponse.json({ success: false, message: "Failed to create account. Please try again." }, { status: 500 })
+      }
+
+      const newParticipant = inserted[0]
+      console.log("[v0] Registration successful for:", email, "ID:", newParticipant.id)
+
+      // Increment referrer's referral count if a valid referral code was used
+      if (referralCode) {
+        try {
+          await query(
+            `UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1, total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`,
+            [referralCode.toUpperCase()]
+          )
+        } catch (e) {
+          console.log("[v0] Failed to increment referrer count:", e)
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: "Registration successful! Your account is now active. You can log in immediately.",
+        participantId: newParticipant.id,
+        walletAddress: walletAddress,
+        username: usernameKey,
+        email: emailKey,
+        name: fullName,
+        full_name: fullName,
+        referralCode: newReferralCode,
+        referral_code: newReferralCode,
+        wallet_balance: 0,
+        account_balance: 0,
+        bonus_balance: 0,
+        total_referrals: 0,
+        total_earnings: 0,
+        status: "active",
+        rank: "bronze",
+        is_active: true,
+        details_completed: false,
+        created_at: newParticipant.created_at,
+      }, { status: 200 })
+    } catch (dbError: any) {
+      console.error("[v0] Database error during registration:", dbError)
+      return NextResponse.json({ 
+        success: false, 
+        message: dbError.message || "Database error during registration" 
+      }, { status: 500 })
     }
-
-    await setParticipantSession({
-      participantId: newParticipant.id,
-      email: newParticipant.email,
-      role: "participant",
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: "Registration successful",
-      participantId: newParticipant.id,
-      walletAddress,
-      username,
-      email,
-      name: fullName,
-      full_name: fullName,
-      referralCode: newReferralCode,
-      referral_code: newReferralCode,
-      bep20_address: walletAddress,
-      wallet_balance: 0,
-      account_balance: 0,
-      bonus_balance: 0,
-      total_referrals: 0,
-      total_earnings: 0,
-      status: "active",
-      rank: "bronze",
-      is_active: true,
-      details_completed: false,
-      serial_number: newParticipant.serial_number || "",
-      created_at: newParticipant.created_at,
-    })
   } catch (error: any) {
-    console.error("Registration error:", error)
-    return NextResponse.json({ success: false, error: "Registration failed" }, { status: 500 })
+    console.error("[v0] Registration error:", error)
+    return NextResponse.json({ 
+      success: false, 
+      message: error.message || "Registration failed. Please try again." 
+    }, { status: 500 })
   }
 }

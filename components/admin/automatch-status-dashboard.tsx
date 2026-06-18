@@ -33,7 +33,7 @@ export function AutomatchStatusDashboard({ cronSecret }: { cronSecret: string })
   const fetchMetrics = async () => {
     try {
       setError(null)
-      const response = await fetch(`/api/admin/automatch/status?token=${encodeURIComponent(cronSecret)}`)
+      const response = await adminFetch(`/api/admin/automatch/status?token=${encodeURIComponent(cronSecret)}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch metrics: ${response.statusText}`)

@@ -1,5 +1,5 @@
-import { sql } from "@/lib/db"
-import { type NextRequest, NextResponse } from "next/server"
+import { getPool } from "@/lib/db"
+import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function POST(request: NextRequest) {
@@ -7,40 +7,27 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
   try {
     const { email, full_name, wallet_address, full_address } = await request.json()
-
     if (!email || !full_name || !wallet_address || !full_address) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 })
     }
-
     if (!wallet_address.match(/^0x[a-fA-F0-9]{40}$/)) {
       return NextResponse.json({ error: "Invalid BEP20 wallet address format" }, { status: 400 })
     }
-
-    // Check if wallet already used by another account
-    const [existingWallet] = await sql`
-      SELECT email FROM participants WHERE wallet_address=${wallet_address} AND email != ${email}
-    `
-    if (existingWallet) {
+    const db = getPool()!
+    const { rows: existing } = await db.query(
+      "SELECT email FROM participants WHERE wallet_address = $1 AND email != $2", [wallet_address, email]
+    )
+    if (existing.length > 0) {
       return NextResponse.json({ error: "This wallet address is already registered to another account" }, { status: 400 })
     }
-
-    const [updated] = await sql`
-      UPDATE participants SET
-        full_name       = ${full_name},
-        wallet_address  = ${wallet_address},
-        bep20_address   = ${wallet_address},
-        full_address    = ${full_address},
-        details_completed = true,
-        username        = ${full_name.split(" ")[0].toLowerCase()},
-        updated_at      = NOW()
-      WHERE email = ${email}
-      RETURNING *
-    `
-
-    if (!updated) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-
-    return NextResponse.json({ success: true, message: "Profile completed successfully", data: updated })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    const { rows } = await db.query(
+      `UPDATE participants SET full_name=$1, wallet_address=$2, full_address=$3, details_completed=true, updated_at=NOW()
+       WHERE email=$4 RETURNING *`,
+      [full_name, wallet_address, full_address, email]
+    )
+    return NextResponse.json({ success: true, message: "Profile completed successfully", data: rows[0] })
+  } catch (error) {
+    console.error("[v0] Error in complete-profile route:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

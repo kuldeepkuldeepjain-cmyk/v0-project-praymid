@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -63,18 +64,24 @@ export function UserLedgerView() {
     }
     setLoading(true)
     try {
-      const res = await fetch(`/api/admin/user-ledger?email=${encodeURIComponent(email.trim())}`)
-      const json = await res.json()
+      const supabase = createClient()
 
-      if (!json.success || !json.participant) {
+      const { data: participant } = await supabase
+        .from("participants")
+        .select("id, email, full_name, username, account_balance")
+        .eq("email", email.trim())
+        .maybeSingle()
+
+      if (!participant) {
         toast({ title: "Not found", description: "No participant with that email.", variant: "destructive" })
         return
       }
 
-      const participant = json.participant
-      const transactions = json.transactions || []
-      const contributions = json.contributions || []
-      const payouts = json.payouts || []
+      const [{ data: transactions }, { data: contributions }, { data: payouts }] = await Promise.all([
+        supabase.from("transactions").select("*").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
+        supabase.from("payment_submissions").select("id, amount, status, created_at").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
+        supabase.from("payout_requests").select("id, amount, status, created_at").eq("participant_email", email.trim()).order("created_at", { ascending: false }),
+      ])
 
       const all: Transaction[] = [
         ...(transactions ?? []).map((tx: any) => ({
@@ -92,8 +99,8 @@ export function UserLedgerView() {
           .map((c: any) => ({
             id: c.id,
             type: "contribution",
-            amount: 180,
-            description: "Contribution approved — $180 credited",
+            amount: 150,
+            description: "Contribution approved — $150 credited",
             balance_before: 0,
             balance_after: 0,
             created_at: c.created_at,

@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 import { Trophy, ArrowLeft, Crown, Medal, TrendingUp, Coins, Sparkles, Zap, Star, Award, TrendingDown, ArrowUp, ArrowDown, User } from "lucide-react"
 
-
 interface LeaderboardEntry {
   position: number
   name: string
@@ -80,11 +79,10 @@ export default function LeaderboardContent() {
       const data = JSON.parse(participantData)
       const userEmail = data.email
 
-      const res = await fetch(`/api/participant/me`, {
-        headers: { "x-participant-email": userEmail },
-      })
-      const json = await res.json()
-      const userData = json.participant
+      const res = await fetch("/api/participant/me")
+      const meData = await res.json()
+      const userData: any = meData.participant || null
+
       if (!userData) return
 
       // Generate daily random rank between 10000-18000
@@ -92,7 +90,7 @@ export default function LeaderboardContent() {
       const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()
       
       // Create seed from user email for consistency
-      const emailSeed = userEmail.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+      const emailSeed = userEmail.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
       const combinedSeed = seed + emailSeed
       
       // Seeded random for daily rank
@@ -111,7 +109,7 @@ export default function LeaderboardContent() {
         earnings: Number(userData.total_earnings || 0),
       })
     } catch (error) {
-      console.error("Error fetching user stats:", error)
+      console.error("[v0] Error fetching user stats:", error)
     }
   }
 

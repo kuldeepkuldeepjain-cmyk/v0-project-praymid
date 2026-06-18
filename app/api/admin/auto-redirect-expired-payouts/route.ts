@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/db"
+import { NextRequest, NextResponse } from "next/server"
+import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 const PAYOUT_TIMEOUT_HOURS = 24
@@ -8,80 +8,46 @@ export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const expiredPayouts = await sql`
-      SELECT * FROM payout_requests
-      WHERE status = 'pending'
-        AND created_at < NOW() - INTERVAL '${PAYOUT_TIMEOUT_HOURS} hours'
-      ORDER BY created_at ASC
-      LIMIT 50
-    `
+    const db = getPool()!
+    const cutoffTime = new Date(Date.now() - PAYOUT_TIMEOUT_HOURS * 60 * 60 * 1000).toISOString()
+
+    const expiredRes = await db.query(
+      `SELECT * FROM payout_requests WHERE status='pending' AND created_at<$1 ORDER BY created_at ASC LIMIT 50`,
+      [cutoffTime]
+    )
+    const expiredPayouts = expiredRes.rows
 
     if (!expiredPayouts.length) {
-      return NextResponse.json({ success: true, message: "No expired payouts to redirect", redirectedCount: 0 })
+      return NextResponse.json({ success: true, message: "No expired payouts found", expiredCount: 0, redirectedCount: 0 })
     }
 
-    let redirectedCount = 0
-    const redirectResults = []
-
+    // Mark expired payouts as expired instead of redirecting to other participants
     for (const payout of expiredPayouts) {
       try {
-        const [nextParticipant] = await sql`
-          SELECT id, email, username, full_name, account_balance
-          FROM participants
-          WHERE email != ${payout.participant_email}
-          ORDER BY created_at DESC
-          LIMIT 1
-        `
-
-        if (!nextParticipant) continue
-
-        const newBalance = Number(nextParticipant.account_balance) + Number(payout.amount)
-
-        await sql`UPDATE participants SET account_balance=${newBalance} WHERE id=${nextParticipant.id}`
-
-        await sql`
-          INSERT INTO transactions (participant_email, participant_id, type, amount, balance_before, balance_after, description, reference_id)
-          VALUES (${nextParticipant.email}, ${nextParticipant.id}, 'payout_redirect', ${payout.amount},
-            ${nextParticipant.account_balance}, ${newBalance},
-            ${'Auto-redirected payout from expired request (original: ' + payout.participant_email + ')'},
-            ${'AUTO_REDIRECT_' + payout.id})
-        `
-
-        await sql`
-          UPDATE payout_requests SET
-            status = 'redirected',
-            redirect_to_email = ${nextParticipant.email},
-            admin_notes = ${'Auto-redirected after ' + PAYOUT_TIMEOUT_HOURS + 'h inactivity. Original: ' + payout.participant_email},
-            processed_at = NOW()
-          WHERE id = ${payout.id}
-        `
-
-        await sql`
-          INSERT INTO notifications (user_email, type, title, message)
-          VALUES (${nextParticipant.email}, 'success', 'Payout Redirected to Your Account',
-            ${'You have received a redirected payout of $' + payout.amount + '. Your new balance is $' + newBalance.toFixed(2) + '.'})
-        `
-
-        await sql`
-          INSERT INTO activity_logs (actor_email, action, target_type, target_id, details)
-          VALUES ('system_auto_redirect', 'payout_auto_redirected', 'payout', ${payout.id},
-            ${'Redirected $' + payout.amount + ' from ' + payout.participant_email + ' to ' + nextParticipant.email + ' after ' + PAYOUT_TIMEOUT_HOURS + 'h timeout'})
-        `
-
-        redirectResults.push({ payoutId: payout.id, originalRecipient: payout.participant_email, newRecipient: nextParticipant.email, amount: payout.amount, status: "success" })
-        redirectedCount++
-      } catch (error: any) {
-        redirectResults.push({ payoutId: payout.id, status: "failed", error: error.message })
+        await db.query(
+          `UPDATE payout_requests SET status='expired', admin_notes=$1, processed_at=NOW() WHERE id=$2`,
+          [`Payout request expired after ${PAYOUT_TIMEOUT_HOURS}h without completion`, payout.id]
+        )
+        await db.query(
+          `INSERT INTO notifications(user_email,type,title,message,read_status) VALUES($1,'payout_expired','Payout Request Expired',$2,false)`,
+          [payout.participant_email, `Your payout request of $${payout.amount} has expired. Please submit a new request if needed.`]
+        )
+        await db.query(
+          `INSERT INTO activity_logs(actor_email,action,target_type,details) VALUES('system_auto','payout_expired','payout',$1)`,
+          [`Payout request expired for ${payout.participant_email}`]
+        )
+      } catch (error) {
+        console.error(`Failed to mark payout ${payout.id} as expired:`, error)
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Auto-redirect completed. ${redirectedCount} payouts redirected.`,
-      redirectedCount,
-      results: redirectResults,
+    return NextResponse.json({ 
+      success: true, 
+      message: `Auto-cleanup completed. ${expiredPayouts.length} expired payouts marked as expired.`, 
+      expiredCount: expiredPayouts.length,
+      redirectedCount: 0 
     })
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+  } catch (error) {
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : "Unknown error" }, { status: 500 })
   }
 }

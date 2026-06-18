@@ -35,7 +35,7 @@ import {
   Plus,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
 
 import { TopUpModal } from "@/components/topup-modal"
@@ -43,6 +43,9 @@ import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { MessageCircle } from "lucide-react"
 import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
+import { StakingBanner } from "@/components/staking-banner"
+import { NoticeBoard } from "@/components/notice-board"
+import { MysteryBox } from "@/components/mystery-box"
 
 interface LeaderboardEntry {
   position: number
@@ -261,12 +264,22 @@ function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           </p>
 
           <div className="space-y-3">
-            <Link href="/participant/dashboard/settings/help" className="block">
-              <Button className="w-full h-12 bg-[#7c3aed] hover:bg-[#6d28d9] btn-premium">
-                <Mail className="h-4 w-4 mr-2" />
-                Contact Support
-              </Button>
-            </Link>
+            <a
+              href="https://wa.me/995574450590"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp Support
+            </a>
+            <a
+              href="mailto:support@flowchain.club"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-semibold rounded-lg transition-colors"
+            >
+              <Mail className="h-4 w-4" />
+              Email Support
+            </a>
             <Button
               variant="outline"
               className="w-full h-12 bg-transparent border-2 border-slate-300 hover:bg-slate-50"
@@ -436,7 +449,7 @@ function HamburgerMenu({
           <Link href="/participant/dashboard/refer" onClick={onClose}>
             <div className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
               <Gift className="h-5 w-5 text-slate-600" />
-              <span className="text-slate-700">Invite 4 Friends, Get $20</span>
+              <span className="text-slate-700">Invite Friends & Earn Unlimited $5 Per Referral</span>
             </div>
           </Link>
           <Link href="/participant/dashboard/settings/security" onClick={onClose}>
@@ -461,6 +474,35 @@ function HamburgerMenu({
               <span className="text-slate-700">Help & Support</span>
             </div>
           </Link>
+
+          {/* Support contacts */}
+          <div className="mx-1 mt-2 rounded-xl bg-green-50 border border-green-100 overflow-hidden">
+            <p className="text-[11px] font-semibold text-green-700 uppercase tracking-wide px-3 pt-2.5 pb-1">Contact Support</p>
+            <a
+              href="https://wa.me/995574450590"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-green-100 transition-colors"
+            >
+              <MessageCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">WhatsApp</p>
+                <p className="text-xs text-green-600">+995 574 450 590</p>
+              </div>
+            </a>
+            <a
+              href="mailto:support@flowchain.club"
+              onClick={onClose}
+              className="flex items-center gap-3 px-3 py-2.5 hover:bg-green-100 transition-colors border-t border-green-100"
+            >
+              <Mail className="h-4 w-4 text-green-600 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Email</p>
+                <p className="text-xs text-green-600">support@flowchain.club</p>
+              </div>
+            </a>
+          </div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-100">
@@ -484,16 +526,15 @@ function HamburgerMenu({
 // Segments ordered starting from TOP (12 o'clock) going CLOCKWISE
 // This array order MUST match the visual wheel layout
 const SPIN_SEGMENTS = [
-  { label: "$10", value: 10, color: "#eab308", darkColor: "#ca8a04", icon: "💎", type: "cash", probability: 1 },           // Index 0: TOP
-  { label: "BETTER LUCK", value: 0, color: "#f5f5f5", darkColor: "#e5e5e5", icon: "🍀", type: "luck", textColor: "#64748b", probability: 1 }, // Index 1
-  { label: "$4", value: 4, color: "#3b82f6", darkColor: "#2563eb", icon: "🎟️", type: "cash", probability: 1 },           // Index 2
-  { label: "$1", value: 1, color: "#f97316", darkColor: "#ea580c", icon: "💵", type: "cash", probability: 1 },           // Index 3
-  { label: "$50", value: 50, color: "#14b8a6", darkColor: "#0d9488", icon: "💰", type: "cash", probability: 0 },         // Index 4: JACKPOT (0% chance)
-  { label: "$5", value: 5, color: "#ef4444", darkColor: "#dc2626", icon: "💰", type: "cash", probability: 1 },           // Index 5
-  { label: "TRY AGAIN", value: 0, color: "#8b5cf6", darkColor: "#7c3aed", icon: "🔄", type: "luck", probability: 1 },   // Index 6
-  { label: "$2", value: 2, color: "#10b981", darkColor: "#059669", icon: "💸", type: "cash", probability: 1 },           // Index 7
-  { label: "$100", value: 100, color: "#f59e0b", darkColor: "#d97706", icon: "💎", type: "cash", probability: 0 },       // Index 8: MEGA JACKPOT (0% chance)
-  { label: "$3", value: 3, color: "#ec4899", darkColor: "#db2777", icon: "🎁", type: "cash", probability: 1 },           // Index 9
+  { label: "0x", multiplier: 0.0, color: "#ef4444", darkColor: "#991b1b", icon: "💔", type: "multiplier", probability: 0.45, textColor: "#7f1d1d", subtext: "Better Luck!" },      // 45% - Full loss
+  { label: "0.25x", multiplier: 0.25, color: "#fca5a5", darkColor: "#dc2626", icon: "😅", type: "multiplier", probability: 0.25, textColor: "#7f1d1d", subtext: "Oops!" },         // 25% - Quarter loss
+  { label: "0.5x", multiplier: 0.5, color: "#fef3c7", darkColor: "#f59e0b", icon: "🎲", type: "multiplier", probability: 0.10, textColor: "#92400e", subtext: "Close!" },       // 10% - Half loss
+  { label: "1x", multiplier: 1.0, color: "#dbeafe", darkColor: "#3b82f6", icon: "⭐", type: "multiplier", probability: 0.08, textColor: "#1e40af", subtext: "Even!" },         // 8% - Break even
+  { label: "1.5x", multiplier: 1.5, color: "#dcfce7", darkColor: "#22c55e", icon: "🌟", type: "multiplier", probability: 0.04, textColor: "#15803d", subtext: "Good!" },     // 4% - Good win
+  { label: "2x", multiplier: 2.0, color: "#f5e5ff", darkColor: "#a855f7", icon: "💫", type: "multiplier", probability: 0.03, textColor: "#6d28d9", subtext: "Great!" },      // 3% - Great win
+  { label: "3x", multiplier: 3.0, color: "#fee2e2", darkColor: "#ef4444", icon: "🎯", type: "multiplier", probability: 0.02, textColor: "#991b1b", subtext: "Jackpot!" },    // 2% - Jackpot
+  { label: "5x", multiplier: 5.0, color: "#f87171", darkColor: "#b91c1c", icon: "💎", type: "multiplier", probability: 0.02, textColor: "#4c0519", subtext: "Mega!" },       // 2% - Mega
+  { label: "10x", multiplier: 10.0, color: "#dc2626", darkColor: "#7f1d1d", icon: "👑", type: "multiplier", probability: 0.01, textColor: "#fca5a5", subtext: "Legend!" },    // 1% - Legendary
 ]
 
 function DailySpinWheel({
@@ -507,7 +548,7 @@ function DailySpinWheel({
 }: {
   isOpen: boolean
   onClose: () => void
-  onWin: (amount: number, label: string, type: string) => void
+  onWin: (amount: number, label: string, type: string, balanceAfter: number, balanceAfterDeduct: number) => void
   userEmail: string
   currentBalance: number
   participantData: any
@@ -515,21 +556,22 @@ function DailySpinWheel({
 }) {
   const [isSpinning, setIsSpinning] = useState(false)
   const [rotation, setRotation] = useState(0)
-  const [result, setResult] = useState<{ label: string; value: number; icon: string; type: string } | null>(null)
+  const [spinKey, setSpinKey] = useState(0) // incremented each spin to remount wheel and reset CSS transition
+  const [result, setResult] = useState<{ label: string; multiplier: number; icon: string; type: string; probability?: number; darkColor?: string; color?: string; subtext?: string } | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [canSpin, setCanSpin] = useState(true)
   const [streakDays, setStreakDays] = useState(0)
+  const [spinAmount, setSpinAmount] = useState(10) // Default spin amount
   const { toast } = useToast()
-  const SPIN_COST = 5
 
   const spinWheel = async () => {
     if (isSpinning) return
-    
+
     // Check if user has enough balance
-    if (currentBalance < SPIN_COST) {
+    if (currentBalance < spinAmount || spinAmount <= 0) {
       toast({
         title: "Insufficient Balance",
-        description: "You need $" + SPIN_COST + " to spin the wheel. Please top up your wallet.",
+        description: `You need $${spinAmount.toFixed(2)} USDT to spin. Please top up your wallet or select a lower amount.`,
         variant: "destructive",
       })
       return
@@ -538,135 +580,141 @@ function DailySpinWheel({
     setIsSpinning(true)
     setShowResult(false)
     setResult(null)
-    
-    // IMPORTANT: Reset wheel to 0° before each spin to ensure full animation
-    // This prevents the wheel from just slowly rotating between close angles
+
+    // Reset rotation instantly by remounting the wheel (new key = no CSS transition on mount)
+    const newKey = spinKey + 1
+    setSpinKey(newKey)
     setRotation(0)
-    
-  // Store original balance before deduction
-  const originalBalance = participantData?.account_balance || 0
-  
-  // Deduct $5 from wallet immediately
-  const balanceAfterDeduction = originalBalance - SPIN_COST
-  setParticipantData({ ...participantData, account_balance: balanceAfterDeduction })
-  localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: balanceAfterDeduction }))
-    
-    // Update database with deduction
+
+    // Call the spin API with the selected amount
+    let apiResult: { prize: { label: string; amount: number; multiplier: number; segmentIndex: number }; balanceAfter: number; balanceBefore: number } | null = null
     try {
-      await fetch("/api/participant/update-balance", {
+      const res = await participantFetch("/api/participant/spin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: userEmail, balance: balanceAfterDeduction }),
+        body: JSON.stringify({ email: userEmail, spinAmount }),
       })
-    } catch (error) {
-      console.error("Error updating wallet after deduction:", error)
+      const data = await res.json()
+      if (!res.ok) {
+        toast({ title: "Spin Failed", description: data.error || "Could not process spin.", variant: "destructive" })
+        setIsSpinning(false)
+        return
+      }
+      apiResult = data
+      const balanceAfterDeduct = parseFloat((data.balanceBefore - spinAmount).toFixed(2))
+      onWin(0, "", "deduct", balanceAfterDeduct, balanceAfterDeduct)
+    } catch {
+      toast({ title: "Spin Failed", description: "Network error. Please try again.", variant: "destructive" })
+      setIsSpinning(false)
+      return
     }
 
-  // Pick random segment FIRST - only from segments with probability > 0
-  const eligibleSegments = SPIN_SEGMENTS.map((seg, idx) => ({ seg, idx })).filter(item => item.seg.probability > 0)
-  const randomEligible = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)]
-  const segmentIndex = randomEligible.idx
-  const wonSegment = SPIN_SEGMENTS[segmentIndex]
-  
-  const segmentAngle = 360 / SPIN_SEGMENTS.length // 36° for 10 segments
-    const spins = 5 + Math.floor(Math.random() * 3) // 5-7 full rotations for excitement
-    
-    // FINAL SOLUTION: Calculate rotation based on pointer position
-    // The pointer is at TOP. After wheel rotates, which segment is under the pointer?
-    // 
-    // In the SVG, segments are positioned at angles (measured from -90° at top):
-    // Segment i is at angle: (i * 45) degrees from TOP, going CLOCKWISE
-    // - Segment 0: 0° from top (AT top)
-    // - Segment 1: 45° from top (clockwise)
-    // - Segment 2: 90° from top (at right)
-    // - Segment 3: 135° from top
-    // - Segment 4: 180° from top (at bottom)
-    // 
-    // When we apply CSS rotate(R), the wheel rotates clockwise by R degrees
-    // Pointer stays at top, but segments move
-    // To determine which segment ends under pointer after rotation R:
-    // The segment that was R degrees COUNTER-CLOCKWISE from top is now at top
-    // That's segment at position (-R) from top
-    // So segment (-R / 45) ends up at top
-    // 
-    // To get segment i at top: -R / 45 = i, so R = -i * 45
-    // Convert to positive: R = 360 - (i * 45) = (8 - i) * 45
-    
-    const rotationForSegment = (SPIN_SEGMENTS.length - segmentIndex) * segmentAngle
-    const finalRotation = spins * 360 + rotationForSegment
-    
+    // Use the server-determined segment index so the wheel matches the actual prize
+    const segmentIndex = apiResult!.prize.segmentIndex
+    const N = SPIN_SEGMENTS.length
+    const STEP = 360 / N  // 40° per segment
+    const spins = 5 + Math.floor(Math.random() * 3)
 
+    // Rotation to bring segment i's centre under the pointer (top of wheel).
+    //
+    // slicePath(i) draws from angle (i*STEP - 90) clockwise, so the visual
+    // centre of segment i in SVG-angle space is:
+    //   midDeg = i*STEP + STEP/2 - 90
+    //
+    // "Top of circle" in SVG-angle convention (0°=right, 90°=down) is 270°.
+    //
+    // After applying CSS rotate(R deg) clockwise the segment centre lands at:
+    //   (midDeg + R) mod 360
+    //
+    // Set that equal to 270°:
+    //   R = (270 - midDeg + 360*k) mod 360   → always positive
+    const midDeg = segmentIndex * STEP + STEP / 2 - 90
+    const stopAt = ((270 - midDeg) % 360 + 360) % 360
+    const finalRotation = spins * 360 + stopAt
 
-    // Wait a tiny bit for state to update, then apply the rotation
+    // Give React one frame to render rotation=0 (no transition) before we set the target
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setRotation(finalRotation)
+      })
+    })
+
+    // Capture for closure use in setTimeout
+    const capturedResult = apiResult!
+
+    // After spin animation completes (match the 3.5 s CSS transition)
     setTimeout(() => {
-      setRotation(finalRotation)
-    }, 50)
-
-    // After spin completes (3 seconds)
-    setTimeout(async () => {
       setIsSpinning(false)
       const won = SPIN_SEGMENTS[segmentIndex]
       setResult(won)
       setShowResult(true)
 
+      // Determine if it's a win based on multiplier value
+      const isWin = won.multiplier >= 1.0
+      const isMegaJackpot = won.multiplier >= 10.0
+      const isUltraJackpot = won.multiplier >= 5.0
+      const isJackpot = won.multiplier >= 3.0
+      const isFullLoss = won.multiplier === 0.0
+      const isQuarterLoss = won.multiplier === 0.25
+      const isHalfLoss = won.multiplier === 0.5
+      const winAmount = spinAmount * won.multiplier
 
-
-      // Handle different prize types
-      if (won.type === "ticket") {
-        // Create free ticket coupon in database
-        try {
-          const expiresAt = new Date()
-          expiresAt.setHours(expiresAt.getHours() + 24)
-          await fetch("/api/participant/spin-coupon", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: userEmail, couponType: "free_bet", amount: 5, expiresAt: expiresAt.toISOString() }),
-          })
-          toast({
-            title: "Free Ticket Won!",
-            description: "You can use this $5 free bet in predictions within 24 hours!",
-          })
-        } catch (error) {
-          console.error("[v0] Error creating coupon:", error)
-        }
-      } else if (won.type === "cash" && won.value > 0) {
-        // Credit cash winnings to wallet (add to balance AFTER deduction)
-        const finalBalance = balanceAfterDeduction + won.value
-        setParticipantData({ ...participantData, account_balance: finalBalance })
-        localStorage.setItem("participantData", JSON.stringify({ ...participantData, account_balance: finalBalance }))
-        
-        // Update database with winnings
-        try {
-          await fetch("/api/participant/update-balance", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: userEmail, balance: finalBalance }),
-          })
-        } catch (error) {
-          console.error("Error updating wallet with winnings:", error)
-        }
-        
+      // Display appropriate toast message based on outcome
+      if (isMegaJackpot) {
         toast({
-          title: won.value >= 10 ? "Jackpot!" : "Congratulations!",
-          description: `You won $${won.value}! It has been added to your wallet.`,
+          title: "👑 LEGENDARY WIN! 👑",
+          description: `YOU HIT THE 10X MULTIPLIER! You won $${winAmount.toFixed(2)}! 🚀✨🎊`,
         })
-      } else if (won.type === "luck") {
-        // No credit for luck segments
+      } else if (isUltraJackpot) {
         toast({
-          title: "Better Luck Next Time!",
-          description: "Try spinning again for a chance to win!",
+          title: "💎 MEGA JACKPOT! 💎",
+          description: `You hit the 5x multiplier! You won $${winAmount.toFixed(2)}! 🎉`,
+        })
+      } else if (isJackpot) {
+        toast({
+          title: "🎊 JACKPOT! 🎊",
+          description: `You hit the 3x multiplier! You won $${winAmount.toFixed(2)}!`,
+        })
+      } else if (isWin && won.multiplier >= 2.0) {
+        toast({
+          title: "🎉 AMAZING WIN! 🎉",
+          description: `You won ${won.multiplier}x! You earned $${winAmount.toFixed(2)}!`,
+        })
+      } else if (isWin) {
+        toast({
+          title: "✨ Congratulations! ✨",
+          description: `You won ${won.multiplier}x! You earned $${winAmount.toFixed(2)}!`,
+        })
+      } else if (isFullLoss) {
+        toast({
+          title: "Better Luck Next Time! 🍀",
+          description: `Oh no! You lost your entire $${spinAmount.toFixed(2)} spin. Better luck next time!`,
+        })
+      } else if (isQuarterLoss) {
+        toast({
+          title: "Close One! 😅",
+          description: `You got 0.25x. You lost $${(spinAmount * 0.75).toFixed(2)} on this spin. Try again!`,
+        })
+      } else if (isHalfLoss) {
+        toast({
+          title: "Better Luck Next Time! 🍀",
+          description: `You got 0.5x. You lost $${(spinAmount * 0.5).toFixed(2)} on this spin. Try again!`,
+        })
+      } else {
+        toast({
+          title: "Better Luck Next Time! 🍀",
+          description: "Keep spinning! The next one could be a winner.",
         })
       }
-      
-      // Trigger balance refresh
-      onWin(won.value, won.label, won.type)
-    }, 3000)
+
+      // Notify parent with the final server-confirmed balance (after winnings added)
+      onWin(winAmount, won.label, won.type, capturedResult.balanceAfter, capturedResult.balanceAfter)
+    }, 3600) // slightly after 3.5s CSS animation ends
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden" style={{ background: 'linear-gradient(135deg, #fef3c7 0%, #fce7f3 30%, #e0e7ff 60%, #f0fdf4 100%)' }}>
+    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f0720 0%, #1a0533 30%, #200a3e 60%, #0d1526 100%)' }}>
       {/* Premium CSS Animations */}
       <style jsx>{`
         @keyframes float {
@@ -708,17 +756,28 @@ function DailySpinWheel({
         }
       `}</style>
       
-      {/* Floating Background Decorations - Hidden on mobile for performance */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden hidden md:block">
-        <div className="absolute top-5 left-5 w-64 h-64 bg-orange-300/40 rounded-full blur-3xl" style={{ animation: 'float 4s ease-in-out infinite', willChange: 'transform' }} />
-        <div className="absolute top-20 right-10 w-52 h-52 bg-pink-300/35 rounded-full blur-3xl" style={{ animation: 'float-reverse 5s ease-in-out infinite', willChange: 'transform' }} />
-        <div className="absolute bottom-32 left-10 w-72 h-72 bg-purple-300/30 rounded-full blur-3xl" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
-        <div className="absolute bottom-10 right-5 w-56 h-56 bg-emerald-300/30 rounded-full blur-3xl" style={{ animation: 'float-reverse 4.5s ease-in-out infinite', animationDelay: '0.5s', willChange: 'transform' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-200/25 rounded-full blur-3xl" />
+      {/* Starfield & Floating Background Decorations */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Stars */}
+        {[...Array(22)].map((_, i) => (
+          <div key={i} className="absolute rounded-full bg-white"
+            style={{
+              width: `${1.5 + (i % 3)}px`, height: `${1.5 + (i % 3)}px`,
+              top: `${(i * 41 + 9) % 96}%`, left: `${(i * 57 + 5) % 96}%`,
+              opacity: 0.12 + (i % 4) * 0.07,
+              animation: `pulse ${2 + (i % 3)}s ease-in-out infinite`,
+              animationDelay: `${(i * 0.35) % 3}s`,
+            }}
+          />
+        ))}
+        <div className="absolute top-5 left-5 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 4s ease-in-out infinite', willChange: 'transform' }} />
+        <div className="absolute top-20 right-10 w-52 h-52 bg-pink-500/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float-reverse 5s ease-in-out infinite', willChange: 'transform' }} />
+        <div className="absolute bottom-32 left-10 w-72 h-72 bg-purple-600/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/12 rounded-full blur-3xl" />
       </div>
 
       {/* Header - Mobile Optimized */}
-      <div className="relative z-10 flex items-center justify-between p-3 sm:p-5 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+      <div className="relative z-10 flex items-center justify-between p-3 sm:p-5 border-b border-white/10 bg-white/5 backdrop-blur-md">
         <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
           <div 
             className="w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -731,213 +790,439 @@ function DailySpinWheel({
             <Sparkles className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg sm:text-2xl font-black bg-gradient-to-r from-[#e85d3b] via-[#f59e0b] to-[#fbbf24] bg-clip-text text-transparent">LUCK WHEEL</h2>
-            <p className="text-[10px] sm:text-xs text-slate-600 font-semibold tracking-wide truncate">Spin to win amazing rewards!</p>
+            <h2 className="text-lg sm:text-2xl font-black bg-gradient-to-r from-[#fb923c] via-[#f59e0b] to-[#fbbf24] bg-clip-text text-transparent">LUCK WHEEL</h2>
+            <p className="text-[10px] sm:text-xs text-orange-200/80 font-semibold tracking-wide truncate">Spin to win amazing rewards!</p>
           </div>
         </div>
         <button 
           onClick={onClose} 
-          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 transition-colors flex-shrink-0"
+          className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg sm:rounded-xl flex items-center justify-center bg-white/10 hover:bg-white/20 transition-colors flex-shrink-0"
         >
-          <X className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />
+          <X className="h-4 w-4 sm:h-5 sm:w-5 text-white/80" />
         </button>
       </div>
 
-      {/* Content Container with Gradient Background - Mobile Optimized */}
-      <div className="relative z-10 flex-1 flex flex-col items-center px-3 sm:px-4 py-4 sm:py-6 overflow-y-auto">
+      {/* Content Container */}
+      <div className="relative z-10 flex-1 flex flex-col items-center px-3 sm:px-6 py-3 sm:py-5 overflow-y-auto min-h-0">
         {/* Animated Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-orange-50 to-pink-50 opacity-60" 
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-orange-900/10 to-pink-900/20 opacity-60" 
           style={{
             backgroundSize: '400% 400%',
             animation: 'gradient-shift 15s ease infinite'
           }}
         />
         
-        {/* Compact Layout with Wheel and Actions - Responsive */}
-        <div className="relative w-full max-w-4xl mx-auto">
-          <div className="flex flex-col lg:flex-row items-center justify-center gap-4 sm:gap-8">
+        {/* Main layout: wheel left, controls right */}
+        <div className="relative w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center lg:items-start justify-center gap-4 lg:gap-8">
             
-            {/* Wheel Section with Glow Effect */}
-            <div className="relative">
-          {/* Glowing Ring Behind Wheel */}
-          <div className="absolute inset-0 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(249, 115, 22, 0.3) 0%, transparent 70%)',
-              filter: 'blur(30px)',
-            }}
-          />
-              
-              {/* Enhanced Triangle Pointer with Glow */}
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-5 z-30 animate-bounce">
-                <div 
-                  className="w-0 h-0 border-l-[20px] border-r-[20px] border-t-[36px] border-l-transparent border-r-transparent"
-                  style={{
-                    borderTopColor: '#f97316',
-                    filter: 'drop-shadow(0 4px 12px rgba(249, 115, 22, 0.8)) drop-shadow(0 0 20px rgba(249, 115, 22, 0.4))',
-                  }}
-                />
-          {/* Golden circle under pointer */}
-          <div
-            className="absolute top-[34px] left-1/2 -translate-x-1/2 w-6 h-6 rounded-full"
-            style={{
-              background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-              boxShadow: '0 0 20px rgba(251, 191, 36, 0.8)',
-              filter: 'blur(2px)'
-            }}
-          />
+            {/* Wheel Section */}
+            <div className="relative flex flex-col items-center justify-center flex-shrink-0 w-full lg:w-auto">
+              {/* Ambient glow */}
+              <div className="absolute inset-0 rounded-full pointer-events-none"
+                style={{ 
+                  background: 'radial-gradient(circle, rgba(249,115,22,0.35) 0%, rgba(168,85,247,0.18) 50%, transparent 80%)', 
+                  filter: 'blur(40px)',
+                }}
+              />
+
+              {/* Diamond Pointer — scales with the wheel wrapper */}
+              <div className="relative z-30" style={{ marginBottom: '-5%', filter: 'drop-shadow(0 6px 16px rgba(236,72,153,0.7))' }}>
+                <svg viewBox="0 0 52 64" className="w-8 h-10 sm:w-10 sm:h-12">
+                  <defs>
+                    <linearGradient id="dPtrBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#ffffff"/>
+                      <stop offset="100%" stopColor="#d1d5db"/>
+                    </linearGradient>
+                    <linearGradient id="dPtrGem" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%"   stopColor="#fda4af"/>
+                      <stop offset="40%"  stopColor="#ec4899"/>
+                      <stop offset="100%" stopColor="#be123c"/>
+                    </linearGradient>
+                  </defs>
+                  <ellipse cx="26" cy="22" rx="20" ry="20" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="2"/>
+                  <polygon points="6,34 46,34 26,64" fill="url(#dPtrBody)" stroke="#fda4af" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <polygon points="26,6 38,20 26,34 14,20" fill="url(#dPtrGem)"/>
+                  <polygon points="26,6 38,20 26,15 14,20" fill="rgba(255,255,255,0.5)"/>
+                  <polygon points="26,34 38,20 26,26 14,20" fill="rgba(0,0,0,0.12)"/>
+                  <line x1="14" y1="20" x2="38" y2="20" stroke="rgba(255,255,255,0.5)" strokeWidth="1"/>
+                  <circle cx="21" cy="13" r="2.8" fill="rgba(255,255,255,0.7)"/>
+                </svg>
               </div>
 
-              {/* Wheel with SVG segments - Mobile Optimized */}
+              {/* Responsive wheel wrapper: 280px on small phones → 340px on sm → 380px on md+ */}
+              <div className="relative w-[280px] h-[280px] sm:w-[340px] sm:h-[340px] md:w-[380px] md:h-[380px]">
+              {/* Spinning div — key forces remount so CSS transition resets cleanly each spin */}
               <div
-                className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96"
+                key={spinKey}
+                className="absolute inset-0 rounded-full"
                 style={{
                   transform: `rotate(${rotation}deg)`,
-                  transition: isSpinning ? "transform 3s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
-                  filter: isSpinning 
-                    ? 'drop-shadow(0 20px 50px rgba(249, 115, 22, 0.4)) blur(0.5px)' 
-                    : 'drop-shadow(0 20px 50px rgba(0,0,0,0.2))',
+                  transition: rotation > 0 ? "transform 3.5s cubic-bezier(0.17, 0.67, 0.12, 0.99)" : "none",
+                  willChange: "transform",
                 }}
               >
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              {/* Golden outer ring */}
-              <defs>
-                <linearGradient id="goldRing" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="50%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#fbbf24" />
-                </linearGradient>
-                <linearGradient id="centerGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#fbbf24" />
-                  <stop offset="100%" stopColor="#f59e0b" />
-                </linearGradient>
-                <filter id="segmentShadow">
-                  <feDropShadow dx="0" dy="0.5" stdDeviation="0.3" floodOpacity="0.3"/>
-                </filter>
-              </defs>
-              
-              {/* Outer golden ring */}
-              <circle cx="50" cy="50" r="49" fill="url(#goldRing)" />
-              <circle cx="50" cy="50" r="46" fill="white" />
-              
-              {/* Wheel segments - 8 segments from SPIN_SEGMENTS */}
-              {SPIN_SEGMENTS.map((segment, i) => {
-                const angle = 360 / SPIN_SEGMENTS.length
-                const startAngle = i * angle - 90 - angle / 2
-                const endAngle = startAngle + angle
-                const startRad = (startAngle * Math.PI) / 180
-                const endRad = (endAngle * Math.PI) / 180
-                const x1 = 50 + 44 * Math.cos(startRad)
-                const y1 = 50 + 44 * Math.sin(startRad)
-                const x2 = 50 + 44 * Math.cos(endRad)
-                const y2 = 50 + 44 * Math.sin(endRad)
-                const midAngle = startAngle + angle / 2
-                const midRad = (midAngle * Math.PI) / 180
-                const textX = 50 + 30 * Math.cos(midRad)
-                const textY = 50 + 30 * Math.sin(midRad)
+                {(() => {
+                  const SIZE = 320
+                  const CX = SIZE / 2
+                  const CY = SIZE / 2
+                  const OUTER = 138
+                  const INNER = 46
+                  const RIM   = 152
+                  const N     = SPIN_SEGMENTS.length
+                  const STEP  = 360 / N
+                  const toRad = (d: number) => (d * Math.PI) / 180
 
-                return (
-                  <g key={i}>
-                    <path
-                      d={`M 50 50 L ${x1} ${y1} A 44 44 0 0 1 ${x2} ${y2} Z`}
-                      fill={segment.color}
-                      stroke="rgba(255,255,255,0.5)"
-                      strokeWidth="0.5"
-                      filter="url(#segmentShadow)"
-                    />
-                    <text
-                      x={textX}
-                      y={textY}
-                      fill={segment.textColor || "#ffffff"}
-                      fontSize="6"
-                      fontWeight="900"
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      transform={`rotate(${midAngle + 90}, ${textX}, ${textY})`}
-                      style={{ textShadow: segment.textColor === "#64748b" ? "0 1px 3px rgba(0,0,0,0.2)" : "0 2px 6px rgba(0,0,0,0.6)", letterSpacing: "0.5px" }}
+                  const slicePath = (i: number) => {
+                    const s = i * STEP - 90
+                    const e = s + STEP
+                    const x1 = CX + OUTER * Math.cos(toRad(s))
+                    const y1 = CY + OUTER * Math.sin(toRad(s))
+                    const x2 = CX + OUTER * Math.cos(toRad(e))
+                    const y2 = CY + OUTER * Math.sin(toRad(e))
+                    return `M${CX},${CY} L${x1},${y1} A${OUTER},${OUTER} 0 0,1 ${x2},${y2} Z`
+                  }
+
+                  const ledAngles = Array.from({ length: 16 }, (_, i) => (i * 360) / 16)
+
+                  return (
+                    <svg
+                      width="100%" height="100%"
+                      viewBox={`0 0 ${SIZE} ${SIZE}`}
+                      style={{ overflow: "visible", filter: isSpinning ? "drop-shadow(0 0 28px rgba(249,115,22,0.7))" : "drop-shadow(0 8px 32px rgba(0,0,0,0.35))" }}
                     >
-                      {segment.type === 'cash' ? `$${segment.value}` : segment.icon}
-                    </text>
-                  </g>
-                )
-              })}
-              
-              {/* Center golden circle */}
-              <circle cx="50" cy="50" r="12" fill="url(#centerGold)" stroke="#f59e0b" strokeWidth="2" />
-              <circle cx="50" cy="50" r="9" fill="#fbbf24" />
-              {/* Star in center */}
-              <text x="50" y="51" fontSize="10" textAnchor="middle" dominantBaseline="middle" fill="#f97316">★</text>
-            </svg>
-          </div>
-        </div>
+                      <defs>
+                        {/* Per-segment radial gradient for 3D depth */}
+                        {SPIN_SEGMENTS.map((seg, i) => (
+                          <radialGradient key={i} id={`dseg${i}`} cx="30%" cy="28%" r="82%">
+                            <stop offset="0%"   stopColor={seg.color} stopOpacity="1"/>
+                            <stop offset="55%"  stopColor={seg.color} stopOpacity="1"/>
+                            <stop offset="100%" stopColor={seg.darkColor} stopOpacity="1"/>
+                          </radialGradient>
+                        ))}
+                        {/* Chrome rim gradient */}
+                        <linearGradient id="dRimChrome" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%"   stopColor="#ff7e36"/>
+                          <stop offset="20%"  stopColor="#f97316"/>
+                          <stop offset="38%"  stopColor="#f43f5e"/>
+                          <stop offset="55%"  stopColor="#ec4899"/>
+                          <stop offset="72%"  stopColor="#a855f7"/>
+                          <stop offset="88%"  stopColor="#6366f1"/>
+                          <stop offset="100%" stopColor="#3b82f6"/>
+                        </linearGradient>
+                        {/* Rim shine */}
+                        <linearGradient id="dRimShine" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%"   stopColor="rgba(255,255,255,0.55)"/>
+                          <stop offset="45%"  stopColor="rgba(255,255,255,0.12)"/>
+                          <stop offset="100%" stopColor="rgba(0,0,0,0.18)"/>
+                        </linearGradient>
+                        {/* Center button gradient */}
+                        <radialGradient id="dCenterGrad" cx="38%" cy="30%" r="75%">
+                          <stop offset="0%"   stopColor="#fcd34d"/>
+                          <stop offset="30%"  stopColor="#fb923c"/>
+                          <stop offset="65%"  stopColor="#ef4444"/>
+                          <stop offset="100%" stopColor="#991b1b"/>
+                        </radialGradient>
+                        {/* Center gloss */}
+                        <radialGradient id="dCenterGloss" cx="50%" cy="22%" r="58%">
+                          <stop offset="0%"   stopColor="rgba(255,255,255,0.5)"/>
+                          <stop offset="100%" stopColor="rgba(255,255,255,0)"/>
+                        </radialGradient>
+                        {/* Hub ring metallic */}
+                        <radialGradient id="dHubRing" cx="30%" cy="25%" r="80%">
+                          <stop offset="0%"   stopColor="#f8fafc"/>
+                          <stop offset="45%"  stopColor="#e2e8f0"/>
+                          <stop offset="100%" stopColor="#94a3b8"/>
+                        </radialGradient>
+                        {/* Outer ambient glow */}
+                        <radialGradient id="dOuterGlow" cx="50%" cy="50%" r="50%">
+                          <stop offset="55%"  stopColor="transparent"/>
+                          <stop offset="100%" stopColor="rgba(249,115,22,0.2)"/>
+                        </radialGradient>
+                        {/* Filters */}
+                        <filter id="dWheelDrop" x="-15%" y="-15%" width="130%" height="145%">
+                          <feDropShadow dx="0" dy="10" stdDeviation="16" floodColor="rgba(0,0,0,0.35)"/>
+                        </filter>
+                        <filter id="dRimShadow" x="-5%" y="-5%" width="110%" height="110%">
+                          <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="rgba(0,0,0,0.28)"/>
+                        </filter>
+                        <filter id="dHubDrop" x="-30%" y="-30%" width="160%" height="160%">
+                          <feDropShadow dx="0" dy="5" stdDeviation="7" floodColor="rgba(0,0,0,0.45)"/>
+                        </filter>
+                        <filter id="dLedBloom" x="-150%" y="-150%" width="400%" height="400%">
+                          <feGaussianBlur stdDeviation="2" result="blur"/>
+                          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                        <filter id="dTextShadow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="rgba(0,0,0,0.3)"/>
+                        </filter>
+                      </defs>
+
+                      {/* Ambient outer glow */}
+                      <circle cx={CX} cy={CY} r={RIM + 20} fill="url(#dOuterGlow)"/>
+
+                      {/* Wheel drop shadow */}
+                      <ellipse cx={CX} cy={CY + 10} rx={OUTER + 6} ry={16} fill="rgba(0,0,0,0.18)" filter="url(#dWheelDrop)"/>
+
+                      {/* === SEGMENTS === */}
+                      {SPIN_SEGMENTS.map((seg, i) => {
+                        const midDeg  = i * STEP + STEP / 2 - 90
+                        const textRot = midDeg + 90
+                        const toR = (d: number) => (d * Math.PI) / 180
+
+                        const labelDist = OUTER * 0.62
+                        const iconDist  = OUTER * 0.84
+                        const lx = CX + labelDist * Math.cos(toR(midDeg))
+                        const ly = CY + labelDist * Math.sin(toR(midDeg))
+                        const ix = CX + iconDist  * Math.cos(toR(midDeg))
+                        const iy = CY + iconDist  * Math.sin(toR(midDeg))
+                        const textColor = seg.textColor || "#ffffff"
+
+                        return (
+                          <g key={i}>
+                            {/* Segment with radial gradient for 3D depth */}
+                            <path d={slicePath(i)} fill={`url(#dseg${i})`} stroke="rgba(255,255,255,0.75)" strokeWidth={2.5}/>
+                            {/* Subtle inner bevel - enhanced 3D effect */}
+                            <path d={slicePath(i)} fill="rgba(255,255,255,0.15)"
+                              style={{ transform: `scale(0.38)`, transformOrigin: `${CX}px ${CY}px` }}
+                            />
+                            {/* Outer segment shadow - adds separation */}
+                            <path d={slicePath(i)} fill="none" stroke="rgba(0,0,0,0.15)" strokeWidth={1.5}
+                              style={{ transform: `scale(1.02)`, transformOrigin: `${CX}px ${CY}px` }}
+                            />
+                            
+                            {/* === PROFESSIONAL LABEL LAYOUT === */}
+                            {/* Main multiplier label with enhanced styling */}
+                            <g transform={`rotate(${textRot},${lx},${ly - 6})`} filter="url(#dTextShadow)">
+                              {/* Label shadow for depth */}
+                              <text x={lx} y={ly - 6 + 1.5} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={16} fontWeight="900" fill="rgba(0,0,0,0.3)"
+                                fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.5">
+                                {seg.label}
+                              </text>
+                              {/* Main label */}
+                              <text x={lx} y={ly - 6} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={16} fontWeight="900" fill={textColor}
+                                fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="-0.5"
+                                style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }}>
+                                {seg.label}
+                              </text>
+                            </g>
+                            
+                            {/* Lucky message / motivation text below main label */}
+                            {seg.subtext && (
+                              <g transform={`rotate(${textRot},${lx},${ly + 5})`} filter="url(#dTextShadow)">
+                                <text x={lx} y={ly + 5} textAnchor="middle" dominantBaseline="middle"
+                                  fontSize={9} fontWeight="700" fill={textColor}
+                                  fontFamily="'Arial', sans-serif" opacity="0.85"
+                                  style={{ letterSpacing: '0.3px' }}>
+                                  {seg.subtext}
+                                </text>
+                              </g>
+                            )}
+                            
+                            {/* Icon near rim with glow */}
+                            <g transform={`rotate(${textRot},${ix},${iy})`}>
+                              <text x={ix} y={iy} textAnchor="middle" dominantBaseline="middle"
+                                fontSize={20} fontFamily="Arial, sans-serif" fontWeight="bold"
+                                style={{ 
+                                  filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3)) drop-shadow(0 0 8px rgba(255,255,255,0.4))',
+                                  textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                                }}>
+                                {seg.icon}
+                              </text>
+                            </g>
+                          </g>
+                        )
+                      })}
+
+                      {/* === ENHANCED EMBOSSED CHROME RIM === */}
+                      {/* Outer shadow ring - gives 3D depth */}
+                      <circle cx={CX} cy={CY} r={RIM + 16} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth={3}/>
+                      
+                      {/* Bright outer edge - metallic highlight */}
+                      <circle cx={CX} cy={CY} r={RIM + 14} fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth={2}/>
+                      
+                      {/* Main gradient rim - chrome metallic effect */}
+                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimChrome)" strokeWidth={28} filter="url(#dRimShadow)"/>
+                      
+                      {/* Shine overlay - reflective surface */}
+                      <circle cx={CX} cy={CY} r={RIM} fill="none" stroke="url(#dRimShine)" strokeWidth={28} opacity={0.6}/>
+                      
+                      {/* Inner highlight - beveled edge effect */}
+                      <circle cx={CX} cy={CY} r={RIM - 14} fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth={2.5}/>
+                      
+                      {/* Inner shadow ring - adds depth */}
+                      <circle cx={CX} cy={CY} r={RIM - 15} fill="none" stroke="rgba(0,0,0,0.25)" strokeWidth={1.5}/>
+                      
+                      {/* Deep inner shadow - rim depression effect */}
+                      <circle cx={CX} cy={CY} r={RIM - 20} fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth={2}/>
+
+                      {/* === LED BULBS === */}
+                      {ledAngles.map((deg, i) => {
+                        const r   = toRad(deg)
+                        const lx  = CX + RIM * Math.cos(r)
+                        const ly  = CY + RIM * Math.sin(r)
+                        const isA = i % 2 === 0
+                        return (
+                          <g key={i} filter="url(#dLedBloom)">
+                            <circle cx={lx} cy={ly + 1.5} r={6}   fill="rgba(0,0,0,0.32)"/>
+                            <circle cx={lx} cy={ly}        r={7.5} fill={isA ? "rgba(255,200,80,0.22)" : "rgba(180,210,255,0.22)"}/>
+                            <circle cx={lx} cy={ly}        r={5.5} fill={isA ? "rgba(255,240,180,1)" : "rgba(220,240,255,1)"}/>
+                            <circle cx={lx} cy={ly}        r={5.5} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={0.9}/>
+                            <circle cx={lx - 1.8} cy={ly - 1.8} r={1.8} fill="rgba(255,255,255,0.82)"/>
+                          </g>
+                        )
+                      })}
+
+                      {/* === HUB RING (metallic separator) === */}
+                      <circle cx={CX} cy={CY} r={INNER + 7} fill="url(#dHubRing)"/>
+                      <circle cx={CX} cy={CY} r={INNER + 7} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth={1.5}/>
+                      <circle cx={CX} cy={CY} r={INNER + 2} fill="none" stroke="rgba(0,0,0,0.1)"        strokeWidth={2}/>
+
+                      {/* === CENTER BUTTON WITH LUCK THEME === */}
+                      <circle cx={CX} cy={CY + 4} r={INNER + 1} fill="rgba(0,0,0,0.28)" filter="url(#dHubDrop)"/>
+                      <circle cx={CX} cy={CY}     r={INNER}     fill="url(#dCenterGrad)"/>
+                      <circle cx={CX} cy={CY}     r={INNER}     fill="url(#dCenterGloss)"/>
+                      <circle cx={CX} cy={CY}     r={INNER}     fill="none" stroke="rgba(255,255,255,0.32)" strokeWidth={1.5}/>
+                      <ellipse cx={CX}     cy={CY - 12} rx={24} ry={13} fill="rgba(255,255,255,0.28)"/>
+                      <ellipse cx={CX - 1} cy={CY - 14} rx={15} ry={8}  fill="rgba(255,255,255,0.2)"/>
+
+                      {/* Decorative luck symbols around center */}
+                      <g style={{ opacity: 0.7 }}>
+                        <text x={CX - 28} y={CY} textAnchor="middle" dominantBaseline="middle" fontSize={14}>✨</text>
+                        <text x={CX + 28} y={CY} textAnchor="middle" dominantBaseline="middle" fontSize={14}>✨</text>
+                        <text x={CX} y={CY - 28} textAnchor="middle" dominantBaseline="middle" fontSize={14}>🍀</text>
+                      </g>
+
+                      {/* SPIN text with professional styling */}
+                      <text x={CX} y={CY + 2}  textAnchor="middle" dominantBaseline="middle"
+                        fontSize={16} fontWeight="900" fill="rgba(0,0,0,0.25)"
+                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="3"
+                        style={{ filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.3))' }}>
+                        SPIN
+                      </text>
+                      <text x={CX} y={CY - 2}      textAnchor="middle" dominantBaseline="middle"
+                        fontSize={16} fontWeight="900" fill="white"
+                        fontFamily="'Arial Black', Arial, sans-serif" letterSpacing="3"
+                        style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.4))' }}>
+                        SPIN
+                      </text>
+                    </svg>
+                  )
+                })()}
+              </div>{/* end spinning div */}
+              </div>{/* end responsive wrapper */}
+            </div>{/* end wheel section */}
         
-        {/* Action Section - Enhanced */}
-        <div className="space-y-4 w-full max-w-sm relative">
-          {/* Wallet Balance Display - New */}
-          <div 
-            className="relative rounded-2xl p-4 overflow-hidden border-2 border-emerald-400 transform hover:scale-105 transition-transform"
-            style={{
-              background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 50%, #34d399 100%)',
-              boxShadow: '0 4px 20px rgba(52, 211, 153, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
-            }}
+            {/* Action Section */}
+            <div className="space-y-3 w-full max-w-sm lg:max-w-xs xl:max-w-sm relative flex-shrink-0">
+          {/* Balance */}
+          <div className="relative rounded-xl px-4 py-3 overflow-hidden border border-emerald-400/60"
+            style={{ background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 60%, #34d399 100%)' }}
           >
-            <div className="absolute inset-0 opacity-30"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer-bg 2s infinite'
-              }}
-            />
-            <div className="relative flex items-center justify-center gap-3">
-                <Wallet className="h-5 w-5 text-slate-800" />
-                <p className="text-slate-800 text-base font-black">
-                  Your Balance: <span className="text-slate-900 text-2xl">${currentBalance.toFixed(2)}</span>
-                </p>
-                <Wallet className="h-5 w-5 text-slate-800" />
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-slate-700 flex-shrink-0" />
+                <span className="text-slate-700 text-xs font-bold">Balance</span>
+              </div>
+              <span className="text-slate-900 text-xl font-black">${currentBalance.toFixed(2)}</span>
             </div>
           </div>
 
-          {/* Spin Cost Info - Enhanced with Animation */}
-          <div 
-            className="relative rounded-2xl p-4 overflow-hidden border-2 border-amber-400 transform hover:scale-105 transition-transform"
-            style={{
-              background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%)',
-              boxShadow: '0 4px 20px rgba(251, 191, 36, 0.3), inset 0 2px 10px rgba(255,255,255,0.5)'
-            }}
+          {/* Amount Selector */}
+          <div className="relative rounded-xl p-3 overflow-hidden border border-blue-400/60"
+            style={{ background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 60%, #93c5fd 100%)' }}
           >
-            <div className="absolute inset-0 opacity-30"
-              style={{
-                background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)',
-                backgroundSize: '200% 100%',
-                animation: 'shimmer-bg 2s infinite'
-              }}
-            />
-            <div className="relative flex items-center justify-center gap-3">
-                <Sparkles className="h-5 w-5 text-orange-600" />
-                <p className="text-slate-800 text-base font-black">
-                  Spin Cost: <span className="text-orange-600 text-2xl">${SPIN_COST}</span>
-                </p>
-                <Sparkles className="h-5 w-5 text-orange-600" />
+            <p className="text-slate-800 font-bold text-xs mb-2">Spin Amount</p>
+            
+            <div className="grid grid-cols-3 gap-1.5 mb-2">
+              {[10, 25, 50, 100, 250, 500].map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => setSpinAmount(amt)}
+                  className={`py-1.5 rounded-lg font-black text-xs transition-all ${
+                    spinAmount === amt
+                      ? 'bg-blue-600 text-white shadow-md scale-105' 
+                      : 'bg-white text-slate-800 hover:bg-blue-50'
+                  }`}
+                >
+                  ${amt}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-1.5">
+              <div className="flex-1 relative">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-600 font-black text-sm">$</span>
+                <input
+                  type="number"
+                  min="1"
+                  max={currentBalance}
+                  value={typeof spinAmount === 'number' && spinAmount > 0 && ![10, 25, 50, 100, 250, 500].includes(spinAmount) ? spinAmount : ''}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0
+                    if (val > 0 && val <= currentBalance) setSpinAmount(val)
+                  }}
+                  onFocus={() => {
+                    if ([10, 25, 50, 100, 250, 500].includes(spinAmount)) setSpinAmount(0)
+                  }}
+                  placeholder="Custom"
+                  className="w-full pl-6 pr-2 py-1.5 rounded-lg bg-white text-slate-800 font-bold text-sm border border-blue-300 focus:border-blue-600 focus:outline-none"
+                />
+              </div>
+              <button
+                onClick={() => setSpinAmount(currentBalance)}
+                className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-lg text-xs transition-colors"
+              >
+                MAX
+              </button>
+            </div>
+            <p className="mt-1.5 text-[10px] text-slate-600 font-medium">Min $1 — Max ${Math.floor(currentBalance)}</p>
+          </div>
+
+          {/* Possible Winnings */}
+          <div className="relative rounded-xl p-3 overflow-hidden border border-purple-400/60"
+            style={{ background: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 60%, #d8b4fe 100%)' }}
+          >
+            <p className="text-slate-800 text-xs font-bold mb-2">Possible Winnings</p>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              {[
+                { mult: 0,    label: '0x',    bg: 'bg-red-50',     border: 'border-red-200',    text: 'text-red-600' },
+                { mult: 0.25, label: '0.25x', bg: 'bg-orange-50',  border: 'border-orange-200', text: 'text-orange-600' },
+                { mult: 0.5,  label: '0.5x',  bg: 'bg-yellow-50',  border: 'border-yellow-200', text: 'text-yellow-700' },
+                { mult: 1,    label: '1x',    bg: 'bg-blue-50',    border: 'border-blue-200',   text: 'text-blue-600' },
+                { mult: 1.5,  label: '1.5x',  bg: 'bg-green-50',   border: 'border-green-200',  text: 'text-green-600' },
+                { mult: 2,    label: '2x',    bg: 'bg-emerald-50', border: 'border-emerald-200',text: 'text-emerald-700' },
+                { mult: 3,    label: '3x',    bg: 'bg-pink-50',    border: 'border-pink-300',   text: 'text-pink-700' },
+                { mult: 5,    label: '5x',    bg: 'bg-rose-50',    border: 'border-rose-300',   text: 'text-rose-700' },
+                { mult: 10,   label: '10x',   bg: 'bg-purple-50',  border: 'border-purple-300', text: 'text-purple-700' },
+              ].map(({ mult, label, bg, border, text }) => (
+                <div key={label} className={`${bg} rounded-lg p-1.5 border ${border}`}>
+                  <p className={`text-[10px] font-bold ${text}`}>{label}</p>
+                  <p className={`text-xs font-black ${text}`}>${(spinAmount * mult).toFixed(2)}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Spin Button - Enhanced with Better Effects */}
+          {/* Spin Button */}
           <button
             onClick={spinWheel}
-            disabled={isSpinning || currentBalance < SPIN_COST}
-            className="w-full h-16 text-lg font-black rounded-2xl transition-all disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden transform hover:scale-105 active:scale-95"
+            disabled={isSpinning || currentBalance < spinAmount || spinAmount <= 0}
+            className="w-full h-14 text-base font-black rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed relative overflow-hidden active:scale-95"
             style={{
-              background: !isSpinning && currentBalance >= SPIN_COST
+              background: !isSpinning && currentBalance >= spinAmount && spinAmount > 0
                 ? 'linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%)' 
                 : 'linear-gradient(135deg, #94a3b8, #cbd5e1)',
-              boxShadow: !isSpinning && currentBalance >= SPIN_COST
+              boxShadow: !isSpinning && currentBalance >= spinAmount && spinAmount > 0
                 ? '0 6px 0 #ea580c, 0 12px 30px rgba(249, 115, 22, 0.5), inset 0 1px 0 rgba(255,255,255,0.3)' 
                 : '0 3px 0 #64748b',
               color: 'white',
               textShadow: '0 2px 4px rgba(0,0,0,0.4)',
-              border: !isSpinning && currentBalance >= SPIN_COST ? '2px solid rgba(255,255,255,0.3)' : 'none'
+              border: !isSpinning && currentBalance >= spinAmount && spinAmount > 0 ? '2px solid rgba(255,255,255,0.3)' : 'none'
             }}
           >
-            {!isSpinning && currentBalance >= SPIN_COST && (
+            {!isSpinning && currentBalance >= spinAmount && spinAmount > 0 && (
               <>
                 <div 
                   className="absolute inset-0"
@@ -963,143 +1248,160 @@ function DailySpinWheel({
                   <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
                   <span className="font-black text-xl tracking-wider">SPINNING...</span>
                 </>
-              ) : currentBalance < SPIN_COST ? (
+              ) : currentBalance < spinAmount || spinAmount <= 0 ? (
               <>
                 <AlertCircle className="h-6 w-6" />
-                <span className="font-black text-lg">NEED ${SPIN_COST}</span>
+                <span className="font-black text-lg">NEED ${spinAmount > currentBalance ? (spinAmount - currentBalance).toFixed(2) : 'Valid Amount'}</span>
               </>
               ) : (
                 <>
                   <Sparkles className="h-6 w-6 animate-bounce" />
-                  <span className="font-black text-xl tracking-wider">SPIN NOW!</span>
+                  <span className="font-black text-xl tracking-wider">SPIN ${spinAmount.toFixed(2)}</span>
                   <Sparkles className="h-6 w-6 animate-bounce" style={{ animationDelay: '0.2s' }} />
                 </>
               )}
             </span>
           </button>
-        </div>
-          </div>
-        </div>
-      </div>
+        </div>{/* end action section */}
+        </div>{/* end flex row */}
+      </div>{/* end content container */}
       
-      {/* Result Popup Modal - Enhanced with Better Animations */}
-      {showResult && result && (
-        <div 
-          className="fixed inset-0 bg-gradient-to-br from-black/70 via-purple-900/20 to-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn"
-          onClick={() => setShowResult(false)}
-        >
+      {/* ── Result Modal ── */}
+      {showResult && result && (() => {
+        const m = result.multiplier
+        const bet = spinAmount
+        const returned = parseFloat((bet * m).toFixed(2))
+        const netChange = parseFloat((returned - bet).toFixed(2))
+
+        const isWin       = m >= 1.0
+        const isBreakEven = m === 1.0
+        const isLoss      = m < 1.0 && m > 0
+        const isZero      = m === 0.0
+
+        // Background colour based on outcome
+        const bgGradient = isWin && !isBreakEven
+          ? 'linear-gradient(135deg, #15803d 0%, #16a34a 50%, #166534 100%)'   // green – profit
+          : isBreakEven
+          ? 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #1e40af 100%)'   // blue – break even
+          : 'linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #6b0f0f 100%)'   // red – loss
+
+        // Headline text
+        const headline = (() => {
+          if (m >= 10) return 'LEGENDARY 10X!'
+          if (m >= 5)  return 'MEGA 5X JACKPOT!'
+          if (m >= 3)  return 'JACKPOT — 3X WIN!'
+          if (m >= 2)  return `GREAT WIN — ${m}X!`
+          if (m >= 1.5) return `NICE WIN — ${m}X!`
+          if (m === 1) return 'BREAK EVEN — 1X'
+          if (m === 0.5) return 'HALF BACK — 0.5X'
+          if (m === 0.25) return 'QUARTER BACK — 0.25X'
+          return 'BETTER LUCK NEXT TIME'
+        })()
+
+        // Sub-message
+        const subMessage = (() => {
+          if (m >= 10) return `You turned $${bet.toFixed(2)} into $${returned.toFixed(2)} — incredible!`
+          if (m >= 5)  return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}. Amazing!`
+          if (m >= 3)  return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}. Well done!`
+          if (m >= 2)  return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}.`
+          if (m >= 1.5) return `$${bet.toFixed(2)} bet returned $${returned.toFixed(2)}.`
+          if (m === 1)  return `Your $${bet.toFixed(2)} was returned in full. No profit, no loss.`
+          if (m === 0.5) return `You got half your bet back. Lost $${Math.abs(netChange).toFixed(2)}.`
+          if (m === 0.25) return `You got a quarter back. Lost $${Math.abs(netChange).toFixed(2)}.`
+          return `Your $${bet.toFixed(2)} bet was lost. Try again!`
+        })()
+
+        return (
           <div
-            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl transform"
-            style={{
-              animation: 'bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-            }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowResult(false)}
           >
-            {/* Confetti Effect for Wins */}
-            {result.type === 'cash' && result.value > 0 && (
-              <div className="absolute inset-0 pointer-events-none">
-                {[...Array(20)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full"
-                    style={{
-                      left: `${Math.random() * 100}%`,
-                      top: '-10px',
-                      background: ['#fbbf24', '#f59e0b', '#f97316', '#ec4899', '#8b5cf6'][i % 5],
-                      animation: `confetti-fall ${1 + Math.random()}s ease-out forwards`,
-                      animationDelay: `${Math.random() * 0.5}s`
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-            
-            <div 
-              className="relative w-full rounded-2xl p-10 text-center overflow-hidden"
-              style={{
-                background: result.type === 'cash' && result.value > 0
-                  ? 'linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%)' 
-                  : result.type === 'ticket'
-                  ? 'linear-gradient(135deg, #e85d3b 0%, #f59e0b 50%, #fbbf24 100%)'
-                  : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #4f46e5 100%)',
-                boxShadow: 'inset 0 2px 30px rgba(255,255,255,0.3), 0 10px 40px rgba(0,0,0,0.3)',
-              }}
+            <div
+              className="relative w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+              style={{ animation: 'bounce-in 0.5s cubic-bezier(0.68,-0.55,0.265,1.55)' }}
+              onClick={(e) => e.stopPropagation()}
             >
-              {/* Animated Background Pattern */}
-              <div className="absolute inset-0 opacity-20"
-                style={{
-                  backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                  animation: 'float 3s ease-in-out infinite'
-                }}
-              />
-              
-              {/* Glowing Ring */}
-              <div className="absolute inset-0 rounded-2xl"
-                style={{
-                  boxShadow: result.type === 'cash' && result.value > 0 
-                    ? 'inset 0 0 60px rgba(16, 185, 129, 0.5)' 
-                    : 'inset 0 0 60px rgba(124, 58, 237, 0.5)',
-                  animation: 'pulse 2s ease-in-out infinite'
-                }}
-              />
-              
-              <div className="relative z-10">
-                <div className="text-7xl mb-6 animate-bounce" 
-                  style={{ 
-                    filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.3))',
-                    animation: 'bounce 1s ease-in-out infinite'
-                  }}
-                >
+              {/* Coloured header band */}
+              <div className="relative p-8 text-center" style={{ background: bgGradient }}>
+                {/* Dot-pattern overlay */}
+                <div className="absolute inset-0 opacity-10"
+                  style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '18px 18px' }}
+                />
+
+                {/* Icon */}
+                <div className="text-6xl mb-3 relative z-10" style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}>
                   {result.icon}
                 </div>
-                <h3 className="text-white font-black text-3xl mb-3 tracking-wide" 
-                  style={{ 
-                    textShadow: '0 3px 10px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3)',
-                    animation: 'text-glow 2s ease-in-out infinite'
-                  }}
-                >
-                  {result.type === 'cash' && result.value > 0 
-                    ? result.value >= 10 
-                      ? `🎊 JACKPOT! YOU WON $${result.value}! 🎊`
-                      : `🎉 AWESOME! YOU WON $${result.value}! 🎉`
-                    : result.type === 'ticket' 
-                    ? '🎟️ FREE TICKET WON! 🎟️' 
-                    : '🍀 BETTER LUCK NEXT TIME! 🍀'}
+
+                {/* Segment label badge */}
+                <div className="inline-block mb-3 bg-white/20 rounded-full px-3 py-0.5 text-xs font-semibold text-white relative z-10">
+                  Pointer landed on: <span className="font-black">{result.label}</span>
+                </div>
+
+                {/* Headline */}
+                <h3 className="relative z-10 text-white font-black text-2xl leading-tight mb-1"
+                  style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
+                  {headline}
                 </h3>
-                {result.type === 'cash' && result.value > 0 && (
-                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                    <p className="text-white text-base font-bold">
-                      💰 ${result.value} has been added to your wallet!
+
+                {/* Sub-message */}
+                <p className="relative z-10 text-white/85 text-sm font-medium">
+                  {subMessage}
+                </p>
+              </div>
+
+              {/* White body */}
+              <div className="bg-white px-6 py-5 space-y-3">
+
+                {/* Bet / Returned / Net row */}
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Bet</p>
+                    <p className="font-black text-slate-800 text-base">${bet.toFixed(2)}</p>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-3">
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Multiplier</p>
+                    <p className="font-black text-slate-800 text-base">{m}x</p>
+                  </div>
+                  <div className={`rounded-xl p-3 ${isWin && !isBreakEven ? 'bg-green-50' : isBreakEven ? 'bg-blue-50' : 'bg-red-50'}`}>
+                    <p className="text-xs text-slate-500 font-medium mb-0.5">Returned</p>
+                    <p className={`font-black text-base ${isWin && !isBreakEven ? 'text-green-700' : isBreakEven ? 'text-blue-700' : 'text-red-700'}`}>
+                      ${returned.toFixed(2)}
                     </p>
                   </div>
-                )}
-                {result.type === 'ticket' && (
-                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                    <p className="text-white/95 text-sm font-semibold">
-                      ⏰ Use your $5 free bet within 24 hours!
-                    </p>
-                  </div>
-                )}
-                {result.type === 'luck' && (
-                  <div className="mt-4 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/30">
-                    <p className="text-white/95 text-sm font-semibold">
-                      Try spinning again for another chance to win!
-                    </p>
-                  </div>
-                )}
+                </div>
+
+                {/* Net change bar */}
+                <div className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                  isWin && !isBreakEven ? 'bg-green-50 border border-green-200'
+                  : isBreakEven ? 'bg-blue-50 border border-blue-200'
+                  : 'bg-red-50 border border-red-200'
+                }`}>
+                  <span className="text-sm font-semibold text-slate-600">
+                    {isWin && !isBreakEven ? 'Profit' : isBreakEven ? 'Net Change' : 'Loss'}
+                  </span>
+                  <span className={`text-lg font-black ${
+                    isWin && !isBreakEven ? 'text-green-700'
+                    : isBreakEven ? 'text-blue-700'
+                    : 'text-red-700'
+                  }`}>
+                    {isWin && !isBreakEven ? '+' : ''}{netChange.toFixed(2)} USDT
+                  </span>
+                </div>
+
+                {/* Dismiss button */}
+                <button
+                  onClick={() => setShowResult(false)}
+                  className="w-full py-3.5 rounded-2xl font-black text-white text-base transition-all active:scale-95"
+                  style={{ background: bgGradient, boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
+                >
+                  {isWin && !isBreakEven ? 'Collect Winnings' : isBreakEven ? 'Noted' : 'Try Again'}
+                </button>
               </div>
             </div>
-            
-            <button
-              onClick={() => setShowResult(false)}
-              className="w-full mt-6 py-4 bg-gradient-to-r from-slate-100 to-slate-200 hover:from-slate-200 hover:to-slate-300 rounded-2xl font-black text-slate-800 transition-all text-lg shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
-            >
-              AWESOME! 🎊
-            </button>
           </div>
-        </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
@@ -1167,9 +1469,11 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
+    id?: string
+    wallet_address?: string
     email?: string
     username?: string
     activation_fee_paid?: boolean
@@ -1180,8 +1484,12 @@ export default function DashboardHome() {
     referral_code?: string
     total_referrals?: number
     total_earnings?: number
+    referral_earnings?: number
     activation_deadline?: string
     account_frozen?: boolean
+    profile_image?: string
+    details_completed?: boolean
+    [key: string]: any
   } | null>(null)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [showFrozenModal, setShowFrozenModal] = useState(false)
@@ -1192,26 +1500,13 @@ export default function DashboardHome() {
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
   
-  const isAuthenticated = isParticipantAuthenticated()
-
-  const checkProfileCompletion = async (email: string) => {
-    try {
-      const res = await fetch(`/api/participant/me`, {
-        headers: { "x-participant-email": email },
-      })
-      const json = await res.json()
-      if (json.success && !json.participant?.details_completed) {
-        router.push("/participant/complete-profile")
-      }
-    } catch (error) {
-      console.error("Error in checkProfileCompletion:", error)
-    }
-  }
+  // Profile completion check removed — details_completed column does not exist in DB schema
+  // Users should not be forced off the dashboard for missing this field
 
   const handleTimerExpire = useCallback(async () => {
     if (!participantData?.email) return
     try {
-      await fetch("/api/participant/freeze-account", {
+      await fetch("/api/participant/check-expired", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: participantData.email }),
@@ -1229,8 +1524,29 @@ export default function DashboardHome() {
     router.push("/participant/login")
   }
 
-  const handleSpinWin = (amount: number, label: string, type: string) => {
-    // Wallet transactions handled within SpinWheelModal — this callback kept for compatibility
+  const handleSpinWin = (_amount: number, _label: string, _type: string, balanceAfter?: number, _balanceAfterDeduct?: number) => {
+    if (balanceAfter !== undefined) {
+      // Directly update balance with the server-confirmed value — no round-trip needed
+      setParticipantData((prev: any) => {
+        const updated = { ...prev, account_balance: balanceAfter }
+        localStorage.setItem("participantData", JSON.stringify(updated))
+        return updated
+      })
+    }
+  }
+
+  // Refresh participant data from server
+  const fetchParticipantData = async () => {
+    try {
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(participantData?.email || "")}`)
+      const data = await res.json()
+      if (data.success && data.participant) {
+        setParticipantData(data.participant)
+        localStorage.setItem("participantData", JSON.stringify(data.participant))
+      }
+    } catch (error) {
+      console.error("[v0] Error refreshing participant data:", error)
+    }
   }
 
   // Function to fetch queue position
@@ -1243,36 +1559,42 @@ export default function DashboardHome() {
         setQueuePosition(data.position)
         setQueueData(data)
       }
-    } catch (error) {
-      console.error("Error fetching queue position:", error)
-    }
+    } catch {}
   }
 
   // Function to fetch fresh participant data from database
   const refreshParticipantData = async (email: string) => {
     try {
-      const res = await fetch("/api/participant/me", {
-        headers: { "x-participant-email": email },
-      })
+      const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
+      if (!res.ok) return
       const json = await res.json()
-      if (json.success && json.participant) {
-        const updatedData = {
-          ...json.participant,
-          participantId: json.participant.id,
-          walletAddress: json.participant.wallet_address,
-        }
-        setParticipantData(updatedData)
-        localStorage.setItem("participantData", JSON.stringify(updatedData))
+      const data: any = json.participant
+      if (!data) return
+      // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
+      const updatedData = {
+        ...data,
+        participantId: data.id,
+        walletAddress: data.wallet_address || data.bep20_address || "",
+        bep20_address: data.wallet_address || data.bep20_address || "",
+        account_balance: Number(data.account_balance) || 0,
+        wallet_balance: Number(data.wallet_balance ?? data.account_balance) || 0,
+        bonus_balance: Number(data.bonus_balance) || 0,
+        total_earnings: Number(data.total_earnings) || 0,
+        referral_earnings: Number(data.referral_earnings) || 0,
+        contributed_amount: Number(data.contributed_amount) || 0,
+        participation_count: Number(data.participation_count) || 0,
+        referral_count: Number(data.referral_count) || 0,
+        total_referrals: Number(data.total_referrals) || 0,
       }
-    } catch (error) {
-      console.error("Error refreshing participant data:", error)
-    }
+      setParticipantData(updatedData)
+      localStorage.setItem("participantData", JSON.stringify(updatedData))
+    } catch {}
   }
 
   useEffect(() => {
     setMounted(true)
 
-    if (!isAuthenticated) {
+    if (!isParticipantAuthenticated()) {
       router.push("/participant/login")
       return
     }
@@ -1296,8 +1618,21 @@ export default function DashboardHome() {
         if (data.email) {
           refreshParticipantData(data.email)
         }
-      } catch (error) {
-        console.error("Error parsing participant data:", error)
+      } catch {}
+    }
+
+    // Add listener for page visibility to refresh balance when user returns to this page
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const storedData = localStorage.getItem("participantData")
+        if (storedData) {
+          try {
+            const data = JSON.parse(storedData)
+            if (data.email) {
+              refreshParticipantData(data.email)
+            }
+          } catch {}
+        }
       }
     }
 
@@ -1320,14 +1655,17 @@ export default function DashboardHome() {
           if (data.email) {
             refreshParticipantData(data.email)
           }
-        } catch (error) {
-          console.error("[v0] Error in periodic refresh:", error)
-        }
+        } catch {}
       }
     }, 60000) // Refresh every 60 seconds to reduce load
 
-    return () => clearInterval(refreshInterval)
-  }, [router, isAuthenticated])
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      clearInterval(refreshInterval)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
+  }, [router])
 
   const copyToClipboard = async (text: string) => {
     try {
@@ -1345,9 +1683,10 @@ export default function DashboardHome() {
     return <PageLoader variant="dashboard" />
   }
 
+
+
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
-  const walletBalance = participantData.account_balance || 0
-  const bonusBalance = participantData.bonus_balance ?? participantData.referral_earnings ?? 0
+  const walletBalance = parseFloat(participantData.account_balance) || 0
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
   const referralCode = participantData.referral_code || ""
@@ -1374,7 +1713,7 @@ export default function DashboardHome() {
         }}
       />
 
-      <header className="bg-white sticky top-0 z-40 border-b border-slate-100 h-14 shadow-sm">
+      <header className="bg-gradient-to-r from-slate-50 to-purple-50 sticky top-0 z-40 border-b border-purple-100 h-14 shadow-sm">
         <div className="px-4 h-full flex items-center justify-between">
           {/* Left side - Profile Avatar */}
           <div className="flex items-center gap-2">
@@ -1384,7 +1723,7 @@ export default function DashboardHome() {
                   <img
                     src={participantData.profile_image || "/placeholder.svg"}
                     alt="Profile"
-                    className="h-9 w-9 rounded-full object-cover border-2 border-purple-500"
+                    className="h-9 w-9 rounded-full object-cover border-2 border-purple-400"
                   />
                 ) : (
                   <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] flex items-center justify-center border-2 border-white shadow-md">
@@ -1402,18 +1741,18 @@ export default function DashboardHome() {
               onClick={() => setActiveTab("wheel")}
               className="relative group px-3 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
               style={{
-                background: "linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%)",
-                boxShadow: "0 2px 8px rgba(249, 115, 22, 0.3)",
+                background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
+                boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
               }}
             >
                 <Sparkles className="h-4 w-4 text-white" />
-                <span className="text-white text-xs font-bold tracking-wide">Luck Wheel</span>
+                <span className="text-white text-xs font-bold tracking-wide">Spin</span>
               {/* Shine effect */}
               <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             </button>
             
             {/* Functional Notification Bell */}
-            <UserNotificationsBell userEmail={participantData.email} />
+            <UserNotificationsBell userEmail={participantData.email ?? ""} />
             
             {/* Logout Button */}
             
@@ -1421,14 +1760,14 @@ export default function DashboardHome() {
         </div>
       </header>
 
-      <main className="px-3 sm:px-4 py-3 sm:py-4 pb-20 space-y-3 sm:space-y-5">
+      <main className="px-3 sm:px-4 py-3 sm:py-4 pb-20 space-y-3 sm:space-y-5 bg-gradient-to-b from-white via-purple-50/30 to-slate-50">
         {activeTab === "dashboard" && (
           <>
             {/* Welcome Banner - Mobile Optimized */}
-        <div className="bg-gradient-to-r from-purple-50 to-transparent rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2">
+        <div className="bg-gradient-to-r from-purple-600/10 via-purple-500/5 to-transparent rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2 border border-purple-200/40">
           <div className="flex-1 min-w-0">
             <p className="text-base sm:text-lg font-bold text-slate-800 truncate">Welcome back, {displayName}</p>
-            <p className="text-xs sm:text-sm text-slate-500">Let's grow your network today</p>
+            <p className="text-xs sm:text-sm text-slate-600">Let's grow your network today</p>
           </div>
           <Link href="/participant/dashboard/profile">
             <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] p-[2px] flex-shrink-0">
@@ -1440,39 +1779,39 @@ export default function DashboardHome() {
         </div>
 
         <div
-          className="relative py-6 px-4 sm:py-8 sm:px-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-white/20"
+          className="relative py-6 px-4 sm:py-8 sm:px-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-purple-200/40"
           style={{
             background:
-              "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(232, 93, 59, 0.08) 35%, rgba(34, 211, 238, 0.08) 70%, rgba(16, 185, 129, 0.06) 100%)",
+              "linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(232, 93, 59, 0.04) 35%, rgba(16, 185, 129, 0.04) 100%)",
           }}
         >
           {/* Enhanced animated background with multiple orbs - Responsive */}
           <div className="absolute inset-0 overflow-hidden">
           {/* Top right purple orb */}
-          <div className="absolute -top-8 -right-8 sm:-top-16 sm:-right-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#7c3aed]/20 via-purple-400/10 to-transparent rounded-full blur-2xl sm:blur-3xl" />
+          <div className="absolute -top-8 -right-8 sm:-top-16 sm:-right-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#7c3aed]/15 via-purple-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl" />
           
           {/* Bottom left orange orb */}
           <div
-            className="absolute -bottom-8 -left-8 sm:-bottom-16 sm:-left-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#E85D3B]/20 via-orange-400/10 to-transparent rounded-full blur-2xl sm:blur-3xl"
+            className="absolute -bottom-8 -left-8 sm:-bottom-16 sm:-left-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#E85D3B]/15 via-orange-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl"
           />
           
-          {/* Middle cyan orb */}
+          {/* Middle emerald orb */}
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 bg-gradient-to-br from-[#22d3ee]/15 via-cyan-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 bg-gradient-to-br from-[#10b981]/12 via-emerald-400/6 to-transparent rounded-full blur-2xl sm:blur-3xl"
           />
             
-            {/* Top left emerald accent */}
+            {/* Top left cyan accent */}
             <div
-              className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-emerald-400/15 to-transparent rounded-full blur-2xl"
+              className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-2xl"
             />
             
-            {/* Bottom right pink accent */}
+            {/* Bottom right accent */}
             <div
-              className="absolute bottom-10 right-10 w-32 h-32 bg-gradient-to-br from-pink-400/15 to-transparent rounded-full blur-2xl"
+              className="absolute bottom-10 right-10 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl"
             />
             
             {/* Animated gradient lines */}
-            <div className="absolute inset-0 opacity-30">
+            <div className="absolute inset-0 opacity-20">
               <div
                 className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent"
                 style={{
@@ -1490,7 +1829,7 @@ export default function DashboardHome() {
             
             {/* Subtle grid pattern overlay */}
             <div
-              className="absolute inset-0 opacity-5"
+              className="absolute inset-0 opacity-3"
               style={{
                 backgroundImage: `linear-gradient(rgba(124, 58, 237, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px)`,
                 backgroundSize: "20px 20px",
@@ -1506,7 +1845,7 @@ export default function DashboardHome() {
                 onClick={() => setShowTopUpModal(true)}
                 className="absolute -top-1 sm:-top-2 right-0 rounded-lg sm:rounded-xl font-bold text-white flex flex-col items-center gap-0.5 sm:gap-1 transition-all hover:scale-105 active:scale-95 shadow-lg text-[10px] sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5"
                 style={{
-                  background: "linear-gradient(135deg, #7c3aed, #6366f1)",
+                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
                   boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
                 }}
               >
@@ -1515,103 +1854,176 @@ export default function DashboardHome() {
               </button>
 
               <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
-                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-slate-800" />
-                <span className="text-xs sm:text-sm text-slate-500 uppercase tracking-wider font-bold">Wallet Balance</span>
+                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                <span className="text-xs sm:text-sm text-slate-600 uppercase tracking-wider font-bold">Wallet Balance</span>
               </div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900">
+              <div className="text-3xl sm:text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-600 to-orange-600 bg-clip-text text-transparent">
                 <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
               </div>
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-              <span className="text-slate-400 text-xs">+</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
+            {/* Referral Earnings - Below Wallet Balance */}
+            <div className="text-center relative">
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
+                <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                <span className="text-xs sm:text-sm text-slate-600 uppercase tracking-wider font-bold">Referral Earnings</span>
+              </div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
+                <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
             </div>
 
-            {/* Bonus Balance */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Sparkles className="h-5 w-5 text-[#22d3ee]" />
-                <span className="text-sm text-slate-500 uppercase tracking-wider font-bold">Bonus Balance</span>
-                
-              </div>
-              <div className="text-3xl font-bold text-slate-800">
-                <AnimatedNumber value={bonusBalance} prefix="$" decimals={2} />
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-              <span className="text-slate-400 text-xs">+</span>
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
-            </div>
-
-            {/* Referral Earnings */}
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Gift className="h-5 w-5 text-[#E85D3B]" />
-                <span className="text-sm text-slate-500 uppercase tracking-wider font-bold">Referral Earnings</span>
-              </div>
-              <div className="text-3xl font-bold text-slate-800">
-                <AnimatedNumber value={referralEarnings} prefix="$" decimals={2} />
-              </div>
-            </div>
-
+          </div>
 
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* Action Buttons - Side by Side with Professional 3D Effects */}
+        <style>{`
+          @keyframes slideUp {
+            from { transform: translateY(4px); opacity: 0.95; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          @keyframes lift3d {
+            0% { transform: translateY(0) perspective(1200px) rotateX(0deg) rotateY(0deg); }
+            100% { transform: translateY(-8px) perspective(1200px) rotateX(4deg) rotateY(0deg); }
+          }
+          @keyframes shadowShift {
+            0% { box-shadow: 0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
+            100% { box-shadow: 0 24px 60px rgba(255, 100, 50, 0.5), 0 12px 30px rgba(150, 80, 200, 0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
+          }
+          @keyframes shadowShiftGreen {
+            0% { box-shadow: 0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
+            100% { box-shadow: 0 24px 60px rgba(16, 185, 129, 0.5), 0 12px 30px rgba(52, 211, 153, 0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
+          }
+          @keyframes iconBounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+          }
+          .button-3d {
+            animation: slideUp 0.4s ease-out;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+          }
+          .button-3d:hover {
+            animation: lift3d 0.4s ease-out forwards;
+          }
+          .button-3d-orange:hover {
+            animation: lift3d 0.4s ease-out forwards, shadowShift 0.4s ease-out forwards;
+          }
+          .button-3d-green:hover {
+            animation: lift3d 0.4s ease-out forwards, shadowShiftGreen 0.4s ease-out forwards;
+          }
+          .icon-animated {
+            animation: iconBounce 2s ease-in-out infinite;
+          }
+          .button-3d:hover .icon-animated {
+            animation: none;
+            transform: scale(1.1);
+          }
+        `}</style>
+
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* Contribute Button - 3D Orange */}
           <Link href="/participant/dashboard/contribute">
             <button
               onClick={createRipple}
-              className="group w-full h-28 text-white flex flex-col items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 active:scale-[0.97] leading-7 rounded-3xl"
+              className="button-3d button-3d-orange group w-full relative overflow-hidden active:scale-[0.96] rounded-2xl p-3 text-white"
               style={{
-                background: "linear-gradient(145deg, #E85D3B 0%, #ff6b45 50%, #E85D3B 100%)",
-                boxShadow:
-                  "0 8px 32px rgba(232, 93, 59, 0.4), 0 4px 8px rgba(232, 93, 59, 0.3), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0,0,0,0.1)",
+                background: "linear-gradient(90deg, rgba(255, 140, 80, 0.9) 0%, rgba(255, 100, 100, 0.7) 40%, rgba(150, 100, 200, 0.8) 100%)",
+                boxShadow: "0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15), -4px 8px 20px rgba(255, 100, 50, 0.15)",
+                minHeight: "100px",
+                transformStyle: "preserve-3d",
               }}
             >
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              {/* Icon with animation */}
-              <Send
-                className="transition-transform group-hover:scale-110 group-hover:-rotate-12 w-9 h-9"
-                style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }}
-              />
-              <span className="font-bold text-lg tracking-wide leading-6" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
-                CONTRIBUTE
-              </span>
-              <span className="text-xs text-white/80">Join $100</span>
+              {/* Top highlight layer */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                {/* Left Icon */}
+                <div className="flex-shrink-0">
+                  <div className="icon-animated w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
+                    style={{
+                      boxShadow: "0 6px 20px rgba(255, 100, 50, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset -1px -1px 8px rgba(0,0,0,0.2)",
+                      transition: "transform 0.3s ease"
+                    }}>
+                    <Send className="w-7 h-7 text-white" style={{filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}} />
+                  </div>
+                </div>
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base tracking-wide text-white leading-none drop-shadow-lg">CONTRIBUTE</h3>
+                  <p className="text-xs text-white/85 font-medium drop-shadow-md">Join Now</p>
+                  <div className="mt-1 inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] border border-white/20 shadow-lg">
+                    <span className="text-white font-bold">+$50</span>
+                  </div>
+                </div>
+
+                {/* Right Arrow Button */}
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-xl group-hover:shadow-2xl transition-all group-hover:scale-125 group-hover:bg-orange-100"
+                  style={{boxShadow: "0 6px 20px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
+                  <ChevronRight className="w-5 h-5 text-orange-600 group-hover:text-orange-700 transition-colors" />
+                </div>
+              </div>
             </button>
           </Link>
+
+          {/* Payout Button - 3D Green */}
           <Link href="/participant/dashboard/payout">
             <button
               onClick={createRipple}
-              className="group w-full h-28 text-white flex flex-col items-center justify-center gap-2 relative overflow-hidden transition-all duration-300 active:scale-[0.97] rounded-4xl"
+              className="button-3d button-3d-green group w-full relative overflow-hidden active:scale-[0.96] rounded-2xl p-3 text-white"
               style={{
-                background: "linear-gradient(145deg, #10b981 0%, #34d399 50%, #10b981 100%)",
-                boxShadow:
-                  "0 8px 32px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255,255,255,0.2), inset 0 -2px 0 rgba(0,0,0,0.1)",
+                background: "linear-gradient(90deg, rgba(16, 185, 129, 0.9) 0%, rgba(52, 211, 153, 0.7) 40%, rgba(5, 150, 100, 0.8) 100%)",
+                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15), -4px 8px 20px rgba(16, 185, 129, 0.15)",
+                minHeight: "100px",
+                transformStyle: "preserve-3d",
               }}
             >
-              {/* Shine effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              {/* Icon with animation */}
-              <ArrowUpRight
-                className="h-10 w-10 transition-transform group-hover:scale-110 group-hover:translate-x-1 group-hover:-translate-y-1"
-                style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))" }}
-              />
-              <span className="font-bold text-lg tracking-wide leading-6" style={{ textShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
-                PAYOUT
-              </span>
-              <span className="text-xs text-white/80">Claim Funds</span>
+              {/* Top highlight layer */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
+              
+              <div className="relative z-10 flex items-center justify-between gap-3">
+                {/* Left Icon */}
+                <div className="flex-shrink-0">
+                  <div className="icon-animated w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center"
+                    style={{
+                      boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset -1px -1px 8px rgba(0,0,0,0.2)",
+                      transition: "transform 0.3s ease"
+                    }}>
+                    <ArrowUpRight className="w-7 h-7 text-white" style={{filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}} />
+                  </div>
+                </div>
+
+                {/* Center Content */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-base tracking-wide text-white leading-none drop-shadow-lg">PAYOUT</h3>
+                  <p className="text-xs text-white/85 font-medium drop-shadow-md">Instant Claim</p>
+                  <div className="mt-1 inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] border border-white/20 shadow-lg">
+                    <span className="text-white font-bold">Crypto</span>
+                  </div>
+                </div>
+
+                {/* Right Arrow Button */}
+                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-xl group-hover:shadow-2xl transition-all group-hover:scale-125 group-hover:bg-emerald-100"
+                  style={{boxShadow: "0 6px 20px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
+                  <ChevronRight className="w-5 h-5 text-emerald-600 group-hover:text-emerald-700 transition-colors" />
+                </div>
+              </div>
             </button>
           </Link>
         </div>
+
+        {/* Staking Banner - New Feature */}
+        <StakingBanner
+          currentBalance={walletBalance}
+          participantEmail={participantData?.email || ""}
+          onBalanceUpdated={(newBalance) => {
+            setParticipantData((prev: any) => ({
+              ...prev,
+              account_balance: newBalance,
+            }))
+          }}
+        />
 
         {/* Lucky Spin Card - Mobile Optimized */}
         <button
@@ -1668,8 +2080,8 @@ export default function DashboardHome() {
                       <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Invite 4 Friends, Get $20</h3>
-                      <p className="text-[10px] sm:text-xs text-slate-600">Share your link & earn instantly</p>
+                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Invite Friends & Earn Unlimited $5 Per Referral</h3>
+                      <p className="text-[10px] sm:text-xs text-slate-600">Share your link & earn $5 per signup</p>
                     </div>
                   </div>
                   <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 cursor-pointer shadow-md text-[10px] sm:text-xs flex-shrink-0">
@@ -1682,48 +2094,27 @@ export default function DashboardHome() {
             </Card>
           </Link>
 
-          <Card
-            className="border-0 overflow-hidden relative"
-            style={{
-              background: "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(250,245,255,0.9) 100%)",
-              backdropFilter: "blur(10px)",
-              boxShadow: "0 4px 20px rgba(124, 58, 237, 0.08), 0 0 0 1px rgba(124, 58, 237, 0.05)",
+          {/* Mystery Box Card - New Feature */}
+          <MysteryBox
+            currentBalance={walletBalance}
+            participantEmail={participantData?.email || ""}
+            onRewardWon={(amount) => {
+              // Notify user of reward
+              toast({
+                title: "Mystery Box Reward!",
+                description: `You won $${amount}!`,
+              })
             }}
-          >
-            <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[#7c3aed]" /> Recent Activity
-              </h3>
-              <Link href="/participant/dashboard/activity">
-                
-              </Link>
-            </div>
-            <div className="space-y-3">
-              <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-purple-50/50 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-[#7c3aed] mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">Joined queue at position #47</p>
-                  <p className="text-xs text-slate-400">2 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-orange-50/50 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-[#E85D3B] mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">Contribution deadline active</p>
-                  <p className="text-xs text-slate-400">11h 17m remaining</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-50/50 transition-colors">
-                <div className="w-2 h-2 rounded-full bg-slate-300 mt-2" />
-                <div className="flex-1">
-                  <p className="text-sm text-slate-700">Account created</p>
-                  <p className="text-xs text-slate-400">3 days ago</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            onBalanceUpdated={(newBalance) => {
+              // Update participant data with new balance
+              setParticipantData((prev: any) => {
+                const updated = { ...prev, account_balance: newBalance }
+                localStorage.setItem("participantData", JSON.stringify(updated))
+                return updated
+              })
+            }}
+          />
+
         </>
         )}
 
@@ -1766,6 +2157,10 @@ export default function DashboardHome() {
           <LeaderboardView mode="compact" initialTab="contributors" />
         </div>
       )}
+      
+      {/* Notice Board - Display important announcements */}
+      <NoticeBoard />
+      
       </main>
 
       {/* Footer Navigation */}
@@ -1799,7 +2194,7 @@ export default function DashboardHome() {
             onClick={() => setActiveTab("activity")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
               activeTab === "activity"
-                ? "text-[#E85D3B]"
+                ? "text-amber-600"
                 : "text-slate-400 hover:text-slate-600"
             }`}
           >
@@ -1820,6 +2215,22 @@ export default function DashboardHome() {
           </button>
         </nav>
       </footer>
+
+      {/* Floating WhatsApp Support Button */}
+      <a
+        href="https://wa.me/995574450590"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="WhatsApp Support: +995 574 450 590"
+        className="fixed bottom-40 right-6 z-50 h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-2xl hover:shadow-green-500/40 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 group"
+      >
+        <MessageCircle className="h-6 w-6 text-white" />
+        {/* Tooltip */}
+        <span className="absolute right-16 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
+          <span className="block">WhatsApp Support</span>
+          <span className="block text-green-400">+995 574 450 590</span>
+        </span>
+      </a>
 
       {/* Floating AI Chat Button */}
       <Button
