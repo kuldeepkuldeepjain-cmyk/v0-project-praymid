@@ -46,14 +46,14 @@ export async function POST(request: Request) {
         }
       }
 
-      // Insert new participant with $50 unclaimed welcome bonus
+      // Insert new participant
       const inserted = await query<Record<string, any>>(
         `INSERT INTO participants
           (full_name, username, email, password_hash, plain_password, wallet_address,
            referral_code, referred_by, account_balance, status, is_active,
-           whatsapp_otp, otp_verified, mobile_number, unclaimed_bonus, bonus_claimed)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10,50,false)
-         RETURNING id, full_name, username, email, referral_code, account_balance, unclaimed_bonus, bonus_claimed, status, is_active, created_at`,
+           whatsapp_otp, otp_verified, mobile_number)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10)
+         RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
         [
           fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
           newReferralCode, referralCode ? referralCode.toUpperCase() : null,
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: "Registration successful! Your account is now active. You can log in immediately. Welcome bonus: $50 (claim by making your first contribution).",
+        message: "Registration successful! Your account is now active. You can log in immediately.",
         participantId: newParticipant.id,
         walletAddress: walletAddress,
         username: usernameKey,
@@ -94,8 +94,6 @@ export async function POST(request: Request) {
         referral_code: newReferralCode,
         wallet_balance: 0,
         account_balance: 0,
-        unclaimed_bonus: 50,
-        bonus_claimed: false,
         bonus_balance: 0,
         total_referrals: 0,
         total_earnings: 0,
