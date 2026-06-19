@@ -1,0 +1,80 @@
+================================================================================
+                    DATABASE COLUMNS - SUCCESSFULLY ADDED ✅
+================================================================================
+
+ISSUE: "column unclaimed_bonus of relation participants does not exist"
+
+SOLUTION: Directly added missing columns to production database using Neon
+
+================================================================================
+COLUMNS ADDED TO 'participants' TABLE
+================================================================================
+
+1. unclaimed_bonus
+   Type: NUMERIC
+   Default: 0
+   Status: ✅ ADDED & VERIFIED
+
+2. bonus_claimed
+   Type: BOOLEAN
+   Default: FALSE
+   Status: ✅ ADDED & VERIFIED
+
+3. bonus_claimed_at
+   Type: TIMESTAMP WITH TIME ZONE
+   Default: NULL
+   Status: ✅ ADDED & VERIFIED
+
+================================================================================
+PERFORMANCE INDEXES CREATED
+================================================================================
+
+1. idx_participants_unclaimed_bonus
+   Condition: WHERE unclaimed_bonus > 0
+   Purpose: Fast queries for participants with unclaimed bonuses
+   Status: ✅ CREATED
+
+2. idx_participants_bonus_claimed
+   Purpose: Fast queries for claimed bonus status
+   Status: ✅ CREATED
+
+================================================================================
+REGISTRATION ENDPOINT
+================================================================================
+
+File: app/api/participant/register/route.ts
+
+INSERT Statement (Lines 51-56):
+✅ Column list correctly includes: unclaimed_bonus, bonus_claimed
+✅ Values correctly map: 50 for unclaimed_bonus, false for bonus_claimed
+✅ RETURNING clause includes all bonus fields
+
+When a participant registers:
+- unclaimed_bonus = 50 (automatically)
+- bonus_claimed = false (automatically)
+- All required fields properly set
+
+================================================================================
+READY TO TEST
+================================================================================
+
+1. Go to Lending Page
+2. Click "Register as Participant"
+3. Fill out registration form
+4. Submit
+
+Expected Result:
+- Registration completes successfully
+- Participant receives $50 unclaimed bonus
+- Dashboard shows yellow bonus card with $50
+- "Start Contributing" button guides next steps
+
+================================================================================
+STATUS: ✅ ALL SYSTEMS READY
+================================================================================
+
+Database: ✅ Columns added and verified
+Application: ✅ Build successful
+Indexes: ✅ Created for performance
+Ready: ✅ YES - REGISTER NOW
+
