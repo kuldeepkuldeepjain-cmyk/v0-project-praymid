@@ -1,35 +1,7 @@
 import "server-only"
 import { Pool } from "pg"
 
-const globalForPools = globalThis as unknown as {
-  _pgPoolV1?: Pool
-  _pgPoolV2?: Pool
-}
-
-/**
- * Database Router
- * Routes queries to v1 (production) or v2 (new schema) based on environment variables
- * v1: Original database (keeps all existing data)
- * v2: New database (fresh, empty tables with restructured schema)
- */
-
-function createPoolV1() {
-  const url =
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_URL ||
-    process.env.DATABASE_URL ||
-    process.env.NEON_DATABASE_URL
-
-  if (!url) return null
-
-  return new Pool({
-    connectionString: url,
-    ssl: { rejectUnauthorized: false },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-  })
-}
+const globalForPoolV2 = globalThis as unknown as { _pgPoolV2?: Pool }
 
 function createPoolV2() {
   const url =
@@ -38,7 +10,7 @@ function createPoolV2() {
     process.env.NEON_DATABASE_URL_V2
 
   if (!url) {
-    console.warn("[v0] V2 database URL not configured. Set DATABASE_URL_V2 or NEON_DATABASE_URL_V2")
+    console.warn("[v0] V2 database URL not set. Set DATABASE_URL_V2 or POSTGRES_URL_V2")
     return null
   }
 
@@ -51,147 +23,50 @@ function createPoolV2() {
   })
 }
 
-export function getPoolV1(): Pool | null {
-  if (!globalForPools._pgPoolV1) {
-    globalForPools._pgPoolV1 = createPoolV1() ?? undefined
-  }
-  return globalForPools._pgPoolV1 ?? null
-}
-
 export function getPoolV2(): Pool | null {
-  if (!globalForPools._pgPoolV2) {
-    globalForPools._pgPoolV2 = createPoolV2() ?? undefined
+  if (!globalForPoolV2._pgPoolV2) {
+    globalForPoolV2._pgPoolV2 = createPoolV2() ?? undefined
   }
-  return globalForPools._pgPoolV2 ?? null
+  return globalForPoolV2._pgPoolV2 ?? null
 }
 
-/**
- * Determine which database version to use
- * Returns "v1" (default) or "v2" based on USE_DB_V2 environment variable
- */
-export function getActiveDBVersion(): "v1" | "v2" {
-  if (process.env.USE_DB_V2 === "true") {
-    return "v2"
-  }
-  return "v1"
-}
-
-/**
- * Get the appropriate pool based on active database version
- */
-export function getActivePool(): Pool | null {
-  const version = getActiveDBVersion()
-  if (version === "v2") {
-    return getPoolV2()
-  }
-  return getPoolV1()
-}
-
-/**
- * Health check for both databases
- */
-export async function checkDatabaseHealth(
-  version: "v1" | "v2" | "both" = "both"
-): Promise<{ v1?: boolean; v2?: boolean }> {
-  const result: { v1?: boolean; v2?: boolean } = {}
-
-  if (version === "v1" || version === "both") {
-    try {
-      const poolV1 = getPoolV1()
-      if (poolV1) {
-        await poolV1.query("SELECT 1")
-        result.v1 = true
-      } else {
-        result.v1 = false
-      }
-    } catch {
-      result.v1 = false
-    }
-  }
-
-  if (version === "v2" || version === "both") {
-    try {
-      const poolV2 = getPoolV2()
-      if (poolV2) {
-        await poolV2.query("SELECT 1")
-        result.v2 = true
-      } else {
-        result.v2 = false
-      }
-    } catch {
-      result.v2 = false
-    }
-  }
-
-  return result
-}
-
-/**
- * Query using the active database version
- * Can force a specific version by passing forceVersion parameter
- */
-export async function query<T = Record<string, any>>(
+// Helper: run a query on v2, returns rows
+export async function queryV2<T = Record<string, any>>(
   sql: string,
-  params: any[] = [],
-  forceVersion?: "v1" | "v2"
+  params: any[] = []
 ): Promise<T[]> {
-  const pool = forceVersion === "v1" ? getPoolV1() : forceVersion === "v2" ? getPoolV2() : getActivePool()
-
-  if (!pool) {
-    const version = forceVersion || getActiveDBVersion()
-    throw new Error(`No database connection for ${version} — set DATABASE_URL_V2 or NEON_DATABASE_URL_V2`)
-  }
-
+  const pool = getPoolV2()
+  if (!pool) throw new Error("V2 database not configured — set DATABASE_URL_V2")
   const result = await pool.query(sql, params)
   return result.rows as T[]
 }
 
-/**
- * Query one using the active database version
- */
-export async function queryOne<T = Record<string, any>>(
+// Helper: run a query on v2, return single row or null
+export async function queryOneV2<T = Record<string, any>>(
   sql: string,
-  params: any[] = [],
-  forceVersion?: "v1" | "v2"
+  params: any[] = []
 ): Promise<T | null> {
-  const rows = await query<T>(sql, params, forceVersion)
+  const rows = await queryV2<T>(sql, params)
   return rows[0] ?? null
 }
 
-/**
- * Execute using the active database version (for INSERT/UPDATE/DELETE)
- */
-export async function execute(
-  sql: string,
-  params: any[] = [],
-  forceVersion?: "v1" | "v2"
-): Promise<number> {
-  const pool = forceVersion === "v1" ? getPoolV1() : forceVersion === "v2" ? getPoolV2() : getActivePool()
-
-  if (!pool) {
-    const version = forceVersion || getActiveDBVersion()
-    throw new Error(`No database connection for ${version} — set DATABASE_URL_V2 or NEON_DATABASE_URL_V2`)
-  }
-
+// Helper: run an insert/update/delete on v2, return rowCount
+export async function executeV2(sql: string, params: any[] = []): Promise<number> {
+  const pool = getPoolV2()
+  if (!pool) throw new Error("V2 database not configured — set DATABASE_URL_V2")
   const result = await pool.query(sql, params)
   return result.rowCount ?? 0
 }
 
-/**
- * Get service client that routes to v1 or v2
- * Usage: const db = getServiceClient()
- */
-export function getServiceClient() {
+// Compatibility shim for v2 — matches Supabase JS API surface used in project
+export function getServiceClientV2() {
   return {
-    from: (table: string) => new TableQueryBuilder(table),
+    from: (table: string) => new TableQueryBuilderV2(table),
   }
 }
 
-/**
- * Lightweight query builder matching Supabase JS API
- * Routes to v1 or v2 based on active database version
- */
-class TableQueryBuilder {
+// Lightweight query builder for v2, matching Supabase surface
+class TableQueryBuilderV2 {
   private _table: string
   private _filters: { col: string; op: string; val: any }[] = []
   private _selectCols = "*"
@@ -200,14 +75,14 @@ class TableQueryBuilder {
   private _orderAsc = true
   private _insertData?: Record<string, any> | Record<string, any>[]
   private _updateData?: Record<string, any>
+  private _upsertData?: Record<string, any>
+  private _upsertConflict?: string
   private _isSingle = false
   private _isMaybeSingle = false
   private _isDelete = false
-  private _forceVersion?: "v1" | "v2"
 
-  constructor(table: string, forceVersion?: "v1" | "v2") {
+  constructor(table: string) {
     this._table = table
-    this._forceVersion = forceVersion
   }
 
   select(cols = "*") { this._selectCols = cols; return this }
@@ -223,9 +98,27 @@ class TableQueryBuilder {
   order(col: string, opts?: { ascending?: boolean }) { this._orderCol = col; this._orderAsc = opts?.ascending !== false; return this }
   single() { this._isSingle = true; return this }
   maybeSingle() { this._isMaybeSingle = true; return this }
-  insert(data: Record<string, any> | Record<string, any>[]) { this._insertData = data; return this }
-  update(data: Record<string, any>) { this._updateData = data; return this }
-  delete() { this._isDelete = true; return this }
+
+  insert(data: Record<string, any> | Record<string, any>[]) {
+    this._insertData = data
+    return this
+  }
+
+  update(data: Record<string, any>) {
+    this._updateData = data
+    return this
+  }
+
+  upsert(data: Record<string, any>, opts?: { onConflict?: string }) {
+    this._upsertData = data
+    this._upsertConflict = opts?.onConflict
+    return this
+  }
+
+  delete() {
+    this._isDelete = true
+    return this
+  }
 
   async then(onFulfilled?: any, onRejected?: any) {
     try {
@@ -239,6 +132,7 @@ class TableQueryBuilder {
   private async _execute() {
     if (this._insertData) return this._executeInsert()
     if (this._updateData) return this._executeUpdate()
+    if (this._upsertData) return this._executeUpsert()
     if (this._isDelete) return this._executeDelete()
     return this._executeSelect()
   }
@@ -272,7 +166,7 @@ class TableQueryBuilder {
       sql += ` LIMIT ${this._limitVal}`
     }
 
-    const rows = await query(sql, params, this._forceVersion)
+    const rows = await queryV2(sql, params)
     if (this._isSingle && rows.length !== 1) throw new Error("Expected single row")
     if (this._isMaybeSingle && rows.length > 1) throw new Error("Expected 0 or 1 rows")
     return { data: this._isSingle || this._isMaybeSingle ? rows[0] : rows, error: null }
@@ -291,7 +185,7 @@ class TableQueryBuilder {
     dataArray.forEach(row => keys.forEach(k => values.push(row[k])))
 
     const sql = `INSERT INTO ${this._table} (${keys.join(",")}) VALUES ${placeholders} RETURNING *`
-    const rows = await query(sql, values, this._forceVersion)
+    const rows = await queryV2(sql, values)
     return { data: this._isSingle ? rows[0] : rows, error: null }
   }
 
@@ -310,8 +204,22 @@ class TableQueryBuilder {
     }).join(" AND ")
 
     const sql = `UPDATE ${this._table} SET ${setClauses} WHERE ${whereClause} RETURNING *`
-    const rows = await query(sql, params, this._forceVersion)
+    const rows = await queryV2(sql, params)
     return { data: rows, error: null }
+  }
+
+  private async _executeUpsert() {
+    const keys = Object.keys(this._upsertData!)
+    const placeholders = keys.map((_, i) => `$${i + 1}`).join(",")
+    const params = Object.values(this._upsertData!)
+
+    const conflictClause = this._upsertConflict
+      ? `ON CONFLICT (${this._upsertConflict}) DO UPDATE SET ${keys.map(k => `${k}=EXCLUDED.${k}`).join(",")}`
+      : ""
+
+    const sql = `INSERT INTO ${this._table} (${keys.join(",")}) VALUES (${placeholders}) ${conflictClause} RETURNING *`
+    const rows = await queryV2(sql, params)
+    return { data: rows[0], error: null }
   }
 
   private async _executeDelete() {
@@ -327,7 +235,7 @@ class TableQueryBuilder {
     }).join(" AND ")
 
     const sql = `DELETE FROM ${this._table} WHERE ${whereClause}`
-    await execute(sql, params, this._forceVersion)
+    await executeV2(sql, params)
     return { data: null, error: null }
   }
 }
