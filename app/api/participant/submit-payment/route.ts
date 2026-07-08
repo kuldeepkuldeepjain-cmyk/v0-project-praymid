@@ -177,11 +177,36 @@ export async function PATCH(request: Request) {
       const parts = await query("SELECT * FROM participants WHERE email = $1", [submission.participant_email]) as any[]
       const participant = parts[0]
       if (participant) {
-        const newBalance = Number(participant.account_balance || 0) + 200
-        await execute(
-          "UPDATE participants SET status='active', is_active=true, account_balance=$1, activation_date=NOW() WHERE email=$2",
-          [newBalance, submission.participant_email]
-        ).catch(() => {})
+        let newBalance = Number(participant.account_balance || 0) + 200
+        
+        // Claim welcome bonus if not already claimed
+        if (participant.unclaimed_bonus > 0 && !participant.bonus_claimed) {
+          const bonusAmount = Number(participant.unclaimed_bonus || 0)
+          newBalance += bonusAmount
+          await execute(
+            `UPDATE participants 
+             SET status='active', is_active=true, account_balance=$1, activation_date=NOW(),
+                 bonus_claimed=true, bonus_claimed_at=NOW(), unclaimed_bonus=0 
+             WHERE email=$2`,
+            [newBalance, submission.participant_email]
+          ).catch(() => {})
+          
+          // Log bonus claim transaction
+          try {
+            await execute(
+              `INSERT INTO transactions (participant_id, participant_email, type, amount, description, status, balance_before, balance_after)
+               VALUES ($1, $2, 'bonus_claim', $3, 'Welcome bonus claimed upon first contribution', 'completed', $4, $5)`,
+              [participant.id, submission.participant_email, bonusAmount, Number(participant.account_balance || 0) + 200, newBalance]
+            )
+          } catch (e) {
+            console.log("[v0] Failed to log bonus claim transaction:", e)
+          }
+        } else {
+          await execute(
+            "UPDATE participants SET status='active', is_active=true, account_balance=$1, activation_date=NOW() WHERE email=$2",
+            [newBalance, submission.participant_email]
+          ).catch(() => {})
+        }
       }
     }
 

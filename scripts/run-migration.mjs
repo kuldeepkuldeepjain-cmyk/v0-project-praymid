@@ -33,7 +33,60 @@ async function run() {
     await client.connect()
     console.log("[migration] Connected. Running migration...")
     await client.query(sql)
-    console.log("[migration] Migration completed successfully!")
+    console.log("[migration] Schema migration completed successfully!")
+    
+    // Add bonus columns
+    console.log("[migration] Adding bonus columns...")
+    
+    await client.query(`
+      ALTER TABLE participants
+      ADD COLUMN IF NOT EXISTS unclaimed_bonus NUMERIC DEFAULT 0
+    `)
+    console.log("[migration] ✅ unclaimed_bonus column added")
+    
+    await client.query(`
+      ALTER TABLE participants
+      ADD COLUMN IF NOT EXISTS bonus_claimed BOOLEAN DEFAULT FALSE
+    `)
+    console.log("[migration] ✅ bonus_claimed column added")
+    
+    await client.query(`
+      ALTER TABLE participants
+      ADD COLUMN IF NOT EXISTS bonus_claimed_at TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    `)
+    console.log("[migration] ✅ bonus_claimed_at column added")
+    
+    // Create performance indexes
+    console.log("[migration] Creating performance indexes...")
+    
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_participants_unclaimed_bonus 
+      ON participants(unclaimed_bonus) WHERE unclaimed_bonus > 0
+    `)
+    console.log("[migration] ✅ Index idx_participants_unclaimed_bonus created")
+    
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_participants_bonus_claimed 
+      ON participants(bonus_claimed)
+    `)
+    console.log("[migration] ✅ Index idx_participants_bonus_claimed created")
+    
+    // Verify columns
+    console.log("[migration] Verifying columns...")
+    const result = await client.query(`
+      SELECT column_name, data_type, column_default 
+      FROM information_schema.columns 
+      WHERE table_name = 'participants' 
+      AND column_name IN ('unclaimed_bonus', 'bonus_claimed', 'bonus_claimed_at')
+      ORDER BY ordinal_position
+    `)
+    
+    console.log("[migration] ✅ Verified columns:")
+    result.rows.forEach(row => {
+      console.log(`     - ${row.column_name}: ${row.data_type}`)
+    })
+    
+    console.log("[migration] ✅ All migrations completed successfully!")
   } catch (err) {
     console.error("[migration] Error:", err.message)
     process.exit(1)

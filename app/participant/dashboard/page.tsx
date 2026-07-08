@@ -1871,8 +1871,7 @@ export default function DashboardHome() {
               <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
                 <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
             </div>
-
-          </div>
+            </div>
 
           </div>
         </div>
