@@ -1714,118 +1714,157 @@ export default function DashboardHome() {
         }}
       />
 
-      <header className="sticky top-0 z-40 border-b border-slate-800/60" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #0f172a 100%)" }}>
+      <header
+        className="sticky top-0 z-40"
+        style={{
+          background: "linear-gradient(180deg, rgba(3,7,18,0.98) 0%, rgba(7,11,28,0.95) 100%)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(124,58,237,0.12)"
+        }}
+      >
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(124,58,237,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
+
         <div className="px-4 h-14 flex items-center justify-between gap-3">
           {/* Left — avatar + greeting */}
           <div className="flex items-center gap-2.5 min-w-0">
             <Link href="/participant/dashboard/profile">
               <div className="relative flex-shrink-0">
                 {participantData?.profile_image ? (
-                  <img src={participantData.profile_image} alt="Profile" className="h-8 w-8 rounded-full object-cover ring-2 ring-purple-500/60" />
+                  <img src={participantData.profile_image} alt="Profile" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 2px rgba(124,58,237,0.6), 0 0 12px rgba(124,58,237,0.3)" }} />
                 ) : (
-                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/40">
-                    <span className="text-white text-xs font-bold">{displayName.charAt(0).toUpperCase()}</span>
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(124,58,237,0.5), 0 0 14px rgba(124,58,237,0.3)" }}>
+                    <span className="text-white text-xs font-black">{displayName.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#030712]" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.8)" }} />
               </div>
             </Link>
             <div className="min-w-0">
-              <p className="text-white text-xs font-semibold leading-none truncate">{displayName}</p>
-              <p className="text-slate-400 text-[10px] mt-0.5 leading-none">Trading Account</p>
+              <p className="text-white text-xs font-bold leading-none truncate">{displayName}</p>
+              <p className="text-slate-500 text-[10px] mt-0.5 leading-none tracking-wide">TRADING ACCOUNT</p>
             </div>
           </div>
 
-          {/* Center — live indicator */}
-          <div className="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/50 rounded-full px-2.5 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-[10px] font-semibold tracking-wide">LIVE</span>
+          {/* Center — live ticker */}
+          <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", boxShadow: "0 0 12px rgba(16,185,129,0.1)" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.9)" }} />
+            <span className="text-emerald-400 text-[10px] font-bold tracking-widest">LIVE</span>
           </div>
 
           {/* Right — actions */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setActiveTab("wheel")}
-              className="flex items-center gap-1 bg-violet-600/80 hover:bg-violet-600 border border-violet-500/40 rounded-full px-2.5 py-1 transition-all"
+              className="holo-shine flex items-center gap-1 rounded-full px-2.5 py-1.5 transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.7),rgba(109,40,217,0.8))", border: "1px solid rgba(124,58,237,0.4)", boxShadow: "0 0 12px rgba(124,58,237,0.3), 0 2px 8px rgba(0,0,0,0.4)" }}
             >
               <Sparkles className="h-3 w-3 text-white" />
-              <span className="text-white text-[10px] font-bold">Spin</span>
+              <span className="text-white text-[10px] font-black tracking-wide">SPIN</span>
             </button>
             <UserNotificationsBell userEmail={participantData.email ?? ""} />
           </div>
         </div>
       </header>
 
-      <main className="pb-20" style={{ background: "#0f1923" }}>
+      <main className="pb-20" style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            {/* ── PORTFOLIO HERO CARD ───────────────────────────── */}
-            <div className="relative overflow-hidden px-4 pt-5 pb-6" style={{ background: "linear-gradient(160deg, #1e1b4b 0%, #0f172a 55%, #0c1a12 100%)" }}>
-              {/* subtle grid */}
-              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)", backgroundSize: "28px 28px" }} />
-              {/* glow orbs */}
-              <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-violet-600/20 blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+            {/* ── PORTFOLIO HERO ───────────────────────────────── */}
+            <div className="relative overflow-hidden px-4 pt-6 pb-7 hero-card-deep">
+              {/* Depth grid */}
+              <div className="absolute inset-0 depth-grid opacity-50 pointer-events-none" />
+              {/* Scan line */}
+              <div className="scan-line pointer-events-none" />
+              {/* Deep glow orbs */}
+              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
+              <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)", filter: "blur(36px)" }} />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)", filter: "blur(30px)" }} />
 
-              {/* balance */}
-              <div className="relative text-center mb-4">
-                <p className="text-slate-400 text-xs font-medium uppercase tracking-widest mb-1">Portfolio Balance</p>
-                <div className="text-4xl font-black text-white tracking-tight">
-                  <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+              {/* Balance display */}
+              <div className="relative text-center mb-5">
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
+                <div className="relative inline-block">
+                  {/* Balance glow */}
+                  <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
+                  <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                    <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+                  </div>
                 </div>
-                <div className="flex items-center justify-center gap-1.5 mt-1.5">
-                  <TrendingUp className="h-3 w-3 text-emerald-400" />
-                  <span className="text-emerald-400 text-xs font-semibold">Active Account</span>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                    <TrendingUp className="h-3 w-3 text-emerald-400" />
+                    <span className="text-emerald-400 text-[10px] font-bold tracking-wide">ACTIVE ACCOUNT</span>
+                  </div>
                 </div>
               </div>
 
-              {/* 3 stat chips */}
-              <div className="grid grid-cols-3 gap-2 relative">
-                <div className="rounded-xl bg-white/5 border border-white/8 p-2.5 text-center">
-                  <p className="text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">Referral</p>
-                  <p className="text-white text-sm font-bold">${referralEarnings.toFixed(0)}</p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/8 p-2.5 text-center">
-                  <p className="text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">Trades</p>
-                  <p className="text-white text-sm font-bold">{participantData?.participation_count ?? 0}</p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/8 p-2.5 text-center">
-                  <p className="text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">Earnings</p>
-                  <p className="text-white text-sm font-bold">${Number(participantData?.total_earnings ?? 0).toFixed(0)}</p>
-                </div>
+              {/* 3 deep stat chips */}
+              <div className="grid grid-cols-3 gap-2 relative mb-4">
+                {[
+                  { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.7)" },
+                  { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.7)" },
+                  { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.7)" },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="stat-chip-dark rounded-xl p-3 text-center">
+                    <p className="text-slate-500 text-[9px] uppercase tracking-widest mb-1">{label}</p>
+                    <p className="text-sm font-black" style={{ color, textShadow: `0 0 12px ${color}` }}>{value}</p>
+                  </div>
+                ))}
               </div>
 
-              {/* Add Funds + Payout pill buttons */}
-              <div className="flex gap-2 mt-4 relative">
+              {/* CTA buttons */}
+              <div className="flex gap-2.5 relative">
                 <button
                   onClick={() => setShowTopUpModal(true)}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-white text-xs font-bold transition-all active:scale-95"
-                  style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 4px 14px rgba(124,58,237,0.45)" }}
+                  className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95"
                 >
-                  <Plus className="h-3.5 w-3.5" /> Add Funds
+                  <Plus className="h-3.5 w-3.5" /> ADD FUNDS
                 </button>
                 <Link href="/participant/dashboard/payout" className="flex-1">
-                  <button className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-white text-xs font-bold transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#059669,#047857)", boxShadow: "0 4px 14px rgba(5,150,105,0.4)" }}>
-                    <ArrowUpRight className="h-3.5 w-3.5" /> Payout
+                  <button className="btn-deep-emerald w-full flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                    <ArrowUpRight className="h-3.5 w-3.5" /> PAYOUT
                   </button>
                 </Link>
               </div>
             </div>
 
-            {/* ── QUICK ACTION ROW ─────────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-4 gap-2">
+            {/* ── LIVE TICKER BAR ──────────────────────────────── */}
+            <div className="ticker-wrap border-y py-1.5" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
+              <div className="ticker-tape text-[10px] font-mono font-bold text-slate-500 gap-6">
+                {["EUR/USD · 1.0842", "GBP/USD · 1.2734", "USD/JPY · 149.32", "BTC/USD · 67,420", "ETH/USD · 3,580", "XAU/USD · 2,318", "USD/CHF · 0.9012", "AUD/USD · 0.6521",
+                  "EUR/USD · 1.0842", "GBP/USD · 1.2734", "USD/JPY · 149.32", "BTC/USD · 67,420", "ETH/USD · 3,580", "XAU/USD · 2,318", "USD/CHF · 0.9012", "AUD/USD · 0.6521"
+                ].map((item, i) => (
+                  <span key={i} className="shrink-0 mx-4">
+                    <span className="text-slate-600 mr-1">▸</span>
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* ── QUICK ACTION TILES ───────────────────────────── */}
+            <div className="px-4 pt-4 grid grid-cols-4 gap-2.5">
               {[
-                { href: "/participant/dashboard/contribute", icon: Send, label: "Contribute", color: "#f97316", bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.2)" },
-                { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", bg: "rgba(34,197,94,0.12)", border: "rgba(34,197,94,0.2)" },
-                { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", bg: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)" },
-                { href: "/participant/dashboard/activity", icon: History, label: "History", color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.2)" },
-              ].map(({ href, icon: Icon, label, color, bg, border }) => (
+                { href: "/participant/dashboard/contribute", icon: Send, label: "Contribute", color: "#f97316", glow: "rgba(249,115,22,0.3)" },
+                { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
+                { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
+                { href: "/participant/dashboard/activity", icon: History, label: "History", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
+              ].map(({ href, icon: Icon, label, color, glow }) => (
                 <Link key={href} href={href}>
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer active:scale-95 transition-all" style={{ background: bg, border: `1px solid ${border}` }}>
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}22` }}>
-                      <Icon className="h-4 w-4" style={{ color }} />
+                  <div
+                    className="action-tile flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer"
+                    style={{
+                      background: `linear-gradient(145deg, ${color}14 0%, ${color}07 100%)`,
+                      border: `1px solid ${color}28`,
+                    }}
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}18`, boxShadow: `0 0 14px ${glow}, inset 0 1px 0 rgba(255,255,255,0.08)` }}>
+                      <Icon className="h-4 w-4" style={{ color, filter: `drop-shadow(0 0 4px ${glow})` }} />
                     </div>
-                    <span className="text-[10px] font-semibold text-slate-300">{label}</span>
+                    <span className="text-[10px] font-bold" style={{ color: "rgba(148,163,184,0.9)" }}>{label}</span>
                   </div>
                 </Link>
               ))}
@@ -1853,26 +1892,43 @@ export default function DashboardHome() {
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
             <div className="px-4 pt-3 grid grid-cols-2 gap-2.5">
               {/* Lucky Spin */}
-              <button onClick={() => setActiveTab("wheel")} className="text-left rounded-2xl p-3 transition-all active:scale-95 border border-amber-500/20" style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.10),rgba(245,158,11,0.06))" }}>
-                <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center mb-2">
-                  <Sparkles className="h-4 w-4 text-amber-400" />
+              <button
+                onClick={() => setActiveTab("wheel")}
+                className="holo-shine text-left rounded-2xl p-3.5 transition-all active:scale-95 relative overflow-hidden"
+                style={{
+                  background: "linear-gradient(145deg, rgba(251,191,36,0.12) 0%, rgba(245,158,11,0.06) 100%)",
+                  border: "1px solid rgba(251,191,36,0.2)",
+                  boxShadow: "0 4px 24px rgba(251,191,36,0.1), inset 0 1px 0 rgba(255,255,255,0.06)"
+                }}
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)", filter: "blur(16px)", transform: "translate(30%, -30%)" }} />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2.5" style={{ background: "rgba(251,191,36,0.15)", boxShadow: "0 0 16px rgba(251,191,36,0.3), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
+                  <Sparkles className="h-4 w-4 text-amber-400" style={{ filter: "drop-shadow(0 0 4px rgba(251,191,36,0.8))" }} />
                 </div>
-                <p className="text-white text-xs font-bold">Lucky Spin</p>
-                <p className="text-slate-400 text-[10px] mt-0.5">$5 per spin</p>
-                <span className="mt-1.5 inline-flex items-center gap-0.5 text-amber-400 text-[10px] font-semibold">
+                <p className="text-white text-xs font-black">Lucky Spin</p>
+                <p className="text-slate-500 text-[10px] mt-0.5">$5 per spin</p>
+                <span className="mt-2 inline-flex items-center gap-0.5 text-[10px] font-bold" style={{ color: "#fbbf24", textShadow: "0 0 8px rgba(251,191,36,0.5)" }}>
                   Spin Now <ChevronRight className="h-3 w-3" />
                 </span>
               </button>
 
               {/* Refer & Earn */}
               <Link href="/participant/dashboard/refer">
-                <div className="rounded-2xl p-3 transition-all active:scale-95 border border-emerald-500/20" style={{ background: "linear-gradient(135deg,rgba(34,197,94,0.10),rgba(16,185,129,0.06))" }}>
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-2">
-                    <Gift className="h-4 w-4 text-emerald-400" />
+                <div
+                  className="holo-shine rounded-2xl p-3.5 transition-all active:scale-95 relative overflow-hidden"
+                  style={{
+                    background: "linear-gradient(145deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.06) 100%)",
+                    border: "1px solid rgba(16,185,129,0.2)",
+                    boxShadow: "0 4px 24px rgba(16,185,129,0.1), inset 0 1px 0 rgba(255,255,255,0.06)"
+                  }}
+                >
+                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)", filter: "blur(16px)", transform: "translate(30%, -30%)" }} />
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2.5" style={{ background: "rgba(16,185,129,0.15)", boxShadow: "0 0 16px rgba(16,185,129,0.3), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
+                    <Gift className="h-4 w-4 text-emerald-400" style={{ filter: "drop-shadow(0 0 4px rgba(16,185,129,0.8))" }} />
                   </div>
-                  <p className="text-white text-xs font-bold">Refer & Earn</p>
-                  <p className="text-slate-400 text-[10px] mt-0.5">$5 per referral</p>
-                  <span className="mt-1.5 inline-flex items-center gap-0.5 text-emerald-400 text-[10px] font-semibold">
+                  <p className="text-white text-xs font-black">Refer &amp; Earn</p>
+                  <p className="text-slate-500 text-[10px] mt-0.5">$5 per referral</p>
+                  <span className="mt-2 inline-flex items-center gap-0.5 text-[10px] font-bold" style={{ color: "#34d399", textShadow: "0 0 8px rgba(52,211,153,0.5)" }}>
                     Invite Now <ChevronRight className="h-3 w-3" />
                   </span>
                 </div>

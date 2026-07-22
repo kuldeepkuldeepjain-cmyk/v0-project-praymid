@@ -408,7 +408,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
         finalPnl: trade.pnl,
       }
       setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-      showMsg(trade.pnl >= 0 ? "success" : "error", `Closed ${trade.pair} ${trade.direction} — P&L: $${trade.pnl.toFixed(2)}`)
+      showMsg(trade.pnl >= 0 ? "success" : "error", `Closed ${trade.pair} ${trade.direction} ��� P&L: $${trade.pnl.toFixed(2)}`)
       return prev.filter((t) => t.id !== id)
     })
   }
@@ -434,25 +434,36 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
   const isUp = selectedPair ? selectedPair.change >= 0 : true
 
   return (
-    <div className="flex flex-col h-full min-h-screen bg-slate-950 text-white pb-20">
+    <div className="flex flex-col h-full min-h-screen text-white pb-20 forex-deep-bg">
 
       {/* ── Top Bar ─────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between px-3 py-2.5 bg-slate-900/80 border-b border-slate-800 sticky top-0 z-30">
+      <div
+        className="flex items-center justify-between px-3 py-2.5 sticky top-0 z-30"
+        style={{
+          background: "rgba(3,7,18,0.9)",
+          backdropFilter: "blur(20px)",
+          borderBottom: "1px solid rgba(34,211,238,0.12)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)"
+        }}
+      >
         <div className="flex items-center gap-2">
-          <BarChart2 className="h-4 w-4 text-cyan-400" />
-          <span className="text-sm font-bold text-white tracking-wide">Forex Trading</span>
-          <Badge className={`text-[9px] px-1.5 py-0 h-4 ${online ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
+          <BarChart2 className="h-4 w-4 text-cyan-400" style={{ filter: "drop-shadow(0 0 6px rgba(34,211,238,0.7))" }} />
+          <span className="text-sm font-black text-white tracking-widest">FOREX</span>
+          <Badge
+            className={`text-[9px] px-1.5 py-0 h-4 font-bold ${online ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" : "bg-red-500/15 text-red-400 border-red-500/30"}`}
+            style={online ? { boxShadow: "0 0 8px rgba(16,185,129,0.3)" } : {}}
+          >
             {online ? <><Wifi className="h-2.5 w-2.5 mr-0.5 inline" />LIVE</> : <><WifiOff className="h-2.5 w-2.5 mr-0.5 inline" />OFFLINE</>}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
           {lastUpdated && (
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-slate-600">
               <Clock className="h-3 w-3 inline mr-0.5" />
               {lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </span>
           )}
-          <button onClick={fetchRates} className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition-colors">
+          <button onClick={fetchRates} className="p-1.5 rounded-lg transition-colors" style={{ background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)" }}>
             <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
           </button>
         </div>
@@ -460,31 +471,38 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
 
       {/* ── Trade notification toast ────────────────────────────────────── */}
       {tradeMsg && (
-        <div className={`mx-3 mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium border ${
+        <div className={`mx-3 mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border ${
           tradeMsg.type === "success"
-            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-            : "bg-red-500/10 border-red-500/30 text-red-400"
-        }`}>
+            ? "bg-emerald-500/8 border-emerald-500/25 text-emerald-400"
+            : "bg-red-500/8 border-red-500/25 text-red-400"
+        }`}
+          style={tradeMsg.type === "success"
+            ? { boxShadow: "0 0 20px rgba(16,185,129,0.15)" }
+            : { boxShadow: "0 0 20px rgba(239,68,68,0.15)" }
+          }
+        >
           {tradeMsg.type === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertTriangle className="h-4 w-4 shrink-0" />}
           {tradeMsg.text}
         </div>
       )}
 
       {/* ── P&L Summary bar ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-px bg-slate-800 mx-3 mt-2 rounded-xl overflow-hidden text-center text-[11px]">
-        <div className="bg-slate-900 px-2 py-2">
-          <p className="text-slate-500 mb-0.5">Open Trades</p>
-          <p className="font-bold text-white">{openTrades.length}</p>
+      <div className="grid grid-cols-3 mx-3 mt-2 rounded-2xl overflow-hidden text-center text-[11px]"
+        style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.06)", boxShadow: "inset 0 2px 8px rgba(0,0,0,0.4)" }}
+      >
+        <div className="px-2 py-2.5" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+          <p className="text-slate-600 mb-1 text-[10px] uppercase tracking-wider">Open</p>
+          <p className="font-black text-white">{openTrades.length}</p>
         </div>
-        <div className="bg-slate-900 px-2 py-2">
-          <p className="text-slate-500 mb-0.5">Total P&L</p>
-          <p className={`font-bold ${totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+        <div className="px-2 py-2.5" style={{ borderRight: "1px solid rgba(255,255,255,0.05)" }}>
+          <p className="text-slate-600 mb-1 text-[10px] uppercase tracking-wider">P&amp;L</p>
+          <p className={`font-black ${totalPnl >= 0 ? "price-up" : "price-down"}`}>
             {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
           </p>
         </div>
-        <div className="bg-slate-900 px-2 py-2">
-          <p className="text-slate-500 mb-0.5">Closed Trades</p>
-          <p className="font-bold text-white">{closedTrades.length}</p>
+        <div className="px-2 py-2.5">
+          <p className="text-slate-600 mb-1 text-[10px] uppercase tracking-wider">Closed</p>
+          <p className="font-black text-white">{closedTrades.length}</p>
         </div>
       </div>
 
@@ -492,17 +510,23 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       <div className="flex gap-1.5 px-3 mt-3 overflow-x-auto pb-1 scrollbar-none flex-nowrap">
         {loading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-9 w-20 rounded-lg bg-slate-800 animate-pulse shrink-0" />
+              <div key={i} className="h-9 w-20 rounded-lg animate-pulse shrink-0" style={{ background: "rgba(255,255,255,0.05)" }} />
             ))
           : pairs.map((p) => (
               <button
                 key={p.symbol}
                 onClick={() => setSelectedPair(p)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all border ${
-                  selectedPair?.symbol === p.symbol
-                    ? "bg-cyan-500 text-slate-950 border-cyan-400"
-                    : `bg-slate-800 border-slate-700 ${p.change >= 0 ? "text-emerald-400" : "text-red-400"} hover:bg-slate-700`
-                }`}
+                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black transition-all"
+                style={selectedPair?.symbol === p.symbol ? {
+                  background: "linear-gradient(135deg,rgba(34,211,238,0.25),rgba(34,211,238,0.12))",
+                  color: "#22d3ee",
+                  border: "1px solid rgba(34,211,238,0.4)",
+                  boxShadow: "0 0 14px rgba(34,211,238,0.25), inset 0 1px 0 rgba(255,255,255,0.08)"
+                } : {
+                  background: "rgba(255,255,255,0.04)",
+                  color: p.change >= 0 ? "#34d399" : "#f87171",
+                  border: "1px solid rgba(255,255,255,0.07)"
+                }}
               >
                 {p.symbol}
               </button>
@@ -511,44 +535,44 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
 
       {/* ── Selected pair info ───────────────────────────────────────────── */}
       {selectedPair && (
-        <div className="mx-3 mt-3 rounded-2xl bg-slate-900 border border-slate-800 p-3">
+        <div className="mx-3 mt-3 rounded-2xl p-3 relative overflow-hidden glass-dark">
+          {/* Corner glow */}
+          <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: `radial-gradient(circle, ${isUp ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"} 0%, transparent 70%)`, filter: "blur(20px)", transform: "translate(30%,-30%)" }} />
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h2 className="text-lg font-black text-white tracking-wide">{selectedPair.symbol}</h2>
+              <h2 className="text-base font-black text-white tracking-widest">{selectedPair.symbol}</h2>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-2xl font-bold font-mono text-white">
+                <span className={`text-2xl font-black font-mono ${isUp ? "price-up" : "price-down"}`}>
                   {formatPrice((selectedPair.bid + selectedPair.ask) / 2, selectedPair.symbol)}
                 </span>
-                <span className={`flex items-center gap-0.5 text-xs font-bold ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+                <span className={`flex items-center gap-0.5 text-xs font-black ${isUp ? "text-emerald-400" : "text-red-400"}`}>
                   {isUp ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                   {isUp ? "+" : ""}{selectedPair.change.toFixed(2)}%
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-right text-[11px]">
-              <span className="text-slate-500">BID</span>
-              <span className="text-red-400 font-mono font-bold">{formatPrice(selectedPair.bid, selectedPair.symbol)}</span>
-              <span className="text-slate-500">ASK</span>
-              <span className="text-emerald-400 font-mono font-bold">{formatPrice(selectedPair.ask, selectedPair.symbol)}</span>
-              <span className="text-slate-500">SPREAD</span>
-              <span className="text-cyan-400 font-mono">{(selectedPair.spread / pip).toFixed(1)} pips</span>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-right text-[10px]">
+              <span className="text-slate-600 tracking-wider">BID</span>
+              <span className="price-down font-mono font-black text-xs">{formatPrice(selectedPair.bid, selectedPair.symbol)}</span>
+              <span className="text-slate-600 tracking-wider">ASK</span>
+              <span className="price-up font-mono font-black text-xs">{formatPrice(selectedPair.ask, selectedPair.symbol)}</span>
+              <span className="text-slate-600 tracking-wider">SPRD</span>
+              <span className="text-cyan-400 font-mono text-xs">{(selectedPair.spread / pip).toFixed(1)}p</span>
             </div>
           </div>
 
           {/* OHLC row */}
-          <div className="grid grid-cols-3 gap-2 text-[10px] text-center mb-3">
-            <div className="bg-slate-800/60 rounded-lg py-1.5">
-              <p className="text-slate-500 mb-0.5">OPEN</p>
-              <p className="font-mono text-white font-medium">{formatPrice(selectedPair.open, selectedPair.symbol)}</p>
-            </div>
-            <div className="bg-slate-800/60 rounded-lg py-1.5">
-              <p className="text-slate-500 mb-0.5">HIGH</p>
-              <p className="font-mono text-emerald-400 font-medium">{formatPrice(selectedPair.high, selectedPair.symbol)}</p>
-            </div>
-            <div className="bg-slate-800/60 rounded-lg py-1.5">
-              <p className="text-slate-500 mb-0.5">LOW</p>
-              <p className="font-mono text-red-400 font-medium">{formatPrice(selectedPair.low, selectedPair.symbol)}</p>
-            </div>
+          <div className="grid grid-cols-3 gap-1.5 text-[10px] text-center mb-3">
+            {[
+              { label: "OPEN", value: formatPrice(selectedPair.open, selectedPair.symbol), color: "text-slate-300" },
+              { label: "HIGH", value: formatPrice(selectedPair.high, selectedPair.symbol), color: "text-emerald-400" },
+              { label: "LOW",  value: formatPrice(selectedPair.low,  selectedPair.symbol), color: "text-red-400" },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="panel-inset rounded-lg py-1.5" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <p className="text-slate-600 mb-0.5 tracking-wider">{label}</p>
+                <p className={`font-mono font-bold ${color}`}>{value}</p>
+              </div>
+            ))}
           </div>
 
           {/* Timeframe selector */}
@@ -557,11 +581,16 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               <button
                 key={tf}
                 onClick={() => setTimeframe(tf)}
-                className={`flex-1 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                  timeframe === tf
-                    ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/40"
-                    : "text-slate-500 hover:text-slate-300"
-                }`}
+                className="flex-1 py-1 rounded-lg text-[10px] font-bold transition-all"
+                style={timeframe === tf ? {
+                  background: "rgba(34,211,238,0.12)",
+                  color: "#22d3ee",
+                  border: "1px solid rgba(34,211,238,0.3)",
+                  boxShadow: "0 0 10px rgba(34,211,238,0.2)"
+                } : {
+                  color: "rgba(100,116,139,0.7)",
+                  border: "1px solid transparent"
+                }}
               >
                 {tf}
               </button>
@@ -569,27 +598,27 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
           </div>
 
           {/* Chart */}
-          <div className="h-44">
+          <div className="h-44 rounded-xl overflow-hidden" style={{ background: "rgba(0,0,0,0.2)" }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={selectedPair.history} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.3} />
+                    <stop offset="5%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0.4} />
                     <stop offset="95%" stopColor={isUp ? "#10b981" : "#ef4444"} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#475569" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis domain={[chartMin, chartMax]} tick={{ fontSize: 8, fill: "#475569" }} tickLine={false} axisLine={false} tickFormatter={(v) => formatPrice(v, selectedPair.symbol)} width={52} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
+                <XAxis dataKey="time" tick={{ fontSize: 8, fill: "#334155" }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis domain={[chartMin, chartMax]} tick={{ fontSize: 8, fill: "#334155" }} tickLine={false} axisLine={false} tickFormatter={(v) => formatPrice(v, selectedPair.symbol)} width={52} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="price"
                   stroke={isUp ? "#10b981" : "#ef4444"}
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                   fill="url(#priceGradient)"
                   dot={false}
-                  activeDot={{ r: 3, fill: isUp ? "#10b981" : "#ef4444" }}
+                  activeDot={{ r: 4, fill: isUp ? "#10b981" : "#ef4444", strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -599,30 +628,32 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
 
       {/* ── Trade execution panel ────────────────────────────────────────── */}
       {selectedPair && (
-        <div className="mx-3 mt-3 rounded-2xl bg-slate-900 border border-slate-800 p-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-            <Activity className="h-3.5 w-3.5 text-cyan-400" /> Place Order
+        <div className="mx-3 mt-3 rounded-2xl p-3 glass-dark">
+          <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 flex items-center gap-1.5">
+            <Activity className="h-3.5 w-3.5 text-cyan-400" style={{ filter: "drop-shadow(0 0 4px rgba(34,211,238,0.7))" }} /> Place Order
           </h3>
 
           {/* BUY / SELL toggle */}
-          <div className="flex rounded-xl overflow-hidden border border-slate-700 mb-3">
+          <div className="flex rounded-xl overflow-hidden mb-3" style={{ border: "1px solid rgba(255,255,255,0.08)", gap: "1px", background: "rgba(0,0,0,0.3)" }}>
             <button
               onClick={() => setDirection("BUY")}
-              className={`flex-1 py-2.5 text-sm font-black transition-all flex items-center justify-center gap-1.5 ${
-                direction === "BUY"
-                  ? "bg-emerald-500 text-white shadow-[0_0_16px_rgba(16,185,129,0.4)]"
-                  : "bg-slate-800 text-slate-400 hover:text-emerald-400"
-              }`}
+              className="flex-1 py-2.5 text-sm font-black transition-all flex items-center justify-center gap-1.5"
+              style={direction === "BUY" ? {
+                background: "linear-gradient(135deg,#059669,#047857)",
+                color: "white",
+                boxShadow: "0 0 20px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)"
+              } : { color: "rgba(100,116,139,0.7)" }}
             >
               <TrendingUp className="h-4 w-4" /> BUY
             </button>
             <button
               onClick={() => setDirection("SELL")}
-              className={`flex-1 py-2.5 text-sm font-black transition-all flex items-center justify-center gap-1.5 ${
-                direction === "SELL"
-                  ? "bg-red-500 text-white shadow-[0_0_16px_rgba(239,68,68,0.4)]"
-                  : "bg-slate-800 text-slate-400 hover:text-red-400"
-              }`}
+              className="flex-1 py-2.5 text-sm font-black transition-all flex items-center justify-center gap-1.5"
+              style={direction === "SELL" ? {
+                background: "linear-gradient(135deg,#dc2626,#b91c1c)",
+                color: "white",
+                boxShadow: "0 0 20px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)"
+              } : { color: "rgba(100,116,139,0.7)" }}
             >
               <TrendingDown className="h-4 w-4" /> SELL
             </button>
@@ -631,24 +662,24 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
           {/* Lot size + Leverage */}
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">Lot Size</label>
+              <label className="text-[10px] text-slate-600 mb-1 block tracking-wider">Lot Size</label>
               <input
                 type="number"
                 value={lotSize}
                 onChange={(e) => setLotSize(e.target.value)}
-                step="0.01"
-                min="0.01"
-                max="100"
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-cyan-500 focus:outline-none"
+                step="0.01" min="0.01" max="100"
+                className="w-full rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none"
+                style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)" }}
                 placeholder="0.01"
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">Leverage</label>
+              <label className="text-[10px] text-slate-600 mb-1 block tracking-wider">Leverage</label>
               <select
                 value={leverage}
                 onChange={(e) => setLeverage(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-cyan-500 focus:outline-none"
+                className="w-full rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none"
+                style={{ background: "rgba(0,0,0,0.5)", border: "1px solid rgba(255,255,255,0.08)", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)" }}
               >
                 {["10", "25", "50", "100", "200", "500"].map((l) => (
                   <option key={l} value={l}>1:{l}</option>
@@ -660,43 +691,50 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
           {/* SL / TP */}
           <div className="grid grid-cols-2 gap-2 mb-3">
             <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">Stop Loss (optional)</label>
+              <label className="text-[10px] text-slate-600 mb-1 block tracking-wider">Stop Loss</label>
               <input
                 type="number"
                 value={sl}
                 onChange={(e) => setSl(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-red-500 focus:outline-none"
+                className="w-full rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none"
+                style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(239,68,68,0.15)", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)" }}
                 placeholder={formatPrice(midPrice * (direction === "BUY" ? 0.999 : 1.001), selectedPair.symbol)}
               />
             </div>
             <div>
-              <label className="text-[10px] text-slate-500 mb-1 block">Take Profit (optional)</label>
+              <label className="text-[10px] text-slate-600 mb-1 block tracking-wider">Take Profit</label>
               <input
                 type="number"
                 value={tp}
                 onChange={(e) => setTp(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm font-mono text-white focus:border-emerald-500 focus:outline-none"
+                className="w-full rounded-lg px-3 py-2 text-sm font-mono text-white focus:outline-none"
+                style={{ background: "rgba(0,0,0,0.4)", border: "1px solid rgba(16,185,129,0.15)", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)" }}
                 placeholder={formatPrice(midPrice * (direction === "BUY" ? 1.001 : 0.999), selectedPair.symbol)}
               />
             </div>
           </div>
 
           {/* Margin info */}
-          <div className="flex items-center justify-between text-[11px] bg-slate-800/60 rounded-xl px-3 py-2 mb-3">
-            <span className="text-slate-500 flex items-center gap-1"><DollarSign className="h-3 w-3" />Est. Margin</span>
-            <span className="text-cyan-400 font-mono font-bold">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString()}</span>
-            <span className="text-slate-500">Pip Value</span>
-            <span className="text-cyan-400 font-mono font-bold">${((parseFloat(lotSize) || 0.01) * 100000 * pip).toFixed(2)}</span>
+          <div className="flex items-center justify-between text-[11px] rounded-xl px-3 py-2 mb-3 panel-inset" style={{ background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <span className="text-slate-600 flex items-center gap-1"><DollarSign className="h-3 w-3" />Margin</span>
+            <span className="text-cyan-400 font-mono font-black">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString()}</span>
+            <span className="text-slate-600">Pip Val</span>
+            <span className="text-cyan-400 font-mono font-black">${((parseFloat(lotSize) || 0.01) * 100000 * pip).toFixed(2)}</span>
           </div>
 
           {/* Execute button */}
           <button
             onClick={executeTrade}
-            className={`w-full py-3 rounded-xl font-black text-sm tracking-wide transition-all ${
-              direction === "BUY"
-                ? "bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_4px_20px_rgba(16,185,129,0.4)]"
-                : "bg-red-500 hover:bg-red-400 text-white shadow-[0_4px_20px_rgba(239,68,68,0.4)]"
-            }`}
+            className="w-full py-3 rounded-xl font-black text-sm tracking-widest transition-all"
+            style={direction === "BUY" ? {
+              background: "linear-gradient(135deg,#059669,#047857)",
+              color: "white",
+              boxShadow: "0 4px 24px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)",
+            } : {
+              background: "linear-gradient(135deg,#dc2626,#b91c1c)",
+              color: "white",
+              boxShadow: "0 4px 24px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)",
+            }}
           >
             {direction === "BUY" ? <TrendingUp className="h-4 w-4 inline mr-1.5" /> : <TrendingDown className="h-4 w-4 inline mr-1.5" />}
             {direction} {selectedPair.symbol} @ {formatPrice(direction === "BUY" ? selectedPair.ask : selectedPair.bid, selectedPair.symbol)}
@@ -705,68 +743,81 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       )}
 
       {/* ── Positions + History ─────────────────────────────────────────── */}
-      <div className="mx-3 mt-3 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden">
+      <div className="mx-3 mt-3 rounded-2xl overflow-hidden glass-dark">
         {/* Tabs */}
-        <div className="flex border-b border-slate-800">
+        <div className="flex" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <button
             onClick={() => setActivePanel("positions")}
-            className={`flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-              activePanel === "positions" ? "text-cyan-400 border-b-2 border-cyan-500" : "text-slate-500"
-            }`}
+            className="flex-1 py-2.5 text-xs font-black flex items-center justify-center gap-1.5 transition-all"
+            style={activePanel === "positions" ? {
+              color: "#22d3ee",
+              borderBottom: "2px solid #22d3ee",
+              background: "rgba(34,211,238,0.04)"
+            } : { color: "rgba(100,116,139,0.6)" }}
           >
-            <Layers className="h-3.5 w-3.5" /> Open Positions ({openTrades.length})
+            <Layers className="h-3.5 w-3.5" /> Positions ({openTrades.length})
           </button>
           <button
             onClick={() => setActivePanel("history")}
-            className={`flex-1 py-2.5 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors ${
-              activePanel === "history" ? "text-cyan-400 border-b-2 border-cyan-500" : "text-slate-500"
-            }`}
+            className="flex-1 py-2.5 text-xs font-black flex items-center justify-center gap-1.5 transition-all"
+            style={activePanel === "history" ? {
+              color: "#22d3ee",
+              borderBottom: "2px solid #22d3ee",
+              background: "rgba(34,211,238,0.04)"
+            } : { color: "rgba(100,116,139,0.6)" }}
           >
-            <History className="h-3.5 w-3.5" /> Trade History ({closedTrades.length})
+            <History className="h-3.5 w-3.5" /> History ({closedTrades.length})
           </button>
         </div>
 
         {/* Open Positions */}
         {activePanel === "positions" && (
-          <div className="divide-y divide-slate-800">
+          <div>
             {openTrades.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-slate-600">
-                <BarChart2 className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-xs">No open positions</p>
+              <div className="flex flex-col items-center justify-center py-8 text-slate-700">
+                <BarChart2 className="h-8 w-8 mb-2 opacity-30" />
+                <p className="text-xs tracking-wider">No open positions</p>
               </div>
             ) : (
               openTrades.map((trade) => (
-                <div key={trade.id} className="p-3 flex items-center justify-between gap-2">
+                <div key={trade.id} className="p-3 flex items-center justify-between gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-xs font-bold text-white">{trade.pair}</span>
-                      <Badge className={`text-[9px] px-1 py-0 h-4 ${trade.direction === "BUY" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
+                      <span className="text-xs font-black text-white">{trade.pair}</span>
+                      <Badge
+                        className="text-[9px] px-1.5 py-0 h-4 font-black"
+                        style={trade.direction === "BUY"
+                          ? { background: "rgba(16,185,129,0.12)", color: "#34d399", border: "1px solid rgba(16,185,129,0.25)", boxShadow: "0 0 6px rgba(16,185,129,0.15)" }
+                          : { background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)", boxShadow: "0 0 6px rgba(239,68,68,0.15)" }
+                        }
+                      >
                         {trade.direction}
                       </Badge>
-                      <span className="text-[10px] text-slate-500">x{trade.leverage}</span>
+                      <span className="text-[10px] text-slate-600">x{trade.leverage}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                    <div className="flex items-center gap-2 text-[10px] text-slate-600">
                       <span>{trade.lotSize} lot</span>
                       <span>@{formatPrice(trade.openPrice, trade.pair)}</span>
-                      <span className="text-slate-600">{trade.openTime}</span>
+                      <span>{trade.openTime}</span>
                     </div>
                     {(trade.sl || trade.tp) && (
                       <div className="flex gap-2 mt-0.5 text-[10px]">
-                        {trade.sl && <span className="text-red-400/70">SL {formatPrice(trade.sl, trade.pair)}</span>}
-                        {trade.tp && <span className="text-emerald-400/70">TP {formatPrice(trade.tp, trade.pair)}</span>}
+                        {trade.sl && <span className="text-red-500">SL {formatPrice(trade.sl, trade.pair)}</span>}
+                        {trade.tp && <span className="text-emerald-500">TP {formatPrice(trade.tp, trade.pair)}</span>}
                       </div>
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    <span className={`text-sm font-black font-mono ${trade.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    <span className={`text-sm font-black font-mono ${trade.pnl >= 0 ? "price-up" : "price-down"}`}>
                       {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-500">
-                      now: {formatPrice(trade.currentPrice, trade.pair)}
+                    <span className="text-[10px] font-mono text-slate-600">
+                      {formatPrice(trade.currentPrice, trade.pair)}
                     </span>
                     <button
                       onClick={() => closeTrade(trade.id)}
-                      className="flex items-center gap-0.5 px-2 py-1 rounded-lg bg-slate-700 hover:bg-red-500/20 hover:text-red-400 text-slate-400 text-[10px] font-bold transition-colors"
+                      className="flex items-center gap-0.5 px-2 py-1 rounded-lg text-[10px] font-bold transition-all"
+                      style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}
                     >
                       <X className="h-3 w-3" /> Close
                     </button>
@@ -779,30 +830,36 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
 
         {/* Trade History */}
         {activePanel === "history" && (
-          <div className="divide-y divide-slate-800">
+          <div>
             {closedTrades.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-slate-600">
-                <History className="h-8 w-8 mb-2 opacity-40" />
-                <p className="text-xs">No closed trades yet</p>
+              <div className="flex flex-col items-center justify-center py-8 text-slate-700">
+                <History className="h-8 w-8 mb-2 opacity-30" />
+                <p className="text-xs tracking-wider">No closed trades yet</p>
               </div>
             ) : (
               closedTrades.slice(0, 20).map((trade) => (
-                <div key={trade.id} className="p-3 flex items-center justify-between">
+                <div key={trade.id} className="p-3 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="text-xs font-bold text-white">{trade.pair}</span>
-                      <Badge className={`text-[9px] px-1 py-0 h-4 ${trade.direction === "BUY" ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
+                      <span className="text-xs font-black text-white">{trade.pair}</span>
+                      <Badge
+                        className="text-[9px] px-1.5 py-0 h-4 font-black"
+                        style={trade.direction === "BUY"
+                          ? { background: "rgba(16,185,129,0.12)", color: "#34d399", border: "1px solid rgba(16,185,129,0.25)" }
+                          : { background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }
+                        }
+                      >
                         {trade.direction}
                       </Badge>
                     </div>
-                    <div className="text-[10px] text-slate-500">
-                      {trade.lotSize} lot · Open {trade.openTime} · Close {trade.closeTime}
+                    <div className="text-[10px] text-slate-600">
+                      {trade.lotSize} lot · {trade.openTime} → {trade.closeTime}
                     </div>
-                    <div className="text-[10px] text-slate-600 font-mono">
+                    <div className="text-[10px] text-slate-700 font-mono">
                       {formatPrice(trade.openPrice, trade.pair)} → {formatPrice(trade.closePrice, trade.pair)}
                     </div>
                   </div>
-                  <span className={`text-sm font-black font-mono ${trade.finalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                  <span className={`text-sm font-black font-mono ${trade.finalPnl >= 0 ? "price-up" : "price-down"}`}>
                     {trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}
                   </span>
                 </div>
