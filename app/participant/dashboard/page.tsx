@@ -1714,413 +1714,188 @@ export default function DashboardHome() {
         }}
       />
 
-      <header className="bg-gradient-to-r from-slate-50 to-purple-50 sticky top-0 z-40 border-b border-purple-100 h-14 shadow-sm">
-        <div className="px-4 h-full flex items-center justify-between">
-          {/* Left side - Profile Avatar */}
-          <div className="flex items-center gap-2">
+      <header className="sticky top-0 z-40 border-b border-slate-800/60" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #0f172a 100%)" }}>
+        <div className="px-4 h-14 flex items-center justify-between gap-3">
+          {/* Left — avatar + greeting */}
+          <div className="flex items-center gap-2.5 min-w-0">
             <Link href="/participant/dashboard/profile">
-              <button className="relative transition-transform hover:scale-105">
+              <div className="relative flex-shrink-0">
                 {participantData?.profile_image ? (
-                  <img
-                    src={participantData.profile_image || "/placeholder.svg"}
-                    alt="Profile"
-                    className="h-9 w-9 rounded-full object-cover border-2 border-purple-400"
-                  />
+                  <img src={participantData.profile_image} alt="Profile" className="h-8 w-8 rounded-full object-cover ring-2 ring-purple-500/60" />
                 ) : (
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] flex items-center justify-center border-2 border-white shadow-md">
-                    <User className="h-5 w-5 text-white" />
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center ring-2 ring-purple-500/40">
+                    <span className="text-white text-xs font-bold">{displayName.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
-              </button>
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-slate-900" />
+              </div>
             </Link>
+            <div className="min-w-0">
+              <p className="text-white text-xs font-semibold leading-none truncate">{displayName}</p>
+              <p className="text-slate-400 text-[10px] mt-0.5 leading-none">Trading Account</p>
+            </div>
           </div>
 
-          {/* Right side - Luck Wheel, Notifications, Logout */}
-          <div className="flex items-center gap-2">
-            {/* Luck Wheel Button */}
+          {/* Center — live indicator */}
+          <div className="flex items-center gap-1.5 bg-slate-800/70 border border-slate-700/50 rounded-full px-2.5 py-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-400 text-[10px] font-semibold tracking-wide">LIVE</span>
+          </div>
+
+          {/* Right — actions */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setActiveTab("wheel")}
-              className="relative group px-3 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
-              style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)",
-                boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
-              }}
+              className="flex items-center gap-1 bg-violet-600/80 hover:bg-violet-600 border border-violet-500/40 rounded-full px-2.5 py-1 transition-all"
             >
-                <Sparkles className="h-4 w-4 text-white" />
-                <span className="text-white text-xs font-bold tracking-wide">Spin</span>
-              {/* Shine effect */}
-              <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Sparkles className="h-3 w-3 text-white" />
+              <span className="text-white text-[10px] font-bold">Spin</span>
             </button>
-            
-            {/* Functional Notification Bell */}
             <UserNotificationsBell userEmail={participantData.email ?? ""} />
-            
-            {/* Logout Button */}
-            
           </div>
         </div>
       </header>
 
-      <main className="px-3 sm:px-4 py-3 sm:py-4 pb-20 space-y-3 sm:space-y-5 bg-gradient-to-b from-white via-purple-50/30 to-slate-50">
+      <main className="pb-20" style={{ background: "#0f1923" }}>
         {activeTab === "dashboard" && (
           <>
-            {/* Welcome Banner - Mobile Optimized */}
-        <div className="bg-gradient-to-r from-purple-600/10 via-purple-500/5 to-transparent rounded-lg sm:rounded-xl p-3 sm:p-4 flex items-center justify-between gap-2 border border-purple-200/40">
-          <div className="flex-1 min-w-0">
-            <p className="text-base sm:text-lg font-bold text-slate-800 truncate">Welcome back, {displayName}</p>
-            <p className="text-xs sm:text-sm text-slate-600">Let's grow your network today</p>
-          </div>
-          <Link href="/participant/dashboard/profile">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] p-[2px] flex-shrink-0">
-              <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-[#7c3aed] font-bold text-base sm:text-lg">
-                {displayName.charAt(0).toUpperCase()}
+            {/* ── PORTFOLIO HERO CARD ───────────────────────────── */}
+            <div className="relative overflow-hidden px-4 pt-5 pb-6" style={{ background: "linear-gradient(160deg, #1e1b4b 0%, #0f172a 55%, #0c1a12 100%)" }}>
+              {/* subtle grid */}
+              <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px)", backgroundSize: "28px 28px" }} />
+              {/* glow orbs */}
+              <div className="absolute -top-16 -right-16 w-56 h-56 rounded-full bg-violet-600/20 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+
+              {/* balance */}
+              <div className="relative text-center mb-4">
+                <p className="text-slate-400 text-xs font-medium uppercase tracking-widest mb-1">Portfolio Balance</p>
+                <div className="text-4xl font-black text-white tracking-tight">
+                  <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+                </div>
+                <div className="flex items-center justify-center gap-1.5 mt-1.5">
+                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  <span className="text-emerald-400 text-xs font-semibold">Active Account</span>
+                </div>
+              </div>
+
+              {/* 3 stat chips */}
+              <div className="grid grid-cols-3 gap-2 relative">
+                <div className="rounded-xl bg-white/5 border border-white/8 p-2.5 text-center">
+                  <p className="text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">Referral</p>
+                  <p className="text-white text-sm font-bold">${referralEarnings.toFixed(0)}</p>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/8 p-2.5 text-center">
+                  <p className="text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">Trades</p>
+                  <p className="text-white text-sm font-bold">{participantData?.participation_count ?? 0}</p>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/8 p-2.5 text-center">
+                  <p className="text-slate-400 text-[9px] uppercase tracking-wider mb-0.5">Earnings</p>
+                  <p className="text-white text-sm font-bold">${Number(participantData?.total_earnings ?? 0).toFixed(0)}</p>
+                </div>
+              </div>
+
+              {/* Add Funds + Payout pill buttons */}
+              <div className="flex gap-2 mt-4 relative">
+                <button
+                  onClick={() => setShowTopUpModal(true)}
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-white text-xs font-bold transition-all active:scale-95"
+                  style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)", boxShadow: "0 4px 14px rgba(124,58,237,0.45)" }}
+                >
+                  <Plus className="h-3.5 w-3.5" /> Add Funds
+                </button>
+                <Link href="/participant/dashboard/payout" className="flex-1">
+                  <button className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-white text-xs font-bold transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#059669,#047857)", boxShadow: "0 4px 14px rgba(5,150,105,0.4)" }}>
+                    <ArrowUpRight className="h-3.5 w-3.5" /> Payout
+                  </button>
+                </Link>
               </div>
             </div>
-          </Link>
-        </div>
 
-        <div
-          className="relative py-6 px-4 sm:py-8 sm:px-5 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-purple-200/40"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(124, 58, 237, 0.06) 0%, rgba(232, 93, 59, 0.04) 35%, rgba(16, 185, 129, 0.04) 100%)",
-          }}
-        >
-          {/* Enhanced animated background with multiple orbs - Responsive */}
-          <div className="absolute inset-0 overflow-hidden">
-          {/* Top right purple orb */}
-          <div className="absolute -top-8 -right-8 sm:-top-16 sm:-right-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#7c3aed]/15 via-purple-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl" />
-          
-          {/* Bottom left orange orb */}
-          <div
-            className="absolute -bottom-8 -left-8 sm:-bottom-16 sm:-left-16 w-32 h-32 sm:w-56 sm:h-56 bg-gradient-to-br from-[#E85D3B]/15 via-orange-400/8 to-transparent rounded-full blur-2xl sm:blur-3xl"
-          />
-          
-          {/* Middle emerald orb */}
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-48 sm:h-48 bg-gradient-to-br from-[#10b981]/12 via-emerald-400/6 to-transparent rounded-full blur-2xl sm:blur-3xl"
-          />
-            
-            {/* Top left cyan accent */}
-            <div
-              className="absolute top-10 left-10 w-32 h-32 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-2xl"
-            />
-            
-            {/* Bottom right accent */}
-            <div
-              className="absolute bottom-10 right-10 w-32 h-32 bg-gradient-to-br from-purple-400/10 to-transparent rounded-full blur-2xl"
-            />
-            
-            {/* Animated gradient lines */}
-            <div className="absolute inset-0 opacity-20">
-              <div
-                className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-purple-400/50 to-transparent"
-                style={{
-                  animation: "shimmer 3s ease-in-out infinite",
-                }}
-              />
-              <div
-                className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400/50 to-transparent"
-                style={{
-                  animation: "shimmer 3s ease-in-out infinite",
-                  animationDelay: "1.5s",
+            {/* ── QUICK ACTION ROW ─────────────────────────────── */}
+            <div className="px-4 pt-4 grid grid-cols-4 gap-2">
+              {[
+                { href: "/participant/dashboard/contribute", icon: Send, label: "Contribute", color: "#f97316", bg: "rgba(249,115,22,0.12)", border: "rgba(249,115,22,0.2)" },
+                { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", bg: "rgba(34,197,94,0.12)", border: "rgba(34,197,94,0.2)" },
+                { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", bg: "rgba(56,189,248,0.12)", border: "rgba(56,189,248,0.2)" },
+                { href: "/participant/dashboard/activity", icon: History, label: "History", color: "#a78bfa", bg: "rgba(167,139,250,0.12)", border: "rgba(167,139,250,0.2)" },
+              ].map(({ href, icon: Icon, label, color, bg, border }) => (
+                <Link key={href} href={href}>
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer active:scale-95 transition-all" style={{ background: bg, border: `1px solid ${border}` }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}22` }}>
+                      <Icon className="h-4 w-4" style={{ color }} />
+                    </div>
+                    <span className="text-[10px] font-semibold text-slate-300">{label}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
+            <div className="px-0 pt-4">
+              <ForexTradingPlatform participantEmail={participantData?.email ?? ""} />
+            </div>
+
+            {/* ── STAKING SECTION ──────────────────────────────── */}
+            <div className="px-4 pt-3">
+              <StakingBanner
+                currentBalance={walletBalance}
+                participantEmail={participantData?.email || ""}
+                onBalanceUpdated={(newBalance) => {
+                  setParticipantData((prev: any) => ({
+                    ...prev,
+                    account_balance: newBalance,
+                  }))
                 }}
               />
             </div>
-            
-            {/* Subtle grid pattern overlay */}
-            <div
-              className="absolute inset-0 opacity-3"
-              style={{
-                backgroundImage: `linear-gradient(rgba(124, 58, 237, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px)`,
-                backgroundSize: "20px 20px",
-              }}
-            />
-          </div>
 
-          <div className="relative space-y-2 sm:space-y-3">
-            {/* Wallet Balance - Mobile Optimized */}
-            <div className="text-center relative">
-              {/* Top Up Button - Right Upper Side - Responsive */}
-              <button
-                onClick={() => setShowTopUpModal(true)}
-                className="absolute -top-1 sm:-top-2 right-0 rounded-lg sm:rounded-xl font-bold text-white flex flex-col items-center gap-0.5 sm:gap-1 transition-all hover:scale-105 active:scale-95 shadow-lg text-[10px] sm:text-xs px-2 py-1 sm:px-3 sm:py-1.5"
-                style={{
-                  background: "linear-gradient(135deg, #7c3aed, #6d28d9)",
-                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.4)",
-                }}
-              >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="text-[8px] sm:text-[10px] font-bold tracking-wider">ADD FUND</span>
+            {/* ── PROMO CARDS ROW ──────────────────────────────── */}
+            <div className="px-4 pt-3 grid grid-cols-2 gap-2.5">
+              {/* Lucky Spin */}
+              <button onClick={() => setActiveTab("wheel")} className="text-left rounded-2xl p-3 transition-all active:scale-95 border border-amber-500/20" style={{ background: "linear-gradient(135deg,rgba(251,191,36,0.10),rgba(245,158,11,0.06))" }}>
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 flex items-center justify-center mb-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" />
+                </div>
+                <p className="text-white text-xs font-bold">Lucky Spin</p>
+                <p className="text-slate-400 text-[10px] mt-0.5">$5 per spin</p>
+                <span className="mt-1.5 inline-flex items-center gap-0.5 text-amber-400 text-[10px] font-semibold">
+                  Spin Now <ChevronRight className="h-3 w-3" />
+                </span>
               </button>
 
-              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
-                <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
-                <span className="text-xs sm:text-sm text-slate-600 uppercase tracking-wider font-bold">Wallet Balance</span>
-              </div>
-              <div className="text-3xl sm:text-4xl md:text-5xl font-black bg-gradient-to-r from-purple-600 to-orange-600 bg-clip-text text-transparent">
-                <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
-              </div>
+              {/* Refer & Earn */}
+              <Link href="/participant/dashboard/refer">
+                <div className="rounded-2xl p-3 transition-all active:scale-95 border border-emerald-500/20" style={{ background: "linear-gradient(135deg,rgba(34,197,94,0.10),rgba(16,185,129,0.06))" }}>
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-2">
+                    <Gift className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <p className="text-white text-xs font-bold">Refer & Earn</p>
+                  <p className="text-slate-400 text-[10px] mt-0.5">$5 per referral</p>
+                  <span className="mt-1.5 inline-flex items-center gap-0.5 text-emerald-400 text-[10px] font-semibold">
+                    Invite Now <ChevronRight className="h-3 w-3" />
+                  </span>
+                </div>
+              </Link>
             </div>
 
-            {/* Referral Earnings - Below Wallet Balance */}
-            <div className="text-center relative">
-              <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-1 sm:mb-2 font-semibold">
-                <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
-                <span className="text-xs sm:text-sm text-slate-600 uppercase tracking-wider font-bold">Referral Earnings</span>
-              </div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-black text-emerald-600">
-                <AnimatedNumber value={referralEarnings} prefix="$" gradient={false} decimals={2} />
+            {/* ── MYSTERY BOX ──────────────────────────────────── */}
+            <div className="px-4 pt-2.5 pb-4">
+              <MysteryBox
+                currentBalance={walletBalance}
+                participantEmail={participantData?.email || ""}
+                onRewardWon={(amount) => { toast({ title: "Mystery Box Reward!", description: `You won $${amount}!` }) }}
+                onBalanceUpdated={(newBalance) => {
+                  setParticipantData((prev: any) => {
+                    const updated = { ...prev, account_balance: newBalance }
+                    localStorage.setItem("participantData", JSON.stringify(updated))
+                    return updated
+                  })
+                }}
+              />
             </div>
-            </div>
 
-          </div>
-        </div>
-
-        {/* Forex Trading Platform - Directly below wallet balance */}
-        <div className="-mx-3 sm:-mx-4">
-          <ForexTradingPlatform participantEmail={participantData?.email ?? ""} />
-        </div>
-
-        {/* Action Buttons - Side by Side with Professional 3D Effects */}
-        <style>{`
-          @keyframes slideUp {
-            from { transform: translateY(4px); opacity: 0.95; }
-            to { transform: translateY(0); opacity: 1; }
-          }
-          @keyframes lift3d {
-            0% { transform: translateY(0) perspective(1200px) rotateX(0deg) rotateY(0deg); }
-            100% { transform: translateY(-8px) perspective(1200px) rotateX(4deg) rotateY(0deg); }
-          }
-          @keyframes shadowShift {
-            0% { box-shadow: 0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
-            100% { box-shadow: 0 24px 60px rgba(255, 100, 50, 0.5), 0 12px 30px rgba(150, 80, 200, 0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
-          }
-          @keyframes shadowShiftGreen {
-            0% { box-shadow: 0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15); }
-            100% { box-shadow: 0 24px 60px rgba(16, 185, 129, 0.5), 0 12px 30px rgba(52, 211, 153, 0.35), inset 0 1px 0 rgba(255,255,255,0.2); }
-          }
-          @keyframes iconBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-3px); }
-          }
-          .button-3d {
-            animation: slideUp 0.4s ease-out;
-            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-          }
-          .button-3d:hover {
-            animation: lift3d 0.4s ease-out forwards;
-          }
-          .button-3d-orange:hover {
-            animation: lift3d 0.4s ease-out forwards, shadowShift 0.4s ease-out forwards;
-          }
-          .button-3d-green:hover {
-            animation: lift3d 0.4s ease-out forwards, shadowShiftGreen 0.4s ease-out forwards;
-          }
-          .icon-animated {
-            animation: iconBounce 2s ease-in-out infinite;
-          }
-          .button-3d:hover .icon-animated {
-            animation: none;
-            transform: scale(1.1);
-          }
-        `}</style>
-
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          {/* Contribute Button - 3D Orange */}
-          <Link href="/participant/dashboard/contribute">
-            <button
-              onClick={createRipple}
-              className="button-3d button-3d-orange group w-full relative overflow-hidden active:scale-[0.96] rounded-2xl p-3 text-white"
-              style={{
-                background: "linear-gradient(90deg, rgba(255, 140, 80, 0.9) 0%, rgba(255, 100, 100, 0.7) 40%, rgba(150, 100, 200, 0.8) 100%)",
-                boxShadow: "0 12px 40px rgba(255, 100, 50, 0.3), 0 4px 12px rgba(150, 80, 200, 0.2), inset 0 1px 0 rgba(255,255,255,0.15), -4px 8px 20px rgba(255, 100, 50, 0.15)",
-                minHeight: "100px",
-                transformStyle: "preserve-3d",
-              }}
-            >
-              {/* Top highlight layer */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-              
-              <div className="relative z-10 flex items-center justify-between gap-3">
-                {/* Left Icon */}
-                <div className="flex-shrink-0">
-                  <div className="icon-animated w-14 h-14 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center"
-                    style={{
-                      boxShadow: "0 6px 20px rgba(255, 100, 50, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset -1px -1px 8px rgba(0,0,0,0.2)",
-                      transition: "transform 0.3s ease"
-                    }}>
-                    <Send className="w-7 h-7 text-white" style={{filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}} />
-                  </div>
-                </div>
-
-                {/* Center Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base tracking-wide text-white leading-none drop-shadow-lg">CONTRIBUTE</h3>
-                  <p className="text-xs text-white/85 font-medium drop-shadow-md">Join Now</p>
-                  <div className="mt-1 inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] border border-white/20 shadow-lg">
-                    <span className="text-white font-bold">+$50</span>
-                  </div>
-                </div>
-
-                {/* Right Arrow Button */}
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-xl group-hover:shadow-2xl transition-all group-hover:scale-125 group-hover:bg-orange-100"
-                  style={{boxShadow: "0 6px 20px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
-                  <ChevronRight className="w-5 h-5 text-orange-600 group-hover:text-orange-700 transition-colors" />
-                </div>
-              </div>
-            </button>
-          </Link>
-
-          {/* Payout Button - 3D Green */}
-          <Link href="/participant/dashboard/payout">
-            <button
-              onClick={createRipple}
-              className="button-3d button-3d-green group w-full relative overflow-hidden active:scale-[0.96] rounded-2xl p-3 text-white"
-              style={{
-                background: "linear-gradient(90deg, rgba(16, 185, 129, 0.9) 0%, rgba(52, 211, 153, 0.7) 40%, rgba(5, 150, 100, 0.8) 100%)",
-                boxShadow: "0 12px 40px rgba(16, 185, 129, 0.3), 0 4px 12px rgba(52, 211, 153, 0.2), inset 0 1px 0 rgba(255,255,255,0.15), -4px 8px 20px rgba(16, 185, 129, 0.15)",
-                minHeight: "100px",
-                transformStyle: "preserve-3d",
-              }}
-            >
-              {/* Top highlight layer */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none" />
-              
-              <div className="relative z-10 flex items-center justify-between gap-3">
-                {/* Left Icon */}
-                <div className="flex-shrink-0">
-                  <div className="icon-animated w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center"
-                    style={{
-                      boxShadow: "0 6px 20px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255,255,255,0.3), inset -1px -1px 8px rgba(0,0,0,0.2)",
-                      transition: "transform 0.3s ease"
-                    }}>
-                    <ArrowUpRight className="w-7 h-7 text-white" style={{filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))"}} />
-                  </div>
-                </div>
-
-                {/* Center Content */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base tracking-wide text-white leading-none drop-shadow-lg">PAYOUT</h3>
-                  <p className="text-xs text-white/85 font-medium drop-shadow-md">Instant Claim</p>
-                  <div className="mt-1 inline-flex items-center gap-1 bg-white/25 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] border border-white/20 shadow-lg">
-                    <span className="text-white font-bold">Crypto</span>
-                  </div>
-                </div>
-
-                {/* Right Arrow Button */}
-                <div className="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-white shadow-xl group-hover:shadow-2xl transition-all group-hover:scale-125 group-hover:bg-emerald-100"
-                  style={{boxShadow: "0 6px 20px rgba(255,255,255,0.6), inset 0 1px 0 rgba(255,255,255,0.8)"}}>
-                  <ChevronRight className="w-5 h-5 text-emerald-600 group-hover:text-emerald-700 transition-colors" />
-                </div>
-              </div>
-            </button>
-          </Link>
-        </div>
-
-        {/* Staking Banner - New Feature */}
-        <StakingBanner
-          currentBalance={walletBalance}
-          participantEmail={participantData?.email || ""}
-          onBalanceUpdated={(newBalance) => {
-            setParticipantData((prev: any) => ({
-              ...prev,
-              account_balance: newBalance,
-            }))
-          }}
-        />
-
-        {/* Lucky Spin Card - Mobile Optimized */}
-        <button
-          onClick={() => setActiveTab("wheel")}
-          className="w-full text-left group"
-        >
-          <Card
-            className="border-0 overflow-hidden relative transition-all hover:shadow-lg cursor-pointer"
-            style={{
-              background: "linear-gradient(135deg, #fff5eb 0%, #fef3c7 100%)",
-              boxShadow: "0 2px 10px rgba(249, 115, 22, 0.15)",
-            }}
-          >
-            <CardContent className="p-2.5 sm:p-3 relative">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-md flex-shrink-0">
-                    <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Lucky Spin</h3>
-                    <p className="text-[10px] sm:text-xs text-slate-600">Only $5 per spin</p>
-                  </div>
-                </div>
-                <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600 cursor-pointer shadow-md text-[10px] sm:text-xs flex-shrink-0">
-                  <span className="hidden xs:inline">Spin Now</span>
-                  <span className="xs:hidden">Spin</span>
-                  <ChevronRight className="h-3 w-3 ml-0.5 sm:ml-1" />
-                </Badge>
-              </div>
-            </CardContent>
-            </Card>
-          </button>
-
-          {/* Refer & Earn Card - Mobile Optimized */}
-          <Link href="/participant/dashboard/refer" className="w-full block group">
-            <Card
-              className="border-0 overflow-hidden relative transition-all hover:shadow-lg cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
-                boxShadow: "0 2px 10px rgba(34, 197, 94, 0.15)",
-              }}
-            >
-              <CardContent className="p-2.5 sm:p-3 md:p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                    <div
-                      className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg sm:rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{
-                        background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
-                        boxShadow: "0 2px 8px rgba(34, 197, 94, 0.3)",
-                      }}
-                    >
-                      <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-800 text-sm sm:text-base truncate">Invite Friends & Earn Unlimited $5 Per Referral</h3>
-                      <p className="text-[10px] sm:text-xs text-slate-600">Share your link & earn $5 per signup</p>
-                    </div>
-                  </div>
-                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 cursor-pointer shadow-md text-[10px] sm:text-xs flex-shrink-0">
-                    <span className="hidden xs:inline">Invite Now</span>
-                    <span className="xs:hidden">Invite</span>
-                    <ChevronRight className="h-3 w-3 ml-0.5 sm:ml-1" />
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-
-          {/* Mystery Box Card - New Feature */}
-          <MysteryBox
-            currentBalance={walletBalance}
-            participantEmail={participantData?.email || ""}
-            onRewardWon={(amount) => {
-              // Notify user of reward
-              toast({
-                title: "Mystery Box Reward!",
-                description: `You won $${amount}!`,
-              })
-            }}
-            onBalanceUpdated={(newBalance) => {
-              // Update participant data with new balance
-              setParticipantData((prev: any) => {
-                const updated = { ...prev, account_balance: newBalance }
-                localStorage.setItem("participantData", JSON.stringify(updated))
-                return updated
-              })
-            }}
-          />
-
-        </>
+          </>
         )}
 
         {/* Luck Wheel Tab Content */}
@@ -2146,18 +1921,18 @@ export default function DashboardHome() {
 
       {/* Leaderboard Tab Content */}
       {activeTab === "leaderboard" && (
-        <div className="space-y-6 pb-20">
-          <div className="text-center mb-8">
-            <div className="relative inline-block mb-4">
+        <div className="space-y-6 pb-20 px-4 pt-4">
+          <div className="text-center mb-6">
+            <div className="relative inline-block mb-3">
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 blur-2xl opacity-30" />
-              <div className="relative w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-xl">
-                <Trophy className="h-10 w-10 text-white" />
+              <div className="relative w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-xl">
+                <Trophy className="h-8 w-8 text-white" />
               </div>
             </div>
-            <h2 className="text-3xl font-bold text-slate-900 mb-2">
-              Global <span className="bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text text-transparent">Leaderboard</span>
+            <h2 className="text-2xl font-bold text-white mb-1">
+              Global <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Leaderboard</span>
             </h2>
-            <p className="text-sm text-slate-600">Top earners updated daily</p>
+            <p className="text-sm text-slate-400">Top earners updated daily</p>
           </div>
           <LeaderboardView mode="compact" initialTab="contributors" />
         </div>

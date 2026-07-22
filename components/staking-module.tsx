@@ -260,195 +260,119 @@ export function StakingModule({ currentBalance, participantEmail, onBalanceUpdat
   }
 
   return (
-    <div className="w-full space-y-6">
+    <div className="w-full space-y-3">
       {/* Dashboard View */}
       {view === "dashboard" && (
         <>
-          {/* Header */}
+          {/* Compact Header Row */}
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-                <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                Staking Dashboard
-              </h2>
-              <p className="text-slate-600 dark:text-slate-300 text-sm">Lock your assets and earn passive income</p>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-violet-600/30 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-violet-400" />
+              </div>
+              <div>
+                <p className="text-white text-xs font-bold leading-none">Staking</p>
+                <p className="text-slate-400 text-[10px] leading-none mt-0.5">Earn passive income</p>
+              </div>
             </div>
-            {/* APY Range Badge */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-600 dark:to-blue-700 rounded-lg px-4 py-2 text-white font-bold text-lg shadow-lg">
-              8-25% APY
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-violet-300 bg-violet-500/15 border border-violet-500/25 rounded-full px-2 py-0.5">8–25% APY</span>
+              <button onClick={() => setView("select")} className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-white text-[10px] font-bold transition-all active:scale-95" style={{ background: "linear-gradient(135deg,#7c3aed,#6d28d9)" }}>
+                <Zap className="h-3 w-3" /> Stake
+              </button>
             </div>
           </div>
 
-          {/* Stats Cards - Professional Theme */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {/* Total Locked */}
-            <Card className="border border-purple-300 dark:border-purple-500 bg-gradient-to-br from-purple-50 to-purple-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="p-4">
-                <p className="text-purple-700 dark:text-purple-300 text-sm font-semibold mb-1">Total Locked</p>
-                <p className="text-3xl font-bold text-purple-900 dark:text-white">${dashboardStats.totalLocked.toFixed(2)}</p>
-              </CardContent>
-            </Card>
-
-            {/* Total Earned */}
-            <Card className="border border-emerald-300 dark:border-emerald-500 bg-gradient-to-br from-emerald-50 to-emerald-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="p-4">
-                <p className="text-emerald-700 dark:text-emerald-300 text-sm font-semibold mb-1">Total Earned</p>
-                <p className="text-3xl font-bold text-emerald-900 dark:text-white">${dashboardStats.totalEarned.toFixed(2)}</p>
-              </CardContent>
-            </Card>
-
-            {/* Active Stakes */}
-            <Card className="border border-orange-300 dark:border-orange-500 bg-gradient-to-br from-orange-50 to-orange-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="p-4">
-                <p className="text-orange-700 dark:text-orange-300 text-sm font-semibold mb-1">Active Stakes</p>
-                <p className="text-3xl font-bold text-orange-900 dark:text-white">{dashboardStats.activeStakes}</p>
-              </CardContent>
-            </Card>
-
-            {/* Average APY */}
-            <Card className="border border-cyan-300 dark:border-cyan-500 bg-gradient-to-br from-cyan-50 to-cyan-100/50 dark:from-slate-700 dark:to-slate-800 shadow-lg hover:shadow-xl transition-all">
-              <CardContent className="p-4">
-                <p className="text-cyan-700 dark:text-cyan-300 text-sm font-semibold mb-1">Average APY</p>
-                <p className="text-3xl font-bold text-cyan-900 dark:text-white">{dashboardStats.averageApy}%</p>
-              </CardContent>
-            </Card>
-
-            {/* Start Staking Button */}
-            <Card className="border border-purple-500 dark:border-purple-600 bg-gradient-to-br from-purple-600 to-purple-700 dark:from-purple-700 dark:to-purple-800 cursor-pointer hover:from-purple-700 hover:to-purple-800 dark:hover:from-purple-600 dark:hover:to-purple-700 transition-all shadow-lg hover:shadow-xl" onClick={() => setView("select")}>
-              <CardContent className="p-4 h-full flex items-center justify-center">
-                <button className="flex flex-col items-center gap-2 w-full">
-                  <Zap className="h-6 w-6 text-white" />
-                  <span className="text-sm font-bold text-white">Start Staking</span>
-                </button>
-              </CardContent>
-            </Card>
+          {/* Compact 4-stat grid */}
+          <div className="grid grid-cols-4 gap-1.5">
+            <div className="rounded-xl bg-violet-500/10 border border-violet-500/20 p-2 text-center">
+              <p className="text-violet-300 text-[9px] uppercase tracking-wide">Locked</p>
+              <p className="text-white text-xs font-bold mt-0.5">${dashboardStats.totalLocked.toFixed(0)}</p>
+            </div>
+            <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-2 text-center">
+              <p className="text-emerald-300 text-[9px] uppercase tracking-wide">Earned</p>
+              <p className="text-white text-xs font-bold mt-0.5">${dashboardStats.totalEarned.toFixed(2)}</p>
+            </div>
+            <div className="rounded-xl bg-orange-500/10 border border-orange-500/20 p-2 text-center">
+              <p className="text-orange-300 text-[9px] uppercase tracking-wide">Active</p>
+              <p className="text-white text-xs font-bold mt-0.5">{dashboardStats.activeStakes}</p>
+            </div>
+            <div className="rounded-xl bg-cyan-500/10 border border-cyan-500/20 p-2 text-center">
+              <p className="text-cyan-300 text-[9px] uppercase tracking-wide">Avg APY</p>
+              <p className="text-white text-xs font-bold mt-0.5">{dashboardStats.averageApy}%</p>
+            </div>
           </div>
 
           {/* Active Stakes Section */}
           {dashboardStats.activeStakes > 0 && (
-            <Card className="border border-slate-700 dark:border-slate-700 bg-slate-800 dark:bg-slate-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-slate-900 dark:text-white">Active Stakes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {stakes
-                  .filter((s) => s.status === "Active")
-                  .map((stake) => (
-                    <div
-                      key={stake.id}
-                      className="bg-gradient-to-r from-purple-50 to-purple-100/50 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-purple-200 dark:border-slate-600 hover:border-purple-300 dark:hover:border-slate-500 transition-all shadow-sm"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center overflow-hidden">
-                            {failedLogos.has(stake.coin_symbol) ? (
-                              <span className="text-sm font-bold text-purple-600">{stake.coin_symbol[0]}</span>
-                            ) : (
-                              <img 
-                                src={COIN_LOGOS[stake.coin_symbol]} 
-                                alt={stake.coin_symbol}
-                                className="h-8 w-8 object-contain"
-                                onError={() => {
-                                  setFailedLogos(prev => new Set([...prev, stake.coin_symbol]))
-                                }}
-                              />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 dark:text-white">{stake.coin_name}</p>
-                            <p className="text-slate-600 dark:text-slate-400 text-sm">${stake.amount.toFixed(2)} at {stake.apy}% APY</p>
-                          </div>
+            <div className="space-y-1.5">
+              <p className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold">Active Stakes</p>
+              {stakes
+                .filter((s) => s.status === "Active")
+                .map((stake) => (
+                  <div key={stake.id} className="rounded-xl bg-white/5 border border-white/8 p-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-7 w-7 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {failedLogos.has(stake.coin_symbol) ? (
+                            <span className="text-[10px] font-bold text-violet-400">{stake.coin_symbol[0]}</span>
+                          ) : (
+                            <img src={COIN_LOGOS[stake.coin_symbol]} alt={stake.coin_symbol} className="h-5 w-5 object-contain" onError={() => setFailedLogos(prev => new Set([...prev, stake.coin_symbol]))} />
+                          )}
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-emerald-600 dark:text-emerald-400">+${stake.daily_reward.toFixed(4)}/day</p>
-                          <p className="text-slate-600 dark:text-slate-400 text-sm">Total: ${stake.total_earned.toFixed(2)}</p>
+                        <div>
+                          <p className="font-semibold text-white text-xs">{stake.coin_symbol}</p>
+                          <p className="text-slate-400 text-[10px]">${stake.amount.toFixed(0)} · {stake.apy}% APY</p>
                         </div>
                       </div>
-                      <div className="h-1 bg-slate-700 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-green-600 to-blue-600 dark:from-green-600 dark:to-blue-600"
-                          style={{
-                            width: `${Math.min(
-                              ((new Date().getTime() - new Date(stake.start_date).getTime()) /
-                                (new Date(stake.end_date).getTime() - new Date(stake.start_date).getTime())) *
-                                100,
-                              100
-                            )}%`,
-                          }}
-                        />
+                      <div className="text-right">
+                        <p className="font-semibold text-emerald-400 text-xs">+${stake.daily_reward.toFixed(4)}/d</p>
+                        <p className="text-slate-400 text-[10px]">Earned: ${stake.total_earned.toFixed(2)}</p>
                       </div>
                     </div>
-                  ))}
-              </CardContent>
-            </Card>
+                    <div className="h-0.5 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-violet-500 to-cyan-500" style={{ width: `${Math.min(((new Date().getTime() - new Date(stake.start_date).getTime()) / (new Date(stake.end_date).getTime() - new Date(stake.start_date).getTime())) * 100, 100)}%` }} />
+                    </div>
+                  </div>
+                ))}
+            </div>
           )}
 
-          {/* Available Coins Section - Display all coins with selection */}
-          <div className="space-y-4">
+          {/* Available Coins Section */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Available Coins</h3>
-                <p className="text-sm text-blue-600 dark:text-blue-400 font-semibold mt-1">Earn 8-25% APY on your cryptocurrency</p>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">{coins.length} coins available</p>
+              <p className="text-slate-400 text-[10px] uppercase tracking-wider font-semibold">Available Coins</p>
+              <p className="text-slate-500 text-[10px]">{coins.length} coins</p>
             </div>
 
             {loading ? (
-              <Card className="border border-slate-700 dark:border-slate-700 bg-slate-800 dark:bg-slate-800 shadow-lg">
-                <CardContent className="p-8 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-blue-600 dark:text-blue-400" />
-                </CardContent>
-              </Card>
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
+              </div>
             ) : coins.length === 0 ? (
-              <Card className="border border-slate-700 dark:border-slate-700 bg-slate-800 dark:bg-slate-800 shadow-lg">
-                <CardContent className="p-8 flex flex-col items-center justify-center gap-3">
-                  <AlertCircle className="h-8 w-8 text-slate-500 dark:text-slate-400" />
-                  <p className="text-slate-500 dark:text-slate-400 text-center">No staking coins available yet. Please check back soon.</p>
-                </CardContent>
-              </Card>
+              <div className="flex flex-col items-center gap-2 py-4">
+                <AlertCircle className="h-6 w-6 text-slate-500" />
+                <p className="text-slate-400 text-xs text-center">No coins available yet.</p>
+              </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {coins.map((coin) => (
                   <button
                     key={coin.id}
-                    onClick={() => {
-                      setSelectedCoin(coin)
-                      setView("input")
-                      setStakeAmount("")
-                    }}
-                    className="group bg-gradient-to-br from-purple-100 to-purple-50 dark:from-slate-700 dark:to-slate-800 rounded-lg p-4 border border-purple-300 dark:border-slate-600 hover:border-purple-500 dark:hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-200 hover:to-purple-100 dark:hover:from-slate-600 dark:hover:to-slate-700 transition-all cursor-pointer shadow-sm"
+                    onClick={() => { setSelectedCoin(coin); setView("input"); setStakeAmount("") }}
+                    className="group rounded-xl p-2.5 border border-white/8 hover:border-violet-500/40 bg-white/5 hover:bg-violet-500/10 transition-all text-left active:scale-95"
                   >
-                    <div className="h-12 w-12 rounded-full bg-white border-2 border-purple-300 dark:bg-slate-600 dark:border-slate-500 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform overflow-hidden">
+                    <div className="h-9 w-9 rounded-full bg-slate-700 border border-slate-600 flex items-center justify-center mb-2 overflow-hidden">
                       {failedLogos.has(coin.coin_symbol) ? (
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-purple-600 to-purple-700 flex items-center justify-center text-white font-bold text-sm">
-                          {coin.coin_symbol[0]}
-                        </div>
+                        <span className="text-xs font-bold text-violet-400">{coin.coin_symbol[0]}</span>
                       ) : (
-                        <img 
-                          src={COIN_LOGOS[coin.coin_symbol]} 
-                          alt={coin.coin_symbol}
-                          className="h-10 w-10 object-contain"
-                          onError={() => {
-                            setFailedLogos(prev => new Set([...prev, coin.coin_symbol]))
-                          }}
-                        />
+                        <img src={COIN_LOGOS[coin.coin_symbol]} alt={coin.coin_symbol} className="h-7 w-7 object-contain" onError={() => setFailedLogos(prev => new Set([...prev, coin.coin_symbol]))} />
                       )}
                     </div>
-                    <p className="font-bold text-slate-900 dark:text-white text-sm mb-1">{coin.coin_symbol}</p>
-                    <p className="text-slate-600 dark:text-slate-400 text-xs mb-2">{coin.coin_name}</p>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-purple-600 dark:text-purple-400 font-bold text-sm">{coin.apy}% APY</p>
-                      <ChevronRight className="h-3 w-3 text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition-transform" />
-                    </div>
-                    <span
-                      className={`inline-block text-xs font-bold px-1.5 py-0.5 rounded-full ${
-                        coin.risk_level === "Low"
-                          ? "bg-emerald-600 text-emerald-100 dark:bg-emerald-600 dark:text-emerald-100"
-                          : coin.risk_level === "Medium"
-                            ? "bg-orange-600 text-orange-100 dark:bg-orange-600 dark:text-orange-100"
-                            : "bg-red-600 text-red-100 dark:bg-red-600 dark:text-red-100"
-                      }`}
-                    >
+                    <p className="font-bold text-white text-[11px] leading-none">{coin.coin_symbol}</p>
+                    <p className="text-slate-400 text-[9px] mt-0.5 mb-1.5 truncate">{coin.coin_name}</p>
+                    <p className="text-violet-400 font-bold text-[11px]">{coin.apy}%</p>
+                    <span className={`inline-block text-[9px] font-bold px-1 py-0.5 rounded mt-0.5 ${coin.risk_level === "Low" ? "bg-emerald-500/20 text-emerald-400" : coin.risk_level === "Medium" ? "bg-orange-500/20 text-orange-400" : "bg-red-500/20 text-red-400"}`}>
                       {coin.risk_level}
                     </span>
                   </button>
