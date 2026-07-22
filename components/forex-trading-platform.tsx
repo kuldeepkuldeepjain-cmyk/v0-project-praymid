@@ -97,14 +97,6 @@ const TYPICAL_SPREADS: Record<string, number> = {
   "NZD/USD": 0.0004, "EUR/GBP": 0.0003,
 }
 
-const CANDLE_COUNT = 80
-
-const DEFAULTS: Record<string, number> = {
-  "EUR/USD": 1.0842, "GBP/USD": 1.2731, "USD/JPY": 149.42,
-  "USD/CHF": 0.9014, "AUD/USD": 0.6524, "USD/CAD": 1.3618,
-  "NZD/USD": 0.6052, "EUR/GBP": 0.8552,
-}
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isJpy(sym: string): boolean { return sym.includes("JPY") }
@@ -113,51 +105,6 @@ function fmt(price: number, sym: string): string { return price.toFixed(decimals
 function pip(sym: string): number { return isJpy(sym) ? 0.01 : 0.0001 }
 function pips(diff: number, sym: string): number { return diff / pip(sym) }
 function genId(): string { return Math.random().toString(36).slice(2, 10) }
-
-function volatilityFor(mid: number): number {
-  return mid > 50 ? 0.04 : 0.00012   // JPY vs others
-}
-
-// Generate a realistic candle using Geometric Brownian Motion + candle patterns
-function generateCandle(prevClose: number, sym: string, bias: number = 0): Candle {
-  const vol = volatilityFor(prevClose)
-  const drift = bias * vol * 0.2
-  const open = prevClose
-  // GBM step
-  const bodySize = vol * prevClose * (0.3 + Math.random() * 1.2)
-  const direction = Math.random() < 0.5 + drift ? 1 : -1
-  const close = open + direction * bodySize
-  // Wicks: high/low extend beyond body
-  const upperWick = bodySize * (0.2 + Math.random() * 0.8)
-  const lowerWick = bodySize * (0.2 + Math.random() * 0.8)
-  const high = Math.max(open, close) + upperWick
-  const low = Math.min(open, close) - lowerWick
-  const volume = Math.floor(200 + Math.random() * 1800)
-  return {
-    time: "",
-    open: parseFloat(open.toFixed(decimals(sym))),
-    high: parseFloat(high.toFixed(decimals(sym))),
-    low: parseFloat(low.toFixed(decimals(sym))),
-    close: parseFloat(close.toFixed(decimals(sym))),
-    volume,
-  }
-}
-
-function buildInitialCandles(sym: string): Candle[] {
-  const now = Date.now()
-  const msPerCandle = 60000 // treat each as 1 min candle for speed
-  const mid = DEFAULTS[sym] ?? 1.0
-  const candles: Candle[] = []
-  let price = mid * (1 - (Math.random() - 0.5) * 0.004)
-  for (let i = CANDLE_COUNT; i >= 0; i--) {
-    const c = generateCandle(price, sym)
-    const t = new Date(now - i * msPerCandle)
-    c.time = t.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-    candles.push(c)
-    price = c.close
-  }
-  return candles
-}
 
 // ─── P&L Calculation ─────────────────────────────────────────────────────────
 // In real forex: P&L = lot_size × contract_size × pip_move × pip_value
@@ -259,140 +206,151 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
   const [tradeMsg, setTradeMsg] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [totalPnl, setTotalPnl] = useState(0)
   const [tickCount, setTickCount] = useState(0)
-  const ratesRef = useRef<Record<string, number>>({})
+  // candleCache: key = "symbol|tf" => Candle[]
+  const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
+  const [candleLoading, setCandleLoading] = useState(false)
   const pairsRef = useRef<ForexPair[]>([])
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const candleTickRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const apiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // ── Init pairs with synthetic data ─────────────────────────────────────────
-  useEffect(() => {
-    const initialPairs: ForexPair[] = PAIRS_CONFIG.map((p) => {
-      const mid = DEFAULTS[p.symbol] ?? 1.0
-      const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
-      const candles = buildInitialCandles(p.symbol)
-      return {
-        symbol: p.symbol, base: p.base, quote: p.quote,
-        bid: parseFloat((mid - spread / 2).toFixed(decimals(p.symbol))),
-        ask: parseFloat((mid + spread / 2).toFixed(decimals(p.symbol))),
-        change: parseFloat(((Math.random() - 0.5) * 0.6).toFixed(2)),
-        high: parseFloat((mid * 1.003).toFixed(decimals(p.symbol))),
-        low: parseFloat((mid * 0.997).toFixed(decimals(p.symbol))),
-        open: parseFloat(mid.toFixed(decimals(p.symbol))),
-        spread: spread,
-        candles,
-      }
-    })
-    setPairs(initialPairs)
-    pairsRef.current = initialPairs
-    setSelectedPair(initialPairs[0])
-    setLoading(false)
-    setLastUpdated(new Date())
-    // Store initial rates
-    initialPairs.forEach((p) => { ratesRef.current[p.symbol] = (p.bid + p.ask) / 2 })
-  }, [])
-
-  // ── Tick engine: update prices every 1.5s ─────────────────────────────────
-  useEffect(() => {
-    if (pairsRef.current.length === 0) return
-    tickRef.current = setInterval(() => {
-      setPairs((prev) => {
-        const updated = prev.map((p) => {
-          const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
-          const vol = volatilityFor((p.bid + p.ask) / 2)
-          const midNow = (p.bid + p.ask) / 2
-          const tick = (Math.random() - 0.5) * 2 * vol * midNow
-          const newMid = midNow + tick
-          const newBid = parseFloat((newMid - spread / 2).toFixed(decimals(p.symbol)))
-          const newAsk = parseFloat((newMid + spread / 2).toFixed(decimals(p.symbol)))
-          const newHigh = Math.max(p.high, newAsk)
-          const newLow = Math.min(p.low, newBid)
-          const change = parseFloat((((newMid - p.open) / p.open) * 100).toFixed(2))
-          ratesRef.current[p.symbol] = newMid
-
-          // Update last candle's close/high/low (live candle)
-          const newCandles = [...p.candles]
-          if (newCandles.length > 0) {
-            const last = { ...newCandles[newCandles.length - 1] }
-            last.close = parseFloat(newMid.toFixed(decimals(p.symbol)))
-            last.high = Math.max(last.high, parseFloat(newMid.toFixed(decimals(p.symbol))))
-            last.low = Math.min(last.low, parseFloat(newMid.toFixed(decimals(p.symbol))))
-            newCandles[newCandles.length - 1] = last
-          }
-
-          return { ...p, bid: newBid, ask: newAsk, high: newHigh, low: newLow, change, candles: newCandles }
-        })
-        pairsRef.current = updated
-        return updated
-      })
-
-      setSelectedPair((prev) => {
-        if (!prev) return prev
-        return pairsRef.current.find((p) => p.symbol === prev.symbol) ?? prev
-      })
-      setLastUpdated(new Date())
-      setTickCount((n) => n + 1)
-    }, 1500)
-    return () => { if (tickRef.current) clearInterval(tickRef.current) }
-  }, [loading])
-
-  // ── Candle engine: add new candle every 15s ──────────────────────────────
-  useEffect(() => {
-    if (pairsRef.current.length === 0) return
-    candleTickRef.current = setInterval(() => {
-      setPairs((prev) => {
-        const updated = prev.map((p) => {
-          const lastClose = p.candles.length > 0 ? p.candles[p.candles.length - 1].close : DEFAULTS[p.symbol] ?? 1.0
-          const newCandle = generateCandle(lastClose, p.symbol)
-          newCandle.time = new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
-          const newCandles = [...p.candles.slice(-CANDLE_COUNT + 1), newCandle]
-          return { ...p, candles: newCandles }
-        })
-        pairsRef.current = updated
-        return updated
-      })
-      setSelectedPair((prev) => {
-        if (!prev) return prev
-        return pairsRef.current.find((p) => p.symbol === prev.symbol) ?? prev
-      })
-    }, 15000)
-    return () => { if (candleTickRef.current) clearInterval(candleTickRef.current) }
-  }, [loading])
-
-  // ── Try to fetch real rates every 60s ─────────────────────────────────────
+  // ── Fetch live rates from our API route (which proxies Yahoo Finance) ──────
   const fetchRates = useCallback(async () => {
     try {
-      const res = await fetch("https://open.er-api.com/v6/latest/USD", { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed")
-      const data = await res.json()
-      const usdRates = data.rates as Record<string, number>
+      const res = await fetch("/api/forex/rates", { cache: "no-store" })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      const rateMap = json.rates as Record<string, {
+        bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number
+      }>
 
-      setPairs((prev) => prev.map((p) => {
-        let mid: number
-        if (p.base === "USD") mid = usdRates[p.quote] ?? (p.bid + p.ask) / 2
-        else if (p.quote === "USD") mid = usdRates[p.base] ? 1 / usdRates[p.base] : (p.bid + p.ask) / 2
-        else mid = (usdRates[p.quote] ?? 1) / (usdRates[p.base] ?? 1)
-        const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
-        const noise = (Math.random() - 0.5) * spread * 0.4
-        const nMid = mid + noise
-        ratesRef.current[p.symbol] = nMid
-        return {
-          ...p,
-          bid: parseFloat((nMid - spread / 2).toFixed(decimals(p.symbol))),
-          ask: parseFloat((nMid + spread / 2).toFixed(decimals(p.symbol))),
-        }
-      }))
+      setPairs((prev) => {
+        const updated = prev.map((p) => {
+          const r = rateMap[p.symbol]
+          if (!r) return p
+          const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
+          return {
+            ...p,
+            bid: r.bid,
+            ask: r.ask,
+            change: r.change,
+            high: r.high,
+            low: r.low,
+            open: r.open,
+            spread,
+          }
+        })
+        pairsRef.current = updated
+        return updated
+      })
+
+      setSelectedPair((prev) => {
+        if (!prev) return prev
+        return pairsRef.current.find((p) => p.symbol === prev.symbol) ?? prev
+      })
       setOnline(true)
+      setLastUpdated(new Date())
+      setTickCount((n) => n + 1)
     } catch {
       setOnline(false)
     }
   }, [])
 
+  // ── Fetch real OHLC candles for selected pair + timeframe ─────────────────
+  const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
+    const key = `${sym}|${tf}`
+    setCandleLoading(true)
+    try {
+      const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      if (json.error) throw new Error(json.error)
+      const candles: Candle[] = json.candles
+      setCandleCache((prev) => ({ ...prev, [key]: candles }))
+      // Update the pair's candles array too so TradingChart gets live candles
+      setPairs((prev) => {
+        const updated = prev.map((p) => p.symbol === sym ? { ...p, candles } : p)
+        pairsRef.current = updated
+        return updated
+      })
+      setSelectedPair((prev) => {
+        if (!prev || prev.symbol !== sym) return prev
+        return pairsRef.current.find((p) => p.symbol === sym) ?? prev
+      })
+    } catch {
+      // keep existing candles on error
+    } finally {
+      setCandleLoading(false)
+    }
+  }, [])
+
+  // ── Init: build empty pairs then load data ─────────────────────────────────
   useEffect(() => {
+    const initialPairs: ForexPair[] = PAIRS_CONFIG.map((p) => ({
+      symbol: p.symbol, base: p.base, quote: p.quote,
+      bid: 0, ask: 0, change: 0, high: 0, low: 0, open: 0,
+      spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002,
+      candles: [],
+    }))
+    setPairs(initialPairs)
+    pairsRef.current = initialPairs
+    setSelectedPair(initialPairs[0])
+    setLoading(false)
+    // Kick off first fetch immediately
     fetchRates()
-    apiIntervalRef.current = setInterval(fetchRates, 60000)
-    return () => { if (apiIntervalRef.current) clearInterval(apiIntervalRef.current) }
+    fetchCandles(initialPairs[0].symbol, "5M")
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Poll rates every 3s ────────────────────────────────────────────────────
+  useEffect(() => {
+    ratesIntervalRef.current = setInterval(fetchRates, 3000)
+    return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
+
+  // ── Re-fetch candles when pair or timeframe changes ───────────────────────
+  useEffect(() => {
+    if (!selectedPair) return
+    fetchCandles(selectedPair.symbol, timeframe)
+    // Refresh candles periodically based on TF
+    const refreshMs: Record<TimeFrame, number> = {
+      "1M": 30_000, "5M": 60_000, "15M": 120_000, "1H": 300_000, "4H": 600_000, "1D": 3600_000
+    }
+    const ms = refreshMs[timeframe] ?? 60_000
+    candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
+    return () => { if (candleIntervalRef.current) clearInterval(candleIntervalRef.current) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPair?.symbol, timeframe])
+
+  // ── Live-update the last candle's close/high/low on every rate tick ────────
+  // This makes the chart animate in real time even between candle refreshes.
+  useEffect(() => {
+    if (!selectedPair || selectedPair.candles.length === 0) return
+    const mid = (selectedPair.bid + selectedPair.ask) / 2
+    if (mid === 0) return
+    setPairs((prev) => {
+      const updated = prev.map((p) => {
+        if (p.symbol !== selectedPair.symbol || p.candles.length === 0) return p
+        const liveMid = (p.bid + p.ask) / 2
+        if (liveMid === 0) return p
+        const d = decimals(p.symbol)
+        const newCandles = [...p.candles]
+        const last = { ...newCandles[newCandles.length - 1] }
+        last.close = parseFloat(liveMid.toFixed(d))
+        last.high  = Math.max(last.high, last.close)
+        last.low   = Math.min(last.low,  last.close)
+        newCandles[newCandles.length - 1] = last
+        return { ...p, candles: newCandles }
+      })
+      pairsRef.current = updated
+      return updated
+    })
+    setSelectedPair((prev) => {
+      if (!prev) return prev
+      return pairsRef.current.find((p) => p.symbol === prev.symbol) ?? prev
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickCount])
 
   // ── P&L + SL/TP engine ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -566,7 +524,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               : { background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }
             }
           >
-            {online ? <><Wifi className="h-2.5 w-2.5 mr-0.5 inline" />LIVE</> : <><WifiOff className="h-2.5 w-2.5 mr-0.5 inline" />SIM</>}
+            {online ? <><Wifi className="h-2.5 w-2.5 mr-0.5 inline" />LIVE · Yahoo</> : <><WifiOff className="h-2.5 w-2.5 mr-0.5 inline" />OFFLINE</>}
           </Badge>
         </div>
         <div className="flex items-center gap-1.5">
@@ -576,11 +534,15 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               {lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </span>
           )}
-          <span className="text-[9px] font-black px-1.5 py-0.5 rounded" style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.15)" }}>
-            LIVE
-          </span>
-          <button onClick={fetchRates} className="p-1.5 rounded-lg transition-colors" style={{ background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)" }}>
-            <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
+          <button
+            onClick={() => {
+              fetchRates()
+              if (selectedPair) fetchCandles(selectedPair.symbol, timeframe)
+            }}
+            className="p-1.5 rounded-lg transition-colors"
+            style={{ background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)" }}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
           </button>
         </div>
       </div>
@@ -627,7 +589,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               return (
                 <button
                   key={p.symbol}
-                  onClick={() => setSelectedPair(p)}
+                  onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
                   className="shrink-0 flex flex-col items-center px-2.5 py-1 rounded-xl text-[10px] font-black transition-all"
                   style={selectedPair?.symbol === p.symbol ? {
                     background: "linear-gradient(135deg,rgba(34,211,238,0.2),rgba(34,211,238,0.08))",
@@ -727,7 +689,10 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                 </button>
               ))}
             </div>
-            <span className="text-[9px] text-slate-600 font-mono">{selectedPair.candles.length} bars</span>
+            <span className="flex items-center gap-1 text-[9px] font-mono" style={{ color: candleLoading ? "#fb923c" : "rgba(100,116,139,0.5)" }}>
+              {candleLoading && <span className="inline-block w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />}
+              {selectedPair.candles.length > 0 ? `${selectedPair.candles.length} bars` : candleLoading ? "Loading..." : "No data"}
+            </span>
           </div>
 
           {/* TradingChart fills remaining height */}
