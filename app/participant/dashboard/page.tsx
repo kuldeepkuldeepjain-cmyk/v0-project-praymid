@@ -33,6 +33,7 @@ import {
   Home,
   Trophy,
   Plus,
+  BarChart2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -46,6 +47,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { StakingBanner } from "@/components/staking-banner"
 import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
+import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 interface LeaderboardEntry {
   position: number
@@ -1469,7 +1471,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard" | "forex">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -2157,60 +2159,69 @@ export default function DashboardHome() {
         </div>
       )}
       
+      {/* Forex Trading Tab Content */}
+      {activeTab === "forex" && (
+        <div className="-mx-4 -mt-4">
+          <ForexTradingPlatform participantEmail={participantData?.email ?? ""} />
+        </div>
+      )}
+
       {/* Notice Board - Display important announcements */}
-      <NoticeBoard />
+      {activeTab !== "forex" && <NoticeBoard />}
       
       </main>
 
       {/* Footer Navigation */}
       <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
-        <nav className="flex items-center justify-around h-16 max-w-2xl mx-auto px-2">
+        <nav className="flex items-center justify-around h-16 max-w-2xl mx-auto px-1">
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "dashboard"
-                ? "text-[#7c3aed]"
-                : "text-slate-400 hover:text-slate-600"
+              activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400 hover:text-slate-600"
             }`}
           >
-            <Home className={`h-6 w-6 mb-1 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Home</span>
+            <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
+            <span className="text-[10px] font-medium">Home</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab("wheel")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "wheel"
-                ? "text-orange-500"
-                : "text-slate-400 hover:text-slate-600"
+              activeTab === "wheel" ? "text-orange-500" : "text-slate-400 hover:text-slate-600"
             }`}
           >
-              <Sparkles className={`h-6 w-6 mb-1 ${activeTab === "wheel" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Luck Wheel</span>
+            <Sparkles className={`h-5 w-5 mb-0.5 ${activeTab === "wheel" ? "scale-110" : ""}`} />
+            <span className="text-[10px] font-medium">Luck Wheel</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab("activity")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "activity"
-                ? "text-amber-600"
-                : "text-slate-400 hover:text-slate-600"
+              activeTab === "activity" ? "text-amber-600" : "text-slate-400 hover:text-slate-600"
             }`}
           >
-            <Send className={`h-6 w-6 mb-1 ${activeTab === "activity" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Contribute</span>
+            <Send className={`h-5 w-5 mb-0.5 ${activeTab === "activity" ? "scale-110" : ""}`} />
+            <span className="text-[10px] font-medium">Contribute</span>
           </button>
 
           <button
             onClick={() => setActiveTab("leaderboard")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "leaderboard"
-                ? "text-yellow-500"
-                : "text-slate-400 hover:text-slate-600"
+              activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400 hover:text-slate-600"
             }`}
           >
-              <Trophy className={`h-6 w-6 mb-1 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
-            <span className="text-xs font-medium">Leaderboard</span>
+            <Trophy className={`h-5 w-5 mb-0.5 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
+            <span className="text-[10px] font-medium">Leaderboard</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("forex")}
+            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
+              activeTab === "forex" ? "text-cyan-500" : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            <BarChart2 className={`h-5 w-5 mb-0.5 ${activeTab === "forex" ? "scale-110" : ""}`} />
+            <span className="text-[10px] font-medium">Forex</span>
           </button>
         </nav>
       </footer>
