@@ -186,7 +186,7 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
 }
 
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────���───────
 
 export function ForexTradingPlatform({ participantEmail }: { participantEmail: string }) {
   const [pairs, setPairs] = useState<ForexPair[]>([])
@@ -500,6 +500,18 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
   const pipValue = selectedPair ? ((parseFloat(lotSize) || 0.01) * 100000 * pip(selectedPair.symbol)) : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
+
+  // Pre-compute SL/TP risk metrics so we avoid IIFE patterns inside JSX
+  const entryPrice = selectedPair
+    ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid)
+    : midPrice
+  const slVal = sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null
+  const tpVal = tp && !isNaN(parseFloat(tp)) ? parseFloat(tp) : null
+  const slPips    = slVal !== null && selectedPair ? Math.abs((slVal - entryPrice) / pip(selectedPair.symbol)) : 0
+  const tpPips    = tpVal !== null && selectedPair ? Math.abs((tpVal - entryPrice) / pip(selectedPair.symbol)) : 0
+  const maxLoss   = slPips * pipValue
+  const maxGain   = tpPips * pipValue
+  const rrRatio   = slPips > 0 ? (tpPips / slPips).toFixed(2) : null
 
   return (
     <div className="flex flex-col h-full min-h-screen text-white pb-20 forex-deep-bg">
@@ -904,54 +916,36 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               <span className="font-mono font-black text-orange-400">${isNaN(estimatedMargin) ? "—" : estimatedMargin}</span>
               <span className="text-slate-600">Position size</span>
               <span className="font-mono font-black text-violet-400">${((parseFloat(lotSize)||0.01)*100000).toLocaleString()}</span>
-              {sl && !isNaN(parseFloat(sl)) && (() => {
-                const slPrice = parseFloat(sl)
-                const entryPrice = direction === "BUY" ? (selectedPair?.ask ?? midPrice) : (selectedPair?.bid ?? midPrice)
-                const slPips = Math.abs((slPrice - entryPrice) / pip(selectedPair!.symbol))
-                const maxLoss = slPips * pipValue
-                return (
-                  <>
-                    <span className="text-slate-600">SL distance</span>
-                    <span className="font-mono font-black text-red-400">{slPips.toFixed(1)} pips</span>
-                    <span className="text-slate-600">Max loss</span>
-                    <span className="font-mono font-black text-red-400">-${maxLoss.toFixed(2)}</span>
-                    <span className="text-slate-600">Return on margin if SL</span>
-                    <span className="font-mono font-black text-red-400">
-                      -{estimatedMargin > 0 ? ((maxLoss / estimatedMargin) * 100).toFixed(1) : "—"}%
-                    </span>
-                  </>
-                )
-              })()}
-              {tp && !isNaN(parseFloat(tp)) && (() => {
-                const tpPrice = parseFloat(tp)
-                const entryPrice = direction === "BUY" ? (selectedPair?.ask ?? midPrice) : (selectedPair?.bid ?? midPrice)
-                const tpPips = Math.abs((tpPrice - entryPrice) / pip(selectedPair!.symbol))
-                const maxGain = tpPips * pipValue
-                return (
-                  <>
-                    <span className="text-slate-600">TP distance</span>
-                    <span className="font-mono font-black text-emerald-400">{tpPips.toFixed(1)} pips</span>
-                    <span className="text-slate-600">Max gain</span>
-                    <span className="font-mono font-black text-emerald-400">+${maxGain.toFixed(2)}</span>
-                    <span className="text-slate-600">Return on margin if TP</span>
-                    <span className="font-mono font-black text-emerald-400">
-                      +{estimatedMargin > 0 ? ((maxGain / estimatedMargin) * 100).toFixed(1) : "—"}%
-                    </span>
-                  </>
-                )
-              })()}
-              {sl && tp && !isNaN(parseFloat(sl)) && !isNaN(parseFloat(tp)) && (() => {
-                const entryPrice = direction === "BUY" ? (selectedPair?.ask ?? midPrice) : (selectedPair?.bid ?? midPrice)
-                const slPips = Math.abs((parseFloat(sl) - entryPrice) / pip(selectedPair!.symbol))
-                const tpPips = Math.abs((parseFloat(tp) - entryPrice) / pip(selectedPair!.symbol))
-                const rr = slPips > 0 ? (tpPips / slPips).toFixed(2) : "—"
-                return (
-                  <>
-                    <span className="text-slate-600">Risk : Reward</span>
-                    <span className="font-mono font-black text-cyan-400">1 : {rr}</span>
-                  </>
-                )
-              })()}
+              {slVal !== null && (
+                <>
+                  <span className="text-slate-600">SL distance</span>
+                  <span className="font-mono font-black text-red-400">{slPips.toFixed(1)} pips</span>
+                  <span className="text-slate-600">Max loss</span>
+                  <span className="font-mono font-black text-red-400">-${maxLoss.toFixed(2)}</span>
+                  <span className="text-slate-600">Return on margin if SL</span>
+                  <span className="font-mono font-black text-red-400">
+                    -{estimatedMargin > 0 ? ((maxLoss / estimatedMargin) * 100).toFixed(1) : "—"}%
+                  </span>
+                </>
+              )}
+              {tpVal !== null && (
+                <>
+                  <span className="text-slate-600">TP distance</span>
+                  <span className="font-mono font-black text-emerald-400">{tpPips.toFixed(1)} pips</span>
+                  <span className="text-slate-600">Max gain</span>
+                  <span className="font-mono font-black text-emerald-400">+${maxGain.toFixed(2)}</span>
+                  <span className="text-slate-600">Return on margin if TP</span>
+                  <span className="font-mono font-black text-emerald-400">
+                    +{estimatedMargin > 0 ? ((maxGain / estimatedMargin) * 100).toFixed(1) : "—"}%
+                  </span>
+                </>
+              )}
+              {rrRatio !== null && (
+                <>
+                  <span className="text-slate-600">Risk : Reward</span>
+                  <span className="font-mono font-black text-cyan-400">1 : {rrRatio}</span>
+                </>
+              )}
             </div>
           </div>
 

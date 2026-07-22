@@ -189,31 +189,31 @@ export function TradingChart({
   const rsiH = showRsi ? 52 : 0
   const macdH = showMacd ? 52 : 0
   const subGap = (showRsi || showMacd) ? 6 : 0
-  const candleH = h - padT - padB - volH - rsiH - macdH - subGap * ((showRsi ? 1 : 0) + (showMacd ? 1 : 0))
+  const candleH = Math.max(40, h - padT - padB - volH - rsiH - macdH - subGap * ((showRsi ? 1 : 0) + (showMacd ? 1 : 0)))
   const volY = padT + candleH
   const rsiY = showRsi ? volY + volH + subGap : volY + volH
   const macdY = showMacd ? rsiY + rsiH + (showRsi ? subGap : 0) : rsiY
 
   const chartW = w - padL - padR
   const colW = chartW / Math.max(visible.length, 1)
-  const candleW = Math.max(2, colW - 1.5)
 
-  // Price range for candle area
-  const allHigh = Math.max(...visible.map((c) => c.high))
-  const allLow = Math.min(...visible.map((c) => c.low))
-  const priceRange = allHigh - allLow || pipS(sym) * 10
+  // Price range for candle area — guard against empty visible array
+  const allHigh = visible.length > 0 ? Math.max(...visible.map((c) => c.high)) : 1
+  const allLow  = visible.length > 0 ? Math.min(...visible.map((c) => c.low))  : 0
+  const priceRange = (allHigh - allLow) || pipS(sym) * 10
 
-  // Closes for indicator calc (use all candles for accurate indicators, map to visible indices)
-  const allCloses = candles.map((c) => c.close)
+  // Memoize allCloses so useMemo deps are stable across renders
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const allCloses = useMemo(() => candles.map((c) => c.close), [candles.length, candles[candles.length - 1]?.close])
   const visibleStartIdx = candles.length - visible.length
   const slice = (arr: (number | null)[]) => arr.slice(visibleStartIdx)
 
-  const ema9All = useMemo(() => calcEMA(allCloses, 9), [allCloses])
-  const ema21All = useMemo(() => calcEMA(allCloses, 21), [allCloses])
-  const ema50All = useMemo(() => calcEMA(allCloses, 50), [allCloses])
-  const bbAll = useMemo(() => calcBB(allCloses, 20, 2), [allCloses])
-  const rsiAll = useMemo(() => calcRSI(allCloses, 14), [allCloses])
-  const macdAll = useMemo(() => calcMACD(allCloses), [allCloses])
+  const ema9All  = useMemo(() => calcEMA(allCloses, 9),       [allCloses])
+  const ema21All = useMemo(() => calcEMA(allCloses, 21),      [allCloses])
+  const ema50All = useMemo(() => calcEMA(allCloses, 50),      [allCloses])
+  const bbAll    = useMemo(() => calcBB(allCloses, 20, 2),    [allCloses])
+  const rsiAll   = useMemo(() => calcRSI(allCloses, 14),      [allCloses])
+  const macdAll  = useMemo(() => calcMACD(allCloses),         [allCloses])
 
   const ema9 = slice(ema9All)
   const ema21 = slice(ema21All)
@@ -222,35 +222,37 @@ export function TradingChart({
   const rsi = slice(rsiAll)
   const macd = { macd: slice(macdAll.macd), signal: slice(macdAll.signal), hist: slice(macdAll.hist) }
 
-  // Coord transforms
-  function toY(price: number): number {
+  // Coord transforms — useCallback so they are stable references for other callbacks
+  const toY = useCallback((price: number): number => {
     return padT + ((allHigh - price) / priceRange) * candleH
-  }
-  function toX(i: number): number {
-    return padL + (i + 0.5) * colW
-  }
-  function toPrice(svgY: number): number {
-    return allHigh - ((svgY - padT) / candleH) * priceRange
-  }
+  }, [padT, allHigh, priceRange, candleH])
 
-  // RSI y-transform (0–100 range)
-  function toRsiY(val: number): number {
+  const toX = useCallback((i: number): number => {
+    return padL + (i + 0.5) * colW
+  }, [padL, colW])
+
+  const toPrice = useCallback((svgY: number): number => {
+    return allHigh - ((svgY - padT) / candleH) * priceRange
+  }, [allHigh, padT, candleH, priceRange])
+
+  const toRsiY = useCallback((val: number): number => {
     return rsiY + (1 - val / 100) * rsiH
-  }
+  }, [rsiY, rsiH])
 
   // MACD y-transform
-  const macdVals = macd.macd.filter((v) => v !== null) as number[]
+  const macdVals    = macd.macd.filter((v) => v !== null) as number[]
   const macdSigVals = macd.signal.filter((v) => v !== null) as number[]
   const macdAllVals = [...macdVals, ...macdSigVals]
   const macdMin = macdAllVals.length ? Math.min(...macdAllVals) * 1.2 : -0.001
   const macdMax = macdAllVals.length ? Math.max(...macdAllVals) * 1.2 : 0.001
   const macdRange = macdMax - macdMin || 0.001
-  function toMacdY(val: number): number {
+
+  const toMacdY = useCallback((val: number): number => {
     return macdY + ((macdMax - val) / macdRange) * macdH
-  }
+  }, [macdY, macdMax, macdRange, macdH])
 
   // Volume
-  const maxVol = Math.max(...visible.map((c) => c.volume), 1)
+  const maxVol = visible.length > 0 ? Math.max(...visible.map((c) => c.volume), 1) : 1
 
   // Grid prices
   const gridPrices: number[] = []
@@ -321,6 +323,18 @@ export function TradingChart({
 
   const currentClose = visible.length > 0 ? visible[visible.length - 1].close : 0
   const isUp = visible.length > 1 ? visible[visible.length - 1].close >= visible[visible.length - 2].close : true
+
+  // Show loading skeleton while candles haven't arrived yet
+  if (visible.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center" style={{ color: "rgba(100,116,139,0.4)" }}>
+        <div className="text-center">
+          <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-2" />
+          <p className="text-[10px] font-mono">Loading chart data...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col w-full h-full select-none" style={{ userSelect: "none" }}>
