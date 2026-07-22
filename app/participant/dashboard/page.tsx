@@ -33,7 +33,6 @@ import {
   Home,
   Trophy,
   Plus,
-  BarChart2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -1471,7 +1470,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard" | "forex">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1878,6 +1877,11 @@ export default function DashboardHome() {
           </div>
         </div>
 
+        {/* Forex Trading Platform - Directly below wallet balance */}
+        <div className="-mx-3 sm:-mx-4">
+          <ForexTradingPlatform participantEmail={participantData?.email ?? ""} />
+        </div>
+
         {/* Action Buttons - Side by Side with Professional 3D Effects */}
         <style>{`
           @keyframes slideUp {
@@ -2159,15 +2163,8 @@ export default function DashboardHome() {
         </div>
       )}
       
-      {/* Forex Trading Tab Content */}
-      {activeTab === "forex" && (
-        <div className="-mx-4 -mt-4">
-          <ForexTradingPlatform participantEmail={participantData?.email ?? ""} />
-        </div>
-      )}
-
       {/* Notice Board - Display important announcements */}
-      {activeTab !== "forex" && <NoticeBoard />}
+      <NoticeBoard />
       
       </main>
 
@@ -2214,15 +2211,7 @@ export default function DashboardHome() {
             <span className="text-[10px] font-medium">Leaderboard</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("forex")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "forex" ? "text-cyan-500" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <BarChart2 className={`h-5 w-5 mb-0.5 ${activeTab === "forex" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Forex</span>
-          </button>
+
         </nav>
       </footer>
 
