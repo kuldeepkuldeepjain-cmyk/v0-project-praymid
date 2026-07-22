@@ -122,12 +122,12 @@ function seriesToPolyline(
   const segments: string[] = []
   let current = ""
   for (let i = 0; i < data.length; i++) {
-    if (data[i] === null) {
+    if (data[i] == null || !isFinite(data[i] as number)) {
       if (current) { segments.push(current); current = "" }
       continue
     }
     const x = toX(i).toFixed(1)
-    const y = toY(data[i]!).toFixed(1)
+    const y = toY(data[i] as number).toFixed(1)
     current += current ? ` L${x},${y}` : `M${x},${y}`
   }
   if (current) segments.push(current)
@@ -137,7 +137,10 @@ function seriesToPolyline(
 // ─── Pad helpers ──────────────────────────────────────────────────────────────
 
 function isJpy(sym: string): boolean { return sym.includes("JPY") }
-function fmtP(price: number, sym: string): string { return price.toFixed(isJpy(sym) ? 3 : 5) }
+function fmtP(price: number | null | undefined, sym: string): string {
+  if (price == null || !isFinite(price)) return "—"
+  return price.toFixed(isJpy(sym) ? 3 : 5)
+}
 function pipS(sym: string): number { return isJpy(sym) ? 0.01 : 0.0001 }
 
 // ─── TradingChart ─────────────────────────────────────────────────────────────
@@ -226,6 +229,7 @@ export function TradingChart({
 
   // Coord transforms — useCallback so they are stable references for other callbacks
   const toY = useCallback((price: number): number => {
+    if (price == null || !isFinite(price)) return padT
     return padT + ((allHigh - price) / priceRange) * candleH
   }, [padT, allHigh, priceRange, candleH])
 
@@ -452,10 +456,10 @@ export function TradingChart({
             const midPath = seriesToPolyline(bb.mid, toX, toY)
             const lowerPath = seriesToPolyline(bb.lower, toX, toY)
             // Fill band
-            const upperPoints = bb.upper.map((v, i) => v !== null ? `${toX(i).toFixed(1)},${toY(v).toFixed(1)}` : null).filter(Boolean)
+            const upperPoints = bb.upper.map((v, i) => (v != null && isFinite(v)) ? `${toX(i).toFixed(1)},${toY(v).toFixed(1)}` : null).filter(Boolean)
             const lowerPointsRev = [...bb.lower].reverse().map((v, i) => {
               const origI = bb.lower.length - 1 - i
-              return v !== null ? `${toX(origI).toFixed(1)},${toY(v).toFixed(1)}` : null
+              return (v != null && isFinite(v)) ? `${toX(origI).toFixed(1)},${toY(v).toFixed(1)}` : null
             }).filter(Boolean)
             const fillPts = [...upperPoints, ...lowerPointsRev].join(" ")
             return (
@@ -605,10 +609,10 @@ export function TradingChart({
                 {/* RSI line */}
                 <path d={rsiPath} stroke="#34d399" strokeWidth={1.2} fill="none" opacity={0.85} />
                 {/* Current RSI value */}
-                {rsi[rsi.length - 1] !== null && (
-                  <text x={w - padR - 2} y={toRsiY(rsi[rsi.length - 1]!) + 3}
+                {rsi.length > 0 && rsi[rsi.length - 1] != null && (
+                  <text x={w - padR - 2} y={toRsiY(rsi[rsi.length - 1] as number) + 3}
                     fill="#34d399" fontSize={7} textAnchor="end" fontFamily="monospace" fontWeight="bold">
-                    {(rsi[rsi.length - 1]!).toFixed(1)}
+                    {(rsi[rsi.length - 1] as number).toFixed(1)}
                   </text>
                 )}
               </g>
@@ -766,18 +770,18 @@ export function TradingChart({
             </div>
             {/* Live indicator values */}
             <div className="mt-1.5 pt-1.5 border-t border-white/5 grid grid-cols-2 gap-x-3 gap-y-0.5">
-              {indicators.ema9 && ema9[hovered] !== null && (
+              {indicators.ema9 && ema9[hovered] != null && (
                 <><span className="text-yellow-400/70">EMA9</span>
-                <span className="text-yellow-400">{fmtP(ema9[hovered]!, sym)}</span></>
+                <span className="text-yellow-400">{fmtP(ema9[hovered] as number, sym)}</span></>
               )}
-              {indicators.ema21 && ema21[hovered] !== null && (
+              {indicators.ema21 && ema21[hovered] != null && (
                 <><span className="text-blue-400/70">EMA21</span>
-                <span className="text-blue-400">{fmtP(ema21[hovered]!, sym)}</span></>
+                <span className="text-blue-400">{fmtP(ema21[hovered] as number, sym)}</span></>
               )}
-              {indicators.rsi && rsi[hovered] !== null && (
+              {indicators.rsi && rsi[hovered] != null && (
                 <><span className="text-emerald-400/70">RSI</span>
-                <span className={`font-black ${rsi[hovered]! > 70 ? "text-red-400" : rsi[hovered]! < 30 ? "text-emerald-400" : "text-emerald-300"}`}>
-                  {(rsi[hovered]!).toFixed(1)}
+                <span className={`font-black ${(rsi[hovered] as number) > 70 ? "text-red-400" : (rsi[hovered] as number) < 30 ? "text-emerald-400" : "text-emerald-300"}`}>
+                  {(rsi[hovered] as number).toFixed(1)}
                 </span></>
               )}
             </div>

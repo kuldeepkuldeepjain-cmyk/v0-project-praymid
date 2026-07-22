@@ -101,7 +101,10 @@ const TYPICAL_SPREADS: Record<string, number> = {
 
 function isJpy(sym: string): boolean { return sym.includes("JPY") }
 function decimals(sym: string): number { return isJpy(sym) ? 3 : 5 }
-function fmt(price: number, sym: string): string { return price.toFixed(decimals(sym)) }
+function fmt(price: number | null | undefined, sym: string): string {
+  if (price == null || !isFinite(price)) return "—"
+  return price.toFixed(decimals(sym))
+}
 function pip(sym: string): number { return isJpy(sym) ? 0.01 : 0.0001 }
 function pips(diff: number, sym: string): number { return diff / pip(sym) }
 function genId(): string { return Math.random().toString(36).slice(2, 10) }
@@ -169,7 +172,7 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
       {/* Spread mid */}
       <div className="flex items-center justify-center gap-2 py-1.5 my-0.5" style={{ borderTop: "1px solid rgba(255,255,255,0.05)", borderBottom: "1px solid rgba(255,255,255,0.05)", background: "rgba(34,211,238,0.04)" }}>
         <span className="text-cyan-400 font-black font-mono text-xs">{fmt((pair.bid + pair.ask) / 2, pair.symbol)}</span>
-        <span className="text-slate-600 text-[9px]">spread {(pips(pair.spread, pair.symbol)).toFixed(1)}p</span>
+        <span className="text-slate-600 text-[9px]">spread {(pips(pair.spread ?? 0, pair.symbol) || 0).toFixed(1)}p</span>
       </div>
       {/* Bids */}
       <div className="px-2 pb-1.5 pt-0">
@@ -186,7 +189,7 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
 }
 
 
-// ─── Main Component ───────────────────────────────────────────────────���───────
+// ─── Main Component ───────────────────────────────────────────────────�����───────
 
 export function ForexTradingPlatform({ participantEmail }: { participantEmail: string }) {
   const [pairs, setPairs] = useState<ForexPair[]>([])
@@ -615,7 +618,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                   }}
                 >
                   <span>{p.symbol}</span>
-                  <span style={{ color: up ? "#34d399" : "#f87171", fontSize: 9 }}>{up ? "+" : ""}{p.change.toFixed(2)}%</span>
+                  <span style={{ color: up ? "#34d399" : "#f87171", fontSize: 9 }}>{up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%</span>
                 </button>
               )
             })}
@@ -644,7 +647,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                 </span>
                 <span className={`flex items-center gap-0.5 text-xs font-black ${isUp ? "text-emerald-400" : "text-red-400"}`}>
                   {isUp ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  {isUp ? "+" : ""}{selectedPair.change.toFixed(2)}%
+                  {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
                 </span>
               </div>
             </div>
@@ -654,7 +657,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               <span className="text-slate-600">ASK</span>
               <span className="text-emerald-400 font-mono font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
               <span className="text-slate-600">SPREAD</span>
-              <span className="text-cyan-400 font-mono">{pips(selectedPair.spread, selectedPair.symbol).toFixed(1)}p</span>
+              <span className="text-cyan-400 font-mono">{(pips(selectedPair.spread ?? 0, selectedPair.symbol) || 0).toFixed(1)}p</span>
               <span className="text-slate-600">HIGH</span>
               <span className="text-emerald-400 font-mono">{fmt(selectedPair.high, selectedPair.symbol)}</span>
               <span className="text-slate-600">LOW</span>
@@ -1171,7 +1174,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                 <div className="text-right">
                   <p className="text-[10px] font-mono text-slate-500">{fmt(p.ask, p.symbol)}</p>
                   <p className="text-[10px] font-black" style={{ color: up ? "#34d399" : "#f87171" }}>
-                    {up ? "+" : ""}{p.change.toFixed(2)}%
+                    {up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%
                   </p>
                 </div>
               </button>
