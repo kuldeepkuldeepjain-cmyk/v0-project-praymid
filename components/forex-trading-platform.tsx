@@ -66,6 +66,7 @@ type OpenTrade = {
   pnl: number
   pips: number
   margin: number
+  returnOnMargin: number
 }
 
 type ClosedTrade = OpenTrade & {
@@ -158,15 +159,28 @@ function buildInitialCandles(sym: string): Candle[] {
   return candles
 }
 
-function calcPnl(trade: OpenTrade, currentPrice: number, sym: string): { pnl: number; pips: number } {
+// ─── P&L Calculation ─────────────────────────────────────────────────────────
+// In real forex: P&L = lot_size × contract_size × pip_move × pip_value
+// Leverage affects MARGIN required, NOT the raw pip-value profit.
+// A 0.01 lot BUY at 1:100 leverage means:
+//   Margin locked = (0.01 × 100,000 × price) / 100 = $10–$15
+//   But position exposure = 0.01 × 100,000 = $1,000 of notional
+//   1 pip move on 0.01 lot = $0.10  (for USD-quoted pairs)
+// The user's RISK is amplified relative to their margin because leverage > 1.
+// We show both the raw $P&L and the "return on margin" % so traders see leverage effect.
+function calcPnl(trade: OpenTrade, currentPrice: number, sym: string): {
+  pnl: number; pips: number; returnOnMargin: number
+} {
   const dir = trade.direction === "BUY" ? 1 : -1
   const diff = (currentPrice - trade.openPrice) * dir
-  const pipVal = trade.lotSize * 100000 * pip(sym)
-  const rawPips = pips(Math.abs(diff), sym) * Math.sign(diff)
-  return {
-    pnl: parseFloat((rawPips * pipVal).toFixed(2)),
-    pips: parseFloat(rawPips.toFixed(1)),
-  }
+  const contractSize = 100000
+  const pipSize = pip(sym)
+  const pipVal = trade.lotSize * contractSize * pipSize   // $ per pip (USD quote)
+  const rawPips = (diff / pipSize)                        // signed pip count
+  const pnl = parseFloat((rawPips * pipVal).toFixed(2))
+  // Return on Margin = P&L / margin × 100%
+  const returnOnMargin = trade.margin > 0 ? parseFloat(((pnl / trade.margin) * 100).toFixed(1)) : 0
+  return { pnl, pips: parseFloat(rawPips.toFixed(1)), returnOnMargin }
 }
 
 // ─── Candlestick Chart Component ─────────────────────────────────────────────
@@ -662,7 +676,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       const pairNow = pairsRef.current.find((p) => p.symbol === t.pair)
       if (!pairNow) return t
       const currentPrice = t.direction === "BUY" ? pairNow.bid : pairNow.ask
-      const { pnl, pips: pipCount } = calcPnl(t, currentPrice, t.pair)
+      const { pnl, pips: pipCount, returnOnMargin } = calcPnl(t, currentPrice, t.pair)
       // SL check
       if (t.sl) {
         if ((t.direction === "BUY" && currentPrice <= t.sl) || (t.direction === "SELL" && currentPrice >= t.sl)) {
@@ -675,7 +689,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
           toClose.push({ id: t.id, reason: "tp", price: t.tp })
         }
       }
-      return { ...t, currentPrice, pnl, pips: pipCount }
+      return { ...t, currentPrice, pnl, pips: pipCount, returnOnMargin }
     })
 
     if (toClose.length > 0) {
@@ -747,10 +761,10 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
       sl: slNum, tp: tpNum,
       openTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-      pnl: 0, pips: 0, margin,
+      pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`)
+    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} (Margin: $${margin})`)
     setSl(""); setTp("")
     setActivePanel("positions")
   }
@@ -767,10 +781,10 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
       sl: null, tp: null,
       openTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-      pnl: 0, pips: 0, margin,
+      pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`)
+    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Notional: $${(lot * 100000).toLocaleString()}`)
     setActivePanel("positions")
   }
 
@@ -1011,33 +1025,93 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
 
       {/* ── Quick Trade Buttons ───────────────────────────────────────────────── */}
       {selectedPair && (
-        <div className="mx-3 mt-2 grid grid-cols-2 gap-2">
-          <button
-            onClick={() => quickTrade("BUY")}
-            className="flex flex-col items-center py-3 rounded-2xl font-black text-white transition-all active:scale-95"
-            style={{
-              background: "linear-gradient(135deg,#059669,#047857)",
-              boxShadow: "0 4px 24px rgba(16,185,129,0.45), inset 0 1px 0 rgba(255,255,255,0.12)"
-            }}
-          >
-            <div className="flex items-center gap-1.5 text-sm">
-              <TrendingUp className="h-4 w-4" /> BUY
+        <div className="mx-3 mt-2">
+          {/* Leverage + Lot quick controls */}
+          <div className="flex items-center gap-2 mb-2 px-1">
+            <div className="flex items-center gap-1.5 flex-1 rounded-xl px-2.5 py-1.5"
+              style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider shrink-0">Lot</span>
+              <input
+                type="number"
+                value={lotSize}
+                onChange={(e) => setLotSize(e.target.value)}
+                step="0.01" min="0.01" max="100"
+                className="flex-1 bg-transparent text-white font-mono font-black text-xs focus:outline-none w-0"
+                placeholder="0.01"
+              />
             </div>
-            <span className="text-[10px] opacity-80 font-mono mt-0.5">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-          </button>
-          <button
-            onClick={() => quickTrade("SELL")}
-            className="flex flex-col items-center py-3 rounded-2xl font-black text-white transition-all active:scale-95"
-            style={{
-              background: "linear-gradient(135deg,#dc2626,#b91c1c)",
-              boxShadow: "0 4px 24px rgba(239,68,68,0.45), inset 0 1px 0 rgba(255,255,255,0.12)"
-            }}
-          >
-            <div className="flex items-center gap-1.5 text-sm">
-              <TrendingDown className="h-4 w-4" /> SELL
+            <div className="flex items-center gap-1.5 flex-1 rounded-xl px-2.5 py-1.5"
+              style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.07)" }}
+            >
+              <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider shrink-0">Lev</span>
+              <select
+                value={leverage}
+                onChange={(e) => setLeverage(e.target.value)}
+                className="flex-1 bg-transparent text-white font-mono font-black text-xs focus:outline-none appearance-none"
+              >
+                {["10", "25", "50", "100", "200", "500"].map((l) => <option key={l} value={l} style={{ background: "#0d1117" }}>1:{l}</option>)}
+              </select>
             </div>
-            <span className="text-[10px] opacity-80 font-mono mt-0.5">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-          </button>
+            {/* Live margin preview */}
+            <div className="shrink-0 text-right">
+              <p className="text-[9px] text-slate-700 tracking-wider">Margin</p>
+              <p className="text-xs font-black font-mono" style={{ color: "#fb923c" }}>
+                ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Leverage impact info bar */}
+          <div className="flex items-center gap-2 mb-2 px-2 py-1.5 rounded-xl text-[10px] mx-0"
+            style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.12)" }}
+          >
+            <span className="text-slate-600">Notional</span>
+            <span className="font-black font-mono text-violet-400">${((parseFloat(lotSize) || 0.01) * 100000).toLocaleString()}</span>
+            <span className="text-slate-700 mx-1">·</span>
+            <span className="text-slate-600">Pip Val</span>
+            <span className="font-black font-mono text-cyan-400">${pipValue.toFixed(2)}</span>
+            <span className="text-slate-700 mx-1">·</span>
+            <span className="text-slate-600">Lev</span>
+            <span className="font-black font-mono" style={{ color: "#fb923c" }}>×{leverage}</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => quickTrade("BUY")}
+              className="flex flex-col items-center py-3.5 rounded-2xl font-black text-white transition-all active:scale-95 relative overflow-hidden"
+              style={{
+                background: "linear-gradient(160deg,#059669 0%,#047857 100%)",
+                boxShadow: "0 4px 28px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)"
+              }}
+            >
+              <div className="absolute inset-0 opacity-20" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,255,255,0.3), transparent)" }} />
+              <div className="flex items-center gap-1.5 text-base">
+                <TrendingUp className="h-4 w-4" /> BUY
+              </div>
+              <span className="text-[11px] font-black font-mono mt-0.5" style={{ opacity: 0.9 }}>{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+              <span className="text-[9px] mt-0.5 font-bold tracking-wider" style={{ opacity: 0.65 }}>
+                {(parseFloat(lotSize) || 0.01)}L · 1:{leverage} · ${isNaN(estimatedMargin) ? "—" : estimatedMargin}
+              </span>
+            </button>
+            <button
+              onClick={() => quickTrade("SELL")}
+              className="flex flex-col items-center py-3.5 rounded-2xl font-black text-white transition-all active:scale-95 relative overflow-hidden"
+              style={{
+                background: "linear-gradient(160deg,#dc2626 0%,#b91c1c 100%)",
+                boxShadow: "0 4px 28px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)"
+              }}
+            >
+              <div className="absolute inset-0 opacity-20" style={{ background: "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255,255,255,0.3), transparent)" }} />
+              <div className="flex items-center gap-1.5 text-base">
+                <TrendingDown className="h-4 w-4" /> SELL
+              </div>
+              <span className="text-[11px] font-black font-mono mt-0.5" style={{ opacity: 0.9 }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+              <span className="text-[9px] mt-0.5 font-bold tracking-wider" style={{ opacity: 0.65 }}>
+                {(parseFloat(lotSize) || 0.01)}L · 1:{leverage} · ${isNaN(estimatedMargin) ? "—" : estimatedMargin}
+              </span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -1122,7 +1196,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
           </div>
 
           {/* Order info strip */}
-          <div className="grid grid-cols-3 gap-1 mb-3 text-center text-[10px]">
+          <div className="grid grid-cols-3 gap-1 mb-2 text-center text-[10px]">
             {[
               { label: "Margin", value: `$${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString()}`, color: "#fb923c" },
               { label: "Pip Value", value: `$${pipValue.toFixed(2)}`, color: "#22d3ee" },
@@ -1135,6 +1209,67 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                 <p className="font-black font-mono" style={{ color: item.color }}>{item.value}</p>
               </div>
             ))}
+          </div>
+
+          {/* Leverage Effect explainer */}
+          <div className="rounded-xl p-2.5 mb-3 text-[10px]"
+            style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.14)" }}
+          >
+            <p className="text-violet-400 font-black text-[9px] uppercase tracking-widest mb-1.5">Leverage Effect (1:{leverage})</p>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+              <span className="text-slate-600">Capital locked</span>
+              <span className="font-mono font-black text-orange-400">${isNaN(estimatedMargin) ? "—" : estimatedMargin}</span>
+              <span className="text-slate-600">Position size</span>
+              <span className="font-mono font-black text-violet-400">${((parseFloat(lotSize)||0.01)*100000).toLocaleString()}</span>
+              {sl && !isNaN(parseFloat(sl)) && (() => {
+                const slPrice = parseFloat(sl)
+                const entryPrice = direction === "BUY" ? (selectedPair?.ask ?? midPrice) : (selectedPair?.bid ?? midPrice)
+                const slPips = Math.abs((slPrice - entryPrice) / pip(selectedPair!.symbol))
+                const maxLoss = slPips * pipValue
+                return (
+                  <>
+                    <span className="text-slate-600">SL distance</span>
+                    <span className="font-mono font-black text-red-400">{slPips.toFixed(1)} pips</span>
+                    <span className="text-slate-600">Max loss</span>
+                    <span className="font-mono font-black text-red-400">-${maxLoss.toFixed(2)}</span>
+                    <span className="text-slate-600">Return on margin if SL</span>
+                    <span className="font-mono font-black text-red-400">
+                      -{estimatedMargin > 0 ? ((maxLoss / estimatedMargin) * 100).toFixed(1) : "—"}%
+                    </span>
+                  </>
+                )
+              })()}
+              {tp && !isNaN(parseFloat(tp)) && (() => {
+                const tpPrice = parseFloat(tp)
+                const entryPrice = direction === "BUY" ? (selectedPair?.ask ?? midPrice) : (selectedPair?.bid ?? midPrice)
+                const tpPips = Math.abs((tpPrice - entryPrice) / pip(selectedPair!.symbol))
+                const maxGain = tpPips * pipValue
+                return (
+                  <>
+                    <span className="text-slate-600">TP distance</span>
+                    <span className="font-mono font-black text-emerald-400">{tpPips.toFixed(1)} pips</span>
+                    <span className="text-slate-600">Max gain</span>
+                    <span className="font-mono font-black text-emerald-400">+${maxGain.toFixed(2)}</span>
+                    <span className="text-slate-600">Return on margin if TP</span>
+                    <span className="font-mono font-black text-emerald-400">
+                      +{estimatedMargin > 0 ? ((maxGain / estimatedMargin) * 100).toFixed(1) : "—"}%
+                    </span>
+                  </>
+                )
+              })()}
+              {sl && tp && !isNaN(parseFloat(sl)) && !isNaN(parseFloat(tp)) && (() => {
+                const entryPrice = direction === "BUY" ? (selectedPair?.ask ?? midPrice) : (selectedPair?.bid ?? midPrice)
+                const slPips = Math.abs((parseFloat(sl) - entryPrice) / pip(selectedPair!.symbol))
+                const tpPips = Math.abs((parseFloat(tp) - entryPrice) / pip(selectedPair!.symbol))
+                const rr = slPips > 0 ? (tpPips / slPips).toFixed(2) : "—"
+                return (
+                  <>
+                    <span className="text-slate-600">Risk : Reward</span>
+                    <span className="font-mono font-black text-cyan-400">1 : {rr}</span>
+                  </>
+                )
+              })()}
+            </div>
           </div>
 
           {/* Execute */}
@@ -1207,21 +1342,33 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                           <span className="text-slate-600">Open: <span className="text-slate-400">{fmt(trade.openPrice, trade.pair)}</span></span>
                           <span className="text-slate-600">Now: <span className="text-slate-400">{fmt(trade.currentPrice, trade.pair)}</span></span>
                         </div>
+                        {/* Leverage + margin row */}
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] font-mono">
+                          <span className="text-slate-700">1:{trade.leverage}</span>
+                          <span className="text-slate-800">·</span>
+                          <span className="text-slate-600">Margin: <span className="text-orange-400/80">${trade.margin}</span></span>
+                          <span className="text-slate-800">·</span>
+                          <span className="text-slate-600">Notional: <span className="text-violet-400/80">${(trade.lotSize * 100000).toLocaleString()}</span></span>
+                        </div>
                         {/* SL/TP indicators */}
                         {(trade.sl || trade.tp) && (
-                          <div className="flex gap-2 mt-1 text-[10px]">
+                          <div className="flex gap-2 mt-0.5 text-[10px]">
                             {trade.sl && <span className="flex items-center gap-0.5" style={{ color: "#f87171" }}><ShieldAlert className="h-2.5 w-2.5" />{fmt(trade.sl, trade.pair)}</span>}
                             {trade.tp && <span className="flex items-center gap-0.5" style={{ color: "#34d399" }}><Target className="h-2.5 w-2.5" />{fmt(trade.tp, trade.pair)}</span>}
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                      <div className="flex flex-col items-end gap-1 shrink-0">
                         <div className="text-right">
                           <p className="text-base font-black font-mono" style={{ color: pnlColor, textShadow: `0 0 10px ${pnlColor}60` }}>
                             {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                           </p>
                           <p className="text-[10px] font-mono" style={{ color: `${pnlColor}80` }}>
                             {trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips
+                          </p>
+                          {/* Return on margin — shows the leverage amplification */}
+                          <p className="text-[9px] font-black font-mono" style={{ color: `${pnlColor}` }}>
+                            {trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(1)}% ROM
                           </p>
                         </div>
                         <button
@@ -1233,12 +1380,12 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
                         </button>
                       </div>
                     </div>
-                    {/* Live P&L progress bar */}
+                    {/* Live P&L progress bar — scaled by margin (100% = 100% of margin gone/doubled) */}
                     <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.05)" }}>
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{
-                          width: `${Math.min(100, Math.abs(trade.pnl) / 5)}%`,
+                          width: `${Math.min(100, Math.abs(trade.returnOnMargin))}%`,
                           background: trade.pnl >= 0
                             ? "linear-gradient(90deg,#059669,#34d399)"
                             : "linear-gradient(90deg,#b91c1c,#f87171)",
@@ -1316,7 +1463,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
         )}
       </div>
 
-      {/* ── Market Watch ─────────────────────────────────────────────────────── */}
+      {/* ── Market Watch ────────────────────���────────────────────────────────── */}
       <div className="mx-3 mt-3 mb-4 rounded-2xl overflow-hidden glass-dark">
         <div className="px-3 py-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
           <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Market Watch</h3>
