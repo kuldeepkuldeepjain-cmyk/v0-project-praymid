@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { TradingChart } from "@/components/trading-chart"
+import { participantFetch } from "@/lib/auth"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -219,6 +220,8 @@ export function ForexTradingPlatform({
   const [tickCount, setTickCount] = useState(0)
   // Mirror external balance locally so we can optimistically update it
   const [walletBalance, setWalletBalance] = useState(externalBalance)
+  // Track whether balance has been received from parent at least once
+  const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
   // candleCache: key = "symbol|tf" => Candle[]
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
@@ -227,12 +230,16 @@ export function ForexTradingPlatform({
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // Sync external wallet balance when parent updates it (e.g. after top-up)
-  useEffect(() => { setWalletBalance(externalBalance) }, [externalBalance])
+  useEffect(() => {
+    setWalletBalance(externalBalance)
+    if (externalBalance > 0) setBalanceLoaded(true)
+  }, [externalBalance])
 
   // ── Wallet balance API helper ───────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
     try {
-      const res = await fetch("/api/forex/trade-balance", {
+      // Use participantFetch so X-Participant-Token header is sent automatically
+      const res = await participantFetch("/api/forex/trade-balance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: participantEmail, delta, description }),
@@ -243,6 +250,7 @@ export function ForexTradingPlatform({
         return null
       }
       setWalletBalance(json.newBalance)
+      setBalanceLoaded(true)
       onBalanceUpdated?.(json.newBalance)
       return json.newBalance
     } catch {
@@ -854,10 +862,20 @@ export function ForexTradingPlatform({
             <span className="font-black font-mono" style={{ color: "#fb923c" }}>×{leverage}</span>
           </div>
 
+          {/* Balance chip above quick-trade buttons */}
+          <div className="flex items-center justify-between mb-1.5 px-0.5">
+            <span className="text-[10px] text-slate-600">Wallet Balance</span>
+            <span className="text-[11px] font-black font-mono"
+              style={{ color: balanceLoaded && estimatedMargin > walletBalance ? "#f87171" : "#34d399" }}>
+              ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => quickTrade("BUY")}
-              className="flex flex-col items-center py-3.5 rounded-2xl font-black text-white transition-all active:scale-95 relative overflow-hidden"
+              disabled={balanceLoaded && estimatedMargin > walletBalance}
+              className="flex flex-col items-center py-3.5 rounded-2xl font-black text-white transition-all active:scale-95 relative overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: "linear-gradient(160deg,#059669 0%,#047857 100%)",
                 boxShadow: "0 4px 28px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)"
@@ -874,7 +892,8 @@ export function ForexTradingPlatform({
             </button>
             <button
               onClick={() => quickTrade("SELL")}
-              className="flex flex-col items-center py-3.5 rounded-2xl font-black text-white transition-all active:scale-95 relative overflow-hidden"
+              disabled={balanceLoaded && estimatedMargin > walletBalance}
+              className="flex flex-col items-center py-3.5 rounded-2xl font-black text-white transition-all active:scale-95 relative overflow-hidden disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: "linear-gradient(160deg,#dc2626 0%,#b91c1c 100%)",
                 boxShadow: "0 4px 28px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)"
@@ -1032,22 +1051,22 @@ export function ForexTradingPlatform({
             </div>
           </div>
 
-          {/* Balance warning */}
-          {estimatedMargin > walletBalance && (
+          {/* Balance warning — only show after balance is confirmed loaded */}
+          {balanceLoaded && estimatedMargin > walletBalance && (
             <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl mb-2 text-[11px] font-bold"
               style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               Insufficient balance — need ${estimatedMargin.toFixed(2)}, have ${walletBalance.toFixed(2)}
             </div>
           )}
-          {/* Execute */}
+          {/* Execute — only disabled when balance IS known and truly insufficient */}
           <button
             onClick={executeTrade}
-            disabled={estimatedMargin > walletBalance}
+            disabled={balanceLoaded && estimatedMargin > walletBalance}
             className="w-full py-3 rounded-xl font-black text-sm tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={direction === "BUY"
-              ? { background: "linear-gradient(135deg,#059669,#047857)", color: "white", boxShadow: estimatedMargin <= walletBalance ? "0 4px 24px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" : "none" }
-              : { background: "linear-gradient(135deg,#dc2626,#b91c1c)", color: "white", boxShadow: estimatedMargin <= walletBalance ? "0 4px 24px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" : "none" }
+              ? { background: "linear-gradient(135deg,#059669,#047857)", color: "white", boxShadow: "0 4px 24px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" }
+              : { background: "linear-gradient(135deg,#dc2626,#b91c1c)", color: "white", boxShadow: "0 4px 24px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" }
             }
           >
             <Zap className="h-4 w-4" />
