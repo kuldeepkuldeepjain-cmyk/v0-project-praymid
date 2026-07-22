@@ -196,15 +196,17 @@ export function TradingChart({
 
   const chartW = w - padL - padR
   const colW = chartW / Math.max(visible.length, 1)
+  const candleW = Math.max(2, colW - 1.5)
 
   // Price range for candle area — guard against empty visible array
   const allHigh = visible.length > 0 ? Math.max(...visible.map((c) => c.high)) : 1
   const allLow  = visible.length > 0 ? Math.min(...visible.map((c) => c.low))  : 0
   const priceRange = (allHigh - allLow) || pipS(sym) * 10
 
-  // Memoize allCloses so useMemo deps are stable across renders
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const allCloses = useMemo(() => candles.map((c) => c.close), [candles.length, candles[candles.length - 1]?.close])
+  // Memoize allCloses — deps use length + last close so it stays stable between ticks
+  // Do NOT index candles[] in deps (can throw on empty array)
+  const lastClose = candles.length > 0 ? candles[candles.length - 1].close : 0
+  const allCloses = useMemo(() => candles.map((c) => c.close), [candles.length, lastClose]) // eslint-disable-line react-hooks/exhaustive-deps
   const visibleStartIdx = candles.length - visible.length
   const slice = (arr: (number | null)[]) => arr.slice(visibleStartIdx)
 
@@ -323,18 +325,7 @@ export function TradingChart({
 
   const currentClose = visible.length > 0 ? visible[visible.length - 1].close : 0
   const isUp = visible.length > 1 ? visible[visible.length - 1].close >= visible[visible.length - 2].close : true
-
-  // Show loading skeleton while candles haven't arrived yet
-  if (visible.length === 0) {
-    return (
-      <div className="w-full h-full flex items-center justify-center" style={{ color: "rgba(100,116,139,0.4)" }}>
-        <div className="text-center">
-          <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-2" />
-          <p className="text-[10px] font-mono">Loading chart data...</p>
-        </div>
-      </div>
-    )
-  }
+  const isLoading = visible.length === 0
 
   return (
     <div className="flex flex-col w-full h-full select-none" style={{ userSelect: "none" }}>
@@ -412,6 +403,16 @@ export function TradingChart({
 
       {/* ── Main SVG chart ─────────────────────────────────────────────────────── */}
       <div ref={containerRef} className="relative flex-1" style={{ cursor: activeTool !== "none" ? "crosshair" : "default" }}>
+        {/* Loading overlay — rendered as a sibling so hook count never changes */}
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center"
+            style={{ background: "rgba(3,7,18,0.7)", backdropFilter: "blur(2px)" }}>
+            <div className="text-center">
+              <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-400 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-[10px] font-mono" style={{ color: "rgba(100,116,139,0.6)" }}>Loading chart data...</p>
+            </div>
+          </div>
+        )}
         <svg
           ref={svgRef}
           width={w}
