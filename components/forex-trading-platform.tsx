@@ -189,9 +189,17 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
 }
 
 
-// ─── Main Component ───────────────────────────────────────────────────�����───────
+// ─── Main Component ─────────────────────���─────────────────────────────�����───────
 
-export function ForexTradingPlatform({ participantEmail }: { participantEmail: string }) {
+export function ForexTradingPlatform({
+  participantEmail,
+  walletBalance: externalBalance = 0,
+  onBalanceUpdated,
+}: {
+  participantEmail: string
+  walletBalance?: number
+  onBalanceUpdated?: (newBalance: number) => void
+}) {
   const [pairs, setPairs] = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [timeframe, setTimeframe] = useState<TimeFrame>("5M")
@@ -209,12 +217,40 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
   const [tradeMsg, setTradeMsg] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [totalPnl, setTotalPnl] = useState(0)
   const [tickCount, setTickCount] = useState(0)
+  // Mirror external balance locally so we can optimistically update it
+  const [walletBalance, setWalletBalance] = useState(externalBalance)
   // candleCache: key = "symbol|tf" => Candle[]
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const pairsRef = useRef<ForexPair[]>([])
   const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Sync external wallet balance when parent updates it (e.g. after top-up)
+  useEffect(() => { setWalletBalance(externalBalance) }, [externalBalance])
+
+  // ── Wallet balance API helper ───────────────────────────────────────────────
+  const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
+    try {
+      const res = await fetch("/api/forex/trade-balance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: participantEmail, delta, description }),
+      })
+      const json = await res.json()
+      if (!json.success) {
+        showMsg("error", json.error || "Balance update failed")
+        return null
+      }
+      setWalletBalance(json.newBalance)
+      onBalanceUpdated?.(json.newBalance)
+      return json.newBalance
+    } catch {
+      showMsg("error", "Network error updating balance")
+      return null
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [participantEmail, onBalanceUpdated])
 
   // ── Fetch live rates from our API route (which proxies Yahoo Finance) ──────
   const fetchRates = useCallback(async () => {
@@ -392,6 +428,14 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
             finalPnl, closeReason: reason,
           }
           setClosedTrades((c) => [closed, ...c.slice(0, 49)])
+          // Credit margin + P&L back to wallet on SL/TP hit
+          const returnAmount = parseFloat((trade.margin + finalPnl).toFixed(2))
+          if (returnAmount !== 0) {
+            adjustWalletBalance(
+              returnAmount,
+              `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: $${finalPnl.toFixed(2)}`
+            )
+          }
           showMsg(
             reason === "tp" ? "success" : "error",
             `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — P&L: $${finalPnl.toFixed(2)}`
@@ -426,7 +470,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
   }, [openTrades, closedTrades, participantEmail])
 
   // ── Execute trade ───────────────────────────────────────────────────────────
-  const executeTrade = () => {
+  const executeTrade = async () => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize)
     const lev = parseFloat(leverage)
@@ -444,6 +488,17 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
     if (tpNum && direction === "BUY" && tpNum <= price) { showMsg("error", "TP must be above entry for BUY"); return }
     if (tpNum && direction === "SELL" && tpNum >= price) { showMsg("error", "TP must be below entry for SELL"); return }
 
+    // Check and deduct margin from wallet
+    if (walletBalance < margin) {
+      showMsg("error", `Insufficient balance. Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
+      return
+    }
+    const newBal = await adjustWalletBalance(
+      -margin,
+      `Margin locked — ${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
+    )
+    if (newBal === null) return // API error — abort
+
     const trade: OpenTrade = {
       id: genId(), pair: selectedPair.symbol, direction,
       lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
@@ -452,18 +507,29 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} (Margin: $${margin})`)
+    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Balance: $${newBal.toFixed(2)}`)
     setSl(""); setTp("")
     setActivePanel("positions")
   }
 
   // ── Quick trade (one-click) ─────────────────────────────────────────────────
-  const quickTrade = (dir: TradeDirection) => {
+  const quickTrade = async (dir: TradeDirection) => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize) || 0.01
     const lev = parseFloat(leverage) || 100
     const price = dir === "BUY" ? selectedPair.ask : selectedPair.bid
     const margin = parseFloat(((lot * 100000 * price) / lev).toFixed(2))
+
+    if (walletBalance < margin) {
+      showMsg("error", `Insufficient balance. Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
+      return
+    }
+    const newBal = await adjustWalletBalance(
+      -margin,
+      `Margin locked — Quick ${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
+    )
+    if (newBal === null) return
+
     const trade: OpenTrade = {
       id: genId(), pair: selectedPair.symbol, direction: dir,
       lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
@@ -472,7 +538,7 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
       pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Notional: $${(lot * 100000).toLocaleString()}`)
+    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Balance: $${newBal.toFixed(2)}`)
     setActivePanel("positions")
   }
 
@@ -486,6 +552,14 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
         finalPnl: trade.pnl, closeReason: "manual",
       }
       setClosedTrades((c) => [closed, ...c.slice(0, 49)])
+      // Credit margin + P&L back to wallet
+      const returnAmount = parseFloat((trade.margin + trade.pnl).toFixed(2))
+      if (returnAmount !== 0) {
+        adjustWalletBalance(
+          returnAmount,
+          `Trade closed — ${trade.pair} ${trade.direction} | P&L: $${trade.pnl.toFixed(2)} | Margin returned: $${trade.margin.toFixed(2)}`
+        )
+      }
       showMsg(trade.pnl >= 0 ? "success" : "error", `Closed ${trade.pair} — P&L: $${trade.pnl.toFixed(2)}`)
       return prev.filter((t) => t.id !== id)
     })
@@ -542,9 +616,15 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
             {online ? <><Wifi className="h-2.5 w-2.5 mr-0.5 inline" />LIVE · Yahoo</> : <><WifiOff className="h-2.5 w-2.5 mr-0.5 inline" />OFFLINE</>}
           </Badge>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
+          {/* Live wallet balance */}
+          <div className="flex items-center gap-1 px-2 py-1 rounded-lg"
+            style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.18)" }}>
+            <span className="text-[9px] text-slate-500 uppercase tracking-wider">Balance</span>
+            <span className="text-xs font-black font-mono text-emerald-400">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          </div>
           {lastUpdated && (
-            <span className="text-[10px] text-slate-600 font-mono">
+            <span className="text-[10px] text-slate-600 font-mono hidden sm:block">
               <Clock className="h-2.5 w-2.5 inline mr-0.5" />
               {lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </span>
@@ -581,10 +661,10 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
         style={{ background: "rgba(0,0,0,0.45)", border: "1px solid rgba(255,255,255,0.05)", boxShadow: "inset 0 2px 8px rgba(0,0,0,0.4)" }}
       >
         {[
-          { label: "Positions", value: String(openTrades.length), color: "#22d3ee" },
+          { label: "Balance", value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "#34d399" },
           { label: "Live P&L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171" },
-          { label: "Closed", value: String(closedTrades.length), color: "#a78bfa" },
-          { label: "Margin", value: `$${openTrades.reduce((s, t) => s + t.margin, 0).toFixed(0)}`, color: "#fb923c" },
+          { label: "Margin Used", value: `$${openTrades.reduce((s, t) => s + t.margin, 0).toFixed(0)}`, color: "#fb923c" },
+          { label: "Positions", value: String(openTrades.length), color: "#22d3ee" },
         ].map((item, i) => (
           <div key={i} className="px-1 py-2.5" style={{ borderRight: i < 3 ? "1px solid rgba(255,255,255,0.05)" : undefined }}>
             <p className="text-slate-600 mb-0.5 text-[9px] uppercase tracking-wider">{item.label}</p>
@@ -952,13 +1032,22 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
             </div>
           </div>
 
+          {/* Balance warning */}
+          {estimatedMargin > walletBalance && (
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl mb-2 text-[11px] font-bold"
+              style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171" }}>
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+              Insufficient balance — need ${estimatedMargin.toFixed(2)}, have ${walletBalance.toFixed(2)}
+            </div>
+          )}
           {/* Execute */}
           <button
             onClick={executeTrade}
-            className="w-full py-3 rounded-xl font-black text-sm tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2"
+            disabled={estimatedMargin > walletBalance}
+            className="w-full py-3 rounded-xl font-black text-sm tracking-widest transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={direction === "BUY"
-              ? { background: "linear-gradient(135deg,#059669,#047857)", color: "white", boxShadow: "0 4px 24px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" }
-              : { background: "linear-gradient(135deg,#dc2626,#b91c1c)", color: "white", boxShadow: "0 4px 24px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" }
+              ? { background: "linear-gradient(135deg,#059669,#047857)", color: "white", boxShadow: estimatedMargin <= walletBalance ? "0 4px 24px rgba(16,185,129,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" : "none" }
+              : { background: "linear-gradient(135deg,#dc2626,#b91c1c)", color: "white", boxShadow: estimatedMargin <= walletBalance ? "0 4px 24px rgba(239,68,68,0.5), inset 0 1px 0 rgba(255,255,255,0.15)" : "none" }
             }
           >
             <Zap className="h-4 w-4" />

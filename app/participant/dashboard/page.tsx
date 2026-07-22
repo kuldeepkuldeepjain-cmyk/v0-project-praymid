@@ -1772,7 +1772,7 @@ export default function DashboardHome() {
       <main className="pb-20" style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            {/* ── PORTFOLIO HERO ───────────────────────────────── */}
+            {/* ── PORTFOLIO HERO ───────���───────────────────────── */}
             <div className="relative overflow-hidden px-4 pt-6 pb-7 hero-card-deep">
               {/* Depth grid */}
               <div className="absolute inset-0 depth-grid opacity-50 pointer-events-none" />
@@ -1872,7 +1872,13 @@ export default function DashboardHome() {
 
             {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
             <div className="px-0 pt-4">
-              <ForexTradingPlatform participantEmail={participantData?.email ?? ""} />
+              <ForexTradingPlatform
+                participantEmail={participantData?.email ?? ""}
+                walletBalance={walletBalance}
+                onBalanceUpdated={(newBalance) => {
+                  setParticipantData((prev: any) => prev ? { ...prev, account_balance: newBalance } : prev)
+                }}
+              />
             </div>
 
             {/* ── STAKING SECTION ──────────────────────────────── */}
