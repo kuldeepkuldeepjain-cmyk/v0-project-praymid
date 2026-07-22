@@ -10,7 +10,6 @@ import {
   ChevronDown,
   Clock,
   BarChart2,
-  DollarSign,
   AlertTriangle,
   CheckCircle2,
   Wifi,
@@ -24,6 +23,7 @@ import {
   CandlestickChart,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { TradingChart } from "@/components/trading-chart"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -183,265 +183,7 @@ function calcPnl(trade: OpenTrade, currentPrice: number, sym: string): {
   return { pnl, pips: parseFloat(rawPips.toFixed(1)), returnOnMargin }
 }
 
-// ─── Candlestick Chart Component ─────────────────────────────────────────────
 
-function CandlestickChartSVG({
-  candles,
-  sym,
-  openTrades,
-}: {
-  candles: Candle[]
-  sym: string
-  openTrades: OpenTrade[]
-}) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ w: 340, h: 200 })
-  const [hovered, setHovered] = useState<number | null>(null)
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; candle: Candle } | null>(null)
-
-  useEffect(() => {
-    if (!containerRef.current) return
-    const ro = new ResizeObserver(() => {
-      if (containerRef.current) {
-        setSize({ w: containerRef.current.offsetWidth, h: containerRef.current.offsetHeight })
-      }
-    })
-    ro.observe(containerRef.current)
-    return () => ro.disconnect()
-  }, [])
-
-  const visible = candles.slice(-60)
-  const { w, h } = size
-  const padL = 54, padR = 8, padT = 12, padB = 22
-  const chartW = w - padL - padR
-  const chartH = h - padT - padB
-
-  const allHigh = Math.max(...visible.map((c) => c.high))
-  const allLow = Math.min(...visible.map((c) => c.low))
-  const priceRange = allHigh - allLow || 0.001
-  const candleW = Math.max(2, chartW / visible.length - 1)
-
-  function toY(price: number): number {
-    return padT + ((allHigh - price) / priceRange) * chartH
-  }
-  function toX(i: number): number {
-    return padL + (i + 0.5) * (chartW / visible.length)
-  }
-
-  // Price grid lines
-  const gridPrices: number[] = []
-  const step = priceRange / 5
-  for (let i = 0; i <= 5; i++) gridPrices.push(allLow + step * i)
-
-  const hovCandle = hovered !== null ? visible[hovered] : null
-
-  return (
-    <div ref={containerRef} className="relative w-full h-full" style={{ cursor: "crosshair" }}>
-      <svg
-        width={w}
-        height={h}
-        onMouseLeave={() => { setHovered(null); setTooltip(null) }}
-        onMouseMove={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect()
-          const mx = e.clientX - rect.left
-          const colW = chartW / visible.length
-          const idx = Math.floor((mx - padL) / colW)
-          if (idx >= 0 && idx < visible.length) {
-            setHovered(idx)
-            setTooltip({ x: mx, y: e.clientY - rect.top, candle: visible[idx] })
-          } else {
-            setHovered(null); setTooltip(null)
-          }
-        }}
-      >
-        {/* Background */}
-        <rect x={0} y={0} width={w} height={h} fill="rgba(0,0,0,0.0)" />
-
-        {/* Grid lines */}
-        {gridPrices.map((p, i) => (
-          <g key={i}>
-            <line
-              x1={padL} x2={w - padR}
-              y1={toY(p)} y2={toY(p)}
-              stroke="rgba(255,255,255,0.04)"
-              strokeWidth={1}
-            />
-            <text
-              x={padL - 4} y={toY(p) + 3}
-              fill="rgba(100,116,139,0.7)"
-              fontSize={8}
-              textAnchor="end"
-              fontFamily="monospace"
-            >
-              {fmt(p, sym)}
-            </text>
-          </g>
-        ))}
-
-        {/* SL/TP lines from open trades */}
-        {openTrades.map((t) => (
-          <g key={t.id}>
-            {t.sl && (
-              <g>
-                <line x1={padL} x2={w - padR} y1={toY(t.sl)} y2={toY(t.sl)} stroke="#f87171" strokeWidth={1} strokeDasharray="4 3" opacity={0.7} />
-                <text x={padL + 2} y={toY(t.sl) - 2} fill="#f87171" fontSize={7} fontFamily="monospace" opacity={0.9}>SL</text>
-              </g>
-            )}
-            {t.tp && (
-              <g>
-                <line x1={padL} x2={w - padR} y1={toY(t.tp)} y2={toY(t.tp)} stroke="#34d399" strokeWidth={1} strokeDasharray="4 3" opacity={0.7} />
-                <text x={padL + 2} y={toY(t.tp) - 2} fill="#34d399" fontSize={7} fontFamily="monospace" opacity={0.9}>TP</text>
-              </g>
-            )}
-            {/* Open price line */}
-            <line
-              x1={padL} x2={w - padR}
-              y1={toY(t.openPrice)} y2={toY(t.openPrice)}
-              stroke={t.direction === "BUY" ? "#34d399" : "#f87171"}
-              strokeWidth={1} strokeDasharray="6 2" opacity={0.5}
-            />
-          </g>
-        ))}
-
-        {/* Candles */}
-        {visible.map((c, i) => {
-          const x = toX(i)
-          const isGreen = c.close >= c.open
-          const bodyTop = toY(Math.max(c.open, c.close))
-          const bodyBot = toY(Math.min(c.open, c.close))
-          const bodyH = Math.max(1, bodyBot - bodyTop)
-          const isHov = hovered === i
-          const color = isGreen ? "#22c55e" : "#ef4444"
-          const fill = isGreen ? "rgba(34,197,94,0.85)" : "rgba(239,68,68,0.85)"
-          const wickFill = isGreen ? "rgba(34,197,94,0.6)" : "rgba(239,68,68,0.6)"
-
-          return (
-            <g key={i}>
-              {/* Upper wick */}
-              <line
-                x1={x} x2={x}
-                y1={toY(c.high)} y2={bodyTop}
-                stroke={isHov ? color : wickFill}
-                strokeWidth={isHov ? 1.5 : 1}
-              />
-              {/* Lower wick */}
-              <line
-                x1={x} x2={x}
-                y1={bodyBot} y2={toY(c.low)}
-                stroke={isHov ? color : wickFill}
-                strokeWidth={isHov ? 1.5 : 1}
-              />
-              {/* Body */}
-              <rect
-                x={x - candleW / 2}
-                y={bodyTop}
-                width={candleW}
-                height={bodyH}
-                fill={isHov ? color : fill}
-                rx={candleW > 4 ? 1 : 0}
-                style={{ filter: isHov ? `drop-shadow(0 0 3px ${color})` : undefined }}
-              />
-            </g>
-          )
-        })}
-
-        {/* Current price line */}
-        {visible.length > 0 && (
-          <g>
-            <line
-              x1={padL} x2={w - padR}
-              y1={toY(visible[visible.length - 1].close)} y2={toY(visible[visible.length - 1].close)}
-              stroke="#22d3ee" strokeWidth={1} strokeDasharray="3 2" opacity={0.8}
-            />
-            <rect x={w - padR - 50} y={toY(visible[visible.length - 1].close) - 7} width={50} height={13} rx={3}
-              fill="rgba(34,211,238,0.2)" stroke="rgba(34,211,238,0.5)" strokeWidth={0.5}
-            />
-            <text
-              x={w - padR - 4} y={toY(visible[visible.length - 1].close) + 3.5}
-              fill="#22d3ee" fontSize={8} textAnchor="end" fontFamily="monospace" fontWeight="bold"
-            >
-              {fmt(visible[visible.length - 1].close, sym)}
-            </text>
-          </g>
-        )}
-
-        {/* Crosshair vertical */}
-        {hovered !== null && (
-          <line
-            x1={toX(hovered)} x2={toX(hovered)}
-            y1={padT} y2={h - padB}
-            stroke="rgba(34,211,238,0.3)"
-            strokeWidth={1}
-            strokeDasharray="3 2"
-          />
-        )}
-
-        {/* X-axis time labels */}
-        {visible.map((c, i) => {
-          if (i % Math.ceil(visible.length / 6) !== 0) return null
-          return (
-            <text key={i} x={toX(i)} y={h - 6} fill="rgba(100,116,139,0.6)" fontSize={7}
-              textAnchor="middle" fontFamily="monospace"
-            >
-              {c.time}
-            </text>
-          )
-        })}
-      </svg>
-
-      {/* Tooltip */}
-      {tooltip && hovCandle && (
-        <div
-          className="absolute pointer-events-none z-20 rounded-xl text-[10px] font-mono"
-          style={{
-            left: tooltip.x > w * 0.6 ? tooltip.x - 120 : tooltip.x + 8,
-            top: Math.max(8, tooltip.y - 60),
-            background: "rgba(3,7,18,0.95)",
-            border: "1px solid rgba(34,211,238,0.25)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.6)",
-            padding: "8px 10px",
-            minWidth: 110,
-          }}
-        >
-          <p className="text-cyan-400 mb-1 font-bold">{hovCandle.time}</p>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-            <span className="text-slate-500">O</span><span className="text-white">{fmt(hovCandle.open, sym)}</span>
-            <span className="text-emerald-400">H</span><span className="text-emerald-400">{fmt(hovCandle.high, sym)}</span>
-            <span className="text-red-400">L</span><span className="text-red-400">{fmt(hovCandle.low, sym)}</span>
-            <span className="text-slate-300">C</span><span className={hovCandle.close >= hovCandle.open ? "text-emerald-400" : "text-red-400"}>{fmt(hovCandle.close, sym)}</span>
-            <span className="text-slate-500">Vol</span><span className="text-slate-400">{hovCandle.volume}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─── Volume Bar Chart ────────────────────────────────────────────────────────
-
-function VolumeBar({ candles }: { candles: Candle[] }) {
-  const visible = candles.slice(-60)
-  const maxVol = Math.max(...visible.map((c) => c.volume), 1)
-  return (
-    <div className="flex items-end gap-[1px] w-full h-full">
-      {visible.map((c, i) => {
-        const heightPct = (c.volume / maxVol) * 100
-        const isGreen = c.close >= c.open
-        return (
-          <div
-            key={i}
-            className="flex-1 rounded-t-[1px] transition-all"
-            style={{
-              height: `${heightPct}%`,
-              background: isGreen ? "rgba(34,197,94,0.35)" : "rgba(239,68,68,0.35)",
-              minWidth: 1,
-            }}
-          />
-        )
-      })}
-    </div>
-  )
-}
 
 // ─── Order Depth Panel ───────────────────────────────────────────────────────
 
@@ -496,19 +238,6 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Custom Tooltip (unused but kept) ────────────────────────────────────────
-
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-slate-900 border border-cyan-500/30 rounded-lg px-3 py-1.5 text-xs">
-        <p className="text-cyan-400 font-mono">{payload[0].payload.time}</p>
-        <p className="text-white font-bold font-mono">{payload[0].value}</p>
-      </div>
-    )
-  }
-  return null
-}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -530,8 +259,6 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
   const [tradeMsg, setTradeMsg] = useState<{ type: "success" | "error"; text: string } | null>(null)
   const [totalPnl, setTotalPnl] = useState(0)
   const [tickCount, setTickCount] = useState(0)
-  const [chartType, setChartType] = useState<"candle" | "line">("candle")
-
   const ratesRef = useRef<Record<string, number>>({})
   const pairsRef = useRef<ForexPair[]>([])
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -849,13 +576,9 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
               {lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
             </span>
           )}
-          <button
-            onClick={() => setChartType((c) => c === "candle" ? "line" : "candle")}
-            className="p-1.5 rounded-lg transition-colors text-[10px] font-black"
-            style={{ background: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.2)", color: "#a78bfa" }}
-          >
-            {chartType === "candle" ? "LINE" : "CANDLE"}
-          </button>
+          <span className="text-[9px] font-black px-1.5 py-0.5 rounded" style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.15)" }}>
+            LIVE
+          </span>
           <button onClick={fetchRates} className="p-1.5 rounded-lg transition-colors" style={{ background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.15)" }}>
             <RefreshCw className="h-3.5 w-3.5 text-cyan-400" />
           </button>
@@ -982,9 +705,9 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
 
       {/* ── Chart ────────────────────────────────────────────────────────────── */}
       {selectedPair && (
-        <div className="mx-3 mt-2 rounded-2xl overflow-hidden glass-dark" style={{ height: 260 }}>
+        <div className="mx-3 mt-2 rounded-2xl overflow-hidden glass-dark flex flex-col" style={{ height: 420 }}>
           {/* Timeframe bar */}
-          <div className="flex items-center justify-between px-3 pt-2 pb-1">
+          <div className="flex items-center justify-between px-3 pt-2 pb-1 shrink-0">
             <div className="flex gap-1">
               {(["1M", "5M", "15M", "1H", "4H", "1D"] as TimeFrame[]).map((tf) => (
                 <button
@@ -1007,18 +730,13 @@ export function ForexTradingPlatform({ participantEmail }: { participantEmail: s
             <span className="text-[9px] text-slate-600 font-mono">{selectedPair.candles.length} bars</span>
           </div>
 
-          {/* Main candlestick area */}
-          <div style={{ height: 190, padding: "0 0 0 0" }}>
-            <CandlestickChartSVG
+          {/* TradingChart fills remaining height */}
+          <div className="flex-1 min-h-0">
+            <TradingChart
               candles={selectedPair.candles}
               sym={selectedPair.symbol}
               openTrades={openTrades.filter((t) => t.pair === selectedPair.symbol)}
             />
-          </div>
-
-          {/* Volume strip */}
-          <div className="px-3 pb-2" style={{ height: 32 }}>
-            <VolumeBar candles={selectedPair.candles} />
           </div>
         </div>
       )}
