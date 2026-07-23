@@ -766,66 +766,180 @@ export function ForexTradingPlatform({
       <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT COLUMN: Market Watch ──────────────────────────────────────── */}
-        <div className="flex flex-col shrink-0 terminal-scroll overflow-y-auto" style={{ width: 200, borderRight: "1px solid #1e2d45" }}>
-          {/* Header with category filter */}
-          <div className="terminal-panel-header shrink-0 flex-col gap-1.5 py-2">
-            <span className="text-[9px] font-black tracking-[0.2em] text-slate-500 uppercase">Market Watch</span>
-            <div className="flex gap-1 flex-wrap">
+        <div className="flex flex-col shrink-0" style={{ width: 264, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+
+          {/* ── Sidebar header ── */}
+          <div className="shrink-0 px-3 pt-3 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
+            <div className="flex items-center justify-between mb-2.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg,#22d3ee,#0ea5e9)" }} />
+                <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="live-dot" />
+                <span className="text-[9px] font-bold text-emerald-500 tracking-wider">LIVE</span>
+              </div>
+            </div>
+
+            {/* Category filter pills */}
+            <div className="flex gap-1">
               {categoryTabs.map((cat) => {
                 const isActive = activeCategory === cat
-                const cc = cat === "All" ? { text: "#64748b", border: "#2d4565" } : { text: CATEGORY_COLOR[cat as AssetCategory].text, border: CATEGORY_COLOR[cat as AssetCategory].border }
+                const cc = cat === "All"
+                  ? { text: "#94a3b8", border: "#334155", bg: "rgba(148,163,184,0.1)" }
+                  : { text: CATEGORY_COLOR[cat as AssetCategory].text, border: CATEGORY_COLOR[cat as AssetCategory].border, bg: CATEGORY_COLOR[cat as AssetCategory].bg }
+                const label = cat === "All" ? "All" : cat === "Commodities" ? "Metals" : cat === "Forex" ? "FX" : cat
                 return (
                   <button key={cat} onClick={() => setActiveCategory(cat)}
-                    className="px-1.5 py-0.5 text-[8px] font-black tracking-wider uppercase transition-all"
-                    style={{ borderRadius: 3,
-                      background: isActive ? "rgba(34,211,238,0.08)" : "transparent",
+                    className="flex-1 py-1 text-[9px] font-black tracking-wider uppercase transition-all"
+                    style={{ borderRadius: 4,
+                      background: isActive ? cc.bg : "transparent",
                       color: isActive ? cc.text : "#374151",
-                      border: `1px solid ${isActive ? cc.border : "transparent"}` }}>
-                    {cat === "Commodities" ? "Metals" : cat}
+                      border: `1px solid ${isActive ? cc.border : "#1a2640"}` }}>
+                    {label}
                   </button>
                 )
               })}
             </div>
           </div>
-          {/* Column headers */}
-          <div className="flex items-center px-2 py-1 shrink-0" style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-            <span className="text-[8px] font-bold tracking-widest text-slate-700 flex-1">SYMBOL</span>
-            <span className="text-[8px] font-bold tracking-widest text-slate-700 w-16 text-right">BID</span>
-            <span className="text-[8px] font-bold tracking-widest text-slate-700 w-12 text-right">CHG%</span>
+
+          {/* ── Column headers ── */}
+          <div className="grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "#05080e", borderBottom: "1px solid #111827" }}>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#2d4565" }}>Instrument</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Bid / Ask</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Chg%</span>
           </div>
-          {/* Instrument rows */}
-          {loading
-            ? Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-9 mx-2 my-0.5 rounded animate-pulse" style={{ background: "#0d1424" }} />
-              ))
-            : filteredPairs.map((p) => {
-                const up = p.change >= 0
-                const cfg = PAIRS_CONFIG.find((c) => c.symbol === p.symbol)
-                const cat = cfg?.category ?? "Forex"
-                const cc = CATEGORY_COLOR[cat]
-                const icon = ASSET_ICON[p.symbol]
-                const isSelected = selectedPair?.symbol === p.symbol
+
+          {/* ── Instrument list ── */}
+          <div className="flex-1 overflow-y-auto terminal-scroll">
+            {loading ? (
+              <div className="p-2 flex flex-col gap-1">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="h-11 rounded animate-pulse" style={{ background: "rgba(255,255,255,0.03)" }} />
+                ))}
+              </div>
+            ) : (
+              (() => {
+                // Group by category when showing All
+                const categories: AssetCategory[] = ["Forex", "Commodities", "Crypto"]
+                const toShow = activeCategory === "All" ? categories : [activeCategory as AssetCategory]
+                return toShow.map((cat) => {
+                  const catPairs = filteredPairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat)
+                  if (catPairs.length === 0) return null
+                  const cc = CATEGORY_COLOR[cat]
+                  return (
+                    <div key={cat}>
+                      {/* Category section label */}
+                      {activeCategory === "All" && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
+                          style={{ background: "#06090f", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid #111827" }}>
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
+                          <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
+                            {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
+                          </span>
+                          <span className="text-[8px] ml-auto" style={{ color: "#2d4565" }}>{catPairs.length}</span>
+                        </div>
+                      )}
+                      {/* Rows */}
+                      {catPairs.map((p) => {
+                        const up = p.change >= 0
+                        const cfg = PAIRS_CONFIG.find((c) => c.symbol === p.symbol)
+                        const pCat = cfg?.category ?? "Forex"
+                        const pCc = CATEGORY_COLOR[pCat]
+                        const icon = ASSET_ICON[p.symbol]
+                        const isSelected = selectedPair?.symbol === p.symbol
+                        const base = p.symbol.split("/")[0]
+                        const quote = p.symbol.split("/")[1]
+                        // Full instrument names
+                        const fullNames: Record<string, string> = {
+                          "EUR/USD": "Euro / US Dollar", "GBP/USD": "British Pound", "USD/JPY": "US Dollar / Yen",
+                          "USD/CHF": "Swiss Franc", "AUD/USD": "Australian Dollar", "USD/CAD": "Canadian Dollar",
+                          "NZD/USD": "New Zealand Dollar", "EUR/GBP": "Euro / Pound",
+                          "XAU/USD": "Gold Spot", "XAG/USD": "Silver Spot",
+                          "BTC/USD": "Bitcoin", "ETH/USD": "Ethereum", "BNB/USD": "BNB Chain",
+                          "SOL/USD": "Solana", "XRP/USD": "Ripple XRP", "ADA/USD": "Cardano",
+                        }
+                        return (
+                          <button key={p.symbol}
+                            onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
+                            className="w-full mw-row"
+                            style={{
+                              background: isSelected ? `linear-gradient(90deg, ${pCc.bg}, rgba(0,0,0,0))` : "transparent",
+                              borderLeft: isSelected ? `3px solid ${pCc.text}` : "3px solid transparent",
+                              borderBottom: "1px solid #0d1525",
+                              padding: "8px 12px 8px 10px",
+                            }}>
+                            <div className="grid items-center" style={{ gridTemplateColumns: "1fr 72px 52px", gap: 0 }}>
+                              {/* Left: icon + names */}
+                              <div className="flex items-center gap-2 min-w-0">
+                                {/* Icon badge */}
+                                <div className="mw-badge w-7 h-7 rounded flex items-center justify-center shrink-0 text-[10px] font-black"
+                                  style={{ background: isSelected ? pCc.bg : "rgba(255,255,255,0.03)", border: `1px solid ${isSelected ? pCc.border : "#131d2e"}`, color: pCc.text }}>
+                                  {icon ?? base.slice(0, 2)}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-[11px] font-black leading-none" style={{ color: isSelected ? "#ffffff" : "#c8d4e4" }}>{base}</span>
+                                    <span className="text-[9px] font-bold leading-none" style={{ color: "#3d5a7a" }}>/{quote}</span>
+                                  </div>
+                                  <div className="text-[8px] leading-none mt-0.5 truncate" style={{ color: "#2d4565" }}>
+                                    {fullNames[p.symbol] ?? p.symbol}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Middle: Bid / Ask stacked */}
+                              <div className="text-right">
+                                <div className="price-mono text-[10px] font-black leading-none" style={{ color: up ? "#10b981" : "#ef4444" }}>
+                                  {fmt(p.bid, p.symbol)}
+                                </div>
+                                <div className="price-mono text-[9px] leading-none mt-0.5" style={{ color: "#2d4565" }}>
+                                  {fmt(p.ask, p.symbol)}
+                                </div>
+                              </div>
+                              {/* Right: change% + mini bar */}
+                              <div className="text-right">
+                                <div className="price-mono text-[10px] font-black leading-none" style={{ color: up ? "#10b981" : "#ef4444" }}>
+                                  {up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%
+                                </div>
+                                {/* Mini change bar */}
+                                <div className="mt-1 h-0.5 w-full rounded-full overflow-hidden" style={{ background: "#111827" }}>
+                                  <div className="h-full rounded-full transition-all"
+                                    style={{
+                                      width: `${Math.min(100, Math.abs(p.change ?? 0) * 20)}%`,
+                                      background: up ? "#10b981" : "#ef4444",
+                                      boxShadow: up ? "0 0 4px #10b981" : "0 0 4px #ef4444",
+                                      marginLeft: up ? 0 : "auto"
+                                    }} />
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                })
+              })()
+            )}
+          </div>
+
+          {/* ── Sidebar footer: instrument count ── */}
+          <div className="shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid #1a2640", background: "#05080e" }}>
+            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>
+              {filteredPairs.length} instrument{filteredPairs.length !== 1 ? "s" : ""}
+            </span>
+            <div className="flex items-center gap-1.5">
+              {(["Forex", "Commodities", "Crypto"] as AssetCategory[]).map(cat => {
+                const count = pairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat).length
                 return (
-                  <button key={p.symbol} onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
-                    className={`instrument-row w-full text-left ${isSelected ? "active" : ""}`}
-                    style={isSelected ? { background: "rgba(34,211,238,0.06)", borderLeft: `2px solid ${cc.text}` } : {}}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1">
-                        {icon && <span className="text-[9px] shrink-0" style={{ color: cc.text }}>{icon}</span>}
-                        <span className="text-[10px] font-black text-slate-200 truncate">{p.symbol.split("/")[0]}</span>
-                        <span className="text-[8px] text-slate-700">/{p.symbol.split("/")[1]}</span>
-                      </div>
-                      <div className="text-[8px] text-slate-700 price-mono">{fmt(p.ask, p.symbol)} ask</div>
-                    </div>
-                    <div className="price-mono text-[10px] font-black w-16 text-right shrink-0" style={{ color: up ? "#10b981" : "#ef4444" }}>
-                      {fmt(p.bid, p.symbol)}
-                    </div>
-                    <div className="price-mono text-[9px] font-bold w-12 text-right shrink-0" style={{ color: up ? "#10b981" : "#ef4444" }}>
-                      {up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%
-                    </div>
-                  </button>
+                  <span key={cat} className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                    style={{ background: CATEGORY_COLOR[cat].bg, color: CATEGORY_COLOR[cat].text, border: `1px solid ${CATEGORY_COLOR[cat].border}` }}>
+                    {cat === "Commodities" ? "Au/Ag" : cat === "Forex" ? "FX" : "Crypto"} {count}
+                  </span>
                 )
               })}
+            </div>
+          </div>
         </div>
 
         {/* ── CENTER COLUMN: Chart area ──────────────────────────────────────── */}

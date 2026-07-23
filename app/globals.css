@@ -558,7 +558,7 @@
   gap: 6px;
 }
 
-/* Instrument row in market watch */
+/* Instrument row in market watch (legacy) */
 .instrument-row {
   display: flex;
   align-items: center;
@@ -575,6 +575,22 @@
 .instrument-row.active {
   background: rgba(34,211,238,0.07);
   border-left: 2px solid #22d3ee;
+}
+
+/* New Market Watch instrument button */
+.mw-row {
+  cursor: pointer;
+  transition: background 0.12s ease, border-left-color 0.12s ease;
+}
+.mw-row:hover {
+  background: rgba(255,255,255,0.025) !important;
+}
+.mw-row:hover .mw-badge {
+  border-color: rgba(255,255,255,0.1) !important;
+  background: rgba(255,255,255,0.06) !important;
+}
+.mw-row:active {
+  background: rgba(255,255,255,0.04) !important;
 }
 
 /* Neon price text */
