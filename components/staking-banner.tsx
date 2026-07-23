@@ -22,23 +22,20 @@ export function StakingBanner({
 
   return (
     <div
-      className={`relative w-full rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl transition-all duration-700 ${
-        isVisible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+      className={`relative w-full rounded-2xl overflow-hidden transition-all duration-700 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
       }`}
       style={{
-        background: "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(232, 93, 59, 0.06) 35%, rgba(16, 185, 129, 0.05) 100%)",
-        border: "1px solid rgba(124, 58, 237, 0.15)",
-        boxShadow: "0 12px 40px rgba(124, 58, 237, 0.15), 0 4px 12px rgba(232, 93, 59, 0.1)"
+        background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)",
+        border: "1px solid rgba(124, 58, 237, 0.25)",
+        boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)"
       }}
     >
-      {/* Animated background orbs */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 -right-20 w-64 h-64 bg-gradient-to-br from-purple-400/15 via-purple-300/8 to-transparent rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gradient-to-br from-orange-400/15 via-orange-300/8 to-transparent rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
-      </div>
+      {/* Subtle accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: "linear-gradient(90deg,transparent,rgba(124,58,237,0.6),rgba(99,102,241,0.6),transparent)" }} />
 
-      {/* Content */}
-      <div className="relative px-4 sm:px-6 py-6 sm:py-8">
+      {/* Content — compact padding */}
+      <div className="relative px-3 py-3">
         <StakingModule
           currentBalance={currentBalance}
           participantEmail={participantEmail}
