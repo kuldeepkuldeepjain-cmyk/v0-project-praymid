@@ -81,55 +81,127 @@ type TimeFrame = "1M" | "5M" | "15M" | "1H" | "4H" | "1D"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const PAIRS_CONFIG: { base: string; quote: string; symbol: string }[] = [
-  { base: "EUR", quote: "USD", symbol: "EUR/USD" },
-  { base: "GBP", quote: "USD", symbol: "GBP/USD" },
-  { base: "USD", quote: "JPY", symbol: "USD/JPY" },
-  { base: "USD", quote: "CHF", symbol: "USD/CHF" },
-  { base: "AUD", quote: "USD", symbol: "AUD/USD" },
-  { base: "USD", quote: "CAD", symbol: "USD/CAD" },
-  { base: "NZD", quote: "USD", symbol: "NZD/USD" },
-  { base: "EUR", quote: "GBP", symbol: "EUR/GBP" },
+type AssetCategory = "Forex" | "Commodities" | "Crypto"
+
+const PAIRS_CONFIG: { base: string; quote: string; symbol: string; category: AssetCategory }[] = [
+  // Forex majors
+  { base: "EUR", quote: "USD", symbol: "EUR/USD",   category: "Forex" },
+  { base: "GBP", quote: "USD", symbol: "GBP/USD",   category: "Forex" },
+  { base: "USD", quote: "JPY", symbol: "USD/JPY",   category: "Forex" },
+  { base: "USD", quote: "CHF", symbol: "USD/CHF",   category: "Forex" },
+  { base: "AUD", quote: "USD", symbol: "AUD/USD",   category: "Forex" },
+  { base: "USD", quote: "CAD", symbol: "USD/CAD",   category: "Forex" },
+  { base: "NZD", quote: "USD", symbol: "NZD/USD",   category: "Forex" },
+  { base: "EUR", quote: "GBP", symbol: "EUR/GBP",   category: "Forex" },
+  // Commodities
+  { base: "XAU", quote: "USD", symbol: "XAU/USD",   category: "Commodities" },
+  { base: "XAG", quote: "USD", symbol: "XAG/USD",   category: "Commodities" },
+  // Crypto
+  { base: "BTC", quote: "USD", symbol: "BTC/USD",   category: "Crypto" },
+  { base: "ETH", quote: "USD", symbol: "ETH/USD",   category: "Crypto" },
+  { base: "BNB", quote: "USD", symbol: "BNB/USD",   category: "Crypto" },
+  { base: "SOL", quote: "USD", symbol: "SOL/USD",   category: "Crypto" },
+  { base: "XRP", quote: "USD", symbol: "XRP/USD",   category: "Crypto" },
+  { base: "ADA", quote: "USD", symbol: "ADA/USD",   category: "Crypto" },
 ]
 
 const TYPICAL_SPREADS: Record<string, number> = {
+  // Forex
   "EUR/USD": 0.0002, "GBP/USD": 0.0003, "USD/JPY": 0.02,
   "USD/CHF": 0.0003, "AUD/USD": 0.0003, "USD/CAD": 0.0003,
   "NZD/USD": 0.0004, "EUR/GBP": 0.0003,
+  // Commodities — spread as $ absolute
+  "XAU/USD": 0.50,   // ~$0.50 on Gold
+  "XAG/USD": 0.03,   // ~$0.03 on Silver
+  // Crypto — spread as % of price applied later
+  "BTC/USD": 5.0,
+  "ETH/USD": 1.5,
+  "BNB/USD": 0.30,
+  "SOL/USD": 0.10,
+  "XRP/USD": 0.001,
+  "ADA/USD": 0.0005,
+}
+
+// Category colours for UI badges
+const CATEGORY_COLOR: Record<AssetCategory, { bg: string; text: string; border: string }> = {
+  Forex:       { bg: "rgba(34,211,238,0.1)",  text: "#22d3ee", border: "rgba(34,211,238,0.25)" },
+  Commodities: { bg: "rgba(251,191,36,0.1)",  text: "#fbbf24", border: "rgba(251,191,36,0.25)" },
+  Crypto:      { bg: "rgba(167,139,250,0.1)", text: "#a78bfa", border: "rgba(167,139,250,0.25)" },
+}
+
+// Emoji/icon label for each asset
+const ASSET_ICON: Record<string, string> = {
+  "XAU/USD": "Au", "XAG/USD": "Ag",
+  "BTC/USD": "₿",  "ETH/USD": "Ξ",
+  "BNB/USD": "BNB","SOL/USD": "◎",
+  "XRP/USD": "✕",  "ADA/USD": "₳",
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function isJpy(sym: string): boolean { return sym.includes("JPY") }
-function decimals(sym: string): number { return isJpy(sym) ? 3 : 5 }
+function isCrypto(sym: string): boolean { return ["BTC","ETH","BNB","SOL","XRP","ADA"].some(c => sym.startsWith(c)) }
+function isGold(sym: string): boolean { return sym.startsWith("XAU") }
+function isSilver(sym: string): boolean { return sym.startsWith("XAG") }
+function isCommodity(sym: string): boolean { return isGold(sym) || isSilver(sym) }
+
+function decimals(sym: string): number {
+  if (isGold(sym))   return 2
+  if (isSilver(sym)) return 3
+  if (isCrypto(sym)) {
+    if (sym.startsWith("BTC")) return 1
+    if (sym.startsWith("ETH")) return 2
+    if (sym.startsWith("BNB")) return 2
+    if (sym.startsWith("SOL")) return 3
+    return 4
+  }
+  return isJpy(sym) ? 3 : 5
+}
+
 function fmt(price: number | null | undefined, sym: string): string {
   if (price == null || !isFinite(price)) return "—"
   return price.toFixed(decimals(sym))
 }
-function pip(sym: string): number { return isJpy(sym) ? 0.01 : 0.0001 }
+
+// Pip size — the minimum price increment used for P&L calculation
+function pip(sym: string): number {
+  if (isGold(sym))           return 0.01    // $0.01 per pip on Gold
+  if (isSilver(sym))         return 0.001   // $0.001 per pip on Silver
+  if (sym.startsWith("BTC")) return 1.0     // $1 per pip on BTC
+  if (sym.startsWith("ETH")) return 0.1
+  if (sym.startsWith("BNB")) return 0.01
+  if (sym.startsWith("SOL")) return 0.001
+  if (sym.startsWith("XRP") || sym.startsWith("ADA")) return 0.0001
+  return isJpy(sym) ? 0.01 : 0.0001
+}
+
 function pips(diff: number, sym: string): number { return diff / pip(sym) }
 function genId(): string { return Math.random().toString(36).slice(2, 10) }
 
+// Contract sizes per instrument class
+function contractSize(sym: string): number {
+  if (isGold(sym))           return 100     // 100 oz per standard lot
+  if (isSilver(sym))         return 5000    // 5000 oz per standard lot
+  if (sym.startsWith("BTC")) return 1       // 1 BTC per lot
+  if (sym.startsWith("ETH")) return 10      // 10 ETH per lot
+  if (sym.startsWith("BNB")) return 100
+  if (sym.startsWith("SOL")) return 100
+  if (sym.startsWith("XRP")) return 10000
+  if (sym.startsWith("ADA")) return 10000
+  return 100000 // Standard forex
+}
+
 // ─── P&L Calculation ─────────────────────────────────────────────────────────
-// In real forex: P&L = lot_size × contract_size × pip_move × pip_value
-// Leverage affects MARGIN required, NOT the raw pip-value profit.
-// A 0.01 lot BUY at 1:100 leverage means:
-//   Margin locked = (0.01 × 100,000 × price) / 100 = $10–$15
-//   But position exposure = 0.01 × 100,000 = $1,000 of notional
-//   1 pip move on 0.01 lot = $0.10  (for USD-quoted pairs)
-// The user's RISK is amplified relative to their margin because leverage > 1.
-// We show both the raw $P&L and the "return on margin" % so traders see leverage effect.
 function calcPnl(trade: OpenTrade, currentPrice: number, sym: string): {
   pnl: number; pips: number; returnOnMargin: number
 } {
   const dir = trade.direction === "BUY" ? 1 : -1
   const diff = (currentPrice - trade.openPrice) * dir
-  const contractSize = 100000
+  const cs = contractSize(sym)
   const pipSize = pip(sym)
-  const pipVal = trade.lotSize * contractSize * pipSize   // $ per pip (USD quote)
-  const rawPips = (diff / pipSize)                        // signed pip count
+  const pipVal = trade.lotSize * cs * pipSize
+  const rawPips = diff / pipSize
   const pnl = parseFloat((rawPips * pipVal).toFixed(2))
-  // Return on Margin = P&L / margin × 100%
   const returnOnMargin = trade.margin > 0 ? parseFloat(((pnl / trade.margin) * 100).toFixed(1)) : 0
   return { pnl, pips: parseFloat(rawPips.toFixed(1)), returnOnMargin }
 }
@@ -203,6 +275,7 @@ export function ForexTradingPlatform({
 }) {
   const [pairs, setPairs] = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
+  const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
   const [timeframe, setTimeframe] = useState<TimeFrame>("5M")
   const [direction, setDirection] = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize] = useState("0.01")
@@ -681,35 +754,71 @@ export function ForexTradingPlatform({
         ))}
       </div>
 
+      {/* ── Category tabs ────────────────────────────────────────────────────── */}
+      <div className="flex gap-1.5 px-3 mt-3">
+        {(["All", "Forex", "Commodities", "Crypto"] as const).map((cat) => {
+          const isActive = activeCategory === cat
+          const color = cat === "All" ? { bg: "rgba(148,163,184,0.12)", text: "#94a3b8", border: "rgba(148,163,184,0.25)" }
+            : CATEGORY_COLOR[cat as AssetCategory]
+          return (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              className="px-3 py-1 rounded-lg text-[10px] font-black tracking-wider transition-all"
+              style={isActive ? {
+                background: color.bg, color: color.text,
+                border: `1px solid ${color.border}`,
+                boxShadow: `0 0 10px ${color.border}`
+              } : {
+                background: "rgba(255,255,255,0.03)", color: "#475569",
+                border: "1px solid rgba(255,255,255,0.06)"
+              }}
+            >
+              {cat === "Commodities" ? "Metals" : cat}
+            </button>
+          )
+        })}
+      </div>
+
       {/* ── Pair selector ────────────────────────────────────────────────────── */}
-      <div className="flex gap-1.5 px-3 mt-3 overflow-x-auto pb-1 scrollbar-none flex-nowrap">
+      <div className="flex gap-1.5 px-3 mt-2 overflow-x-auto pb-1 scrollbar-none flex-nowrap">
         {loading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-9 w-20 rounded-lg animate-pulse shrink-0" style={{ background: "rgba(255,255,255,0.05)" }} />
+              <div key={i} className="h-11 w-20 rounded-lg animate-pulse shrink-0" style={{ background: "rgba(255,255,255,0.05)" }} />
             ))
-          : pairs.map((p) => {
-              const up = p.change >= 0
-              return (
-                <button
-                  key={p.symbol}
-                  onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
-                  className="shrink-0 flex flex-col items-center px-2.5 py-1 rounded-xl text-[10px] font-black transition-all"
-                  style={selectedPair?.symbol === p.symbol ? {
-                    background: "linear-gradient(135deg,rgba(34,211,238,0.2),rgba(34,211,238,0.08))",
-                    color: "#22d3ee",
-                    border: "1px solid rgba(34,211,238,0.35)",
-                    boxShadow: "0 0 12px rgba(34,211,238,0.2), inset 0 1px 0 rgba(255,255,255,0.08)"
-                  } : {
-                    background: "rgba(255,255,255,0.03)",
-                    color: "#94a3b8",
-                    border: "1px solid rgba(255,255,255,0.06)"
-                  }}
-                >
-                  <span>{p.symbol}</span>
-                  <span style={{ color: up ? "#34d399" : "#f87171", fontSize: 9 }}>{up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%</span>
-                </button>
-              )
-            })}
+          : pairs
+              .filter((p) => {
+                const cfg = PAIRS_CONFIG.find((c) => c.symbol === p.symbol)
+                return activeCategory === "All" || cfg?.category === activeCategory
+              })
+              .map((p) => {
+                const up = p.change >= 0
+                const cfg = PAIRS_CONFIG.find((c) => c.symbol === p.symbol)
+                const cat = cfg?.category ?? "Forex"
+                const cc = CATEGORY_COLOR[cat]
+                const icon = ASSET_ICON[p.symbol]
+                return (
+                  <button
+                    key={p.symbol}
+                    onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
+                    className="shrink-0 flex flex-col items-center px-2.5 py-1.5 rounded-xl text-[10px] font-black transition-all min-w-[72px]"
+                    style={selectedPair?.symbol === p.symbol ? {
+                      background: `linear-gradient(135deg,${cc.bg},rgba(0,0,0,0.2))`,
+                      color: cc.text,
+                      border: `1px solid ${cc.border}`,
+                      boxShadow: `0 0 12px ${cc.border}80, inset 0 1px 0 rgba(255,255,255,0.08)`
+                    } : {
+                      background: "rgba(255,255,255,0.03)",
+                      color: "#94a3b8",
+                      border: "1px solid rgba(255,255,255,0.06)"
+                    }}
+                  >
+                    {icon && <span className="text-[11px] mb-0.5" style={{ color: selectedPair?.symbol === p.symbol ? cc.text : "#64748b" }}>{icon}</span>}
+                    <span className="leading-none">{p.symbol.split("/")[0]}</span>
+                    <span className="text-[8px] leading-none mt-0.5" style={{ color: up ? "#34d399" : "#f87171" }}>{up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%</span>
+                  </button>
+                )
+              })}
       </div>
 
       {/* ── Selected pair header ──────────────────────────────────────────────── */}
@@ -723,7 +832,23 @@ export function ForexTradingPlatform({
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <h2 className="text-sm font-black text-white tracking-widest">{selectedPair.symbol}</h2>
+                <h2 className="text-sm font-black text-white tracking-widest">
+                  {ASSET_ICON[selectedPair.symbol] && (
+                    <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>
+                  )}
+                  {selectedPair.symbol}
+                </h2>
+                {(() => {
+                  const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
+                  if (!cat || cat === "Forex") return null
+                  const cc = CATEGORY_COLOR[cat]
+                  return (
+                    <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md uppercase tracking-wider"
+                      style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>
+                      {cat}
+                    </span>
+                  )
+                })()}
                 <span className="text-[9px] text-slate-600 tracking-widest font-bold uppercase">{timeframe}</span>
               </div>
               <div className="flex items-baseline gap-2">

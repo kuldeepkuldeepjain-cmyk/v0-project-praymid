@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 const YAHOO_SYMBOLS: Record<string, string> = {
+  // Forex
   "EUR/USD": "EURUSD=X",
   "GBP/USD": "GBPUSD=X",
   "USD/JPY": "USDJPY=X",
@@ -9,6 +10,16 @@ const YAHOO_SYMBOLS: Record<string, string> = {
   "USD/CAD": "USDCAD=X",
   "NZD/USD": "NZDUSD=X",
   "EUR/GBP": "EURGBP=X",
+  // Commodities
+  "XAU/USD": "GC=F",
+  "XAG/USD": "SI=F",
+  // Crypto
+  "BTC/USD": "BTC-USD",
+  "ETH/USD": "ETH-USD",
+  "BNB/USD": "BNB-USD",
+  "SOL/USD": "SOL-USD",
+  "XRP/USD": "XRP-USD",
+  "ADA/USD": "ADA-USD",
 }
 
 // Yahoo Finance interval + range that gives the best candle history per timeframe
@@ -22,7 +33,16 @@ const TF_MAP: Record<string, { interval: string; range: string }> = {
 }
 
 function isJpy(sym: string) { return sym.includes("JPY") }
-function dec(sym: string) { return isJpy(sym) ? 3 : 5 }
+function isCrypto(sym: string) { return ["BTC","ETH","BNB","SOL","XRP","ADA"].some(c => sym.startsWith(c)) }
+function dec(sym: string): number {
+  if (sym.startsWith("XAU")) return 2
+  if (sym.startsWith("XAG")) return 3
+  if (sym.startsWith("BTC")) return 1
+  if (sym.startsWith("ETH") || sym.startsWith("BNB")) return 2
+  if (sym.startsWith("SOL")) return 3
+  if (isCrypto(sym)) return 4
+  return isJpy(sym) ? 3 : 5
+}
 
 // Format timestamp to human-readable label based on timeframe
 function fmtTime(ts: number, tf: string): string {
