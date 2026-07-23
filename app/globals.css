@@ -533,22 +533,58 @@
   100% { left: 125%; opacity: 0; }
 }
 
-/* Forex platform deep background */
+/* ── Forex / Trading Terminal Design System ──────────────────────────────── */
+
+/* Terminal background — pure deep navy, no gradients */
 .forex-deep-bg {
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(34,211,238,0.06) 0%, transparent 60%),
-    radial-gradient(ellipse 50% 40% at 0% 100%, rgba(124,58,237,0.08) 0%, transparent 50%),
-    linear-gradient(180deg, #030712 0%, #050d1a 100%);
+  background: #080c14;
+  color: #e2e8f0;
+}
+
+/* Terminal panel — tight 4px radius, 1px border, no backdrop blur for perf */
+.terminal-panel {
+  background: #0d1424;
+  border: 1px solid #1e2d45;
+  border-radius: 4px;
+}
+
+/* Header bar of a terminal panel */
+.terminal-panel-header {
+  background: #0b1220;
+  border-bottom: 1px solid #1e2d45;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Instrument row in market watch */
+.instrument-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid rgba(30,45,69,0.6);
+  cursor: pointer;
+  transition: background 0.1s;
+  font-variant-numeric: tabular-nums;
+}
+.instrument-row:hover {
+  background: rgba(34,211,238,0.04);
+}
+.instrument-row.active {
+  background: rgba(34,211,238,0.07);
+  border-left: 2px solid #22d3ee;
 }
 
 /* Neon price text */
 .price-up {
-  color: #34d399;
-  text-shadow: 0 0 12px rgba(52,211,153,0.6), 0 0 24px rgba(52,211,153,0.3);
+  color: #10b981;
+  text-shadow: 0 0 8px rgba(16,185,129,0.5);
 }
 .price-down {
-  color: #f87171;
-  text-shadow: 0 0 12px rgba(248,113,113,0.6), 0 0 24px rgba(248,113,113,0.3);
+  color: #ef4444;
+  text-shadow: 0 0 8px rgba(239,68,68,0.5);
 }
 
 /* Panel inset shadow */
@@ -564,6 +600,85 @@
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent);
   box-shadow: 0 1px 0 rgba(0,0,0,0.4);
 }
+
+/* Monospace price label */
+.price-mono {
+  font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Bid/Ask big price display */
+.bid-ask-price {
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Ticker tape scrolling animation */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-scroll {
+  animation: ticker-scroll 40s linear infinite;
+  white-space: nowrap;
+}
+.ticker-scroll:hover {
+  animation-play-state: paused;
+}
+
+/* Pulsing live dot */
+@keyframes live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.7); }
+}
+.live-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: live-pulse 1.4s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* Trade direction button active states */
+.btn-buy-active {
+  background: linear-gradient(135deg, #065f46, #047857);
+  border-color: #10b981;
+  color: #ecfdf5;
+  box-shadow: 0 0 20px rgba(16,185,129,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+.btn-sell-active {
+  background: linear-gradient(135deg, #7f1d1d, #b91c1c);
+  border-color: #ef4444;
+  color: #fef2f2;
+  box-shadow: 0 0 20px rgba(239,68,68,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+}
+
+/* Positions table row */
+.position-row {
+  display: grid;
+  grid-template-columns: 90px 48px 60px 70px 70px 70px 60px 52px;
+  align-items: center;
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(30,45,69,0.5);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.1s;
+}
+.position-row:hover {
+  background: rgba(255,255,255,0.02);
+}
+
+/* Thin scrollbar for terminal panels */
+.terminal-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
+.terminal-scroll::-webkit-scrollbar-track { background: transparent; }
+.terminal-scroll::-webkit-scrollbar-thumb { background: #1e2d45; border-radius: 2px; }
+.terminal-scroll::-webkit-scrollbar-thumb:hover { background: #2d4565; }
 
 .card-tint-peach {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 237, 213, 0.4));

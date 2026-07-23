@@ -1871,7 +1871,7 @@ export default function DashboardHome() {
             </div>
 
             {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
-            <div className="px-0 pt-4">
+            <div className="px-0 pt-4" style={{ height: "calc(100vh - 80px)", minHeight: 640, position: "relative" }}>
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
