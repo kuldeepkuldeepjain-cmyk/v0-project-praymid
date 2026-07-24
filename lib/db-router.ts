@@ -14,11 +14,13 @@ const globalForPools = globalThis as unknown as {
  */
 
 function createPoolV1() {
+  // Prioritize Neon over legacy Supabase POSTGRES_URL (which may be stale)
   const url =
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_URL ||
+    process.env.NEON_DATABASE_URL ||
     process.env.DATABASE_URL ||
-    process.env.NEON_DATABASE_URL
+    process.env.NEON_POSTGRES_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL
 
   if (!url) return null
 
