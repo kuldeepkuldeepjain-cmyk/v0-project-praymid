@@ -97,7 +97,12 @@ export async function POST(request: Request) {
       created_at: participant.created_at,
     })
   } catch (error: any) {
-    console.error("[login] Unexpected error:", error)
-    return NextResponse.json({ success: false, error: "Login failed" }, { status: 500 })
+    console.error("[login] Unexpected error:", error?.message, error?.code, error?.detail)
+    return NextResponse.json({
+      success: false,
+      error: "Login failed",
+      detail: process.env.NODE_ENV !== "production" ? error?.message : undefined,
+      _debug: error?.message?.slice(0, 120),
+    }, { status: 500 })
   }
 }
