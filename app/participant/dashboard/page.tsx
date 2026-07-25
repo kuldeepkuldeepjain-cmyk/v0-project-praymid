@@ -1696,7 +1696,7 @@ export default function DashboardHome() {
     : new Date(Date.now() + 48 * 60 * 60 * 1000)
 
   return (
-    <div className="pb-24 page-fade-enter">
+    <div className="pb-24 page-fade-enter w-full overflow-x-hidden">
       {/* Frozen Account Modal */}
       <FrozenAccountModal isOpen={showFrozenModal} onClose={() => setShowFrozenModal(false)} />
 
@@ -1871,7 +1871,7 @@ export default function DashboardHome() {
             </div>
 
             {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
-            <div className="px-0 pt-4" style={{ height: "calc(100vh - 80px)", minHeight: 640, position: "relative" }}>
+            <div className="px-0 pt-4" style={{ height: "calc(100svh - 80px)", minHeight: 540, maxHeight: 720, position: "relative" }}>
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}

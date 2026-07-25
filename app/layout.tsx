@@ -14,8 +14,9 @@ export const viewport: Viewport = {
   themeColor: "#080c14",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
 }
 
 export const metadata: Metadata = {
@@ -74,7 +75,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <ToastProvider>
             {children}

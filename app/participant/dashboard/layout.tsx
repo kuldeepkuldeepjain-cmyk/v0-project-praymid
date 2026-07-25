@@ -72,7 +72,7 @@ export default function DashboardLayout({
   }, [])
 
   return (
-    <div className="min-h-screen pb-20 relative overflow-hidden" style={{ background: "#030712" }}>
+    <div className="min-h-screen pb-20 relative overflow-hidden w-full max-w-[430px] mx-auto" style={{ background: "#030712", boxShadow: "0 0 60px rgba(0,0,0,0.8)" }}>
       {/* Deep space ambient layers */}
       <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 120% 60% at 50% -10%, rgba(124,58,237,0.18) 0%, transparent 55%)" }} />
       <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at -20% 60%, rgba(34,211,238,0.06) 0%, transparent 50%)" }} />
@@ -111,13 +111,17 @@ export default function DashboardLayout({
 
       <nav
         ref={navRef}
-        className="fixed bottom-0 left-0 right-0 z-50"
+        className="fixed bottom-0 z-50"
         style={{
+          left: "50%",
+          transform: "translateX(-50%)",
+          width: "min(430px, 100vw)",
           background: "linear-gradient(180deg, rgba(3,7,18,0.0) 0%, rgba(3,7,18,0.95) 20%)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderTop: "1px solid rgba(255,255,255,0.06)",
-          boxShadow: "0 -8px 32px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.04)"
+          boxShadow: "0 -8px 32px rgba(0,0,0,0.6), 0 -1px 0 rgba(255,255,255,0.04)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
         <div

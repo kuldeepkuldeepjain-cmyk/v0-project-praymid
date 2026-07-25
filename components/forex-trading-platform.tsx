@@ -292,6 +292,7 @@ export function ForexTradingPlatform({
   // candleCache: key = "symbol|tf" => Candle[]
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
+  const [mobileTab, setMobileTab] = useState<"market" | "chart" | "order">("chart")
   const pairsRef = useRef<ForexPair[]>([])
   const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -673,7 +674,7 @@ export function ForexTradingPlatform({
   })
 
   return (
-    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", minHeight: 600, fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", minHeight: 540, fontFamily: "'Inter', sans-serif" }}>
 
       {/* ══════════════════════════════════════════════════════════════════════
            TOP NAVIGATION BAR
@@ -732,7 +733,7 @@ export function ForexTradingPlatform({
       {/* ══════════════════════════════════════════════════════════════════════
            ACCOUNT SUMMARY STRIP
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-3 h-8 gap-0" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="flex items-center shrink-0 px-3 h-8 gap-0 overflow-x-auto" style={{ background: "#060a12", borderBottom: "1px solid #1a2640", WebkitOverflowScrolling: "touch" as any }}>
         {[
           { label: "BALANCE", value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "#10b981" },
           { label: "EQUITY", value: `$${(walletBalance + totalPnl).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: totalPnl >= 0 ? "#10b981" : "#ef4444" },
@@ -761,12 +762,29 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
+           MOBILE TAB SWITCHER (hidden on md+)
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+        {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map((tab) => (
+          <button key={tab.id} onClick={() => setMobileTab(tab.id as "market" | "chart" | "order")}
+            className="flex-1 py-2 text-[10px] font-black tracking-wider uppercase transition-all"
+            style={{
+              color: mobileTab === tab.id ? "#22d3ee" : "#3d5a80",
+              borderBottom: mobileTab === tab.id ? "2px solid #22d3ee" : "2px solid transparent",
+              background: mobileTab === tab.id ? "rgba(34,211,238,0.04)" : "transparent",
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
            MAIN 3-COLUMN TRADING GRID
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT COLUMN: Market Watch ──────────────────────────────────────── */}
-        <div className="flex flex-col shrink-0" style={{ width: 264, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+        <div className={`flex flex-col shrink-0 ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`} style={{ width: "min(264px, 100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* ── Sidebar header ── */}
           <div className="shrink-0 px-3 pt-3 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -861,7 +879,7 @@ export function ForexTradingPlatform({
                         }
                         return (
                           <button key={p.symbol}
-                            onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
+                            onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe); setMobileTab("chart") }}
                             className="w-full mw-row"
                             style={{
                               background: isSelected ? `linear-gradient(90deg, ${pCc.bg}, rgba(0,0,0,0))` : "transparent",
@@ -943,7 +961,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── CENTER COLUMN: Chart area ──────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header bar */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-4 px-3 py-2" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -1020,7 +1038,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── RIGHT COLUMN: Order Ticket ────────────────────────────────────── */}
-        <div className="flex flex-col shrink-0 terminal-scroll overflow-y-auto" style={{ width: 220, borderLeft: "1px solid #1e2d45" }}>
+        <div className={`flex flex-col shrink-0 terminal-scroll overflow-y-auto ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`} style={{ width: "min(220px, 100%)", borderLeft: "1px solid #1e2d45" }}>
 
           {/* Panel header */}
           <div className="terminal-panel-header shrink-0">
