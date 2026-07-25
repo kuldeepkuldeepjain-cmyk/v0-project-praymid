@@ -144,12 +144,16 @@ export function TopUpRequestsPanel() {
     try {
       const res = await adminFetch("/api/admin/topup-requests")
       const data = await res.json()
+      console.log("[v0] Topup requests response:", data)
       if (data.success) {
         const mappedRequests = (data.requests || []).map((r: any) => ({ ...r, amount: Number(r.amount) || 0 }))
+        console.log("[v0] Mapped requests:", mappedRequests.length, "requests")
         setRequests(mappedRequests)
+      } else {
+        console.log("[v0] Failed to fetch topup requests:", data)
       }
     } catch (err) {
-      // silent fail
+      console.error("[v0] Error fetching topup requests:", err)
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
