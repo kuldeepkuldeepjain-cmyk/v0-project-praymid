@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import {
   LayoutDashboard,
   Users,
-  Coins,
+
   BarChart3,
   Database,
   MessageSquare,
@@ -18,10 +18,10 @@ import {
   Shield,
   Bell,
   Search,
-  UserPlus,
+
   RefreshCw,
   LogOut,
-  Settings,
+
   Loader2,
   TrendingUp,
   Crown,
@@ -38,13 +38,12 @@ import { ParticipantDatabaseView } from "@/components/admin/participant-database
 import { OverviewAnalytics } from "@/components/admin/overview-analytics"
 import { ComprehensiveDatabaseView } from "@/components/admin/comprehensive-database-view"
 import { SendNotificationPanel } from "@/components/admin/send-notification-panel"
-import { P2PContributionPanel } from "@/components/admin/p2p-contribution-panel"
-import { P2PPayoutQueuePanel } from "@/components/admin/p2p-payout-queue-panel"
+
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
 import { UserLedgerView } from "@/components/admin/user-ledger-view"
 import { AllParticipantsLedger } from "@/components/admin/all-participants-ledger"
 import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-panel"
-import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
+
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
@@ -117,8 +116,6 @@ export default function AdminDashboard() {
   const navItems: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, section: "MAIN MENU" },
     { id: "participants", label: "Participants", icon: Users, section: "MAIN MENU" },
-    { id: "p2p-contributions", label: "P2P Contributions", icon: Coins, section: "MAIN MENU" },
-    { id: "p2p-payout-queue", label: "P2P Payout Queue", icon: UserPlus, section: "MAIN MENU" },
     { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
     { id: "all-payouts", label: "All Payout Records", icon: Wallet, section: "MAIN MENU" },
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
@@ -129,7 +126,6 @@ export default function AdminDashboard() {
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
     { id: "two-factor-auth", label: "2FA Setup", icon: Shield, section: "SYSTEM" },
     { id: "send-notifications", label: "Send Notifications", icon: Bell, section: "SYSTEM" },
-    { id: "p2p-settings", label: "P2P Mode Toggle", icon: Settings, section: "SYSTEM" },
   ]
 
   const handleLogout = () => {
@@ -147,10 +143,6 @@ export default function AdminDashboard() {
         return <OverviewAnalytics />
       case "participants":
         return <ParticipantDatabaseView />
-      case "p2p-contributions":
-        return <P2PContributionPanel />
-      case "p2p-payout-queue":
-        return <P2PPayoutQueuePanel />
       case "database":
         return <ComprehensiveDatabaseView />
       case "topup-requests":
@@ -171,8 +163,6 @@ export default function AdminDashboard() {
         return <SendNotificationPanel />
       case "otp-approvals":
         return <OtpApprovalsPanel />
-      case "p2p-settings":
-        return <P2PModeTogglePanel />
       default:
         return <OverviewAnalytics />
     }

@@ -3,7 +3,7 @@
 import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Home, PlusCircle, User, TrendingUp, Trophy } from "lucide-react"
+import { Home, User, TrendingUp, Trophy } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 
 export default function DashboardLayout({
@@ -19,7 +19,6 @@ export default function DashboardLayout({
     { href: "/participant/dashboard/activity", icon: Trophy, label: "Lead", color: "#F59E0B", gradient: "from-amber-400 to-yellow-500", glow: "shadow-amber-500/40" },
     { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Pred", color: "#10B981", gradient: "from-emerald-400 to-teal-500", glow: "shadow-emerald-500/40" },
     { href: "/participant/dashboard", icon: Home, label: "Home", color: "#7c3aed", gradient: "from-purple-500 to-indigo-600", glow: "shadow-purple-500/40" },
-    { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Cont", color: "#E85D3B", gradient: "from-orange-400 to-red-500", glow: "shadow-orange-500/40" },
     { href: "/participant/dashboard/profile", icon: User, label: "Prof", color: "#22d3ee", gradient: "from-cyan-400 to-blue-500", glow: "shadow-cyan-500/40" },
   ]
 

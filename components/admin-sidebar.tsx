@@ -16,7 +16,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Bell,
-  ImageIcon,
   AlertTriangle,
   Activity,
   MessageSquare,
@@ -41,7 +40,6 @@ type AdminSidebarProps = {
 const mainMenuItems = [
   { id: "overview", label: "Overview", icon: LayoutDashboard, badge: null },
   { id: "participants", label: "Participants", icon: Users, badge: null },
-  { id: "payments", label: "Contributions", icon: ImageIcon, badge: null, highlight: true },
   { id: "analytics", label: "Advanced Analytics", icon: TrendingUp, badge: null },
   { id: "payout-tracker", label: "Payout Tracker", icon: TrendingUp, badge: null },
 ]

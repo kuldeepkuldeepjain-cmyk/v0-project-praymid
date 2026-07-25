@@ -1846,9 +1846,8 @@ export default function DashboardHome() {
             </div>
 
             {/* ── QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-4 gap-2.5">
+            <div className="px-4 pt-4 grid grid-cols-3 gap-2.5">
               {[
-                { href: "/participant/dashboard/contribute", icon: Send, label: "Contribute", color: "#f97316", glow: "rgba(249,115,22,0.3)" },
                 { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
                 { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
                 { href: "/participant/dashboard/activity", icon: History, label: "History", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
@@ -2026,16 +2025,6 @@ export default function DashboardHome() {
           >
             <Sparkles className={`h-5 w-5 mb-0.5 ${activeTab === "wheel" ? "scale-110" : ""}`} />
             <span className="text-[10px] font-medium">Luck Wheel</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("activity")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "activity" ? "text-amber-600" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Send className={`h-5 w-5 mb-0.5 ${activeTab === "activity" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Contribute</span>
           </button>
 
           <button
