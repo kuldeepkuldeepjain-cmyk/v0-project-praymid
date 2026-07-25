@@ -368,7 +368,7 @@ export default function PayoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-white relative overflow-hidden">
       <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
@@ -403,7 +403,7 @@ export default function PayoutPage() {
         </div>
       </header>
 
-      <main className="px-4 py-6 space-y-5 relative z-10 pb-24">
+      <main className="px-4 lg:px-8 py-6 lg:py-8 space-y-5 relative z-10 pb-24 max-w-3xl lg:mx-auto">
         {/* Queue Position */}
         <div 
           className="rounded-xl p-3 backdrop-blur-md flex items-center justify-between"

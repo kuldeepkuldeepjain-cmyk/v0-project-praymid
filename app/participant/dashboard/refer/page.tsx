@@ -184,7 +184,7 @@ export default function ReferPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-orange-50">
+    <div className="min-h-screen min-h-dvh bg-gradient-to-b from-purple-50 via-white to-orange-50">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm">
         <div className="px-4 py-4 flex items-center gap-4">
@@ -197,7 +197,7 @@ export default function ReferPage() {
         </div>
       </header>
 
-      <main className="px-4 py-6 space-y-6 max-w-2xl mx-auto">
+      <main className="px-4 lg:px-8 py-6 lg:py-8 space-y-6 max-w-3xl mx-auto">
         {/* Hero Card */}
         <Card 
           className="border-0 shadow-2xl relative overflow-hidden"

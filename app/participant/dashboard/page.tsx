@@ -1666,7 +1666,7 @@ export default function DashboardHome() {
     : new Date(Date.now() + 48 * 60 * 60 * 1000)
 
   return (
-    <div className="pb-24 page-fade-enter w-full overflow-x-hidden">
+    <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {/* Frozen Account Modal */}
       <FrozenAccountModal isOpen={showFrozenModal} onClose={() => setShowFrozenModal(false)} />
 
@@ -1739,11 +1739,11 @@ export default function DashboardHome() {
         </div>
       </header>
 
-      <main className="pb-20" style={{ background: "transparent" }}>
+      <main className="pb-24 md:pb-6" style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            {/* ── PORTFOLIO HERO ───────���───────────────────────── */}
-            <div className="relative overflow-hidden px-4 pt-6 pb-7 hero-card-deep">
+            {/* ── PORTFOLIO HERO ──────────────────────────────────── */}
+            <div className="relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
               <div className="absolute inset-0 depth-grid opacity-50 pointer-events-none" />
               {/* Scan line */}
@@ -1751,53 +1751,90 @@ export default function DashboardHome() {
               {/* Deep glow orbs */}
               <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
               <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)", filter: "blur(36px)" }} />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)", filter: "blur(30px)" }} />
 
-              {/* Balance display */}
-              <div className="relative text-center mb-5">
-                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
-                <div className="relative inline-block">
-                  {/* Balance glow */}
-                  <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
-                  <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
-                    <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+              {/* ── Mobile hero layout */}
+              <div className="lg:hidden px-4 pt-6 pb-7">
+                {/* Balance display */}
+                <div className="relative text-center mb-5">
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
+                  <div className="relative inline-block">
+                    <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                      <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                      <span className="text-emerald-400 text-[10px] font-bold tracking-wide">ACTIVE ACCOUNT</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                    <TrendingUp className="h-3 w-3 text-emerald-400" />
-                    <span className="text-emerald-400 text-[10px] font-bold tracking-wide">ACTIVE ACCOUNT</span>
-                  </div>
+                <div className="grid grid-cols-3 gap-2 relative mb-4">
+                  {[
+                    { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.7)" },
+                    { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.7)" },
+                    { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.7)" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="stat-chip-dark rounded-xl p-3 text-center">
+                      <p className="text-slate-500 text-[9px] uppercase tracking-widest mb-1">{label}</p>
+                      <p className="text-sm font-black" style={{ color, textShadow: `0 0 12px ${color}` }}>{value}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              {/* 3 deep stat chips */}
-              <div className="grid grid-cols-3 gap-2 relative mb-4">
-                {[
-                  { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.7)" },
-                  { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.7)" },
-                  { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.7)" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="stat-chip-dark rounded-xl p-3 text-center">
-                    <p className="text-slate-500 text-[9px] uppercase tracking-widest mb-1">{label}</p>
-                    <p className="text-sm font-black" style={{ color, textShadow: `0 0 12px ${color}` }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA buttons */}
-              <div className="flex gap-2.5 relative">
-                <button
-                  onClick={() => setShowTopUpModal(true)}
-                  className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95"
-                >
-                  <Plus className="h-3.5 w-3.5" /> ADD FUNDS
-                </button>
-                <Link href="/participant/dashboard/payout" className="flex-1">
-                  <button className="btn-deep-emerald w-full flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
-                    <ArrowUpRight className="h-3.5 w-3.5" /> PAYOUT
+                <div className="flex gap-2.5 relative">
+                  <button onClick={() => setShowTopUpModal(true)} className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                    <Plus className="h-3.5 w-3.5" /> ADD FUNDS
                   </button>
-                </Link>
+                  <Link href="/participant/dashboard/payout" className="flex-1">
+                    <button className="btn-deep-emerald w-full flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                      <ArrowUpRight className="h-3.5 w-3.5" /> PAYOUT
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* ── Desktop hero layout (2-column) */}
+              <div className="hidden lg:flex items-center gap-8 px-8 py-8">
+                {/* Left: balance */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">Total Portfolio Balance</p>
+                  <div className="relative inline-block mb-3">
+                    <div className="absolute inset-0 blur-2xl opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[56px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                      <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                      <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 text-xs font-bold tracking-wide">ACTIVE ACCOUNT</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowTopUpModal(true)} className="btn-deep-purple flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
+                      <Plus className="h-4 w-4" /> ADD FUNDS
+                    </button>
+                    <Link href="/participant/dashboard/payout">
+                      <button className="btn-deep-emerald flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
+                        <ArrowUpRight className="h-4 w-4" /> PAYOUT
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+                {/* Right: stat chips */}
+                <div className="flex-shrink-0 grid grid-cols-3 gap-3" style={{ width: 360 }}>
+                  {[
+                    { label: "Referral Earnings", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.85)" },
+                    { label: "Total Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.85)" },
+                    { label: "Total Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.85)" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="stat-chip-dark rounded-2xl p-4 text-center">
+                      <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-2">{label}</p>
+                      <p className="text-2xl font-black" style={{ color, textShadow: `0 0 14px ${color}` }}>{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -1816,10 +1853,12 @@ export default function DashboardHome() {
             </div>
 
             {/* ── QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-2 gap-2.5">
+            <div className="px-4 pt-4 grid grid-cols-2 md:grid-cols-4 gap-2.5">
               {[
                 { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
                 { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
+                { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payout", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
+                { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", color: "#10B981", glow: "rgba(16,185,129,0.3)" },
               ].map(({ href, icon: Icon, label, color, glow }) => (
                 <Link key={href} href={href}>
                   <div
@@ -1839,7 +1878,7 @@ export default function DashboardHome() {
             </div>
 
             {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
-            <div className="px-0 pt-4" style={{ height: "calc(100svh - 80px)", minHeight: 540, maxHeight: 720, position: "relative" }}>
+            <div className="px-0 pt-4" style={{ height: "calc(100svh - 80px)", minHeight: 540, maxHeight: 900, position: "relative" }}>
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
@@ -1864,7 +1903,7 @@ export default function DashboardHome() {
             </div>
 
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
-            <div className="px-4 pt-3 grid grid-cols-2 gap-2.5">
+            <div className="px-4 pt-3 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {/* Lucky Spin */}
               <button
                 onClick={() => setActiveTab("wheel")}
@@ -1956,8 +1995,8 @@ export default function DashboardHome() {
       
       </main>
 
-      {/* Footer Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
+      {/* Footer Navigation — hidden (replaced by layout.tsx bottom nav) */}
+      <footer className="hidden">
         <nav className="flex items-center justify-around h-16 max-w-2xl mx-auto px-1">
           <button
             onClick={() => setActiveTab("dashboard")}

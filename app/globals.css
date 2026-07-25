@@ -185,12 +185,21 @@ button, a, [role="button"] {
   scroll-behavior: smooth;
 }
 
-/* Participant dashboard centering on large screens */
+/* Participant dashboard — mobile-first, fills full viewport on all screens */
 .participant-shell {
   width: 100%;
-  max-width: 430px;
+  max-width: 100%;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* Dashboard content max-width on very large screens */
+@media (min-width: 1536px) {
+  .dashboard-content-max {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 /* Safe-area bottom padding for bottom navbars */

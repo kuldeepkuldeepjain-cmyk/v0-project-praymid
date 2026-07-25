@@ -208,7 +208,7 @@ export default function ProfilePage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50/60 to-blue-50/60 relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-slate-50 via-purple-50/60 to-blue-50/60 relative overflow-hidden">
       {/* CSS Animations */}
       <style jsx>{`
         @keyframes fade-in {
@@ -273,7 +273,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="px-2 sm:px-3 md:px-4 py-4 sm:py-5 md:py-6 space-y-3 sm:space-y-4 md:space-y-6 relative z-10">
+      <main className="px-2 sm:px-3 md:px-4 lg:px-8 py-4 sm:py-5 md:py-6 lg:py-8 space-y-3 sm:space-y-4 md:space-y-6 relative z-10 max-w-4xl lg:mx-auto">
         {/* Profile Header - Mobile Optimized */}
         <div className="text-center relative animate-fade-in">
           {/* Avatar with glow and ring animation - Mobile Responsive */}

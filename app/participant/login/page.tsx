@@ -192,7 +192,7 @@ export default function ParticipantLoginPage() {
 
   return (
     <>
-    <div className="min-h-screen relative overflow-hidden flex items-center justify-center p-4">
+    <div className="min-h-screen min-h-dvh relative overflow-hidden flex items-center justify-center p-4">
       {/* Animated Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 -z-10" />
 
