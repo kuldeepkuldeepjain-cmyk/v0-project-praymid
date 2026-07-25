@@ -42,7 +42,6 @@ import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { MessageCircle } from "lucide-react"
 
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
-import { StakingBanner } from "@/components/staking-banner"
 import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
@@ -1888,18 +1887,7 @@ export default function DashboardHome() {
               />
             </div>
 
-            {/* ── STAKING SECTION ──────────────────────────────── */}
-            <div className="px-4 pt-3">
-              <StakingBanner
-                currentBalance={walletBalance}
-                participantEmail={participantData?.email || ""}
-                onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => ({
-                    ...prev,
-                    account_balance: newBalance,
-                  }))
-                }}
-              />
+
             </div>
 
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
