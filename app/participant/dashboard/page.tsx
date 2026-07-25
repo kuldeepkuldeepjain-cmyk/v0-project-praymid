@@ -1,50 +1,28 @@
 "use client"
-import { useEffect, useState, useCallback } from "react"
-import { useRef } from "react"
-import { PageLoader } from "@/components/ui/page-loader"
 
 import type React from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
-  TrendingUp,
-  ChevronRight,
-  ArrowUpRight,
-  Send,
-  Wallet,
-  Gift,
-  AlertTriangle,
-  Clock,
-  Mail,
-  Bell,
-  X,
-  History,
-  Settings,
-  CreditCard,
-  HelpCircle,
-  LogOut,
-  Smartphone,
-  Sparkles,
-  User,
-  AlertCircle,
-  Home,
-  Plus,
+  TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
+  AlertTriangle, Clock, Mail, Bell, X, History, Settings,
+  CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
+  AlertCircle, Home, Plus, MessageCircle,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
-
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
-import { MessageCircle } from "lucide-react"
-
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
-import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
+import { NoticeBoard } from "@/components/notice-board"
 
 
 
