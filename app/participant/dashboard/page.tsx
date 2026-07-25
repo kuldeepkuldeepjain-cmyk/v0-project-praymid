@@ -31,7 +31,6 @@ import {
   User,
   AlertCircle,
   Home,
-  Trophy,
   Plus,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -41,34 +40,14 @@ import type { UserRank } from "@/lib/types"
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { MessageCircle } from "lucide-react"
-import { LeaderboardView } from "@/components/leaderboard-view"
+
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { StakingBanner } from "@/components/staking-banner"
 import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
-interface LeaderboardEntry {
-  position: number
-  username: string
-  participantNumber: number
-  rank: UserRank
-  participation_count: number
-  contributedAmount: number
-}
 
-const SAMPLE_USERNAMES = [
-  "amit.k",
-  "rohit92",
-  "ankit.patel",
-  "deepak.s",
-  "john.miller",
-  "neha",
-  "ghostx",
-  "sanjay.mehta",
-  "ravi23",
-  "manish.j",
-]
 
 function AnimatedNumber({
   value,
@@ -1470,7 +1449,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1492,7 +1471,7 @@ export default function DashboardHome() {
     details_completed?: boolean
     [key: string]: any
   } | null>(null)
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+
   const [showFrozenModal, setShowFrozenModal] = useState(false)
   const [hasContributed, setHasContributed] = useState(false)
   const [participantId, setParticipantId] = useState<string>("")
@@ -1637,15 +1616,6 @@ export default function DashboardHome() {
       }
     }
 
-    const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
-      position: index + 1,
-      username,
-      participantNumber: Math.floor(Math.random() * 9000) + 1000,
-      rank: (index < 2 ? "Platinum" : index < 5 ? "Gold" : "Silver") as UserRank,
-      participation_count: Math.floor(Math.random() * 50) + (10 - index) * 5,
-      contributedAmount: 100,
-    }))
-    setLeaderboard(mockLeaderboard)
 
     // Set up periodic refresh to sync balance updates
     const refreshInterval = setInterval(() => {
@@ -1846,11 +1816,10 @@ export default function DashboardHome() {
             </div>
 
             {/* ── QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-3 gap-2.5">
+            <div className="px-4 pt-4 grid grid-cols-2 gap-2.5">
               {[
                 { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
                 { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
-                { href: "/participant/dashboard/activity", icon: History, label: "History", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
               ].map(({ href, icon: Icon, label, color, glow }) => (
                 <Link key={href} href={href}>
                   <div
@@ -1980,24 +1949,7 @@ export default function DashboardHome() {
         </div>
       )}
 
-      {/* Leaderboard Tab Content */}
-      {activeTab === "leaderboard" && (
-        <div className="space-y-6 pb-20 px-4 pt-4">
-          <div className="text-center mb-6">
-            <div className="relative inline-block mb-3">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 blur-2xl opacity-30" />
-              <div className="relative w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-xl">
-                <Trophy className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-1">
-              Global <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Leaderboard</span>
-            </h2>
-            <p className="text-sm text-slate-400">Top earners updated daily</p>
-          </div>
-          <LeaderboardView mode="compact" initialTab="contributors" />
-        </div>
-      )}
+
       
       {/* Notice Board - Display important announcements */}
       <NoticeBoard />
@@ -2027,15 +1979,7 @@ export default function DashboardHome() {
             <span className="text-[10px] font-medium">Luck Wheel</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("leaderboard")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Trophy className={`h-5 w-5 mb-0.5 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Leaderboard</span>
-          </button>
+
 
 
         </nav>
