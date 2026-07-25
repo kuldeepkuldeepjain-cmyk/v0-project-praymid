@@ -1,5 +1,5 @@
 "use client"
-
+// Dashboard — staking section removed
 import type React from "react"
 import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
@@ -23,8 +23,6 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 import { NoticeBoard } from "@/components/notice-board"
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { StakingBanner } from "@/components/staking-banner"
 
 
 
