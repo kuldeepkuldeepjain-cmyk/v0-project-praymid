@@ -1,4 +1,4 @@
-// Stub: staking feature removed. Not used anywhere in the app.
+// Stub: staking feature removed. Not rendered anywhere.
 export function StakingModule() {
   return null
 }
