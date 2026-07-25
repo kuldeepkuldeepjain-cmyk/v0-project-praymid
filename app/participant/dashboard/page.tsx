@@ -1965,19 +1965,16 @@ export default function DashboardHome() {
           />
         )}
 
-      {/* Activity Tab Content */}
-      {activeTab === "activity" && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-800">Activity History</h2>
-          {/* Activity content would go here */}
-        </div>
-      )}
+        {/* Activity Tab Content */}
+        {activeTab === "activity" && (
+          <div className="space-y-4 px-4 pt-4">
+            <h2 className="text-2xl font-bold text-slate-800">Activity History</h2>
+          </div>
+        )}
 
+        {/* Notice Board - Display important announcements */}
+        <NoticeBoard />
 
-      
-      {/* Notice Board - Display important announcements */}
-      <NoticeBoard />
-      
       </main>
 
       {/* Footer Navigation — hidden (replaced by layout.tsx bottom nav) */}
