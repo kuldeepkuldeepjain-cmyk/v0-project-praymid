@@ -1887,9 +1887,6 @@ export default function DashboardHome() {
               />
             </div>
 
-
-            </div>
-
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
             <div className="px-4 pt-3 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {/* Lucky Spin */}
