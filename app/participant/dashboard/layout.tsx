@@ -1,5 +1,5 @@
 "use client"
-
+// layout — staking section removed
 import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"

@@ -24,6 +24,8 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 import { NoticeBoard } from "@/components/notice-board"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { StakingBanner } from "@/components/staking-banner"
 
 
 
