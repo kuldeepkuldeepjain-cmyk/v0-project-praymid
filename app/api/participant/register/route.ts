@@ -51,8 +51,8 @@ export async function POST(request: Request) {
         `INSERT INTO participants
           (full_name, username, email, password_hash, plain_password, wallet_address,
            referral_code, referred_by, account_balance, status, is_active,
-           whatsapp_otp, otp_verified, mobile_number)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10)
+           whatsapp_otp, otp_verified, mobile_number, is_deleted)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10,false)
          RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
         [
           fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,

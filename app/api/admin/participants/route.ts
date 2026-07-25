@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
               serial_number, mobile_number, country_code, country, state, pin_code, full_address,
               bep20_address, total_earnings, bonus_balance, referral_count, referral_earnings,
               is_deleted, deleted_at, last_login, total_referrals, activation_date, activation_deadline
-       FROM participants WHERE is_deleted = FALSE ORDER BY created_at DESC`
+       FROM participants WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC`
     )
 
     const participants = rows.map((p: any) => ({
