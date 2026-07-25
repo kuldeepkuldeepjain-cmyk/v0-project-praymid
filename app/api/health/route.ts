@@ -22,6 +22,11 @@ export async function GET() {
       environment: {
         USE_DB_V2: process.env.USE_DB_V2 || "not set",
         HAS_DATABASE_URL_V2: !!process.env.DATABASE_URL_V2 || !!process.env.NEON_DATABASE_URL_V2 ? "yes" : "no",
+        HAS_NEON_DATABASE_URL: !!process.env.NEON_DATABASE_URL ? "yes" : "no",
+        HAS_DATABASE_URL: !!process.env.DATABASE_URL ? "yes" : "no",
+        HAS_POSTGRES_URL: !!process.env.POSTGRES_URL ? "yes" : "no",
+        HAS_NEON_POSTGRES_URL: !!process.env.NEON_POSTGRES_URL ? "yes" : "no",
+        NEON_DATABASE_URL_PREFIX: process.env.NEON_DATABASE_URL ? process.env.NEON_DATABASE_URL.slice(0, 30) + "..." : "not set",
       },
     })
   } catch (error) {
