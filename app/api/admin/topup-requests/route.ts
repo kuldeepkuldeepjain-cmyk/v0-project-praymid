@@ -9,8 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const rows = await query(
       `SELECT id, participant_email, participant_id, amount, status, created_at,
-              payment_method, transaction_id, admin_notes, bep20_address, screenshot_url,
-              rejection_reason, reviewed_at, reviewed_by_email
+              payment_method, transaction_id, admin_notes, screenshot_url, reviewed_at
        FROM topup_requests ORDER BY created_at DESC`
     )
     return NextResponse.json({ success: true, requests: rows })
@@ -25,16 +24,16 @@ export async function PATCH(req: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const { requestId, bep20_address } = await req.json()
+    const { requestId, adminNotes } = await req.json()
     if (!requestId) {
       return NextResponse.json({ success: false, message: "Missing requestId" }, { status: 400 })
     }
 
     await execute(
-      "UPDATE topup_requests SET bep20_address = $1 WHERE id = $2",
-      [bep20_address?.trim() || null, requestId]
+      "UPDATE topup_requests SET admin_notes = $1 WHERE id = $2",
+      [adminNotes?.trim() || null, requestId]
     )
-    return NextResponse.json({ success: true, message: "BEP20 address updated" })
+    return NextResponse.json({ success: true, message: "Admin notes updated" })
   } catch (error) {
     console.error("[topup-requests] PATCH error:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
@@ -77,8 +76,8 @@ export async function POST(req: NextRequest) {
         [newBalance, topup.participant_id]
       )
       await execute(
-        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), reviewed_by_email = $1, admin_notes = $2 WHERE id = $3",
-        [adminEmail, adminNotes || null, requestId]
+        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
+        [adminNotes || null, requestId]
       )
       await execute(
         "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
@@ -129,8 +128,8 @@ export async function POST(req: NextRequest) {
     }
 
     await execute(
-      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), reviewed_by_email = $1, rejection_reason = $2, admin_notes = $3 WHERE id = $4",
-      [adminEmail, rejectionReason || null, adminNotes || null, requestId]
+      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
+      [adminNotes || null, requestId]
     )
     await execute(
       "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
