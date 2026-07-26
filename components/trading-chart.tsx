@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import {
   createChart,
+  CandlestickSeries,
+  LineSeries,
+  HistogramSeries,
   type IChartApi,
   type ISeriesApi,
   type CandlestickData,
@@ -231,7 +234,7 @@ export function TradingChart({
     chartRef.current = chart
 
     // ── Candlestick series ──
-    const cSer = chart.addCandlestickSeries({
+    const cSer = chart.addSeries(CandlestickSeries, {
       upColor:          "#22d3ee",
       downColor:        "#f87171",
       borderUpColor:    "#22d3ee",
@@ -243,7 +246,7 @@ export function TradingChart({
     candleSerRef.current = cSer
 
     // ── Volume histogram (overlay on candle pane, bottom) ──
-    const vSer = chart.addHistogramSeries({
+    const vSer = chart.addSeries(HistogramSeries, {
       priceFormat:     { type: "volume" },
       priceScaleId:    "vol",
     })
@@ -251,7 +254,7 @@ export function TradingChart({
     volSerRef.current = vSer
 
     // ── EMA overlays ──
-    const mkLine = (color: string, width = 1) => chart.addLineSeries({
+    const mkLine = (color: string, width = 1) => chart.addSeries(LineSeries, {
       color, lineWidth: width as 1 | 2 | 3 | 4,
       priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
@@ -266,7 +269,7 @@ export function TradingChart({
     bbLowerRef.current = mkLine("rgba(129,140,248,0.7)", 1)
 
     // ── RSI pane ──
-    const rsiSer = chart.addLineSeries({
+    const rsiSer = chart.addSeries(LineSeries, {
       color: "#34d399", lineWidth: 1,
       priceScaleId: "rsi",
       priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false,
@@ -278,23 +281,23 @@ export function TradingChart({
     })
     rsiSerRef.current = rsiSer
 
-    const rsiOb = chart.addLineSeries({ color: "rgba(248,113,113,0.3)", lineWidth: 1, priceScaleId: "rsi", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-    const rsiOs = chart.addLineSeries({ color: "rgba(52,211,153,0.3)",  lineWidth: 1, priceScaleId: "rsi", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+    const rsiOb = chart.addSeries(LineSeries, { color: "rgba(248,113,113,0.3)", lineWidth: 1, priceScaleId: "rsi", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+    const rsiOs = chart.addSeries(LineSeries, { color: "rgba(52,211,153,0.3)",  lineWidth: 1, priceScaleId: "rsi", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
     rsiOb70Ref.current = rsiOb
     rsiOs30Ref.current = rsiOs
 
     // ── MACD pane ──
-    const macdSer = chart.addLineSeries({
+    const macdSer = chart.addSeries(LineSeries, {
       color: "#fb923c", lineWidth: 1,
       priceScaleId: "macd",
       priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false,
     })
-    const macdSigSer = chart.addLineSeries({
+    const macdSigSer = chart.addSeries(LineSeries, {
       color: "#818cf8", lineWidth: 1,
       priceScaleId: "macd",
       priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
     })
-    const macdHistSer = chart.addHistogramSeries({
+    const macdHistSer = chart.addSeries(HistogramSeries, {
       priceScaleId: "macd",
       priceLineVisible: false, lastValueVisible: false,
     })
