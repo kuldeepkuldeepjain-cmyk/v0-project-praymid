@@ -1291,57 +1291,179 @@ export function ForexTradingPlatform({
         {/* Blotter content */}
         <div className="flex-1 overflow-y-auto terminal-scroll">
 
-          {/* ── Open Positions ── */}
+          {/* ── Open Positions (BiDana-style cards) ── */}
           {activePanel === "positions" && (
             openTrades.length === 0 ? (
-              <div className="flex items-center justify-center h-full gap-2 text-slate-700">
-                <BarChart2 className="h-5 w-5 opacity-30" />
-                <span className="text-[11px] tracking-wider">No open positions</span>
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
+                <BarChart2 className="h-8 w-8 opacity-20" />
+                <span className="text-[11px] tracking-wider font-bold uppercase">No open positions</span>
               </div>
             ) : (
-              <table className="w-full text-[10px] price-mono">
-                <thead>
-                  <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-                    {["Symbol","Dir","Lots","Open","Current","P&L","Pips","ROM","SL","TP","Close"].map(h => (
-                      <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {openTrades.map((trade) => {
-                    const pc = trade.pnl >= 0 ? "#10b981" : "#ef4444"
-                    return (
-                      <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
-                        <td className="px-2 py-1.5 font-black text-white">{trade.pair}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="px-1.5 py-0.5 font-black text-[8px] uppercase" style={{
-                            background: trade.direction === "BUY" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                            color: trade.direction === "BUY" ? "#10b981" : "#ef4444",
-                            border: `1px solid ${trade.direction === "BUY" ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`,
-                            borderRadius: 3 }}>
-                            {trade.direction}
-                          </span>
-                        </td>
-                        <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
-                        <td className="px-2 py-1.5 text-slate-400">{fmt(trade.openPrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5" style={{ color: pc }}>{fmt(trade.currentPrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5 font-black" style={{ color: pc }}>{trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}</td>
-                        <td className="px-2 py-1.5" style={{ color: pc }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)}</td>
-                        <td className="px-2 py-1.5 font-black" style={{ color: pc }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(1)}%</td>
-                        <td className="px-2 py-1.5 text-red-500">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</td>
-                        <td className="px-2 py-1.5 text-emerald-600">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</td>
-                        <td className="px-2 py-1.5">
-                          <button onClick={() => closeTrade(trade.id)}
-                            className="px-2 py-0.5 font-black text-[9px] transition-all active:scale-95"
-                            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 3 }}>
-                            Close
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+              <div className="p-2 flex flex-col gap-2 overflow-y-auto">
+                {openTrades.map((trade) => {
+                  const isBuy   = trade.direction === "BUY"
+                  const pnlPos  = trade.pnl >= 0
+                  const pnlClr  = pnlPos  ? "#10b981" : "#ef4444"
+                  const dirBg   = isBuy   ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"
+                  const dirClr  = isBuy   ? "#10b981"               : "#ef4444"
+                  const notional = parseFloat((trade.lotSize * contractSize(trade.pair) * trade.currentPrice).toFixed(2))
+                  // Liquidation price estimate (simplified: margin / notional away from entry)
+                  const liqOffset = (trade.margin / (trade.lotSize * contractSize(trade.pair))) * (isBuy ? -1 : 1)
+                  const liqPrice  = parseFloat((trade.openPrice + liqOffset).toFixed(pip(trade.pair) < 0.001 ? 5 : 2))
+                  // Risk % = margin / total balance *100 — use returnOnMargin as proxy
+                  const riskPct = Math.abs(trade.returnOnMargin).toFixed(2)
+                  // Pair display name
+                  const base  = trade.pair.slice(0, 3)
+                  const quote = trade.pair.slice(3)
+                  const isCrypto = ["BTC","ETH","SOL","BNB","XRP"].includes(base)
+                  const isGold   = base === "XAU"
+
+                  return (
+                    <div
+                      key={trade.id}
+                      className="rounded-xl price-mono text-[11px]"
+                      style={{ background: "#0d1625", border: "1px solid #1a2a42" }}
+                    >
+                      {/* ── Card header ── */}
+                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
+                        <div className="flex items-center gap-2">
+                          {/* Instrument icon */}
+                          <div className="flex items-center justify-center w-7 h-7 rounded-full font-black text-[10px]"
+                            style={{ background: isGold ? "#b45309" : isCrypto ? "#1d4ed8" : "#0f4c81", color: "#fff" }}>
+                            {isGold ? "Au" : isCrypto ? base.slice(0,2) : base.slice(0,2)}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-black text-white text-[13px] tracking-wide">{trade.pair}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
+                                style={{ background: dirBg, color: dirClr }}>
+                                {trade.direction}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-slate-600 tracking-wide">
+                              {isCrypto ? "Crypto" : isGold ? "Gold" : `${base} / ${quote}`} &nbsp;&bull;&nbsp; {trade.lotSize} Lot
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[9px] text-slate-600">{trade.openTime}</span>
+                          <div className="flex items-center justify-end gap-1 mt-0.5">
+                            <span className="text-[9px] font-bold" style={{ color: "#f59e0b" }}>
+                              1:{trade.leverage}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── PnL + ROE row ── */}
+                      <div className="flex items-end justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">PnL (USD)</p>
+                          <p className="text-[22px] font-black leading-none tracking-tight" style={{ color: pnlClr }}>
+                            {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
+                          </p>
+                          <p className="text-[9px] mt-0.5" style={{ color: pnlClr }}>
+                            {trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-slate-600 mb-0.5">ROE</p>
+                          <p className="text-[18px] font-black leading-none" style={{ color: pnlClr }}>
+                            {trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* ── Amount / Margin / Risk ── */}
+                      <div className="grid grid-cols-3 px-3 py-2" style={{ borderBottom: "1px solid #1a2a42", gap: "0 8px" }}>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Amount (USD)</p>
+                          <p className="font-bold text-slate-300 text-[11px]">{notional.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Margin (USD)</p>
+                          <p className="font-bold text-slate-300 text-[11px]">{trade.margin.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-slate-600 mb-0.5">Risk</p>
+                          <p className="font-black text-[11px]" style={{ color: "#f87171" }}>{riskPct}%</p>
+                        </div>
+                      </div>
+
+                      {/* ── Price levels ── */}
+                      <div className="grid grid-cols-3 px-3 py-2" style={{ borderBottom: "1px solid #1a2a42", gap: "0 8px" }}>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Entry Price (USD)</p>
+                          <p className="font-bold text-slate-400 text-[11px]">{fmt(trade.openPrice, trade.pair)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Mark Price (USD)</p>
+                          <p className="font-black text-[11px]" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-slate-600 mb-0.5">Liq. Price (USD)</p>
+                          <p className="font-bold text-slate-400 text-[11px]">{fmt(liqPrice, trade.pair)}</p>
+                        </div>
+                      </div>
+
+                      {/* ── SL / TP levels (if set) ── */}
+                      {(trade.sl || trade.tp) && (
+                        <div className="grid grid-cols-2 px-3 py-2" style={{ borderBottom: "1px solid #1a2a42", gap: "0 8px" }}>
+                          <div>
+                            <p className="text-[9px] text-slate-600 mb-0.5">Stop Loss</p>
+                            <p className="font-bold text-[11px] text-red-500">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] text-slate-600 mb-0.5">Take Profit</p>
+                            <p className="font-bold text-[11px] text-emerald-500">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Action buttons ── */}
+                      <div className="flex gap-2 px-3 py-2.5">
+                        {/* Take Profit button — only if TP set, else greyed */}
+                        <button
+                          onClick={() => {
+                            // Manually close at current price as take-profit
+                            if (trade.pnl > 0) closeTrade(trade.id)
+                          }}
+                          className="flex-1 py-2 rounded-lg font-black text-[12px] tracking-wide transition-all active:scale-[0.97]"
+                          style={{
+                            background: trade.pnl > 0 ? "linear-gradient(135deg,#065f46,#059669)" : "rgba(16,185,129,0.1)",
+                            color: trade.pnl > 0 ? "#fff" : "#10b981",
+                            border: `1px solid ${trade.pnl > 0 ? "#059669" : "rgba(16,185,129,0.25)"}`,
+                          }}
+                        >
+                          Take Profit
+                        </button>
+                        {/* Stop Loss */}
+                        <button
+                          onClick={() => {
+                            if (trade.pnl < 0) closeTrade(trade.id)
+                          }}
+                          className="flex-1 py-2 rounded-lg font-black text-[12px] tracking-wide transition-all active:scale-[0.97]"
+                          style={{
+                            background: trade.pnl < 0 ? "linear-gradient(135deg,#7f1d1d,#dc2626)" : "rgba(239,68,68,0.1)",
+                            color: trade.pnl < 0 ? "#fff" : "#ef4444",
+                            border: `1px solid ${trade.pnl < 0 ? "#dc2626" : "rgba(239,68,68,0.25)"}`,
+                          }}
+                        >
+                          Stop Loss
+                        </button>
+                        {/* Close position */}
+                        <button
+                          onClick={() => closeTrade(trade.id)}
+                          className="flex-1 py-2 rounded-lg font-black text-[12px] tracking-wide transition-all active:scale-[0.97] text-slate-300 hover:text-white"
+                          style={{ background: "transparent", border: "1px solid #2a3f5f" }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )
           )}
 
