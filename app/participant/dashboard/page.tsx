@@ -1876,7 +1876,12 @@ export default function DashboardHome() {
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
                 onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => prev ? { ...prev, account_balance: newBalance } : prev)
+                  setParticipantData((prev: any) => {
+                    if (!prev) return prev
+                    const updated = { ...prev, account_balance: newBalance }
+                    try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+                    return updated
+                  })
                 }}
               />
             </div>

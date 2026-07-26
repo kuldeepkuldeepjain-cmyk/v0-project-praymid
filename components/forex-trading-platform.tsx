@@ -289,6 +289,8 @@ export function ForexTradingPlatform({
   const [walletBalance, setWalletBalance] = useState(externalBalance)
   // Track whether balance has been received from parent at least once
   const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
+  // Flash the balance change (+/-) briefly on each update
+  const [balanceDelta, setBalanceDelta] = useState<{ value: number; id: number } | null>(null)
   // candleCache: key = "symbol|tf" => Candle[]
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
@@ -320,6 +322,9 @@ export function ForexTradingPlatform({
       setWalletBalance(json.newBalance)
       setBalanceLoaded(true)
       onBalanceUpdated?.(json.newBalance)
+      // Flash delta badge
+      setBalanceDelta({ value: delta, id: Date.now() })
+      setTimeout(() => setBalanceDelta(null), 2500)
       return json.newBalance
     } catch {
       showMsg("error", "Network error updating balance")
@@ -371,7 +376,7 @@ export function ForexTradingPlatform({
     }
   }, [])
 
-  // ── Fetch real OHLC candles for selected pair + timeframe ───────────�����─────
+  // ── Fetch real OHLC candles for selected pair + timeframe ───────────�������─────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
     const key = `${sym}|${tf}`
     setCandleLoading(true)
@@ -504,17 +509,15 @@ export function ForexTradingPlatform({
             finalPnl, closeReason: reason,
           }
           setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-          // Credit margin + P&L back to wallet on SL/TP hit
+          // Always return margin + PnL (even if PnL is negative, the route clamps to 0)
           const returnAmount = parseFloat((trade.margin + finalPnl).toFixed(2))
-          if (returnAmount !== 0) {
-            adjustWalletBalance(
-              returnAmount,
-              `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: $${finalPnl.toFixed(2)}`
-            )
-          }
+          adjustWalletBalance(
+            returnAmount > 0 ? returnAmount : 0,
+            `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+          )
           showMsg(
             reason === "tp" ? "success" : "error",
-            `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — P&L: $${finalPnl.toFixed(2)}`
+            `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`
           )
           return prev.filter((t) => t.id !== id)
         })
@@ -628,15 +631,16 @@ export function ForexTradingPlatform({
         finalPnl: trade.pnl, closeReason: "manual",
       }
       setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-      // Credit margin + P&L back to wallet
+      // Always credit margin + PnL back. If PnL wiped all margin, credit 0 (route prevents negative balance)
       const returnAmount = parseFloat((trade.margin + trade.pnl).toFixed(2))
-      if (returnAmount !== 0) {
-        adjustWalletBalance(
-          returnAmount,
-          `Trade closed — ${trade.pair} ${trade.direction} | P&L: $${trade.pnl.toFixed(2)} | Margin returned: $${trade.margin.toFixed(2)}`
-        )
-      }
-      showMsg(trade.pnl >= 0 ? "success" : "error", `Closed ${trade.pair} — P&L: $${trade.pnl.toFixed(2)}`)
+      adjustWalletBalance(
+        returnAmount > 0 ? returnAmount : 0,
+        `Trade closed — ${trade.pair} ${trade.direction} | P&L: ${trade.pnl >= 0 ? "+" : ""}$${trade.pnl.toFixed(2)} | Margin returned: $${trade.margin.toFixed(2)}`
+      )
+      showMsg(
+        trade.pnl >= 0 ? "success" : "error",
+        `Closed ${trade.pair} — P&L: ${trade.pnl >= 0 ? "+" : ""}$${trade.pnl.toFixed(2)} | Balance updated`
+      )
       return prev.filter((t) => t.id !== id)
     })
   }
@@ -714,10 +718,24 @@ export function ForexTradingPlatform({
         </div>
 
         {/* Balance chip */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
+        <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
           <Wallet className="h-3 w-3 text-emerald-400" />
           <span className="text-[10px] text-slate-500">Balance</span>
           <span className="price-mono text-[11px] font-black text-emerald-400">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          {/* Delta flash badge */}
+          {balanceDelta && (
+            <span
+              key={balanceDelta.id}
+              className="absolute -top-5 left-1/2 price-mono text-[10px] font-black pointer-events-none animate-bounce"
+              style={{
+                transform: "translateX(-50%)",
+                color: balanceDelta.value >= 0 ? "#10b981" : "#ef4444",
+                textShadow: `0 0 8px ${balanceDelta.value >= 0 ? "rgba(16,185,129,0.8)" : "rgba(239,68,68,0.8)"}`,
+              }}
+            >
+              {balanceDelta.value >= 0 ? "+" : ""}${Math.abs(balanceDelta.value).toFixed(2)}
+            </span>
+          )}
         </div>
 
         {/* Refresh */}
