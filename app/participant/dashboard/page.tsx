@@ -1524,10 +1524,16 @@ export default function DashboardHome() {
   const refreshParticipantData = async (email: string) => {
     try {
       const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
-      if (!res.ok) return
+      if (!res.ok) {
+        console.warn("[v0] Failed to fetch participant data:", res.status, res.statusText)
+        return
+      }
       const json = await res.json()
       const data: any = json.participant
-      if (!data) return
+      if (!data) {
+        console.warn("[v0] No participant data in response")
+        return
+      }
       // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
       const updatedData = {
         ...data,
@@ -1546,37 +1552,46 @@ export default function DashboardHome() {
       }
       setParticipantData(updatedData)
       localStorage.setItem("participantData", JSON.stringify(updatedData))
-    } catch {}
+    } catch (error) {
+      console.error("[v0] Error refreshing participant data:", error)
+    }
   }
 
   useEffect(() => {
     setMounted(true)
 
-    if (!isParticipantAuthenticated()) {
-      router.push("/participant/login")
-      return
-    }
+    try {
+      if (!isParticipantAuthenticated()) {
+        router.push("/participant/login")
+        return
+      }
 
-    const storedData = localStorage.getItem("participantData")
-    if (storedData) {
-      try {
-        const data = JSON.parse(storedData)
-        setParticipantData(data)
-        setParticipantId(data.id || "")
+      const storedData = localStorage.getItem("participantData")
+      if (storedData) {
+        try {
+          const data = JSON.parse(storedData)
+          setParticipantData(data)
+          setParticipantId(data.id || "")
 
-        if (data.account_frozen) {
-          setShowFrozenModal(true)
+          if (data.account_frozen) {
+            setShowFrozenModal(true)
+          }
+
+          if (data.contributed_amount && data.contributed_amount > 0) {
+            setHasContributed(true)
+          }
+
+          // Refresh data from database to get latest balance
+          if (data.email) {
+            refreshParticipantData(data.email)
+          }
+        } catch (parseError) {
+          console.error("[v0] Failed to parse stored participant data:", parseError)
+          localStorage.removeItem("participantData")
         }
-
-        if (data.contributed_amount && data.contributed_amount > 0) {
-          setHasContributed(true)
-        }
-
-        // Refresh data from database to get latest balance
-        if (data.email) {
-          refreshParticipantData(data.email)
-        }
-      } catch {}
+      }
+    } catch (error) {
+      console.error("[v0] Error in dashboard useEffect:", error)
     }
 
     // Add listener for page visibility to refresh balance when user returns to this page
