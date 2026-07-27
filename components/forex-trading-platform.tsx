@@ -404,7 +404,7 @@ export function ForexTradingPlatform({
     }
   }, [])
 
-  // ── Init: build empty pairs then load data ─────────────────────────────────
+  // ── Init: build empty pairs then load data ────────────────────���────────────
   useEffect(() => {
     const initialPairs: ForexPair[] = PAIRS_CONFIG.map((p) => ({
       symbol: p.symbol, base: p.base, quote: p.quote,
@@ -509,15 +509,15 @@ export function ForexTradingPlatform({
             finalPnl, closeReason: reason,
           }
           setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-          // Always return margin + PnL (even if PnL is negative, the route clamps to 0)
-          const returnAmount = parseFloat((trade.margin + finalPnl).toFixed(2))
+          // Only apply the P&L — profit adds to balance, loss deducts
+          const pnl = parseFloat(finalPnl.toFixed(2))
           adjustWalletBalance(
-            returnAmount > 0 ? returnAmount : 0,
-            `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+            pnl,
+            `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
           )
           showMsg(
             reason === "tp" ? "success" : "error",
-            `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`
+            `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — ${pnl >= 0 ? "Profit" : "Loss"}: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
           )
           return prev.filter((t) => t.id !== id)
         })
@@ -548,7 +548,7 @@ export function ForexTradingPlatform({
     } catch {}
   }, [openTrades, closedTrades, participantEmail])
 
-  // ── Execute trade ───────────────────────────────────────────────────────────
+  // ── Execute trade ───────────��───────────────────────────────────────────────
   const executeTrade = async () => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize)
@@ -567,16 +567,11 @@ export function ForexTradingPlatform({
     if (tpNum && direction === "BUY" && tpNum <= price) { showMsg("error", "TP must be above entry for BUY"); return }
     if (tpNum && direction === "SELL" && tpNum >= price) { showMsg("error", "TP must be below entry for SELL"); return }
 
-    // Check and deduct margin from wallet
+    // Check margin against balance (margin is reserved, not deducted on open)
     if (walletBalance < margin) {
       showMsg("error", `Insufficient balance. Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
       return
     }
-    const newBal = await adjustWalletBalance(
-      -margin,
-      `Margin locked — ${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
-    )
-    if (newBal === null) return // API error — abort
 
     const trade: OpenTrade = {
       id: genId(), pair: selectedPair.symbol, direction,
@@ -586,7 +581,7 @@ export function ForexTradingPlatform({
       pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Balance: $${newBal.toFixed(2)}`)
+    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)}`)
     setSl(""); setTp("")
     setActivePanel("positions")
   }
@@ -603,11 +598,6 @@ export function ForexTradingPlatform({
       showMsg("error", `Insufficient balance. Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
       return
     }
-    const newBal = await adjustWalletBalance(
-      -margin,
-      `Margin locked — Quick ${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
-    )
-    if (newBal === null) return
 
     const trade: OpenTrade = {
       id: genId(), pair: selectedPair.symbol, direction: dir,
@@ -617,7 +607,7 @@ export function ForexTradingPlatform({
       pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Balance: $${newBal.toFixed(2)}`)
+    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)}`)
     setActivePanel("positions")
   }
 
@@ -631,15 +621,16 @@ export function ForexTradingPlatform({
         finalPnl: trade.pnl, closeReason: "manual",
       }
       setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-      // Always credit margin + PnL back. If PnL wiped all margin, credit 0 (route prevents negative balance)
-      const returnAmount = parseFloat((trade.margin + trade.pnl).toFixed(2))
+      // Only apply the P&L to balance — profit adds, loss deducts
+      // Balance is never deducted on open, so only the net gain/loss is applied here
+      const pnl = parseFloat(trade.pnl.toFixed(2))
       adjustWalletBalance(
-        returnAmount > 0 ? returnAmount : 0,
-        `Trade closed — ${trade.pair} ${trade.direction} | P&L: ${trade.pnl >= 0 ? "+" : ""}$${trade.pnl.toFixed(2)} | Margin returned: $${trade.margin.toFixed(2)}`
+        pnl,
+        `Trade closed — ${trade.pair} ${trade.direction} | P&L: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
       )
       showMsg(
-        trade.pnl >= 0 ? "success" : "error",
-        `Closed ${trade.pair} — P&L: ${trade.pnl >= 0 ? "+" : ""}$${trade.pnl.toFixed(2)} | Balance updated`
+        pnl >= 0 ? "success" : "error",
+        `Closed ${trade.pair} — ${pnl >= 0 ? "Profit" : "Loss"}: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
       )
       return prev.filter((t) => t.id !== id)
     })

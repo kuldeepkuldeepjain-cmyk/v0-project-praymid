@@ -25,6 +25,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing or invalid fields" }, { status: 400 })
     }
 
+    // delta = 0 is valid (breakeven trade — no balance change needed, skip DB write)
+    if (delta === 0) {
+      const db = getPool()
+      const { rows } = await db!.query("SELECT account_balance FROM participants WHERE email = $1", [email])
+      const bal = parseFloat(rows[0]?.account_balance) || 0
+      return NextResponse.json({ success: true, newBalance: bal })
+    }
+
     // Only allow the authenticated participant to adjust their own balance
     if (auth.email.toLowerCase() !== email.toLowerCase()) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
@@ -74,9 +82,9 @@ export async function POST(req: NextRequest) {
           [
             participantId,
             email,
-            delta < 0 ? "forex_margin_lock" : "forex_pnl_credit",
+            delta < 0 ? "forex_pnl_loss" : "forex_pnl_profit",
             Math.abs(delta),
-            description || (delta < 0 ? "Forex margin locked" : "Forex trade closed"),
+            description || (delta < 0 ? "Forex trade loss" : "Forex trade profit"),
             currentBalance,
             newBalance,
           ]
