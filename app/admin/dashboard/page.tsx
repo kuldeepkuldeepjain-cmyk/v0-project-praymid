@@ -22,7 +22,6 @@ import {
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
-import { StakingAdminPanel } from "@/components/admin/staking-admin-panel"
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 
 interface ApprovedWallet {
@@ -373,17 +372,6 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <ParticipantsAdminPanel />
-          </CardContent>
-        </Card>
-
-        {/* Staking Management Panel */}
-        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-white">Staking Management</CardTitle>
-            <CardDescription>View and manage all staking records, rewards, and claims</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StakingAdminPanel />
           </CardContent>
         </Card>
 

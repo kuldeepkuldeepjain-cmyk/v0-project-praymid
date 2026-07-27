@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import {
   LayoutDashboard,
   Users,
-  Coins,
+
   BarChart3,
   Database,
   MessageSquare,
@@ -18,10 +18,10 @@ import {
   Shield,
   Bell,
   Search,
-  UserPlus,
+
   RefreshCw,
   LogOut,
-  Settings,
+
   Loader2,
   TrendingUp,
   Crown,
@@ -38,13 +38,12 @@ import { ParticipantDatabaseView } from "@/components/admin/participant-database
 import { OverviewAnalytics } from "@/components/admin/overview-analytics"
 import { ComprehensiveDatabaseView } from "@/components/admin/comprehensive-database-view"
 import { SendNotificationPanel } from "@/components/admin/send-notification-panel"
-import { P2PContributionPanel } from "@/components/admin/p2p-contribution-panel"
-import { P2PPayoutQueuePanel } from "@/components/admin/p2p-payout-queue-panel"
+
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
 import { UserLedgerView } from "@/components/admin/user-ledger-view"
 import { AllParticipantsLedger } from "@/components/admin/all-participants-ledger"
 import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-panel"
-import { P2PModeTogglePanel } from "@/components/admin/p2p-mode-toggle-panel"
+
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
@@ -117,8 +116,6 @@ export default function AdminDashboard() {
   const navItems: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, section: "MAIN MENU" },
     { id: "participants", label: "Participants", icon: Users, section: "MAIN MENU" },
-    { id: "p2p-contributions", label: "P2P Contributions", icon: Coins, section: "MAIN MENU" },
-    { id: "p2p-payout-queue", label: "P2P Payout Queue", icon: UserPlus, section: "MAIN MENU" },
     { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
     { id: "all-payouts", label: "All Payout Records", icon: Wallet, section: "MAIN MENU" },
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
@@ -129,7 +126,6 @@ export default function AdminDashboard() {
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
     { id: "two-factor-auth", label: "2FA Setup", icon: Shield, section: "SYSTEM" },
     { id: "send-notifications", label: "Send Notifications", icon: Bell, section: "SYSTEM" },
-    { id: "p2p-settings", label: "P2P Mode Toggle", icon: Settings, section: "SYSTEM" },
   ]
 
   const handleLogout = () => {
@@ -147,10 +143,6 @@ export default function AdminDashboard() {
         return <OverviewAnalytics />
       case "participants":
         return <ParticipantDatabaseView />
-      case "p2p-contributions":
-        return <P2PContributionPanel />
-      case "p2p-payout-queue":
-        return <P2PPayoutQueuePanel />
       case "database":
         return <ComprehensiveDatabaseView />
       case "topup-requests":
@@ -171,8 +163,6 @@ export default function AdminDashboard() {
         return <SendNotificationPanel />
       case "otp-approvals":
         return <OtpApprovalsPanel />
-      case "p2p-settings":
-        return <P2PModeTogglePanel />
       default:
         return <OverviewAnalytics />
     }
@@ -194,11 +184,19 @@ export default function AdminDashboard() {
 
   return (
     <div className="flex h-screen bg-slate-950 text-white overflow-hidden">
+      {/* Mobile sidebar overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 lg:sticky lg:top-0 w-64 bg-slate-900 border-r border-slate-700 overflow-y-auto transition-transform duration-300 z-50`}
+        } lg:translate-x-0 fixed lg:sticky lg:top-0 inset-y-0 left-0 w-72 lg:w-64 bg-slate-900 border-r border-slate-700 overflow-y-auto transition-transform duration-300 z-50 flex-shrink-0`}
       >
         <div className="p-6">
           <h1 className="text-2xl font-bold text-cyan-500 mb-8">Admin Panel</h1>
@@ -238,37 +236,37 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
-        <header className="border-b border-slate-700 bg-slate-900 px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <header className="border-b border-slate-700 bg-slate-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden p-2 hover:bg-slate-800 rounded-lg"
+              className="lg:hidden p-2 hover:bg-slate-800 rounded-lg flex-shrink-0"
             >
               <MessageSquare className="h-5 w-5" />
             </button>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="text-base sm:text-xl font-bold text-white truncate">
               {navItems.find(item => item.id === activeView)?.label || "Dashboard"}
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-400">{adminEmail}</span>
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <span className="text-xs sm:text-sm text-slate-400 hidden sm:block truncate max-w-[120px]">{adminEmail}</span>
             <Button
               onClick={handleLogout}
               variant="ghost"
               size="sm"
-              className="text-slate-300 hover:text-red-400"
+              className="text-slate-300 hover:text-red-400 px-2 sm:px-3"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-6">
+        <main className="flex-1 overflow-y-auto bg-slate-950 p-3 sm:p-6">
           <ErrorBoundary key={activeView} fallback={
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
               <p className="text-slate-400 text-sm">This panel encountered an error. Please try refreshing.</p>

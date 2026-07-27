@@ -289,9 +289,12 @@ export function ForexTradingPlatform({
   const [walletBalance, setWalletBalance] = useState(externalBalance)
   // Track whether balance has been received from parent at least once
   const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
+  // Flash the balance change (+/-) briefly on each update
+  const [balanceDelta, setBalanceDelta] = useState<{ value: number; id: number } | null>(null)
   // candleCache: key = "symbol|tf" => Candle[]
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
+  const [mobileTab, setMobileTab] = useState<"market" | "chart" | "order">("chart")
   const pairsRef = useRef<ForexPair[]>([])
   const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -319,6 +322,9 @@ export function ForexTradingPlatform({
       setWalletBalance(json.newBalance)
       setBalanceLoaded(true)
       onBalanceUpdated?.(json.newBalance)
+      // Flash delta badge
+      setBalanceDelta({ value: delta, id: Date.now() })
+      setTimeout(() => setBalanceDelta(null), 2500)
       return json.newBalance
     } catch {
       showMsg("error", "Network error updating balance")
@@ -370,7 +376,7 @@ export function ForexTradingPlatform({
     }
   }, [])
 
-  // ── Fetch real OHLC candles for selected pair + timeframe ───────────���─────
+  // ── Fetch real OHLC candles for selected pair + timeframe ───────────�������─────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
     const key = `${sym}|${tf}`
     setCandleLoading(true)
@@ -398,7 +404,7 @@ export function ForexTradingPlatform({
     }
   }, [])
 
-  // ── Init: build empty pairs then load data ─────────────────────────────────
+  // ── Init: build empty pairs then load data ────────────────────���────────────
   useEffect(() => {
     const initialPairs: ForexPair[] = PAIRS_CONFIG.map((p) => ({
       symbol: p.symbol, base: p.base, quote: p.quote,
@@ -503,17 +509,15 @@ export function ForexTradingPlatform({
             finalPnl, closeReason: reason,
           }
           setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-          // Credit margin + P&L back to wallet on SL/TP hit
-          const returnAmount = parseFloat((trade.margin + finalPnl).toFixed(2))
-          if (returnAmount !== 0) {
-            adjustWalletBalance(
-              returnAmount,
-              `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: $${finalPnl.toFixed(2)}`
-            )
-          }
+          // Only apply the P&L — profit adds to balance, loss deducts
+          const pnl = parseFloat(finalPnl.toFixed(2))
+          adjustWalletBalance(
+            pnl,
+            `${reason.toUpperCase()} hit — ${trade.pair} ${trade.direction} | P&L: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
+          )
           showMsg(
             reason === "tp" ? "success" : "error",
-            `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — P&L: $${finalPnl.toFixed(2)}`
+            `${reason.toUpperCase()} hit: ${trade.pair} ${trade.direction} — ${pnl >= 0 ? "Profit" : "Loss"}: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
           )
           return prev.filter((t) => t.id !== id)
         })
@@ -544,7 +548,7 @@ export function ForexTradingPlatform({
     } catch {}
   }, [openTrades, closedTrades, participantEmail])
 
-  // ── Execute trade ───────────────────────────────────────────────────────────
+  // ── Execute trade ───────────��───────────────────────────────────────────────
   const executeTrade = async () => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize)
@@ -553,7 +557,7 @@ export function ForexTradingPlatform({
     if (isNaN(lev) || lev < 1) { showMsg("error", "Invalid leverage"); return }
 
     const price = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-    const margin = parseFloat(((lot * 100000 * price) / lev).toFixed(2))
+    const margin = parseFloat(((lot * contractSize(selectedPair.symbol) * price) / lev).toFixed(2))
     const slNum = sl ? parseFloat(sl) : null
     const tpNum = tp ? parseFloat(tp) : null
 
@@ -563,16 +567,11 @@ export function ForexTradingPlatform({
     if (tpNum && direction === "BUY" && tpNum <= price) { showMsg("error", "TP must be above entry for BUY"); return }
     if (tpNum && direction === "SELL" && tpNum >= price) { showMsg("error", "TP must be below entry for SELL"); return }
 
-    // Check and deduct margin from wallet
+    // Check margin against balance (margin is reserved, not deducted on open)
     if (walletBalance < margin) {
       showMsg("error", `Insufficient balance. Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
       return
     }
-    const newBal = await adjustWalletBalance(
-      -margin,
-      `Margin locked — ${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
-    )
-    if (newBal === null) return // API error — abort
 
     const trade: OpenTrade = {
       id: genId(), pair: selectedPair.symbol, direction,
@@ -582,7 +581,7 @@ export function ForexTradingPlatform({
       pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Balance: $${newBal.toFixed(2)}`)
+    showMsg("success", `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)}`)
     setSl(""); setTp("")
     setActivePanel("positions")
   }
@@ -593,17 +592,12 @@ export function ForexTradingPlatform({
     const lot = parseFloat(lotSize) || 0.01
     const lev = parseFloat(leverage) || 100
     const price = dir === "BUY" ? selectedPair.ask : selectedPair.bid
-    const margin = parseFloat(((lot * 100000 * price) / lev).toFixed(2))
+    const margin = parseFloat(((lot * contractSize(selectedPair.symbol) * price) / lev).toFixed(2))
 
     if (walletBalance < margin) {
       showMsg("error", `Insufficient balance. Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
       return
     }
-    const newBal = await adjustWalletBalance(
-      -margin,
-      `Margin locked — Quick ${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
-    )
-    if (newBal === null) return
 
     const trade: OpenTrade = {
       id: genId(), pair: selectedPair.symbol, direction: dir,
@@ -613,7 +607,7 @@ export function ForexTradingPlatform({
       pnl: 0, pips: 0, margin, returnOnMargin: 0,
     }
     setOpenTrades((prev) => [trade, ...prev])
-    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin} | Balance: $${newBal.toFixed(2)}`)
+    showMsg("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)}`)
     setActivePanel("positions")
   }
 
@@ -627,15 +621,17 @@ export function ForexTradingPlatform({
         finalPnl: trade.pnl, closeReason: "manual",
       }
       setClosedTrades((c) => [closed, ...c.slice(0, 49)])
-      // Credit margin + P&L back to wallet
-      const returnAmount = parseFloat((trade.margin + trade.pnl).toFixed(2))
-      if (returnAmount !== 0) {
-        adjustWalletBalance(
-          returnAmount,
-          `Trade closed — ${trade.pair} ${trade.direction} | P&L: $${trade.pnl.toFixed(2)} | Margin returned: $${trade.margin.toFixed(2)}`
-        )
-      }
-      showMsg(trade.pnl >= 0 ? "success" : "error", `Closed ${trade.pair} — P&L: $${trade.pnl.toFixed(2)}`)
+      // Only apply the P&L to balance — profit adds, loss deducts
+      // Balance is never deducted on open, so only the net gain/loss is applied here
+      const pnl = parseFloat(trade.pnl.toFixed(2))
+      adjustWalletBalance(
+        pnl,
+        `Trade closed — ${trade.pair} ${trade.direction} | P&L: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
+      )
+      showMsg(
+        pnl >= 0 ? "success" : "error",
+        `Closed ${trade.pair} — ${pnl >= 0 ? "Profit" : "Loss"}: ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`
+      )
       return prev.filter((t) => t.id !== id)
     })
   }
@@ -647,9 +643,9 @@ export function ForexTradingPlatform({
 
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const estimatedMargin = selectedPair
-    ? parseFloat(((parseFloat(lotSize) || 0.01) * 100000 * midPrice / (parseFloat(leverage) || 100)).toFixed(2))
+    ? parseFloat(((parseFloat(lotSize) || 0.01) * contractSize(selectedPair.symbol) * midPrice / (parseFloat(leverage) || 100)).toFixed(2))
     : 0
-  const pipValue = selectedPair ? ((parseFloat(lotSize) || 0.01) * 100000 * pip(selectedPair.symbol)) : 0
+  const pipValue = selectedPair ? ((parseFloat(lotSize) || 0.01) * contractSize(selectedPair.symbol) * pip(selectedPair.symbol)) : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
 
@@ -673,7 +669,7 @@ export function ForexTradingPlatform({
   })
 
   return (
-    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", minHeight: 600, fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", minHeight: 540, fontFamily: "'Inter', sans-serif" }}>
 
       {/* ══════════════════════════════════════════════════════════════════════
            TOP NAVIGATION BAR
@@ -713,10 +709,24 @@ export function ForexTradingPlatform({
         </div>
 
         {/* Balance chip */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
+        <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
           <Wallet className="h-3 w-3 text-emerald-400" />
           <span className="text-[10px] text-slate-500">Balance</span>
           <span className="price-mono text-[11px] font-black text-emerald-400">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+          {/* Delta flash badge */}
+          {balanceDelta && (
+            <span
+              key={balanceDelta.id}
+              className="absolute -top-5 left-1/2 price-mono text-[10px] font-black pointer-events-none animate-bounce"
+              style={{
+                transform: "translateX(-50%)",
+                color: balanceDelta.value >= 0 ? "#10b981" : "#ef4444",
+                textShadow: `0 0 8px ${balanceDelta.value >= 0 ? "rgba(16,185,129,0.8)" : "rgba(239,68,68,0.8)"}`,
+              }}
+            >
+              {balanceDelta.value >= 0 ? "+" : ""}${Math.abs(balanceDelta.value).toFixed(2)}
+            </span>
+          )}
         </div>
 
         {/* Refresh */}
@@ -732,7 +742,7 @@ export function ForexTradingPlatform({
       {/* ══════════════════════════════════════════════════════════════════════
            ACCOUNT SUMMARY STRIP
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-3 h-8 gap-0" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="flex items-center shrink-0 px-3 h-8 gap-0 overflow-x-auto" style={{ background: "#060a12", borderBottom: "1px solid #1a2640", WebkitOverflowScrolling: "touch" as any }}>
         {[
           { label: "BALANCE", value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: "#10b981" },
           { label: "EQUITY", value: `$${(walletBalance + totalPnl).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, color: totalPnl >= 0 ? "#10b981" : "#ef4444" },
@@ -761,12 +771,29 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
+           MOBILE TAB SWITCHER (hidden on md+)
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div className="flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+        {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map((tab) => (
+          <button key={tab.id} onClick={() => setMobileTab(tab.id as "market" | "chart" | "order")}
+            className="flex-1 py-2 text-[10px] font-black tracking-wider uppercase transition-all"
+            style={{
+              color: mobileTab === tab.id ? "#22d3ee" : "#3d5a80",
+              borderBottom: mobileTab === tab.id ? "2px solid #22d3ee" : "2px solid transparent",
+              background: mobileTab === tab.id ? "rgba(34,211,238,0.04)" : "transparent",
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
            MAIN 3-COLUMN TRADING GRID
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT COLUMN: Market Watch ──────────────────────────────────────── */}
-        <div className="flex flex-col shrink-0" style={{ width: 264, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+        <div className={`flex flex-col shrink-0 ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`} style={{ width: "min(264px, 100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* ── Sidebar header ── */}
           <div className="shrink-0 px-3 pt-3 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -861,7 +888,7 @@ export function ForexTradingPlatform({
                         }
                         return (
                           <button key={p.symbol}
-                            onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
+                            onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe); setMobileTab("chart") }}
                             className="w-full mw-row"
                             style={{
                               background: isSelected ? `linear-gradient(90deg, ${pCc.bg}, rgba(0,0,0,0))` : "transparent",
@@ -943,7 +970,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── CENTER COLUMN: Chart area ──────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className={`flex-1 flex flex-col min-w-0 ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header bar */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-4 px-3 py-2" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -1002,25 +1029,104 @@ export function ForexTradingPlatform({
             </div>
           )}
 
-          {/* Chart — fills all remaining height */}
-          <div className="flex-1 min-h-0" style={{ background: "#080c14" }}>
-            {selectedPair ? (
-              <TradingChart
-                candles={selectedPair.candles}
-                sym={selectedPair.symbol}
-                openTrades={openTrades.filter((t) => t.pair === selectedPair.symbol)}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-3">
-                <CandlestickChart className="h-12 w-12 text-slate-800" />
-                <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
+          {/* Chart — fills all remaining height, with BUY/SELL strip at bottom */}
+          <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
+            <div className="flex-1 min-h-0">
+              {selectedPair ? (
+                <TradingChart
+                  candles={selectedPair.candles}
+                  sym={selectedPair.symbol}
+                  openTrades={openTrades.filter((t) => t.pair === selectedPair.symbol)}
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-3">
+                  <CandlestickChart className="h-12 w-12 text-slate-800" />
+                  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
+                </div>
+              )}
+            </div>
+
+            {/* ── BUY / SELL action strip directly below chart ── */}
+            {selectedPair && (
+              <div className="shrink-0 flex items-stretch gap-0" style={{ borderTop: "1px solid #1e2d45", height: 54 }}>
+                {/* Lot + Leverage compact display */}
+                <div className="flex items-center gap-3 px-3 shrink-0" style={{ background: "#060a12", borderRight: "1px solid #1e2d45" }}>
+                  <div className="text-center">
+                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Lots</p>
+                    <input
+                      type="number"
+                      value={lotSize}
+                      onChange={(e) => setLotSize(e.target.value)}
+                      step="0.01" min="0.01" max="100"
+                      className="price-mono text-sm font-black text-white focus:outline-none text-center w-16"
+                      style={{ background: "transparent", border: "none" }}
+                    />
+                  </div>
+                  <div className="w-px h-6" style={{ background: "#1e2d45" }} />
+                  <div className="text-center">
+                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Leverage</p>
+                    <select
+                      value={leverage}
+                      onChange={(e) => setLeverage(e.target.value)}
+                      className="price-mono text-sm font-black text-cyan-400 focus:outline-none text-center appearance-none w-14 cursor-pointer"
+                      style={{ background: "transparent", border: "none" }}
+                    >
+                      {["10", "25", "50", "100", "200", "500"].map((l) => (
+                        <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-px h-6" style={{ background: "#1e2d45" }} />
+                  <div className="text-center">
+                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Margin</p>
+                    <p className="price-mono text-sm font-black" style={{ color: "#f59e0b" }}>
+                      ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+
+                {/* SELL button */}
+                <button
+                  onClick={() => quickTrade("SELL")}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance}
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: "linear-gradient(135deg, #450a0a, #7f1d1d)", borderRight: "1px solid #991b1b" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <TrendingDown className="h-4 w-4 text-red-400" />
+                    <span className="text-base font-black tracking-wider text-red-300">SELL</span>
+                  </div>
+                  <span className="price-mono text-[11px] font-bold text-red-500">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                </button>
+
+                {/* Spread pill */}
+                <div className="flex flex-col items-center justify-center px-2 shrink-0" style={{ background: "#050810", borderRight: "1px solid #1e2d45" }}>
+                  <span className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Spread</span>
+                  <span className="price-mono text-[10px] font-black text-cyan-600">
+                    {(pips(selectedPair.spread ?? 0, selectedPair.symbol) || 0).toFixed(1)}p
+                  </span>
+                </div>
+
+                {/* BUY button */}
+                <button
+                  onClick={() => quickTrade("BUY")}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance}
+                  className="flex-1 flex flex-col items-center justify-center gap-0.5 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: "linear-gradient(135deg, #052e16, #065f46)" }}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <TrendingUp className="h-4 w-4 text-emerald-400" />
+                    <span className="text-base font-black tracking-wider text-emerald-300">BUY</span>
+                  </div>
+                  <span className="price-mono text-[11px] font-bold text-emerald-500">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* ── RIGHT COLUMN: Order Ticket ────────────────────────────────────── */}
-        <div className="flex flex-col shrink-0 terminal-scroll overflow-y-auto" style={{ width: 220, borderLeft: "1px solid #1e2d45" }}>
+        <div className={`flex flex-col shrink-0 terminal-scroll overflow-y-auto ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`} style={{ width: "min(220px, 100%)", borderLeft: "1px solid #1e2d45" }}>
 
           {/* Panel header */}
           <div className="terminal-panel-header shrink-0">
@@ -1194,57 +1300,179 @@ export function ForexTradingPlatform({
         {/* Blotter content */}
         <div className="flex-1 overflow-y-auto terminal-scroll">
 
-          {/* ── Open Positions ── */}
+          {/* ── Open Positions (BiDana-style cards) ── */}
           {activePanel === "positions" && (
             openTrades.length === 0 ? (
-              <div className="flex items-center justify-center h-full gap-2 text-slate-700">
-                <BarChart2 className="h-5 w-5 opacity-30" />
-                <span className="text-[11px] tracking-wider">No open positions</span>
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
+                <BarChart2 className="h-8 w-8 opacity-20" />
+                <span className="text-[11px] tracking-wider font-bold uppercase">No open positions</span>
               </div>
             ) : (
-              <table className="w-full text-[10px] price-mono">
-                <thead>
-                  <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-                    {["Symbol","Dir","Lots","Open","Current","P&L","Pips","ROM","SL","TP","Close"].map(h => (
-                      <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {openTrades.map((trade) => {
-                    const pc = trade.pnl >= 0 ? "#10b981" : "#ef4444"
-                    return (
-                      <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
-                        <td className="px-2 py-1.5 font-black text-white">{trade.pair}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="px-1.5 py-0.5 font-black text-[8px] uppercase" style={{
-                            background: trade.direction === "BUY" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)",
-                            color: trade.direction === "BUY" ? "#10b981" : "#ef4444",
-                            border: `1px solid ${trade.direction === "BUY" ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`,
-                            borderRadius: 3 }}>
-                            {trade.direction}
-                          </span>
-                        </td>
-                        <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
-                        <td className="px-2 py-1.5 text-slate-400">{fmt(trade.openPrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5" style={{ color: pc }}>{fmt(trade.currentPrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5 font-black" style={{ color: pc }}>{trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}</td>
-                        <td className="px-2 py-1.5" style={{ color: pc }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)}</td>
-                        <td className="px-2 py-1.5 font-black" style={{ color: pc }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(1)}%</td>
-                        <td className="px-2 py-1.5 text-red-500">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</td>
-                        <td className="px-2 py-1.5 text-emerald-600">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</td>
-                        <td className="px-2 py-1.5">
-                          <button onClick={() => closeTrade(trade.id)}
-                            className="px-2 py-0.5 font-black text-[9px] transition-all active:scale-95"
-                            style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 3 }}>
-                            Close
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+              <div className="p-2 flex flex-col gap-2 overflow-y-auto">
+                {openTrades.map((trade) => {
+                  const isBuy   = trade.direction === "BUY"
+                  const pnlPos  = trade.pnl >= 0
+                  const pnlClr  = pnlPos  ? "#10b981" : "#ef4444"
+                  const dirBg   = isBuy   ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"
+                  const dirClr  = isBuy   ? "#10b981"               : "#ef4444"
+                  const notional = parseFloat((trade.lotSize * contractSize(trade.pair) * trade.currentPrice).toFixed(2))
+                  // Liquidation price estimate (simplified: margin / notional away from entry)
+                  const liqOffset = (trade.margin / (trade.lotSize * contractSize(trade.pair))) * (isBuy ? -1 : 1)
+                  const liqPrice  = parseFloat((trade.openPrice + liqOffset).toFixed(pip(trade.pair) < 0.001 ? 5 : 2))
+                  // Risk % = margin / total balance *100 — use returnOnMargin as proxy
+                  const riskPct = Math.abs(trade.returnOnMargin).toFixed(2)
+                  // Pair display name
+                  const base  = trade.pair.slice(0, 3)
+                  const quote = trade.pair.slice(3)
+                  const isCrypto = ["BTC","ETH","SOL","BNB","XRP"].includes(base)
+                  const isGold   = base === "XAU"
+
+                  return (
+                    <div
+                      key={trade.id}
+                      className="rounded-xl price-mono text-[11px]"
+                      style={{ background: "#0d1625", border: "1px solid #1a2a42" }}
+                    >
+                      {/* ── Card header ── */}
+                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
+                        <div className="flex items-center gap-2">
+                          {/* Instrument icon */}
+                          <div className="flex items-center justify-center w-7 h-7 rounded-full font-black text-[10px]"
+                            style={{ background: isGold ? "#b45309" : isCrypto ? "#1d4ed8" : "#0f4c81", color: "#fff" }}>
+                            {isGold ? "Au" : isCrypto ? base.slice(0,2) : base.slice(0,2)}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-black text-white text-[13px] tracking-wide">{trade.pair}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
+                                style={{ background: dirBg, color: dirClr }}>
+                                {trade.direction}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-slate-600 tracking-wide">
+                              {isCrypto ? "Crypto" : isGold ? "Gold" : `${base} / ${quote}`} &nbsp;&bull;&nbsp; {trade.lotSize} Lot
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[9px] text-slate-600">{trade.openTime}</span>
+                          <div className="flex items-center justify-end gap-1 mt-0.5">
+                            <span className="text-[9px] font-bold" style={{ color: "#f59e0b" }}>
+                              1:{trade.leverage}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ── PnL + ROE row ── */}
+                      <div className="flex items-end justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">PnL (USD)</p>
+                          <p className="text-[22px] font-black leading-none tracking-tight" style={{ color: pnlClr }}>
+                            {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
+                          </p>
+                          <p className="text-[9px] mt-0.5" style={{ color: pnlClr }}>
+                            {trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-slate-600 mb-0.5">ROE</p>
+                          <p className="text-[18px] font-black leading-none" style={{ color: pnlClr }}>
+                            {trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* ── Amount / Margin / Risk ── */}
+                      <div className="grid grid-cols-3 px-3 py-2" style={{ borderBottom: "1px solid #1a2a42", gap: "0 8px" }}>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Amount (USD)</p>
+                          <p className="font-bold text-slate-300 text-[11px]">{notional.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Margin (USD)</p>
+                          <p className="font-bold text-slate-300 text-[11px]">{trade.margin.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-slate-600 mb-0.5">Risk</p>
+                          <p className="font-black text-[11px]" style={{ color: "#f87171" }}>{riskPct}%</p>
+                        </div>
+                      </div>
+
+                      {/* ── Price levels ── */}
+                      <div className="grid grid-cols-3 px-3 py-2" style={{ borderBottom: "1px solid #1a2a42", gap: "0 8px" }}>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Entry Price (USD)</p>
+                          <p className="font-bold text-slate-400 text-[11px]">{fmt(trade.openPrice, trade.pair)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] text-slate-600 mb-0.5">Mark Price (USD)</p>
+                          <p className="font-black text-[11px]" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[9px] text-slate-600 mb-0.5">Liq. Price (USD)</p>
+                          <p className="font-bold text-slate-400 text-[11px]">{fmt(liqPrice, trade.pair)}</p>
+                        </div>
+                      </div>
+
+                      {/* ── SL / TP levels (if set) ── */}
+                      {(trade.sl || trade.tp) && (
+                        <div className="grid grid-cols-2 px-3 py-2" style={{ borderBottom: "1px solid #1a2a42", gap: "0 8px" }}>
+                          <div>
+                            <p className="text-[9px] text-slate-600 mb-0.5">Stop Loss</p>
+                            <p className="font-bold text-[11px] text-red-500">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] text-slate-600 mb-0.5">Take Profit</p>
+                            <p className="font-bold text-[11px] text-emerald-500">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── Action buttons ── */}
+                      <div className="flex gap-2 px-3 py-2.5">
+                        {/* Take Profit button — only if TP set, else greyed */}
+                        <button
+                          onClick={() => {
+                            // Manually close at current price as take-profit
+                            if (trade.pnl > 0) closeTrade(trade.id)
+                          }}
+                          className="flex-1 py-2 rounded-lg font-black text-[12px] tracking-wide transition-all active:scale-[0.97]"
+                          style={{
+                            background: trade.pnl > 0 ? "linear-gradient(135deg,#065f46,#059669)" : "rgba(16,185,129,0.1)",
+                            color: trade.pnl > 0 ? "#fff" : "#10b981",
+                            border: `1px solid ${trade.pnl > 0 ? "#059669" : "rgba(16,185,129,0.25)"}`,
+                          }}
+                        >
+                          Take Profit
+                        </button>
+                        {/* Stop Loss */}
+                        <button
+                          onClick={() => {
+                            if (trade.pnl < 0) closeTrade(trade.id)
+                          }}
+                          className="flex-1 py-2 rounded-lg font-black text-[12px] tracking-wide transition-all active:scale-[0.97]"
+                          style={{
+                            background: trade.pnl < 0 ? "linear-gradient(135deg,#7f1d1d,#dc2626)" : "rgba(239,68,68,0.1)",
+                            color: trade.pnl < 0 ? "#fff" : "#ef4444",
+                            border: `1px solid ${trade.pnl < 0 ? "#dc2626" : "rgba(239,68,68,0.25)"}`,
+                          }}
+                        >
+                          Stop Loss
+                        </button>
+                        {/* Close position */}
+                        <button
+                          onClick={() => closeTrade(trade.id)}
+                          className="flex-1 py-2 rounded-lg font-black text-[12px] tracking-wide transition-all active:scale-[0.97] text-slate-300 hover:text-white"
+                          style={{ background: "transparent", border: "1px solid #2a3f5f" }}
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             )
           )}
 

@@ -399,7 +399,7 @@ function PredictPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-100/80 to-blue-100/80 relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-slate-100 via-purple-100/80 to-blue-100/80 relative overflow-hidden">
       {/* Decorative Background Elements - Hidden on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
         <div className="absolute top-20 right-10 w-64 h-64 bg-purple-300/20 rounded-full blur-3xl" />
@@ -456,7 +456,7 @@ function PredictPageContent() {
       </div>
 
       {/* Main Content - Mobile Optimized */}
-      <div className="container mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 relative z-10">
+      <div className="container mx-auto px-2 sm:px-3 md:px-4 lg:px-6 py-3 sm:py-4 md:py-6 relative z-10 max-w-6xl">
         {/* Filter Tabs - Mobile Optimized */}
         <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4 md:mb-6 bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-1.5 md:p-2 border border-slate-200 sm:border-2 w-full overflow-x-auto shadow-md">
           {([

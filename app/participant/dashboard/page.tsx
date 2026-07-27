@@ -1,74 +1,31 @@
 "use client"
-import { useEffect, useState, useCallback } from "react"
-import { useRef } from "react"
-import { PageLoader } from "@/components/ui/page-loader"
 
+// Participant dashboard v2
 import type React from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
-  TrendingUp,
-  ChevronRight,
-  ArrowUpRight,
-  Send,
-  Wallet,
-  Gift,
-  AlertTriangle,
-  Clock,
-  Mail,
-  Bell,
-  X,
-  History,
-  Settings,
-  CreditCard,
-  HelpCircle,
-  LogOut,
-  Smartphone,
-  Sparkles,
-  User,
-  AlertCircle,
-  Home,
-  Trophy,
-  Plus,
+  TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
+  AlertTriangle, Clock, Mail, Bell, X, History, Settings,
+  CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
+  AlertCircle, Home, Plus, MessageCircle,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
-
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
-import { MessageCircle } from "lucide-react"
-import { LeaderboardView } from "@/components/leaderboard-view"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
-import { StakingBanner } from "@/components/staking-banner"
-import { NoticeBoard } from "@/components/notice-board"
 import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
+import { NoticeBoard } from "@/components/notice-board"
 
-interface LeaderboardEntry {
-  position: number
-  username: string
-  participantNumber: number
-  rank: UserRank
-  participation_count: number
-  contributedAmount: number
-}
 
-const SAMPLE_USERNAMES = [
-  "amit.k",
-  "rohit92",
-  "ankit.patel",
-  "deepak.s",
-  "john.miller",
-  "neha",
-  "ghostx",
-  "sanjay.mehta",
-  "ravi23",
-  "manish.j",
-]
 
 function AnimatedNumber({
   value,
@@ -1470,7 +1427,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity" | "leaderboard">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1492,7 +1449,7 @@ export default function DashboardHome() {
     details_completed?: boolean
     [key: string]: any
   } | null>(null)
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+
   const [showFrozenModal, setShowFrozenModal] = useState(false)
   const [hasContributed, setHasContributed] = useState(false)
   const [participantId, setParticipantId] = useState<string>("")
@@ -1567,10 +1524,16 @@ export default function DashboardHome() {
   const refreshParticipantData = async (email: string) => {
     try {
       const res = await fetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
-      if (!res.ok) return
+      if (!res.ok) {
+        console.warn("[v0] Failed to fetch participant data:", res.status, res.statusText)
+        return
+      }
       const json = await res.json()
       const data: any = json.participant
-      if (!data) return
+      if (!data) {
+        console.warn("[v0] No participant data in response")
+        return
+      }
       // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
       const updatedData = {
         ...data,
@@ -1589,37 +1552,46 @@ export default function DashboardHome() {
       }
       setParticipantData(updatedData)
       localStorage.setItem("participantData", JSON.stringify(updatedData))
-    } catch {}
+    } catch (error) {
+      console.error("[v0] Error refreshing participant data:", error)
+    }
   }
 
   useEffect(() => {
     setMounted(true)
 
-    if (!isParticipantAuthenticated()) {
-      router.push("/participant/login")
-      return
-    }
+    try {
+      if (!isParticipantAuthenticated()) {
+        router.push("/participant/login")
+        return
+      }
 
-    const storedData = localStorage.getItem("participantData")
-    if (storedData) {
-      try {
-        const data = JSON.parse(storedData)
-        setParticipantData(data)
-        setParticipantId(data.id || "")
+      const storedData = localStorage.getItem("participantData")
+      if (storedData) {
+        try {
+          const data = JSON.parse(storedData)
+          setParticipantData(data)
+          setParticipantId(data.id || "")
 
-        if (data.account_frozen) {
-          setShowFrozenModal(true)
+          if (data.account_frozen) {
+            setShowFrozenModal(true)
+          }
+
+          if (data.contributed_amount && data.contributed_amount > 0) {
+            setHasContributed(true)
+          }
+
+          // Refresh data from database to get latest balance
+          if (data.email) {
+            refreshParticipantData(data.email)
+          }
+        } catch (parseError) {
+          console.error("[v0] Failed to parse stored participant data:", parseError)
+          localStorage.removeItem("participantData")
         }
-
-        if (data.contributed_amount && data.contributed_amount > 0) {
-          setHasContributed(true)
-        }
-
-        // Refresh data from database to get latest balance
-        if (data.email) {
-          refreshParticipantData(data.email)
-        }
-      } catch {}
+      }
+    } catch (error) {
+      console.error("[v0] Error in dashboard useEffect:", error)
     }
 
     // Add listener for page visibility to refresh balance when user returns to this page
@@ -1637,15 +1609,6 @@ export default function DashboardHome() {
       }
     }
 
-    const mockLeaderboard: LeaderboardEntry[] = SAMPLE_USERNAMES.map((username, index) => ({
-      position: index + 1,
-      username,
-      participantNumber: Math.floor(Math.random() * 9000) + 1000,
-      rank: (index < 2 ? "Platinum" : index < 5 ? "Gold" : "Silver") as UserRank,
-      participation_count: Math.floor(Math.random() * 50) + (10 - index) * 5,
-      contributedAmount: 100,
-    }))
-    setLeaderboard(mockLeaderboard)
 
     // Set up periodic refresh to sync balance updates
     const refreshInterval = setInterval(() => {
@@ -1696,7 +1659,7 @@ export default function DashboardHome() {
     : new Date(Date.now() + 48 * 60 * 60 * 1000)
 
   return (
-    <div className="pb-24 page-fade-enter">
+    <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {/* Frozen Account Modal */}
       <FrozenAccountModal isOpen={showFrozenModal} onClose={() => setShowFrozenModal(false)} />
 
@@ -1769,11 +1732,11 @@ export default function DashboardHome() {
         </div>
       </header>
 
-      <main className="pb-20" style={{ background: "transparent" }}>
+      <main className="pb-24 md:pb-6" style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            {/* ── PORTFOLIO HERO ───────���───────────────────────── */}
-            <div className="relative overflow-hidden px-4 pt-6 pb-7 hero-card-deep">
+            {/* ── PORTFOLIO HERO ──────────────────────────────────── */}
+            <div className="relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
               <div className="absolute inset-0 depth-grid opacity-50 pointer-events-none" />
               {/* Scan line */}
@@ -1781,53 +1744,90 @@ export default function DashboardHome() {
               {/* Deep glow orbs */}
               <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
               <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)", filter: "blur(36px)" }} />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)", filter: "blur(30px)" }} />
 
-              {/* Balance display */}
-              <div className="relative text-center mb-5">
-                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
-                <div className="relative inline-block">
-                  {/* Balance glow */}
-                  <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
-                  <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
-                    <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+              {/* ── Mobile hero layout */}
+              <div className="lg:hidden px-4 pt-6 pb-7">
+                {/* Balance display */}
+                <div className="relative text-center mb-5">
+                  <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
+                  <div className="relative inline-block">
+                    <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                      <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-center gap-2 mt-2">
+                    <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                      <TrendingUp className="h-3 w-3 text-emerald-400" />
+                      <span className="text-emerald-400 text-[10px] font-bold tracking-wide">ACTIVE ACCOUNT</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center justify-center gap-2 mt-2">
-                  <div className="flex items-center gap-1 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
-                    <TrendingUp className="h-3 w-3 text-emerald-400" />
-                    <span className="text-emerald-400 text-[10px] font-bold tracking-wide">ACTIVE ACCOUNT</span>
-                  </div>
+                <div className="grid grid-cols-3 gap-2 relative mb-4">
+                  {[
+                    { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.7)" },
+                    { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.7)" },
+                    { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.7)" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="stat-chip-dark rounded-xl p-3 text-center">
+                      <p className="text-slate-500 text-[9px] uppercase tracking-widest mb-1">{label}</p>
+                      <p className="text-sm font-black" style={{ color, textShadow: `0 0 12px ${color}` }}>{value}</p>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              {/* 3 deep stat chips */}
-              <div className="grid grid-cols-3 gap-2 relative mb-4">
-                {[
-                  { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.7)" },
-                  { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.7)" },
-                  { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.7)" },
-                ].map(({ label, value, color }) => (
-                  <div key={label} className="stat-chip-dark rounded-xl p-3 text-center">
-                    <p className="text-slate-500 text-[9px] uppercase tracking-widest mb-1">{label}</p>
-                    <p className="text-sm font-black" style={{ color, textShadow: `0 0 12px ${color}` }}>{value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* CTA buttons */}
-              <div className="flex gap-2.5 relative">
-                <button
-                  onClick={() => setShowTopUpModal(true)}
-                  className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95"
-                >
-                  <Plus className="h-3.5 w-3.5" /> ADD FUNDS
-                </button>
-                <Link href="/participant/dashboard/payout" className="flex-1">
-                  <button className="btn-deep-emerald w-full flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
-                    <ArrowUpRight className="h-3.5 w-3.5" /> PAYOUT
+                <div className="flex gap-2.5 relative">
+                  <button onClick={() => setShowTopUpModal(true)} className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                    <Plus className="h-3.5 w-3.5" /> ADD FUNDS
                   </button>
-                </Link>
+                  <Link href="/participant/dashboard/payout" className="flex-1">
+                    <button className="btn-deep-emerald w-full flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                      <ArrowUpRight className="h-3.5 w-3.5" /> PAYOUT
+                    </button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* ── Desktop hero layout (2-column) */}
+              <div className="hidden lg:flex items-center gap-8 px-8 py-8">
+                {/* Left: balance */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">Total Portfolio Balance</p>
+                  <div className="relative inline-block mb-3">
+                    <div className="absolute inset-0 blur-2xl opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[56px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                      <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mb-5">
+                    <div className="flex items-center gap-1.5 rounded-full px-3 py-1.5" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)" }}>
+                      <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 text-xs font-bold tracking-wide">ACTIVE ACCOUNT</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setShowTopUpModal(true)} className="btn-deep-purple flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
+                      <Plus className="h-4 w-4" /> ADD FUNDS
+                    </button>
+                    <Link href="/participant/dashboard/payout">
+                      <button className="btn-deep-emerald flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
+                        <ArrowUpRight className="h-4 w-4" /> PAYOUT
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+                {/* Right: stat chips */}
+                <div className="flex-shrink-0 grid grid-cols-3 gap-3" style={{ width: 360 }}>
+                  {[
+                    { label: "Referral Earnings", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.85)" },
+                    { label: "Total Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.85)" },
+                    { label: "Total Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.85)" },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="stat-chip-dark rounded-2xl p-4 text-center">
+                      <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-2">{label}</p>
+                      <p className="text-2xl font-black" style={{ color, textShadow: `0 0 14px ${color}` }}>{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -1846,12 +1846,12 @@ export default function DashboardHome() {
             </div>
 
             {/* ── QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-4 gap-2.5">
+            <div className="px-4 pt-4 grid grid-cols-2 md:grid-cols-4 gap-2.5">
               {[
-                { href: "/participant/dashboard/contribute", icon: Send, label: "Contribute", color: "#f97316", glow: "rgba(249,115,22,0.3)" },
                 { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
                 { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
-                { href: "/participant/dashboard/activity", icon: History, label: "History", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
+                { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payout", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
+                { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", color: "#10B981", glow: "rgba(16,185,129,0.3)" },
               ].map(({ href, icon: Icon, label, color, glow }) => (
                 <Link key={href} href={href}>
                   <div
@@ -1871,32 +1871,23 @@ export default function DashboardHome() {
             </div>
 
             {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
-            <div className="px-0 pt-4" style={{ height: "calc(100vh - 80px)", minHeight: 640, position: "relative" }}>
+            <div className="px-0 pt-4" style={{ height: "calc(100svh - 80px)", minHeight: 540, maxHeight: 900, position: "relative" }}>
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
                 onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => prev ? { ...prev, account_balance: newBalance } : prev)
-                }}
-              />
-            </div>
-
-            {/* ── STAKING SECTION ──────────────────────────────── */}
-            <div className="px-4 pt-3">
-              <StakingBanner
-                currentBalance={walletBalance}
-                participantEmail={participantData?.email || ""}
-                onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => ({
-                    ...prev,
-                    account_balance: newBalance,
-                  }))
+                  setParticipantData((prev: any) => {
+                    if (!prev) return prev
+                    const updated = { ...prev, account_balance: newBalance }
+                    try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+                    return updated
+                  })
                 }}
               />
             </div>
 
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
-            <div className="px-4 pt-3 grid grid-cols-2 gap-2.5">
+            <div className="px-4 pt-3 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {/* Lucky Spin */}
               <button
                 onClick={() => setActiveTab("wheel")}
@@ -1973,40 +1964,20 @@ export default function DashboardHome() {
           />
         )}
 
-      {/* Activity Tab Content */}
-      {activeTab === "activity" && (
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-800">Activity History</h2>
-          {/* Activity content would go here */}
-        </div>
-      )}
-
-      {/* Leaderboard Tab Content */}
-      {activeTab === "leaderboard" && (
-        <div className="space-y-6 pb-20 px-4 pt-4">
-          <div className="text-center mb-6">
-            <div className="relative inline-block mb-3">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-500 to-orange-500 blur-2xl opacity-30" />
-              <div className="relative w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-600 flex items-center justify-center shadow-xl">
-                <Trophy className="h-8 w-8 text-white" />
-              </div>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-1">
-              Global <span className="bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Leaderboard</span>
-            </h2>
-            <p className="text-sm text-slate-400">Top earners updated daily</p>
+        {/* Activity Tab Content */}
+        {activeTab === "activity" && (
+          <div className="space-y-4 px-4 pt-4">
+            <h2 className="text-2xl font-bold text-slate-800">Activity History</h2>
           </div>
-          <LeaderboardView mode="compact" initialTab="contributors" />
-        </div>
-      )}
-      
-      {/* Notice Board - Display important announcements */}
-      <NoticeBoard />
-      
+        )}
+
+        {/* Notice Board - Display important announcements */}
+        <NoticeBoard />
+
       </main>
 
-      {/* Footer Navigation */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
+      {/* Footer Navigation — hidden (replaced by layout.tsx bottom nav) */}
+      <footer className="hidden">
         <nav className="flex items-center justify-around h-16 max-w-2xl mx-auto px-1">
           <button
             onClick={() => setActiveTab("dashboard")}
@@ -2028,25 +1999,7 @@ export default function DashboardHome() {
             <span className="text-[10px] font-medium">Luck Wheel</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab("activity")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "activity" ? "text-amber-600" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Send className={`h-5 w-5 mb-0.5 ${activeTab === "activity" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Contribute</span>
-          </button>
 
-          <button
-            onClick={() => setActiveTab("leaderboard")}
-            className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "leaderboard" ? "text-yellow-500" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Trophy className={`h-5 w-5 mb-0.5 ${activeTab === "leaderboard" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Leaderboard</span>
-          </button>
 
 
         </nav>

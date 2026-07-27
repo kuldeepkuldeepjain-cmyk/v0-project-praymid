@@ -11,7 +11,7 @@ interface ErrorBoundaryProps {
 
 export function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
   useEffect(() => {
-    // Error is surfaced to the user via the UI below
+    console.error("[v0] Dashboard ErrorBoundary caught:", error?.message, error?.stack)
   }, [error])
 
   return (
@@ -33,6 +33,12 @@ export function ErrorBoundary({ error, reset }: ErrorBoundaryProps) {
             We&apos;re having trouble loading this page. Please try again or contact support if the issue persists.
           </p>
 
+          {/* Error message (for debugging) */}
+          {error.message && (
+            <p className="text-xs text-red-500 font-mono mb-3 px-3 py-2 bg-red-50 rounded-lg border border-red-200 text-left break-all">
+              {error.message}
+            </p>
+          )}
           {/* Error digest (for tracking) */}
           {error.digest && (
             <p className="text-xs text-slate-400 font-mono mb-6 px-3 py-2 bg-slate-50 rounded-lg border border-slate-200">
