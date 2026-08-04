@@ -9,7 +9,7 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, MessageCircle,
+  AlertCircle, Home, Plus, MessageCircle, BarChart2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -21,7 +21,6 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
-import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 import { NoticeBoard } from "@/components/notice-board"
 
@@ -1427,7 +1426,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "wheel" | "activity">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1845,8 +1844,23 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            {/* ── QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-2 md:grid-cols-4 gap-2.5">
+            {/* ─��� QUICK ACTION TILES ───────────────────────────── */}
+            <div className="px-4 pt-4 grid grid-cols-3 md:grid-cols-5 gap-2.5">
+              {/* Trade — opens fullscreen terminal */}
+              <button
+                onClick={() => setActiveTab("trading")}
+                className="action-tile flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer transition-all active:scale-95"
+                style={{
+                  background: "linear-gradient(145deg, rgba(34,211,238,0.18) 0%, rgba(6,182,212,0.08) 100%)",
+                  border: "1px solid rgba(34,211,238,0.35)",
+                  boxShadow: "0 0 16px rgba(34,211,238,0.12)",
+                }}
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(34,211,238,0.18)", boxShadow: "0 0 14px rgba(34,211,238,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
+                  <BarChart2 className="h-4 w-4" style={{ color: "#22d3ee", filter: "drop-shadow(0 0 4px rgba(34,211,238,0.8))" }} />
+                </div>
+                <span className="text-[10px] font-black" style={{ color: "#22d3ee" }}>Trade</span>
+              </button>
               {[
                 { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
                 { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
@@ -1870,21 +1884,7 @@ export default function DashboardHome() {
               ))}
             </div>
 
-            {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
-            <div className="px-0 pt-4" style={{ height: "calc(100svh - 80px)", minHeight: 540, maxHeight: 900, position: "relative" }}>
-              <ForexTradingPlatform
-                participantEmail={participantData?.email ?? ""}
-                walletBalance={walletBalance}
-                onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => {
-                    if (!prev) return prev
-                    const updated = { ...prev, account_balance: newBalance }
-                    try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
-                    return updated
-                  })
-                }}
-              />
-            </div>
+
 
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
             <div className="px-4 pt-3 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -1932,21 +1932,7 @@ export default function DashboardHome() {
               </Link>
             </div>
 
-            {/* ── MYSTERY BOX ──────────────────────────────────── */}
-            <div className="px-4 pt-2.5 pb-4">
-              <MysteryBox
-                currentBalance={walletBalance}
-                participantEmail={participantData?.email || ""}
-                onRewardWon={(amount) => { toast({ title: "Mystery Box Reward!", description: `You won $${amount}!` }) }}
-                onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => {
-                    const updated = { ...prev, account_balance: newBalance }
-                    localStorage.setItem("participantData", JSON.stringify(updated))
-                    return updated
-                  })
-                }}
-              />
-            </div>
+
 
           </>
         )}
@@ -1975,6 +1961,71 @@ export default function DashboardHome() {
         <NoticeBoard />
 
       </main>
+
+      {/* ── FULLSCREEN TRADING TERMINAL ─────────────────────────────────────
+          Rendered outside <main> so it escapes all padding/overflow constraints.
+          Uses fixed inset-0 z-[60] so it sits above the header but below modals.
+      ──────────────────────────────────────────────────────────────────────── */}
+      {activeTab === "trading" && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 60,
+            display: "flex",
+            flexDirection: "column",
+            background: "#040810",
+          }}
+        >
+          {/* Terminal top bar with back button */}
+          <div
+            className="flex items-center gap-3 px-3 shrink-0"
+            style={{
+              height: 44,
+              background: "#060b14",
+              borderBottom: "1px solid #0f1e35",
+              zIndex: 1,
+            }}
+          >
+            <button
+              onClick={() => setActiveTab("dashboard")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all active:scale-95"
+              style={{
+                background: "rgba(34,211,238,0.08)",
+                border: "1px solid rgba(34,211,238,0.18)",
+                color: "#22d3ee",
+              }}
+            >
+              <ChevronRight className="h-3.5 w-3.5 rotate-180" />
+              Dashboard
+            </button>
+            <div className="flex items-center gap-1.5">
+              <BarChart2 className="h-4 w-4" style={{ color: "#22d3ee" }} />
+              <span className="text-white font-black text-[13px] tracking-wide">Trading Terminal</span>
+            </div>
+            <div className="ml-auto flex items-center gap-1 px-2 py-1 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[9px] font-black text-emerald-400 tracking-widest">LIVE</span>
+            </div>
+          </div>
+
+          {/* Platform fills remaining height */}
+          <div className="flex-1 min-h-0">
+            <ForexTradingPlatform
+              participantEmail={participantData?.email ?? ""}
+              walletBalance={walletBalance}
+              onBalanceUpdated={(newBalance) => {
+                setParticipantData((prev: any) => {
+                  if (!prev) return prev
+                  const updated = { ...prev, account_balance: newBalance }
+                  try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+                  return updated
+                })
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Footer Navigation — hidden (replaced by layout.tsx bottom nav) */}
       <footer className="hidden">
