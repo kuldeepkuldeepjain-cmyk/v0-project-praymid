@@ -705,6 +705,8 @@ export function ForexTradingPlatform({
   const [totalPnl, setTotalPnl]       = useState(0)
   const [tickCount, setTickCount]     = useState(0)
   const [walletBalance, setWalletBalance] = useState(externalBalance)
+  // Flag to suppress the external-balance sync while an internal adjustWalletBalance is in flight
+  const suppressExternalSync = useRef(false)
   const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
   const [balanceDelta, setBalanceDelta] = useState<{ value: number; id: number } | null>(null)
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
@@ -731,8 +733,10 @@ export function ForexTradingPlatform({
   // Keep openTradesRef in sync
   useEffect(() => { openTradesRef.current = openTrades }, [openTrades])
 
-  // Sync external balance
+  // Sync external balance — skipped while an internal adjustWalletBalance call is in-flight
+  // to prevent the prop update triggered by onBalanceUpdated from overwriting the fresh DB value
   useEffect(() => {
+    if (suppressExternalSync.current) return
     setWalletBalance(externalBalance)
     if (externalBalance > 0) setBalanceLoaded(true)
   }, [externalBalance])
@@ -751,20 +755,29 @@ export function ForexTradingPlatform({
   // ── Balance API ────────────────────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
     try {
+      // Prevent the externalBalance useEffect from overwriting the fresh DB value
+      suppressExternalSync.current = true
       const res = await participantFetch("/api/forex/trade-balance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: participantEmail, delta, description }),
       })
       const json = await res.json()
-      if (!json.success) { showToast("error", json.error || "Balance update failed"); return null }
+      if (!json.success) {
+        suppressExternalSync.current = false
+        showToast("error", json.error || "Balance update failed")
+        return null
+      }
       setWalletBalance(json.newBalance)
       setBalanceLoaded(true)
       onBalanceUpdated?.(json.newBalance)
       setBalanceDelta({ value: delta, id: Date.now() })
       setTimeout(() => setBalanceDelta(null), 2500)
+      // Re-enable external sync after a short delay (after onBalanceUpdated propagates)
+      setTimeout(() => { suppressExternalSync.current = false }, 800)
       return json.newBalance
     } catch {
+      suppressExternalSync.current = false
       showToast("error", "Network error updating balance")
       return null
     }
@@ -994,9 +1007,11 @@ export function ForexTradingPlatform({
 
     if (toClose.length > 0) {
       toClose.forEach(({ id, reason, price }) => {
+        if (closingTradeIds.current.has(id)) return
+        closingTradeIds.current.add(id)
         setOpenTrades(prev => {
           const trade = prev.find(t => t.id === id)
-          if (!trade) return prev
+          if (!trade) { closingTradeIds.current.delete(id); return prev }
           const { pnl: finalPnlRaw } = calcPnl(trade, price, trade.pair)
           const finalPnl   = parseFloat((finalPnlRaw + trade.swap).toFixed(2))
           const { pipCount: finalPips } = calcPnl(trade, price, trade.pair)
@@ -1020,6 +1035,7 @@ export function ForexTradingPlatform({
             reason === "tp" ? "success" : "error",
             `${icons[reason as keyof typeof icons]} — ${trade.pair} ${trade.direction}: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${finalPips >= 0 ? "+" : ""}${finalPips.toFixed(1)} pips)`
           )
+          setTimeout(() => closingTradeIds.current.delete(id), 1000)
           return prev.filter(t => t.id !== id)
         })
       })
@@ -1148,8 +1164,9 @@ export function ForexTradingPlatform({
       )
       if (newBal === null) { setConfirmLoading(false); return }  // API error — abort
 
+      const tradeId = genId()
       const trade: OpenTrade = {
-        id: genId(), pair: selectedPair.symbol, direction: dir,
+        id: tradeId, pair: selectedPair.symbol, direction: dir,
         lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
         sl: slNum, tp: tpNum, trailingStopPips: trailN && trailN > 0 ? trailN : null,
         trailingPeak: price,
@@ -1157,7 +1174,13 @@ export function ForexTradingPlatform({
         openTimestamp: Date.now(),
         pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
       }
-      setOpenTrades(prev => [trade, ...prev])
+      // Update ref immediately so the tick engine sees the new trade before next render
+      openTradesRef.current = [trade, ...openTradesRef.current]
+      setOpenTrades(prev => {
+        // Guard: never add the same trade ID twice (prevents double placement on re-render)
+        if (prev.some(t => t.id === tradeId)) return prev
+        return [trade, ...prev]
+      })
       showToast("success",
         `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
       )
@@ -1180,11 +1203,17 @@ export function ForexTradingPlatform({
     requestConfirm(dir, lot, lev, price, null, null, null, false)
   }
 
+  // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
+  const closingTradeIds = useRef<Set<string>>(new Set())
+
   // ── Close trade ────────────────────────────────────────────────────────────
   const closeTrade = (id: string) => {
+    // Prevent double-close if tick engine and manual close race
+    if (closingTradeIds.current.has(id)) return
+    closingTradeIds.current.add(id)
     setOpenTrades(prev => {
       const trade = prev.find(t => t.id === id)
-      if (!trade) return prev
+      if (!trade) { closingTradeIds.current.delete(id); return prev }
       const pairNow = pairsRef.current.find(p => p.symbol === trade.pair)
       const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
       const { pnl: pnlRaw, pipCount } = calcPnl(trade, closePrice, trade.pair)
@@ -1206,6 +1235,7 @@ export function ForexTradingPlatform({
       showToast(finalPnl >= 0 ? "success" : "error",
         `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
       )
+      setTimeout(() => closingTradeIds.current.delete(id), 1000)
       return prev.filter(t => t.id !== id)
     })
   }
