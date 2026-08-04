@@ -40,6 +40,13 @@ export type OpenTrade = {
 
 type IndicatorKey = "ema9" | "ema21" | "ema50" | "bb" | "rsi" | "macd" | "volume"
 
+type PriceAlert = {
+  id: number
+  price: number
+  label: string
+  hit: boolean
+}
+
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 const T = {
@@ -176,6 +183,14 @@ export function TradingChart({
   const [chartPane, setChartPane] = useState<"rsi" | "macd" | "none">("rsi")
   const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
   const [crosshairActive, setCrosshairActive] = useState(false)
+
+  // Price alerts ─────────────────────────────────────────────────────────────
+  const [alerts, setAlerts]             = useState<PriceAlert[]>([])
+  const [alertMode, setAlertMode]       = useState(false)      // true = click-to-set mode
+  const [showAlertPanel, setShowAlertPanel] = useState(false)
+  const alertsRef                       = useRef<PriceAlert[]>([])
+  const alertNextId                     = useRef(1)
+  alertsRef.current = alerts
 
   const isJpy = sym.includes("JPY")
   const dec   = isJpy ? 3 : sym.startsWith("XAU") ? 2 : sym.startsWith("BTC") ? 1 : sym.startsWith("ETH") ? 2 : 5
@@ -348,6 +363,22 @@ export function TradingChart({
       })
     })
 
+    // ── Click-to-set price alert ──
+    chart.subscribeClick((param) => {
+      // Only act when alert-mode is active (checked via DOM flag to avoid stale closure)
+      if (!containerRef.current?.dataset.alertmode) return
+      if (!param.point) return
+      const price = cSer.coordinateToPrice(param.point.y)
+      if (!price) return
+      const id = alertNextId.current++
+      const alertPrice = parseFloat(price.toFixed(dec))
+      setAlerts((prev) => {
+        const newAlert: PriceAlert = { id, price: alertPrice, label: `Alert ${id}`, hit: false }
+        return [...prev, newAlert]
+      })
+      setShowAlertPanel(true)
+    })
+
     // ── Resize observer ──
     const ro = new ResizeObserver(() => {
       if (!containerRef.current || !chartRef.current) return
@@ -475,6 +506,63 @@ export function TradingChart({
 
   const toggle = useCallback((key: IndicatorKey) => setIndicators((p) => ({ ...p, [key]: !p[key] })), [])
   const isLoading = candles.length === 0
+
+  // Sync alertMode to DOM so the subscribeClick handler can read it without stale closure
+  useEffect(() => {
+    if (!containerRef.current) return
+    if (alertMode) containerRef.current.dataset.alertmode = "1"
+    else delete containerRef.current.dataset.alertmode
+  }, [alertMode])
+
+  // Render alert price lines on the chart
+  useEffect(() => {
+    if (!candleSerRef.current) return
+    // Remove all existing alert lines by rebuilding — lightweight-charts price lines
+    // don't have a direct "remove all" API so we track via series re-render.
+    // We use a separate approach: store IPriceLine refs.
+  }, [alerts])
+
+  // Draw alert price lines (stored refs for later removal)
+  const alertLineRefs = useRef<Map<number, ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>>>(new Map())
+
+  useEffect(() => {
+    if (!candleSerRef.current) return
+    const ser = candleSerRef.current
+    // Remove lines that no longer exist
+    alertLineRefs.current.forEach((line, id) => {
+      if (!alerts.find(a => a.id === id)) {
+        try { ser.removePriceLine(line) } catch {}
+        alertLineRefs.current.delete(id)
+      }
+    })
+    // Add new lines
+    alerts.forEach(a => {
+      if (alertLineRefs.current.has(a.id)) return
+      const line = ser.createPriceLine({
+        price:              a.price,
+        color:              a.hit ? "rgba(245,158,11,0.4)" : "#f59e0b",
+        lineWidth:          1,
+        lineStyle:          LineStyle.LargeDashed,
+        axisLabelVisible:   true,
+        title:              a.label,
+      })
+      alertLineRefs.current.set(a.id, line)
+    })
+  }, [alerts])
+
+  // Check if current candle close crosses any alert
+  useEffect(() => {
+    if (alerts.length === 0) return
+    const last = candles[candles.length - 1]
+    if (!last) return
+    setAlerts(prev => prev.map(a => {
+      if (a.hit) return a
+      // Triggered when close is within 0.05% of alert price
+      const dist = Math.abs(last.close - a.price) / a.price
+      if (dist < 0.0005) return { ...a, hit: true }
+      return a
+    }))
+  }, [candles]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Last candle stats for header ─────────────────────────────────────────────
   const lastCandle = candles[candles.length - 1]
@@ -610,6 +698,32 @@ export function TradingChart({
 
         <div className="flex-1" />
 
+        {/* Price Alert toggle */}
+        <button
+          onClick={() => {
+            setAlertMode(m => !m)
+            if (!alertMode) setShowAlertPanel(true)
+          }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all"
+          style={alertMode
+            ? { background: `${T.amber}20`, border: `1px solid ${T.amber}60`, color: T.amber }
+            : { background: "transparent", border: `1px solid ${T.border}`, color: T.textMuted }
+          }
+          title="Click on chart to set a price alert"
+        >
+          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
+            <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+            <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
+          </svg>
+          <span className="text-[9px] font-black tracking-wider">ALERT</span>
+          {alerts.length > 0 && (
+            <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black"
+              style={{ background: T.amber, color: "#000" }}>
+              {alerts.length}
+            </span>
+          )}
+        </button>
+
         {/* Reset zoom */}
         <button
           onClick={() => {
@@ -630,6 +744,94 @@ export function TradingChart({
 
       {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
       <div ref={containerRef} className="relative flex-1 min-h-0 w-full">
+
+        {/* Alert mode banner */}
+        {alertMode && (
+          <div
+            className="absolute top-2 left-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg pointer-events-none"
+            style={{
+              transform: "translateX(-50%)",
+              background: `${T.amber}22`,
+              border: `1px solid ${T.amber}60`,
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke={T.amber} strokeWidth="1.3" strokeLinecap="round"/>
+              <circle cx="5" cy="5" r="2.5" stroke={T.amber} strokeWidth="1.3"/>
+            </svg>
+            <span className="text-[9px] font-black tracking-widest" style={{ color: T.amber }}>
+              CLICK ON CHART TO SET PRICE ALERT
+            </span>
+          </div>
+        )}
+
+        {/* Alert management panel */}
+        {showAlertPanel && alerts.length > 0 && (
+          <div
+            className="absolute top-2 right-2 z-20 flex flex-col gap-1 rounded-xl p-2"
+            style={{
+              background: "rgba(6,11,21,0.92)",
+              border: `1px solid ${T.border}`,
+              backdropFilter: "blur(8px)",
+              minWidth: 180,
+              maxWidth: 220,
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-[9px] font-black tracking-widest" style={{ color: T.amber }}>PRICE ALERTS</span>
+              <button
+                onClick={() => setShowAlertPanel(false)}
+                className="text-[8px] font-bold transition-opacity hover:opacity-60"
+                style={{ color: T.textMuted }}
+              >
+                hide
+              </button>
+            </div>
+            {alerts.map(a => (
+              <div key={a.id} className="flex items-center gap-2">
+                <span
+                  className="w-1.5 h-1.5 rounded-full shrink-0"
+                  style={{ background: a.hit ? T.green : T.amber, boxShadow: a.hit ? `0 0 4px ${T.green}` : "none" }}
+                />
+                <span className="flex-1 text-[9px] font-black price-mono" style={{ color: a.hit ? T.green : T.textBase }}>
+                  {fmtP(a.price)}
+                  {a.hit && <span className="ml-1 text-[8px]" style={{ color: T.green }}>HIT</span>}
+                </span>
+                <button
+                  onClick={() => {
+                    const line = alertLineRefs.current.get(a.id)
+                    if (line && candleSerRef.current) {
+                      try { candleSerRef.current.removePriceLine(line) } catch {}
+                      alertLineRefs.current.delete(a.id)
+                    }
+                    setAlerts(prev => prev.filter(x => x.id !== a.id))
+                  }}
+                  className="text-[8px] transition-opacity hover:opacity-60 shrink-0"
+                  style={{ color: T.red }}
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+            {alerts.length > 1 && (
+              <button
+                onClick={() => {
+                  alertLineRefs.current.forEach((line) => {
+                    if (candleSerRef.current) try { candleSerRef.current.removePriceLine(line) } catch {}
+                  })
+                  alertLineRefs.current.clear()
+                  setAlerts([])
+                }}
+                className="mt-1 text-[8px] font-bold tracking-wider transition-opacity hover:opacity-70"
+                style={{ color: T.red }}
+              >
+                Clear all
+              </button>
+            )}
+          </div>
+        )}
+
         {isLoading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2"
             style={{ background: "rgba(6,11,21,0.9)", backdropFilter: "blur(6px)" }}>
