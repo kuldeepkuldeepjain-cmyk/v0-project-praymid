@@ -29,6 +29,7 @@ type Candle = {
   low: number
   close: number
   volume: number
+  ts?: number   // Unix timestamp from Yahoo Finance — required for correct chart time axis
 }
 
 type ForexPair = {
@@ -548,7 +549,7 @@ export function ForexTradingPlatform({
     } catch {}
   }, [openTrades, closedTrades, participantEmail])
 
-  // ── Execute trade ───────────��───────────────────────────────────────────────
+  // ── Execute trade ───────────��────────────────────────────────��──────────────
   const executeTrade = async () => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize)
@@ -1029,13 +1030,14 @@ export function ForexTradingPlatform({
             </div>
           )}
 
-          {/* Chart — fills all remaining height, with BUY/SELL strip at bottom */}
+          {/* Chart ��� fills all remaining height, with BUY/SELL strip at bottom */}
           <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
             <div className="flex-1 min-h-0">
               {selectedPair ? (
                 <TradingChart
                   candles={selectedPair.candles}
                   sym={selectedPair.symbol}
+                  tf={timeframe}
                   openTrades={openTrades.filter((t) => t.pair === selectedPair.symbol)}
                 />
               ) : (

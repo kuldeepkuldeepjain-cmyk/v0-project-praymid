@@ -122,9 +122,14 @@ function calcMACD(closes: number[]) {
   return { macd, signal, hist }
 }
 
-function toTimestamp(c: Candle, idx: number): Time {
-  if (c.ts) return c.ts as Time
-  return (idx * 60) as Time
+const TF_SECONDS: Record<string, number> = {
+  "1M": 60, "5M": 300, "15M": 900, "1H": 3600, "4H": 14400, "1D": 86400,
+}
+
+function toTimestamp(c: Candle, idx: number, tfSeconds = 300): Time {
+  if (c.ts && c.ts > 1_000_000) return c.ts as Time
+  // Fallback: generate sequential timestamps anchored to Jan 1 2024 with proper interval
+  return (1704067200 + idx * tfSeconds) as Time
 }
 
 // ─── OHLCV Info Bar state ─────────────────────────────────────────────────────
@@ -138,10 +143,12 @@ type OHLCVInfo = {
 export function TradingChart({
   candles,
   sym,
+  tf = "5M",
   openTrades = [],
 }: {
   candles: Candle[]
   sym: string
+  tf?: string
   openTrades?: OpenTrade[]
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -179,8 +186,9 @@ export function TradingChart({
     const volData: HistogramData[]      = []
     const closes: number[]              = []
     const times: Time[]                 = []
+    const tfSecs = TF_SECONDS[tf] ?? 300
     candles.forEach((c, i) => {
-      const t = toTimestamp(c, i)
+      const t = toTimestamp(c, i, tfSecs)
       const isUp = c.close >= c.open
       candleData.push({ time: t, open: c.open, high: c.high, low: c.low, close: c.close })
       volData.push({
@@ -383,7 +391,7 @@ export function TradingChart({
     if (last) setOhlcv({ open: last.open, high: last.high, low: last.low, close: last.close, volume: last.volume, isUp: last.close >= last.open })
   }, [candleData, volData, candles])
 
-  // ── Update EMA ───────────────────────────────────────────────────────────────
+  // ── Update EMA ───────────────────────────────────��───────────────────────────
   useEffect(() => {
     if (!ema9Ref.current || times.length === 0) return
     ema9Ref.current.setData(indicators.ema9 ? toLineData(ema9d) : [])
@@ -514,7 +522,7 @@ export function TradingChart({
         )}
       </div>
 
-      {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
+      {/* ── Indicator Toolbar ────���──────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-1 px-2 shrink-0 overflow-x-auto"
         style={{ height: 34, borderBottom: `1px solid ${T.border}`, background: T.bgSurface }}
