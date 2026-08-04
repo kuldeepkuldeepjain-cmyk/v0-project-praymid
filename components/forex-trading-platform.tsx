@@ -1009,38 +1009,53 @@ export function ForexTradingPlatform({
     })
 
     if (toClose.length > 0) {
+      const icons = { tp: "Take Profit", sl: "Stop Loss", trailing_sl: "Trailing Stop", manual: "Closed" }
+
       toClose.forEach(({ id, reason, price }) => {
         if (closingTradeIds.current.has(id)) return
+
+        // Read trade from the live ref — never from stale closure or inside a state updater
+        const trade = openTradesRef.current.find(t => t.id === id)
+        if (!trade) return
+
         closingTradeIds.current.add(id)
-        setOpenTrades(prev => {
-          const trade = prev.find(t => t.id === id)
-          if (!trade) { closingTradeIds.current.delete(id); return prev }
-          const { pnl: finalPnlRaw } = calcPnl(trade, price, trade.pair)
-          const finalPnl   = parseFloat((finalPnlRaw + trade.swap).toFixed(2))
-          const { pipCount: finalPips } = calcPnl(trade, price, trade.pair)
-          const closed: ClosedTrade = {
-            ...trade, closePrice: price,
-            closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-            closeDuration: formatDuration(trade.openTimestamp),
-            finalPnl, finalPips: finalPips,
-            finalSwap: parseFloat(trade.swap.toFixed(2)),
-            closeReason: reason as ClosedTrade["closeReason"],
-          }
-          setClosedTrades(c => [closed, ...c.slice(0, 99)])
-          // Return margin + P&L (margin was deducted on open, return it now with profit/loss)
-          const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-          adjustWalletBalance(
-            returnAmt > 0 ? returnAmt : 0,
-            `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
-          )
-          const icons = { tp: "Take Profit", sl: "Stop Loss", trailing_sl: "Trailing Stop", manual: "Closed" }
-          showToast(
-            reason === "tp" ? "success" : "error",
-            `${icons[reason as keyof typeof icons]} — ${trade.pair} ${trade.direction}: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${finalPips >= 0 ? "+" : ""}${finalPips.toFixed(1)} pips)`
-          )
-          setTimeout(() => closingTradeIds.current.delete(id), 1000)
-          return prev.filter(t => t.id !== id)
+
+        // --- Compute close values OUTSIDE any state updater ---
+        const { pnl: finalPnlRaw, pipCount: finalPips } = calcPnl(trade, price, trade.pair)
+        const finalPnl = parseFloat((finalPnlRaw + trade.swap).toFixed(2))
+        const closed: ClosedTrade = {
+          ...trade, closePrice: price,
+          closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          closeDuration: formatDuration(trade.openTimestamp),
+          finalPnl, finalPips,
+          finalSwap: parseFloat(trade.swap.toFixed(2)),
+          closeReason: reason as ClosedTrade["closeReason"],
+        }
+
+        // --- Apply all state mutations once, separately, never nested ---
+        // 1. Remove from open list
+        openTradesRef.current = openTradesRef.current.filter(t => t.id !== id)
+        setOpenTrades(prev => prev.filter(t => t.id !== id))
+
+        // 2. Add to history once — guard with ID check to be safe
+        setClosedTrades(prev => {
+          if (prev.some(t => t.id === closed.id)) return prev
+          return [closed, ...prev.slice(0, 99)]
         })
+
+        // 3. Return margin + P&L (called only once per trade)
+        const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
+        adjustWalletBalance(
+          returnAmt > 0 ? returnAmt : 0,
+          `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+        )
+
+        showToast(
+          reason === "tp" ? "success" : "error",
+          `${icons[reason as keyof typeof icons]} — ${trade.pair} ${trade.direction}: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${finalPips >= 0 ? "+" : ""}${finalPips.toFixed(1)} pips)`
+        )
+
+        setTimeout(() => closingTradeIds.current.delete(id), 1000)
       })
     } else {
       // Use functional updater: only keep trades still present in prev state.
@@ -1067,17 +1082,26 @@ export function ForexTradingPlatform({
   }, [tickCount])
 
   // ── Persist trades ─────────────────────────────────────────────────────────
+  // Guard: do not save until the load effect has run at least once
+  const localStorageLoaded = useRef(false)
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`forex_v3_${participantEmail}`)
       if (saved) {
         const { open, closed, pending } = JSON.parse(saved)
-        setOpenTrades(open ?? []); setClosedTrades(closed ?? []); setPendingOrders(pending ?? [])
+        setOpenTrades(open ?? [])
+        setClosedTrades(closed ?? [])
+        setPendingOrders(pending ?? [])
       }
     } catch {}
+    // Mark as loaded so the save effect is now allowed to run
+    localStorageLoaded.current = true
   }, [participantEmail])
 
   useEffect(() => {
+    // Never save before the initial load — prevents empty state overwriting saved data
+    if (!localStorageLoaded.current) return
     try {
       localStorage.setItem(`forex_v3_${participantEmail}`, JSON.stringify({ open: openTrades, closed: closedTrades, pending: pendingOrders }))
     } catch {}
@@ -1221,34 +1245,49 @@ export function ForexTradingPlatform({
   const closeTrade = (id: string) => {
     // Prevent double-close if tick engine and manual close race
     if (closingTradeIds.current.has(id)) return
+
+    // Read trade from the live ref — never from stale closure
+    const trade = openTradesRef.current.find(t => t.id === id)
+    if (!trade) return
+
     closingTradeIds.current.add(id)
-    setOpenTrades(prev => {
-      const trade = prev.find(t => t.id === id)
-      if (!trade) { closingTradeIds.current.delete(id); return prev }
-      const pairNow = pairsRef.current.find(p => p.symbol === trade.pair)
-      const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
-      const { pnl: pnlRaw, pipCount } = calcPnl(trade, closePrice, trade.pair)
-      const finalPnl = parseFloat((pnlRaw + trade.swap).toFixed(2))
-      const closed: ClosedTrade = {
-        ...trade, closePrice,
-        closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        closeDuration: formatDuration(trade.openTimestamp),
-        finalPnl, finalPips: pipCount, finalSwap: parseFloat(trade.swap.toFixed(2)),
-        closeReason: "manual",
-      }
-      setClosedTrades(c => [closed, ...c.slice(0, 99)])
-      // Return margin + P&L (margin was locked on open)
-      const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-      adjustWalletBalance(
-        returnAmt > 0 ? returnAmt : 0,
-        `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
-      )
-      showToast(finalPnl >= 0 ? "success" : "error",
-        `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
-      )
-      setTimeout(() => closingTradeIds.current.delete(id), 1000)
-      return prev.filter(t => t.id !== id)
+
+    // --- Compute close values OUTSIDE any state updater ---
+    const pairNow    = pairsRef.current.find(p => p.symbol === trade.pair)
+    const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
+    const { pnl: pnlRaw, pipCount } = calcPnl(trade, closePrice, trade.pair)
+    const finalPnl   = parseFloat((pnlRaw + trade.swap).toFixed(2))
+    const closed: ClosedTrade = {
+      ...trade, closePrice,
+      closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      closeDuration: formatDuration(trade.openTimestamp),
+      finalPnl, finalPips: pipCount, finalSwap: parseFloat(trade.swap.toFixed(2)),
+      closeReason: "manual",
+    }
+
+    // --- Apply all state mutations once, separately, never nested ---
+    // 1. Remove from open list
+    openTradesRef.current = openTradesRef.current.filter(t => t.id !== id)
+    setOpenTrades(prev => prev.filter(t => t.id !== id))
+
+    // 2. Add to history once — guard with ID check to be safe
+    setClosedTrades(prev => {
+      if (prev.some(t => t.id === closed.id)) return prev
+      return [closed, ...prev.slice(0, 99)]
     })
+
+    // 3. Return margin + P&L to balance (called only once)
+    const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
+    adjustWalletBalance(
+      returnAmt > 0 ? returnAmt : 0,
+      `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+    )
+
+    showToast(finalPnl >= 0 ? "success" : "error",
+      `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
+    )
+
+    setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
 
   // ── Modify trade ───────────────────────────────────────────────────────────
@@ -2215,7 +2254,7 @@ export function ForexTradingPlatform({
         </div>
       </div>
 
-      {/* ── Trade Confirmation Modal ───────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���────────────────────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
