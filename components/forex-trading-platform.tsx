@@ -203,7 +203,7 @@ function calcPnl(trade: OpenTrade, currentPrice: number, sym: string): {
 
 
 
-// ─── Order Depth Panel ───────────────────────────────────────────���───────────
+// ─── Order Depth Panel ───────────────────────────────────────────�����──────────
 
 function OrderDepth({ pair }: { pair: ForexPair }) {
   // Simulate depth levels
@@ -670,7 +670,7 @@ export function ForexTradingPlatform({
   })
 
   return (
-    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", minHeight: 540, fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", width: "100%", fontFamily: "'Inter', sans-serif" }}>
 
       {/* ══════════════════════════════════════════════════════════════════════
            TOP NAVIGATION BAR

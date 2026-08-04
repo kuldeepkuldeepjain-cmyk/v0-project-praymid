@@ -21,7 +21,6 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
-import { MysteryBox } from "@/components/mystery-box"
 import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 import { NoticeBoard } from "@/components/notice-board"
 
@@ -1870,8 +1869,14 @@ export default function DashboardHome() {
               ))}
             </div>
 
-            {/* ── FOREX TRADING PLATFORM ───────────────────────── */}
-            <div className="px-0 pt-4" style={{ height: "calc(100svh - 80px)", minHeight: 540, maxHeight: 900, position: "relative" }}>
+            {/* ── FOREX TRADING PLATFORM — true full-screen terminal ── */}
+            <div style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 40,
+              display: "flex",
+              flexDirection: "column",
+            }}>
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
@@ -1885,6 +1890,8 @@ export default function DashboardHome() {
                 }}
               />
             </div>
+            {/* Spacer so content below the fixed platform is reachable via scroll */}
+            <div style={{ height: "100svh" }} />
 
             {/* ── PROMO CARDS ROW ──────────────────────────────── */}
             <div className="px-4 pt-3 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -1932,21 +1939,7 @@ export default function DashboardHome() {
               </Link>
             </div>
 
-            {/* ── MYSTERY BOX ──────────────────────────────────── */}
-            <div className="px-4 pt-2.5 pb-4">
-              <MysteryBox
-                currentBalance={walletBalance}
-                participantEmail={participantData?.email || ""}
-                onRewardWon={(amount) => { toast({ title: "Mystery Box Reward!", description: `You won $${amount}!` }) }}
-                onBalanceUpdated={(newBalance) => {
-                  setParticipantData((prev: any) => {
-                    const updated = { ...prev, account_balance: newBalance }
-                    localStorage.setItem("participantData", JSON.stringify(updated))
-                    return updated
-                  })
-                }}
-              />
-            </div>
+
 
           </>
         )}
