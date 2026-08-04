@@ -255,7 +255,6 @@ export function TradingChart({
       },
       timeScale: {
         borderColor:    T.border,
-        textColor:      T.textMuted,
         timeVisible:    true,
         secondsVisible: false,
         fixLeftEdge:    false,
@@ -488,6 +487,18 @@ export function TradingChart({
   const fmtP = (v: number) => v.toFixed(dec)
   const fmtV = (v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toString()
 
+  // ATR(14) derived from current candles for display in OHLCV bar
+  const atr14 = useMemo(() => {
+    if (candles.length < 15) return null
+    const trs: number[] = []
+    for (let i = 1; i < candles.length; i++) {
+      const c = candles[i], p = candles[i - 1]
+      trs.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)))
+    }
+    const recent = trs.slice(-14)
+    return recent.reduce((a, b) => a + b, 0) / 14
+  }, [candles])
+
   return (
     <div className="flex flex-col w-full h-full select-none" style={{ background: T.bg }}>
 
@@ -516,6 +527,12 @@ export function TradingChart({
               <span className="text-[8px] font-bold tracking-wider" style={{ color: T.textMuted }}>V</span>
               <span className="text-[10px] font-black price-mono" style={{ color: T.textDim }}>{fmtV(displayOhlcv.volume)}</span>
             </span>
+            {atr14 !== null && (
+              <span className="flex items-baseline gap-0.5 shrink-0">
+                <span className="text-[8px] font-bold tracking-wider" style={{ color: T.textMuted }}>ATR</span>
+                <span className="text-[10px] font-black price-mono" style={{ color: T.amber }}>{fmtP(atr14)}</span>
+              </span>
+            )}
           </>
         ) : (
           <span className="text-[9px]" style={{ color: T.textMuted }}>Waiting for data...</span>
