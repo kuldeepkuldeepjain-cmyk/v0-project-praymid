@@ -730,8 +730,9 @@ export function ForexTradingPlatform({
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastIdRef       = useRef(0)
 
-  // Keep openTradesRef in sync
-  useEffect(() => { openTradesRef.current = openTrades }, [openTrades])
+  // Keep openTradesRef in sync — assigned at render time (not in useEffect)
+  // so the tick engine always reads the latest committed state
+  openTradesRef.current = openTrades
 
   // Sync external balance — skipped while an internal adjustWalletBalance call is in-flight
   // to prevent the prop update triggered by onBalanceUpdated from overwriting the fresh DB value
@@ -918,7 +919,9 @@ export function ForexTradingPlatform({
 
   // ── P&L engine + SL/TP/Trailing engine ────────────────────────────────────
   useEffect(() => {
-    if (openTrades.length === 0 && pendingOrders.length === 0) return
+    // Always read live trade list from the ref — never the stale closure value
+    const liveTrades = openTradesRef.current
+    if (liveTrades.length === 0 && pendingOrders.length === 0) return
     const toClose: { id: string; reason: ClosedTrade["closeReason"]; price: number }[] = []
     const toFillPending: string[] = []
 
@@ -961,8 +964,8 @@ export function ForexTradingPlatform({
       })
     }
 
-    // Update open trades P&L + check SL/TP/Trailing
-    const updated = openTrades.map(t => {
+    // Update open trades P&L + check SL/TP/Trailing — use liveTrades (ref) not stale closure
+    const updated = liveTrades.map(t => {
       const pairNow = pairsRef.current.find(p => p.symbol === t.pair)
       if (!pairNow) return t
       const currentPrice = t.direction === "BUY" ? pairNow.bid : pairNow.ask
@@ -1040,8 +1043,16 @@ export function ForexTradingPlatform({
         })
       })
     } else {
-      setOpenTrades(updated)
+      // Use functional updater: only keep trades still present in prev state.
+      // This prevents resurrecting trades that were just closed between tick cycles.
+      setOpenTrades(prev => {
+        const prevIds = new Set(prev.map(t => t.id))
+        return updated.filter(t => prevIds.has(t.id))
+      })
     }
+
+    // Sync ref immediately so subsequent ticks read the latest list
+    openTradesRef.current = updated.filter(t => !toClose.some(c => c.id === t.id))
 
     const newTotalPnl = updated.reduce((s, t) => s + t.pnl, 0)
     setTotalPnl(newTotalPnl)
@@ -1707,7 +1718,7 @@ export function ForexTradingPlatform({
           </div>
         </div>
 
-        {/* ── RIGHT: Order Ticket ─────────────────────────────────────────────── */}
+        {/* ── RIGHT: Order Ticket ────────────��────────────────────────────────── */}
         <div className={`flex flex-col shrink-0 ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
