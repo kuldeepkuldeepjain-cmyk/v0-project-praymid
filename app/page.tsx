@@ -119,31 +119,28 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex gap-3">
-            <Button
-              variant="outline"
+            <button
               onClick={() => router.push("/participant/login")}
-              className="border-slate-700 text-slate-200 hover:bg-slate-800 hover:text-white"
+              className="px-5 py-2 rounded-lg border border-cyan-500/60 bg-slate-900/80 text-cyan-300 font-semibold text-sm hover:bg-cyan-500/10 hover:border-cyan-400 hover:text-white transition-all duration-200 active:scale-95"
             >
               Login
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={() => router.push("/participant/register")}
-              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+              className="px-5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-semibold text-sm shadow-lg hover:shadow-cyan-500/30 transition-all duration-200 active:scale-95 flex items-center gap-2"
             >
-              Start Trading <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+              Start Trading <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Mobile nav */}
           <div className="flex md:hidden items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
+            <button
               onClick={() => router.push("/participant/login")}
-              className="border-slate-700 h-8 px-3 text-xs"
+              className="h-8 px-3 rounded-lg border border-cyan-500/60 bg-slate-900/80 text-cyan-300 font-semibold text-xs hover:bg-cyan-500/10 hover:border-cyan-400 hover:text-white transition-all duration-200 active:scale-95"
             >
               Login
-            </Button>
+            </button>
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-1">
               {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -395,13 +392,12 @@ export default function LandingPage() {
             >
               Create Account <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
-            <Button
-              variant="outline"
+            <button
               onClick={() => router.push("/participant/login")}
-              className="border-slate-700 text-slate-200 hover:bg-slate-800 px-8 py-4 text-lg"
+              className="px-8 py-4 rounded-lg border border-cyan-500/60 bg-slate-900/80 text-cyan-300 font-semibold text-lg hover:bg-cyan-500/10 hover:border-cyan-400 hover:text-white transition-all duration-200 active:scale-95"
             >
               Sign In
-            </Button>
+            </button>
           </div>
         </div>
       </section>
