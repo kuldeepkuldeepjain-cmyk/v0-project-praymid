@@ -58,6 +58,24 @@ type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; t
 
 type ModifyTarget = { tradeId: string; sl: string; tp: string; trailingPips: string } | null
 
+type TradeConfirm = {
+  pair: string
+  direction: TradeDirection
+  lotSize: number
+  leverage: number
+  price: number
+  margin: number
+  sl: number | null
+  tp: number | null
+  trailingPips: number | null
+  pipVal: number
+  liqPrice: number
+  isPending: boolean
+  pendingOrderType?: PendingOrder["orderType"]
+  pendingPrice?: number
+  pendingExpiry?: "GTC" | "TODAY"
+} | null
+
 type PositionSizerState = {
   riskPct: string; slPips: string; calculatedLots: number | null
 }
@@ -693,6 +711,8 @@ export function ForexTradingPlatform({
   const [candleLoading, setCandleLoading] = useState(false)
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
+  const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
   const [pendingExpiry, setPendingExpiry] = useState<"GTC" | "TODAY">("GTC")
@@ -989,9 +1009,11 @@ export function ForexTradingPlatform({
             closeReason: reason as ClosedTrade["closeReason"],
           }
           setClosedTrades(c => [closed, ...c.slice(0, 99)])
+          // Return margin + P&L (margin was deducted on open, return it now with profit/loss)
+          const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
           adjustWalletBalance(
-            finalPnl,
-            `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`
+            returnAmt > 0 ? returnAmt : 0,
+            `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
           )
           const icons = { tp: "Take Profit", sl: "Stop Loss", trailing_sl: "Trailing Stop", manual: "Closed" }
           showToast(
@@ -1035,84 +1057,127 @@ export function ForexTradingPlatform({
   }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
   // ── Execute market trade ───────────────────────────────────────────────────
-  const executeTrade = async () => {
+  // Opens the confirmation modal — called by both executeTrade and quickTrade
+  const requestConfirm = (
+    dir: TradeDirection,
+    lot: number,
+    lev: number,
+    price: number,
+    slNum: number | null,
+    tpNum: number | null,
+    trailN: number | null,
+    isPending: boolean,
+    pendingMeta?: { orderType: PendingOrder["orderType"]; price: number; expiry: "GTC" | "TODAY" },
+  ) => {
+    if (!selectedPair) return
+    const margin  = calcMargin(selectedPair.symbol, lot, price, lev)
+    const pv      = pipValue(selectedPair.symbol, lot, price)
+    const cs      = contractSize(selectedPair.symbol)
+    const liqDist = margin / (lot * cs)   // distance from entry to liquidation in price units
+    const liqPrice = dir === "BUY" ? parseFloat((price - liqDist).toFixed(5)) : parseFloat((price + liqDist).toFixed(5))
+
+    setTradeConfirm({
+      pair: selectedPair.symbol, direction: dir,
+      lotSize: lot, leverage: lev, price, margin,
+      sl: slNum, tp: tpNum, trailingPips: trailN,
+      pipVal: pv, liqPrice, isPending,
+      ...(pendingMeta ? {
+        pendingOrderType: pendingMeta.orderType,
+        pendingPrice: pendingMeta.price,
+        pendingExpiry: pendingMeta.expiry,
+      } : {}),
+    })
+  }
+
+  const executeTrade = () => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize); const lev = parseFloat(leverage)
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
 
     const price  = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-    const margin = calcMargin(selectedPair.symbol, lot, price, lev)
     const slNum  = sl ? parseFloat(sl) : null
     const tpNum  = tp ? parseFloat(tp) : null
     const trailN = trailingPips ? parseFloat(trailingPips) : null
+    const margin = calcMargin(selectedPair.symbol, lot, price, lev)
 
     if (slNum && direction === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
     if (slNum && direction === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
     if (tpNum && direction === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
     if (tpNum && direction === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
-
     if (walletBalance < margin) {
       showToast("error", `Insufficient balance — need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return
     }
 
     if (orderType !== "market") {
-      // Place pending order
       const pPrice = parseFloat(pendingPrice)
       if (isNaN(pPrice) || pPrice <= 0) { showToast("error", "Enter a valid pending order price"); return }
       const oType: PendingOrder["orderType"] =
         orderType === "limit"
           ? direction === "BUY" ? "BUY_LIMIT" : "SELL_LIMIT"
           : direction === "BUY" ? "BUY_STOP" : "SELL_STOP"
-      const order: PendingOrder = {
-        id: genId(), pair: selectedPair.symbol, direction,
-        orderType: oType, lotSize: lot, leverage: lev,
-        targetPrice: pPrice, sl: slNum, tp: tpNum,
-        createdTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-        expiry: pendingExpiry,
-      }
-      setPendingOrders(prev => [order, ...prev])
-      showToast("info", `${oType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(pPrice, selectedPair.symbol)}`)
-      setActivePanel("pending")
+      requestConfirm(direction, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price: pPrice, expiry: pendingExpiry })
       return
     }
 
-    const trade: OpenTrade = {
-      id: genId(), pair: selectedPair.symbol, direction,
-      lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
-      sl: slNum, tp: tpNum, trailingStopPips: trailN && trailN > 0 ? trailN : null,
-      trailingPeak: price,
-      openTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-      openTimestamp: Date.now(),
-      pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
-    }
-    setOpenTrades(prev => [trade, ...prev])
-    const pv = pipValue(selectedPair.symbol, lot, price)
-    showToast("success",
-      `${direction} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Pip: $${pv.toFixed(4)}`
-    )
-    setSl(""); setTp(""); setTrailingPips("")
-    setActivePanel("positions")
+    requestConfirm(direction, lot, lev, price, slNum, tpNum, trailN, false)
   }
 
-  // ── Quick trade ────────────────────────────────────────────────────────────
+  // Actual placement — called after user confirms
+  const confirmAndPlace = async () => {
+    if (!tradeConfirm || !selectedPair) return
+    setConfirmLoading(true)
+    const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
+
+    if (isPending && tradeConfirm.pendingOrderType && tradeConfirm.pendingPrice) {
+      const order: PendingOrder = {
+        id: genId(), pair: selectedPair.symbol, direction: dir,
+        orderType: tradeConfirm.pendingOrderType, lotSize: lot, leverage: lev,
+        targetPrice: tradeConfirm.pendingPrice, sl: slNum, tp: tpNum,
+        createdTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        expiry: tradeConfirm.pendingExpiry ?? "GTC",
+      }
+      setPendingOrders(prev => [order, ...prev])
+      showToast("info", `${order.orderType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(order.targetPrice, selectedPair.symbol)}`)
+      setActivePanel("pending")
+    } else {
+      // Deduct margin from balance immediately
+      const newBal = await adjustWalletBalance(
+        -margin,
+        `Margin locked — ${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
+      )
+      if (newBal === null) { setConfirmLoading(false); return }  // API error — abort
+
+      const trade: OpenTrade = {
+        id: genId(), pair: selectedPair.symbol, direction: dir,
+        lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
+        sl: slNum, tp: tpNum, trailingStopPips: trailN && trailN > 0 ? trailN : null,
+        trailingPeak: price,
+        openTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        openTimestamp: Date.now(),
+        pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
+      }
+      setOpenTrades(prev => [trade, ...prev])
+      showToast("success",
+        `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
+      )
+      setSl(""); setTp(""); setTrailingPips("")
+      setActivePanel("positions")
+    }
+
+    setTradeConfirm(null)
+    setConfirmLoading(false)
+  }
+
+  // ── Quick trade — routes through confirmation modal ────────────────────────
   const quickTrade = (dir: TradeDirection) => {
     if (!selectedPair) return
-    const lot = parseFloat(lotSize) || 0.01; const lev = parseFloat(leverage) || 100
+    const lot = parseFloat(lotSize) || 0.01
+    const lev = parseFloat(leverage) || 100
     const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
     if (walletBalance < margin) { showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return }
-    const trade: OpenTrade = {
-      id: genId(), pair: selectedPair.symbol, direction: dir,
-      lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
-      sl: null, tp: null, trailingStopPips: null, trailingPeak: price,
-      openTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-      openTimestamp: Date.now(),
-      pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
-    }
-    setOpenTrades(prev => [trade, ...prev])
-    showToast("success", `Quick ${dir}: ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`)
-    setActivePanel("positions")
+    requestConfirm(dir, lot, lev, price, null, null, null, false)
   }
 
   // ── Close trade ────────────────────────────────────────────────────────────
@@ -1132,7 +1197,12 @@ export function ForexTradingPlatform({
         closeReason: "manual",
       }
       setClosedTrades(c => [closed, ...c.slice(0, 99)])
-      adjustWalletBalance(finalPnl, `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+      // Return margin + P&L (margin was locked on open)
+      const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
+      adjustWalletBalance(
+        returnAmt > 0 ? returnAmt : 0,
+        `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+      )
       showToast(finalPnl >= 0 ? "success" : "error",
         `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
       )
@@ -1203,7 +1273,7 @@ export function ForexTradingPlatform({
   const equity = walletBalance + totalPnl
 
   return (
-    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", width: "100%", fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", width: "100%", position: "relative", fontFamily: "'Inter', sans-serif" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -2103,6 +2173,204 @@ export function ForexTradingPlatform({
 
         </div>
       </div>
+
+      {/* ── Trade Confirmation Modal ───────────────────────────────────────────── */}
+      {tradeConfirm && (
+        <div
+          className="absolute inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(2,6,15,0.82)", backdropFilter: "blur(6px)" }}
+          onClick={(e) => { if (e.target === e.currentTarget && !confirmLoading) setTradeConfirm(null) }}
+        >
+          <div
+            className="relative flex flex-col rounded-2xl overflow-hidden"
+            style={{
+              width: "min(420px, 94vw)",
+              background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,
+            }}
+          >
+            {/* Header */}
+            <div
+              className="flex items-center justify-between px-5 py-4"
+              style={{
+                background: tradeConfirm.direction === "BUY"
+                  ? "linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%)"
+                  : "linear-gradient(90deg, rgba(239,68,68,0.15) 0%, transparent 100%)",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center w-10 h-10 rounded-xl"
+                  style={{
+                    background: tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
+                    border: `1px solid ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
+                  }}
+                >
+                  {tradeConfirm.direction === "BUY"
+                    ? <TrendingUp className="h-5 w-5 text-emerald-400" />
+                    : <TrendingDown className="h-5 w-5 text-red-400" />
+                  }
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <span
+                      className="text-[10px] font-black tracking-widest px-2 py-0.5 rounded"
+                      style={{
+                        background: tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)",
+                        color: tradeConfirm.direction === "BUY" ? "#10b981" : "#ef4444",
+                      }}
+                    >
+                      {tradeConfirm.isPending
+                        ? (tradeConfirm.pendingOrderType?.replace("_", " ") ?? "PENDING")
+                        : tradeConfirm.direction}
+                    </span>
+                    <span className="text-white font-black text-[15px] tracking-wide">{tradeConfirm.pair}</span>
+                  </div>
+                  <p className="text-[10px]" style={{ color: "rgba(148,163,184,0.6)" }}>
+                    Review order details before placing
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => { if (!confirmLoading) setTradeConfirm(null) }}
+                className="flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-white/10"
+                style={{ color: "rgba(148,163,184,0.6)" }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Order summary grid */}
+            <div className="px-5 py-4 grid grid-cols-2 gap-2.5">
+              {[
+                {
+                  label: "Entry Price",
+                  value: tradeConfirm.isPending && tradeConfirm.pendingPrice
+                    ? fmt(tradeConfirm.pendingPrice, tradeConfirm.pair)
+                    : fmt(tradeConfirm.price, tradeConfirm.pair),
+                  color: tradeConfirm.direction === "BUY" ? "#10b981" : "#ef4444",
+                },
+                { label: "Lot Size", value: `${tradeConfirm.lotSize} L`, color: "#f8fafc" },
+                { label: "Leverage", value: `1:${tradeConfirm.leverage}`, color: "#f8fafc" },
+                { label: "Pip Value", value: `$${tradeConfirm.pipVal.toFixed(4)} / pip`, color: "#94a3b8" },
+                {
+                  label: "Stop Loss",
+                  value: tradeConfirm.sl ? fmt(tradeConfirm.sl, tradeConfirm.pair) : "None",
+                  color: tradeConfirm.sl ? "#ef4444" : "#475569",
+                },
+                {
+                  label: "Take Profit",
+                  value: tradeConfirm.tp ? fmt(tradeConfirm.tp, tradeConfirm.pair) : "None",
+                  color: tradeConfirm.tp ? "#10b981" : "#475569",
+                },
+                {
+                  label: "Trailing Stop",
+                  value: tradeConfirm.trailingPips ? `${tradeConfirm.trailingPips} pips` : "None",
+                  color: tradeConfirm.trailingPips ? "#f59e0b" : "#475569",
+                },
+                {
+                  label: "Liq. Price",
+                  value: fmt(tradeConfirm.liqPrice, tradeConfirm.pair),
+                  color: "#f97316",
+                },
+              ].map(({ label, value, color }) => (
+                <div
+                  key={label}
+                  className="flex flex-col gap-1 px-3 py-2.5 rounded-xl"
+                  style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
+                >
+                  <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(148,163,184,0.5)" }}>{label}</span>
+                  <span className="text-[12px] font-black price-mono" style={{ color }}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Margin block */}
+            <div
+              className="mx-5 mb-3 rounded-xl px-4 py-3 flex items-center justify-between"
+              style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[9px] font-black tracking-widest uppercase" style={{ color: "rgba(245,158,11,0.65)" }}>
+                  Margin Required
+                </span>
+                <span className="text-[20px] font-black price-mono" style={{ color: "#f59e0b" }}>
+                  ${tradeConfirm.margin.toFixed(2)}
+                </span>
+                <span className="text-[9px]" style={{ color: "rgba(148,163,184,0.45)" }}>
+                  Locked from balance until trade closes
+                </span>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                <div className="text-right">
+                  <div className="text-[8px] font-bold tracking-wider mb-0.5" style={{ color: "rgba(148,163,184,0.5)" }}>BALANCE BEFORE</div>
+                  <div className="text-[12px] font-black price-mono text-white">${walletBalance.toFixed(2)}</div>
+                </div>
+                <div style={{ color: "rgba(245,158,11,0.6)", lineHeight: 1 }}>↓</div>
+                <div className="text-right">
+                  <div className="text-[8px] font-bold tracking-wider mb-0.5" style={{ color: "rgba(148,163,184,0.5)" }}>BALANCE AFTER</div>
+                  <div
+                    className="text-[12px] font-black price-mono"
+                    style={{ color: (walletBalance - tradeConfirm.margin) >= 0 ? "#10b981" : "#ef4444" }}
+                  >
+                    ${Math.max(0, walletBalance - tradeConfirm.margin).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Low free margin warning */}
+            {(walletBalance - tradeConfirm.margin) < tradeConfirm.margin * 0.5 && walletBalance > tradeConfirm.margin && (
+              <div
+                className="mx-5 mb-3 flex items-center gap-2 px-3 py-2 rounded-lg"
+                style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.18)" }}
+              >
+                <AlertTriangle className="h-3 w-3 shrink-0 text-red-400" />
+                <span className="text-[9px] font-bold leading-tight" style={{ color: "#f87171" }}>
+                  Low free margin after this trade. Consider reducing lot size.
+                </span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="px-5 pb-5 flex gap-3">
+              <button
+                onClick={() => { if (!confirmLoading) setTradeConfirm(null) }}
+                disabled={confirmLoading}
+                className="flex-1 py-3 rounded-xl font-black text-[12px] tracking-wider transition-all hover:bg-white/10 disabled:opacity-40"
+                style={{ border: "1px solid rgba(255,255,255,0.09)", color: "rgba(148,163,184,0.75)" }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmAndPlace}
+                disabled={confirmLoading}
+                className="flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-black text-[12px] tracking-wider transition-all active:scale-95 disabled:opacity-60"
+                style={{
+                  flex: 2,
+                  background: tradeConfirm.direction === "BUY"
+                    ? "linear-gradient(135deg, #059669 0%, #10b981 100%)"
+                    : "linear-gradient(135deg, #dc2626 0%, #ef4444 100%)",
+                  boxShadow: tradeConfirm.direction === "BUY"
+                    ? "0 4px 24px rgba(16,185,129,0.35)"
+                    : "0 4px 24px rgba(239,68,68,0.35)",
+                  color: "#fff",
+                }}
+              >
+                {confirmLoading
+                  ? <><RefreshCw className="h-3.5 w-3.5 animate-spin" /> Placing...</>
+                  : tradeConfirm.direction === "BUY"
+                    ? <><TrendingUp className="h-3.5 w-3.5" /> {tradeConfirm.isPending ? `Place ${tradeConfirm.pendingOrderType?.replace("_"," ")}` : "Confirm BUY"}</>
+                    : <><TrendingDown className="h-3.5 w-3.5" /> {tradeConfirm.isPending ? `Place ${tradeConfirm.pendingOrderType?.replace("_"," ")}` : "Confirm SELL"}</>
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
