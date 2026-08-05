@@ -5,7 +5,9 @@ import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
-  ChevronDown, ChevronUp, ArrowUpDown,
+  ChevronDown, ChevronUp, ArrowUpDown, Award, Flame, TrendingUp as TUp,
+  BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
+  Gauge, Lock, Unlock, BookOpen, Filter,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -78,6 +80,21 @@ type TradeConfirm = {
 
 type PositionSizerState = {
   riskPct: string; slPips: string; calculatedLots: number | null
+}
+
+type PriceAlertItem = {
+  id: string; pair: string; price: number; condition: "above" | "below"
+  label: string; triggered: boolean; createdAt: number
+}
+
+type TradingSession = { name: string; open: number; close: number; tz: string; color: string }
+
+// Performance stats derived from closed trades
+type PerfStats = {
+  totalPnl: number; winRate: number; profitFactor: number
+  avgWin: number; avgLoss: number; bestTrade: number; worstTrade: number
+  totalTrades: number; winCount: number; lossCount: number
+  maxDrawdown: number; sharpe: number
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -295,6 +312,448 @@ function formatDuration(openTimestamp: number): string {
 }
 
 function genId(): string { return Math.random().toString(36).slice(2, 10) }
+
+// ─── Performance Statistics ───────────────────────────────────────────────────
+function calcPerfStats(closed: ClosedTrade[]): PerfStats {
+  if (closed.length === 0) return {
+    totalPnl: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0,
+    bestTrade: 0, worstTrade: 0, totalTrades: 0, winCount: 0, lossCount: 0,
+    maxDrawdown: 0, sharpe: 0,
+  }
+  const wins  = closed.filter(t => t.finalPnl > 0)
+  const losses = closed.filter(t => t.finalPnl <= 0)
+  const totalPnl   = parseFloat(closed.reduce((s, t) => s + t.finalPnl, 0).toFixed(2))
+  const grossWin   = wins.reduce((s, t) => s + t.finalPnl, 0)
+  const grossLoss  = Math.abs(losses.reduce((s, t) => s + t.finalPnl, 0))
+  const winRate    = (wins.length / closed.length) * 100
+  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? 999 : 0
+  const avgWin     = wins.length  > 0 ? grossWin  / wins.length  : 0
+  const avgLoss    = losses.length > 0 ? grossLoss / losses.length : 0
+  const bestTrade  = Math.max(...closed.map(t => t.finalPnl))
+  const worstTrade = Math.min(...closed.map(t => t.finalPnl))
+  // Max drawdown from equity curve
+  let peak = 0, maxDD = 0, running = 0
+  for (const t of [...closed].reverse()) {
+    running += t.finalPnl
+    if (running > peak) peak = running
+    const dd = peak - running
+    if (dd > maxDD) maxDD = dd
+  }
+  // Simple Sharpe (daily returns approximation)
+  const returns = closed.map(t => t.finalPnl)
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length
+  const std  = Math.sqrt(returns.reduce((s, v) => s + (v - mean) ** 2, 0) / returns.length)
+  const sharpe = std > 0 ? parseFloat((mean / std).toFixed(2)) : 0
+  return {
+    totalPnl, winRate: parseFloat(winRate.toFixed(1)), profitFactor: parseFloat(profitFactor.toFixed(2)),
+    avgWin: parseFloat(avgWin.toFixed(2)), avgLoss: parseFloat(avgLoss.toFixed(2)),
+    bestTrade: parseFloat(bestTrade.toFixed(2)), worstTrade: parseFloat(worstTrade.toFixed(2)),
+    totalTrades: closed.length, winCount: wins.length, lossCount: losses.length,
+    maxDrawdown: parseFloat(maxDD.toFixed(2)), sharpe,
+  }
+}
+
+// ─── Trading Sessions (UTC hours) ────────────────────────────────────────────
+const SESSIONS: TradingSession[] = [
+  { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
+  { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
+  { name: "London",  open: 7,  close: 16, tz: "GMT",  color: "#22d3ee" },
+  { name: "New York",open: 12, close: 21, tz: "EST",  color: "#10b981" },
+]
+
+function isSessionOpen(s: TradingSession, utcH: number): boolean {
+  if (s.open < s.close) return utcH >= s.open && utcH < s.close
+  return utcH >= s.open || utcH < s.close // crosses midnight
+}
+
+// ─── Performance Dashboard ───────────────────────────────────────────────────
+
+function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
+  closed: ClosedTrade[]; equityHistory: number[]; walletBalance: number
+}) {
+  const stats = useMemo(() => calcPerfStats(closed), [closed])
+
+  // Mini equity SVG path
+  const eqPath = useMemo(() => {
+    if (equityHistory.length < 2) return ""
+    const min = Math.min(...equityHistory); const max = Math.max(...equityHistory)
+    const range = max - min || 1; const w = 260; const h = 56
+    return equityHistory.map((v, i) => {
+      const x = (i / (equityHistory.length - 1)) * w
+      const y = h - ((v - min) / range) * h
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`
+    }).join(" ")
+  }, [equityHistory])
+
+  // Last 10 trades sparkbar
+  const recent = closed.slice(0, 10).reverse()
+
+  // Pair breakdown
+  const pairMap: Record<string, { pnl: number; count: number }> = {}
+  closed.forEach(t => {
+    if (!pairMap[t.pair]) pairMap[t.pair] = { pnl: 0, count: 0 }
+    pairMap[t.pair].pnl  += t.finalPnl
+    pairMap[t.pair].count += 1
+  })
+  const topPairs = Object.entries(pairMap)
+    .sort((a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl))
+    .slice(0, 5)
+
+  if (closed.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
+        <Trophy className="h-10 w-10" style={{ color: "#1e2d45" }} />
+        <p className="text-[11px] font-bold tracking-wider uppercase" style={{ color: "#2d4565" }}>No trade history yet</p>
+        <p className="text-[10px] text-center" style={{ color: "#1e2d45" }}>Place and close trades to see your performance analytics</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll" style={{ maxHeight: "100%" }}>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {[
+          { label: "Total P&L",      value: `${stats.totalPnl >= 0 ? "+" : ""}$${stats.totalPnl.toFixed(2)}`, color: stats.totalPnl >= 0 ? "#10b981" : "#ef4444", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+          { label: "Win Rate",       value: `${stats.winRate.toFixed(1)}%`, color: stats.winRate >= 55 ? "#10b981" : stats.winRate >= 45 ? "#f59e0b" : "#ef4444", icon: <Award className="h-3.5 w-3.5" /> },
+          { label: "Profit Factor",  value: stats.profitFactor >= 999 ? "∞" : stats.profitFactor.toFixed(2), color: stats.profitFactor >= 1.5 ? "#10b981" : stats.profitFactor >= 1 ? "#f59e0b" : "#ef4444", icon: <Gauge className="h-3.5 w-3.5" /> },
+          { label: "Total Trades",   value: String(stats.totalTrades), color: "#a78bfa", icon: <BarChart className="h-3.5 w-3.5" /> },
+          { label: "Avg Win",        value: `+$${stats.avgWin.toFixed(2)}`, color: "#10b981", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+          { label: "Avg Loss",       value: `-$${stats.avgLoss.toFixed(2)}`, color: "#ef4444", icon: <TrendingDown className="h-3.5 w-3.5" /> },
+          { label: "Best Trade",     value: `+$${stats.bestTrade.toFixed(2)}`, color: "#22d3ee", icon: <Trophy className="h-3.5 w-3.5" /> },
+          { label: "Worst Trade",    value: `$${stats.worstTrade.toFixed(2)}`, color: "#ef4444", icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+          { label: "Max Drawdown",   value: `-$${stats.maxDrawdown.toFixed(2)}`, color: "#fb923c", icon: <TrendingDown className="h-3.5 w-3.5" /> },
+        ].map(item => (
+          <div key={item.label} className="px-2.5 py-2 rounded-xl" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+            <div className="flex items-center gap-1 mb-1" style={{ color: item.color }}>
+              {item.icon}
+              <span className="text-[7px] font-black tracking-[0.15em] uppercase" style={{ color: "#374151" }}>{item.label}</span>
+            </div>
+            <p className="price-mono text-[12px] font-black leading-none" style={{ color: item.color }}>{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Equity Curve */}
+      {eqPath && (
+        <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <LineChart className="h-3 w-3 text-cyan-400" />
+              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Equity Curve</span>
+            </div>
+            <span className="price-mono text-[10px] font-black text-emerald-400">${walletBalance.toFixed(2)}</span>
+          </div>
+          <svg width="100%" height="56" viewBox="0 0 260 56" preserveAspectRatio="none" className="w-full">
+            <defs>
+              <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stats.totalPnl >= 0 ? "#10b981" : "#ef4444"} stopOpacity="0.25" />
+                <stop offset="100%" stopColor={stats.totalPnl >= 0 ? "#10b981" : "#ef4444"} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={`${eqPath} V56 H0 Z`} fill="url(#eqGrad)" />
+            <path d={eqPath} stroke={stats.totalPnl >= 0 ? "#10b981" : "#ef4444"} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+
+      {/* Recent Trades Sparkbar */}
+      {recent.length > 0 && (
+        <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Flame className="h-3 w-3 text-amber-400" />
+            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Last {recent.length} Trades</span>
+            <span className="ml-auto text-[9px] text-slate-600">{stats.winCount}W / {stats.lossCount}L</span>
+          </div>
+          <div className="flex gap-1 items-end h-8">
+            {recent.map((t, i) => {
+              const isWin = t.finalPnl > 0
+              const maxAbs = Math.max(...recent.map(r => Math.abs(r.finalPnl)), 1)
+              const h = Math.max(4, Math.abs(t.finalPnl) / maxAbs * 28)
+              return (
+                <div key={t.id} className="flex-1 rounded-sm relative group cursor-default"
+                  style={{ height: h, background: isWin ? "#059669" : "#dc2626", minWidth: 8 }}>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 rounded text-[8px] font-bold price-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity"
+                    style={{ background: "#0d1625", border: "1px solid #1e2d45", color: isWin ? "#10b981" : "#ef4444" }}>
+                    {t.finalPnl >= 0 ? "+" : ""}${t.finalPnl.toFixed(2)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Top Pairs */}
+      {topPairs.length > 0 && (
+        <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <PieChart className="h-3 w-3 text-violet-400" />
+            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Top Instruments</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {topPairs.map(([pair, data]) => {
+              const isPos = data.pnl >= 0
+              const maxPnl = Math.max(...topPairs.map(([,d]) => Math.abs(d.pnl)), 1)
+              const barW = (Math.abs(data.pnl) / maxPnl) * 100
+              return (
+                <div key={pair} className="flex items-center gap-2">
+                  <span className="price-mono text-[10px] font-black text-white w-16 shrink-0">{pair}</span>
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#111827" }}>
+                    <div className="h-full rounded-full" style={{ width: `${barW}%`, background: isPos ? "#059669" : "#dc2626" }} />
+                  </div>
+                  <span className="price-mono text-[10px] font-black w-16 text-right shrink-0" style={{ color: isPos ? "#10b981" : "#ef4444" }}>
+                    {isPos ? "+" : ""}${data.pnl.toFixed(2)}
+                  </span>
+                  <span className="text-[9px] text-slate-600 w-6 text-right shrink-0">{data.count}t</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Market Sessions Panel ────────────────────────────────────────────────────
+
+function MarketSessionsPanel() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  const utcH = now.getUTCHours()
+  const utcM = now.getUTCMinutes()
+  const utcFrac = utcH + utcM / 60
+
+  // Forex market news items (static — would be API-driven in production)
+  const newsItems = [
+    { time: "08:30", title: "US Non-Farm Payrolls", impact: "high", currency: "USD" },
+    { time: "10:00", title: "EUR CPI Flash Estimate", impact: "high", currency: "EUR" },
+    { time: "12:30", title: "BoE Interest Rate Decision", impact: "high", currency: "GBP" },
+    { time: "14:00", title: "US ISM Manufacturing PMI", impact: "med",  currency: "USD" },
+    { time: "19:30", title: "FOMC Meeting Minutes",   impact: "high", currency: "USD" },
+    { time: "23:50", title: "Japan Trade Balance",     impact: "low",  currency: "JPY" },
+  ]
+
+  const impactColor = { high: "#ef4444", med: "#f59e0b", low: "#10b981" }
+
+  return (
+    <div className="p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll h-full">
+      {/* Sessions grid */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-3">
+          <Globe2 className="h-3 w-3 text-cyan-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Market Sessions</span>
+          <span className="ml-auto price-mono text-[9px] text-slate-600">
+            {String(now.getUTCHours()).padStart(2,"0")}:{String(now.getUTCMinutes()).padStart(2,"0")} UTC
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {SESSIONS.map(s => {
+            const open = isSessionOpen(s, utcH)
+            // Progress through session
+            let prog = 0
+            if (open) {
+              const dur = s.open < s.close ? s.close - s.open : (24 - s.open) + s.close
+              const elapsed = s.open < s.close
+                ? utcFrac - s.open
+                : utcFrac >= s.open ? utcFrac - s.open : (24 - s.open) + utcFrac
+              prog = Math.min(100, (elapsed / dur) * 100)
+            }
+            return (
+              <div key={s.name} className="rounded-lg px-2.5 py-2" style={{
+                background: open ? `${s.color}10` : "#070a10",
+                border: `1px solid ${open ? s.color + "35" : "#1a2640"}`,
+              }}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-black" style={{ color: open ? s.color : "#374151" }}>{s.name}</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                    style={{ background: open ? `${s.color}20` : "#111827", color: open ? s.color : "#374151" }}>
+                    {open ? "OPEN" : "CLOSED"}
+                  </span>
+                </div>
+                <div className="text-[8px] text-slate-600 mb-1.5">{s.tz} · {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
+                {open && (
+                  <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Economic Calendar */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Newspaper className="h-3 w-3 text-amber-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Economic Calendar</span>
+          <span className="ml-auto text-[8px] px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>TODAY</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          {newsItems.map((n, i) => (
+            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #111827" }}>
+              <span className="price-mono text-[9px] font-bold text-slate-600 w-8 shrink-0">{n.time}</span>
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: impactColor[n.impact as keyof typeof impactColor] }} />
+              <span className="text-[9px] text-slate-400 flex-1 truncate">{n.title}</span>
+              <span className="text-[8px] font-black px-1 py-0.5 rounded shrink-0" style={{ background: "rgba(255,255,255,0.04)", color: "#64748b" }}>{n.currency}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sentiment indicators */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Gauge className="h-3 w-3 text-violet-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Market Sentiment</span>
+        </div>
+        {[
+          { pair: "EUR/USD", long: 58, short: 42 },
+          { pair: "GBP/USD", long: 44, short: 56 },
+          { pair: "XAU/USD", long: 71, short: 29 },
+          { pair: "BTC/USD", long: 63, short: 37 },
+        ].map(s => (
+          <div key={s.pair} className="mb-2 last:mb-0">
+            <div className="flex justify-between mb-0.5">
+              <span className="price-mono text-[9px] font-bold text-slate-400">{s.pair}</span>
+              <div className="flex gap-2">
+                <span className="text-[9px] font-black text-emerald-400">{s.long}% L</span>
+                <span className="text-[9px] font-black text-red-400">{s.short}% S</span>
+              </div>
+            </div>
+            <div className="flex h-1.5 rounded-full overflow-hidden">
+              <div className="h-full" style={{ width: `${s.long}%`, background: "#059669" }} />
+              <div className="h-full flex-1" style={{ background: "#dc2626" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Price Alert Panel ────────────────────────────────────────────────────────
+
+function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
+  alerts: PriceAlertItem[]
+  pairs: ForexPair[]
+  onAdd: (pair: string, price: number, condition: "above" | "below", label: string) => void
+  onRemove: (id: string) => void
+}) {
+  const [alertPair, setAlertPair] = useState(pairs[0]?.symbol ?? "EUR/USD")
+  const [alertPrice, setAlertPrice] = useState("")
+  const [alertCondition, setAlertCondition] = useState<"above" | "below">("above")
+  const [alertLabel, setAlertLabel] = useState("")
+
+  const selPair = pairs.find(p => p.symbol === alertPair)
+  const mid = selPair ? (selPair.bid + selPair.ask) / 2 : 0
+
+  return (
+    <div className="p-2 flex flex-col gap-2 h-full overflow-y-auto terminal-scroll">
+      {/* Add alert form */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <AlarmClock className="h-3 w-3 text-amber-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">New Price Alert</span>
+        </div>
+        <div className="flex flex-col gap-2">
+          <div>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">Instrument</label>
+            <select value={alertPair} onChange={e => setAlertPair(e.target.value)}
+              className="w-full price-mono text-xs font-black text-white focus:outline-none px-2 py-1.5 rounded-lg"
+              style={{ background: "#070a10", border: "1px solid #1e2d45" }}>
+              {pairs.map(p => <option key={p.symbol} value={p.symbol}>{p.symbol}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-1">
+            {(["above","below"] as const).map(c => (
+              <button key={c} onClick={() => setAlertCondition(c)}
+                className="flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                style={alertCondition === c
+                  ? { background: c === "above" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: c === "above" ? "#10b981" : "#ef4444", border: `1px solid ${c === "above" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }
+                  : { background: "#070a10", color: "#374151", border: "1px solid #1a2640" }}>
+                {c === "above" ? "Above" : "Below"}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">
+              Target Price {mid > 0 && <span className="text-slate-700 normal-case tracking-normal font-normal">(current: {fmt(mid, alertPair)})</span>}
+            </label>
+            <input type="number" value={alertPrice} onChange={e => setAlertPrice(e.target.value)}
+              placeholder={mid > 0 ? fmt(mid, alertPair) : "0.00000"}
+              className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded-lg"
+              style={{ background: "#070a10", border: "1px solid #1e2d45" }} />
+          </div>
+          <div>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">Label (optional)</label>
+            <input type="text" value={alertLabel} onChange={e => setAlertLabel(e.target.value)}
+              placeholder="e.g. Key resistance"
+              className="w-full text-xs text-white focus:outline-none px-2 py-1.5 rounded-lg"
+              style={{ background: "#070a10", border: "1px solid #1e2d45" }} />
+          </div>
+          <button
+            onClick={() => {
+              const p = parseFloat(alertPrice)
+              if (isNaN(p) || p <= 0) return
+              onAdd(alertPair, p, alertCondition, alertLabel || `${alertPair} ${alertCondition} ${alertPrice}`)
+              setAlertPrice(""); setAlertLabel("")
+            }}
+            className="w-full py-2 rounded-lg font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+            style={{ background: "linear-gradient(135deg,#1e3a5f,#1d4ed8)", color: "#bfdbfe", border: "1px solid rgba(96,165,250,0.3)" }}>
+            <Plus className="h-3 w-3" /> Set Alert
+          </button>
+        </div>
+      </div>
+
+      {/* Alert list */}
+      {alerts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-6 gap-2">
+          <Bell className="h-8 w-8" style={{ color: "#1e2d45" }} />
+          <p className="text-[10px] text-slate-700">No active alerts</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {alerts.map(a => {
+            const pair = pairs.find(p => p.symbol === a.pair)
+            const mid = pair ? (pair.bid + pair.ask) / 2 : 0
+            const dist = mid > 0 ? Math.abs((a.price - mid) / pip(a.pair)) : 0
+            return (
+              <div key={a.id} className="rounded-xl px-3 py-2.5 flex items-center gap-2"
+                style={{ background: a.triggered ? "rgba(16,185,129,0.07)" : "#0a1120", border: `1px solid ${a.triggered ? "rgba(16,185,129,0.25)" : "#1a2640"}` }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="price-mono text-[11px] font-black text-white">{a.pair}</span>
+                    <span className="text-[8px] font-black px-1 py-0.5 rounded"
+                      style={{ background: a.condition === "above" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)", color: a.condition === "above" ? "#10b981" : "#ef4444" }}>
+                      {a.condition}
+                    </span>
+                    {a.triggered && <CheckCircle2 className="h-3 w-3 text-emerald-400" />}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="price-mono text-sm font-black text-cyan-400">{fmt(a.price, a.pair)}</span>
+                    {dist > 0 && !a.triggered && <span className="text-[9px] text-slate-600">{dist.toFixed(1)}p away</span>}
+                  </div>
+                  {a.label && <p className="text-[9px] text-slate-600 truncate mt-0.5">{a.label}</p>}
+                </div>
+                <button onClick={() => onRemove(a.id)} className="p-1 rounded transition-colors text-slate-600 hover:text-red-400">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Order Depth Panel ────────────────────────────────────────────────────────
 
@@ -697,7 +1156,8 @@ export function ForexTradingPlatform({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -1108,7 +1568,7 @@ export function ForexTradingPlatform({
   }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
   // ── Execute market trade ───────────────────────────────────────────────────
-  // Opens the confirmation modal — called by both executeTrade and quickTrade
+  // Opens the confirmation modal ��� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
     lot: number,
@@ -1298,6 +1758,35 @@ export function ForexTradingPlatform({
     showToast("info", "Position updated")
   }, [showToast])
 
+  // ── Price Alert checker (runs each tick) ─────────────────────────────────
+  useEffect(() => {
+    if (priceAlerts.length === 0) return
+    setPriceAlerts(prev => prev.map(a => {
+      if (a.triggered) return a
+      const p = pairsRef.current.find(pair => pair.symbol === a.pair)
+      if (!p) return a
+      const mid = (p.bid + p.ask) / 2
+      const hit = a.condition === "above" ? mid >= a.price : mid <= a.price
+      if (hit) {
+        showToast("warning", `Alert: ${a.pair} ${a.condition} ${fmt(a.price, a.pair)} — ${a.label}`, 8000)
+        return { ...a, triggered: true }
+      }
+      return a
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickCount])
+
+  const addPriceAlert = useCallback((pair: string, price: number, condition: "above" | "below", label: string) => {
+    setPriceAlerts(prev => [{
+      id: genId(), pair, price, condition, label, triggered: false, createdAt: Date.now(),
+    }, ...prev])
+    showToast("info", `Alert set: ${pair} ${condition} ${fmt(price, pair)}`)
+  }, [showToast])
+
+  const removePriceAlert = useCallback((id: string) => {
+    setPriceAlerts(prev => prev.filter(a => a.id !== id))
+  }, [])
+
   // ── Cancel pending order ───────────────────────────────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
@@ -1435,21 +1924,21 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-0 h-8 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
         {[
-          { label: "BALANCE",       value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,     color: "#10b981" },
-          { label: "EQUITY",        value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,             color: totalPnl >= 0 ? "#10b981" : "#ef4444" },
-          { label: "LIVE P&L",      value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                           color: totalPnl >= 0 ? "#10b981" : "#ef4444" },
-          { label: "SWAP",          value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                         color: totalSwap >= 0 ? "#10b981" : "#ef4444" },
-          { label: "MARGIN USED",   value: `$${totalMargin.toFixed(2)}`,                                                    color: "#f59e0b" },
-          { label: "FREE MARGIN",   value: `$${freeMargin.toFixed(2)}`,                                                     color: "#22d3ee" },
-          { label: "MARGIN LEVEL",  value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                            color: marginLevel > 200 ? "#10b981" : marginLevel > 100 ? "#f59e0b" : "#ef4444" },
-          { label: "POSITIONS",     value: String(openTrades.length),                                                        color: "#a78bfa" },
-          { label: "PENDING",       value: String(pendingOrders.length),                                                     color: "#60a5fa" },
+          { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
+          { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
+          { label: "LIVE P&L",     value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                        color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)" },
+          { label: "SWAP",         value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                      color: totalSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+          { label: "MARGIN USED",  value: `$${totalMargin.toFixed(2)}`,                                                 color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
+          { label: "FREE MARGIN",  value: `$${freeMargin.toFixed(2)}`,                                                  color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
+          { label: "MARGIN LVL",   value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                         color: marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171", bg: "transparent" },
+          { label: "POSITIONS",    value: String(openTrades.length),                                                     color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+          { label: "PENDING",      value: String(pendingOrders.length),                                                  color: "#93c5fd", bg: "transparent" },
         ].map((item, i) => (
-          <div key={i} className="flex items-center gap-1.5 px-3 h-full shrink-0" style={{ borderRight: "1px solid #1a2640" }}>
-            <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5a80" }}>{item.label}</span>
-            <span className="price-mono text-[10px] font-black" style={{ color: item.color }}>{item.value}</span>
+          <div key={i} className="flex items-center gap-2 px-3 h-full shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
+            <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
           </div>
         ))}
       </div>
@@ -1695,62 +2184,67 @@ export function ForexTradingPlatform({
 
             {/* ── Quick BUY/SELL strip ── */}
             {selectedPair && (
-              <div className="shrink-0 flex items-stretch gap-0" style={{ borderTop: "1px solid #1e2d45", height: 54 }}>
+              <div className="shrink-0 flex items-stretch gap-0" style={{ borderTop: "1px solid #1e2d45", height: 64 }}>
+                {/* Trade params */}
                 <div className="flex items-center gap-3 px-3 shrink-0" style={{ background: "#060a12", borderRight: "1px solid #1e2d45" }}>
                   <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Lots</p>
+                    <p className="text-[8px] font-black tracking-widest uppercase mb-0.5" style={{ color: "#3d5a80" }}>LOTS</p>
                     <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
                       step="0.01" min="0.01" max="100"
-                      className="price-mono text-sm font-black text-white focus:outline-none text-center w-16"
+                      className="price-mono text-base font-black text-white focus:outline-none text-center w-16"
                       style={{ background: "transparent", border: "none" }} />
                   </div>
-                  <div className="w-px h-6" style={{ background: "#1e2d45" }} />
+                  <div className="w-px h-8" style={{ background: "#1e2d45" }} />
                   <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Lev</p>
+                    <p className="text-[8px] font-black tracking-widest uppercase mb-0.5" style={{ color: "#3d5a80" }}>LEV</p>
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="price-mono text-sm font-black text-cyan-400 focus:outline-none appearance-none w-14 cursor-pointer"
+                      className="price-mono text-base font-black text-cyan-400 focus:outline-none appearance-none w-14 cursor-pointer"
                       style={{ background: "transparent", border: "none" }}>
                       {["10","25","50","100","200","500"].map(l => (
                         <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="w-px h-6" style={{ background: "#1e2d45" }} />
+                  <div className="w-px h-8" style={{ background: "#1e2d45" }} />
                   <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Margin</p>
-                    <p className="price-mono text-sm font-black" style={{ color: "#f59e0b" }}>
+                    <p className="text-[8px] font-black tracking-widest uppercase mb-0.5" style={{ color: "#3d5a80" }}>MARGIN</p>
+                    <p className="price-mono text-base font-black" style={{ color: "#f59e0b" }}>
                       ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
 
-                {/* SELL */}
+                {/* SELL button */}
                 <button onClick={() => quickTrade("SELL")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "linear-gradient(135deg,#450a0a,#7f1d1d)", borderRight: "1px solid #991b1b" }}>
-                  <div className="flex items-center gap-1.5">
-                    <TrendingDown className="h-4 w-4 text-red-400" />
-                    <span className="text-base font-black tracking-wider text-red-300">SELL</span>
+                  className="flex-1 flex flex-col items-center justify-center gap-1 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
+                  style={{ background: "linear-gradient(160deg,#450a0a 0%,#7f1d1d 60%,#991b1b 100%)", borderRight: "1px solid #7f1d1d" }}>
+                  <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity" style={{ background: "rgba(239,68,68,0.08)" }} />
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="h-5 w-5 text-red-300" />
+                    <span className="text-xl font-black tracking-widest text-white">SELL</span>
                   </div>
-                  <span className="price-mono text-[11px] font-bold text-red-500">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-bold" style={{ color: "#fca5a5" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
                 </button>
 
-                <div className="flex flex-col items-center justify-center px-2 shrink-0" style={{ background: "#050810", borderRight: "1px solid #1e2d45" }}>
-                  <span className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Spread</span>
-                  <span className="price-mono text-[10px] font-black text-cyan-600">
-                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p
+                {/* Spread divider */}
+                <div className="flex flex-col items-center justify-center px-2 shrink-0" style={{ background: "#040710", borderRight: "1px solid #1e2d45", minWidth: 52 }}>
+                  <span className="text-[7px] font-black tracking-[0.2em] uppercase mb-1" style={{ color: "#2d4565" }}>SPR</span>
+                  <span className="price-mono text-[11px] font-black text-cyan-500">
+                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}
                   </span>
+                  <span className="text-[7px] font-bold" style={{ color: "#1e3a5f" }}>pips</span>
                 </div>
 
-                {/* BUY */}
+                {/* BUY button */}
                 <button onClick={() => quickTrade("BUY")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "linear-gradient(135deg,#052e16,#065f46)" }}>
-                  <div className="flex items-center gap-1.5">
-                    <TrendingUp className="h-4 w-4 text-emerald-400" />
-                    <span className="text-base font-black tracking-wider text-emerald-300">BUY</span>
+                  className="flex-1 flex flex-col items-center justify-center gap-1 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
+                  style={{ background: "linear-gradient(160deg,#052e16 0%,#065f46 60%,#047857 100%)" }}>
+                  <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity" style={{ background: "rgba(16,185,129,0.08)" }} />
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-emerald-300" />
+                    <span className="text-xl font-black tracking-widest text-white">BUY</span>
                   </div>
-                  <span className="price-mono text-[11px] font-bold text-emerald-500">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-bold" style={{ color: "#6ee7b7" }}>{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                 </button>
               </div>
             )}
@@ -1997,15 +2491,18 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
-      <div className="flex flex-col shrink-0" style={{ height: 200, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <div className="flex flex-col shrink-0" style={{ height: 220, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
-            { id: "positions", label: `Open (${openTrades.length})`,    icon: Layers },
-            { id: "pending",   label: `Pending (${pendingOrders.length})`, icon: Clock },
-            { id: "history",   label: `History (${closedTrades.length})`, icon: History },
-            { id: "depth",     label: "Depth",                           icon: BarChart2 },
-            { id: "stats",     label: "Stats",                           icon: Activity },
+            { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
+            { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
+            { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
+            { id: "performance", label: "Performance",                        icon: BarChart },
+            { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
+            { id: "sessions",    label: "Sessions",                           icon: Globe2 },
+            { id: "depth",       label: "Depth",                              icon: BarChart2 },
+            { id: "stats",       label: "Stats",                              icon: Activity },
           ] as { id: typeof activePanel; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setActivePanel(id)}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
@@ -2250,6 +2747,28 @@ export function ForexTradingPlatform({
               ? <MarketStats pair={selectedPair} />
               : <div className="flex items-center justify-center h-full text-slate-700 text-[11px] tracking-wider">Select an instrument</div>
           )}
+
+          {/* ── Performance Dashboard ── */}
+          {activePanel === "performance" && (
+            <PerformanceDashboard
+              closed={closedTrades}
+              equityHistory={equityHistory}
+              walletBalance={walletBalance}
+            />
+          )}
+
+          {/* ── Price Alerts ── */}
+          {activePanel === "alerts" && (
+            <PriceAlertPanel
+              alerts={priceAlerts}
+              pairs={pairs}
+              onAdd={addPriceAlert}
+              onRemove={removePriceAlert}
+            />
+          )}
+
+          {/* ── Market Sessions ── */}
+          {activePanel === "sessions" && <MarketSessionsPanel />}
 
         </div>
       </div>
