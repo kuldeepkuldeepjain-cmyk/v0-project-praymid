@@ -1158,6 +1158,8 @@ export function ForexTradingPlatform({
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
   const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
+  // Map of tradeId → partial close lot input value
+  const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -1749,6 +1751,61 @@ export function ForexTradingPlatform({
 
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
+
+  // ── Partial close trade ────────────────────────────────────────────────────
+  const partialCloseTrade = useCallback((id: string, closeLots: number) => {
+    const trade = openTradesRef.current.find(t => t.id === id)
+    if (!trade) return
+    if (closeLots <= 0 || closeLots >= trade.lotSize) {
+      // Full close
+      closeTrade(id)
+      return
+    }
+    if (closingTradeIds.current.has(id)) return
+
+    const pairNow    = pairsRef.current.find(p => p.symbol === trade.pair)
+    const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
+
+    // Scale P&L proportionally to the closed lot fraction
+    const lotFraction = closeLots / trade.lotSize
+    const { pnl: pnlRaw, pipCount } = calcPnl({ ...trade, lotSize: closeLots }, closePrice, trade.pair)
+    const finalPnl = parseFloat((pnlRaw + trade.swap * lotFraction).toFixed(2))
+    const closedMargin = parseFloat((trade.margin * lotFraction).toFixed(2))
+
+    const closed: ClosedTrade = {
+      ...trade,
+      lotSize: closeLots,
+      closePrice,
+      closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      closeDuration: formatDuration(trade.openTimestamp),
+      finalPnl, finalPips: pipCount,
+      finalSwap: parseFloat((trade.swap * lotFraction).toFixed(4)),
+      closeReason: "manual",
+      id: `${id}_partial_${Date.now()}`,
+    }
+
+    // Update the open trade with reduced lots and margin
+    const remainingLots = parseFloat((trade.lotSize - closeLots).toFixed(2))
+    const remainingMargin = parseFloat((trade.margin - closedMargin).toFixed(2))
+    openTradesRef.current = openTradesRef.current.map(t =>
+      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
+    )
+    setOpenTrades(prev => prev.map(t =>
+      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
+    ))
+
+    setClosedTrades(prev => [closed, ...prev.slice(0, 99)])
+
+    const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
+    adjustWalletBalance(returnAmt > 0 ? returnAmt : 0,
+      `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+
+    showToast(finalPnl >= 0 ? "success" : "error",
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+
+    setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjustWalletBalance, showToast])
 
   // ── Modify trade ───────────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
@@ -2491,7 +2548,7 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
-      <div className="flex flex-col shrink-0" style={{ height: 220, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <div className="flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
@@ -2523,9 +2580,34 @@ export function ForexTradingPlatform({
               <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
                 <BarChart2 className="h-8 w-8 opacity-20" />
                 <span className="text-[11px] tracking-wider font-bold uppercase">No open positions</span>
+                <span className="text-[9px] tracking-wider text-slate-800">Place a BUY or SELL to get started</span>
               </div>
             ) : (
-              <div className="p-2 flex flex-col gap-2">
+              <div className="flex flex-col h-full">
+              {/* Positions live summary bar */}
+              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+                {[
+                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+                  { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+                  { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
+                  { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
+                  { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
+                  { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
+                    <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+                  </div>
+                ))}
+                {/* Close all button */}
+                <button
+                  onClick={() => { openTrades.forEach(t => closeTrade(t.id)) }}
+                  className="ml-auto mr-2 px-2.5 py-1 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  Close All
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
                 {openTrades.map(trade => {
                   const isBuy    = trade.direction === "BUY"
                   const pnlPos   = trade.pnl >= 0
@@ -2601,6 +2683,28 @@ export function ForexTradingPlatform({
                         </div>
                       </div>
 
+                      {/* Partial close row */}
+                      <div className="flex gap-1.5 px-3 pb-1.5 items-center">
+                        <span className="text-[8px] font-black uppercase tracking-wider shrink-0" style={{ color: "#3d5a80" }}>Partial</span>
+                        <input
+                          type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
+                          value={partialCloseMap[trade.id] ?? ""}
+                          onChange={e => setPartialCloseMap(prev => ({ ...prev, [trade.id]: e.target.value }))}
+                          placeholder={`${(trade.lotSize / 2).toFixed(2)} lots`}
+                          className="flex-1 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded-lg"
+                          style={{ background: "#070a10", border: "1px solid #1e2d45", minWidth: 0 }}
+                        />
+                        <button
+                          onClick={() => {
+                            const l = parseFloat(partialCloseMap[trade.id] ?? "")
+                            if (!isNaN(l) && l > 0) partialCloseTrade(trade.id, l)
+                          }}
+                          className="px-2 py-1 rounded-lg font-black text-[10px] transition-all active:scale-95 shrink-0"
+                          style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
+                          Close Partial
+                        </button>
+                      </div>
+
                       {/* Action buttons */}
                       <div className="flex gap-1.5 px-3 py-2">
                         <button
@@ -2617,12 +2721,13 @@ export function ForexTradingPlatform({
                             color: "#fff",
                             border: `1px solid ${trade.pnl >= 0 ? "#059669" : "#dc2626"}`,
                           }}>
-                          <X className="h-3 w-3" /> Close {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
+                          <X className="h-3 w-3" /> Close All {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                         </button>
                       </div>
                     </div>
                   )
                 })}
+              </div>
               </div>
             )
           )}
@@ -2685,54 +2790,82 @@ export function ForexTradingPlatform({
           )}
 
           {/* ── Trade History ── */}
-          {activePanel === "history" && (
-            closedTrades.length === 0 ? (
+          {activePanel === "history" && (() => {
+            const totalHistPnl   = closedTrades.reduce((s, t) => s + t.finalPnl, 0)
+            const totalHistPips  = closedTrades.reduce((s, t) => s + t.finalPips, 0)
+            const totalHistSwap  = closedTrades.reduce((s, t) => s + t.finalSwap, 0)
+            const wins           = closedTrades.filter(t => t.finalPnl > 0).length
+            const winRate        = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) : "0"
+            const pnlColor       = totalHistPnl >= 0 ? "#34d399" : "#f87171"
+            return closedTrades.length === 0 ? (
               <div className="flex items-center justify-center h-full gap-2 text-slate-700">
                 <History className="h-5 w-5 opacity-30" />
                 <span className="text-[11px] tracking-wider">No closed trades yet</span>
               </div>
             ) : (
-              <table className="w-full text-[10px] price-mono">
-                <thead>
-                  <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-                    {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
-                      <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {closedTrades.slice(0, 100).map(trade => {
-                    const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
-                    const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa" }
-                    return (
-                      <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
-                        <td className="px-2 py-1.5 font-black text-white">{trade.pair}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="px-1.5 py-0.5 font-black text-[8px] uppercase rounded"
-                            style={{ background: trade.direction === "BUY" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: trade.direction === "BUY" ? "#10b981" : "#ef4444" }}>
-                            {trade.direction}
-                          </span>
-                        </td>
-                        <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
-                        <td className="px-2 py-1.5 text-slate-400">{fmt(trade.openPrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5 text-slate-400">{fmt(trade.closePrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5 font-black" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
-                        <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
-                        <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
-                        <td className="px-2 py-1.5 text-slate-600">{trade.closeDuration}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded"
-                            style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
-                            {trade.closeReason.replace("_"," ")}
-                          </span>
-                        </td>
+              <div className="flex flex-col h-full">
+                {/* Summary strip */}
+                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+                  {[
+                    { label: "TOTAL P&L",  value: `${totalHistPnl >= 0 ? "+" : ""}$${totalHistPnl.toFixed(2)}`, color: pnlColor, bg: totalHistPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+                    { label: "TOTAL PIPS", value: `${totalHistPips >= 0 ? "+" : ""}${totalHistPips.toFixed(1)}p`, color: pnlColor, bg: "transparent" },
+                    { label: "TOTAL SWAP", value: `${totalHistSwap >= 0 ? "+" : ""}$${totalHistSwap.toFixed(2)}`, color: totalHistSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+                    { label: "TRADES",     value: String(closedTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+                    { label: "WIN RATE",   value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? "#34d399" : "#f87171", bg: "transparent" },
+                    { label: "WINS",       value: String(wins), color: "#34d399", bg: "transparent" },
+                    { label: "LOSSES",     value: String(closedTrades.length - wins), color: "#f87171", bg: "transparent" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                      <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
+                      <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Table */}
+                <div className="flex-1 overflow-y-auto terminal-scroll">
+                  <table className="w-full text-[10px] price-mono">
+                    <thead>
+                      <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
+                        {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
+                          <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap sticky top-0" style={{ background: "#070a10" }}>{h}</th>
+                        ))}
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {closedTrades.slice(0, 100).map(trade => {
+                        const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
+                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa" }
+                        return (
+                          <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
+                            <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
+                            <td className="px-2 py-1.5">
+                              <span className="px-1.5 py-0.5 font-black text-[8px] uppercase rounded"
+                                style={{ background: trade.direction === "BUY" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: trade.direction === "BUY" ? "#10b981" : "#ef4444" }}>
+                                {trade.direction}
+                              </span>
+                            </td>
+                            <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
+                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.openPrice, trade.pair)}</td>
+                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.closePrice, trade.pair)}</td>
+                            <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
+                            <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
+                            <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
+                            <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">{trade.closeDuration}</td>
+                            <td className="px-2 py-1.5">
+                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
+                                style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
+                                {trade.closeReason.replace("_"," ")}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )
-          )}
+          })()}
 
           {/* ── Order Depth ── */}
           {activePanel === "depth" && (
