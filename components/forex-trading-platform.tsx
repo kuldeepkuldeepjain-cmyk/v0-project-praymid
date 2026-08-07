@@ -2239,69 +2239,81 @@ export function ForexTradingPlatform({
               )}
             </div>
 
-            {/* ── Quick BUY/SELL strip ── */}
+            {/* ── Quick BUY/SELL strip (3D) ── */}
             {selectedPair && (
-              <div className="shrink-0 flex items-stretch gap-0" style={{ borderTop: "1px solid #1e2d45", height: 64 }}>
-                {/* Trade params */}
-                <div className="flex items-center gap-3 px-3 shrink-0" style={{ background: "#060a12", borderRight: "1px solid #1e2d45" }}>
-                  <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest uppercase mb-0.5" style={{ color: "#3d5a80" }}>LOTS</p>
-                    <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
+              <div className="shrink-0 flex items-stretch" style={{ borderTop: "2px solid #1a2d4a", height: 72, background: "#04080f" }}>
+
+                {/* Param chips */}
+                <div className="flex items-center gap-2 px-3 shrink-0" style={{ borderRight: "1px solid #1a2d4a" }}>
+                  {/* LOTS chip */}
+                  <div className="param-chip flex flex-col items-center px-3 py-1.5" style={{ minWidth: 64 }}>
+                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LOTS</span>
+                    <input
+                      type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
                       step="0.01" min="0.01" max="100"
-                      className="price-mono text-base font-black text-white focus:outline-none text-center w-16"
-                      style={{ background: "transparent", border: "none" }} />
+                      className="input-3d price-mono text-base font-black text-center w-full focus:outline-none px-1 py-0.5"
+                      style={{ width: 60, borderRadius: 6 }}
+                    />
                   </div>
-                  <div className="w-px h-8" style={{ background: "#1e2d45" }} />
-                  <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest uppercase mb-0.5" style={{ color: "#3d5a80" }}>LEV</p>
+                  {/* LEV chip */}
+                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 60 }}>
+                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LEV</span>
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="price-mono text-base font-black text-cyan-400 focus:outline-none appearance-none w-14 cursor-pointer"
-                      style={{ background: "transparent", border: "none" }}>
+                      className="input-3d price-mono text-sm font-black text-cyan-300 focus:outline-none appearance-none cursor-pointer text-center w-full px-1 py-0.5"
+                      style={{ width: 56, borderRadius: 6 }}>
                       {["10","25","50","100","200","500"].map(l => (
                         <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="w-px h-8" style={{ background: "#1e2d45" }} />
-                  <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest uppercase mb-0.5" style={{ color: "#3d5a80" }}>MARGIN</p>
-                    <p className="price-mono text-base font-black" style={{ color: "#f59e0b" }}>
+                  {/* MARGIN chip */}
+                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 72 }}>
+                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>MARGIN</span>
+                    <span className="price-mono text-sm font-black" style={{ color: "#fbbf24", textShadow: "0 0 10px rgba(251,191,36,0.4)" }}>
                       ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                {/* SELL button */}
-                <button onClick={() => quickTrade("SELL")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="flex-1 flex flex-col items-center justify-center gap-1 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
-                  style={{ background: "linear-gradient(160deg,#450a0a 0%,#7f1d1d 60%,#991b1b 100%)", borderRight: "1px solid #7f1d1d" }}>
-                  <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity" style={{ background: "rgba(239,68,68,0.08)" }} />
-                  <div className="flex items-center gap-2">
-                    <TrendingDown className="h-5 w-5 text-red-300" />
-                    <span className="text-xl font-black tracking-widest text-white">SELL</span>
+                {/* SELL 3D button */}
+                <button
+                  onClick={() => quickTrade("SELL")}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance}
+                  className="btn-3d-sell flex-1 flex flex-col items-center justify-center gap-0.5"
+                  style={{ borderRadius: 0 }}
+                >
+                  <div className="flex items-center gap-2 relative z-10">
+                    <TrendingDown className="h-5 w-5 drop-shadow-lg" style={{ color: "#fca5a5", filter: "drop-shadow(0 0 6px rgba(248,113,113,0.7))" }} />
+                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(239,68,68,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>SELL</span>
                   </div>
-                  <span className="price-mono text-xs font-bold" style={{ color: "#fca5a5" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#fca5a5", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>
+                    {fmt(selectedPair.bid, selectedPair.symbol)}
+                  </span>
                 </button>
 
-                {/* Spread divider */}
-                <div className="flex flex-col items-center justify-center px-2 shrink-0" style={{ background: "#040710", borderRight: "1px solid #1e2d45", minWidth: 52 }}>
-                  <span className="text-[7px] font-black tracking-[0.2em] uppercase mb-1" style={{ color: "#2d4565" }}>SPR</span>
-                  <span className="price-mono text-[11px] font-black text-cyan-500">
+                {/* Spread pill */}
+                <div className="flex flex-col items-center justify-center shrink-0 px-1" style={{ background: "#02050b", minWidth: 50, borderLeft: "1px solid #1a2d4a", borderRight: "1px solid #1a2d4a" }}>
+                  <span className="text-[6px] font-black tracking-[0.2em] uppercase" style={{ color: "#1e3a5f" }}>SPR</span>
+                  <span className="price-mono text-xs font-black mt-0.5" style={{ color: "#0e7490", textShadow: "0 0 8px rgba(14,116,144,0.6)" }}>
                     {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}
                   </span>
-                  <span className="text-[7px] font-bold" style={{ color: "#1e3a5f" }}>pips</span>
+                  <span className="text-[6px] font-bold mt-0.5" style={{ color: "#0e3a4a" }}>pips</span>
                 </div>
 
-                {/* BUY button */}
-                <button onClick={() => quickTrade("BUY")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="flex-1 flex flex-col items-center justify-center gap-1 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
-                  style={{ background: "linear-gradient(160deg,#052e16 0%,#065f46 60%,#047857 100%)" }}>
-                  <div className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity" style={{ background: "rgba(16,185,129,0.08)" }} />
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5 text-emerald-300" />
-                    <span className="text-xl font-black tracking-widest text-white">BUY</span>
+                {/* BUY 3D button */}
+                <button
+                  onClick={() => quickTrade("BUY")}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance}
+                  className="btn-3d-buy flex-1 flex flex-col items-center justify-center gap-0.5"
+                  style={{ borderRadius: 0 }}
+                >
+                  <div className="flex items-center gap-2 relative z-10">
+                    <TrendingUp className="h-5 w-5" style={{ color: "#6ee7b7", filter: "drop-shadow(0 0 6px rgba(110,231,183,0.7))" }} />
+                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(16,185,129,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>BUY</span>
                   </div>
-                  <span className="price-mono text-xs font-bold" style={{ color: "#6ee7b7" }}>{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#6ee7b7", textShadow: "0 0 8px rgba(110,231,183,0.5)" }}>
+                    {fmt(selectedPair.ask, selectedPair.symbol)}
+                  </span>
                 </button>
               </div>
             )}
@@ -2345,18 +2357,23 @@ export function ForexTradingPlatform({
                   ))}
                 </div>
 
-                {/* BUY/SELL toggle */}
-                <div className="flex mb-2 overflow-hidden" style={{ borderRadius: 4, border: "1px solid #1e2d45", background: "#060a12" }}>
+                {/* BUY/SELL toggle — 3D */}
+                <div className="flex mb-2 gap-1.5">
                   {(["BUY","SELL"] as TradeDirection[]).map(d => (
                     <button key={d} onClick={() => setDirection(d)}
-                      className="flex-1 py-2 text-xs font-black flex items-center justify-center gap-1 transition-all"
-                      style={direction === d
-                        ? d === "BUY"
-                          ? { background: "linear-gradient(135deg,#065f46,#047857)", color: "#d1fae5", borderBottom: "2px solid #10b981" }
-                          : { background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fee2e2", borderBottom: "2px solid #ef4444" }
-                        : { color: "#374151" }}>
-                      {d === "BUY" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {d}
+                      className={`flex-1 py-2.5 text-sm font-black flex items-center justify-center gap-1.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
+                      style={direction !== d ? {
+                        background: "#080c14",
+                        border: "1px solid #1a2640",
+                        borderBottom: "2px solid #050810",
+                        borderRadius: 8,
+                        color: "#374151",
+                        boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
+                      } : {}}>
+                      {d === "BUY"
+                        ? <TrendingUp  className="h-3.5 w-3.5 relative z-10" />
+                        : <TrendingDown className="h-3.5 w-3.5 relative z-10" />}
+                      <span className="relative z-10">{d}</span>
                     </button>
                   ))}
                 </div>
@@ -2393,67 +2410,82 @@ export function ForexTradingPlatform({
                   </div>
                 )}
 
-                {/* Volume */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase block mb-1 text-slate-600">Volume (Lots)</label>
+                {/* Volume (3D input) */}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#a855f7" }}>
+                    Volume (Lots)
+                  </label>
                   <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
                     step="0.01" min="0.01" max="100"
-                    className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid #1e2d45", borderRadius: 4 }} />
-                  <div className="flex gap-1 mt-1">
-                    {["0.01","0.1","1.0"].map(l => (
+                    className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
+                    placeholder="0.01"
+                  />
+                  <div className="flex gap-1 mt-1.5">
+                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
                       <button key={l} onClick={() => setLotSize(l)}
-                        className="flex-1 py-1 text-[8px] font-black tracking-wider rounded transition-all"
-                        style={{ background: lotSize === l ? "rgba(167,139,250,0.15)" : "#070a10", color: lotSize === l ? "#a78bfa" : "#374151", border: `1px solid ${lotSize === l ? "rgba(167,139,250,0.3)" : "#1a2640"}` }}>
+                        className="flex-1 py-1 text-[7px] font-black tracking-wide rounded-md transition-all active:scale-95"
+                        style={lotSize === l
+                          ? { background: "rgba(168,85,247,0.18)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.4)", boxShadow: "0 0 8px rgba(168,85,247,0.2)" }
+                          : { background: "#0a1020", color: "#2d4565", border: "1px solid #1a2640" }}>
                         {l}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Leverage */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase block mb-1 text-slate-600">Leverage</label>
+                {/* Leverage (3D select) */}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#38bdf8" }}>
+                    Leverage
+                  </label>
                   <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                    className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 appearance-none"
-                    style={{ background: "#070a10", border: "1px solid #1e2d45", borderRadius: 4 }}>
-                    {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14" }}>1:{l}</option>)}
+                    className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
+                    {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
                   </select>
                 </div>
 
                 {/* SL */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#ef4444" }}>
-                    <ShieldAlert className="h-2.5 w-2.5" /> Stop Loss
-                    {slVal !== null && <span className="ml-auto text-[8px] text-slate-600 font-bold normal-case tracking-normal">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#ef4444" }}>
+                    <ShieldAlert className="h-3 w-3" /> Stop Loss
+                    {slVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
                   </label>
                   <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 4 }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)} />
+                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
+                    style={{ background: "linear-gradient(175deg,#1a0505 0%,#0d0204 100%)", border: "1px solid rgba(239,68,68,0.35)", borderBottom: "2px solid rgba(239,68,68,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 0 rgba(239,68,68,0.0)", outline: "none" }}
+                    placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(239,68,68,0.2), 0 0 12px rgba(239,68,68,0.12)" }}
+                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
                 </div>
 
                 {/* TP */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#10b981" }}>
-                    <Target className="h-2.5 w-2.5" /> Take Profit
-                    {tpVal !== null && <span className="ml-auto text-[8px] text-slate-600 font-bold normal-case tracking-normal">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#10b981" }}>
+                    <Target className="h-3 w-3" /> Take Profit
+                    {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
                   </label>
                   <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4 }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)} />
+                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
+                    style={{ background: "linear-gradient(175deg,#021a0d 0%,#010d06 100%)", border: "1px solid rgba(16,185,129,0.35)", borderBottom: "2px solid rgba(16,185,129,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
+                    placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(16,185,129,0.2), 0 0 12px rgba(16,185,129,0.12)" }}
+                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
                 </div>
 
                 {/* Trailing Stop */}
                 <div className="mb-2">
-                  <label className="text-[9px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#a78bfa" }}>
-                    <ArrowUpDown className="h-2.5 w-2.5" /> Trailing Stop (pips)
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#a78bfa" }}>
+                    <ArrowUpDown className="h-3 w-3" /> Trailing Stop (pips)
                   </label>
                   <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 4 }}
-                    placeholder="0 = disabled" />
+                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
+                    style={{ background: "linear-gradient(175deg,#0e0617 0%,#07030f 100%)", border: "1px solid rgba(167,139,250,0.3)", borderBottom: "2px solid rgba(167,139,250,0.12)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
+                    placeholder="0 = disabled"
+                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(167,139,250,0.2), 0 0 12px rgba(167,139,250,0.12)" }}
+                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
                 </div>
 
                 {/* Metrics grid */}
@@ -2489,33 +2521,40 @@ export function ForexTradingPlatform({
                   </div>
                 )}
 
-                {/* Execute */}
-                <button onClick={executeTrade} disabled={balanceLoaded && estimatedMargin > walletBalance && orderType === "market"}
-                  className="w-full py-2.5 font-black text-xs tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ borderRadius: 4,
-                    ...(direction === "BUY"
-                      ? { background: "linear-gradient(135deg,#065f46,#047857)", color: "#d1fae5", boxShadow: "0 4px 16px rgba(16,185,129,0.3)" }
-                      : { background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fee2e2", boxShadow: "0 4px 16px rgba(239,68,68,0.3)" }) }}>
-                  <Zap className="h-3.5 w-3.5" />
-                  {orderType === "market" ? `${direction} ${selectedPair.symbol}` : `Place ${direction} ${orderType.toUpperCase()}`}
+                {/* Execute (3D) */}
+                <button
+                  onClick={executeTrade}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance && orderType === "market"}
+                  className={`w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
+                >
+                  <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
+                  <span className="relative z-10" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
+                    {orderType === "market"
+                      ? `${direction} ${selectedPair.symbol}`
+                      : `Place ${direction} ${orderType.toUpperCase()}`}
+                  </span>
                 </button>
 
-                <div className="my-2" style={{ height: 1, background: "#1a2640" }} />
+                <div className="my-2" style={{ height: 1, background: "#111927" }} />
 
-                {/* Quick trade */}
-                <p className="text-[8px] font-black text-slate-700 tracking-widest uppercase mb-1.5">Quick Market Trade</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button onClick={() => quickTrade("BUY")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="flex flex-col items-center py-2 font-black text-xs transition-all active:scale-95 disabled:opacity-40"
-                    style={{ borderRadius: 4, background: "linear-gradient(135deg,#065f46,#047857)", color: "#d1fae5", border: "1px solid #10b981" }}>
-                    <div className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> BUY</div>
-                    <span className="price-mono text-[9px] opacity-80">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                {/* Quick Market Trade (3D) */}
+                <p className="text-[7px] font-black tracking-[0.2em] uppercase mb-1.5" style={{ color: "#1e2d45" }}>Quick Market Trade</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => quickTrade("BUY")}
+                    disabled={balanceLoaded && estimatedMargin > walletBalance}
+                    className="btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5"
+                  >
+                    <div className="flex items-center gap-1 relative z-10"><TrendingUp className="h-3.5 w-3.5" /><span className="font-black text-xs">BUY</span></div>
+                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                   </button>
-                  <button onClick={() => quickTrade("SELL")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="flex flex-col items-center py-2 font-black text-xs transition-all active:scale-95 disabled:opacity-40"
-                    style={{ borderRadius: 4, background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fee2e2", border: "1px solid #ef4444" }}>
-                    <div className="flex items-center gap-1"><TrendingDown className="h-3 w-3" /> SELL</div>
-                    <span className="price-mono text-[9px] opacity-80">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <button
+                    onClick={() => quickTrade("SELL")}
+                    disabled={balanceLoaded && estimatedMargin > walletBalance}
+                    className="btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5"
+                  >
+                    <div className="flex items-center gap-1 relative z-10"><TrendingDown className="h-3.5 w-3.5" /><span className="font-black text-xs">SELL</span></div>
+                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
                   </button>
                 </div>
               </div>
