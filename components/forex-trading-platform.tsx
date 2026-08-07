@@ -5,7 +5,9 @@ import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
-  ChevronDown, ChevronUp, ArrowUpDown,
+  ChevronDown, ChevronUp, ArrowUpDown, Award, Flame, TrendingUp as TUp,
+  BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
+  Gauge, Lock, Unlock, BookOpen, Filter,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -78,6 +80,21 @@ type TradeConfirm = {
 
 type PositionSizerState = {
   riskPct: string; slPips: string; calculatedLots: number | null
+}
+
+type PriceAlertItem = {
+  id: string; pair: string; price: number; condition: "above" | "below"
+  label: string; triggered: boolean; createdAt: number
+}
+
+type TradingSession = { name: string; open: number; close: number; tz: string; color: string }
+
+// Performance stats derived from closed trades
+type PerfStats = {
+  totalPnl: number; winRate: number; profitFactor: number
+  avgWin: number; avgLoss: number; bestTrade: number; worstTrade: number
+  totalTrades: number; winCount: number; lossCount: number
+  maxDrawdown: number; sharpe: number
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -295,6 +312,448 @@ function formatDuration(openTimestamp: number): string {
 }
 
 function genId(): string { return Math.random().toString(36).slice(2, 10) }
+
+// ─── Performance Statistics ───────────────────────────────────────────────────
+function calcPerfStats(closed: ClosedTrade[]): PerfStats {
+  if (closed.length === 0) return {
+    totalPnl: 0, winRate: 0, profitFactor: 0, avgWin: 0, avgLoss: 0,
+    bestTrade: 0, worstTrade: 0, totalTrades: 0, winCount: 0, lossCount: 0,
+    maxDrawdown: 0, sharpe: 0,
+  }
+  const wins  = closed.filter(t => t.finalPnl > 0)
+  const losses = closed.filter(t => t.finalPnl <= 0)
+  const totalPnl   = parseFloat(closed.reduce((s, t) => s + t.finalPnl, 0).toFixed(2))
+  const grossWin   = wins.reduce((s, t) => s + t.finalPnl, 0)
+  const grossLoss  = Math.abs(losses.reduce((s, t) => s + t.finalPnl, 0))
+  const winRate    = (wins.length / closed.length) * 100
+  const profitFactor = grossLoss > 0 ? grossWin / grossLoss : grossWin > 0 ? 999 : 0
+  const avgWin     = wins.length  > 0 ? grossWin  / wins.length  : 0
+  const avgLoss    = losses.length > 0 ? grossLoss / losses.length : 0
+  const bestTrade  = Math.max(...closed.map(t => t.finalPnl))
+  const worstTrade = Math.min(...closed.map(t => t.finalPnl))
+  // Max drawdown from equity curve
+  let peak = 0, maxDD = 0, running = 0
+  for (const t of [...closed].reverse()) {
+    running += t.finalPnl
+    if (running > peak) peak = running
+    const dd = peak - running
+    if (dd > maxDD) maxDD = dd
+  }
+  // Simple Sharpe (daily returns approximation)
+  const returns = closed.map(t => t.finalPnl)
+  const mean = returns.reduce((a, b) => a + b, 0) / returns.length
+  const std  = Math.sqrt(returns.reduce((s, v) => s + (v - mean) ** 2, 0) / returns.length)
+  const sharpe = std > 0 ? parseFloat((mean / std).toFixed(2)) : 0
+  return {
+    totalPnl, winRate: parseFloat(winRate.toFixed(1)), profitFactor: parseFloat(profitFactor.toFixed(2)),
+    avgWin: parseFloat(avgWin.toFixed(2)), avgLoss: parseFloat(avgLoss.toFixed(2)),
+    bestTrade: parseFloat(bestTrade.toFixed(2)), worstTrade: parseFloat(worstTrade.toFixed(2)),
+    totalTrades: closed.length, winCount: wins.length, lossCount: losses.length,
+    maxDrawdown: parseFloat(maxDD.toFixed(2)), sharpe,
+  }
+}
+
+// ─── Trading Sessions (UTC hours) ────────────────────────────────────────────
+const SESSIONS: TradingSession[] = [
+  { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
+  { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
+  { name: "London",  open: 7,  close: 16, tz: "GMT",  color: "#22d3ee" },
+  { name: "New York",open: 12, close: 21, tz: "EST",  color: "#10b981" },
+]
+
+function isSessionOpen(s: TradingSession, utcH: number): boolean {
+  if (s.open < s.close) return utcH >= s.open && utcH < s.close
+  return utcH >= s.open || utcH < s.close // crosses midnight
+}
+
+// ─── Performance Dashboard ───────────────────────────────────────────────────
+
+function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
+  closed: ClosedTrade[]; equityHistory: number[]; walletBalance: number
+}) {
+  const stats = useMemo(() => calcPerfStats(closed), [closed])
+
+  // Mini equity SVG path
+  const eqPath = useMemo(() => {
+    if (equityHistory.length < 2) return ""
+    const min = Math.min(...equityHistory); const max = Math.max(...equityHistory)
+    const range = max - min || 1; const w = 260; const h = 56
+    return equityHistory.map((v, i) => {
+      const x = (i / (equityHistory.length - 1)) * w
+      const y = h - ((v - min) / range) * h
+      return `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`
+    }).join(" ")
+  }, [equityHistory])
+
+  // Last 10 trades sparkbar
+  const recent = closed.slice(0, 10).reverse()
+
+  // Pair breakdown
+  const pairMap: Record<string, { pnl: number; count: number }> = {}
+  closed.forEach(t => {
+    if (!pairMap[t.pair]) pairMap[t.pair] = { pnl: 0, count: 0 }
+    pairMap[t.pair].pnl  += t.finalPnl
+    pairMap[t.pair].count += 1
+  })
+  const topPairs = Object.entries(pairMap)
+    .sort((a, b) => Math.abs(b[1].pnl) - Math.abs(a[1].pnl))
+    .slice(0, 5)
+
+  if (closed.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
+        <Trophy className="h-10 w-10" style={{ color: "#1e2d45" }} />
+        <p className="text-[11px] font-bold tracking-wider uppercase" style={{ color: "#2d4565" }}>No trade history yet</p>
+        <p className="text-[10px] text-center" style={{ color: "#1e2d45" }}>Place and close trades to see your performance analytics</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll" style={{ maxHeight: "100%" }}>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-3 gap-1.5">
+        {[
+          { label: "Total P&L",      value: `${stats.totalPnl >= 0 ? "+" : ""}$${stats.totalPnl.toFixed(2)}`, color: stats.totalPnl >= 0 ? "#10b981" : "#ef4444", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+          { label: "Win Rate",       value: `${stats.winRate.toFixed(1)}%`, color: stats.winRate >= 55 ? "#10b981" : stats.winRate >= 45 ? "#f59e0b" : "#ef4444", icon: <Award className="h-3.5 w-3.5" /> },
+          { label: "Profit Factor",  value: stats.profitFactor >= 999 ? "∞" : stats.profitFactor.toFixed(2), color: stats.profitFactor >= 1.5 ? "#10b981" : stats.profitFactor >= 1 ? "#f59e0b" : "#ef4444", icon: <Gauge className="h-3.5 w-3.5" /> },
+          { label: "Total Trades",   value: String(stats.totalTrades), color: "#a78bfa", icon: <BarChart className="h-3.5 w-3.5" /> },
+          { label: "Avg Win",        value: `+$${stats.avgWin.toFixed(2)}`, color: "#10b981", icon: <TrendingUp className="h-3.5 w-3.5" /> },
+          { label: "Avg Loss",       value: `-$${stats.avgLoss.toFixed(2)}`, color: "#ef4444", icon: <TrendingDown className="h-3.5 w-3.5" /> },
+          { label: "Best Trade",     value: `+$${stats.bestTrade.toFixed(2)}`, color: "#22d3ee", icon: <Trophy className="h-3.5 w-3.5" /> },
+          { label: "Worst Trade",    value: `$${stats.worstTrade.toFixed(2)}`, color: "#ef4444", icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+          { label: "Max Drawdown",   value: `-$${stats.maxDrawdown.toFixed(2)}`, color: "#fb923c", icon: <TrendingDown className="h-3.5 w-3.5" /> },
+        ].map(item => (
+          <div key={item.label} className="px-2.5 py-2 rounded-xl" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+            <div className="flex items-center gap-1 mb-1" style={{ color: item.color }}>
+              {item.icon}
+              <span className="text-[7px] font-black tracking-[0.15em] uppercase" style={{ color: "#374151" }}>{item.label}</span>
+            </div>
+            <p className="price-mono text-[12px] font-black leading-none" style={{ color: item.color }}>{item.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Equity Curve */}
+      {eqPath && (
+        <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <LineChart className="h-3 w-3 text-cyan-400" />
+              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Equity Curve</span>
+            </div>
+            <span className="price-mono text-[10px] font-black text-emerald-400">${walletBalance.toFixed(2)}</span>
+          </div>
+          <svg width="100%" height="56" viewBox="0 0 260 56" preserveAspectRatio="none" className="w-full">
+            <defs>
+              <linearGradient id="eqGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={stats.totalPnl >= 0 ? "#10b981" : "#ef4444"} stopOpacity="0.25" />
+                <stop offset="100%" stopColor={stats.totalPnl >= 0 ? "#10b981" : "#ef4444"} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d={`${eqPath} V56 H0 Z`} fill="url(#eqGrad)" />
+            <path d={eqPath} stroke={stats.totalPnl >= 0 ? "#10b981" : "#ef4444"} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+      )}
+
+      {/* Recent Trades Sparkbar */}
+      {recent.length > 0 && (
+        <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <Flame className="h-3 w-3 text-amber-400" />
+            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Last {recent.length} Trades</span>
+            <span className="ml-auto text-[9px] text-slate-600">{stats.winCount}W / {stats.lossCount}L</span>
+          </div>
+          <div className="flex gap-1 items-end h-8">
+            {recent.map((t, i) => {
+              const isWin = t.finalPnl > 0
+              const maxAbs = Math.max(...recent.map(r => Math.abs(r.finalPnl)), 1)
+              const h = Math.max(4, Math.abs(t.finalPnl) / maxAbs * 28)
+              return (
+                <div key={t.id} className="flex-1 rounded-sm relative group cursor-default"
+                  style={{ height: h, background: isWin ? "#059669" : "#dc2626", minWidth: 8 }}>
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-1.5 py-0.5 rounded text-[8px] font-bold price-mono whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none z-10 transition-opacity"
+                    style={{ background: "#0d1625", border: "1px solid #1e2d45", color: isWin ? "#10b981" : "#ef4444" }}>
+                    {t.finalPnl >= 0 ? "+" : ""}${t.finalPnl.toFixed(2)}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Top Pairs */}
+      {topPairs.length > 0 && (
+        <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+          <div className="flex items-center gap-1.5 mb-2">
+            <PieChart className="h-3 w-3 text-violet-400" />
+            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Top Instruments</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {topPairs.map(([pair, data]) => {
+              const isPos = data.pnl >= 0
+              const maxPnl = Math.max(...topPairs.map(([,d]) => Math.abs(d.pnl)), 1)
+              const barW = (Math.abs(data.pnl) / maxPnl) * 100
+              return (
+                <div key={pair} className="flex items-center gap-2">
+                  <span className="price-mono text-[10px] font-black text-white w-16 shrink-0">{pair}</span>
+                  <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: "#111827" }}>
+                    <div className="h-full rounded-full" style={{ width: `${barW}%`, background: isPos ? "#059669" : "#dc2626" }} />
+                  </div>
+                  <span className="price-mono text-[10px] font-black w-16 text-right shrink-0" style={{ color: isPos ? "#10b981" : "#ef4444" }}>
+                    {isPos ? "+" : ""}${data.pnl.toFixed(2)}
+                  </span>
+                  <span className="text-[9px] text-slate-600 w-6 text-right shrink-0">{data.count}t</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Market Sessions Panel ────────────────────────────────────────────────────
+
+function MarketSessionsPanel() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(t)
+  }, [])
+
+  const utcH = now.getUTCHours()
+  const utcM = now.getUTCMinutes()
+  const utcFrac = utcH + utcM / 60
+
+  // Forex market news items (static — would be API-driven in production)
+  const newsItems = [
+    { time: "08:30", title: "US Non-Farm Payrolls", impact: "high", currency: "USD" },
+    { time: "10:00", title: "EUR CPI Flash Estimate", impact: "high", currency: "EUR" },
+    { time: "12:30", title: "BoE Interest Rate Decision", impact: "high", currency: "GBP" },
+    { time: "14:00", title: "US ISM Manufacturing PMI", impact: "med",  currency: "USD" },
+    { time: "19:30", title: "FOMC Meeting Minutes",   impact: "high", currency: "USD" },
+    { time: "23:50", title: "Japan Trade Balance",     impact: "low",  currency: "JPY" },
+  ]
+
+  const impactColor = { high: "#ef4444", med: "#f59e0b", low: "#10b981" }
+
+  return (
+    <div className="p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll h-full">
+      {/* Sessions grid */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-3">
+          <Globe2 className="h-3 w-3 text-cyan-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Market Sessions</span>
+          <span className="ml-auto price-mono text-[9px] text-slate-600">
+            {String(now.getUTCHours()).padStart(2,"0")}:{String(now.getUTCMinutes()).padStart(2,"0")} UTC
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {SESSIONS.map(s => {
+            const open = isSessionOpen(s, utcH)
+            // Progress through session
+            let prog = 0
+            if (open) {
+              const dur = s.open < s.close ? s.close - s.open : (24 - s.open) + s.close
+              const elapsed = s.open < s.close
+                ? utcFrac - s.open
+                : utcFrac >= s.open ? utcFrac - s.open : (24 - s.open) + utcFrac
+              prog = Math.min(100, (elapsed / dur) * 100)
+            }
+            return (
+              <div key={s.name} className="rounded-lg px-2.5 py-2" style={{
+                background: open ? `${s.color}10` : "#070a10",
+                border: `1px solid ${open ? s.color + "35" : "#1a2640"}`,
+              }}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-black" style={{ color: open ? s.color : "#374151" }}>{s.name}</span>
+                  <span className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                    style={{ background: open ? `${s.color}20` : "#111827", color: open ? s.color : "#374151" }}>
+                    {open ? "OPEN" : "CLOSED"}
+                  </span>
+                </div>
+                <div className="text-[8px] text-slate-600 mb-1.5">{s.tz} · {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
+                {open && (
+                  <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
+                    <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Economic Calendar */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Newspaper className="h-3 w-3 text-amber-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Economic Calendar</span>
+          <span className="ml-auto text-[8px] px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>TODAY</span>
+        </div>
+        <div className="flex flex-col gap-1">
+          {newsItems.map((n, i) => (
+            <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #111827" }}>
+              <span className="price-mono text-[9px] font-bold text-slate-600 w-8 shrink-0">{n.time}</span>
+              <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: impactColor[n.impact as keyof typeof impactColor] }} />
+              <span className="text-[9px] text-slate-400 flex-1 truncate">{n.title}</span>
+              <span className="text-[8px] font-black px-1 py-0.5 rounded shrink-0" style={{ background: "rgba(255,255,255,0.04)", color: "#64748b" }}>{n.currency}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sentiment indicators */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-2">
+          <Gauge className="h-3 w-3 text-violet-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Market Sentiment</span>
+        </div>
+        {[
+          { pair: "EUR/USD", long: 58, short: 42 },
+          { pair: "GBP/USD", long: 44, short: 56 },
+          { pair: "XAU/USD", long: 71, short: 29 },
+          { pair: "BTC/USD", long: 63, short: 37 },
+        ].map(s => (
+          <div key={s.pair} className="mb-2 last:mb-0">
+            <div className="flex justify-between mb-0.5">
+              <span className="price-mono text-[9px] font-bold text-slate-400">{s.pair}</span>
+              <div className="flex gap-2">
+                <span className="text-[9px] font-black text-emerald-400">{s.long}% L</span>
+                <span className="text-[9px] font-black text-red-400">{s.short}% S</span>
+              </div>
+            </div>
+            <div className="flex h-1.5 rounded-full overflow-hidden">
+              <div className="h-full" style={{ width: `${s.long}%`, background: "#059669" }} />
+              <div className="h-full flex-1" style={{ background: "#dc2626" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Price Alert Panel ────────────────────────────────────────────────────────
+
+function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
+  alerts: PriceAlertItem[]
+  pairs: ForexPair[]
+  onAdd: (pair: string, price: number, condition: "above" | "below", label: string) => void
+  onRemove: (id: string) => void
+}) {
+  const [alertPair, setAlertPair] = useState(pairs[0]?.symbol ?? "EUR/USD")
+  const [alertPrice, setAlertPrice] = useState("")
+  const [alertCondition, setAlertCondition] = useState<"above" | "below">("above")
+  const [alertLabel, setAlertLabel] = useState("")
+
+  const selPair = pairs.find(p => p.symbol === alertPair)
+  const mid = selPair ? (selPair.bid + selPair.ask) / 2 : 0
+
+  return (
+    <div className="p-2 flex flex-col gap-2 h-full overflow-y-auto terminal-scroll">
+      {/* Add alert form */}
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
+        <div className="flex items-center gap-1.5 mb-2.5">
+          <AlarmClock className="h-3 w-3 text-amber-400" />
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">New Price Alert</span>
+        </div>
+        <div className="flex flex-col gap-2">
+          <div>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">Instrument</label>
+            <select value={alertPair} onChange={e => setAlertPair(e.target.value)}
+              className="w-full price-mono text-xs font-black text-white focus:outline-none px-2 py-1.5 rounded-lg"
+              style={{ background: "#070a10", border: "1px solid #1e2d45" }}>
+              {pairs.map(p => <option key={p.symbol} value={p.symbol}>{p.symbol}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-1">
+            {(["above","below"] as const).map(c => (
+              <button key={c} onClick={() => setAlertCondition(c)}
+                className="flex-1 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all"
+                style={alertCondition === c
+                  ? { background: c === "above" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: c === "above" ? "#10b981" : "#ef4444", border: `1px solid ${c === "above" ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }
+                  : { background: "#070a10", color: "#374151", border: "1px solid #1a2640" }}>
+                {c === "above" ? "Above" : "Below"}
+              </button>
+            ))}
+          </div>
+          <div>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">
+              Target Price {mid > 0 && <span className="text-slate-700 normal-case tracking-normal font-normal">(current: {fmt(mid, alertPair)})</span>}
+            </label>
+            <input type="number" value={alertPrice} onChange={e => setAlertPrice(e.target.value)}
+              placeholder={mid > 0 ? fmt(mid, alertPair) : "0.00000"}
+              className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded-lg"
+              style={{ background: "#070a10", border: "1px solid #1e2d45" }} />
+          </div>
+          <div>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">Label (optional)</label>
+            <input type="text" value={alertLabel} onChange={e => setAlertLabel(e.target.value)}
+              placeholder="e.g. Key resistance"
+              className="w-full text-xs text-white focus:outline-none px-2 py-1.5 rounded-lg"
+              style={{ background: "#070a10", border: "1px solid #1e2d45" }} />
+          </div>
+          <button
+            onClick={() => {
+              const p = parseFloat(alertPrice)
+              if (isNaN(p) || p <= 0) return
+              onAdd(alertPair, p, alertCondition, alertLabel || `${alertPair} ${alertCondition} ${alertPrice}`)
+              setAlertPrice(""); setAlertLabel("")
+            }}
+            className="w-full py-2 rounded-lg font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
+            style={{ background: "linear-gradient(135deg,#1e3a5f,#1d4ed8)", color: "#bfdbfe", border: "1px solid rgba(96,165,250,0.3)" }}>
+            <Plus className="h-3 w-3" /> Set Alert
+          </button>
+        </div>
+      </div>
+
+      {/* Alert list */}
+      {alerts.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-6 gap-2">
+          <Bell className="h-8 w-8" style={{ color: "#1e2d45" }} />
+          <p className="text-[10px] text-slate-700">No active alerts</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {alerts.map(a => {
+            const pair = pairs.find(p => p.symbol === a.pair)
+            const mid = pair ? (pair.bid + pair.ask) / 2 : 0
+            const dist = mid > 0 ? Math.abs((a.price - mid) / pip(a.pair)) : 0
+            return (
+              <div key={a.id} className="rounded-xl px-3 py-2.5 flex items-center gap-2"
+                style={{ background: a.triggered ? "rgba(16,185,129,0.07)" : "#0a1120", border: `1px solid ${a.triggered ? "rgba(16,185,129,0.25)" : "#1a2640"}` }}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="price-mono text-[11px] font-black text-white">{a.pair}</span>
+                    <span className="text-[8px] font-black px-1 py-0.5 rounded"
+                      style={{ background: a.condition === "above" ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)", color: a.condition === "above" ? "#10b981" : "#ef4444" }}>
+                      {a.condition}
+                    </span>
+                    {a.triggered && <CheckCircle2 className="h-3 w-3 text-emerald-400" />}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="price-mono text-sm font-black text-cyan-400">{fmt(a.price, a.pair)}</span>
+                    {dist > 0 && !a.triggered && <span className="text-[9px] text-slate-600">{dist.toFixed(1)}p away</span>}
+                  </div>
+                  {a.label && <p className="text-[9px] text-slate-600 truncate mt-0.5">{a.label}</p>}
+                </div>
+                <button onClick={() => onRemove(a.id)} className="p-1 rounded transition-colors text-slate-600 hover:text-red-400">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Order Depth Panel ────────────────────────────────────────────────────────
 
@@ -697,7 +1156,11 @@ export function ForexTradingPlatform({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
+  const [chartExpanded, setChartExpanded] = useState(false)
+  // Map of tradeId → partial close lot input value
+  const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(true)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -1108,7 +1571,7 @@ export function ForexTradingPlatform({
   }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
   // ── Execute market trade ───────────────────────────────────────────────────
-  // Opens the confirmation modal — called by both executeTrade and quickTrade
+  // Opens the confirmation modal ��� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
     lot: number,
@@ -1290,6 +1753,61 @@ export function ForexTradingPlatform({
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
 
+  // ── Partial close trade ────────────────────────────────────────────────────
+  const partialCloseTrade = useCallback((id: string, closeLots: number) => {
+    const trade = openTradesRef.current.find(t => t.id === id)
+    if (!trade) return
+    if (closeLots <= 0 || closeLots >= trade.lotSize) {
+      // Full close
+      closeTrade(id)
+      return
+    }
+    if (closingTradeIds.current.has(id)) return
+
+    const pairNow    = pairsRef.current.find(p => p.symbol === trade.pair)
+    const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
+
+    // Scale P&L proportionally to the closed lot fraction
+    const lotFraction = closeLots / trade.lotSize
+    const { pnl: pnlRaw, pipCount } = calcPnl({ ...trade, lotSize: closeLots }, closePrice, trade.pair)
+    const finalPnl = parseFloat((pnlRaw + trade.swap * lotFraction).toFixed(2))
+    const closedMargin = parseFloat((trade.margin * lotFraction).toFixed(2))
+
+    const closed: ClosedTrade = {
+      ...trade,
+      lotSize: closeLots,
+      closePrice,
+      closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      closeDuration: formatDuration(trade.openTimestamp),
+      finalPnl, finalPips: pipCount,
+      finalSwap: parseFloat((trade.swap * lotFraction).toFixed(4)),
+      closeReason: "manual",
+      id: `${id}_partial_${Date.now()}`,
+    }
+
+    // Update the open trade with reduced lots and margin
+    const remainingLots = parseFloat((trade.lotSize - closeLots).toFixed(2))
+    const remainingMargin = parseFloat((trade.margin - closedMargin).toFixed(2))
+    openTradesRef.current = openTradesRef.current.map(t =>
+      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
+    )
+    setOpenTrades(prev => prev.map(t =>
+      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
+    ))
+
+    setClosedTrades(prev => [closed, ...prev.slice(0, 99)])
+
+    const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
+    adjustWalletBalance(returnAmt > 0 ? returnAmt : 0,
+      `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+
+    showToast(finalPnl >= 0 ? "success" : "error",
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+
+    setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adjustWalletBalance, showToast])
+
   // ── Modify trade ───────────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
     setOpenTrades(prev => prev.map(t =>
@@ -1297,6 +1815,35 @@ export function ForexTradingPlatform({
     ))
     showToast("info", "Position updated")
   }, [showToast])
+
+  // ── Price Alert checker (runs each tick) ─────────────────────────────────
+  useEffect(() => {
+    if (priceAlerts.length === 0) return
+    setPriceAlerts(prev => prev.map(a => {
+      if (a.triggered) return a
+      const p = pairsRef.current.find(pair => pair.symbol === a.pair)
+      if (!p) return a
+      const mid = (p.bid + p.ask) / 2
+      const hit = a.condition === "above" ? mid >= a.price : mid <= a.price
+      if (hit) {
+        showToast("warning", `Alert: ${a.pair} ${a.condition} ${fmt(a.price, a.pair)} — ${a.label}`, 8000)
+        return { ...a, triggered: true }
+      }
+      return a
+    }))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickCount])
+
+  const addPriceAlert = useCallback((pair: string, price: number, condition: "above" | "below", label: string) => {
+    setPriceAlerts(prev => [{
+      id: genId(), pair, price, condition, label, triggered: false, createdAt: Date.now(),
+    }, ...prev])
+    showToast("info", `Alert set: ${pair} ${condition} ${fmt(price, pair)}`)
+  }, [showToast])
+
+  const removePriceAlert = useCallback((id: string) => {
+    setPriceAlerts(prev => prev.filter(a => a.id !== id))
+  }, [])
 
   // ── Cancel pending order ───────────────────────────────────────────────────
   const cancelPending = (id: string) => {
@@ -1435,21 +1982,21 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-0 h-8 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
         {[
-          { label: "BALANCE",       value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,     color: "#10b981" },
-          { label: "EQUITY",        value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,             color: totalPnl >= 0 ? "#10b981" : "#ef4444" },
-          { label: "LIVE P&L",      value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                           color: totalPnl >= 0 ? "#10b981" : "#ef4444" },
-          { label: "SWAP",          value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                         color: totalSwap >= 0 ? "#10b981" : "#ef4444" },
-          { label: "MARGIN USED",   value: `$${totalMargin.toFixed(2)}`,                                                    color: "#f59e0b" },
-          { label: "FREE MARGIN",   value: `$${freeMargin.toFixed(2)}`,                                                     color: "#22d3ee" },
-          { label: "MARGIN LEVEL",  value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                            color: marginLevel > 200 ? "#10b981" : marginLevel > 100 ? "#f59e0b" : "#ef4444" },
-          { label: "POSITIONS",     value: String(openTrades.length),                                                        color: "#a78bfa" },
-          { label: "PENDING",       value: String(pendingOrders.length),                                                     color: "#60a5fa" },
+          { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
+          { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
+          { label: "LIVE P&L",     value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                        color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)" },
+          { label: "SWAP",         value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                      color: totalSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+          { label: "MARGIN USED",  value: `$${totalMargin.toFixed(2)}`,                                                 color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
+          { label: "FREE MARGIN",  value: `$${freeMargin.toFixed(2)}`,                                                  color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
+          { label: "MARGIN LVL",   value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                         color: marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171", bg: "transparent" },
+          { label: "POSITIONS",    value: String(openTrades.length),                                                     color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+          { label: "PENDING",      value: String(pendingOrders.length),                                                  color: "#93c5fd", bg: "transparent" },
         ].map((item, i) => (
-          <div key={i} className="flex items-center gap-1.5 px-3 h-full shrink-0" style={{ borderRight: "1px solid #1a2640" }}>
-            <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5a80" }}>{item.label}</span>
-            <span className="price-mono text-[10px] font-black" style={{ color: item.color }}>{item.value}</span>
+          <div key={i} className="flex items-center gap-2 px-3 h-full shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
+            <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
           </div>
         ))}
       </div>
@@ -1473,7 +2020,7 @@ export function ForexTradingPlatform({
       <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
+        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-2.5 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -1621,7 +2168,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
-        <div className={`flex-1 flex flex-col min-w-0 ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
+        <div className={`flex flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -1684,6 +2231,8 @@ export function ForexTradingPlatform({
                   sym={selectedPair.symbol}
                   tf={timeframe}
                   openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+                  onExpand={() => setChartExpanded(e => !e)}
+                  isExpanded={chartExpanded}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -1693,64 +2242,81 @@ export function ForexTradingPlatform({
               )}
             </div>
 
-            {/* ── Quick BUY/SELL strip ── */}
+            {/* ── Quick BUY/SELL strip (3D) ── */}
             {selectedPair && (
-              <div className="shrink-0 flex items-stretch gap-0" style={{ borderTop: "1px solid #1e2d45", height: 54 }}>
-                <div className="flex items-center gap-3 px-3 shrink-0" style={{ background: "#060a12", borderRight: "1px solid #1e2d45" }}>
-                  <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Lots</p>
-                    <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
+              <div className="shrink-0 flex items-stretch" style={{ borderTop: "2px solid #1a2d4a", height: 72, background: "#04080f" }}>
+
+                {/* Param chips */}
+                <div className="flex items-center gap-2 px-3 shrink-0" style={{ borderRight: "1px solid #1a2d4a" }}>
+                  {/* LOTS chip */}
+                  <div className="param-chip flex flex-col items-center px-3 py-1.5" style={{ minWidth: 64 }}>
+                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LOTS</span>
+                    <input
+                      type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
                       step="0.01" min="0.01" max="100"
-                      className="price-mono text-sm font-black text-white focus:outline-none text-center w-16"
-                      style={{ background: "transparent", border: "none" }} />
+                      className="input-3d price-mono text-base font-black text-center w-full focus:outline-none px-1 py-0.5"
+                      style={{ width: 60, borderRadius: 6 }}
+                    />
                   </div>
-                  <div className="w-px h-6" style={{ background: "#1e2d45" }} />
-                  <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Lev</p>
+                  {/* LEV chip */}
+                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 60 }}>
+                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LEV</span>
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="price-mono text-sm font-black text-cyan-400 focus:outline-none appearance-none w-14 cursor-pointer"
-                      style={{ background: "transparent", border: "none" }}>
+                      className="input-3d price-mono text-sm font-black text-cyan-300 focus:outline-none appearance-none cursor-pointer text-center w-full px-1 py-0.5"
+                      style={{ width: 56, borderRadius: 6 }}>
                       {["10","25","50","100","200","500"].map(l => (
                         <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>
                       ))}
                     </select>
                   </div>
-                  <div className="w-px h-6" style={{ background: "#1e2d45" }} />
-                  <div className="text-center">
-                    <p className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Margin</p>
-                    <p className="price-mono text-sm font-black" style={{ color: "#f59e0b" }}>
+                  {/* MARGIN chip */}
+                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 72 }}>
+                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>MARGIN</span>
+                    <span className="price-mono text-sm font-black" style={{ color: "#fbbf24", textShadow: "0 0 10px rgba(251,191,36,0.4)" }}>
                       ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
-                {/* SELL */}
-                <button onClick={() => quickTrade("SELL")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "linear-gradient(135deg,#450a0a,#7f1d1d)", borderRight: "1px solid #991b1b" }}>
-                  <div className="flex items-center gap-1.5">
-                    <TrendingDown className="h-4 w-4 text-red-400" />
-                    <span className="text-base font-black tracking-wider text-red-300">SELL</span>
+                {/* SELL 3D button */}
+                <button
+                  onClick={() => quickTrade("SELL")}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance}
+                  className="btn-3d-sell flex-1 flex flex-col items-center justify-center gap-0.5"
+                  style={{ borderRadius: 0 }}
+                >
+                  <div className="flex items-center gap-2 relative z-10">
+                    <TrendingDown className="h-5 w-5 drop-shadow-lg" style={{ color: "#fca5a5", filter: "drop-shadow(0 0 6px rgba(248,113,113,0.7))" }} />
+                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(239,68,68,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>SELL</span>
                   </div>
-                  <span className="price-mono text-[11px] font-bold text-red-500">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#fca5a5", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>
+                    {fmt(selectedPair.bid, selectedPair.symbol)}
+                  </span>
                 </button>
 
-                <div className="flex flex-col items-center justify-center px-2 shrink-0" style={{ background: "#050810", borderRight: "1px solid #1e2d45" }}>
-                  <span className="text-[8px] font-black tracking-widest text-slate-700 uppercase">Spread</span>
-                  <span className="price-mono text-[10px] font-black text-cyan-600">
-                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p
+                {/* Spread pill */}
+                <div className="flex flex-col items-center justify-center shrink-0 px-1" style={{ background: "#02050b", minWidth: 50, borderLeft: "1px solid #1a2d4a", borderRight: "1px solid #1a2d4a" }}>
+                  <span className="text-[6px] font-black tracking-[0.2em] uppercase" style={{ color: "#1e3a5f" }}>SPR</span>
+                  <span className="price-mono text-xs font-black mt-0.5" style={{ color: "#0e7490", textShadow: "0 0 8px rgba(14,116,144,0.6)" }}>
+                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}
                   </span>
+                  <span className="text-[6px] font-bold mt-0.5" style={{ color: "#0e3a4a" }}>pips</span>
                 </div>
 
-                {/* BUY */}
-                <button onClick={() => quickTrade("BUY")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="flex-1 flex flex-col items-center justify-center gap-0.5 font-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: "linear-gradient(135deg,#052e16,#065f46)" }}>
-                  <div className="flex items-center gap-1.5">
-                    <TrendingUp className="h-4 w-4 text-emerald-400" />
-                    <span className="text-base font-black tracking-wider text-emerald-300">BUY</span>
+                {/* BUY 3D button */}
+                <button
+                  onClick={() => quickTrade("BUY")}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance}
+                  className="btn-3d-buy flex-1 flex flex-col items-center justify-center gap-0.5"
+                  style={{ borderRadius: 0 }}
+                >
+                  <div className="flex items-center gap-2 relative z-10">
+                    <TrendingUp className="h-5 w-5" style={{ color: "#6ee7b7", filter: "drop-shadow(0 0 6px rgba(110,231,183,0.7))" }} />
+                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(16,185,129,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>BUY</span>
                   </div>
-                  <span className="price-mono text-[11px] font-bold text-emerald-500">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#6ee7b7", textShadow: "0 0 8px rgba(110,231,183,0.5)" }}>
+                    {fmt(selectedPair.ask, selectedPair.symbol)}
+                  </span>
                 </button>
               </div>
             )}
@@ -1758,7 +2324,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── RIGHT: Order Ticket ────────────��────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
+        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
@@ -1794,18 +2360,23 @@ export function ForexTradingPlatform({
                   ))}
                 </div>
 
-                {/* BUY/SELL toggle */}
-                <div className="flex mb-2 overflow-hidden" style={{ borderRadius: 4, border: "1px solid #1e2d45", background: "#060a12" }}>
+                {/* BUY/SELL toggle — 3D */}
+                <div className="flex mb-2 gap-1.5">
                   {(["BUY","SELL"] as TradeDirection[]).map(d => (
                     <button key={d} onClick={() => setDirection(d)}
-                      className="flex-1 py-2 text-xs font-black flex items-center justify-center gap-1 transition-all"
-                      style={direction === d
-                        ? d === "BUY"
-                          ? { background: "linear-gradient(135deg,#065f46,#047857)", color: "#d1fae5", borderBottom: "2px solid #10b981" }
-                          : { background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fee2e2", borderBottom: "2px solid #ef4444" }
-                        : { color: "#374151" }}>
-                      {d === "BUY" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                      {d}
+                      className={`flex-1 py-2.5 text-sm font-black flex items-center justify-center gap-1.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
+                      style={direction !== d ? {
+                        background: "#080c14",
+                        border: "1px solid #1a2640",
+                        borderBottom: "2px solid #050810",
+                        borderRadius: 8,
+                        color: "#374151",
+                        boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
+                      } : {}}>
+                      {d === "BUY"
+                        ? <TrendingUp  className="h-3.5 w-3.5 relative z-10" />
+                        : <TrendingDown className="h-3.5 w-3.5 relative z-10" />}
+                      <span className="relative z-10">{d}</span>
                     </button>
                   ))}
                 </div>
@@ -1842,67 +2413,82 @@ export function ForexTradingPlatform({
                   </div>
                 )}
 
-                {/* Volume */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase block mb-1 text-slate-600">Volume (Lots)</label>
+                {/* Volume (3D input) */}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#a855f7" }}>
+                    Volume (Lots)
+                  </label>
                   <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
                     step="0.01" min="0.01" max="100"
-                    className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid #1e2d45", borderRadius: 4 }} />
-                  <div className="flex gap-1 mt-1">
-                    {["0.01","0.1","1.0"].map(l => (
+                    className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
+                    placeholder="0.01"
+                  />
+                  <div className="flex gap-1 mt-1.5">
+                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
                       <button key={l} onClick={() => setLotSize(l)}
-                        className="flex-1 py-1 text-[8px] font-black tracking-wider rounded transition-all"
-                        style={{ background: lotSize === l ? "rgba(167,139,250,0.15)" : "#070a10", color: lotSize === l ? "#a78bfa" : "#374151", border: `1px solid ${lotSize === l ? "rgba(167,139,250,0.3)" : "#1a2640"}` }}>
+                        className="flex-1 py-1 text-[7px] font-black tracking-wide rounded-md transition-all active:scale-95"
+                        style={lotSize === l
+                          ? { background: "rgba(168,85,247,0.18)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.4)", boxShadow: "0 0 8px rgba(168,85,247,0.2)" }
+                          : { background: "#0a1020", color: "#2d4565", border: "1px solid #1a2640" }}>
                         {l}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Leverage */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase block mb-1 text-slate-600">Leverage</label>
+                {/* Leverage (3D select) */}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#38bdf8" }}>
+                    Leverage
+                  </label>
                   <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                    className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 appearance-none"
-                    style={{ background: "#070a10", border: "1px solid #1e2d45", borderRadius: 4 }}>
-                    {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14" }}>1:{l}</option>)}
+                    className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
+                    {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
                   </select>
                 </div>
 
                 {/* SL */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#ef4444" }}>
-                    <ShieldAlert className="h-2.5 w-2.5" /> Stop Loss
-                    {slVal !== null && <span className="ml-auto text-[8px] text-slate-600 font-bold normal-case tracking-normal">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#ef4444" }}>
+                    <ShieldAlert className="h-3 w-3" /> Stop Loss
+                    {slVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
                   </label>
                   <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 4 }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)} />
+                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
+                    style={{ background: "linear-gradient(175deg,#1a0505 0%,#0d0204 100%)", border: "1px solid rgba(239,68,68,0.35)", borderBottom: "2px solid rgba(239,68,68,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 0 rgba(239,68,68,0.0)", outline: "none" }}
+                    placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(239,68,68,0.2), 0 0 12px rgba(239,68,68,0.12)" }}
+                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
                 </div>
 
                 {/* TP */}
-                <div className="mb-1.5">
-                  <label className="text-[9px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#10b981" }}>
-                    <Target className="h-2.5 w-2.5" /> Take Profit
-                    {tpVal !== null && <span className="ml-auto text-[8px] text-slate-600 font-bold normal-case tracking-normal">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                <div className="mb-2">
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#10b981" }}>
+                    <Target className="h-3 w-3" /> Take Profit
+                    {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
                   </label>
                   <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 4 }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)} />
+                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
+                    style={{ background: "linear-gradient(175deg,#021a0d 0%,#010d06 100%)", border: "1px solid rgba(16,185,129,0.35)", borderBottom: "2px solid rgba(16,185,129,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
+                    placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(16,185,129,0.2), 0 0 12px rgba(16,185,129,0.12)" }}
+                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
                 </div>
 
                 {/* Trailing Stop */}
                 <div className="mb-2">
-                  <label className="text-[9px] font-bold tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#a78bfa" }}>
-                    <ArrowUpDown className="h-2.5 w-2.5" /> Trailing Stop (pips)
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#a78bfa" }}>
+                    <ArrowUpDown className="h-3 w-3" /> Trailing Stop (pips)
                   </label>
                   <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2 py-1.5"
-                    style={{ background: "#070a10", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 4 }}
-                    placeholder="0 = disabled" />
+                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
+                    style={{ background: "linear-gradient(175deg,#0e0617 0%,#07030f 100%)", border: "1px solid rgba(167,139,250,0.3)", borderBottom: "2px solid rgba(167,139,250,0.12)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
+                    placeholder="0 = disabled"
+                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(167,139,250,0.2), 0 0 12px rgba(167,139,250,0.12)" }}
+                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
+                  />
                 </div>
 
                 {/* Metrics grid */}
@@ -1938,33 +2524,40 @@ export function ForexTradingPlatform({
                   </div>
                 )}
 
-                {/* Execute */}
-                <button onClick={executeTrade} disabled={balanceLoaded && estimatedMargin > walletBalance && orderType === "market"}
-                  className="w-full py-2.5 font-black text-xs tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ borderRadius: 4,
-                    ...(direction === "BUY"
-                      ? { background: "linear-gradient(135deg,#065f46,#047857)", color: "#d1fae5", boxShadow: "0 4px 16px rgba(16,185,129,0.3)" }
-                      : { background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fee2e2", boxShadow: "0 4px 16px rgba(239,68,68,0.3)" }) }}>
-                  <Zap className="h-3.5 w-3.5" />
-                  {orderType === "market" ? `${direction} ${selectedPair.symbol}` : `Place ${direction} ${orderType.toUpperCase()}`}
+                {/* Execute (3D) */}
+                <button
+                  onClick={executeTrade}
+                  disabled={balanceLoaded && estimatedMargin > walletBalance && orderType === "market"}
+                  className={`w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
+                >
+                  <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
+                  <span className="relative z-10" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
+                    {orderType === "market"
+                      ? `${direction} ${selectedPair.symbol}`
+                      : `Place ${direction} ${orderType.toUpperCase()}`}
+                  </span>
                 </button>
 
-                <div className="my-2" style={{ height: 1, background: "#1a2640" }} />
+                <div className="my-2" style={{ height: 1, background: "#111927" }} />
 
-                {/* Quick trade */}
-                <p className="text-[8px] font-black text-slate-700 tracking-widest uppercase mb-1.5">Quick Market Trade</p>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button onClick={() => quickTrade("BUY")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="flex flex-col items-center py-2 font-black text-xs transition-all active:scale-95 disabled:opacity-40"
-                    style={{ borderRadius: 4, background: "linear-gradient(135deg,#065f46,#047857)", color: "#d1fae5", border: "1px solid #10b981" }}>
-                    <div className="flex items-center gap-1"><TrendingUp className="h-3 w-3" /> BUY</div>
-                    <span className="price-mono text-[9px] opacity-80">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                {/* Quick Market Trade (3D) */}
+                <p className="text-[7px] font-black tracking-[0.2em] uppercase mb-1.5" style={{ color: "#1e2d45" }}>Quick Market Trade</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => quickTrade("BUY")}
+                    disabled={balanceLoaded && estimatedMargin > walletBalance}
+                    className="btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5"
+                  >
+                    <div className="flex items-center gap-1 relative z-10"><TrendingUp className="h-3.5 w-3.5" /><span className="font-black text-xs">BUY</span></div>
+                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                   </button>
-                  <button onClick={() => quickTrade("SELL")} disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="flex flex-col items-center py-2 font-black text-xs transition-all active:scale-95 disabled:opacity-40"
-                    style={{ borderRadius: 4, background: "linear-gradient(135deg,#7f1d1d,#b91c1c)", color: "#fee2e2", border: "1px solid #ef4444" }}>
-                    <div className="flex items-center gap-1"><TrendingDown className="h-3 w-3" /> SELL</div>
-                    <span className="price-mono text-[9px] opacity-80">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <button
+                    onClick={() => quickTrade("SELL")}
+                    disabled={balanceLoaded && estimatedMargin > walletBalance}
+                    className="btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5"
+                  >
+                    <div className="flex items-center gap-1 relative z-10"><TrendingDown className="h-3.5 w-3.5" /><span className="font-black text-xs">SELL</span></div>
+                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
                   </button>
                 </div>
               </div>
@@ -1997,15 +2590,18 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
-      <div className="flex flex-col shrink-0" style={{ height: 200, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <div className="flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
-            { id: "positions", label: `Open (${openTrades.length})`,    icon: Layers },
-            { id: "pending",   label: `Pending (${pendingOrders.length})`, icon: Clock },
-            { id: "history",   label: `History (${closedTrades.length})`, icon: History },
-            { id: "depth",     label: "Depth",                           icon: BarChart2 },
-            { id: "stats",     label: "Stats",                           icon: Activity },
+            { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
+            { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
+            { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
+            { id: "performance", label: "Performance",                        icon: BarChart },
+            { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
+            { id: "sessions",    label: "Sessions",                           icon: Globe2 },
+            { id: "depth",       label: "Depth",                              icon: BarChart2 },
+            { id: "stats",       label: "Stats",                              icon: Activity },
           ] as { id: typeof activePanel; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
             <button key={id} onClick={() => setActivePanel(id)}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
@@ -2026,9 +2622,34 @@ export function ForexTradingPlatform({
               <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
                 <BarChart2 className="h-8 w-8 opacity-20" />
                 <span className="text-[11px] tracking-wider font-bold uppercase">No open positions</span>
+                <span className="text-[9px] tracking-wider text-slate-800">Place a BUY or SELL to get started</span>
               </div>
             ) : (
-              <div className="p-2 flex flex-col gap-2">
+              <div className="flex flex-col h-full">
+              {/* Positions live summary bar */}
+              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+                {[
+                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+                  { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+                  { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
+                  { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
+                  { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
+                  { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
+                    <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+                  </div>
+                ))}
+                {/* Close all button */}
+                <button
+                  onClick={() => { openTrades.forEach(t => closeTrade(t.id)) }}
+                  className="ml-auto mr-2 px-2.5 py-1 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95"
+                  style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}>
+                  Close All
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
                 {openTrades.map(trade => {
                   const isBuy    = trade.direction === "BUY"
                   const pnlPos   = trade.pnl >= 0
@@ -2104,6 +2725,28 @@ export function ForexTradingPlatform({
                         </div>
                       </div>
 
+                      {/* Partial close row */}
+                      <div className="flex gap-1.5 px-3 pb-1.5 items-center">
+                        <span className="text-[8px] font-black uppercase tracking-wider shrink-0" style={{ color: "#3d5a80" }}>Partial</span>
+                        <input
+                          type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
+                          value={partialCloseMap[trade.id] ?? ""}
+                          onChange={e => setPartialCloseMap(prev => ({ ...prev, [trade.id]: e.target.value }))}
+                          placeholder={`${(trade.lotSize / 2).toFixed(2)} lots`}
+                          className="flex-1 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded-lg"
+                          style={{ background: "#070a10", border: "1px solid #1e2d45", minWidth: 0 }}
+                        />
+                        <button
+                          onClick={() => {
+                            const l = parseFloat(partialCloseMap[trade.id] ?? "")
+                            if (!isNaN(l) && l > 0) partialCloseTrade(trade.id, l)
+                          }}
+                          className="px-2 py-1 rounded-lg font-black text-[10px] transition-all active:scale-95 shrink-0"
+                          style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
+                          Close Partial
+                        </button>
+                      </div>
+
                       {/* Action buttons */}
                       <div className="flex gap-1.5 px-3 py-2">
                         <button
@@ -2120,12 +2763,13 @@ export function ForexTradingPlatform({
                             color: "#fff",
                             border: `1px solid ${trade.pnl >= 0 ? "#059669" : "#dc2626"}`,
                           }}>
-                          <X className="h-3 w-3" /> Close {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
+                          <X className="h-3 w-3" /> Close All {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                         </button>
                       </div>
                     </div>
                   )
                 })}
+              </div>
               </div>
             )
           )}
@@ -2188,54 +2832,82 @@ export function ForexTradingPlatform({
           )}
 
           {/* ── Trade History ── */}
-          {activePanel === "history" && (
-            closedTrades.length === 0 ? (
+          {activePanel === "history" && (() => {
+            const totalHistPnl   = closedTrades.reduce((s, t) => s + t.finalPnl, 0)
+            const totalHistPips  = closedTrades.reduce((s, t) => s + t.finalPips, 0)
+            const totalHistSwap  = closedTrades.reduce((s, t) => s + t.finalSwap, 0)
+            const wins           = closedTrades.filter(t => t.finalPnl > 0).length
+            const winRate        = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) : "0"
+            const pnlColor       = totalHistPnl >= 0 ? "#34d399" : "#f87171"
+            return closedTrades.length === 0 ? (
               <div className="flex items-center justify-center h-full gap-2 text-slate-700">
                 <History className="h-5 w-5 opacity-30" />
                 <span className="text-[11px] tracking-wider">No closed trades yet</span>
               </div>
             ) : (
-              <table className="w-full text-[10px] price-mono">
-                <thead>
-                  <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-                    {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
-                      <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {closedTrades.slice(0, 100).map(trade => {
-                    const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
-                    const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa" }
-                    return (
-                      <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
-                        <td className="px-2 py-1.5 font-black text-white">{trade.pair}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="px-1.5 py-0.5 font-black text-[8px] uppercase rounded"
-                            style={{ background: trade.direction === "BUY" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: trade.direction === "BUY" ? "#10b981" : "#ef4444" }}>
-                            {trade.direction}
-                          </span>
-                        </td>
-                        <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
-                        <td className="px-2 py-1.5 text-slate-400">{fmt(trade.openPrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5 text-slate-400">{fmt(trade.closePrice, trade.pair)}</td>
-                        <td className="px-2 py-1.5 font-black" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
-                        <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
-                        <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
-                        <td className="px-2 py-1.5 text-slate-600">{trade.closeDuration}</td>
-                        <td className="px-2 py-1.5">
-                          <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded"
-                            style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
-                            {trade.closeReason.replace("_"," ")}
-                          </span>
-                        </td>
+              <div className="flex flex-col h-full">
+                {/* Summary strip */}
+                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+                  {[
+                    { label: "TOTAL P&L",  value: `${totalHistPnl >= 0 ? "+" : ""}$${totalHistPnl.toFixed(2)}`, color: pnlColor, bg: totalHistPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+                    { label: "TOTAL PIPS", value: `${totalHistPips >= 0 ? "+" : ""}${totalHistPips.toFixed(1)}p`, color: pnlColor, bg: "transparent" },
+                    { label: "TOTAL SWAP", value: `${totalHistSwap >= 0 ? "+" : ""}$${totalHistSwap.toFixed(2)}`, color: totalHistSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+                    { label: "TRADES",     value: String(closedTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+                    { label: "WIN RATE",   value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? "#34d399" : "#f87171", bg: "transparent" },
+                    { label: "WINS",       value: String(wins), color: "#34d399", bg: "transparent" },
+                    { label: "LOSSES",     value: String(closedTrades.length - wins), color: "#f87171", bg: "transparent" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                      <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
+                      <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Table */}
+                <div className="flex-1 overflow-y-auto terminal-scroll">
+                  <table className="w-full text-[10px] price-mono">
+                    <thead>
+                      <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
+                        {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
+                          <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap sticky top-0" style={{ background: "#070a10" }}>{h}</th>
+                        ))}
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {closedTrades.slice(0, 100).map(trade => {
+                        const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
+                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa" }
+                        return (
+                          <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
+                            <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
+                            <td className="px-2 py-1.5">
+                              <span className="px-1.5 py-0.5 font-black text-[8px] uppercase rounded"
+                                style={{ background: trade.direction === "BUY" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: trade.direction === "BUY" ? "#10b981" : "#ef4444" }}>
+                                {trade.direction}
+                              </span>
+                            </td>
+                            <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
+                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.openPrice, trade.pair)}</td>
+                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.closePrice, trade.pair)}</td>
+                            <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
+                            <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
+                            <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
+                            <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">{trade.closeDuration}</td>
+                            <td className="px-2 py-1.5">
+                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
+                                style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
+                                {trade.closeReason.replace("_"," ")}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             )
-          )}
+          })()}
 
           {/* ── Order Depth ── */}
           {activePanel === "depth" && (
@@ -2250,6 +2922,28 @@ export function ForexTradingPlatform({
               ? <MarketStats pair={selectedPair} />
               : <div className="flex items-center justify-center h-full text-slate-700 text-[11px] tracking-wider">Select an instrument</div>
           )}
+
+          {/* ── Performance Dashboard ── */}
+          {activePanel === "performance" && (
+            <PerformanceDashboard
+              closed={closedTrades}
+              equityHistory={equityHistory}
+              walletBalance={walletBalance}
+            />
+          )}
+
+          {/* ── Price Alerts ── */}
+          {activePanel === "alerts" && (
+            <PriceAlertPanel
+              alerts={priceAlerts}
+              pairs={pairs}
+              onAdd={addPriceAlert}
+              onRemove={removePriceAlert}
+            />
+          )}
+
+          {/* ── Market Sessions ── */}
+          {activePanel === "sessions" && <MarketSessionsPanel />}
 
         </div>
       </div>
