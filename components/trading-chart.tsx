@@ -152,11 +152,15 @@ export function TradingChart({
   sym,
   tf = "5M",
   openTrades = [],
+  onExpand,
+  isExpanded = false,
 }: {
   candles: Candle[]
   sym: string
   tf?: string
   openTrades?: OpenTrade[]
+  onExpand?: () => void
+  isExpanded?: boolean
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
@@ -239,43 +243,43 @@ export function TradingChart({
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: T.bg },
-        textColor:  T.textMuted,
-        fontFamily: "'Inter', 'SF Pro Display', sans-serif",
-        fontSize:   10,
+        background: { type: ColorType.Solid, color: "#060b15" },
+        textColor:  "#4a6580",
+        fontFamily: "'Inter', 'SF Pro Display', monospace",
+        fontSize:   11,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.025)", style: LineStyle.Solid },
-        horzLines: { color: "rgba(255,255,255,0.025)", style: LineStyle.Solid },
+        vertLines: { color: "rgba(255,255,255,0.04)", style: LineStyle.Solid },
+        horzLines: { color: "rgba(255,255,255,0.06)", style: LineStyle.Solid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          color: "rgba(255,255,255,0.15)",
-          labelBackgroundColor: "#0e2035",
+          color: "rgba(100,180,255,0.35)",
+          labelBackgroundColor: "#0d1f35",
           style: LineStyle.Dashed,
           width: 1,
         },
         horzLine: {
-          color: "rgba(255,255,255,0.15)",
-          labelBackgroundColor: "#0e2035",
+          color: "rgba(100,180,255,0.35)",
+          labelBackgroundColor: "#0d1f35",
           style: LineStyle.Dashed,
           width: 1,
         },
       },
       rightPriceScale: {
-        borderColor: T.border,
-        textColor:   T.textMuted,
-        scaleMargins: { top: 0.06, bottom: 0.22 },
+        borderColor: "rgba(255,255,255,0.08)",
+        textColor:   "#4a6580",
+        scaleMargins: { top: 0.08, bottom: 0.18 },
       },
       timeScale: {
-        borderColor:    T.border,
+        borderColor:    "rgba(255,255,255,0.08)",
         timeVisible:    true,
         secondsVisible: false,
         fixLeftEdge:    false,
         fixRightEdge:   false,
-        barSpacing:     8,
-        minBarSpacing:  2,
+        barSpacing:     10,
+        minBarSpacing:  3,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
@@ -285,14 +289,14 @@ export function TradingChart({
 
     chartRef.current = chart
 
-    // ── Realistic candles: green body + green wicks for up, red for down ──
+    // ── Candles: vivid green/red with bright wick contrast ──
     const cSer = chart.addSeries(CandlestickSeries, {
-      upColor:          T.green,
-      downColor:        T.red,
-      borderUpColor:    T.green,
-      borderDownColor:  T.red,
-      wickUpColor:      T.green,
-      wickDownColor:    T.red,
+      upColor:          "#26c97e",
+      downColor:        "#ff4d4d",
+      borderUpColor:    "#26c97e",
+      borderDownColor:  "#ff4d4d",
+      wickUpColor:      "#1aac6a",
+      wickDownColor:    "#e03333",
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
     })
     candleSerRef.current = cSer
@@ -303,7 +307,7 @@ export function TradingChart({
       priceScaleId: "vol",
     })
     chart.priceScale("vol").applyOptions({
-      scaleMargins: { top: 0.84, bottom: 0 },
+      scaleMargins: { top: 0.82, bottom: 0 },
       visible: false,
     })
     volSerRef.current = vSer
@@ -587,78 +591,92 @@ export function TradingChart({
     return recent.reduce((a, b) => a + b, 0) / 14
   }, [candles])
 
+  // Sub-pane config helpers
+  const subPaneColor  = chartPane === "rsi" ? T.emerald : T.orange
+  const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
+
   return (
-    <div className="flex flex-col w-full h-full select-none" style={{ background: T.bg }}>
+    <div className="flex flex-col w-full h-full select-none" style={{ background: "#060b15" }}>
 
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-3 px-3 shrink-0 overflow-x-auto"
-        style={{ height: 30, borderBottom: `1px solid ${T.border}`, minWidth: 0 }}
+        style={{ height: 32, borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#04080f", minWidth: 0 }}
       >
         {displayOhlcv ? (
           <>
-            <span className="text-[9px] font-black tracking-widest uppercase shrink-0" style={{ color: displayOhlcv.isUp ? T.green : T.red }}>
+            {/* Change chip */}
+            <span
+              className="text-[10px] font-black tracking-widest uppercase shrink-0 px-1.5 py-0.5 rounded"
+              style={{
+                color: displayOhlcv.isUp ? "#26c97e" : "#ff4d4d",
+                background: displayOhlcv.isUp ? "rgba(38,201,126,0.1)" : "rgba(255,77,77,0.1)",
+                border: `1px solid ${displayOhlcv.isUp ? "rgba(38,201,126,0.25)" : "rgba(255,77,77,0.25)"}`,
+              }}
+            >
               {displayOhlcv.isUp ? "+" : "-"}{Math.abs(displayOhlcv.close - displayOhlcv.open).toFixed(dec)}
             </span>
+            <div className="w-px h-4 shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
             {[
-              { label: "O", value: fmtP(displayOhlcv.open),   color: T.textBase },
-              { label: "H", value: fmtP(displayOhlcv.high),   color: T.green },
-              { label: "L", value: fmtP(displayOhlcv.low),    color: T.red },
-              { label: "C", value: fmtP(displayOhlcv.close),  color: displayOhlcv.isUp ? T.green : T.red },
+              { label: "O", value: fmtP(displayOhlcv.open),  color: "#8ba3be" },
+              { label: "H", value: fmtP(displayOhlcv.high),  color: "#26c97e" },
+              { label: "L", value: fmtP(displayOhlcv.low),   color: "#ff4d4d" },
+              { label: "C", value: fmtP(displayOhlcv.close), color: displayOhlcv.isUp ? "#26c97e" : "#ff4d4d" },
             ].map(({ label, value, color }) => (
-              <span key={label} className="flex items-baseline gap-0.5 shrink-0">
-                <span className="text-[8px] font-bold tracking-wider" style={{ color: T.textMuted }}>{label}</span>
-                <span className="text-[10px] font-black price-mono" style={{ color }}>{value}</span>
+              <span key={label} className="flex items-baseline gap-1 shrink-0">
+                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5573" }}>{label}</span>
+                <span className="text-[11px] font-black price-mono" style={{ color }}>{value}</span>
               </span>
             ))}
-            <span className="flex items-baseline gap-0.5 shrink-0">
-              <span className="text-[8px] font-bold tracking-wider" style={{ color: T.textMuted }}>V</span>
-              <span className="text-[10px] font-black price-mono" style={{ color: T.textDim }}>{fmtV(displayOhlcv.volume)}</span>
+            <div className="w-px h-4 shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <span className="flex items-baseline gap-1 shrink-0">
+              <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5573" }}>VOL</span>
+              <span className="text-[11px] font-black price-mono" style={{ color: "#5a7a9e" }}>{fmtV(displayOhlcv.volume)}</span>
             </span>
             {atr14 !== null && (
-              <span className="flex items-baseline gap-0.5 shrink-0">
-                <span className="text-[8px] font-bold tracking-wider" style={{ color: T.textMuted }}>ATR</span>
-                <span className="text-[10px] font-black price-mono" style={{ color: T.amber }}>{fmtP(atr14)}</span>
+              <span className="flex items-baseline gap-1 shrink-0">
+                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5573" }}>ATR</span>
+                <span className="text-[11px] font-black price-mono" style={{ color: "#f59e0b" }}>{fmtP(atr14)}</span>
               </span>
             )}
           </>
         ) : (
-          <span className="text-[9px]" style={{ color: T.textMuted }}>Waiting for data...</span>
+          <span className="text-[9px]" style={{ color: "#3d5573" }}>Waiting for data...</span>
         )}
       </div>
 
-      {/* ── Indicator Toolbar ────���──────────────────────────────────────────────── */}
+      {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-1 px-2 shrink-0 overflow-x-auto"
-        style={{ height: 34, borderBottom: `1px solid ${T.border}`, background: T.bgSurface }}
+        style={{ height: 36, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "#070c18", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
         {([
-          { key: "ema9" as IndicatorKey,   label: "EMA9",  color: T.amber  },
-          { key: "ema21" as IndicatorKey,  label: "EMA21", color: T.blue   },
-          { key: "ema50" as IndicatorKey,  label: "EMA50", color: T.pink   },
-          { key: "bb" as IndicatorKey,     label: "BB",    color: T.purple },
-          { key: "volume" as IndicatorKey, label: "VOL",   color: T.cyan   },
+          { key: "ema9"    as IndicatorKey, label: "EMA9",  color: T.amber  },
+          { key: "ema21"   as IndicatorKey, label: "EMA21", color: T.blue   },
+          { key: "ema50"   as IndicatorKey, label: "EMA50", color: T.pink   },
+          { key: "bb"      as IndicatorKey, label: "BB20",  color: T.purple },
+          { key: "volume"  as IndicatorKey, label: "VOL",   color: T.cyan   },
         ]).map(({ key, label, color }) => (
           <button
             key={key}
             onClick={() => toggle(key)}
-            className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all"
+            className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
             style={indicators[key]
-              ? { background: `${color}18`, border: `1px solid ${color}40`, color }
-              : { background: "transparent", border: `1px solid ${T.border}`, color: T.textMuted }
+              ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
+              : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
             }
           >
-            <span className="text-[9px] font-black tracking-wider">{label}</span>
+            <span className="text-[9px] font-black tracking-wide">{label}</span>
           </button>
         ))}
 
-        <div className="w-px h-4 self-center mx-0.5 shrink-0" style={{ background: T.border }} />
+        <div className="w-px h-4 self-center mx-1 shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
 
         {/* Sub-pane oscillators */}
         {([
-          { id: "rsi" as const, label: "RSI", color: T.emerald },
-          { id: "macd" as const, label: "MACD", color: T.orange },
+          { id: "rsi" as const,  label: "RSI(14)", color: T.emerald },
+          { id: "macd" as const, label: "MACD",    color: T.orange  },
         ]).map(({ id, label, color }) => {
           const isActive = chartPane === id && indicators[id]
           return (
@@ -673,26 +691,28 @@ export function TradingChart({
                   setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
                 }
               }}
-              className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all"
+              className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
               style={isActive
-                ? { background: `${color}18`, border: `1px solid ${color}40`, color }
-                : { background: "transparent", border: `1px solid ${T.border}`, color: T.textMuted }
+                ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
+                : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
               }
             >
-              <span className="text-[9px] font-black tracking-wider">{label}</span>
+              <span className="text-[9px] font-black tracking-wide">{label}</span>
             </button>
           )
         })}
 
-        {/* Sub-pane label pill */}
-        {chartPane !== "none" && (
-          <span className="ml-1 px-1.5 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
+        {/* Sub-pane active pill */}
+        {subPaneLabel && (
+          <span
+            className="ml-0.5 px-2 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
             style={{
-              background: chartPane === "rsi" ? `${T.emerald}15` : `${T.orange}15`,
-              color: chartPane === "rsi" ? T.emerald : T.orange,
-              border: `1px solid ${chartPane === "rsi" ? T.emerald : T.orange}35`,
-            }}>
-            {chartPane.toUpperCase()}
+              background: `${subPaneColor}15`,
+              color: subPaneColor,
+              border: `1px solid ${subPaneColor}35`,
+            }}
+          >
+            {subPaneLabel}
           </span>
         )}
 
@@ -700,14 +720,11 @@ export function TradingChart({
 
         {/* Price Alert toggle */}
         <button
-          onClick={() => {
-            setAlertMode(m => !m)
-            if (!alertMode) setShowAlertPanel(true)
-          }}
-          className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all"
+          onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
+          className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
           style={alertMode
             ? { background: `${T.amber}20`, border: `1px solid ${T.amber}60`, color: T.amber }
-            : { background: "transparent", border: `1px solid ${T.border}`, color: T.textMuted }
+            : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
           }
           title="Click on chart to set a price alert"
         >
@@ -715,10 +732,12 @@ export function TradingChart({
             <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
             <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
           </svg>
-          <span className="text-[9px] font-black tracking-wider">ALERT</span>
+          <span className="text-[9px] font-black tracking-wide">ALERT</span>
           {alerts.length > 0 && (
-            <span className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black"
-              style={{ background: T.amber, color: "#000" }}>
+            <span
+              className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black ml-0.5"
+              style={{ background: T.amber, color: "#000" }}
+            >
               {alerts.length}
             </span>
           )}
@@ -731,19 +750,61 @@ export function TradingChart({
             const from = Math.max(0, candleData.length - 90)
             chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
           }}
-          className="flex items-center justify-center w-6 h-6 rounded shrink-0 transition-opacity hover:opacity-80"
-          style={{ background: T.bgHover, border: `1px solid ${T.border}`, color: T.textDim }}
-          title="Reset zoom"
+          className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 transition-all hover:opacity-90 active:scale-95"
+          style={{ background: "#0a1524", border: "1px solid rgba(255,255,255,0.07)", color: "#4a6580" }}
+          title="Reset zoom to 90 candles"
         >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+          <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+            <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3"/>
           </svg>
         </button>
+
+        {/* Expand / Collapse */}
+        {onExpand && (
+          <button
+            onClick={onExpand}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md shrink-0 font-black text-[9px] tracking-widest transition-all active:scale-95"
+            style={isExpanded
+              ? { background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.4)", color: "#22d3ee", boxShadow: "0 0 8px rgba(34,211,238,0.15)" }
+              : { background: "#0a1524", border: "1px solid rgba(255,255,255,0.08)", color: "#4a6580" }
+            }
+            title={isExpanded ? "Collapse chart" : "Expand chart"}
+          >
+            {isExpanded ? (
+              <>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M3 1H1v2M7 1h2v2M3 9H1V7M7 9h2V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                COLLAPSE
+              </>
+            ) : (
+              <>
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                EXPAND
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
-      <div ref={containerRef} className="relative flex-1 min-h-0 w-full">
+      <div ref={containerRef} className="relative flex-1 min-h-0 w-full" style={{ background: "#060b15" }}>
+
+        {/* Sub-pane label overlay in bottom-left of chart */}
+        {subPaneLabel && (
+          <div
+            className="absolute bottom-2 left-3 z-10 px-2 py-0.5 rounded pointer-events-none"
+            style={{
+              background: `${subPaneColor}10`,
+              border: `1px solid ${subPaneColor}30`,
+            }}
+          >
+            <span className="text-[8px] font-black tracking-[0.2em]" style={{ color: subPaneColor }}>{subPaneLabel}</span>
+          </div>
+        )}
 
         {/* Alert mode banner */}
         {alertMode && (
@@ -751,9 +812,9 @@ export function TradingChart({
             className="absolute top-2 left-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg pointer-events-none"
             style={{
               transform: "translateX(-50%)",
-              background: `${T.amber}22`,
-              border: `1px solid ${T.amber}60`,
-              backdropFilter: "blur(4px)",
+              background: `${T.amber}20`,
+              border: `1px solid ${T.amber}55`,
+              backdropFilter: "blur(6px)",
             }}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -761,7 +822,7 @@ export function TradingChart({
               <circle cx="5" cy="5" r="2.5" stroke={T.amber} strokeWidth="1.3"/>
             </svg>
             <span className="text-[9px] font-black tracking-widest" style={{ color: T.amber }}>
-              CLICK ON CHART TO SET PRICE ALERT
+              CLICK TO SET PRICE ALERT
             </span>
           </div>
         )}
@@ -769,34 +830,35 @@ export function TradingChart({
         {/* Alert management panel */}
         {showAlertPanel && alerts.length > 0 && (
           <div
-            className="absolute top-2 right-2 z-20 flex flex-col gap-1 rounded-xl p-2"
+            className="absolute top-2 right-2 z-20 flex flex-col gap-1 rounded-xl p-2.5"
             style={{
-              background: "rgba(6,11,21,0.92)",
-              border: `1px solid ${T.border}`,
-              backdropFilter: "blur(8px)",
-              minWidth: 180,
-              maxWidth: 220,
+              background: "rgba(4,8,15,0.94)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              backdropFilter: "blur(12px)",
+              minWidth: 190,
+              maxWidth: 230,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
             }}
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1.5">
               <span className="text-[9px] font-black tracking-widest" style={{ color: T.amber }}>PRICE ALERTS</span>
               <button
                 onClick={() => setShowAlertPanel(false)}
-                className="text-[8px] font-bold transition-opacity hover:opacity-60"
-                style={{ color: T.textMuted }}
+                className="text-[8px] font-bold transition-opacity hover:opacity-60 px-1"
+                style={{ color: "#3d5573" }}
               >
                 hide
               </button>
             </div>
             {alerts.map(a => (
-              <div key={a.id} className="flex items-center gap-2">
+              <div key={a.id} className="flex items-center gap-2 px-1.5 py-1 rounded-lg" style={{ background: "rgba(255,255,255,0.02)" }}>
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: a.hit ? T.green : T.amber, boxShadow: a.hit ? `0 0 4px ${T.green}` : "none" }}
+                  style={{ background: a.hit ? "#26c97e" : T.amber, boxShadow: a.hit ? "0 0 6px #26c97e" : `0 0 4px ${T.amber}` }}
                 />
-                <span className="flex-1 text-[9px] font-black price-mono" style={{ color: a.hit ? T.green : T.textBase }}>
+                <span className="flex-1 text-[10px] font-black price-mono" style={{ color: a.hit ? "#26c97e" : "#8ba3be" }}>
                   {fmtP(a.price)}
-                  {a.hit && <span className="ml-1 text-[8px]" style={{ color: T.green }}>HIT</span>}
+                  {a.hit && <span className="ml-1.5 text-[8px] font-black tracking-widest" style={{ color: "#26c97e" }}>HIT</span>}
                 </span>
                 <button
                   onClick={() => {
@@ -807,7 +869,7 @@ export function TradingChart({
                     }
                     setAlerts(prev => prev.filter(x => x.id !== a.id))
                   }}
-                  className="text-[8px] transition-opacity hover:opacity-60 shrink-0"
+                  className="text-[11px] leading-none transition-opacity hover:opacity-60 shrink-0 w-4 h-4 flex items-center justify-center rounded"
                   style={{ color: T.red }}
                 >
                   &times;
@@ -823,8 +885,8 @@ export function TradingChart({
                   alertLineRefs.current.clear()
                   setAlerts([])
                 }}
-                className="mt-1 text-[8px] font-bold tracking-wider transition-opacity hover:opacity-70"
-                style={{ color: T.red }}
+                className="mt-1 text-[8px] font-black tracking-widest uppercase transition-opacity hover:opacity-70 text-center py-1 rounded-lg"
+                style={{ color: T.red, background: "rgba(239,83,80,0.06)", border: "1px solid rgba(239,83,80,0.15)" }}
               >
                 Clear all
               </button>
@@ -833,22 +895,28 @@ export function TradingChart({
         )}
 
         {isLoading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2"
-            style={{ background: "rgba(6,11,21,0.9)", backdropFilter: "blur(6px)" }}>
-            <div className="w-5 h-5 rounded-full border-2 animate-spin"
-              style={{ borderColor: `${T.cyan}30`, borderTopColor: T.cyan }} />
-            <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: T.textMuted }}>
-              Loading chart
+          <div
+            className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3"
+            style={{ background: "rgba(6,11,21,0.93)", backdropFilter: "blur(8px)" }}
+          >
+            <div
+              className="w-6 h-6 rounded-full border-2 animate-spin"
+              style={{ borderColor: "rgba(34,211,238,0.15)", borderTopColor: T.cyan }}
+            />
+            <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: "#3d5573" }}>
+              Loading chart data
             </span>
           </div>
         )}
 
         {/* Crosshair active badge */}
-        {crosshairActive && (
-          <div className="absolute top-1.5 right-2 z-10 flex items-center gap-1 px-1.5 py-0.5 rounded"
-            style={{ background: "rgba(6,11,21,0.8)", border: `1px solid ${T.border}`, backdropFilter: "blur(4px)" }}>
-            <div className="w-1 h-1 rounded-full animate-pulse" style={{ background: T.cyan }} />
-            <span className="text-[8px] font-black tracking-wider" style={{ color: T.textDim }}>CROSS</span>
+        {crosshairActive && !alertMode && (
+          <div
+            className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-md"
+            style={{ background: "rgba(4,8,15,0.85)", border: "1px solid rgba(34,211,238,0.15)", backdropFilter: "blur(4px)" }}
+          >
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.cyan, boxShadow: `0 0 4px ${T.cyan}` }} />
+            <span className="text-[8px] font-black tracking-widest" style={{ color: "#4a6580" }}>CROSSHAIR</span>
           </div>
         )}
       </div>

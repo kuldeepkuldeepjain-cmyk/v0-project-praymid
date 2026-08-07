@@ -1158,6 +1158,7 @@ export function ForexTradingPlatform({
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
   const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
+  const [chartExpanded, setChartExpanded] = useState(false)
   // Map of tradeId → partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
@@ -2019,7 +2020,7 @@ export function ForexTradingPlatform({
       <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
+        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-2.5 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -2167,7 +2168,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
-        <div className={`flex-1 flex flex-col min-w-0 ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
+        <div className={`flex flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2230,6 +2231,8 @@ export function ForexTradingPlatform({
                   sym={selectedPair.symbol}
                   tf={timeframe}
                   openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+                  onExpand={() => setChartExpanded(e => !e)}
+                  isExpanded={chartExpanded}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
@@ -2321,7 +2324,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── RIGHT: Order Ticket ────────────��────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
+        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
