@@ -1426,7 +1426,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("trading")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
