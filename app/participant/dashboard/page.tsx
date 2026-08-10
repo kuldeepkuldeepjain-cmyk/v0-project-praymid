@@ -1426,7 +1426,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("trading")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1649,7 +1649,7 @@ export default function DashboardHome() {
 
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
-  const walletBalance = parseFloat(participantData.account_balance) || 0
+  const walletBalance = Number(participantData.account_balance) || 0
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
   const referralCode = participantData.referral_code || ""
