@@ -213,7 +213,7 @@ export function TradingChart({
       volData.push({
         time: t,
         value: c.volume,
-        color: isUp ? "rgba(38,166,154,0.35)" : "rgba(239,83,80,0.35)",
+        color: isUp ? "rgba(22,217,130,0.55)" : "rgba(255,71,87,0.55)",
       })
       closes.push(c.close)
       times.push(t)
@@ -243,43 +243,45 @@ export function TradingChart({
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "#060b15" },
-        textColor:  "#4a6580",
+        background: { type: ColorType.VerticalGradient, topColor: "#0a1220", bottomColor: "#050a13" },
+        textColor:  "#8ba3be",
         fontFamily: "'Inter', 'SF Pro Display', monospace",
-        fontSize:   11,
+        fontSize:   12,
+        attributionLogo: false,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.04)", style: LineStyle.Solid },
-        horzLines: { color: "rgba(255,255,255,0.06)", style: LineStyle.Solid },
+        vertLines: { color: "rgba(120,150,190,0.10)", style: LineStyle.Solid },
+        horzLines: { color: "rgba(120,150,190,0.12)", style: LineStyle.Solid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          color: "rgba(100,180,255,0.35)",
-          labelBackgroundColor: "#0d1f35",
+          color: "rgba(120,200,255,0.55)",
+          labelBackgroundColor: "#1a3a5c",
           style: LineStyle.Dashed,
           width: 1,
         },
         horzLine: {
-          color: "rgba(100,180,255,0.35)",
-          labelBackgroundColor: "#0d1f35",
+          color: "rgba(120,200,255,0.55)",
+          labelBackgroundColor: "#1a3a5c",
           style: LineStyle.Dashed,
           width: 1,
         },
       },
       rightPriceScale: {
-        borderColor: "rgba(255,255,255,0.08)",
-        textColor:   "#4a6580",
-        scaleMargins: { top: 0.08, bottom: 0.18 },
+        borderColor: "rgba(120,150,190,0.20)",
+        textColor:   "#9fb6d0",
+        scaleMargins: { top: 0.06, bottom: 0.16 },
+        entireTextOnly: true,
       },
       timeScale: {
-        borderColor:    "rgba(255,255,255,0.08)",
+        borderColor:    "rgba(120,150,190,0.20)",
         timeVisible:    true,
         secondsVisible: false,
         fixLeftEdge:    false,
         fixRightEdge:   false,
-        barSpacing:     10,
-        minBarSpacing:  3,
+        barSpacing:     12,
+        minBarSpacing:  4,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
@@ -291,13 +293,19 @@ export function TradingChart({
 
     // ── Candles: vivid green/red with bright wick contrast ──
     const cSer = chart.addSeries(CandlestickSeries, {
-      upColor:          "#26c97e",
-      downColor:        "#ff4d4d",
-      borderUpColor:    "#26c97e",
-      borderDownColor:  "#ff4d4d",
-      wickUpColor:      "#1aac6a",
-      wickDownColor:    "#e03333",
+      upColor:          "#16d982",
+      downColor:        "#ff4757",
+      borderUpColor:    "#3ff0a0",
+      borderDownColor:  "#ff6b7a",
+      wickUpColor:      "#3ff0a0",
+      wickDownColor:    "#ff6b7a",
+      borderVisible:    true,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
+      priceLineVisible: true,
+      priceLineWidth:   1,
+      priceLineColor:   "rgba(120,200,255,0.5)",
+      priceLineStyle:   LineStyle.Dashed,
+      lastValueVisible: true,
     })
     candleSerRef.current = cSer
 
