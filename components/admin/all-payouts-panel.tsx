@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { formatRupees } from "@/lib/format-utils"
 
 interface PayoutRecord {
   id: string
@@ -197,14 +198,14 @@ export function AllPayoutsPanel() {
                     <TableCell className="font-mono text-xs text-slate-700">{payout.serial_number}</TableCell>
                     <TableCell className="text-sm text-slate-600 font-mono max-w-[180px] truncate">{payout.participant_email}</TableCell>
                     <TableCell className="text-sm text-slate-900 font-medium">{payout.full_name}</TableCell>
-                    <TableCell className="font-bold text-green-700">${payout.amount.toFixed(2)}</TableCell>
+                    <TableCell className="font-bold text-green-700">{formatRupees(payout.amount)}</TableCell>
                     <TableCell>
                       <Badge className={`${getStatusBadgeClass(payout.status)} border text-xs font-medium`}>
                         {(payout.status || "").charAt(0).toUpperCase() + (payout.status || "").slice(1)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">{payout.payout_method || "—"}</TableCell>
-                    <TableCell className="font-semibold text-blue-700">${payout.account_balance.toFixed(2)}</TableCell>
+                    <TableCell className="font-semibold text-blue-700">{formatRupees(payout.account_balance)}</TableCell>
                     <TableCell className="text-xs text-slate-500">
                       {payout.redirect_to_email || payout.redirect_to_serial || "—"}
                     </TableCell>

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { useState } from "react"
+import { formatRupees } from "@/lib/format-utils"
 
 type CryptoPrice = {
   symbol: string
@@ -31,7 +32,7 @@ export function CryptoPriceWidget() {
               <div className="text-xs text-muted-foreground">{crypto.name}</div>
             </div>
             <div className="text-right">
-              <div className="font-mono font-semibold">${crypto.price.toLocaleString()}</div>
+              <div className="font-mono font-semibold">{formatRupees(crypto.price)}</div>
               <div
                 className={`flex items-center justify-end text-xs ${crypto.change24h >= 0 ? "text-green-500" : "text-red-500"}`}
               >

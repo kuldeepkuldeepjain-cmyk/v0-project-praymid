@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DollarSign, Users, Activity, CheckCircle2 } from "lucide-react"
+import { formatRupees } from "@/lib/format-utils"
 
 type DashboardStatsProps = {
   totalPayments: number
@@ -35,7 +36,7 @@ export function DashboardStats({ totalPayments, totalCollections, totalAmount, a
           <Activity className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">${totalAmount.toLocaleString()}</div>
+          <div className="text-2xl font-bold">{formatRupees(totalAmount)}</div>
         </CardContent>
       </Card>
       <Card>
