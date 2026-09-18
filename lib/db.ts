@@ -5,12 +5,7 @@ const globalForPool = globalThis as unknown as { _pgPool?: Pool }
 
 function createPool() {
   // Prioritize Neon/DATABASE_URL over legacy Supabase POSTGRES_URL
-  const url =
-    process.env.NEON_DATABASE_URL ||
-    process.env.DATABASE_URL ||
-    process.env.NEON_POSTGRES_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
-    process.env.POSTGRES_URL
+  const url = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL
   if (!url) return null
   return new Pool({
     connectionString: url,

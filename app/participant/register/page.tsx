@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, User, Gift, RefreshCcw } from "lucide-react"
+import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, User, Gift, RefreshCcw, Sun, Moon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useTheme } from "@/components/theme-provider"
+import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { setParticipantAuth } from "@/lib/auth"
 
@@ -86,6 +88,8 @@ export default function ParticipantRegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
+  const isLightTheme = theme === "light"
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -108,6 +112,7 @@ export default function ParticipantRegisterPage() {
     state: "",
     pinCode: "",
     referralCode: "",
+    accountType: "normal" as "normal" | "funded",
   })
   const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(null)
 
@@ -213,6 +218,7 @@ export default function ParticipantRegisterPage() {
           state: formData.state,
           pinCode: formData.pinCode,
           referralCode: formData.referralCode,
+          accountType: formData.accountType,
         }),
       })
 
@@ -277,34 +283,53 @@ export default function ParticipantRegisterPage() {
   }
 
   const stars = Array.from({ length: 15 }, (_, i) => ({
-    top: `${Math.random() * 100}%`,
-    left: `${Math.random() * 100}%`,
-    delay: Math.random() * 3,
-    size: 2 + Math.random() * 2,
+    top: `${8 + ((i * 37) % 84)}%`,
+    left: `${5 + ((i * 61) % 90)}%`,
+    delay: (i % 6) * 0.5,
+    size: 2 + (i % 3) * 0.5,
   }))
 
   const particles = Array.from({ length: 10 }, (_, i) => ({
     delay: i * 0.4,
-    size: 4 + Math.random() * 4,
-    color: ["#E85D3B", "#7c3aed", "#22d3ee"][i % 3],
+    size: 4 + (i % 4),
+    color: ["#fbbf24", "#22d3ee", "#34d399"][i % 3],
     left: `${5 + i * 9}%`,
-    duration: 8 + Math.random() * 4,
+    duration: 8 + (i % 5),
   }))
 
   return (
-    <div className="min-h-screen min-h-dvh relative overflow-hidden flex items-center justify-center p-4">
-      {/* Animated Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-white to-slate-100 -z-10" />
+    <div className={cn(
+      "register-page min-h-screen min-h-dvh relative overflow-hidden flex items-center justify-center p-4 transition-colors duration-500",
+      isLightTheme ? "theme-light bg-slate-100 text-slate-950" : "theme-dark bg-slate-950 text-white",
+    )}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setTheme(isLightTheme ? "dark" : "light")}
+        aria-label={isLightTheme ? "Switch to dark theme" : "Switch to light theme"}
+        className={cn(
+          "fixed right-4 top-4 z-50 gap-2 rounded-full shadow-lg backdrop-blur transition-colors",
+          isLightTheme
+            ? "border-slate-300 bg-white/90 text-slate-800 hover:bg-white"
+            : "border-amber-400/30 bg-slate-900/90 text-amber-200 hover:bg-slate-800",
+        )}
+      >
+        {isLightTheme ? <Moon data-icon="inline-start" /> : <Sun data-icon="inline-start" />}
+        <span className="hidden sm:inline">{isLightTheme ? "Dark theme" : "Light theme"}</span>
+      </Button>
 
-      {/* Aurora effect */}
-      <div className="fixed inset-0 opacity-30 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#E85D3B]/10 via-[#7c3aed]/10 to-[#22d3ee]/10 animate-gradient-shift" />
+      {/* Elite Fund dark trading atmosphere */}
+      <div className={cn(
+        "fixed inset-0 -z-10 transition-colors duration-500",
+        isLightTheme ? "bg-gradient-to-br from-slate-100 via-white to-slate-200" : "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950",
+      )} />
+      <div className="fixed inset-0 opacity-40 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-transparent to-cyan-400/10 animate-gradient-shift" />
       </div>
-
-      {/* Floating blobs */}
-      <div className="fixed top-10 left-10 w-64 h-64 bg-[#E85D3B]/20 rounded-full blur-3xl animate-float" />
-      <div className="fixed bottom-20 right-20 w-80 h-80 bg-[#7c3aed]/20 rounded-full blur-3xl animate-float-slow" />
-      <div className="fixed top-1/2 left-1/2 w-72 h-72 bg-[#22d3ee]/20 rounded-full blur-3xl animate-float-delayed" />
+      <div className="fixed top-10 left-10 size-64 bg-amber-400/10 rounded-full blur-3xl animate-float" />
+      <div className="fixed bottom-20 right-20 size-80 bg-cyan-400/10 rounded-full blur-3xl animate-float-slow" />
+      <div className="fixed top-1/2 left-1/2 size-72 bg-emerald-400/10 rounded-full blur-3xl animate-float-delayed" />
 
       {/* Animated stars */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
@@ -324,29 +349,27 @@ export default function ParticipantRegisterPage() {
       <div className="w-full max-w-2xl space-y-6 relative z-10 my-8">
         <div className="text-center space-y-2 animate-fade-in-up">
           <FlowChainLogo size="lg" showTagline={true} className="justify-center mb-4" />
-          <h1 className="text-3xl font-bold text-slate-900">Create your account</h1>
-          <p className="text-sm text-slate-500">Join FlowChain in less than a minute</p>
+          <h1 className={cn("text-3xl font-bold", isLightTheme ? "text-slate-950" : "text-white")}>Create your account</h1>
+          <p className={cn("text-sm", isLightTheme ? "text-slate-600" : "text-slate-400")}>Join Elite Fund in less than a minute</p>
         </div>
 
-        <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/90 backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group">
-          {/* Animated gradient border */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#E85D3B] via-[#7c3aed] to-[#22d3ee] opacity-0 group-hover:opacity-100 transition-opacity duration-700 -z-10" style={{ padding: "2px" }}>
-            <div className="absolute inset-[2px] bg-white/90 backdrop-blur-xl rounded-lg" />
-          </div>
-          
-          {/* Top gradient accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#E85D3B] via-orange-500 to-[#7c3aed] animate-gradient-shift" />
-          
-          {/* Floating gradient orbs inside card */}
-          <div className="absolute top-10 right-10 w-32 h-32 bg-gradient-to-br from-purple-500/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" />
-          <div className="absolute bottom-10 left-10 w-40 h-40 bg-gradient-to-br from-orange-500/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: "1s" }} />
+        <Card className={cn(
+          "backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group transition-colors duration-500",
+          isLightTheme
+            ? "border-slate-200 bg-white/95 shadow-2xl shadow-slate-300/40"
+            : "border border-amber-400/20 bg-slate-900/90 shadow-2xl shadow-black/40",
+        )}>
+          <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-amber-400/20 via-cyan-400/10 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-500 to-cyan-400 animate-gradient-shift" />
+          <div className="absolute top-10 right-10 size-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" />
+          <div className="absolute bottom-10 left-10 size-40 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: "1s" }} />
           
           <CardContent className="p-6 relative z-10">
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name and Surname */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
                 <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <Label htmlFor="firstName" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center">
                       <User className="h-3 w-3 text-white" />
                     </div>
@@ -358,7 +381,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="John"
                       value={formData.firstName}
                       onChange={(e) => handleChange("firstName", e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
-                      className="h-12 bg-gradient-to-r from-white to-emerald-50/30 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all hover:border-emerald-500/50 focus:shadow-lg focus:shadow-emerald-500/10"
+                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all hover:border-emerald-500/50 focus:shadow-lg focus:shadow-emerald-500/10"
                       required
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
@@ -366,7 +389,7 @@ export default function ParticipantRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <Label htmlFor="lastName" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center">
                       <User className="h-3 w-3 text-white" />
                     </div>
@@ -378,7 +401,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="Doe"
                       value={formData.lastName}
                       onChange={(e) => handleChange("lastName", e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
-                      className="h-12 bg-gradient-to-r from-white to-teal-50/30 border-slate-200 focus:border-teal-500 focus:ring-teal-500/20 transition-all hover:border-teal-500/50 focus:shadow-lg focus:shadow-teal-500/10"
+                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-teal-500 focus:ring-teal-500/20 transition-all hover:border-teal-500/50 focus:shadow-lg focus:shadow-teal-500/10"
                       required
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/0 via-teal-500/5 to-teal-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
@@ -386,9 +409,30 @@ export default function ParticipantRegisterPage() {
                 </div>
               </div>
 
+              <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
+                <Label className="text-slate-200 text-sm font-medium">Account Type *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    { value: "normal", title: "Normal Account", description: "Standard platform account" },
+                    { value: "funded", title: "Funded Account", description: "Trade with a funded balance" },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={formData.accountType === option.value}
+                      onClick={() => handleChange("accountType", option.value)}
+                      className={`rounded-xl border p-4 text-left transition-all ${formData.accountType === option.value ? "border-amber-400 bg-amber-400/10 shadow-md shadow-amber-400/10" : "border-slate-700 bg-slate-950/60 hover:border-cyan-400/60"}`}
+                    >
+                      <span className={cn("block text-sm font-semibold", isLightTheme ? "text-slate-900" : "text-slate-200")}>{option.title}</span>
+                      <span className={cn("mt-1 block text-xs", isLightTheme ? "text-slate-600" : "text-slate-500")}>{option.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-                <Label htmlFor="username" className="text-slate-700 text-sm font-medium flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#7c3aed] to-purple-600 flex items-center justify-center">
+                <Label htmlFor="username" className="text-slate-200 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#fbbf24] to-purple-600 flex items-center justify-center">
                     <AtSign className="h-3 w-3 text-white" />
                   </div>
                   Username *
@@ -399,18 +443,18 @@ export default function ParticipantRegisterPage() {
                     placeholder="your_username"
                     value={formData.username}
                     onChange={(e) => handleChange("username", e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                    className="h-12 bg-gradient-to-r from-white to-purple-50/30 border-slate-200 focus:border-[#7c3aed] focus:ring-[#7c3aed]/20 transition-all hover:border-[#7c3aed]/50 focus:shadow-lg focus:shadow-[#7c3aed]/10"
+                    className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-[#fbbf24] focus:ring-[#fbbf24]/20 transition-all hover:border-[#fbbf24]/50 focus:shadow-lg focus:shadow-[#fbbf24]/10"
                     maxLength={20}
                     required
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#7c3aed]/0 via-[#7c3aed]/5 to-[#7c3aed]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#fbbf24]/0 via-[#fbbf24]/5 to-[#fbbf24]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                 </div>
-                <p className="text-xs text-slate-400">3-20 characters, letters, numbers, and underscores only</p>
+                <p className="text-xs text-slate-500">3-20 characters, letters, numbers, and underscores only</p>
               </div>
 
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.15s" }}>
-                <Label htmlFor="email" className="text-slate-700 text-sm font-medium flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#E85D3B] to-orange-500 flex items-center justify-center">
+                <Label htmlFor="email" className="text-slate-200 text-sm font-medium flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#fbbf24] to-orange-500 flex items-center justify-center">
                     <Mail className="h-3 w-3 text-white" />
                   </div>
                   Email *
@@ -422,31 +466,31 @@ export default function ParticipantRegisterPage() {
                     placeholder="Enter Gmail"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
-                    className="h-12 bg-gradient-to-r from-white to-orange-50/30 border-slate-200 focus:border-[#E85D3B] focus:ring-[#E85D3B]/20 transition-all hover:border-[#E85D3B]/50 focus:shadow-lg focus:shadow-[#E85D3B]/10"
+                    className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-[#fbbf24] focus:ring-[#fbbf24]/20 transition-all hover:border-[#fbbf24]/50 focus:shadow-lg focus:shadow-[#fbbf24]/10"
                     required
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#E85D3B]/0 via-[#E85D3B]/5 to-[#E85D3B]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#fbbf24]/0 via-[#fbbf24]/5 to-[#fbbf24]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                 </div>
               </div>
 
               {/* Compact Country Selector */}
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-                <Label htmlFor="country" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                <Label htmlFor="country" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
                     <Globe className="h-3 w-3 text-white" />
                   </div>
                   Country *
                 </Label>
                 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200">
+                <div className={cn("flex items-center gap-3 p-3 rounded-lg border", isLightTheme ? "bg-slate-50 border-slate-200" : "bg-slate-950/60 border-cyan-400/20")}>
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-2xl">{selectedCountryData?.flag || "🌍"}</span>
                     <div className="min-w-0 flex-1">
                       <Select value={formData.country} onValueChange={handleCountryChange}>
-                        <SelectTrigger className="h-10 bg-white border-slate-200 hover:border-blue-300 focus:border-blue-500 transition-all">
+                        <SelectTrigger className="h-10 bg-slate-900 border-slate-700 text-white hover:border-cyan-400/60 focus:border-cyan-400 transition-all">
                           <SelectValue placeholder="Choose a country" />
                         </SelectTrigger>
-                        <SelectContent className="bg-white max-h-[300px]">
+                        <SelectContent className="bg-slate-900 border-slate-700 text-white max-h-[300px]">
                           {COUNTRIES_DATA.map((country) => (
                             <SelectItem key={country.name} value={country.name}>
                               <div className="flex items-center gap-2">
@@ -460,7 +504,7 @@ export default function ParticipantRegisterPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-white rounded-md border border-blue-300">
+                  <div className={cn("flex items-center gap-1 px-3 py-1 rounded-md border", isLightTheme ? "bg-white border-slate-200" : "bg-slate-900 border-cyan-400/30")}>
                     <span className="text-xs text-slate-500">Code:</span>
                     <span className="text-sm font-bold text-blue-600">{selectedCountryData?.code || "-"}</span>
                   </div>
@@ -469,14 +513,14 @@ export default function ParticipantRegisterPage() {
 
               {/* Mobile Number with Auto Country Code */}
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
-                <Label htmlFor="mobileNumber" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                <Label htmlFor="mobileNumber" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-[#22d3ee] to-cyan-600 flex items-center justify-center">
                     <Phone className="h-3 w-3 text-white" />
                   </div>
                   Mobile Number *
                 </Label>
                 <div className="flex gap-2">
-                <div className="w-[110px] h-12 px-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center gap-1.5">
+                <div className={cn("w-[110px] h-12 px-3 rounded-lg border flex items-center justify-center gap-1.5", isLightTheme ? "bg-white border-slate-200" : "bg-slate-950/80 border-slate-700")}>
                   <span className="text-lg">{selectedCountryData?.flag || "🌍"}</span>
                   <span className="text-sm font-bold text-slate-700">{formData.countryCode || "+00"}</span>
                 </div>
@@ -487,7 +531,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="9876543210"
                       value={formData.mobileNumber}
                       onChange={(e) => handleChange("mobileNumber", e.target.value.replace(/\D/g, ""))}
-                      className="h-12 bg-gradient-to-r from-white to-cyan-50/30 border-slate-200 focus:border-[#22d3ee] focus:ring-[#22d3ee]/20 transition-all hover:border-[#22d3ee]/50 focus:shadow-lg focus:shadow-[#22d3ee]/10"
+                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-[#22d3ee] focus:ring-[#22d3ee]/20 transition-all hover:border-[#22d3ee]/50 focus:shadow-lg focus:shadow-[#22d3ee]/10"
                       maxLength={15}
                       required
                     />
@@ -497,12 +541,12 @@ export default function ParticipantRegisterPage() {
               </div>
 
               {/* WhatsApp OTP Section */}
-              <div className="space-y-3 p-5 bg-gradient-to-r from-green-50/90 to-emerald-50/90 rounded-xl border border-green-300 animate-fade-in-up" style={{ animationDelay: "0.28s" }}>
+              <div className={cn("space-y-3 p-5 rounded-xl border animate-fade-in-up", isLightTheme ? "bg-emerald-50/70 border-emerald-200" : "bg-slate-950/60 border-emerald-400/20")} style={{ animationDelay: "0.28s" }}>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
                 <div className="space-y-2">
-                  <Label htmlFor="state" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <Label htmlFor="state" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
                       <MapPin className="h-3 w-3 text-white" />
                     </div>
@@ -514,7 +558,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="State"
                       value={formData.state}
                       onChange={(e) => handleChange("state", e.target.value)}
-                      className="h-12 bg-gradient-to-r from-white to-pink-50/30 border-slate-200 focus:border-pink-500 focus:ring-pink-500/20 transition-all hover:border-pink-500/50 focus:shadow-lg focus:shadow-pink-500/10"
+                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-pink-500 focus:ring-pink-500/20 transition-all hover:border-pink-500/50 focus:shadow-lg focus:shadow-pink-500/10"
                       required
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/5 to-pink-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
@@ -522,7 +566,7 @@ export default function ParticipantRegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="pinCode" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                  <Label htmlFor="pinCode" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                     <div className="w-5 h-5 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                       <span className="text-white text-[10px] font-bold">#</span>
                     </div>
@@ -534,7 +578,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="123456"
                       value={formData.pinCode}
                       onChange={(e) => handleChange("pinCode", e.target.value.replace(/\D/g, ""))}
-                      className="h-12 bg-gradient-to-r from-white to-violet-50/30 border-slate-200 focus:border-violet-500 focus:ring-violet-500/20 transition-all hover:border-violet-500/50 focus:shadow-lg focus:shadow-violet-500/10 font-mono"
+                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-violet-500 focus:ring-violet-500/20 transition-all hover:border-violet-500/50 focus:shadow-lg focus:shadow-violet-500/10 font-mono"
                       maxLength={10}
                       required
                     />
@@ -544,7 +588,7 @@ export default function ParticipantRegisterPage() {
               </div>
 
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
-                <Label htmlFor="referralCode" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                <Label htmlFor="referralCode" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
                     <Gift className="h-3 w-3 text-white" />
                   </div>
@@ -556,7 +600,7 @@ export default function ParticipantRegisterPage() {
                     placeholder="Enter referral code"
                     value={formData.referralCode}
                     onChange={(e) => handleChange("referralCode", e.target.value.toUpperCase())}
-                    className="h-12 bg-gradient-to-r from-white to-amber-50/30 border-slate-200 focus:border-amber-400 focus:ring-amber-400/20 transition-all hover:border-amber-400/50 focus:shadow-lg focus:shadow-amber-400/10 font-mono font-bold tracking-wider"
+                    className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-amber-400 focus:ring-amber-400/20 transition-all hover:border-amber-400/50 focus:shadow-lg focus:shadow-amber-400/10 font-mono font-bold tracking-wider"
                     maxLength={10}
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-amber-400/0 via-amber-400/5 to-amber-400/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
@@ -564,7 +608,7 @@ export default function ParticipantRegisterPage() {
               </div>
 
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.35s" }}>
-                <Label htmlFor="password" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                <Label htmlFor="password" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                     <span className="text-white text-xs font-bold">🔒</span>
                   </div>
@@ -577,23 +621,23 @@ export default function ParticipantRegisterPage() {
                     placeholder="Enter Password"
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
-                    className="h-12 pr-10 bg-gradient-to-r from-white to-emerald-50/30 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all hover:border-emerald-500/50 focus:shadow-lg focus:shadow-emerald-500/10"
+                    className="h-12 pr-10 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all hover:border-emerald-500/50 focus:shadow-lg focus:shadow-emerald-500/10"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-600 transition-colors hover:scale-110"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-emerald-600 transition-colors hover:scale-110"
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                 </div>
-                <p className="text-xs text-slate-400">At least 6 characters</p>
+                <p className="text-xs text-slate-500">At least 6 characters</p>
               </div>
 
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
-                <Label htmlFor="confirmPassword" className="text-slate-700 text-sm font-medium flex items-center gap-2">
+                <Label htmlFor="confirmPassword" className="text-slate-200 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
                     <span className="text-white text-xs font-bold">✓</span>
                   </div>
@@ -606,15 +650,15 @@ export default function ParticipantRegisterPage() {
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange("confirmPassword", e.target.value)}
-                    className="h-12 bg-gradient-to-r from-white to-emerald-50/30 border-slate-200 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all hover:border-emerald-500/50 focus:shadow-lg focus:shadow-emerald-500/10"
+                    className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-emerald-500 focus:ring-emerald-500/20 transition-all hover:border-emerald-500/50 focus:shadow-lg focus:shadow-emerald-500/10"
                     required
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/5 to-emerald-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                 </div>
               </div>
 
-              <div className="space-y-3 p-5 bg-gradient-to-r from-violet-50/90 to-purple-50/90 rounded-xl border border-violet-200 backdrop-blur-sm animate-fade-in-up" style={{ animationDelay: "0.45s" }}>
-                <Label className="text-slate-700 text-sm font-medium flex items-center gap-2">
+              <div className="space-y-3 p-5 bg-gradient-to-r from-slate-950/90 to-slate-900/80 rounded-xl border border-amber-400/20 backdrop-blur-sm animate-fade-in-up" style={{ animationDelay: "0.45s" }}>
+                <Label className="text-slate-200 text-sm font-medium flex items-center gap-2">
                   <div className="w-5 h-5 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
                     <span className="text-white text-xs font-bold">🔒</span>
                   </div>
@@ -622,13 +666,13 @@ export default function ParticipantRegisterPage() {
                 </Label>
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
                   {/* Clean CAPTCHA Display */}
-                  <div className="flex-1 min-w-0 h-14 bg-white rounded-lg border-2 border-violet-300 shadow-md overflow-hidden flex items-center justify-center px-2 sm:px-3">
+                  <div className="flex-1 min-w-0 h-14 bg-slate-950 rounded-lg border-2 border-amber-400/30 shadow-md overflow-hidden flex items-center justify-center px-2 sm:px-3">
                     {/* CAPTCHA Text - Clean and readable */}
                     <div className="flex gap-0.5 sm:gap-1.5 flex-wrap justify-center">
                       {captcha.text.split("").map((char, i) => (
                         <span
                           key={i}
-                          className="font-mono select-none leading-7 text-sm sm:text-base font-bold tracking-widest text-[rgba(10,10,10,1)] flex-shrink-0"
+                          className="font-mono select-none leading-7 text-sm sm:text-base font-bold tracking-widest text-amber-200 flex-shrink-0"
                           style={{
                             letterSpacing: "0.05em",
                           }}
@@ -646,7 +690,7 @@ export default function ParticipantRegisterPage() {
                       placeholder="Enter code"
                       value={captchaInput}
                       onChange={(e) => setCaptchaInput(e.target.value.toUpperCase())}
-                      className="h-14 bg-white border-2 border-violet-300 text-center font-mono text-base sm:text-lg font-bold tracking-widest focus:border-violet-500 focus:ring-violet-500/20 transition-all hover:border-violet-400 focus:shadow-lg focus:shadow-violet-500/10 uppercase"
+                      className="h-14 bg-slate-950/80 border-2 border-amber-400/30 text-white text-center font-mono text-base sm:text-lg font-bold tracking-widest focus:border-amber-300 focus:ring-amber-300/20 transition-all hover:border-amber-300 focus:shadow-lg focus:shadow-amber-300/10 uppercase"
                       maxLength={6}
                       required
                     />
@@ -659,9 +703,9 @@ export default function ParticipantRegisterPage() {
                     onClick={generateCaptcha}
                     variant="outline"
                     size="icon"
-                    className="h-14 w-14 flex-shrink-0 border-2 border-violet-300 hover:bg-violet-100 hover:border-violet-400 bg-white transition-all hover:scale-105 hover:rotate-180 duration-300"
+                    className="h-14 w-14 flex-shrink-0 border-2 border-amber-400/30 hover:bg-amber-400/10 hover:border-amber-300 bg-slate-950/80 transition-all hover:scale-105 hover:rotate-180 duration-300"
                   >
-                    <RefreshCcw className="h-5 w-5 text-[#7c3aed]" />
+                    <RefreshCcw className="h-5 w-5 text-[#fbbf24]" />
                   </Button>
                 </div>
                 <p className="text-xs sm:text-sm text-slate-500 flex items-center gap-1">
@@ -673,10 +717,10 @@ export default function ParticipantRegisterPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-14 bg-gradient-to-r from-[#E85D3B] via-orange-500 to-[#7c3aed] hover:from-[#d14d2c] hover:via-orange-600 hover:to-purple-600 text-white rounded-xl shadow-2xl shadow-[#E85D3B]/40 font-bold text-base transition-all hover:scale-[1.02] hover:shadow-[#E85D3B]/60 animate-fade-in-up relative overflow-hidden group"
+                className="w-full h-14 bg-gradient-to-r from-amber-300 via-yellow-500 to-cyan-400 hover:from-amber-200 hover:via-yellow-400 hover:to-cyan-300 text-slate-950 rounded-xl shadow-2xl shadow-amber-400/20 font-bold text-base transition-all hover:scale-[1.02] hover:shadow-amber-400/40 animate-fade-in-up relative overflow-hidden group"
                 style={{ animationDelay: "0.5s" }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 <div className="relative flex items-center justify-center gap-2">
                   {loading ? (
                     <div className="flex items-center gap-2">
@@ -692,11 +736,11 @@ export default function ParticipantRegisterPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-sm text-slate-500 animate-fade-in-up-delay-2">
+        <p className="text-center text-sm text-slate-400 animate-fade-in-up-delay-2">
           Already have an account?{" "}
           <button
             onClick={() => router.push("/participant/login")}
-            className="text-[#e85d3b] hover:underline font-medium"
+            className="text-amber-300 hover:text-amber-200 hover:underline font-medium"
           >
             Sign in
           </button>

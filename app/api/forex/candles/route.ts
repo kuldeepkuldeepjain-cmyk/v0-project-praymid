@@ -1,26 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-
-const YAHOO_SYMBOLS: Record<string, string> = {
-  // Forex
-  "EUR/USD": "EURUSD=X",
-  "GBP/USD": "GBPUSD=X",
-  "USD/JPY": "USDJPY=X",
-  "USD/CHF": "USDCHF=X",
-  "AUD/USD": "AUDUSD=X",
-  "USD/CAD": "USDCAD=X",
-  "NZD/USD": "NZDUSD=X",
-  "EUR/GBP": "EURGBP=X",
-  // Commodities
-  "XAU/USD": "GC=F",
-  "XAG/USD": "SI=F",
-  // Crypto
-  "BTC/USD": "BTC-USD",
-  "ETH/USD": "ETH-USD",
-  "BNB/USD": "BNB-USD",
-  "SOL/USD": "SOL-USD",
-  "XRP/USD": "XRP-USD",
-  "ADA/USD": "ADA-USD",
-}
+import { YAHOO_SYMBOLS, SEED_PRICES, decimals as dec } from "@/lib/forex-instruments"
 
 // Yahoo Finance interval + range that gives the best candle history per timeframe
 const TF_MAP: Record<string, { interval: string; range: string }> = {
@@ -30,15 +9,6 @@ const TF_MAP: Record<string, { interval: string; range: string }> = {
   "1H":  { interval: "1h",  range: "1mo" },
   "4H":  { interval: "4h",  range: "3mo" },
   "1D":  { interval: "1d",  range: "1y"  },
-}
-
-// Seed prices for synthetic fallback candles
-const SEED_PRICES: Record<string, number> = {
-  "EUR/USD": 1.1050, "GBP/USD": 1.2750, "USD/JPY": 149.50, "USD/CHF": 0.9050,
-  "AUD/USD": 0.6550, "USD/CAD": 1.3650, "NZD/USD": 0.6050, "EUR/GBP": 0.8650,
-  "XAU/USD": 3350.0, "XAG/USD": 34.50,
-  "BTC/USD": 97000.0, "ETH/USD": 3200.0, "BNB/USD": 580.0,
-  "SOL/USD": 180.0,   "XRP/USD": 0.55,   "ADA/USD": 0.45,
 }
 
 // TF interval in seconds
@@ -66,18 +36,6 @@ function generateSyntheticCandles(pair: string, tf: string): unknown[] {
     price = close
   }
   return candles
-}
-
-function isJpy(sym: string) { return sym.includes("JPY") }
-function isCrypto(sym: string) { return ["BTC","ETH","BNB","SOL","XRP","ADA"].some(c => sym.startsWith(c)) }
-function dec(sym: string): number {
-  if (sym.startsWith("XAU")) return 2
-  if (sym.startsWith("XAG")) return 3
-  if (sym.startsWith("BTC")) return 1
-  if (sym.startsWith("ETH") || sym.startsWith("BNB")) return 2
-  if (sym.startsWith("SOL")) return 3
-  if (isCrypto(sym)) return 4
-  return isJpy(sym) ? 3 : 5
 }
 
 // Format timestamp to human-readable label based on timeframe
@@ -154,6 +112,8 @@ export async function GET(req: NextRequest) {
       .filter((c) => c.open > 0 && c.high > 0 && c.low > 0 && c.close > 0)
       // Clamp to last 150 candles
       .slice(-150)
+
+    if (candles.length === 0) throw new Error("No usable candles")
 
     candleCache.set(cacheKey, { candles, ts: now })
     return NextResponse.json({ candles, source: "live", ts: now })

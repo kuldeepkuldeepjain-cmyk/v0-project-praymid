@@ -1,6 +1,6 @@
 {
-  "name": "FlowChain Trading",
-  "short_name": "FlowChain",
+  "name": "Elite Fund",
+  "short_name": "Elite Fund",
   "description": "Professional Forex, Crypto & Commodities trading platform",
   "start_url": "/",
   "display": "standalone",
@@ -46,7 +46,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "FlowChain Trading Platform"
+      "label": "Elite Fund Platform"
     }
   ]
 }

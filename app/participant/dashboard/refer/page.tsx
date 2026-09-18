@@ -144,7 +144,7 @@ export default function ReferPage() {
   }
 
   const shareVia = (platform: string) => {
-    const message = `🎯 Join FlowChain and start earning! I'm earning $5 for every friend who joins using my link. Get rewarded when they add funds or complete tasks: ${referralLink}`
+    const message = `🎯 Join Elite Fund and start earning! I'm earning $5 for every friend who joins using my link. Get rewarded when they add funds or complete tasks: ${referralLink}`
     const encodedMsg = encodeURIComponent(message)
     const encodedLink = encodeURIComponent(referralLink)
     let shareUrl = ""
@@ -166,7 +166,7 @@ export default function ReferPage() {
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedLink}`
         break
       case "email":
-        shareUrl = `mailto:?subject=Join FlowChain - Earn $5 Per Referral&body=${encodedMsg}`
+        shareUrl = `mailto:?subject=Join Elite Fund - Earn $5 Per Referral&body=${encodedMsg}`
         break
     }
 
@@ -349,7 +349,7 @@ export default function ReferPage() {
                 <div>
                   <p className="font-semibold text-slate-900 text-sm">Friends Register</p>
                   <p className="text-xs text-slate-600">
-                    They sign up and join FlowChain using your referral link
+                    They sign up and join Elite Fund using your referral link
                   </p>
                 </div>
               </div>

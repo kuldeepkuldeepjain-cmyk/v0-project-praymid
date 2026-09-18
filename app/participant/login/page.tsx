@@ -156,19 +156,19 @@ export default function ParticipantLoginPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col lg:flex-row">
+      <div className="min-h-screen bg-[#07111f] text-slate-100 flex flex-col lg:flex-row relative overflow-hidden">
 
         {/* ── Left panel — brand / info ─────────────────────────────────────────── */}
-        <div className="hidden lg:flex flex-col justify-between w-[52%] xl:w-[55%] relative overflow-hidden px-12 xl:px-16 py-10">
+        <div className="hidden lg:flex flex-col justify-between w-[52%] xl:w-[55%] relative overflow-hidden px-12 xl:px-16 py-10 bg-white/[0.025] border-r border-white/[0.08]">
 
           {/* Background layers */}
-          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900" />
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-cyan-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-3xl" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(34,211,238,0.11),transparent_42%),radial-gradient(ellipse_at_bottom_left,rgba(59,130,246,0.08),transparent_45%)]" />
+          <div className="absolute top-[-12rem] right-[-8rem] size-[34rem] rounded-full bg-cyan-400/[0.08] blur-3xl" />
+          <div className="absolute bottom-[-16rem] left-[-10rem] size-[34rem] rounded-full bg-blue-500/[0.08] blur-3xl" />
 
           {/* Grid overlay — subtle trading aesthetic */}
           <div
-            className="absolute inset-0 opacity-[0.04]"
+            className="absolute inset-0 opacity-[0.06]"
             style={{
               backgroundImage:
                 "linear-gradient(rgba(6,182,212,1) 1px, transparent 1px), linear-gradient(90deg, rgba(6,182,212,1) 1px, transparent 1px)",
@@ -179,12 +179,7 @@ export default function ParticipantLoginPage() {
           {/* Content */}
           <div className="relative z-10 space-y-10">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <CandlestickChart className="w-7 h-7 text-cyan-400" />
-              <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                FlowChain Trading
-              </span>
-            </div>
+            <FlowChainLogo size="sm" showTagline={false} />
 
             {/* Headline */}
             <div className="space-y-5 pt-8">
@@ -208,7 +203,7 @@ export default function ParticipantLoginPage() {
             <div className="space-y-3">
               {FEATURES.map(({ icon: Icon, label, desc }) => (
                 <div key={label} className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-cyan-500/10 border border-cyan-500/20 shrink-0">
+                  <div className="flex size-10 items-center justify-center rounded-xl border border-cyan-300/[0.16] bg-cyan-300/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] shrink-0">
                     <Icon className="w-4 h-4 text-cyan-400" />
                   </div>
                   <div>
@@ -232,7 +227,7 @@ export default function ParticipantLoginPage() {
             </div>
 
             {/* Live ticker */}
-            <div className="mt-6 p-3 rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden">
+            <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.09] bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
               <p className="text-[10px] font-bold tracking-widest text-slate-500 uppercase mb-2">Live Markets</p>
               <div className="grid grid-cols-3 gap-2">
                 {MARKET_PAIRS.map((pair) => (
@@ -251,17 +246,17 @@ export default function ParticipantLoginPage() {
         </div>
 
         {/* ── Right panel — login form ──────────────────────────────────────────── */}
-        <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 relative">
+        <div className="flex-1 flex flex-col min-h-screen lg:min-h-0 relative bg-white/[0.018]">
 
           {/* Subtle right-panel separator */}
-          <div className="hidden lg:block absolute inset-y-0 left-0 w-px bg-gradient-to-b from-transparent via-slate-700/60 to-transparent" />
+          <div className="hidden lg:block absolute inset-y-8 left-0 w-px bg-gradient-to-b from-transparent via-white/[0.12] to-transparent" />
 
           {/* Top bar — mobile logo + back */}
           <div className="flex items-center justify-between px-6 pt-6 lg:px-10 lg:pt-8">
             <div className="flex lg:hidden items-center gap-2">
-              <CandlestickChart className="w-5 h-5 text-cyan-400" />
-              <span className="font-bold text-base bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                FlowChain Trading
+              <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-7 w-7 rounded-md" />
+              <span className="font-bold text-base bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                Elite Fund
               </span>
             </div>
             <div className="hidden lg:block" />
@@ -276,7 +271,7 @@ export default function ParticipantLoginPage() {
 
           {/* Form area */}
           <div className="flex-1 flex items-center justify-center px-6 py-10 lg:px-12 xl:px-16">
-            <div className="w-full max-w-[400px] space-y-7">
+            <div className="w-full max-w-[440px] space-y-7 rounded-[28px] border border-white/[0.1] bg-white/[0.055] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-8">
 
               {/* Heading */}
               <div className="space-y-1.5">
@@ -320,7 +315,7 @@ export default function ParticipantLoginPage() {
                 <form onSubmit={handleLogin} className="space-y-5">
 
                   {/* Mode toggle */}
-                  <div className="flex gap-1 p-1 bg-slate-800/60 border border-slate-700/50 rounded-lg">
+                  <div className="flex gap-1 rounded-2xl border border-white/[0.08] bg-black/15 p-1.5">
                     {(["email", "mobile"] as const).map((mode) => (
                       <button
                         key={mode}
@@ -349,7 +344,7 @@ export default function ParticipantLoginPage() {
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="h-11 bg-slate-800/60 border-slate-700/60 text-white placeholder:text-slate-600 focus:border-cyan-500/60 focus:ring-cyan-500/20 transition-all"
+                        className="h-12 rounded-xl border-white/[0.1] bg-black/15 text-white placeholder:text-slate-500 shadow-inner shadow-black/10 transition-all focus:border-cyan-400/60 focus:ring-cyan-400/20"
                         required
                         autoComplete="email"
                       />
@@ -365,7 +360,7 @@ export default function ParticipantLoginPage() {
                         placeholder="+95 9 123 456 789"
                         value={mobile_number}
                         onChange={(e) => setMobileNumber(e.target.value)}
-                        className="h-11 bg-slate-800/60 border-slate-700/60 text-white placeholder:text-slate-600 focus:border-cyan-500/60 focus:ring-cyan-500/20 transition-all"
+                        className="h-12 rounded-xl border-white/[0.1] bg-black/15 text-white placeholder:text-slate-500 shadow-inner shadow-black/10 transition-all focus:border-cyan-400/60 focus:ring-cyan-400/20"
                         required
                         autoComplete="tel"
                       />
@@ -410,7 +405,7 @@ export default function ParticipantLoginPage() {
                   </div>
 
                   {/* Security note */}
-                  <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-slate-800/40 border border-slate-700/40">
+                  <div className="flex items-center gap-2 rounded-xl border border-emerald-400/[0.12] bg-emerald-400/[0.05] px-3 py-3">
                     <Lock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                     <span className="text-xs text-slate-500">
                       Your connection is encrypted and secure.
@@ -421,7 +416,7 @@ export default function ParticipantLoginPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white font-bold text-sm tracking-wide shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-200 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2.5"
+                    className="flex h-12 w-full items-center justify-center gap-2.5 rounded-xl bg-cyan-400 text-sm font-bold tracking-wide text-slate-950 shadow-[0_12px_30px_rgba(34,211,238,0.18)] transition-all duration-200 hover:bg-cyan-300 hover:shadow-[0_16px_36px_rgba(34,211,238,0.26)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {loading ? (
                       <>
@@ -461,7 +456,7 @@ export default function ParticipantLoginPage() {
           {/* Bottom bar */}
           <div className="px-6 pb-6 lg:px-10 lg:pb-8 flex items-center justify-between">
             <p className="text-[10px] text-slate-700">
-              &copy; {new Date().getFullYear()} FlowChain Trading. All rights reserved.
+              &copy; {new Date().getFullYear()} Elite Fund. All rights reserved.
             </p>
             <div className="flex items-center gap-1.5 text-[10px] text-slate-700">
               <Shield className="w-3 h-3 text-emerald-700" />

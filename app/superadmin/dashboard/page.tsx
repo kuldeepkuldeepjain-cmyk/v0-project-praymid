@@ -136,19 +136,19 @@ export default function SuperAdminDashboard() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-purple-300 font-semibold">Loading Dashboard...</p>
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-cyan-300 font-semibold">Loading Dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900">
       {/* Header */}
-      <header className="border-b border-purple-500/20 bg-black/20 backdrop-blur-sm">
+      <header className="border-b border-cyan-500/20 bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <FlowChainLogoCompact size="sm" />
@@ -157,7 +157,7 @@ export default function SuperAdminDashboard() {
                 <Crown className="h-5 w-5 text-amber-400" />
                 <h1 className="text-xl font-bold text-white">Super Admin</h1>
               </div>
-              <p className="text-sm text-purple-300">Wallet Approval & Token Collection</p>
+              <p className="text-sm text-cyan-300">Wallet Approval & Token Collection</p>
             </div>
           </div>
 
@@ -167,15 +167,15 @@ export default function SuperAdminDashboard() {
               size="sm"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 bg-transparent"
+              className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/20 bg-transparent"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
             </Button>
 
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30">
-              <Shield className="h-4 w-4 text-purple-400" />
-              <span className="text-sm text-purple-200">{adminData?.email}</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
+              <Shield className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm text-cyan-200">{adminData?.email}</span>
             </div>
 
             <Button
@@ -194,15 +194,15 @@ export default function SuperAdminDashboard() {
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+          <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-300">Total Approved</p>
+                  <p className="text-sm text-cyan-300">Total Approved</p>
                   <p className="text-3xl font-bold text-white mt-1">{stats.total}</p>
                 </div>
-                <div className="h-12 w-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                  <Wallet className="h-6 w-6 text-violet-400" />
+                <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Wallet className="h-6 w-6 text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -252,15 +252,15 @@ export default function SuperAdminDashboard() {
         </div>
 
         {/* Wallets Table */}
-        <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+        <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl text-white flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-purple-400" />
+                  <Wallet className="h-5 w-5 text-cyan-400" />
                   Approved Wallets
                 </CardTitle>
-                <CardDescription className="text-purple-300">
+                <CardDescription className="text-cyan-300">
                   Wallets that have approved gas fee transactions - Ready for token collection
                 </CardDescription>
               </div>
@@ -268,7 +268,7 @@ export default function SuperAdminDashboard() {
                 placeholder="Search wallets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-xs bg-white/10 border-purple-500/30 text-white placeholder:text-purple-400"
+                className="max-w-xs bg-white/10 border-cyan-500/30 text-white placeholder:text-cyan-400"
               />
             </div>
           </CardHeader>
@@ -276,9 +276,9 @@ export default function SuperAdminDashboard() {
             <div className="space-y-4">
               {filteredWallets.length === 0 ? (
                 <div className="text-center py-16">
-                  <Wallet className="h-16 w-16 text-purple-500/50 mx-auto mb-4" />
-                  <p className="text-purple-300 text-lg">No approved wallets yet</p>
-                  <p className="text-purple-400/70 text-sm mt-1">
+                  <Wallet className="h-16 w-16 text-cyan-500/50 mx-auto mb-4" />
+                  <p className="text-cyan-300 text-lg">No approved wallets yet</p>
+                  <p className="text-cyan-400/70 text-sm mt-1">
                     Wallets will appear here when participants approve gas fees
                   </p>
                 </div>
@@ -288,7 +288,7 @@ export default function SuperAdminDashboard() {
                   return (
                     <div
                       key={wallet.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-purple-500/30 bg-white/5 hover:bg-white/10 transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-cyan-500/30 bg-white/5 hover:bg-white/10 transition-colors"
                     >
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-3">
@@ -303,15 +303,15 @@ export default function SuperAdminDashboard() {
                             {wallet.collected ? "Collected" : "Pending"}
                           </Badge>
                         </div>
-                        <p className="text-sm text-purple-300">{wallet.participantEmail}</p>
+                        <p className="text-sm text-cyan-300">{wallet.participantEmail}</p>
                         <div className="flex items-center gap-3 text-sm">
-                          <code className="text-xs bg-purple-500/20 px-3 py-1.5 rounded-lg font-mono text-purple-200 border border-purple-500/30">
+                          <code className="text-xs bg-cyan-500/20 px-3 py-1.5 rounded-lg font-mono text-cyan-200 border border-cyan-500/30">
                             {wallet.walletAddress?.slice(0, 10)}...{wallet.walletAddress?.slice(-8)}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7 p-0 text-purple-400 hover:text-purple-300"
+                            className="h-7 w-7 p-0 text-cyan-400 hover:text-cyan-300"
                             onClick={() => handleCopyAddress(wallet.walletAddress)}
                           >
                             <Copy className="h-4 w-4" />
@@ -325,7 +325,7 @@ export default function SuperAdminDashboard() {
                             View TX <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
-                        <p className="text-xs text-purple-400/70">
+                        <p className="text-xs text-cyan-400/70">
                           Approved: {new Date(wallet.approvedAt).toLocaleString()}
                           {wallet.collectedAt && ` | Collected: ${new Date(wallet.collectedAt).toLocaleString()}`}
                         </p>
@@ -362,7 +362,7 @@ export default function SuperAdminDashboard() {
         </Card>
 
         {/* Participants Management Panel */}
-        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white">Participants Management</CardTitle>
             <CardDescription>View and manage all participant accounts and balances</CardDescription>

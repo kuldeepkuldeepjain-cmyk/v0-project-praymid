@@ -16,11 +16,12 @@ interface TopUpModalProps {
   userId: string
   userEmail?: string
   onSuccess?: (amount: number) => void
+  isFundedAccount?: boolean
 }
 
 type Step = "form" | "submitting" | "success"
 
-export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess }: TopUpModalProps) {
+export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false }: TopUpModalProps) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
@@ -29,7 +30,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [screenshot, setScreenshot] = useState<File | null>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
+  const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
   // Fetch BEP20 address from DB when modal opens
@@ -48,9 +50,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       try {
         const res = await fetch("/api/public/settings")
         const data = await res.json()
-        setWalletAddress(data.topup_address || null)
+        setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
       } catch {
-        setWalletAddress(null)
+        setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
       } finally {
         setLoadingAddress(false)
       }
@@ -59,20 +61,24 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }, [isOpen])
 
   const copyAddress = () => {
+    const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
     if (!walletAddress) return
     navigator.clipboard.writeText(walletAddress)
     setCopiedAddress(true)
     setTimeout(() => setCopiedAddress(false), 2000)
   }
 
+  const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
-  const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5
+  const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
+  const isFundedAmountValid = !isFundedAccount || parsedAmount in fundedTiers
+  const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
   const handleSubmit = async () => {
     setErrorMessage("")
 
     if (!isAmountValid) {
-      setErrorMessage("Please enter a valid amount (minimum $5)")
+      setErrorMessage(isFundedAccount ? "Funded accounts require a $100, $250, $500, or $1,000 top-up tier" : "Please enter a valid amount (minimum $5)")
       return
     }
     if (!txHash.trim()) {
@@ -108,8 +114,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           userEmail: userEmail || userId,
           amount: parsedAmount,
           transactionHash: txHash.trim(),
+          network,
           screenshotBase64: base64,
-          note: note.trim() || null,
+          note: `[Network: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })
 
@@ -141,8 +148,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
             <Wallet className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white leading-tight">Top Up Wallet</h2>
-            <p className="text-[10px] text-white/70">Send USDT (BEP20) and submit proof</p>
+            <h2 className="text-base font-bold text-white leading-tight">{isFundedAccount ? "Funded Account Top Up" : "Top Up Wallet"}</h2>
+            <p className="text-[10px] text-white/70">{isFundedAccount ? "Choose a tier, send USDT, and submit proof" : "Send USDT on your selected network and submit proof"}</p>
           </div>
           {step !== "submitting" && (
             <button
@@ -161,32 +168,68 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           {(step === "form" || step === "submitting") && (
             <div className="space-y-3">
 
-              {/* Network badge */}
-              <div className="flex justify-center">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                  BEP20 Network (BSC) — USDT only
-                </span>
+              {isFundedAccount && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-bold text-emerald-900">Funded Account Top-Up Rules</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">Choose an exact tier. After admin approval, your funded trading balance is credited with the matching account size.</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {[100, 250, 500, 1000].map((tier) => (
+                      <button
+                        key={tier}
+                        type="button"
+                        onClick={() => setAmount(String(tier))}
+                        disabled={step === "submitting"}
+                        className={`rounded-lg border px-2 py-2 text-left text-[11px] transition-colors ${Number(amount) === tier ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}
+                      >
+                        <span className="block font-bold">Top up ${tier.toLocaleString()}</span>
+                        <span className="block opacity-80">Get ${(tier * 100).toLocaleString()} funded</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Network selector */}
+              <div className="space-y-1.5">
+                <Label htmlFor="topup-network" className="text-xs font-semibold text-slate-700">
+                  Deposit Network <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  id="topup-network"
+                  value={network}
+                  onChange={(event) => setNetwork(event.target.value as typeof network)}
+                  disabled={step === "submitting"}
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
+                >
+                  <option value="ALL">All networks</option>
+                  <option value="TRC20">TRC20 (TRON)</option>
+                  <option value="BEP20">BEP20 (BSC)</option>
+                  <option value="ERC20">ERC20 (Ethereum)</option>
+                </select>
+                <p className="text-[10px] text-slate-500">
+                  Select the network used for your USDT transfer.
+                </p>
               </div>
 
               {/* Wallet Address */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">BEP20 Deposit Address (USDT)</Label>
+                <Label className="text-xs font-semibold text-slate-700">{network === "ALL" ? "USDT Deposit Address" : `${network} Deposit Address (USDT)`}</Label>
                 {loadingAddress ? (
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2.5 animate-pulse">
                     <div className="h-3 bg-slate-200 rounded flex-1" />
                     <div className="h-6 w-6 bg-slate-200 rounded" />
                   </div>
-                ) : walletAddress ? (
+                ) : selectedWalletAddress ? (
                   <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
                     {/* QR-like header strip */}
                     <div className="px-3 py-1.5 bg-violet-600 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-white tracking-widest uppercase">BEP20 Network</span>
+                      <span className="text-[10px] font-bold text-white tracking-widest uppercase">{network === "ALL" ? "All Networks" : `${network} Network`}</span>
                       <span className="text-[10px] text-white/80">USDT Only</span>
                     </div>
                     {/* Address row */}
                     <div className="flex items-center gap-2 px-3 py-2.5">
                       <code className="flex-1 text-[11px] text-violet-900 font-mono break-all leading-snug">
-                        {walletAddress}
+                        {network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20}
                       </code>
                       <button
                         onClick={copyAddress}
@@ -211,7 +254,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </div>
                 )}
                 <p className="text-[10px] text-slate-500">
-                  Send USDT (BEP20) to this address, then fill in your transaction details below.
+                  Send USDT using the selected network to this address, then fill in your transaction details below.
                 </p>
               </div>
 

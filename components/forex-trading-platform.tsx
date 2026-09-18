@@ -1,16 +1,22 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
+import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
   ChevronDown, ChevronUp, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
-  Gauge, Lock, Unlock, BookOpen, Filter,
+  Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
+import {
+  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
+  isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
+  type AssetCategory,
+} from "@/lib/forex-instruments"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,7 +60,6 @@ type ClosedTrade = OpenTrade & {
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "1H" | "4H" | "1D"
-type AssetCategory = "Forex" | "Commodities" | "Crypto"
 
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
@@ -98,47 +103,10 @@ type PerfStats = {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const PAIRS_CONFIG: { base: string; quote: string; symbol: string; category: AssetCategory }[] = [
-  { base: "EUR", quote: "USD", symbol: "EUR/USD", category: "Forex" },
-  { base: "GBP", quote: "USD", symbol: "GBP/USD", category: "Forex" },
-  { base: "USD", quote: "JPY", symbol: "USD/JPY", category: "Forex" },
-  { base: "USD", quote: "CHF", symbol: "USD/CHF", category: "Forex" },
-  { base: "AUD", quote: "USD", symbol: "AUD/USD", category: "Forex" },
-  { base: "USD", quote: "CAD", symbol: "USD/CAD", category: "Forex" },
-  { base: "NZD", quote: "USD", symbol: "NZD/USD", category: "Forex" },
-  { base: "EUR", quote: "GBP", symbol: "EUR/GBP", category: "Forex" },
-  { base: "XAU", quote: "USD", symbol: "XAU/USD", category: "Commodities" },
-  { base: "XAG", quote: "USD", symbol: "XAG/USD", category: "Commodities" },
-  { base: "BTC", quote: "USD", symbol: "BTC/USD", category: "Crypto" },
-  { base: "ETH", quote: "USD", symbol: "ETH/USD", category: "Crypto" },
-  { base: "BNB", quote: "USD", symbol: "BNB/USD", category: "Crypto" },
-  { base: "SOL", quote: "USD", symbol: "SOL/USD", category: "Crypto" },
-  { base: "XRP", quote: "USD", symbol: "XRP/USD", category: "Crypto" },
-  { base: "ADA", quote: "USD", symbol: "ADA/USD", category: "Crypto" },
-]
-
-const TYPICAL_SPREADS: Record<string, number> = {
-  "EUR/USD": 0.00012, "GBP/USD": 0.00018, "USD/JPY": 0.012,
-  "USD/CHF": 0.00018, "AUD/USD": 0.00018, "USD/CAD": 0.00018,
-  "NZD/USD": 0.00022, "EUR/GBP": 0.00020,
-  "XAU/USD": 0.35, "XAG/USD": 0.025,
-  "BTC/USD": 8.0, "ETH/USD": 2.0, "BNB/USD": 0.40,
-  "SOL/USD": 0.12, "XRP/USD": 0.0008, "ADA/USD": 0.0004,
-}
-
-// Overnight swap rates per lot per day in USD (Long/Short)
-// Based on real broker approximate values
-const SWAP_RATES: Record<string, [number, number]> = {
-  "EUR/USD": [-5.80, 0.60],  "GBP/USD": [-4.20, 0.20],
-  "USD/JPY": [1.20, -3.40],  "USD/CHF": [0.80, -2.80],
-  "AUD/USD": [-2.60, -0.40], "USD/CAD": [0.60, -2.90],
-  "NZD/USD": [-1.80, -0.60], "EUR/GBP": [-4.10, 0.50],
-  "XAU/USD": [-10.50, -3.50],"XAG/USD": [-2.80, -1.20],
-  "BTC/USD": [-25.0, -25.0], "ETH/USD": [-8.0, -8.0],
-  "BNB/USD": [-5.0, -5.0],   "SOL/USD": [-3.0, -3.0],
-  "XRP/USD": [-1.5, -1.5],   "ADA/USD": [-1.2, -1.2],
-}
+// PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, and the
+// isJpy/isCrypto/isGold/isSilver/isCommodity/decimals/pip/contractSize helpers
+// live in @/lib/forex-instruments so the UI and the rates/candles API routes
+// share one instrument catalog.
 
 const CATEGORY_COLOR: Record<AssetCategory, { bg: string; text: string; border: string }> = {
   Forex:       { bg: "rgba(34,211,238,0.1)",  text: "#22d3ee", border: "rgba(34,211,238,0.25)" },
@@ -146,67 +114,9 @@ const CATEGORY_COLOR: Record<AssetCategory, { bg: string; text: string; border: 
   Crypto:      { bg: "rgba(167,139,250,0.1)", text: "#a78bfa", border: "rgba(167,139,250,0.25)" },
 }
 
-const ASSET_ICON: Record<string, string> = {
-  "XAU/USD": "Au", "XAG/USD": "Ag",
-  "BTC/USD": "₿", "ETH/USD": "Ξ",
-  "BNB/USD": "BNB", "SOL/USD": "◎",
-  "XRP/USD": "✕", "ADA/USD": "₳",
-}
-
-// Full names for display
-const FULL_NAMES: Record<string, string> = {
-  "EUR/USD": "Euro / US Dollar", "GBP/USD": "British Pound", "USD/JPY": "US Dollar / Yen",
-  "USD/CHF": "Swiss Franc", "AUD/USD": "Australian Dollar", "USD/CAD": "Canadian Dollar",
-  "NZD/USD": "New Zealand Dollar", "EUR/GBP": "Euro / Pound",
-  "XAU/USD": "Gold Spot", "XAG/USD": "Silver Spot",
-  "BTC/USD": "Bitcoin", "ETH/USD": "Ethereum", "BNB/USD": "BNB Chain",
-  "SOL/USD": "Solana", "XRP/USD": "Ripple XRP", "ADA/USD": "Cardano",
-}
-
-// ─── Instrument helpers ───────────────────────────────────────────────────────
-
-function isJpy(sym: string): boolean { return sym.includes("JPY") }
-function isCrypto(sym: string): boolean { return ["BTC","ETH","BNB","SOL","XRP","ADA"].some(c => sym.startsWith(c)) }
-function isGold(sym: string): boolean { return sym.startsWith("XAU") }
-function isSilver(sym: string): boolean { return sym.startsWith("XAG") }
-function isCommodity(sym: string): boolean { return isGold(sym) || isSilver(sym) }
-
-function decimals(sym: string): number {
-  if (isGold(sym)) return 2; if (isSilver(sym)) return 3
-  if (sym.startsWith("BTC")) return 1; if (sym.startsWith("ETH")) return 2
-  if (sym.startsWith("BNB")) return 2; if (sym.startsWith("SOL")) return 3
-  if (sym.startsWith("XRP") || sym.startsWith("ADA")) return 4
-  return isJpy(sym) ? 3 : 5
-}
-
 function fmt(price: number | null | undefined, sym: string): string {
   if (price == null || !isFinite(price)) return "—"
   return price.toFixed(decimals(sym))
-}
-
-// Contract sizes — standard lot
-function contractSize(sym: string): number {
-  if (isGold(sym)) return 100        // 100 troy oz
-  if (isSilver(sym)) return 5000     // 5000 troy oz
-  if (sym.startsWith("BTC")) return 1
-  if (sym.startsWith("ETH")) return 10
-  if (sym.startsWith("BNB")) return 100
-  if (sym.startsWith("SOL")) return 100
-  if (sym.startsWith("XRP")) return 10000
-  if (sym.startsWith("ADA")) return 10000
-  return 100000                       // standard forex lot
-}
-
-// Pip size — smallest meaningful price move
-function pip(sym: string): number {
-  if (isGold(sym)) return 0.01
-  if (isSilver(sym)) return 0.001
-  if (sym.startsWith("BTC")) return 1.0
-  if (sym.startsWith("ETH")) return 0.1
-  if (sym.startsWith("BNB")) return 0.01
-  if (sym.startsWith("SOL")) return 0.001
-  if (sym.startsWith("XRP") || sym.startsWith("ADA")) return 0.0001
-  return isJpy(sym) ? 0.01 : 0.0001
 }
 
 // ─── P&L Calculation (industry-accurate) ─────────────────────────────────────
@@ -242,7 +152,7 @@ function pipValue(sym: string, lots: number, currentPrice: number): number {
   return lots * cs * ps
 }
 
-function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number }, currentPrice: number, sym: string): {
+function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number; leverage: number }, currentPrice: number, sym: string): {
   pnl: number; pipCount: number; returnOnMargin: number; margin: number
 } {
   const dir     = trade.direction === "BUY" ? 1 : -1
@@ -261,7 +171,7 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
   const notional = base === "USD"
     ? trade.lotSize * cs                      // already in USD
     : trade.lotSize * cs * trade.openPrice    // convert to USD
-  const margin = notional / (trade as any).leverage   // stored leverage
+  const margin = notional / trade.leverage                 // stored leverage
 
   const returnOnMargin = margin > 0 ? parseFloat(((pnl / margin) * 100).toFixed(2)) : 0
   return { pnl, pipCount: parseFloat(pipCount.toFixed(1)), returnOnMargin, margin }
@@ -517,7 +427,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ────────────────────────────────────────────────────
+// ─── Market Sessions Panel ───────────────────────────────────────────────����───���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -1131,17 +1041,19 @@ function PositionSizer({
   )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─��─ Main Component ───────────────────────────────────────────────────────────
 
-export function ForexTradingPlatform({
+  export function ForexTradingPlatform({
   participantEmail,
   walletBalance: externalBalance = 0,
   onBalanceUpdated,
-}: {
+  onStatsUpdate,
+  }: {
   participantEmail: string
   walletBalance?: number
   onBalanceUpdated?: (newBalance: number) => void
-}) {
+  onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
+  }) {
   // ── State ──────────────────────────────────────────────────────────────────
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
@@ -1177,6 +1089,7 @@ export function ForexTradingPlatform({
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
+  const [chartTradePrice, setChartTradePrice] = useState<number | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
@@ -1185,7 +1098,84 @@ export function ForexTradingPlatform({
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
   const [equityHistory, setEquityHistory] = useState<number[]>([])
+  const [isDarkTheme, setIsDarkTheme] = useState(true)
+  const [themeReady, setThemeReady] = useState(false)
 
+  const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
+  const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
+  const [watchlistReady, setWatchlistReady] = useState(false)
+  const [showAddInstrument, setShowAddInstrument] = useState(false)
+  const [addInstrumentQuery, setAddInstrumentQuery] = useState("")
+  const [addInstrumentPos, setAddInstrumentPos] = useState<{ top: number; left: number } | null>(null)
+  const addInstrumentRef = useRef<HTMLDivElement>(null)
+  const addInstrumentBtnRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    setThemeReady(true)
+    try {
+      const saved = window.localStorage.getItem("trade-terminal-theme")
+      if (saved) setIsDarkTheme(saved === "dark")
+    } catch {}
+    try {
+      const savedWatchlist = window.localStorage.getItem("trade-terminal-watchlist")
+      if (savedWatchlist) {
+        const parsed = JSON.parse(savedWatchlist)
+        if (Array.isArray(parsed) && parsed.every(s => typeof s === "string") && parsed.length > 0) {
+          setWatchlistSymbols(parsed)
+        }
+      }
+    } catch {}
+    setWatchlistReady(true)
+  }, [])
+
+  useEffect(() => {
+    if (themeReady) window.localStorage.setItem("trade-terminal-theme", isDarkTheme ? "dark" : "light")
+  }, [isDarkTheme, themeReady])
+
+  useEffect(() => {
+    if (watchlistReady) window.localStorage.setItem("trade-terminal-watchlist", JSON.stringify(watchlistSymbols))
+  }, [watchlistSymbols, watchlistReady])
+
+  // Close the "add instrument" popover on outside click, Escape, or scroll/resize
+  // (the popover is portaled to <body> with fixed positioning computed from the
+  // trigger button's rect, so its position must be recalculated or dismissed
+  // whenever the layout can shift).
+  useEffect(() => {
+    if (!showAddInstrument) return
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node
+      const insideTrigger = addInstrumentRef.current?.contains(target)
+      const insidePopover = document.getElementById("add-instrument-popover")?.contains(target)
+      if (!insideTrigger && !insidePopover) setShowAddInstrument(false)
+    }
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowAddInstrument(false) }
+    const handleReposition = () => setShowAddInstrument(false)
+    document.addEventListener("mousedown", handleClick)
+    document.addEventListener("keydown", handleKey)
+    window.addEventListener("resize", handleReposition)
+    return () => {
+      document.removeEventListener("mousedown", handleClick)
+      document.removeEventListener("keydown", handleKey)
+      window.removeEventListener("resize", handleReposition)
+    }
+  }, [showAddInstrument])
+
+  const toggleWatchlistSymbol = useCallback((symbol: string) => {
+    setWatchlistSymbols(prev =>
+      prev.includes(symbol) ? prev.filter(s => s !== symbol) : [...prev, symbol]
+    )
+  }, [])
+
+  const addInstrumentResults = useMemo(() => {
+    const q = addInstrumentQuery.trim().toLowerCase().replace(/[\s/_-]/g, "")
+    if (!q) return PAIRS_CONFIG
+    return PAIRS_CONFIG.filter(c => {
+      const sym = c.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+      const name = (FULL_NAMES[c.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+      return sym.includes(q) || name.includes(q)
+    })
+  }, [addInstrumentQuery])
+  
   const pairsRef        = useRef<ForexPair[]>([])
   const openTradesRef   = useRef<OpenTrade[]>([])
   const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -1247,6 +1237,68 @@ export function ForexTradingPlatform({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participantEmail, onBalanceUpdated])
+
+  // ── Trade persistence API (all writes are best-effort/fire-and-forget so the
+  //    optimistic UI never blocks on network latency) ────────────────────────
+  const persistOpenTrade = useCallback((trade: OpenTrade) => {
+    participantFetch("/api/forex/trades", {
+      method: "POST",
+      body: JSON.stringify({ participant_email: participantEmail, action: "open", trade }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistPendingOrder = useCallback((order: PendingOrder) => {
+    participantFetch("/api/forex/trades", {
+      method: "POST",
+      body: JSON.stringify({ participant_email: participantEmail, action: "pending", trade: order }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistPartialClose = useCallback((closed: ClosedTrade) => {
+    participantFetch("/api/forex/trades", {
+      method: "POST",
+      body: JSON.stringify({ participant_email: participantEmail, action: "partial_close", trade: closed }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistClose = useCallback((closed: ClosedTrade) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({
+        participant_email: participantEmail, id: closed.id, action: "close",
+        closePrice: closed.closePrice, closeTime: closed.closeTime, closeDuration: closed.closeDuration,
+        finalPnl: closed.finalPnl, finalPips: closed.finalPips, finalSwap: closed.finalSwap,
+        closeReason: closed.closeReason, lotSize: closed.lotSize, margin: closed.margin,
+      }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const deletePendingOrder = useCallback((id: string) => {
+    participantFetch(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, {
+      method: "DELETE",
+    }).catch(() => {})
+  }, [participantEmail])
 
   // ── Fetch live rates ───────────────────────────────────────────────────────
   const fetchRates = useCallback(async () => {
@@ -1411,7 +1463,7 @@ export function ForexTradingPlatform({
           const fillPrice = order.direction === "BUY" ? pairNow.ask : pairNow.bid
           const margin = calcMargin(order.pair, order.lotSize, fillPrice, order.leverage)
           const newTrade: OpenTrade = {
-            id: genId(), pair: order.pair, direction: order.direction,
+            id: order.id, pair: order.pair, direction: order.direction,
             lotSize: order.lotSize, leverage: order.leverage,
             openPrice: fillPrice, currentPrice: fillPrice,
             sl: order.sl, tp: order.tp,
@@ -1421,6 +1473,7 @@ export function ForexTradingPlatform({
             pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
           }
           setOpenTrades(p => [newTrade, ...p])
+          persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
           showToast("info", `Pending ${order.orderType.replace("_"," ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
           return prev.filter(o => o.id !== id)
         })
@@ -1505,6 +1558,7 @@ export function ForexTradingPlatform({
           if (prev.some(t => t.id === closed.id)) return prev
           return [closed, ...prev.slice(0, 99)]
         })
+        persistClose(closed)
 
         // 3. Return margin + P&L (called only once per trade)
         const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
@@ -1544,34 +1598,34 @@ export function ForexTradingPlatform({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickCount])
 
-  // ── Persist trades ─────────────────────────────────────────────────────────
-  // Guard: do not save until the load effect has run at least once
-  const localStorageLoaded = useRef(false)
+  // ── Load trades from the database ───────────────────────────────────────────
+  // All trade writes (open/close/modify/fill/cancel) are persisted directly to
+  // the forex_trades table via the persist* helpers above — this effect just
+  // hydrates state from the database on mount / participant change.
+  const tradesLoaded = useRef(false)
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`forex_v3_${participantEmail}`)
-      if (saved) {
-        const { open, closed, pending } = JSON.parse(saved)
-        setOpenTrades(open ?? [])
-        setClosedTrades(closed ?? [])
-        setPendingOrders(pending ?? [])
-      }
-    } catch {}
-    // Mark as loaded so the save effect is now allowed to run
-    localStorageLoaded.current = true
+    if (!participantEmail) return
+    let cancelled = false
+    tradesLoaded.current = false
+    ;(async () => {
+      try {
+        const res = await participantFetch(`/api/forex/trades?email=${encodeURIComponent(participantEmail)}`)
+        const json = await res.json()
+        if (!cancelled && json.success) {
+          setOpenTrades(json.open ?? [])
+          setClosedTrades(json.closed ?? [])
+          setPendingOrders(json.pending ?? [])
+          openTradesRef.current = json.open ?? []
+        }
+      } catch {}
+      tradesLoaded.current = true
+    })()
+    return () => { cancelled = true }
   }, [participantEmail])
 
-  useEffect(() => {
-    // Never save before the initial load — prevents empty state overwriting saved data
-    if (!localStorageLoaded.current) return
-    try {
-      localStorage.setItem(`forex_v3_${participantEmail}`, JSON.stringify({ open: openTrades, closed: closedTrades, pending: pendingOrders }))
-    } catch {}
-  }, [openTrades, closedTrades, pendingOrders, participantEmail])
-
-  // ── Execute market trade ───────────────────────────────────────────────────
-  // Opens the confirmation modal ��� called by both executeTrade and quickTrade
+  // ── Execute market trade ───────────────────────────────────���───────────────
+  // Opens the confirmation modal ����� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
     lot: number,
@@ -1652,6 +1706,7 @@ export function ForexTradingPlatform({
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
       setPendingOrders(prev => [order, ...prev])
+      persistPendingOrder(order)
       showToast("info", `${order.orderType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(order.targetPrice, selectedPair.symbol)}`)
       setActivePanel("pending")
     } else {
@@ -1679,6 +1734,7 @@ export function ForexTradingPlatform({
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
+      persistOpenTrade(trade)
       showToast("success",
         `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
       )
@@ -1699,6 +1755,18 @@ export function ForexTradingPlatform({
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
     if (walletBalance < margin) { showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return }
     requestConfirm(dir, lot, lev, price, null, null, null, false)
+  }
+
+  const chartTrade = (dir: TradeDirection) => {
+    if (!selectedPair || chartTradePrice == null) return
+    const lot = parseFloat(lotSize) || 0.01
+    const lev = parseFloat(leverage) || 100
+    const margin = calcMargin(selectedPair.symbol, lot, chartTradePrice, lev)
+    if (walletBalance < margin) {
+      showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
+      return
+    }
+    requestConfirm(dir, lot, lev, chartTradePrice, null, null, null, false)
   }
 
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
@@ -1738,6 +1806,7 @@ export function ForexTradingPlatform({
       if (prev.some(t => t.id === closed.id)) return prev
       return [closed, ...prev.slice(0, 99)]
     })
+    persistClose(closed)
 
     // 3. Return margin + P&L to balance (called only once)
     const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
@@ -1794,8 +1863,10 @@ export function ForexTradingPlatform({
     setOpenTrades(prev => prev.map(t =>
       t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
     ))
+    persistPartialReduce(id, remainingLots, remainingMargin)
 
     setClosedTrades(prev => [closed, ...prev.slice(0, 99)])
+    persistPartialClose(closed)
 
     const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
     adjustWalletBalance(returnAmt > 0 ? returnAmt : 0,
@@ -1806,15 +1877,16 @@ export function ForexTradingPlatform({
 
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjustWalletBalance, showToast])
+  }, [adjustWalletBalance, showToast, persistPartialReduce, persistPartialClose])
 
   // ── Modify trade ───────────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
     setOpenTrades(prev => prev.map(t =>
       t.id === tradeId ? { ...t, sl: newSl, tp: newTp, trailingStopPips: newTrail } : t
     ))
+    persistModify(tradeId, newSl, newTp, newTrail)
     showToast("info", "Position updated")
-  }, [showToast])
+  }, [showToast, persistModify])
 
   // ── Price Alert checker (runs each tick) ─────────────────────────────────
   useEffect(() => {
@@ -1845,9 +1917,10 @@ export function ForexTradingPlatform({
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ───────────────────────────────────────────────────
+  // ── Cancel pending order ────────────────���──────────────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
+    deletePendingOrder(id)
     showToast("info", "Pending order cancelled")
   }
 
@@ -1871,13 +1944,29 @@ export function ForexTradingPlatform({
   const rrRatio = slPips > 0 ? (tpPips / slPips).toFixed(2) : null
 
   const categoryTabs: (AssetCategory | "All")[] = ["All", "Forex", "Commodities", "Crypto"]
-  const searchedPairs = pairSearch
-    ? pairs.filter(p => p.symbol.toLowerCase().includes(pairSearch.toLowerCase()) || FULL_NAMES[p.symbol]?.toLowerCase().includes(pairSearch.toLowerCase()))
+  // Search always scans the complete catalog, regardless of the selected
+  // category tab. This makes the terminal search bar a true instrument finder:
+  // typing EURUSD while Crypto is selected still finds EUR/USD.
+  const searchedPairs = pairSearch.trim()
+    ? (() => {
+        const q = pairSearch.trim().toLowerCase().replace(/[\s/_-]/g, "")
+        return pairs.filter(p => {
+          const symbolNoSeparators = p.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+          const name = (FULL_NAMES[p.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+          return symbolNoSeparators.includes(q) || name.includes(q)
+        })
+      })()
     : pairs
-  const filteredPairs = searchedPairs.filter(p => {
-    const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)
-    return activeCategory === "All" || cfg?.category === activeCategory
-  })
+  const filteredPairs = pairSearch.trim()
+    ? searchedPairs
+    : searchedPairs.filter(p => {
+        const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)
+        return activeCategory === "All" || cfg?.category === activeCategory
+      })
+  const visibleInstrumentCount = pairSearch.trim() ? filteredPairs.length : pairs.length
+  const hasInstrumentSearch = pairSearch.trim().length > 0
+  const searchNoResults = hasInstrumentSearch && filteredPairs.length === 0
+  
 
   // Mini equity sparkline path
   const sparkPath = useMemo(() => {
@@ -1899,8 +1988,17 @@ export function ForexTradingPlatform({
   const marginLevel = totalMargin > 0 ? ((walletBalance + totalPnl) / totalMargin * 100) : 0
   const equity = walletBalance + totalPnl
 
+  useEffect(() => {
+    onStatsUpdate?.({
+      equity,
+      openPnl: totalPnl,
+      openPnlPct: walletBalance > 0 ? (totalPnl / walletBalance) * 100 : 0,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equity, totalPnl, walletBalance])
+
   return (
-    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", width: "100%", position: "relative", fontFamily: "'Inter', sans-serif" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -1917,7 +2015,7 @@ export function ForexTradingPlatform({
       )}
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-topbar flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
         <div className="flex items-center gap-1.5 shrink-0">
           <CandlestickChart className="h-4 w-4 text-cyan-400" />
           <span className="text-[11px] font-black tracking-[0.18em] text-white">TRADE TERMINAL</span>
@@ -1974,15 +2072,32 @@ export function ForexTradingPlatform({
           )}
         </div>
 
-        <button onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
-          className="p-1.5 transition-colors shrink-0"
-          style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: 4 }}>
-          <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsDarkTheme(theme => !theme)}
+            aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
+            aria-pressed={isDarkTheme}
+            title={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
+            className="flex items-center gap-1.5 px-2 py-1.5 transition-colors"
+            style={{ background: isDarkTheme ? "rgba(251,191,36,0.10)" : "rgba(0,113,227,0.08)", border: isDarkTheme ? "1px solid rgba(251,191,36,0.24)" : "1px solid rgba(0,113,227,0.16)", borderRadius: 5 }}>
+            {isDarkTheme ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-blue-500" />}
+            <span className="hidden text-[8px] font-black tracking-[0.14em] uppercase sm:inline" style={{ color: isDarkTheme ? "#b7791f" : "#0071e3" }}>
+              {isDarkTheme ? "Light" : "Dark"}
+            </span>
+          </button>
+          <button onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
+            aria-label="Refresh market data"
+            title="Refresh market data"
+            className="p-1.5 transition-colors"
+            style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: 4 }}>
+            <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+      <div className="apple-terminal-summary flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
         {[
           { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
           { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
@@ -2001,8 +2116,109 @@ export function ForexTradingPlatform({
         ))}
       </div>
 
+      {/* ══ REFERENCE WATCHLIST ════════════════════════════════════════════════ */}
+      <div className="reference-watchlist shrink-0 flex items-center gap-3 px-5 py-4 overflow-x-auto terminal-scroll">
+        {watchlistSymbols.map(symbol => {
+          const pair = pairs.find(p => p.symbol === symbol)
+          if (!pair) return null
+          const isSelected = selectedPair?.symbol === pair.symbol
+          const up = pair.change >= 0
+          return (
+            <button key={pair.symbol} type="button" onClick={() => { setSelectedPair(pair); fetchCandles(pair.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 group relative ${isSelected ? "is-selected" : ""}`}>
+              <span
+                role="button"
+                aria-label={`Remove ${pair.symbol} from watchlist`}
+                onClick={(e) => { e.stopPropagation(); toggleWatchlistSymbol(pair.symbol) }}
+                className="absolute -top-1.5 -right-1.5 hidden group-hover:flex items-center justify-center w-4 h-4 rounded-full text-[9px] leading-none"
+                style={{ background: "#1e2d45", color: "#94a3b8", border: "1px solid #334155" }}
+              >
+                <X className="h-2.5 w-2.5" />
+              </span>
+              <span className="reference-watch-icon">{ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}</span>
+              <span className="reference-watch-copy">
+                <strong>{pair.symbol.replace("/", "")}</strong>
+                <span>{fmt(pair.bid, pair.symbol)}</span>
+              </span>
+              <span className={up ? "reference-watch-up" : "reference-watch-down"}>{up ? "+" : ""}{pair.change.toFixed(2)}%</span>
+            </button>
+          )
+        })}
+        <div className="relative shrink-0" ref={addInstrumentRef}>
+          <button
+            ref={addInstrumentBtnRef}
+            type="button"
+            onClick={() => {
+              if (!showAddInstrument && addInstrumentBtnRef.current) {
+                const rect = addInstrumentBtnRef.current.getBoundingClientRect()
+                setAddInstrumentPos({ top: rect.bottom + 8, left: rect.left })
+              }
+              setShowAddInstrument(v => !v)
+            }}
+            className="reference-watch-add"
+            aria-label="Add instrument to watchlist"
+            aria-expanded={showAddInstrument}
+          >
+            <Plus />
+          </button>
+          {showAddInstrument && addInstrumentPos && typeof document !== "undefined" && createPortal(
+            <div
+              id="add-instrument-popover"
+              className="fixed flex flex-col overflow-hidden"
+              style={{
+                top: addInstrumentPos.top, left: addInstrumentPos.left,
+                width: 280, maxHeight: 360, zIndex: 200,
+                background: "#0b111d", border: "1px solid #1e2d45", borderRadius: 10,
+                boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+              }}
+            >
+              <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid #1a2640" }}>
+                <Search className="h-3.5 w-3.5" style={{ color: "#3d5a80" }} />
+                <input
+                  autoFocus
+                  type="search"
+                  value={addInstrumentQuery}
+                  onChange={e => setAddInstrumentQuery(e.target.value)}
+                  placeholder="Search instrument..."
+                  aria-label="Search instrument to add"
+                  className="flex-1 price-mono text-xs text-white bg-transparent focus:outline-none"
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto terminal-scroll">
+                {addInstrumentResults.length === 0 && (
+                  <div className="px-3 py-6 text-center text-[10px]" style={{ color: "#3d5a80" }}>No instruments found</div>
+                )}
+                {addInstrumentResults.map(cfg => {
+                  const isPinned = watchlistSymbols.includes(cfg.symbol)
+                  return (
+                    <button
+                      key={cfg.symbol}
+                      type="button"
+                      onClick={() => toggleWatchlistSymbol(cfg.symbol)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-white/5"
+                    >
+                      <span className="flex items-center justify-center w-5 h-5 rounded text-[9px] font-black shrink-0" style={{ background: CATEGORY_COLOR[cfg.category].bg, color: CATEGORY_COLOR[cfg.category].text }}>
+                        {ASSET_ICON[cfg.symbol] ?? cfg.symbol.slice(0, 2)}
+                      </span>
+                      <span className="flex flex-col items-start flex-1 min-w-0 text-left">
+                        <span className="price-mono text-[11px] font-bold text-white">{cfg.symbol}</span>
+                        <span className="text-[9px] truncate" style={{ color: "#3d5a80" }}>{FULL_NAMES[cfg.symbol] ?? cfg.symbol}</span>
+                      </span>
+                      {isPinned && <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "#22d3ee" }} />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>,
+            document.body
+          )}
+        </div>
+        <button type="button" onClick={() => setIsDarkTheme(theme => !theme)} className="reference-watch-theme" aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}>
+          {isDarkTheme ? <Sun /> : <Moon />}
+        </button>
+      </div>
+
       {/* ══ MOBILE TAB SWITCHER ═══════════════════════════════════════════════ */}
-      <div className="flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="apple-terminal-mobile-tabs flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
         {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map(tab => (
           <button key={tab.id} onClick={() => setMobileTab(tab.id as typeof mobileTab)}
             className="flex-1 py-2 text-[10px] font-black tracking-wider uppercase transition-all"
@@ -2017,10 +2233,10 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
-      <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
-        {/* ── LEFT: Market Watch ─────────────────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
+        {/* ── LEFT: Market Watch ─────────────────────────────���───────────────── */}
+        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-2.5 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -2029,18 +2245,20 @@ export function ForexTradingPlatform({
                 <div className="w-1.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg,#22d3ee,#0ea5e9)" }} />
                 <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
               </div>
-              <button onClick={() => setShowPairSearch(p => !p)} className="p-1 rounded transition-colors text-slate-600 hover:text-slate-300">
-                <Activity className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            {showPairSearch && (
-              <input
-                type="text" value={pairSearch} onChange={e => setPairSearch(e.target.value)}
-                placeholder="Search instrument..."
-                className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 rounded-lg mb-2"
-                style={{ background: "#070a10", border: "1px solid #1e2d45" }}
-              />
-            )}
+  <button onClick={() => setShowPairSearch(p => !p)} aria-label="Toggle instrument search" className="p-1 rounded transition-colors text-slate-600 hover:text-slate-300">
+  <Activity className="h-3.5 w-3.5" />
+  </button>
+  </div>
+  <div className="relative">
+  <input
+  type="search" value={pairSearch} onChange={e => setPairSearch(e.target.value)}
+  placeholder={`Search all ${PAIRS_CONFIG.length} instruments...`}
+  aria-label="Search all instruments"
+  className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 pr-7 rounded-lg mb-2"
+  style={{ background: "#070a10", border: "1px solid #1e2d45" }}
+  />
+  {pairSearch && <button type="button" onClick={() => setPairSearch("")} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-500 hover:text-slate-200">×</button>}
+  </div>
             <div className="flex gap-1">
               {categoryTabs.map(cat => {
                 const isActive = activeCategory === cat
@@ -2059,7 +2277,7 @@ export function ForexTradingPlatform({
             </div>
           </div>
 
-          <div className="grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "#05080e", borderBottom: "1px solid #111827" }}>
+          <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "rgba(255,255,255,0.58)", borderBottom: "1px solid rgba(29,42,58,0.08)" }}>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#2d4565" }}>Instrument</span>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Bid / Ask</span>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Chg%</span>
@@ -2075,16 +2293,21 @@ export function ForexTradingPlatform({
             ) : (
               (() => {
                 const cats: AssetCategory[] = ["Forex", "Commodities", "Crypto"]
-                const toShow = activeCategory === "All" ? cats : [activeCategory as AssetCategory]
-                return toShow.map(cat => {
+                const toShow = hasInstrumentSearch || activeCategory === "All" ? cats : [activeCategory as AssetCategory]
+                return (
+                  <>
+                  {searchNoResults && (
+                    <div className="px-3 py-8 text-center text-[10px] text-slate-500">No instruments match “{pairSearch}”.</div>
+                  )}
+                  {toShow.map(cat => {
                   const catPairs = filteredPairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat)
                   if (catPairs.length === 0) return null
                   const cc = CATEGORY_COLOR[cat]
                   return (
                     <div key={cat}>
-                      {activeCategory === "All" && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
-                          style={{ background: "#06090f", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid #111827" }}>
+                      {(activeCategory === "All" || hasInstrumentSearch) && (
+                        <div className="apple-market-category-row flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
+                          style={{ background: "rgba(255,255,255,0.58)", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid rgba(29,42,58,0.08)" }}>
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
                           <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
                             {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
@@ -2146,13 +2369,15 @@ export function ForexTradingPlatform({
                       })}
                     </div>
                   )
-                })
+                  })}
+                  </>
+                )
               })()
             )}
           </div>
 
-          <div className="shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid #1a2640", background: "#05080e" }}>
-            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{filteredPairs.length} instruments</span>
+          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid rgba(29,42,58,0.08)", background: "rgba(255,255,255,0.58)" }}>
+            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}instruments</span>
             <div className="flex items-center gap-1">
               {(["Forex", "Commodities", "Crypto"] as AssetCategory[]).map(cat => {
                 const count = pairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat).length
@@ -2168,7 +2393,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
-        <div className={`flex flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
+        <div className={`apple-terminal-chart-column flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2222,109 +2447,78 @@ export function ForexTradingPlatform({
             </div>
           )}
 
-          {/* Chart + BUY/SELL strip */}
-          <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-            <div className="flex-1 min-h-0">
-              {selectedPair ? (
-                <TradingChart
-                  candles={selectedPair.candles}
-                  sym={selectedPair.symbol}
-                  tf={timeframe}
-                  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-                  onExpand={() => setChartExpanded(e => !e)}
-                  isExpanded={chartExpanded}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <CandlestickChart className="h-12 w-12 text-slate-800" />
-                  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
-                </div>
-              )}
-            </div>
+  {/* Chart + BUY/SELL strip */}
+  <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
+  <div className="relative flex-1 min-h-0">
+  {selectedPair ? (
+  <TradingChart
+  key={isDarkTheme ? "dark" : "light"}
+  candles={selectedPair.candles}
+  sym={selectedPair.symbol}
+  tf={timeframe}
+  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+  onExpand={() => setChartExpanded(e => !e)}
+  onPriceClick={setChartTradePrice}
+  isExpanded={chartExpanded}
+  darkTheme={isDarkTheme}
+  />
+  ) : (
+  <div className="flex flex-col items-center justify-center h-full gap-3">
+  <CandlestickChart className="h-12 w-12 text-slate-800" />
+  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
+  </div>
+  )}
 
-            {/* ── Quick BUY/SELL strip (3D) ── */}
-            {selectedPair && (
-              <div className="shrink-0 flex items-stretch" style={{ borderTop: "2px solid #1a2d4a", height: 72, background: "#04080f" }}>
+  {selectedPair && chartTradePrice !== null && (
+  <div className="chart-trade-float" role="group" aria-label={`Trade ${selectedPair.symbol} at ${fmt(chartTradePrice, selectedPair.symbol)}`}>
+    <div className="chart-trade-float-heading">
+      <span>TRADE AT PRICE</span>
+      <button type="button" onClick={() => setChartTradePrice(null)} aria-label="Dismiss chart trade controls">×</button>
+    </div>
+    <strong className="chart-trade-float-price">{fmt(chartTradePrice, selectedPair.symbol)}</strong>
+    <div className="chart-trade-float-actions">
+      <button type="button" className="chart-trade-float-button is-sell" onClick={() => chartTrade("SELL")}>
+        <TrendingDown /> SELL
+      </button>
+      <button type="button" className="chart-trade-float-button is-buy" onClick={() => chartTrade("BUY")}>
+        <TrendingUp /> BUY
+      </button>
+    </div>
+    <span className="chart-trade-float-meta">{lotSize || "0.01"} lots · 1:{leverage}</span>
+  </div>
+  )}
 
-                {/* Param chips */}
-                <div className="flex items-center gap-2 px-3 shrink-0" style={{ borderRight: "1px solid #1a2d4a" }}>
-                  {/* LOTS chip */}
-                  <div className="param-chip flex flex-col items-center px-3 py-1.5" style={{ minWidth: 64 }}>
-                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LOTS</span>
-                    <input
-                      type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
-                      step="0.01" min="0.01" max="100"
-                      className="input-3d price-mono text-base font-black text-center w-full focus:outline-none px-1 py-0.5"
-                      style={{ width: 60, borderRadius: 6 }}
-                    />
-                  </div>
-                  {/* LEV chip */}
-                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 60 }}>
-                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LEV</span>
-                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="input-3d price-mono text-sm font-black text-cyan-300 focus:outline-none appearance-none cursor-pointer text-center w-full px-1 py-0.5"
-                      style={{ width: 56, borderRadius: 6 }}>
-                      {["10","25","50","100","200","500"].map(l => (
-                        <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* MARGIN chip */}
-                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 72 }}>
-                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>MARGIN</span>
-                    <span className="price-mono text-sm font-black" style={{ color: "#fbbf24", textShadow: "0 0 10px rgba(251,191,36,0.4)" }}>
-                      ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-
-                {/* SELL 3D button */}
-                <button
-                  onClick={() => quickTrade("SELL")}
-                  disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="btn-3d-sell flex-1 flex flex-col items-center justify-center gap-0.5"
-                  style={{ borderRadius: 0 }}
-                >
-                  <div className="flex items-center gap-2 relative z-10">
-                    <TrendingDown className="h-5 w-5 drop-shadow-lg" style={{ color: "#fca5a5", filter: "drop-shadow(0 0 6px rgba(248,113,113,0.7))" }} />
-                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(239,68,68,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>SELL</span>
-                  </div>
-                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#fca5a5", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>
-                    {fmt(selectedPair.bid, selectedPair.symbol)}
-                  </span>
-                </button>
-
-                {/* Spread pill */}
-                <div className="flex flex-col items-center justify-center shrink-0 px-1" style={{ background: "#02050b", minWidth: 50, borderLeft: "1px solid #1a2d4a", borderRight: "1px solid #1a2d4a" }}>
-                  <span className="text-[6px] font-black tracking-[0.2em] uppercase" style={{ color: "#1e3a5f" }}>SPR</span>
-                  <span className="price-mono text-xs font-black mt-0.5" style={{ color: "#0e7490", textShadow: "0 0 8px rgba(14,116,144,0.6)" }}>
-                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}
-                  </span>
-                  <span className="text-[6px] font-bold mt-0.5" style={{ color: "#0e3a4a" }}>pips</span>
-                </div>
-
-                {/* BUY 3D button */}
-                <button
-                  onClick={() => quickTrade("BUY")}
-                  disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="btn-3d-buy flex-1 flex flex-col items-center justify-center gap-0.5"
-                  style={{ borderRadius: 0 }}
-                >
-                  <div className="flex items-center gap-2 relative z-10">
-                    <TrendingUp className="h-5 w-5" style={{ color: "#6ee7b7", filter: "drop-shadow(0 0 6px rgba(110,231,183,0.7))" }} />
-                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(16,185,129,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>BUY</span>
-                  </div>
-                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#6ee7b7", textShadow: "0 0 8px rgba(110,231,183,0.5)" }}>
-                    {fmt(selectedPair.ask, selectedPair.symbol)}
-                  </span>
-                </button>
-              </div>
-            )}
+  {/* Persistent floating BUY/SELL, TradingView-style, anchored to the live price */}
+  {selectedPair && (
+  <div className="chart-live-trade-fab" role="group" aria-label="Quick trade at market price">
+    <button
+      type="button"
+      onClick={() => quickTrade("SELL")}
+      disabled={balanceLoaded && estimatedMargin > walletBalance}
+      className="chart-live-trade-fab-button is-sell"
+    >
+      <span className="chart-live-trade-fab-label"><TrendingDown /> SELL</span>
+      <span className="chart-live-trade-fab-price">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+    </button>
+    <div className="chart-live-trade-fab-spread">
+      {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips
+    </div>
+    <button
+      type="button"
+      onClick={() => quickTrade("BUY")}
+      disabled={balanceLoaded && estimatedMargin > walletBalance}
+      className="chart-live-trade-fab-button is-buy"
+    >
+      <span className="chart-live-trade-fab-label"><TrendingUp /> BUY</span>
+      <span className="chart-live-trade-fab-price">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+    </button>
+  </div>
+  )}
+  </div>
           </div>
         </div>
-
-        {/* ── RIGHT: Order Ticket ────────────��────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
+        {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
+        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
@@ -2348,7 +2542,7 @@ export function ForexTradingPlatform({
               <div className="flex flex-col gap-0 p-2">
 
                 {/* Order type tabs */}
-                <div className="flex mb-2 overflow-hidden" style={{ borderRadius: 4, border: "1px solid #1e2d45", background: "#060a12" }}>
+                <div className="apple-order-type-tabs flex mb-2 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
                   {(["market","limit","stop"] as typeof orderType[]).map(ot => (
                     <button key={ot} onClick={() => setOrderType(ot)}
                       className="flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-all"
@@ -2590,9 +2784,9 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
-      <div className="flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
-        <div className="flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
+        <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
@@ -2948,7 +3142,34 @@ export function ForexTradingPlatform({
         </div>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���────────────────────────────────────────── */}
+      <div className="reference-metrics shrink-0">
+        {[
+          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
+          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
+          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+        ].map(item => (
+          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+          </div>
+        ))}
+      </div>
+
+      <div className="reference-statusbar shrink-0">
+        <span><i />Connected</span>
+        <strong>Live Account</strong>
+        <span className="reference-status-spacer" />
+        <span>Server: Elite-Trade-Live-1</span>
+        <span className="reference-status-divider">|</span>
+        <span>Ping: 42 ms</span>
+        <span className="reference-status-divider">|</span>
+        <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
+      </div>
+
+      {/* ── Trade Confirmation Modal ────────────────────────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"

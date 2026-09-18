@@ -1,4 +1,4 @@
-const CACHE_NAME = "flowchain-v1";
+const CACHE_NAME = "elite-fund-v2";
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -42,6 +42,7 @@ self.addEventListener("fetch", (event) => {
 
   // Network-first for API, auth, and dynamic routes
   if (
+    url.pathname === "/" ||
     url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/participant/") ||
     url.pathname.startsWith("/admin/") ||
@@ -83,7 +84,7 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   if (!event.data) return;
   const data = event.data.json();
-  self.registration.showNotification(data.title || "FlowChain", {
+  self.registration.showNotification(data.title || "Elite Fund", {
     body: data.body || "",
     icon: "/icons/icon-192x192.png",
     badge: "/icons/icon-192x192.png",

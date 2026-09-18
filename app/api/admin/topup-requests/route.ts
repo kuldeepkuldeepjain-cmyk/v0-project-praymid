@@ -65,12 +65,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "approve") {
-      const pRows = await query("SELECT account_balance FROM participants WHERE id = $1", [topup.participant_id])
+      const pRows = await query("SELECT account_balance, account_type FROM participants WHERE id = $1", [topup.participant_id])
       if (!pRows.length) {
         return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })
       }
 
-      const newBalance = Number((pRows[0] as any).account_balance || 0) + Number(topup.amount)
+      const participant = pRows[0] as any
+      const depositAmount = Number(topup.amount)
+      const fundedSizes: Record<number, number> = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
+      const isFundedAccount = participant.account_type === "funded"
+      const fundedCredit = fundedSizes[depositAmount]
+      if (isFundedAccount && !fundedCredit) {
+        return NextResponse.json({ success: false, message: "Funded accounts require a $100, $250, $500, or $1,000 top-up tier" }, { status: 400 })
+      }
+      const creditedAmount = isFundedAccount ? fundedCredit : depositAmount
+      const newBalance = Number(participant.account_balance || 0) + creditedAmount
       await execute(
         "UPDATE participants SET account_balance = $1 WHERE id = $2",
         [newBalance, topup.participant_id]
@@ -81,7 +90,7 @@ export async function POST(req: NextRequest) {
       )
       await execute(
         "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
-        [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up`]
+        [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up${isFundedAccount ? ` for a $${creditedAmount.toLocaleString()} funded account` : ""}`]
       ).catch(() => {})
 
       // Credit $5 to referrer if this participant was referred (only once per referred user)
@@ -124,7 +133,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({ success: true, message: "Top-up approved and wallet credited", newBalance })
+      return NextResponse.json({ success: true, message: isFundedAccount ? `Top-up approved and $${creditedAmount.toLocaleString()} funded balance credited` : "Top-up approved and wallet credited", newBalance, creditedAmount })
     }
 
     await execute(

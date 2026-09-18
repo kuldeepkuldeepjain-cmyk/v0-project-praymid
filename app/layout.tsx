@@ -20,14 +20,14 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "FlowChain Trading",
+  title: "Elite Fund",
   description: "Professional Forex, Crypto & Commodities trading platform. Trade smarter with real-time market data.",
   generator: "v0.app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "FlowChain",
+    title: "Elite Fund",
     startupImage: "/icons/icon-512x512.png",
   },
   formatDetection: {
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "FlowChain Trading",
-    title: "FlowChain Trading",
+    siteName: "Elite Fund",
+    title: "Elite Fund",
     description: "Professional Forex, Crypto & Commodities trading platform.",
   },
   twitter: {
     card: "summary",
-    title: "FlowChain Trading",
+    title: "Elite Fund",
     description: "Professional Forex, Crypto & Commodities trading platform.",
   },
   icons: {
@@ -62,37 +62,40 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="bg-background" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="FlowChain" />
-        <meta name="application-name" content="FlowChain" />
+        <meta name="apple-mobile-web-app-title" content="Elite Fund" />
+        <meta name="application-name" content="Elite Fund" />
         <meta name="msapplication-TileColor" content="#080c14" />
         <meta name="msapplication-tap-highlight" content="no" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
       </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="elite-fund-theme">
           <ToastProvider>
             {children}
             <Toaster />
           </ToastProvider>
         </ThemeProvider>
         <Analytics />
-        {/* Service Worker Registration */}
+        {/* Remove legacy service workers so cached HTML cannot diverge from the current server render. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(reg) { console.log('SW registered:', reg.scope); })
-                    .catch(function(err) { console.log('SW registration failed:', err); });
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  registrations.forEach(function(registration) { registration.unregister(); });
                 });
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) {
+                    keys.forEach(function(key) { caches.delete(key); });
+                  });
+                }
               }
             `,
           }}

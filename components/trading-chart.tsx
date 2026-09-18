@@ -49,26 +49,36 @@ type PriceAlert = {
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
+// TradingView-accurate palette: flat background, muted grid, #26a69a/#ef5350 candles
 const T = {
-  bg:          "#060b15",
-  bgSurface:   "#0a1120",
-  bgHover:     "#0e1829",
-  border:      "rgba(255,255,255,0.06)",
-  borderMuted: "rgba(255,255,255,0.04)",
-  textMuted:   "#3d5573",
-  textDim:     "#5a7a9e",
-  textBase:    "#8ba3be",
-  green:       "#26a69a",
-  greenBright: "#4caf7d",
-  red:         "#ef5350",
-  redBright:   "#f44336",
-  cyan:        "#22d3ee",
-  amber:       "#f59e0b",
-  blue:        "#60a5fa",
-  pink:        "#f472b6",
-  purple:      "#818cf8",
-  orange:      "#fb923c",
-  emerald:     "#34d399",
+  bg:          "#ffffff",
+  bgSurface:   "#ffffff",
+  bgHover:     "#f0f3fa",
+  border:      "#e0e3eb",
+  borderMuted: "#eef0f3",
+  textMuted:   "#787b86",
+  textDim:     "#4c525e",
+  textBase:    "#131722",
+  green:       "#089981",
+  greenBright: "#26a69a",
+  red:         "#f23645",
+  redBright:   "#ef5350",
+  cyan:        "#2962ff",
+  amber:       "#b7791f",
+  blue:        "#3b82c4",
+  pink:        "#d35d91",
+  purple:      "#6f65c7",
+  orange:      "#c96f2d",
+  emerald:     "#089981",
+}
+
+const DARK_T = {
+  bg: "#131722", bgSurface: "#131722", bgHover: "#1e222d",
+  border: "#2a2e39", borderMuted: "#1e222d",
+  textMuted: "#787b86", textDim: "#b2b5be", textBase: "#d1d4dc",
+  green: "#089981", greenBright: "#26a69a", red: "#f23645", redBright: "#ef5350",
+  cyan: "#2962ff", amber: "#fbbf24", blue: "#60a5fa", pink: "#f472b6",
+  purple: "#a78bfa", orange: "#fb923c", emerald: "#26a69a",
 }
 
 // ─── Math helpers ─────────────────────────────────────────────────────────────
@@ -153,15 +163,20 @@ export function TradingChart({
   tf = "5M",
   openTrades = [],
   onExpand,
+  onPriceClick,
   isExpanded = false,
+  darkTheme = false,
 }: {
   candles: Candle[]
   sym: string
   tf?: string
   openTrades?: OpenTrade[]
   onExpand?: () => void
+  onPriceClick?: (price: number) => void
   isExpanded?: boolean
+  darkTheme?: boolean
 }) {
+  const palette = darkTheme ? DARK_T : T
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
 
@@ -243,44 +258,44 @@ export function TradingChart({
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.VerticalGradient, topColor: "#0a1220", bottomColor: "#050a13" },
-        textColor:  "#8ba3be",
-        fontFamily: "'Inter', 'SF Pro Display', monospace",
+        background: { type: ColorType.Solid, color: palette.bg },
+        textColor:  palette.textDim,
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif",
         fontSize:   12,
         attributionLogo: false,
       },
       grid: {
-        vertLines: { color: "rgba(120,150,190,0.10)", style: LineStyle.Solid },
-        horzLines: { color: "rgba(120,150,190,0.12)", style: LineStyle.Solid },
+        vertLines: { color: palette.borderMuted, style: LineStyle.Solid },
+        horzLines: { color: palette.borderMuted, style: LineStyle.Solid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          color: "rgba(120,200,255,0.55)",
-          labelBackgroundColor: "#1a3a5c",
+          color: "#758696",
+          labelBackgroundColor: "#758696",
           style: LineStyle.Dashed,
           width: 1,
         },
         horzLine: {
-          color: "rgba(120,200,255,0.55)",
-          labelBackgroundColor: "#1a3a5c",
+          color: "#758696",
+          labelBackgroundColor: "#758696",
           style: LineStyle.Dashed,
           width: 1,
         },
       },
       rightPriceScale: {
-        borderColor: "rgba(120,150,190,0.20)",
-        textColor:   "#9fb6d0",
+        borderColor: palette.border,
+        textColor:   palette.textDim,
         scaleMargins: { top: 0.06, bottom: 0.16 },
         entireTextOnly: true,
       },
       timeScale: {
-        borderColor:    "rgba(120,150,190,0.20)",
+        borderColor:    palette.border,
         timeVisible:    true,
         secondsVisible: false,
         fixLeftEdge:    false,
         fixRightEdge:   false,
-        barSpacing:     12,
+        barSpacing:     10,
         minBarSpacing:  4,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
@@ -291,19 +306,18 @@ export function TradingChart({
 
     chartRef.current = chart
 
-    // ── Candles: vivid green/red with bright wick contrast ──
+    // ── Candles: TradingView-standard teal/red, borderless bodies ──
     const cSer = chart.addSeries(CandlestickSeries, {
-      upColor:          "#16d982",
-      downColor:        "#ff4757",
-      borderUpColor:    "#3ff0a0",
-      borderDownColor:  "#ff6b7a",
-      wickUpColor:      "#3ff0a0",
-      wickDownColor:    "#ff6b7a",
-      borderVisible:    true,
+      upColor:          palette.greenBright,
+      downColor:        palette.redBright,
+      borderUpColor:    palette.greenBright,
+      borderDownColor:  palette.redBright,
+      wickUpColor:      palette.greenBright,
+      wickDownColor:    palette.redBright,
+      borderVisible:    false,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
       priceLineVisible: true,
       priceLineWidth:   1,
-      priceLineColor:   "rgba(120,200,255,0.5)",
       priceLineStyle:   LineStyle.Dashed,
       lastValueVisible: true,
     })
@@ -326,9 +340,9 @@ export function TradingChart({
       priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
     })
-    ema9Ref.current  = mkLine(T.amber, 1)
-    ema21Ref.current = mkLine(T.blue,  1)
-    ema50Ref.current = mkLine(T.pink,  1)
+    ema9Ref.current  = mkLine(palette.amber, 1)
+    ema21Ref.current = mkLine(palette.blue,  1)
+    ema50Ref.current = mkLine(palette.pink,  1)
 
     // ── Bollinger Bands ──
     bbUpperRef.current = mkLine("rgba(129,140,248,0.6)", 1)
@@ -337,7 +351,7 @@ export function TradingChart({
 
     // ── RSI sub-pane ──
     const rsiSer = chart.addSeries(LineSeries, {
-      color: T.emerald, lineWidth: 1,
+      color: palette.emerald, lineWidth: 1,
       priceScaleId: "rsi",
       priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false,
       priceFormat: { type: "price", precision: 2, minMove: 0.01 },
@@ -349,8 +363,8 @@ export function TradingChart({
     rsiOs30Ref.current = chart.addSeries(LineSeries, { color: "rgba(38,166,154,0.25)",  lineWidth: 1, priceScaleId: "rsi", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
 
     // ── MACD sub-pane ──
-    macdSerRef.current  = chart.addSeries(LineSeries, { color: T.orange, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false })
-    macdSigRef.current  = chart.addSeries(LineSeries, { color: T.purple, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
+    macdSerRef.current  = chart.addSeries(LineSeries, { color: palette.orange, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false })
+    macdSigRef.current  = chart.addSeries(LineSeries, { color: palette.purple, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
     macdHistRef.current = chart.addSeries(HistogramSeries, { priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false })
     chart.priceScale("macd").applyOptions({ scaleMargins: { top: 0.99, bottom: 0 }, visible: false })
 
@@ -377,18 +391,20 @@ export function TradingChart({
 
     // ── Click-to-set price alert ──
     chart.subscribeClick((param) => {
-      // Only act when alert-mode is active (checked via DOM flag to avoid stale closure)
-      if (!containerRef.current?.dataset.alertmode) return
       if (!param.point) return
       const price = cSer.coordinateToPrice(param.point.y)
-      if (!price) return
-      const id = alertNextId.current++
-      const alertPrice = parseFloat(price.toFixed(dec))
-      setAlerts((prev) => {
-        const newAlert: PriceAlert = { id, price: alertPrice, label: `Alert ${id}`, hit: false }
-        return [...prev, newAlert]
-      })
-      setShowAlertPanel(true)
+      if (price == null) return
+      const roundedPrice = parseFloat(price.toFixed(dec))
+
+      // Alert mode keeps its existing click behavior; normal clicks surface
+      // a floating trade action at the exact chart price.
+      if (containerRef.current?.dataset.alertmode) {
+        const id = alertNextId.current++
+        setAlerts((prev) => [...prev, { id, price: roundedPrice, label: `Alert ${id}`, hit: false }])
+        setShowAlertPanel(true)
+        return
+      }
+      onPriceClick?.(roundedPrice)
     })
 
     // ── Resize observer ──
@@ -417,7 +433,7 @@ export function TradingChart({
       macdSigRef.current   = null
       macdHistRef.current  = null
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [darkTheme]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Update candle + volume data ──────────────────────────────────────────────
   useEffect(() => {
@@ -507,12 +523,12 @@ export function TradingChart({
       if (!candleSerRef.current) return
       candleSerRef.current.createPriceLine({
         price: t.openPrice,
-        color: t.direction === "BUY" ? T.green : T.red,
+        color: t.direction === "BUY" ? palette.green : palette.red,
         lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true,
         title: `${t.direction}`,
       })
-      if (t.sl) candleSerRef.current.createPriceLine({ price: t.sl, color: T.red,     lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "SL" })
-      if (t.tp) candleSerRef.current.createPriceLine({ price: t.tp, color: T.emerald, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "TP" })
+      if (t.sl) candleSerRef.current.createPriceLine({ price: t.sl, color: palette.red,     lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "SL" })
+      if (t.tp) candleSerRef.current.createPriceLine({ price: t.tp, color: palette.emerald, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "TP" })
     })
   }, [openTrades])
 
@@ -600,11 +616,11 @@ export function TradingChart({
   }, [candles])
 
   // Sub-pane config helpers
-  const subPaneColor  = chartPane === "rsi" ? T.emerald : T.orange
+  const subPaneColor  = chartPane === "rsi" ? palette.emerald : palette.orange
   const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
 
   return (
-    <div className="flex flex-col w-full h-full select-none" style={{ background: "#060b15" }}>
+    <div className="apple-trading-chart flex flex-col w-full h-full select-none" style={{ background: "#f7f9fc" }}>
 
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div
@@ -660,11 +676,11 @@ export function TradingChart({
       >
         {/* Overlay indicators */}
         {([
-          { key: "ema9"    as IndicatorKey, label: "EMA9",  color: T.amber  },
-          { key: "ema21"   as IndicatorKey, label: "EMA21", color: T.blue   },
-          { key: "ema50"   as IndicatorKey, label: "EMA50", color: T.pink   },
-          { key: "bb"      as IndicatorKey, label: "BB20",  color: T.purple },
-          { key: "volume"  as IndicatorKey, label: "VOL",   color: T.cyan   },
+          { key: "ema9"    as IndicatorKey, label: "EMA9",  color: palette.amber  },
+          { key: "ema21"   as IndicatorKey, label: "EMA21", color: palette.blue   },
+          { key: "ema50"   as IndicatorKey, label: "EMA50", color: palette.pink   },
+          { key: "bb"      as IndicatorKey, label: "BB20",  color: palette.purple },
+          { key: "volume"  as IndicatorKey, label: "VOL",   color: palette.cyan   },
         ]).map(({ key, label, color }) => (
           <button
             key={key}
@@ -683,8 +699,8 @@ export function TradingChart({
 
         {/* Sub-pane oscillators */}
         {([
-          { id: "rsi" as const,  label: "RSI(14)", color: T.emerald },
-          { id: "macd" as const, label: "MACD",    color: T.orange  },
+          { id: "rsi" as const,  label: "RSI(14)", color: palette.emerald },
+          { id: "macd" as const, label: "MACD",    color: palette.orange  },
         ]).map(({ id, label, color }) => {
           const isActive = chartPane === id && indicators[id]
           return (
@@ -731,7 +747,7 @@ export function TradingChart({
           onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
           className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
           style={alertMode
-            ? { background: `${T.amber}20`, border: `1px solid ${T.amber}60`, color: T.amber }
+            ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
             : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
           }
           title="Click on chart to set a price alert"
@@ -744,7 +760,7 @@ export function TradingChart({
           {alerts.length > 0 && (
             <span
               className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black ml-0.5"
-              style={{ background: T.amber, color: "#000" }}
+              style={{ background: palette.amber, color: "#000" }}
             >
               {alerts.length}
             </span>
@@ -799,7 +815,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
-      <div ref={containerRef} className="relative flex-1 min-h-0 w-full" style={{ background: "#060b15" }}>
+      <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: "#f7f9fc" }}>
 
         {/* Sub-pane label overlay in bottom-left of chart */}
         {subPaneLabel && (
@@ -820,16 +836,16 @@ export function TradingChart({
             className="absolute top-2 left-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-lg pointer-events-none"
             style={{
               transform: "translateX(-50%)",
-              background: `${T.amber}20`,
-              border: `1px solid ${T.amber}55`,
+              background: `${palette.amber}20`,
+              border: `1px solid ${palette.amber}55`,
               backdropFilter: "blur(6px)",
             }}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke={T.amber} strokeWidth="1.3" strokeLinecap="round"/>
-              <circle cx="5" cy="5" r="2.5" stroke={T.amber} strokeWidth="1.3"/>
+              <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke={palette.amber} strokeWidth="1.3" strokeLinecap="round"/>
+              <circle cx="5" cy="5" r="2.5" stroke={palette.amber} strokeWidth="1.3"/>
             </svg>
-            <span className="text-[9px] font-black tracking-widest" style={{ color: T.amber }}>
+            <span className="text-[9px] font-black tracking-widest" style={{ color: palette.amber }}>
               CLICK TO SET PRICE ALERT
             </span>
           </div>
@@ -849,7 +865,7 @@ export function TradingChart({
             }}
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] font-black tracking-widest" style={{ color: T.amber }}>PRICE ALERTS</span>
+              <span className="text-[9px] font-black tracking-widest" style={{ color: palette.amber }}>PRICE ALERTS</span>
               <button
                 onClick={() => setShowAlertPanel(false)}
                 className="text-[8px] font-bold transition-opacity hover:opacity-60 px-1"
@@ -862,7 +878,7 @@ export function TradingChart({
               <div key={a.id} className="flex items-center gap-2 px-1.5 py-1 rounded-lg" style={{ background: "rgba(255,255,255,0.02)" }}>
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: a.hit ? "#26c97e" : T.amber, boxShadow: a.hit ? "0 0 6px #26c97e" : `0 0 4px ${T.amber}` }}
+                  style={{ background: a.hit ? "#26c97e" : palette.amber, boxShadow: a.hit ? "0 0 6px #26c97e" : `0 0 4px ${palette.amber}` }}
                 />
                 <span className="flex-1 text-[10px] font-black price-mono" style={{ color: a.hit ? "#26c97e" : "#8ba3be" }}>
                   {fmtP(a.price)}
@@ -878,7 +894,7 @@ export function TradingChart({
                     setAlerts(prev => prev.filter(x => x.id !== a.id))
                   }}
                   className="text-[11px] leading-none transition-opacity hover:opacity-60 shrink-0 w-4 h-4 flex items-center justify-center rounded"
-                  style={{ color: T.red }}
+                  style={{ color: palette.red }}
                 >
                   &times;
                 </button>
@@ -894,7 +910,7 @@ export function TradingChart({
                   setAlerts([])
                 }}
                 className="mt-1 text-[8px] font-black tracking-widest uppercase transition-opacity hover:opacity-70 text-center py-1 rounded-lg"
-                style={{ color: T.red, background: "rgba(239,83,80,0.06)", border: "1px solid rgba(239,83,80,0.15)" }}
+                style={{ color: palette.red, background: "rgba(239,83,80,0.06)", border: "1px solid rgba(239,83,80,0.15)" }}
               >
                 Clear all
               </button>
@@ -909,7 +925,7 @@ export function TradingChart({
           >
             <div
               className="w-6 h-6 rounded-full border-2 animate-spin"
-              style={{ borderColor: "rgba(34,211,238,0.15)", borderTopColor: T.cyan }}
+              style={{ borderColor: "rgba(34,211,238,0.15)", borderTopColor: palette.cyan }}
             />
             <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: "#3d5573" }}>
               Loading chart data
@@ -923,7 +939,7 @@ export function TradingChart({
             className="absolute top-2 right-2 z-10 flex items-center gap-1.5 px-2 py-0.5 rounded-md"
             style={{ background: "rgba(4,8,15,0.85)", border: "1px solid rgba(34,211,238,0.15)", backdropFilter: "blur(4px)" }}
           >
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: T.cyan, boxShadow: `0 0 4px ${T.cyan}` }} />
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: palette.cyan, boxShadow: `0 0 4px ${palette.cyan}` }} />
             <span className="text-[8px] font-black tracking-widest" style={{ color: "#4a6580" }}>CROSSHAIR</span>
           </div>
         )}

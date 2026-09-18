@@ -9,7 +9,7 @@ function generateReferralCode(username: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp } = await request.json()
+    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp, accountType } = await request.json()
 
     console.log("[v0] Registration attempt for email:", email)
 
@@ -22,6 +22,7 @@ export async function POST(request: Request) {
     const usernameKey = username.toLowerCase().trim()
     const mobileNumberClean = mobileNumber?.toString().trim() || null
     const walletAddress = null
+    const normalizedAccountType = accountType === "funded" ? "funded" : "normal"
     const newReferralCode = generateReferralCode(username)
 
     try {
@@ -50,14 +51,14 @@ export async function POST(request: Request) {
       const inserted = await query<Record<string, any>>(
         `INSERT INTO participants
           (full_name, username, email, password_hash, plain_password, wallet_address,
-           referral_code, referred_by, account_balance, status, is_active,
+           referral_code, referred_by, account_type, account_balance, status, is_active,
            whatsapp_otp, otp_verified, mobile_number, is_deleted)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,0,'active',true,$9,true,$10,false)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'active',true,$10,true,$11,false)
          RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
         [
           fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
           newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-          whatsappOtp || null, mobileNumberClean,
+          normalizedAccountType, whatsappOtp || null, mobileNumberClean,
         ]
       )
 

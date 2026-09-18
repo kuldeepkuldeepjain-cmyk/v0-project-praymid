@@ -3,7 +3,7 @@
 import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Home, User, TrendingUp, Wallet, Gift, Settings, ChevronRight } from "lucide-react"
+import { Home, User, TrendingUp, Wallet, Gift, Settings, ChevronRight, PlusCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 
 export default function DashboardLayout({
@@ -17,8 +17,9 @@ export default function DashboardLayout({
 
   const navItems = [
     { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", shortLabel: "Pred", color: "#10B981", gradient: "from-emerald-400 to-teal-500", glow: "shadow-emerald-500/40" },
-    { href: "/participant/dashboard", icon: Home, label: "Dashboard", shortLabel: "Home", color: "#7c3aed", gradient: "from-purple-500 to-indigo-600", glow: "shadow-purple-500/40" },
+    { href: "/participant/dashboard", icon: Home, label: "Dashboard", shortLabel: "Home", color: "#3b82f6", gradient: "from-blue-500 to-blue-700", glow: "shadow-blue-500/40" },
     { href: "/participant/dashboard/profile", icon: User, label: "Profile", shortLabel: "Prof", color: "#22d3ee", gradient: "from-cyan-400 to-blue-500", glow: "shadow-cyan-500/40" },
+    { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Add Fund", shortLabel: "Fund", color: "#14B8A6", gradient: "from-teal-400 to-cyan-500", glow: "shadow-teal-500/40" },
     { href: "/participant/dashboard/payout", icon: Wallet, label: "Payout", shortLabel: "Pay", color: "#F59E0B", gradient: "from-amber-400 to-yellow-500", glow: "shadow-amber-500/40" },
     { href: "/participant/dashboard/refer", icon: Gift, label: "Refer & Earn", shortLabel: "Refer", color: "#E85D3B", gradient: "from-orange-400 to-red-500", glow: "shadow-orange-500/40" },
   ]
@@ -65,7 +66,7 @@ export default function DashboardLayout({
         left: `${Math.random() * 100}%`,
         delay: `${Math.random() * 15}s`,
         size: Math.random() * 6 + 3,
-        color: ["#E85D3B", "#7c3aed", "#22d3ee", "#10b981"][Math.floor(Math.random() * 4)],
+        color: ["#E85D3B", "#3b82f6", "#22d3ee", "#10b981"][Math.floor(Math.random() * 4)],
         duration: `${15 + Math.random() * 10}s`,
       }))
     )
@@ -74,14 +75,14 @@ export default function DashboardLayout({
   // ── BACKGROUND LAYERS (shared across breakpoints) ─────────────────────
   const BgLayers = () => (
     <>
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 120% 60% at 50% -10%, rgba(124,58,237,0.18) 0%, transparent 55%)" }} />
+      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 120% 60% at 50% -10%, rgba(59,130,246,0.18) 0%, transparent 55%)" }} />
       <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at -20% 60%, rgba(34,211,238,0.06) 0%, transparent 50%)" }} />
       <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 120% 80%, rgba(16,185,129,0.06) 0%, transparent 50%)" }} />
       <div className="fixed inset-0 pointer-events-none depth-grid opacity-40" />
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="glow-orb absolute w-[600px] h-[600px] -top-48 -left-32 bg-gradient-to-br from-violet-600/12 to-transparent" style={{ animationDelay: "0s" }} />
+        <div className="glow-orb absolute w-[600px] h-[600px] -top-48 -left-32 bg-gradient-to-br from-blue-600/12 to-transparent" style={{ animationDelay: "0s" }} />
         <div className="glow-orb absolute w-[500px] h-[500px] top-1/2 -right-48 bg-gradient-to-br from-cyan-500/8 to-transparent" style={{ animationDelay: "2s" }} />
-        <div className="glow-orb absolute w-[400px] h-[400px] bottom-0 left-1/3 bg-gradient-to-br from-indigo-500/8 to-transparent" style={{ animationDelay: "4s" }} />
+        <div className="glow-orb absolute w-[400px] h-[400px] bottom-0 left-1/3 bg-gradient-to-br from-blue-500/8 to-transparent" style={{ animationDelay: "4s" }} />
       </div>
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-[5]">
         {particles.map((p) => (
@@ -154,26 +155,26 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen min-h-dvh" style={{ background: "#030712" }}>
+    <div className="min-h-screen min-h-dvh" style={{ background: "#07111f" }}>
       <BgLayers />
 
       {/* ── DESKTOP LAYOUT (lg+): Sidebar + Content ─────────────────── */}
       <div className="hidden lg:flex h-screen h-dvh overflow-hidden relative z-10">
         {/* Left Sidebar */}
-        <aside className="flex-shrink-0 flex flex-col" style={{ width: 220, background: "rgba(3,7,18,0.9)", borderRight: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(24px)" }}>
+        <aside className="flex-shrink-0 flex flex-col" style={{ width: 220, background: "rgba(7,17,31,0.72)", borderRight: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(28px)" }}>
           {/* Logo area */}
           <div className="px-5 py-5 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center flex-shrink-0" style={{ boxShadow: "0 0 16px rgba(124,58,237,0.5)" }}>
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center flex-shrink-0" style={{ boxShadow: "0 0 16px rgba(59,130,246,0.5)" }}>
               <span className="text-white text-sm font-black">FC</span>
             </div>
             <div>
-              <p className="text-white text-sm font-black tracking-wide">FlowChain</p>
+              <p className="text-white text-sm font-black tracking-wide">Elite Fund</p>
               <p className="text-slate-500 text-[10px] font-medium tracking-widest uppercase">Trading</p>
             </div>
           </div>
 
           {/* Nav Items */}
-          <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 flex flex-col gap-1 overflow-y-auto py-4">
             {navItems.map((item, index) => (
               <NavItem key={item.href} item={item} index={index} vertical />
             ))}
@@ -199,8 +200,8 @@ export default function DashboardLayout({
       {/* ── TABLET LAYOUT (md): Compact sidebar ─────────────────────── */}
       <div className="hidden md:flex lg:hidden h-screen h-dvh overflow-hidden relative z-10">
         {/* Icon-only sidebar */}
-        <aside className="flex-shrink-0 flex flex-col items-center py-4 gap-2" style={{ width: 68, background: "rgba(3,7,18,0.9)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center mb-3" style={{ boxShadow: "0 0 12px rgba(124,58,237,0.4)" }}>
+        <aside className="flex-shrink-0 flex flex-col items-center py-4 gap-2" style={{ width: 68, background: "rgba(7,17,31,0.74)", borderRight: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(28px)" }}>
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center mb-3" style={{ boxShadow: "0 0 12px rgba(59,130,246,0.4)" }}>
             <span className="text-white text-sm font-black">FC</span>
           </div>
           {navItems.map((item, index) => {
@@ -256,7 +257,7 @@ export default function DashboardLayout({
               width: indicatorStyle.width,
               background: (() => {
                 const activeIndex = navItems.findIndex((item) => isActive(item.href))
-                const color = activeIndex >= 0 ? navItems[activeIndex].color : "#7c3aed"
+                const color = activeIndex >= 0 ? navItems[activeIndex].color : "#3b82f6"
                 return `linear-gradient(90deg, ${color}, ${color}88)`
               })(),
             }}

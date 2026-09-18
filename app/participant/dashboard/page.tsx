@@ -9,9 +9,11 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, MessageCircle, BarChart2,
+  AlertCircle, Home, Plus, PlusCircle, MessageCircle, BarChart2, Menu, Search,
+  ChevronDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
@@ -93,7 +95,7 @@ function AnimatedNumber({
   return (
     <span
       className={
-        gradient ? "bg-gradient-to-r from-[#E85D3B] via-[#7c3aed] to-[#22d3ee] bg-clip-text text-transparent" : ""
+        gradient ? "bg-gradient-to-r from-[#E85D3B] via-[#2563eb] to-[#22d3ee] bg-clip-text text-transparent" : ""
       }
       style={
         gradient
@@ -203,7 +205,7 @@ function ContributionNotificationBar({
   )
 }
 
-function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: { isOpen: boolean; onClose: () => void; onAddBalance?: () => void; isFundedAccount?: boolean }) {
   const router = useRouter()
 
   if (!isOpen) return null
@@ -217,10 +219,21 @@ function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-3">Account Frozen</h2>
           <p className="text-slate-600 mb-6">
-            Your account has been frozen because you did not make your first contribution within the 48-hour deadline.
+            {isFundedAccount
+              ? "Your funded account is on hold because its balance fell below the minimum protected balance. Add balance to reactivate trading."
+              : "Your account has been frozen because you did not make your first contribution within the 48-hour deadline."}
           </p>
 
           <div className="space-y-3">
+            {isFundedAccount && onAddBalance && (
+              <Button
+                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg"
+                onClick={onAddBalance}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Balance
+              </Button>
+            )}
             <a
               href="https://wa.me/995574450590"
               target="_blank"
@@ -232,7 +245,7 @@ function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
             </a>
             <a
               href="mailto:support@flowchain.club"
-              className="flex items-center justify-center gap-2 w-full h-12 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-semibold rounded-lg transition-colors"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg transition-colors"
             >
               <Mail className="h-4 w-4" />
               Email Support
@@ -386,7 +399,7 @@ function HamburgerMenu({
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] flex items-center justify-center text-white font-bold">
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#2563eb] to-[#E85D3B] flex items-center justify-center text-white font-bold">
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -729,8 +742,8 @@ function DailySpinWheel({
         ))}
         <div className="absolute top-5 left-5 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 4s ease-in-out infinite', willChange: 'transform' }} />
         <div className="absolute top-20 right-10 w-52 h-52 bg-pink-500/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float-reverse 5s ease-in-out infinite', willChange: 'transform' }} />
-        <div className="absolute bottom-32 left-10 w-72 h-72 bg-purple-600/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/12 rounded-full blur-3xl" />
+          <div className="absolute bottom-32 left-10 w-72 h-72 bg-blue-600/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-600/12 rounded-full blur-3xl" />
       </div>
 
       {/* Header - Mobile Optimized */}
@@ -1374,7 +1387,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           <div
             className="absolute inset-0 rounded-full animate-spin-slow"
             style={{
-              background: "conic-gradient(from 0deg, #E85D3B, #7c3aed, #22d3ee, #E85D3B)",
+              background: "conic-gradient(from 0deg, #E85D3B, #2563eb, #22d3ee, #E85D3B)",
               padding: "4px",
               WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
               WebkitMaskComposite: "xor",
@@ -1389,7 +1402,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         <defs>
           <linearGradient id="queueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#E85D3B" />
-            <stop offset="50%" stopColor="#7c3aed" />
+            <stop offset="50%" stopColor="#2563eb" />
             <stop offset="100%" stopColor="#22d3ee" />
           </linearGradient>
         </defs>
@@ -1409,7 +1422,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       </svg>
       {/* Position number */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-black bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] bg-clip-text text-transparent">
+        <span className="text-3xl font-black bg-gradient-to-br from-[#2563eb] to-[#E85D3B] bg-clip-text text-transparent">
           #{position}
         </span>
         <span className="text-xs text-slate-500 font-medium">in queue</span>
@@ -1426,6 +1439,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
+  const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("trading")
   const [participantData, setParticipantData] = useState<{
     wallet: string
@@ -1444,6 +1458,7 @@ export default function DashboardHome() {
     referral_earnings?: number
     activation_deadline?: string
     account_frozen?: boolean
+    account_type?: "normal" | "funded"
     profile_image?: string
     details_completed?: boolean
     [key: string]: any
@@ -1572,7 +1587,7 @@ export default function DashboardHome() {
           setParticipantData(data)
           setParticipantId(data.id || "")
 
-          if (data.account_frozen) {
+          if (data.account_frozen || data.is_frozen) {
             setShowFrozenModal(true)
           }
 
@@ -1642,14 +1657,41 @@ export default function DashboardHome() {
     }
   }
 
+  const walletBalance = Number(participantData?.account_balance) || 0
+  const [terminalStats, setTerminalStats] = useState({ equity: walletBalance, openPnl: 0, openPnlPct: 0 })
+  const isFundedAccount = participantData?.account_type === "funded"
+  const fundedBaseAmount = isFundedAccount
+    ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
+    : 0
+  const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
+  const isFundedAccountBelowBase = isFundedAccount && walletBalance > 0 && walletBalance < minimumFundedBalance
+
+  useEffect(() => {
+    if (!isFundedAccountBelowBase || participantData?.account_frozen || participantData?.is_frozen || !participantData?.email) return
+    const holdAccount = async () => {
+      try {
+        const response = await fetch("/api/participant/freeze-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: participantData.email }),
+        })
+        if (response.ok) {
+          setParticipantData((current: any) => ({ ...current, account_frozen: true, status: "frozen" }))
+          setShowFrozenModal(true)
+        }
+      } catch (error) {
+        console.error("[v0] Failed to place funded account on hold:", error)
+      }
+    }
+    holdAccount()
+  }, [isFundedAccountBelowBase, participantData?.account_frozen, participantData?.email])
+
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
   }
 
-
-
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
-  const walletBalance = Number(participantData.account_balance) || 0
+
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
   const referralCode = participantData.referral_code || ""
@@ -1660,7 +1702,15 @@ export default function DashboardHome() {
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {/* Frozen Account Modal */}
-      <FrozenAccountModal isOpen={showFrozenModal} onClose={() => setShowFrozenModal(false)} />
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+        isFundedAccount={isFundedAccount}
+        onAddBalance={() => {
+          setShowFrozenModal(false)
+          setShowTopUpModal(true)
+        }}
+      />
 
       <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} participantData={participantData} />
 
@@ -1671,9 +1721,13 @@ export default function DashboardHome() {
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
-        onSuccess={(amount) => {
-          // Balance will be credited by admin — just close the modal
-        }}
+        isFundedAccount={participantData?.account_type === "funded"}
+  onSuccess={async () => {
+  setShowTopUpModal(false)
+  if (participantData?.email) {
+  await refreshParticipantData(participantData.email)
+  }
+  }}
       />
 
       <header
@@ -1683,11 +1737,11 @@ export default function DashboardHome() {
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(124,58,237,0.12)"
+          boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(37,99,235,0.12)"
         }}
       >
         {/* Top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(124,58,237,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
+        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
 
         <div className="px-4 h-14 flex items-center justify-between gap-3">
           {/* Left — avatar + greeting */}
@@ -1695,9 +1749,9 @@ export default function DashboardHome() {
             <Link href="/participant/dashboard/profile">
               <div className="relative flex-shrink-0">
                 {participantData?.profile_image ? (
-                  <img src={participantData.profile_image} alt="Profile" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 2px rgba(124,58,237,0.6), 0 0 12px rgba(124,58,237,0.3)" }} />
+                  <img src={participantData.profile_image} alt="Profile" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.6), 0 0 12px rgba(37,99,235,0.3)" }} />
                 ) : (
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(124,58,237,0.5), 0 0 14px rgba(124,58,237,0.3)" }}>
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.5), 0 0 14px rgba(37,99,235,0.3)" }}>
                     <span className="text-white text-xs font-black">{displayName.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
@@ -1721,7 +1775,7 @@ export default function DashboardHome() {
             <button
               onClick={() => setActiveTab("wheel")}
               className="holo-shine flex items-center gap-1 rounded-full px-2.5 py-1.5 transition-all active:scale-95"
-              style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.7),rgba(109,40,217,0.8))", border: "1px solid rgba(124,58,237,0.4)", boxShadow: "0 0 12px rgba(124,58,237,0.3), 0 2px 8px rgba(0,0,0,0.4)" }}
+                  style={{ background: "linear-gradient(135deg,rgba(37,99,235,0.7),rgba(29,78,216,0.8))", border: "1px solid rgba(37,99,235,0.4)", boxShadow: "0 0 12px rgba(37,99,235,0.3), 0 2px 8px rgba(0,0,0,0.4)" }}
             >
               <Sparkles className="h-3 w-3 text-white" />
               <span className="text-white text-[10px] font-black tracking-wide">SPIN</span>
@@ -1741,7 +1795,7 @@ export default function DashboardHome() {
               {/* Scan line */}
               <div className="scan-line pointer-events-none" />
               {/* Deep glow orbs */}
-              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
+              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
               <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)", filter: "blur(36px)" }} />
 
               {/* ── Mobile hero layout */}
@@ -1750,8 +1804,8 @@ export default function DashboardHome() {
                 <div className="relative text-center mb-5">
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
                   <div className="relative inline-block">
-                    <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
-                    <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                    <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(37,99,235,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(37,99,235,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
                       <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
                     </div>
                   </div>
@@ -1792,8 +1846,8 @@ export default function DashboardHome() {
                 <div className="flex-1 min-w-0">
                   <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">Total Portfolio Balance</p>
                   <div className="relative inline-block mb-3">
-                    <div className="absolute inset-0 blur-2xl opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
-                    <div className="text-[56px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                    <div className="absolute inset-0 blur-2xl opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(37,99,235,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[56px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(37,99,235,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
                       <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
                     </div>
                   </div>
@@ -1967,62 +2021,106 @@ export default function DashboardHome() {
           Uses fixed inset-0 z-[60] so it sits above the header but below modals.
       ──────────────────────────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 60,
-            display: "flex",
-            flexDirection: "column",
-            background: "#040810",
-          }}
-        >
-          {/* Terminal top bar with back button */}
-          <div
-            className="flex items-center gap-3 px-3 shrink-0"
-            style={{
-              height: 44,
-              background: "#060b14",
-              borderBottom: "1px solid #0f1e35",
-              zIndex: 1,
-            }}
-          >
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all active:scale-95"
-              style={{
-                background: "rgba(34,211,238,0.08)",
-                border: "1px solid rgba(34,211,238,0.18)",
-                color: "#22d3ee",
-              }}
-            >
-              <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-              Dashboard
-            </button>
-            <div className="flex items-center gap-1.5">
-              <BarChart2 className="h-4 w-4" style={{ color: "#22d3ee" }} />
-              <span className="text-white font-black text-[13px] tracking-wide">Trading Terminal</span>
+        <div className="elite-terminal-shell">
+          <aside className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`} aria-label="Trading terminal navigation">
+            <div className="elite-terminal-brand">
+              <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} aria-label="Go to trading dashboard home">
+                <div className="elite-terminal-brand-mark">FC</div>
+              </Link>
+              <div>
+                <strong>Elite Fund</strong>
+                <span>TRADING TERMINAL</span>
+              </div>
+              <button
+                type="button"
+                className="elite-terminal-sidebar-close"
+                onClick={() => setIsTerminalMenuOpen(false)}
+                aria-label="Close terminal navigation"
+              >
+                <X />
+              </button>
             </div>
-            <div className="ml-auto flex items-center gap-1 px-2 py-1 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[9px] font-black text-emerald-400 tracking-widest">LIVE</span>
-            </div>
-          </div>
 
-          {/* Platform fills remaining height */}
-          <div className="flex-1 min-h-0">
-            <ForexTradingPlatform
-              participantEmail={participantData?.email ?? ""}
-              walletBalance={walletBalance}
-              onBalanceUpdated={(newBalance) => {
-                setParticipantData((prev: any) => {
-                  if (!prev) return prev
-                  const updated = { ...prev, account_balance: newBalance }
-                  try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
-                  return updated
-                })
-              }}
-            />
+            <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
+              <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item is-active">
+                <Home />
+                <span>Home</span>
+              </Link>
+              <Link href="/participant/dashboard/profile" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <User />
+                <span>Profile</span>
+              </Link>
+              <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <PlusCircle />
+                <span>Add Fund</span>
+              </Link>
+              <Link href="/participant/dashboard/payout" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <ArrowUpRight />
+                <span>Payout</span>
+              </Link>
+            </nav>
+
+            <div className="elite-terminal-promo">
+              <div className="elite-terminal-promo-copy">
+                <strong>Trade with confidence</strong>
+                <span>Monitor your account and manage your profile from one place.</span>
+              </div>
+            </div>
+          </aside>
+
+          <div className="elite-terminal-workspace">
+            <header className="elite-terminal-header">
+              <button type="button" className="elite-terminal-menu" onClick={() => setIsTerminalMenuOpen(open => !open)} aria-label="Open terminal menu" aria-expanded={isTerminalMenuOpen}>
+                <Menu />
+              </button>
+              <label className="elite-terminal-search">
+                <Search />
+                <input aria-label="Search instruments" placeholder="Search instruments (e.g. EURUSD, GOLD, BTC)..." />
+              </label>
+              <div className="elite-terminal-account-metrics">
+                <div className="elite-terminal-account-card">
+                  <span>Account Balance</span>
+                  <strong>${walletBalance.toFixed(2)}</strong>
+                </div>
+                <div className="elite-terminal-account-metric">
+                  <span>Equity</span>
+                  <strong>${terminalStats.equity.toFixed(2)}</strong>
+                </div>
+                <div className="elite-terminal-account-metric">
+                  <span>Open P/L</span>
+                  <strong className={terminalStats.openPnl >= 0 ? "tone-up" : "tone-down"}>
+                    {terminalStats.openPnl >= 0 ? "+" : ""}${terminalStats.openPnl.toFixed(2)} ({terminalStats.openPnlPct >= 0 ? "+" : ""}{terminalStats.openPnlPct.toFixed(2)}%)
+                  </strong>
+                </div>
+              </div>
+              <button type="button" className="elite-terminal-header-icon" aria-label="Notifications">
+                <Bell />
+              </button>
+              <div className="elite-terminal-user">
+                <div className="elite-terminal-avatar">{displayName.charAt(0).toUpperCase()}</div>
+                <div>
+                  <strong>{displayName}</strong>
+                  <span>Trader</span>
+                </div>
+                <ChevronDown />
+              </div>
+            </header>
+
+            <div className="elite-terminal-platform">
+              <ForexTradingPlatform
+                participantEmail={participantData?.email ?? ""}
+                walletBalance={walletBalance}
+                onBalanceUpdated={(newBalance) => {
+                  setParticipantData((prev: any) => {
+                    if (!prev) return prev
+                    const updated = { ...prev, account_balance: newBalance }
+                    try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+                    return updated
+                  })
+                }}
+                onStatsUpdate={setTerminalStats}
+              />
+            </div>
           </div>
         </div>
       )}
@@ -2033,7 +2131,7 @@ export default function DashboardHome() {
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400 hover:text-slate-600"
+              activeTab === "dashboard" ? "text-[#2563eb]" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
@@ -2075,7 +2173,7 @@ export default function DashboardHome() {
       {/* Floating AI Chat Button */}
       <Button
         onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:from-purple-700 hover:via-pink-600 hover:to-cyan-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
+            className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 hover:from-blue-700 hover:via-cyan-600 hover:to-blue-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
         size="icon"
       >
         <MessageCircle className="h-6 w-6 text-white" />

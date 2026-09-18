@@ -34,23 +34,8 @@ function createPoolV1() {
 }
 
 function createPoolV2() {
-  const url =
-    process.env.DATABASE_URL_V2 ||
-    process.env.POSTGRES_URL_V2 ||
-    process.env.NEON_DATABASE_URL_V2
-
-  if (!url) {
-    console.warn("[v0] V2 database URL not configured. Set DATABASE_URL_V2 or NEON_DATABASE_URL_V2")
-    return null
-  }
-
-  return new Pool({
-    connectionString: url,
-    ssl: { rejectUnauthorized: false },
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 5000,
-  })
+  // Keep the legacy V2 API surface on the same Neon database.
+  return createPoolV1()
 }
 
 export function getPoolV1(): Pool | null {
@@ -68,13 +53,10 @@ export function getPoolV2(): Pool | null {
 }
 
 /**
- * Determine which database version to use
- * Returns "v1" (default) or "v2" based on USE_DB_V2 environment variable
+ * Return the single project database version.
+ * Legacy v2 callers are intentionally routed to the same Neon pool.
  */
-export function getActiveDBVersion(): "v1" | "v2" {
-  if (process.env.USE_DB_V2 === "true") {
-    return "v2"
-  }
+export function getActiveDBVersion(): "v1" {
   return "v1"
 }
 
@@ -141,7 +123,7 @@ export async function query<T = Record<string, any>>(
 
   if (!pool) {
     const version = forceVersion || getActiveDBVersion()
-    throw new Error(`No database connection for ${version} — set DATABASE_URL_V2 or NEON_DATABASE_URL_V2`)
+    throw new Error(`No Neon database connection — set DATABASE_URL`)
   }
 
   const result = await pool.query(sql, params)
@@ -172,7 +154,7 @@ export async function execute(
 
   if (!pool) {
     const version = forceVersion || getActiveDBVersion()
-    throw new Error(`No database connection for ${version} — set DATABASE_URL_V2 or NEON_DATABASE_URL_V2`)
+    throw new Error(`No Neon database connection — set DATABASE_URL`)
   }
 
   const result = await pool.query(sql, params)

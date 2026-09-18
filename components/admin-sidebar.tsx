@@ -168,7 +168,7 @@ export function AdminSidebar({ activeTab, onTabChange, pendingPayments = 0, flag
               <FlowChainLogoCompact size="sm" />
             </div>
             <div>
-              <span className="font-bold text-sm text-white tracking-wide">FLOWCHAIN</span>
+              <span className="font-bold text-sm text-white tracking-wide">ELITE FUND</span>
               <div className="flex items-center gap-1">
                 <Crown className="h-3 w-3 text-white/80" />
                 <p className="text-xs text-white/80 font-medium">Admin Panel</p>

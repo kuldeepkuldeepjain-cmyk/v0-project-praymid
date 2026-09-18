@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { FlowChainLogo } from "@/components/flowchain-logo"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   TrendingUp,
@@ -11,7 +12,6 @@ import {
   Zap,
   ArrowRight,
   CheckCircle2,
-  Wallet,
   BarChart3,
   Rocket,
   Lock,
@@ -24,13 +24,18 @@ export default function LendingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-emerald-500/20">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-blue-500/20">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            FlowChain Lending
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="flex items-center gap-2">
+              <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-lg" />
+              <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                Elite Fund
+              </div>
+            </div>
           </div>
           <Link href="/">
-            <Button variant="outline" className="text-xs sm:text-sm border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 h-9 sm:h-10">
+            <Button variant="outline" className="text-xs sm:text-sm border-blue-500/50 text-blue-400 hover:bg-blue-500/10 h-9 sm:h-10">
               Back to Home
             </Button>
           </Link>
@@ -41,13 +46,13 @@ export default function LendingPage() {
       <section className="pt-20 sm:pt-32 pb-12 sm:pb-20 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
           <div className="space-y-4 sm:space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-xs sm:text-sm">
-              <Rocket className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-400" />
-              <span className="text-emerald-300">Next-Gen P2P Lending</span>
+            <div className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full text-xs sm:text-sm">
+              <Rocket className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
+              <span className="text-blue-300">Next-Gen P2P Lending</span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white leading-tight">
-              Earn <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">250%+</span> Annual
+              Earn <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">250%+</span> Annual
               Returns
             </h1>
 
@@ -57,19 +62,16 @@ export default function LendingPage() {
 
             <div className="flex flex-col gap-3 pt-2 sm:pt-4">
               <Link href="/participant/register" className="w-full">
-                <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-base sm:text-lg">
+                <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold text-base sm:text-lg">
                   Start Trading Now
                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
-              <Button variant="outline" className="w-full h-11 sm:h-12 border-emerald-500/50 text-emerald-400 text-base sm:text-lg">
-                Learn More
-              </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-4 sm:pt-8">
               <div>
-                <div className="text-2xl sm:text-3xl font-bold text-emerald-400">$2.5M+</div>
+                <div className="text-2xl sm:text-3xl font-bold text-blue-400">$2.5M+</div>
                 <p className="text-xs sm:text-sm text-slate-400">Total Traded</p>
               </div>
               <div>
@@ -80,18 +82,18 @@ export default function LendingPage() {
           </div>
 
           <div className="relative hidden md:block">
-            <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 rounded-3xl blur-2xl animate-pulse" />
-            <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 rounded-2xl" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-3xl blur-2xl animate-pulse" />
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl" />
             <Image
               src="/images/binary-profit-burst.jpg"
               alt="Binary Trading Profit Burst"
               width={600}
               height={520}
-              className="relative rounded-2xl shadow-[0_0_60px_rgba(16,185,129,0.4)] border-2 border-emerald-500/50 w-full"
+              className="relative rounded-2xl shadow-[0_0_60px_rgba(37,99,235,0.4)] border-2 border-blue-500/50 w-full"
               priority
             />
             {/* Floating stat badges */}
-            <div className="absolute -top-4 -left-4 bg-emerald-500 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg animate-bounce">
+            <div className="absolute -top-4 -left-4 bg-blue-500 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg animate-bounce">
               +340% Today
             </div>
             <div className="absolute -bottom-4 -right-4 bg-cyan-500 text-white text-xs sm:text-sm font-bold px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg">
@@ -102,10 +104,10 @@ export default function LendingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-20 px-4 bg-gradient-to-b from-transparent to-emerald-900/20">
+      <section className="py-12 sm:py-20 px-4 bg-gradient-to-b from-transparent to-blue-900/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">Why FlowChain Lending?</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">Why Elite Fund?</h2>
             <p className="text-sm sm:text-base md:text-xl text-slate-300">Unlock financial freedom with our revolutionary platform</p>
           </div>
 
@@ -146,11 +148,11 @@ export default function LendingPage() {
               return (
                 <Card
                   key={i}
-                  className="bg-slate-800/50 border-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 group"
+                  className="bg-slate-800/50 border-blue-500/20 hover:border-blue-500/50 transition-all duration-300 group"
                 >
                   <CardHeader>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-emerald-500/40 group-hover:to-cyan-500/40 transition-all">
-                      <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center group-hover:from-blue-500/40 group-hover:to-cyan-500/40 transition-all">
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                     </div>
                     <CardTitle className="text-white mt-3 sm:mt-4 text-base sm:text-lg">{feature.title}</CardTitle>
                   </CardHeader>
@@ -177,19 +179,19 @@ export default function LendingPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-transparent" />
           <div className="absolute inset-0 flex items-center px-4 sm:px-8 md:px-12 lg:px-24">
             <div className="max-w-xl space-y-3 sm:space-y-5">
-              <div className="inline-flex items-center gap-2 bg-emerald-500/20 border border-emerald-400/40 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full">
-                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-emerald-300 text-xs sm:text-sm font-medium">Live Binary Signals Active</span>
+              <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-400/40 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" />
+                <span className="text-blue-300 text-xs sm:text-sm font-medium">Live Binary Signals Active</span>
               </div>
               <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight">
-                Real-Time <span className="text-emerald-400">Winning</span> Trade Signals
+                Real-Time <span className="text-blue-400">Winning</span> Trade Signals
               </h2>
               <p className="text-slate-300 text-sm sm:text-base md:text-lg">
                 Our AI monitors 500+ trading pairs and fires profit signals the moment an opportunity emerges.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                 <div>
-                  <div className="text-2xl sm:text-3xl font-bold text-emerald-400">94%</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-400">94%</div>
                   <div className="text-slate-400 text-xs sm:text-sm">Win Rate</div>
                 </div>
                 <div>
@@ -210,7 +212,7 @@ export default function LendingPage() {
       <section className="py-12 sm:py-20 px-4">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
           <div className="relative order-2 md:order-1 hidden md:block">
-            <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 rounded-3xl blur-2xl" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-3xl blur-2xl" />
             <Image
               src="/images/lending-profit-showcase.jpg"
               alt="Lending Profit Showcase"
@@ -225,7 +227,7 @@ export default function LendingPage() {
 
           <div className="space-y-6 sm:space-y-8 order-1 md:order-2">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-              Watch Your <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Wealth Grow</span>
+              Watch Your <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Wealth Grow</span>
             </h2>
 
             <p className="text-base sm:text-lg text-slate-300">
@@ -239,7 +241,7 @@ export default function LendingPage() {
               "Instant withdrawal capabilities",
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3 sm:gap-4">
-                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400 flex-shrink-0 mt-1" />
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400 flex-shrink-0 mt-1" />
                 <div>
                   <p className="text-white font-semibold text-sm sm:text-base">{item}</p>
                 </div>
@@ -247,7 +249,7 @@ export default function LendingPage() {
             ))}
 
             <Link href="/participant/dashboard/payout" className="block">
-              <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-cyan-500 to-emerald-500 hover:from-cyan-600 hover:to-emerald-600 text-white font-semibold text-base">
+              <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold text-base">
                 Request a Payout
                 <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
@@ -257,11 +259,11 @@ export default function LendingPage() {
       </section>
 
       {/* Trading Analytics Section */}
-      <section className="py-12 sm:py-20 px-4 bg-gradient-to-b from-emerald-900/20 to-transparent">
+      <section className="py-12 sm:py-20 px-4 bg-gradient-to-b from-blue-900/20 to-transparent">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8 sm:gap-12 items-center">
           <div className="space-y-6 sm:space-y-8">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-              Advanced <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Trading Analytics</span>
+              Advanced <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Trading Analytics</span>
             </h2>
 
             <p className="text-base sm:text-lg text-slate-300">
@@ -283,7 +285,7 @@ export default function LendingPage() {
             ))}
 
             <Link href="/participant/dashboard/predict" className="block">
-              <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-base">
+              <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold text-base">
                 View Dashboard
                 <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
@@ -291,15 +293,15 @@ export default function LendingPage() {
           </div>
 
           <div className="relative hidden md:block">
-            <div className="absolute -inset-4 bg-gradient-to-r from-emerald-500/25 to-cyan-500/25 rounded-3xl blur-2xl" />
+            <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/25 to-cyan-500/25 rounded-3xl blur-2xl" />
             <Image
               src="/images/trading-analytics-dashboard.jpg"
               alt="Trading Analytics Dashboard"
               width={580}
               height={520}
-              className="relative rounded-2xl shadow-[0_0_50px_rgba(16,185,129,0.35)] border-2 border-emerald-500/40 w-full"
+              className="relative rounded-2xl shadow-[0_0_50px_rgba(37,99,235,0.35)] border-2 border-blue-500/40 w-full"
             />
-            <div className="absolute -bottom-3 -left-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg">
+            <div className="absolute -bottom-3 -left-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white text-xs font-bold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow-lg">
               Live Analytics
             </div>
           </div>
@@ -325,7 +327,7 @@ export default function LendingPage() {
 
           <div className="space-y-6 sm:space-y-8">
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-              Build <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Passive Income</span> Today
+              Build <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Passive Income</span> Today
             </h2>
 
             <p className="text-base sm:text-lg text-slate-300">
@@ -333,13 +335,13 @@ export default function LendingPage() {
             </p>
 
             <div className="space-y-3 sm:space-y-4">
-              <div className="bg-slate-800/50 border border-emerald-500/20 rounded-lg p-4 sm:p-6">
+              <div className="bg-slate-800/50 border border-blue-500/20 rounded-lg p-4 sm:p-6">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-300 text-sm sm:text-base">Monthly Return</span>
-                  <span className="text-xl sm:text-2xl font-bold text-emerald-400">+21.5%</span>
+                  <span className="text-xl sm:text-2xl font-bold text-blue-400">+21.5%</span>
                 </div>
                 <div className="w-full bg-slate-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full w-1/2" />
+                  <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full w-1/2" />
                 </div>
               </div>
 
@@ -349,13 +351,13 @@ export default function LendingPage() {
                   <span className="text-xl sm:text-2xl font-bold text-cyan-400">+258%</span>
                 </div>
                 <div className="w-full bg-slate-700 rounded-full h-2">
-                  <div className="bg-gradient-to-r from-cyan-500 to-emerald-500 h-2 rounded-full w-3/4" />
+                  <div className="bg-gradient-to-r from-cyan-500 to-blue-500 h-2 rounded-full w-3/4" />
                 </div>
               </div>
             </div>
 
             <Link href="/participant/register" className="block">
-              <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-base">
+              <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold text-base">
                 Create Your Account
                 <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
@@ -365,7 +367,7 @@ export default function LendingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 sm:py-20 px-4 bg-gradient-to-r from-emerald-900/40 to-cyan-900/40 border-y border-emerald-500/20">
+      <section className="py-12 sm:py-20 px-4 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border-y border-blue-500/20">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
           {[
             { label: "Total Volume", value: "$2.5M+" },
@@ -374,7 +376,7 @@ export default function LendingPage() {
             { label: "Daily Earnings", value: "$500K+" },
           ].map((stat, i) => (
             <div key={i}>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-1 sm:mb-2">
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1 sm:mb-2">
                 {stat.value}
               </div>
               <p className="text-slate-300 text-xs sm:text-sm md:text-base">{stat.label}</p>
@@ -400,7 +402,7 @@ export default function LendingPage() {
               <span className="text-yellow-300 text-xs sm:text-sm font-semibold">Binary Trading Platform</span>
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold text-white mb-2 sm:mb-4 drop-shadow-2xl leading-tight">
-              Trade. Win. <span className="text-emerald-400">Repeat.</span>
+              Trade. Win. <span className="text-blue-400">Repeat.</span>
             </h2>
             <p className="text-sm sm:text-base md:text-xl text-slate-200 max-w-2xl mb-6 sm:mb-10 drop-shadow px-2">
               Every second counts in binary trading. Our platform puts you ahead with AI-powered signals and instant execution.
@@ -412,8 +414,8 @@ export default function LendingPage() {
                 { label: "Trades Today", value: "1.2M+" },
                 { label: "Paid Out", value: "$2.5M+" },
               ].map((s, i) => (
-                <div key={i} className="bg-slate-900/70 border border-emerald-500/30 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-6 py-2 sm:py-4 text-center">
-                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-emerald-400">{s.value}</div>
+                <div key={i} className="bg-slate-900/70 border border-blue-500/30 backdrop-blur-sm rounded-lg sm:rounded-xl px-3 sm:px-6 py-2 sm:py-4 text-center">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-400">{s.value}</div>
                   <div className="text-slate-400 text-xs sm:text-sm mt-1">{s.label}</div>
                 </div>
               ))}
@@ -423,13 +425,13 @@ export default function LendingPage() {
       </section>
 
       {/* Support & Guidance Section */}
-      <section className="py-8 sm:py-12 px-4 bg-gradient-to-r from-emerald-900/30 to-cyan-900/30">
+      <section className="py-8 sm:py-12 px-4 bg-gradient-to-r from-blue-900/30 to-cyan-900/30">
         <div className="max-w-6xl mx-auto">
-          <div className="bg-slate-800/60 border border-emerald-500/30 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
+          <div className="bg-slate-800/60 border border-blue-500/30 rounded-2xl p-6 sm:p-8 backdrop-blur-sm">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
               <div className="space-y-2">
                 <h3 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
+                  <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
                   Need Support & Guidance?
                 </h3>
                 <p className="text-sm sm:text-base text-slate-300">Connect with our expert team on WhatsApp for instant assistance and personalized guidance</p>
@@ -440,7 +442,7 @@ export default function LendingPage() {
                 rel="noopener noreferrer"
                 className="flex-shrink-0"
               >
-                <Button className="h-11 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold text-sm sm:text-base flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
+                <Button className="h-11 sm:h-12 px-4 sm:px-6 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold text-sm sm:text-base flex items-center gap-2 shadow-lg hover:shadow-xl transition-all">
                   <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5" />
                   Chat on WhatsApp
                 </Button>
@@ -454,20 +456,20 @@ export default function LendingPage() {
       <section className="py-12 sm:py-24 px-4">
         <div className="max-w-4xl mx-auto text-center space-y-6 sm:space-y-8">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white">
-            Ready to <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Multiply Your Wealth?</span>
+            Ready to <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Multiply Your Wealth?</span>
           </h2>
 
-          <p className="text-base sm:text-lg md:text-xl text-slate-300">Join thousands of successful traders earning 250%+ annual returns with FlowChain Lending</p>
+          <p className="text-base sm:text-lg md:text-xl text-slate-300">Join thousands of successful traders building their future with Elite Fund</p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 sm:pt-8">
             <Link href="/participant/register" className="flex-1 sm:flex-none">
-              <Button className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-base sm:text-lg">
+              <Button className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold text-base sm:text-lg">
                 Start Now - It's Free
                 <Rocket className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
               </Button>
             </Link>
             <Link href="/" className="flex-1 sm:flex-none">
-              <Button variant="outline" className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 font-semibold text-base sm:text-lg">
+              <Button variant="outline" className="w-full sm:w-auto h-11 sm:h-14 px-6 sm:px-8 border-blue-500/50 text-blue-400 hover:bg-blue-500/10 font-semibold text-base sm:text-lg">
                 Learn More
               </Button>
             </Link>
@@ -480,7 +482,7 @@ export default function LendingPage() {
         href="https://wa.me/237651528626"
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-full flex items-center justify-center shadow-2xl hover:shadow-emerald-500/50 transition-all duration-300 hover:scale-110 group"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-full flex items-center justify-center shadow-2xl hover:shadow-green-500/50 transition-all duration-300 hover:scale-110 group"
         title="Chat with us on WhatsApp"
       >
         <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 group-hover:rotate-12 transition-transform" />
@@ -492,7 +494,7 @@ export default function LendingPage() {
       {/* Footer */}
       <footer className="py-8 sm:py-12 px-4 border-t border-slate-700/50 bg-slate-900">
         <div className="max-w-6xl mx-auto text-center text-slate-400 text-xs sm:text-sm">
-          <p>&copy; 2024 FlowChain. All rights reserved. | Secure • Transparent • Profitable</p>
+          <p>&copy; 2024 Elite Fund. All rights reserved. | Secure • Transparent • Profitable</p>
         </div>
       </footer>
     </div>

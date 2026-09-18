@@ -13,14 +13,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
-    const parsedAmount = parseFloat(amount)
-    if (isNaN(parsedAmount) || parsedAmount < 5) {
-      return NextResponse.json({ success: false, message: "Invalid amount. Minimum is $5" }, { status: 400 })
+    const parsedAmount = Number(amount)
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 5 || parsedAmount > 100000) {
+      return NextResponse.json({ success: false, message: "Invalid amount. Enter between $5 and $100,000" }, { status: 400 })
+    }
+
+    const normalizedTransactionHash = String(transactionHash).trim()
+    if (normalizedTransactionHash.length < 10 || normalizedTransactionHash.length > 200) {
+      return NextResponse.json({ success: false, message: "Enter a valid transaction hash" }, { status: 400 })
     }
 
     const existingTx = await query(
       "SELECT id FROM topup_requests WHERE transaction_id = $1",
-      [transactionHash]
+      [normalizedTransactionHash]
     ) as any[]
     if (existingTx.length > 0) {
       return NextResponse.json({ success: false, message: "This transaction has already been submitted" }, { status: 400 })
@@ -40,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (screenshotBase64 && screenshotBase64.startsWith("data:")) {
       try {
         const mimeType = screenshotBase64.match(/data:([^;]+)/)?.[1] || "image/jpeg"
-        const fileName = `topup-${participant.id}-${transactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
+        const fileName = `topup-${participant.id}-${normalizedTransactionHash.slice(0, 8)}-${Date.now()}.${mimeType.split("/")[1] || "jpg"}`
         const uploadedUrl = await uploadBase64ToR2(screenshotBase64, fileName, mimeType)
         if (uploadedUrl) {
           screenshotUrl = uploadedUrl
@@ -58,13 +63,13 @@ export async function POST(request: NextRequest) {
     await execute(
       `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
        VALUES ($1, $2, $3, $4, 'crypto', 'pending', $5)`,
-      [participant.id, userEmail, parsedAmount, transactionHash, screenshotUrl]
+      [participant.id, userEmail, parsedAmount, normalizedTransactionHash, screenshotUrl]
     )
 
     // Log activity (best-effort — table may not exist)
     await execute(
       `INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)`,
-      [participant.id, userEmail, "topup_requested", "wallet", `Submitted $${parsedAmount} top-up (tx: ${transactionHash.slice(0, 12)}...)`]
+      [participant.id, userEmail, "topup_requested", "wallet", `Submitted $${parsedAmount} top-up (tx: ${normalizedTransactionHash.slice(0, 12)}...)`]
     ).catch(() => {})
 
     return NextResponse.json({ success: true, message: "Top-up request submitted successfully" })
