@@ -279,18 +279,18 @@ export default function ParticipantRegisterPage() {
   }
 
   const stars = Array.from({ length: 15 }, (_, i) => ({
-    top: `${Math.random() * 100}%`,
-    left: `${Math.random() * 100}%`,
-    delay: Math.random() * 3,
-    size: 2 + Math.random() * 2,
+    top: `${8 + ((i * 37) % 84)}%`,
+    left: `${5 + ((i * 61) % 90)}%`,
+    delay: (i % 6) * 0.5,
+    size: 2 + (i % 3) * 0.5,
   }))
 
   const particles = Array.from({ length: 10 }, (_, i) => ({
     delay: i * 0.4,
-    size: 4 + Math.random() * 4,
+    size: 4 + (i % 4),
     color: ["#E85D3B", "#7c3aed", "#22d3ee"][i % 3],
     left: `${5 + i * 9}%`,
-    duration: 8 + Math.random() * 4,
+    duration: 8 + (i % 5),
   }))
 
   return (
@@ -325,7 +325,7 @@ export default function ParticipantRegisterPage() {
       {/* Main content */}
       <div className="w-full max-w-2xl space-y-6 relative z-10 my-8">
         <div className="text-center space-y-2 animate-fade-in-up">
-          <Elite FundLogo size="lg" showTagline={true} className="justify-center mb-4" />
+          <FlowChainLogo size="lg" showTagline={true} className="justify-center mb-4" />
           <h1 className="text-3xl font-bold text-slate-900">Create your account</h1>
           <p className="text-sm text-slate-500">Join Elite Fund in less than a minute</p>
         </div>
