@@ -2021,6 +2021,9 @@ button, a, [role="button"] {
 .reference-terminal .apple-terminal-chart-column { min-width: 0; background: #080e16 !important; }
 .reference-terminal .apple-terminal-chart-column > div:first-child { background: #090f17 !important; border-bottom-color: #1a2634 !important; }
 .reference-terminal .apple-terminal-chart-column > div:nth-child(2) { min-height: 300px; }
+.reference-terminal.is-chart-expanded .apple-terminal-grid { min-height: 0; }
+.reference-terminal.is-chart-expanded .apple-terminal-blotter { display: none; }
+.reference-terminal.is-chart-expanded .apple-terminal-chart-column { min-height: 0; }
 .reference-terminal .apple-terminal-order { width: 300px !important; background: #080e16 !important; border-left-color: #263648 !important; }
 .reference-terminal .apple-terminal-order > div:first-child { background: #090f17 !important; }
 .reference-terminal .apple-terminal-blotter { height: 136px !important; background: #080e16 !important; border-top-color: #1a2634 !important; }
@@ -2099,6 +2102,18 @@ button, a, [role="button"] {
     flex: 0 0 280px;
     height: 280px;
     min-height: 280px;
+  }
+  .reference-terminal.is-chart-expanded {
+    overflow: hidden;
+  }
+  .reference-terminal.is-chart-expanded .apple-terminal-grid {
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  .reference-terminal.is-chart-expanded .apple-terminal-chart-column {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
   }
   .reference-terminal .apple-terminal-market {
     order: 2;

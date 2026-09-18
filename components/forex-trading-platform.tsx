@@ -2433,7 +2433,7 @@ function PositionSizer({
         </div>
 
         {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
-        <div className="apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200">
+        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2499,6 +2499,9 @@ function PositionSizer({
   openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
   onExpand={() => setChartExpanded(e => !e)}
   isExpanded={chartExpanded}
+  onQuickTrade={quickTrade}
+  buyPrice={selectedPair.ask}
+  sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   />
   ) : (
