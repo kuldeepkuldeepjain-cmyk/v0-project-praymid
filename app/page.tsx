@@ -116,6 +116,7 @@ export default function LandingPage() {
             <a href="#platform" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Platform</a>
             <a href="#features" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Features</a>
             <a href="#security" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Security</a>
+            <button onClick={() => router.push("/lending")} className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Funded Accounts</button>
           </div>
 
           <div className="hidden md:flex gap-3">
@@ -151,7 +152,13 @@ export default function LandingPage() {
           <div className="md:hidden absolute top-14 left-0 right-0 bg-slate-900 border-b border-slate-800 p-4 space-y-2">
             <a href="#platform" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Platform</a>
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
-            <a href="#security" className="block text-slate-300 font-medium py-2" onClick={() => setIsMenuOpen(false)}>Security</a>
+            <a href="#security" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Security</a>
+            <button
+              onClick={() => { setIsMenuOpen(false); router.push("/lending") }}
+              className="block w-full text-left text-slate-300 font-medium py-2"
+            >
+              Funded Accounts
+            </button>
           </div>
         )}
       </nav>
