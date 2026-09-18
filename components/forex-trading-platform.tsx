@@ -1,13 +1,14 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
+import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
   ChevronDown, ChevronUp, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
-  Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon,
+  Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -1099,14 +1100,81 @@ function PositionSizer({
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
-  
+
+  const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
+  const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
+  const [watchlistReady, setWatchlistReady] = useState(false)
+  const [showAddInstrument, setShowAddInstrument] = useState(false)
+  const [addInstrumentQuery, setAddInstrumentQuery] = useState("")
+  const [addInstrumentPos, setAddInstrumentPos] = useState<{ top: number; left: number } | null>(null)
+  const addInstrumentRef = useRef<HTMLDivElement>(null)
+  const addInstrumentBtnRef = useRef<HTMLButtonElement>(null)
+
   useEffect(() => {
     setThemeReady(true)
+    try {
+      const saved = window.localStorage.getItem("trade-terminal-theme")
+      if (saved) setIsDarkTheme(saved === "dark")
+    } catch {}
+    try {
+      const savedWatchlist = window.localStorage.getItem("trade-terminal-watchlist")
+      if (savedWatchlist) {
+        const parsed = JSON.parse(savedWatchlist)
+        if (Array.isArray(parsed) && parsed.every(s => typeof s === "string") && parsed.length > 0) {
+          setWatchlistSymbols(parsed)
+        }
+      }
+    } catch {}
+    setWatchlistReady(true)
   }, [])
 
   useEffect(() => {
     if (themeReady) window.localStorage.setItem("trade-terminal-theme", isDarkTheme ? "dark" : "light")
   }, [isDarkTheme, themeReady])
+
+  useEffect(() => {
+    if (watchlistReady) window.localStorage.setItem("trade-terminal-watchlist", JSON.stringify(watchlistSymbols))
+  }, [watchlistSymbols, watchlistReady])
+
+  // Close the "add instrument" popover on outside click, Escape, or scroll/resize
+  // (the popover is portaled to <body> with fixed positioning computed from the
+  // trigger button's rect, so its position must be recalculated or dismissed
+  // whenever the layout can shift).
+  useEffect(() => {
+    if (!showAddInstrument) return
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as Node
+      const insideTrigger = addInstrumentRef.current?.contains(target)
+      const insidePopover = document.getElementById("add-instrument-popover")?.contains(target)
+      if (!insideTrigger && !insidePopover) setShowAddInstrument(false)
+    }
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") setShowAddInstrument(false) }
+    const handleReposition = () => setShowAddInstrument(false)
+    document.addEventListener("mousedown", handleClick)
+    document.addEventListener("keydown", handleKey)
+    window.addEventListener("resize", handleReposition)
+    return () => {
+      document.removeEventListener("mousedown", handleClick)
+      document.removeEventListener("keydown", handleKey)
+      window.removeEventListener("resize", handleReposition)
+    }
+  }, [showAddInstrument])
+
+  const toggleWatchlistSymbol = useCallback((symbol: string) => {
+    setWatchlistSymbols(prev =>
+      prev.includes(symbol) ? prev.filter(s => s !== symbol) : [...prev, symbol]
+    )
+  }, [])
+
+  const addInstrumentResults = useMemo(() => {
+    const q = addInstrumentQuery.trim().toLowerCase().replace(/[\s/_-]/g, "")
+    if (!q) return PAIRS_CONFIG
+    return PAIRS_CONFIG.filter(c => {
+      const sym = c.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+      const name = (FULL_NAMES[c.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+      return sym.includes(q) || name.includes(q)
+    })
+  }, [addInstrumentQuery])
   
   const pairsRef        = useRef<ForexPair[]>([])
   const openTradesRef   = useRef<OpenTrade[]>([])
@@ -2050,13 +2118,22 @@ function PositionSizer({
 
       {/* ══ REFERENCE WATCHLIST ════════════════════════════════════════════════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-3 px-5 py-4 overflow-x-auto terminal-scroll">
-        {(["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"] as string[]).map(symbol => {
+        {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
           if (!pair) return null
           const isSelected = selectedPair?.symbol === pair.symbol
           const up = pair.change >= 0
           return (
-            <button key={pair.symbol} type="button" onClick={() => { setSelectedPair(pair); fetchCandles(pair.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 ${isSelected ? "is-selected" : ""}`}>
+            <button key={pair.symbol} type="button" onClick={() => { setSelectedPair(pair); fetchCandles(pair.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 group relative ${isSelected ? "is-selected" : ""}`}>
+              <span
+                role="button"
+                aria-label={`Remove ${pair.symbol} from watchlist`}
+                onClick={(e) => { e.stopPropagation(); toggleWatchlistSymbol(pair.symbol) }}
+                className="absolute -top-1.5 -right-1.5 hidden group-hover:flex items-center justify-center w-4 h-4 rounded-full text-[9px] leading-none"
+                style={{ background: "#1e2d45", color: "#94a3b8", border: "1px solid #334155" }}
+              >
+                <X className="h-2.5 w-2.5" />
+              </span>
               <span className="reference-watch-icon">{ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}</span>
               <span className="reference-watch-copy">
                 <strong>{pair.symbol.replace("/", "")}</strong>
@@ -2066,7 +2143,75 @@ function PositionSizer({
             </button>
           )
         })}
-        <button type="button" className="reference-watch-add" aria-label="Add instrument"><Plus /></button>
+        <div className="relative shrink-0" ref={addInstrumentRef}>
+          <button
+            ref={addInstrumentBtnRef}
+            type="button"
+            onClick={() => {
+              if (!showAddInstrument && addInstrumentBtnRef.current) {
+                const rect = addInstrumentBtnRef.current.getBoundingClientRect()
+                setAddInstrumentPos({ top: rect.bottom + 8, left: rect.left })
+              }
+              setShowAddInstrument(v => !v)
+            }}
+            className="reference-watch-add"
+            aria-label="Add instrument to watchlist"
+            aria-expanded={showAddInstrument}
+          >
+            <Plus />
+          </button>
+          {showAddInstrument && addInstrumentPos && typeof document !== "undefined" && createPortal(
+            <div
+              id="add-instrument-popover"
+              className="fixed flex flex-col overflow-hidden"
+              style={{
+                top: addInstrumentPos.top, left: addInstrumentPos.left,
+                width: 280, maxHeight: 360, zIndex: 200,
+                background: "#0b111d", border: "1px solid #1e2d45", borderRadius: 10,
+                boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+              }}
+            >
+              <div className="flex items-center gap-2 px-3 py-2.5 shrink-0" style={{ borderBottom: "1px solid #1a2640" }}>
+                <Search className="h-3.5 w-3.5" style={{ color: "#3d5a80" }} />
+                <input
+                  autoFocus
+                  type="search"
+                  value={addInstrumentQuery}
+                  onChange={e => setAddInstrumentQuery(e.target.value)}
+                  placeholder="Search instrument..."
+                  aria-label="Search instrument to add"
+                  className="flex-1 price-mono text-xs text-white bg-transparent focus:outline-none"
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto terminal-scroll">
+                {addInstrumentResults.length === 0 && (
+                  <div className="px-3 py-6 text-center text-[10px]" style={{ color: "#3d5a80" }}>No instruments found</div>
+                )}
+                {addInstrumentResults.map(cfg => {
+                  const isPinned = watchlistSymbols.includes(cfg.symbol)
+                  return (
+                    <button
+                      key={cfg.symbol}
+                      type="button"
+                      onClick={() => toggleWatchlistSymbol(cfg.symbol)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-white/5"
+                    >
+                      <span className="flex items-center justify-center w-5 h-5 rounded text-[9px] font-black shrink-0" style={{ background: CATEGORY_COLOR[cfg.category].bg, color: CATEGORY_COLOR[cfg.category].text }}>
+                        {ASSET_ICON[cfg.symbol] ?? cfg.symbol.slice(0, 2)}
+                      </span>
+                      <span className="flex flex-col items-start flex-1 min-w-0 text-left">
+                        <span className="price-mono text-[11px] font-bold text-white">{cfg.symbol}</span>
+                        <span className="text-[9px] truncate" style={{ color: "#3d5a80" }}>{FULL_NAMES[cfg.symbol] ?? cfg.symbol}</span>
+                      </span>
+                      {isPinned && <Check className="h-3.5 w-3.5 shrink-0" style={{ color: "#22d3ee" }} />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>,
+            document.body
+          )}
+        </div>
         <button type="button" onClick={() => setIsDarkTheme(theme => !theme)} className="reference-watch-theme" aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}>
           {isDarkTheme ? <Sun /> : <Moon />}
         </button>
@@ -2090,7 +2235,7 @@ function PositionSizer({
       {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
-        {/* ── LEFT: Market Watch ─────────────────────────────────────────────── */}
+        {/* ── LEFT: Market Watch ─────────────────────────────���───────────────── */}
         <div className={`apple-terminal-market flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
