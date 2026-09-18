@@ -83,16 +83,19 @@ export default function RootLayout({
           </ToastProvider>
         </ThemeProvider>
         <Analytics />
-        {/* Service Worker Registration */}
+        {/* Remove legacy service workers so cached HTML cannot diverge from the current server render. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js')
-                    .then(function(reg) { console.log('SW registered:', reg.scope); })
-                    .catch(function(err) { console.log('SW registration failed:', err); });
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  registrations.forEach(function(registration) { registration.unregister(); });
                 });
+                if ('caches' in window) {
+                  caches.keys().then(function(keys) {
+                    keys.forEach(function(key) { caches.delete(key); });
+                  });
+                }
               }
             `,
           }}
