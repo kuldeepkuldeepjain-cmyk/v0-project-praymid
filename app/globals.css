@@ -1256,6 +1256,85 @@ button, a, [role="button"] {
 .apple-trading-terminal .terminal-scroll::-webkit-scrollbar-thumb { background: rgba(29, 42, 58, 0.18); }
 .apple-trading-terminal .terminal-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0, 113, 227, 0.45); }
 
+.apple-trading-terminal.is-dark {
+  --terminal-surface: #0a1220;
+  --terminal-ink: #e8eef7;
+  --terminal-blue: #38bdf8;
+  --terminal-green: #2dd4a0;
+  --terminal-red: #ff625a;
+  background: linear-gradient(145deg, #0a1220 0%, #07101c 100%) !important;
+  color: var(--terminal-ink) !important;
+}
+
+.apple-trading-terminal.is-dark .apple-terminal-topbar {
+  background: rgba(8, 14, 25, 0.86) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 24px rgba(0, 0, 0, 0.24);
+}
+.apple-trading-terminal.is-dark .apple-terminal-summary,
+.apple-trading-terminal.is-dark .apple-terminal-mobile-tabs,
+.apple-trading-terminal.is-dark .apple-terminal-blotter-tabs {
+  background: rgba(5, 10, 18, 0.84) !important;
+  border-color: rgba(148, 163, 184, 0.13) !important;
+}
+.apple-trading-terminal.is-dark .apple-terminal-grid { background: rgba(4, 9, 16, 0.36) !important; }
+.apple-trading-terminal.is-dark .apple-terminal-market,
+.apple-trading-terminal.is-dark .apple-terminal-order {
+  background: rgba(9, 18, 32, 0.86) !important;
+  border-color: rgba(148, 163, 184, 0.16) !important;
+}
+.apple-trading-terminal.is-dark .apple-terminal-chart-column { background: rgba(7, 14, 25, 0.72) !important; }
+.apple-trading-terminal.is-dark .apple-terminal-blotter {
+  background: rgba(8, 15, 27, 0.88) !important;
+  border-color: rgba(148, 163, 184, 0.15) !important;
+}
+.apple-trading-terminal.is-dark .text-white { color: #f8fafc !important; }
+.apple-trading-terminal.is-dark .text-slate-300 { color: #cbd5e1 !important; }
+.apple-trading-terminal.is-dark .text-slate-400 { color: #94a3b8 !important; }
+.apple-trading-terminal.is-dark .text-slate-500 { color: #8496ad !important; }
+.apple-trading-terminal.is-dark .text-slate-600 { color: #6f829b !important; }
+.apple-trading-terminal.is-dark .text-slate-700,
+.apple-trading-terminal.is-dark .text-slate-800 { color: #51647d !important; }
+.apple-trading-terminal.is-dark .text-cyan-300,
+.apple-trading-terminal.is-dark .text-cyan-400,
+.apple-trading-terminal.is-dark .text-sky-400,
+.apple-trading-terminal.is-dark .text-blue-400 { color: #38bdf8 !important; }
+.apple-trading-terminal.is-dark .apple-terminal-chart-column > div,
+.apple-trading-terminal.is-dark .apple-terminal-order > div,
+.apple-trading-terminal.is-dark .apple-terminal-market > div {
+  border-color: rgba(148, 163, 184, 0.14) !important;
+}
+.apple-trading-terminal.is-dark .apple-terminal-chart-column > div { background: rgba(10, 18, 32, 0.82) !important; }
+.apple-trading-terminal.is-dark .apple-trading-chart > div { background: rgba(12, 23, 39, 0.92) !important; }
+.apple-trading-terminal.is-dark .apple-terminal-order > div:first-child { background: rgba(15, 27, 45, 0.90) !important; }
+.apple-trading-terminal.is-dark .apple-terminal-order input:not(.input-3d),
+.apple-trading-terminal.is-dark .apple-terminal-order select:not(.input-3d) {
+  background: rgba(15, 27, 45, 0.90) !important;
+  border-color: rgba(148, 163, 184, 0.20) !important;
+  color: #e8eef7 !important;
+}
+.apple-trading-terminal.is-dark .apple-market-table-head,
+.apple-trading-terminal.is-dark .apple-market-category-row,
+.apple-trading-terminal.is-dark .apple-market-footer,
+.apple-trading-terminal.is-dark .apple-order-type-tabs {
+  background: rgba(9, 18, 32, 0.72) !important;
+  border-color: rgba(148, 163, 184, 0.13) !important;
+}
+.apple-trading-terminal.is-dark .mw-row:hover,
+.apple-trading-terminal.is-dark .mw-row:active { background: rgba(56, 189, 248, 0.08) !important; }
+.apple-trading-terminal.is-dark .param-chip,
+.apple-trading-terminal.is-dark .input-3d {
+  background: rgba(15, 27, 45, 0.92) !important;
+  border-color: rgba(148, 163, 184, 0.20) !important;
+  color: #e8eef7 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 6px 16px rgba(0, 0, 0, 0.18) !important;
+}
+.apple-trading-terminal.is-dark input,
+.apple-trading-terminal.is-dark select { color: #e8eef7 !important; }
+.apple-trading-terminal.is-dark input::placeholder { color: rgba(203, 213, 225, 0.42) !important; }
+.apple-trading-terminal.is-dark option { background: #111c2e; color: #e8eef7; }
+.apple-trading-terminal.is-dark .terminal-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.22); }
+
 @media (max-width: 767px) {
   .apple-trading-terminal .apple-terminal-blotter { height: 220px !important; }
   .apple-trading-terminal .apple-terminal-topbar { padding-inline: 10px; }

@@ -7,7 +7,7 @@ import {
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
   ChevronDown, ChevronUp, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
-  Gauge, Lock, Unlock, BookOpen, Filter,
+  Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -1185,7 +1185,19 @@ export function ForexTradingPlatform({
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
   const [equityHistory, setEquityHistory] = useState<number[]>([])
+  const [isDarkTheme, setIsDarkTheme] = useState(false)
+  const [themeReady, setThemeReady] = useState(false)
+  
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("trade-terminal-theme")
+    if (savedTheme === "dark") setIsDarkTheme(true)
+    setThemeReady(true)
+  }, [])
 
+  useEffect(() => {
+    if (themeReady) window.localStorage.setItem("trade-terminal-theme", isDarkTheme ? "dark" : "light")
+  }, [isDarkTheme, themeReady])
+  
   const pairsRef        = useRef<ForexPair[]>([])
   const openTradesRef   = useRef<OpenTrade[]>([])
   const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -1900,7 +1912,7 @@ export function ForexTradingPlatform({
   const equity = walletBalance + totalPnl
 
   return (
-    <div className="flex flex-col forex-deep-bg apple-trading-terminal text-slate-900" style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal ${isDarkTheme ? "is-dark" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -1974,11 +1986,28 @@ export function ForexTradingPlatform({
           )}
         </div>
 
-        <button onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
-          className="p-1.5 transition-colors shrink-0"
-          style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: 4 }}>
-          <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => setIsDarkTheme(theme => !theme)}
+            aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
+            aria-pressed={isDarkTheme}
+            title={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
+            className="flex items-center gap-1.5 px-2 py-1.5 transition-colors"
+            style={{ background: isDarkTheme ? "rgba(251,191,36,0.10)" : "rgba(0,113,227,0.08)", border: isDarkTheme ? "1px solid rgba(251,191,36,0.24)" : "1px solid rgba(0,113,227,0.16)", borderRadius: 5 }}>
+            {isDarkTheme ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-blue-500" />}
+            <span className="hidden text-[8px] font-black tracking-[0.14em] uppercase sm:inline" style={{ color: isDarkTheme ? "#b7791f" : "#0071e3" }}>
+              {isDarkTheme ? "Light" : "Dark"}
+            </span>
+          </button>
+          <button onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
+            aria-label="Refresh market data"
+            title="Refresh market data"
+            className="p-1.5 transition-colors"
+            style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: 4 }}>
+            <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
@@ -2227,12 +2256,14 @@ export function ForexTradingPlatform({
             <div className="flex-1 min-h-0">
               {selectedPair ? (
                 <TradingChart
+                  key={isDarkTheme ? "dark" : "light"}
                   candles={selectedPair.candles}
                   sym={selectedPair.symbol}
                   tf={timeframe}
                   openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
                   onExpand={() => setChartExpanded(e => !e)}
                   isExpanded={chartExpanded}
+                  darkTheme={isDarkTheme}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-3">
