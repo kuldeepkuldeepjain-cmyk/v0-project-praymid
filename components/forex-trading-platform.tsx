@@ -1185,12 +1185,10 @@ export function ForexTradingPlatform({
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
   const [equityHistory, setEquityHistory] = useState<number[]>([])
-  const [isDarkTheme, setIsDarkTheme] = useState(false)
+  const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
   
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem("trade-terminal-theme")
-    if (savedTheme === "dark") setIsDarkTheme(true)
     setThemeReady(true)
   }, [])
 
@@ -1912,7 +1910,7 @@ export function ForexTradingPlatform({
   const equity = walletBalance + totalPnl
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal ${isDarkTheme ? "is-dark" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -2028,6 +2026,30 @@ export function ForexTradingPlatform({
             <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
           </div>
         ))}
+      </div>
+
+      {/* ══ REFERENCE WATCHLIST ════════════════════════════════════════════════ */}
+      <div className="reference-watchlist shrink-0 flex items-center gap-3 px-5 py-4 overflow-x-auto terminal-scroll">
+        {(["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"] as string[]).map(symbol => {
+          const pair = pairs.find(p => p.symbol === symbol)
+          if (!pair) return null
+          const isSelected = selectedPair?.symbol === pair.symbol
+          const up = pair.change >= 0
+          return (
+            <button key={pair.symbol} type="button" onClick={() => { setSelectedPair(pair); fetchCandles(pair.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 ${isSelected ? "is-selected" : ""}`}>
+              <span className="reference-watch-icon">{ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}</span>
+              <span className="reference-watch-copy">
+                <strong>{pair.symbol.replace("/", "")}</strong>
+                <span>{fmt(pair.bid, pair.symbol)}</span>
+              </span>
+              <span className={up ? "reference-watch-up" : "reference-watch-down"}>{up ? "+" : ""}{pair.change.toFixed(2)}%</span>
+            </button>
+          )
+        })}
+        <button type="button" className="reference-watch-add" aria-label="Add instrument"><Plus /></button>
+        <button type="button" onClick={() => setIsDarkTheme(theme => !theme)} className="reference-watch-theme" aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}>
+          {isDarkTheme ? <Sun /> : <Moon />}
+        </button>
       </div>
 
       {/* ══ MOBILE TAB SWITCHER ═══════════════════════════════════════════════ */}
@@ -2979,7 +3001,34 @@ export function ForexTradingPlatform({
         </div>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���────────────────────────────���───────────── */}
+      <div className="reference-metrics shrink-0">
+        {[
+          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
+          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
+          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+        ].map(item => (
+          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+          </div>
+        ))}
+      </div>
+
+      <div className="reference-statusbar shrink-0">
+        <span><i />Connected</span>
+        <strong>Live Account</strong>
+        <span className="reference-status-spacer" />
+        <span>Server: Elite-Trade-Live-1</span>
+        <span className="reference-status-divider">|</span>
+        <span>Ping: 42 ms</span>
+        <span className="reference-status-divider">|</span>
+        <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
+      </div>
+
+      {/* ── Trade Confirmation Modal ────────────────────────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"

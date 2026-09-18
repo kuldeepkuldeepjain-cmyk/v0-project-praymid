@@ -9,7 +9,8 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, MessageCircle, BarChart2,
+  AlertCircle, Home, Plus, MessageCircle, BarChart2, Menu, Search,
+  ChevronDown, Layers, FileText, Award,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -2017,62 +2018,125 @@ export default function DashboardHome() {
           Uses fixed inset-0 z-[60] so it sits above the header but below modals.
       ──────────────────────────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 60,
-            display: "flex",
-            flexDirection: "column",
-            background: "#040810",
-          }}
-        >
-          {/* Terminal top bar with back button */}
-          <div
-            className="flex items-center gap-3 px-3 shrink-0"
-            style={{
-              height: 44,
-              background: "#060b14",
-              borderBottom: "1px solid #0f1e35",
-              zIndex: 1,
-            }}
-          >
-            <button
-              onClick={() => setActiveTab("dashboard")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all active:scale-95"
-              style={{
-                background: "rgba(34,211,238,0.08)",
-                border: "1px solid rgba(34,211,238,0.18)",
-                color: "#22d3ee",
-              }}
-            >
-              <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-              Dashboard
-            </button>
-            <div className="flex items-center gap-1.5">
-              <BarChart2 className="h-4 w-4" style={{ color: "#22d3ee" }} />
-              <span className="text-white font-black text-[13px] tracking-wide">Trading Terminal</span>
+        <div className="elite-terminal-shell">
+          <aside className="elite-terminal-sidebar">
+            <div className="elite-terminal-brand">
+              <img src="/elite-fund-logo.jpg" alt="Elite Fund mark" />
+              <div>
+                <strong>ELITE FUND</strong>
+                <span>— TRADE HIGHER —</span>
+              </div>
             </div>
-            <div className="ml-auto flex items-center gap-1 px-2 py-1 rounded" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[9px] font-black text-emerald-400 tracking-widest">LIVE</span>
-            </div>
-          </div>
 
-          {/* Platform fills remaining height */}
-          <div className="flex-1 min-h-0">
-            <ForexTradingPlatform
-              participantEmail={participantData?.email ?? ""}
-              walletBalance={walletBalance}
-              onBalanceUpdated={(newBalance) => {
-                setParticipantData((prev: any) => {
-                  if (!prev) return prev
-                  const updated = { ...prev, account_balance: newBalance }
-                  try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
-                  return updated
-                })
-              }}
-            />
+            <nav className="elite-terminal-nav" aria-label="Trading terminal navigation">
+              <button type="button" className="elite-terminal-nav-item is-active">
+                <BarChart2 />
+                <span>Trading Terminal</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item" onClick={() => setActiveTab("dashboard")}>
+                <Home />
+                <span>Dashboard</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <Layers />
+                <span>Positions</span>
+                <span className="elite-terminal-nav-count">{0}</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <CreditCard />
+                <span>Orders</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <History />
+                <span>History</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <BarChart2 />
+                <span>Analytics</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <FileText />
+                <span>Reports</span>
+              </button>
+              <div className="elite-terminal-nav-divider" />
+              <button type="button" className="elite-terminal-nav-item">
+                <Award />
+                <span>Challenges</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <Wallet />
+                <span>Payouts</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <User />
+                <span>Leaderboard</span>
+              </button>
+              <button type="button" className="elite-terminal-nav-item">
+                <Settings />
+                <span>Settings</span>
+              </button>
+            </nav>
+
+            <div className="elite-terminal-promo">
+              <img src="/elite-fund-logo.jpg" alt="" aria-hidden="true" />
+              <div className="elite-terminal-promo-copy">
+                <strong>Trade Your Edge.</strong>
+                <strong>We Provide the Capital.</strong>
+                <span>Discipline &nbsp; Opportunity &nbsp; Growth</span>
+              </div>
+            </div>
+          </aside>
+
+          <div className="elite-terminal-workspace">
+            <header className="elite-terminal-header">
+              <button type="button" className="elite-terminal-menu" aria-label="Open terminal menu">
+                <Menu />
+              </button>
+              <label className="elite-terminal-search">
+                <Search />
+                <input aria-label="Search instruments" placeholder="Search instruments (e.g. EURUSD, GOLD, BTC)..." />
+              </label>
+              <div className="elite-terminal-account-metrics">
+                <div className="elite-terminal-account-card">
+                  <span>Account Balance</span>
+                  <strong>${walletBalance.toFixed(2)}</strong>
+                </div>
+                <div className="elite-terminal-account-metric">
+                  <span>Equity</span>
+                  <strong>${walletBalance.toFixed(2)}</strong>
+                </div>
+                <div className="elite-terminal-account-metric">
+                  <span>Open P/L</span>
+                  <strong>$0.00 (0.00%)</strong>
+                </div>
+              </div>
+              <button type="button" className="elite-terminal-header-icon" aria-label="Notifications">
+                <Bell />
+              </button>
+              <div className="elite-terminal-user">
+                <div className="elite-terminal-avatar">{displayName.charAt(0).toUpperCase()}</div>
+                <div>
+                  <strong>{displayName}</strong>
+                  <span>Trader</span>
+                </div>
+                <ChevronDown />
+              </div>
+            </header>
+
+            <div className="elite-terminal-platform">
+              <ForexTradingPlatform
+                participantEmail={participantData?.email ?? ""}
+                walletBalance={walletBalance}
+                onBalanceUpdated={(newBalance) => {
+                  setParticipantData((prev: any) => {
+                    if (!prev) return prev
+                    const updated = { ...prev, account_balance: newBalance }
+                    try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+                    return updated
+                  })
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
