@@ -1656,6 +1656,7 @@ export default function DashboardHome() {
   }
 
   const walletBalance = Number(participantData?.account_balance) || 0
+  const [terminalStats, setTerminalStats] = useState({ equity: walletBalance, openPnl: 0, openPnlPct: 0 })
   const isFundedAccount = participantData?.account_type === "funded"
   const fundedBaseAmount = isFundedAccount
     ? ({ 10000: 10000, 25000: 25000, 50000: 50000, 100000: 100000 }[Number(participantData?.funded_amount ?? participantData?.account_balance)] ?? 10000)
@@ -2035,11 +2036,13 @@ export default function DashboardHome() {
                 </div>
                 <div className="elite-terminal-account-metric">
                   <span>Equity</span>
-                  <strong>${walletBalance.toFixed(2)}</strong>
+                  <strong>${terminalStats.equity.toFixed(2)}</strong>
                 </div>
                 <div className="elite-terminal-account-metric">
                   <span>Open P/L</span>
-                  <strong>$0.00 (0.00%)</strong>
+                  <strong className={terminalStats.openPnl >= 0 ? "tone-up" : "tone-down"}>
+                    {terminalStats.openPnl >= 0 ? "+" : ""}${terminalStats.openPnl.toFixed(2)} ({terminalStats.openPnlPct >= 0 ? "+" : ""}{terminalStats.openPnlPct.toFixed(2)}%)
+                  </strong>
                 </div>
               </div>
               <button type="button" className="elite-terminal-header-icon" aria-label="Notifications">
@@ -2067,6 +2070,7 @@ export default function DashboardHome() {
                     return updated
                   })
                 }}
+                onStatsUpdate={setTerminalStats}
               />
             </div>
           </div>

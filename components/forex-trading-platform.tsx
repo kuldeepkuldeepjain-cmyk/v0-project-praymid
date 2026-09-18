@@ -517,7 +517,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ───────────────────────────────────────────────��───���
+// ─── Market Sessions Panel ───────────────────────────────────────────────���───���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -1133,15 +1133,17 @@ function PositionSizer({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function ForexTradingPlatform({
+  export function ForexTradingPlatform({
   participantEmail,
   walletBalance: externalBalance = 0,
   onBalanceUpdated,
-}: {
+  onStatsUpdate,
+  }: {
   participantEmail: string
   walletBalance?: number
   onBalanceUpdated?: (newBalance: number) => void
-}) {
+  onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
+  }) {
   // ── State ──────────────────────────────────────────────────────────────────
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
@@ -1581,7 +1583,7 @@ export function ForexTradingPlatform({
     } catch {}
   }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
-  // ── Execute market trade ───────────────────────────────────��───────────────
+  // ── Execute market trade ───────────────────────────────────���───────────────
   // Opens the confirmation modal ����� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
@@ -1921,6 +1923,15 @@ export function ForexTradingPlatform({
   const freeMargin = Math.max(0, walletBalance - totalMargin)
   const marginLevel = totalMargin > 0 ? ((walletBalance + totalPnl) / totalMargin * 100) : 0
   const equity = walletBalance + totalPnl
+
+  useEffect(() => {
+    onStatsUpdate?.({
+      equity,
+      openPnl: totalPnl,
+      openPnlPct: walletBalance > 0 ? (totalPnl / walletBalance) * 100 : 0,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [equity, totalPnl, walletBalance])
 
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>

@@ -318,7 +318,6 @@ export function TradingChart({
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
       priceLineVisible: true,
       priceLineWidth:   1,
-      priceLineColor:   palette.cyan,
       priceLineStyle:   LineStyle.Dashed,
       lastValueVisible: true,
     })
