@@ -1581,7 +1581,7 @@ export function ForexTradingPlatform({
     } catch {}
   }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
-  // ── Execute market trade ───────────────────────────────────────────────────
+  // ── Execute market trade ───────────────────────────────────��───────────────
   // Opens the confirmation modal ����� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
@@ -2309,107 +2309,54 @@ export function ForexTradingPlatform({
   )}
 
   {selectedPair && chartTradePrice !== null && (
-  <div className="chart-trade-float" role="group" aria-label={`Trade ${selectedPair.symbol} at ${fmt(chartTradePrice, selectedPair.symbol)}`} style={{ position: "absolute", top: "50%", right: 22, zIndex: 30, width: 184, padding: 11, border: "1px solid #334b65", borderRadius: 12, background: "rgba(7,14,23,.94)", boxShadow: "0 14px 36px rgba(0,0,0,.42)", backdropFilter: "blur(12px)", transform: "translateY(-50%)" }}>
-    <div className="chart-trade-float-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#8196ae", fontSize: 8, fontWeight: 800, letterSpacing: ".14em" }}>
+  <div className="chart-trade-float" role="group" aria-label={`Trade ${selectedPair.symbol} at ${fmt(chartTradePrice, selectedPair.symbol)}`}>
+    <div className="chart-trade-float-heading">
       <span>TRADE AT PRICE</span>
-      <button type="button" onClick={() => setChartTradePrice(null)} aria-label="Dismiss chart trade controls" style={{ padding: "0 3px", border: 0, background: "transparent", color: "#8196ae", fontSize: 18, lineHeight: "14px" }}>×</button>
+      <button type="button" onClick={() => setChartTradePrice(null)} aria-label="Dismiss chart trade controls">×</button>
     </div>
-    <strong className="chart-trade-float-price" style={{ display: "block", margin: "8px 0 10px", color: "#f4f8fc", fontFamily: "ui-monospace, SFMono-Regular, monospace", fontSize: 17 }}>{fmt(chartTradePrice, selectedPair.symbol)}</strong>
-    <div className="chart-trade-float-actions" style={{ display: "flex", gap: 7 }}>
-      <button type="button" className="chart-trade-float-button is-sell" onClick={() => chartTrade("SELL")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 5px", border: "1px solid #f16b6f", borderRadius: 7, background: "#c64048", color: "#fff", fontSize: 10, fontWeight: 900, letterSpacing: ".08em" }}>
+    <strong className="chart-trade-float-price">{fmt(chartTradePrice, selectedPair.symbol)}</strong>
+    <div className="chart-trade-float-actions">
+      <button type="button" className="chart-trade-float-button is-sell" onClick={() => chartTrade("SELL")}>
         <TrendingDown /> SELL
       </button>
-      <button type="button" className="chart-trade-float-button is-buy" onClick={() => chartTrade("BUY")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 5px", border: "1px solid #30d69e", borderRadius: 7, background: "#0fae78", color: "#fff", fontSize: 10, fontWeight: 900, letterSpacing: ".08em" }}>
+      <button type="button" className="chart-trade-float-button is-buy" onClick={() => chartTrade("BUY")}>
         <TrendingUp /> BUY
       </button>
     </div>
-    <span className="chart-trade-float-meta" style={{ display: "block", marginTop: 8, color: "#6e8299", fontFamily: "ui-monospace, SFMono-Regular, monospace", fontSize: 9, textAlign: "center" }}>{lotSize || "0.01"} lots · 1:{leverage}</span>
+    <span className="chart-trade-float-meta">{lotSize || "0.01"} lots · 1:{leverage}</span>
+  </div>
+  )}
+
+  {/* Persistent floating BUY/SELL, TradingView-style, anchored to the live price */}
+  {selectedPair && (
+  <div className="chart-live-trade-fab" role="group" aria-label="Quick trade at market price">
+    <button
+      type="button"
+      onClick={() => quickTrade("SELL")}
+      disabled={balanceLoaded && estimatedMargin > walletBalance}
+      className="chart-live-trade-fab-button is-sell"
+    >
+      <span className="chart-live-trade-fab-label"><TrendingDown /> SELL</span>
+      <span className="chart-live-trade-fab-price">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+    </button>
+    <div className="chart-live-trade-fab-spread">
+      {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips
+    </div>
+    <button
+      type="button"
+      onClick={() => quickTrade("BUY")}
+      disabled={balanceLoaded && estimatedMargin > walletBalance}
+      className="chart-live-trade-fab-button is-buy"
+    >
+      <span className="chart-live-trade-fab-label"><TrendingUp /> BUY</span>
+      <span className="chart-live-trade-fab-price">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+    </button>
   </div>
   )}
   </div>
-
-            {/* ── Quick BUY/SELL strip (3D) ─��� */}
-            {selectedPair && (
-              <div className="shrink-0 flex items-stretch" style={{ borderTop: "2px solid #1a2d4a", height: 72, background: "#04080f" }}>
-
-                {/* Param chips */}
-                <div className="flex items-center gap-2 px-3 shrink-0" style={{ borderRight: "1px solid #1a2d4a" }}>
-                  {/* LOTS chip */}
-                  <div className="param-chip flex flex-col items-center px-3 py-1.5" style={{ minWidth: 64 }}>
-                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LOTS</span>
-                    <input
-                      type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
-                      step="0.01" min="0.01" max="100"
-                      className="input-3d price-mono text-base font-black text-center w-full focus:outline-none px-1 py-0.5"
-                      style={{ width: 60, borderRadius: 6 }}
-                    />
-                  </div>
-                  {/* LEV chip */}
-                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 60 }}>
-                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>LEV</span>
-                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="input-3d price-mono text-sm font-black text-cyan-300 focus:outline-none appearance-none cursor-pointer text-center w-full px-1 py-0.5"
-                      style={{ width: 56, borderRadius: 6 }}>
-                      {["10","25","50","100","200","500"].map(l => (
-                        <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* MARGIN chip */}
-                  <div className="param-chip flex flex-col items-center px-2 py-1.5" style={{ minWidth: 72 }}>
-                    <span className="text-[7px] font-black tracking-[0.18em] uppercase mb-1" style={{ color: "#3d5a80" }}>MARGIN</span>
-                    <span className="price-mono text-sm font-black" style={{ color: "#fbbf24", textShadow: "0 0 10px rgba(251,191,36,0.4)" }}>
-                      ${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-
-                {/* SELL 3D button */}
-                <button
-                  onClick={() => quickTrade("SELL")}
-                  disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="btn-3d-sell flex-1 flex flex-col items-center justify-center gap-0.5"
-                  style={{ borderRadius: 0 }}
-                >
-                  <div className="flex items-center gap-2 relative z-10">
-                    <TrendingDown className="h-5 w-5 drop-shadow-lg" style={{ color: "#fca5a5", filter: "drop-shadow(0 0 6px rgba(248,113,113,0.7))" }} />
-                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(239,68,68,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>SELL</span>
-                  </div>
-                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#fca5a5", textShadow: "0 0 8px rgba(248,113,113,0.5)" }}>
-                    {fmt(selectedPair.bid, selectedPair.symbol)}
-                  </span>
-                </button>
-
-                {/* Spread pill */}
-                <div className="flex flex-col items-center justify-center shrink-0 px-1" style={{ background: "#02050b", minWidth: 50, borderLeft: "1px solid #1a2d4a", borderRight: "1px solid #1a2d4a" }}>
-                  <span className="text-[6px] font-black tracking-[0.2em] uppercase" style={{ color: "#1e3a5f" }}>SPR</span>
-                  <span className="price-mono text-xs font-black mt-0.5" style={{ color: "#0e7490", textShadow: "0 0 8px rgba(14,116,144,0.6)" }}>
-                    {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}
-                  </span>
-                  <span className="text-[6px] font-bold mt-0.5" style={{ color: "#0e3a4a" }}>pips</span>
-                </div>
-
-                {/* BUY 3D button */}
-                <button
-                  onClick={() => quickTrade("BUY")}
-                  disabled={balanceLoaded && estimatedMargin > walletBalance}
-                  className="btn-3d-buy flex-1 flex flex-col items-center justify-center gap-0.5"
-                  style={{ borderRadius: 0 }}
-                >
-                  <div className="flex items-center gap-2 relative z-10">
-                    <TrendingUp className="h-5 w-5" style={{ color: "#6ee7b7", filter: "drop-shadow(0 0 6px rgba(110,231,183,0.7))" }} />
-                    <span className="text-xl font-black tracking-[0.18em]" style={{ color: "#fff", textShadow: "0 0 20px rgba(16,185,129,0.8), 0 1px 2px rgba(0,0,0,0.8)" }}>BUY</span>
-                  </div>
-                  <span className="price-mono text-xs font-black relative z-10" style={{ color: "#6ee7b7", textShadow: "0 0 8px rgba(110,231,183,0.5)" }}>
-                    {fmt(selectedPair.ask, selectedPair.symbol)}
-                  </span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* ── RIGHT: Order Ticket ────────────��────────────────────────────────── */}
+        {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
         <div className={`apple-terminal-order flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 

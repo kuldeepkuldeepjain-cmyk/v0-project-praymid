@@ -49,35 +49,36 @@ type PriceAlert = {
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
+// TradingView-accurate palette: flat background, muted grid, #26a69a/#ef5350 candles
 const T = {
-  bg:          "#f7f9fc",
+  bg:          "#ffffff",
   bgSurface:   "#ffffff",
-  bgHover:     "#eef4fb",
-  border:      "rgba(29,42,58,0.10)",
-  borderMuted: "rgba(29,42,58,0.06)",
-  textMuted:   "#718096",
-  textDim:     "#5c6f85",
-  textBase:    "#1d2a3a",
-  green:       "#20a36a",
-  greenBright: "#2bb978",
-  red:         "#ff453a",
-  redBright:   "#ff625a",
-  cyan:        "#0071e3",
+  bgHover:     "#f0f3fa",
+  border:      "#e0e3eb",
+  borderMuted: "#eef0f3",
+  textMuted:   "#787b86",
+  textDim:     "#4c525e",
+  textBase:    "#131722",
+  green:       "#089981",
+  greenBright: "#26a69a",
+  red:         "#f23645",
+  redBright:   "#ef5350",
+  cyan:        "#2962ff",
   amber:       "#b7791f",
   blue:        "#3b82c4",
   pink:        "#d35d91",
   purple:      "#6f65c7",
   orange:      "#c96f2d",
-  emerald:     "#20a36a",
+  emerald:     "#089981",
 }
 
 const DARK_T = {
-  bg: "#0a1220", bgSurface: "#111c2e", bgHover: "#17263d",
-  border: "rgba(148,163,184,0.20)", borderMuted: "rgba(148,163,184,0.10)",
-  textMuted: "#8fa3bd", textDim: "#a9bad0", textBase: "#e8eef7",
-  green: "#24c78b", greenBright: "#3cdda0", red: "#ff625a", redBright: "#ff7a73",
-  cyan: "#38bdf8", amber: "#fbbf24", blue: "#60a5fa", pink: "#f472b6",
-  purple: "#a78bfa", orange: "#fb923c", emerald: "#2dd4a0",
+  bg: "#131722", bgSurface: "#131722", bgHover: "#1e222d",
+  border: "#2a2e39", borderMuted: "#1e222d",
+  textMuted: "#787b86", textDim: "#b2b5be", textBase: "#d1d4dc",
+  green: "#089981", greenBright: "#26a69a", red: "#f23645", redBright: "#ef5350",
+  cyan: "#2962ff", amber: "#fbbf24", blue: "#60a5fa", pink: "#f472b6",
+  purple: "#a78bfa", orange: "#fb923c", emerald: "#26a69a",
 }
 
 // ─── Math helpers ─────────────────────────────────────────────────────────────
@@ -257,27 +258,27 @@ export function TradingChart({
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.VerticalGradient, topColor: palette.bgSurface, bottomColor: palette.bg },
-        textColor:  palette.textBase,
-        fontFamily: "'Inter', 'SF Pro Display', monospace",
+        background: { type: ColorType.Solid, color: palette.bg },
+        textColor:  palette.textDim,
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif",
         fontSize:   12,
         attributionLogo: false,
       },
       grid: {
         vertLines: { color: palette.borderMuted, style: LineStyle.Solid },
-        horzLines: { color: palette.border, style: LineStyle.Solid },
+        horzLines: { color: palette.borderMuted, style: LineStyle.Solid },
       },
       crosshair: {
         mode: CrosshairMode.Normal,
         vertLine: {
-          color: palette.cyan,
-          labelBackgroundColor: palette.cyan,
+          color: "#758696",
+          labelBackgroundColor: "#758696",
           style: LineStyle.Dashed,
           width: 1,
         },
         horzLine: {
-          color: palette.cyan,
-          labelBackgroundColor: palette.cyan,
+          color: "#758696",
+          labelBackgroundColor: "#758696",
           style: LineStyle.Dashed,
           width: 1,
         },
@@ -294,7 +295,7 @@ export function TradingChart({
         secondsVisible: false,
         fixLeftEdge:    false,
         fixRightEdge:   false,
-        barSpacing:     12,
+        barSpacing:     10,
         minBarSpacing:  4,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
@@ -305,15 +306,15 @@ export function TradingChart({
 
     chartRef.current = chart
 
-    // ── Candles: vivid green/red with bright wick contrast ──
+    // ── Candles: TradingView-standard teal/red, borderless bodies ──
     const cSer = chart.addSeries(CandlestickSeries, {
       upColor:          palette.greenBright,
-      downColor:        palette.red,
+      downColor:        palette.redBright,
       borderUpColor:    palette.greenBright,
       borderDownColor:  palette.redBright,
       wickUpColor:      palette.greenBright,
       wickDownColor:    palette.redBright,
-      borderVisible:    true,
+      borderVisible:    false,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
       priceLineVisible: true,
       priceLineWidth:   1,
