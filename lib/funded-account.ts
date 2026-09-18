@@ -34,6 +34,12 @@ export function getFundedMinimumBalance(baseAmount: number): number {
   return Math.max(0, baseAmount - getFundedTopUpAmount(baseAmount))
 }
 
+export function getFundedPayoutAmount(accountBalance: unknown, configuredAmount?: unknown): number {
+  const balance = toPositiveNumber(accountBalance)
+  const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)
+  return balance > baseAmount ? Math.round((balance - baseAmount) * 0.8 * 100) / 100 : 0
+}
+
 export function isFundedBalanceBelowMinimum(
   accountType: unknown,
   balance: unknown,

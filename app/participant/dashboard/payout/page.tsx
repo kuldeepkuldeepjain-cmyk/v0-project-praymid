@@ -20,6 +20,7 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet, TrendingUp, Bell, ThumbsUp, ShieldAlert } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
+import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
 
 
 const PAYOUT_PLANS = [
@@ -139,6 +140,9 @@ export default function PayoutPage() {
 
     const walletBalance = participantData?.account_balance || 0
     const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
+    const requestedAmount = isFundedAccount
+      ? getFundedPayoutAmount(walletBalance, participantData?.funded_amount)
+      : plan.amount
 
     if (hasActivePayout) {
       toast({
@@ -149,7 +153,16 @@ export default function PayoutPage() {
       return
     }
 
-    if (walletBalance < plan.amount) {
+    if (isFundedAccount && requestedAmount <= 0) {
+      toast({
+        title: "No funded profit available",
+        description: `Payouts are allowed only above your $${fundedBaseAmount.toFixed(2)} funded amount.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!isFundedAccount && walletBalance < plan.amount) {
       toast({
         title: "Insufficient Balance",
         description: `You need $${plan.amount} to request a ${plan.label} payout`,
@@ -197,7 +210,9 @@ export default function PayoutPage() {
         method: "POST",
         body: JSON.stringify({
           email: participantData?.email,
-          amount: plan.amount,
+          amount: isFundedAccount
+            ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
+            : plan.amount,
           bep20_address: bep20Address,
           payout_method: plan.method,
         }),
@@ -300,9 +315,18 @@ export default function PayoutPage() {
   }
 
   const walletBalance = Number(participantData?.account_balance) || 0
+  const isFundedAccount = participantData?.account_type === "funded"
+  const fundedBaseAmount = isFundedAccount
+    ? getFundedBaseAmount(walletBalance, participantData?.funded_amount)
+    : 0
+  const maximumFundedPayout = isFundedAccount
+    ? getFundedPayoutAmount(walletBalance, participantData?.funded_amount)
+    : 0
   const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
-  const canWithdraw = walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
+  const canWithdraw = isFundedAccount
+    ? maximumFundedPayout > 0 && !hasActivePayout
+    : walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
   
   // Helper function to render horizontal status tracker
   const renderStatusTracker = (status: string, transactionHash?: string) => {
@@ -481,10 +505,24 @@ export default function PayoutPage() {
               ${walletBalance.toFixed(2)}
             </p>
 
-            {/* Payout Plan Selector */}
-            <div className="space-y-2 mb-5">
-              <p className="text-sm font-semibold text-slate-700">Select Payout Amount</p>
-              {PAYOUT_PLANS.map((plan) => {
+  {/* Payout Plan Selector */}
+  <div className="space-y-2 mb-5">
+  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Payout" : "Select Payout Amount"}</p>
+  {isFundedAccount ? (
+  <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+  {maximumFundedPayout > 0 ? (
+  <>
+  <div className="flex items-center justify-between gap-3">
+  <span>Available profit above ${fundedBaseAmount.toFixed(2)}</span>
+  <strong>${maximumFundedPayout.toFixed(2)}</strong>
+  </div>
+  <p className="mt-1 text-xs text-emerald-700">Maximum payout: 80% of excess profit.</p>
+  </>
+  ) : (
+  <p>Payouts unlock only after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
+  )}
+  </div>
+  ) : PAYOUT_PLANS.map((plan) => {
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
                 const isDirectPlan = plan.id === "direct"
@@ -564,13 +602,17 @@ export default function PayoutPage() {
               }}
             >
               <Wallet className="h-5 w-5" />
-              Request ${selectedPayoutPlan.amount} {selectedPayoutPlan.label} Payout
+              {isFundedAccount
+                ? `Request $${maximumFundedPayout.toFixed(2)} Funded Profit Payout`
+                : `Request $${selectedPayoutPlan.amount} ${selectedPayoutPlan.label} Payout`}
             </button>
 
             {!canWithdraw && (
               <p className="text-center text-xs text-red-400 mt-3 font-medium">
                 {hasActivePayout
                   ? "Complete your current payout request before placing a new one"
+                  : isFundedAccount
+                  ? `Your balance must exceed $${fundedBaseAmount.toFixed(2)} to unlock an 80% excess-profit payout`
                   : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} payout`}
               </p>
             )}
