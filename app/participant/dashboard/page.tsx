@@ -1654,23 +1654,16 @@ export default function DashboardHome() {
     }
   }
 
-  if (!mounted || !participantData) {
-    return <PageLoader variant="dashboard" />
-  }
-
-
-
-  const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
-  const walletBalance = Number(participantData.account_balance) || 0
-  const isFundedAccount = participantData.account_type === "funded"
+  const walletBalance = Number(participantData?.account_balance) || 0
+  const isFundedAccount = participantData?.account_type === "funded"
   const fundedBaseAmount = isFundedAccount
-    ? ({ 10000: 10000, 25000: 25000, 50000: 50000, 100000: 100000 }[Number(participantData.funded_amount ?? participantData.account_balance)] ?? 10000)
+    ? ({ 10000: 10000, 25000: 25000, 50000: 50000, 100000: 100000 }[Number(participantData?.funded_amount ?? participantData?.account_balance)] ?? 10000)
     : 0
   const minimumFundedBalance = Math.max(0, fundedBaseAmount - 100)
   const isFundedAccountBelowBase = isFundedAccount && walletBalance > 0 && walletBalance < minimumFundedBalance
 
   useEffect(() => {
-    if (!isFundedAccountBelowBase || participantData.account_frozen || !participantData.email) return
+    if (!isFundedAccountBelowBase || participantData?.account_frozen || !participantData?.email) return
     const holdAccount = async () => {
       try {
         const response = await fetch("/api/participant/freeze-account", {
@@ -1687,7 +1680,13 @@ export default function DashboardHome() {
       }
     }
     holdAccount()
-  }, [isFundedAccountBelowBase, participantData.account_frozen, participantData.email])
+  }, [isFundedAccountBelowBase, participantData?.account_frozen, participantData?.email])
+
+  if (!mounted || !participantData) {
+    return <PageLoader variant="dashboard" />
+  }
+
+  const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
 
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
