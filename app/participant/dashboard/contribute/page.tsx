@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { maskMobileNumber } from "@/lib/format-utils"
+import { TopUpModal } from "@/components/topup-modal"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Dialog,
@@ -60,6 +61,7 @@ export default function ContributePage() {
 
   const [selectedPlanId, setSelectedPlanId] = useState<PlanId>("platinum")
   const [isRequestingContribution, setIsRequestingContribution] = useState(false)
+  const [showTopUpModal, setShowTopUpModal] = useState(false)
 
   const handleContributeRequest = async () => {
     if (isOnCooldown) return
@@ -572,6 +574,28 @@ export default function ContributePage() {
                 </div>
               )}
 
+              <Card className="overflow-hidden border-2 border-violet-200 bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg">
+                <CardContent className="flex items-center justify-between gap-4 p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15">
+                      <Wallet className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold">Top Up Your Wallet</p>
+                      <p className="mt-0.5 text-xs text-violet-100">Add funds directly with USDT and submit payment proof.</p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={() => setShowTopUpModal(true)}
+                    className="shrink-0 bg-white text-violet-700 hover:bg-violet-50"
+                  >
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Top Up
+                  </Button>
+                </CardContent>
+              </Card>
+
               <div className="text-center space-y-1">
                 <h2 className="text-2xl font-bold text-slate-900">Choose Your Contribution Plan</h2>
                 <p className="text-sm text-slate-500">Select a plan, contribute USDT, and earn 1.5x back upon approval</p>
@@ -691,8 +715,21 @@ export default function ContributePage() {
 
       </main>
 
-
-
+      <TopUpModal
+        isOpen={showTopUpModal}
+        onClose={() => setShowTopUpModal(false)}
+        currentBalance={Number(participantData.wallet_balance ?? participantData.account_balance ?? 0)}
+        userId={participantData.username || participantData.email || ""}
+        userEmail={participantData.email || ""}
+        isFundedAccount={participantData.account_type === "funded"}
+        onSuccess={(amount) => {
+          setParticipantData((previous: any) => previous ? {
+            ...previous,
+            wallet_balance: Number(previous.wallet_balance ?? previous.account_balance ?? 0) + amount,
+            account_balance: Number(previous.account_balance ?? 0) + amount,
+          } : previous)
+        }}
+      />
     </div>
   )
 }
