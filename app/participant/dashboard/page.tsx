@@ -13,6 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
@@ -1586,7 +1587,7 @@ export default function DashboardHome() {
           setParticipantData(data)
           setParticipantId(data.id || "")
 
-          if (data.account_frozen) {
+          if (data.account_frozen || data.is_frozen) {
             setShowFrozenModal(true)
           }
 
@@ -1660,13 +1661,13 @@ export default function DashboardHome() {
   const [terminalStats, setTerminalStats] = useState({ equity: walletBalance, openPnl: 0, openPnlPct: 0 })
   const isFundedAccount = participantData?.account_type === "funded"
   const fundedBaseAmount = isFundedAccount
-    ? ({ 10000: 10000, 25000: 25000, 50000: 50000, 100000: 100000 }[Number(participantData?.funded_amount ?? participantData?.account_balance)] ?? 10000)
+    ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
     : 0
-  const minimumFundedBalance = Math.max(0, fundedBaseAmount - 100)
+  const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
   const isFundedAccountBelowBase = isFundedAccount && walletBalance > 0 && walletBalance < minimumFundedBalance
 
   useEffect(() => {
-    if (!isFundedAccountBelowBase || participantData?.account_frozen || !participantData?.email) return
+    if (!isFundedAccountBelowBase || participantData?.account_frozen || participantData?.is_frozen || !participantData?.email) return
     const holdAccount = async () => {
       try {
         const response = await fetch("/api/participant/freeze-account", {

@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
     const { email } = await req.json()
     if (!email) return NextResponse.json({ success: false, error: "Missing email" }, { status: 400 })
     await execute(
-      `UPDATE participants SET account_frozen = true, status = $1 WHERE email = $2`,
+      `UPDATE participants SET account_frozen = true, is_frozen = true, status = $1, updated_at = NOW() WHERE email = $2`,
       ['frozen', email]
     )
     return NextResponse.json({ success: true })
