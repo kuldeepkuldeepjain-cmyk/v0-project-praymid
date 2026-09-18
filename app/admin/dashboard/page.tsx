@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
+import { isAdminAuthenticated, getAdminData, clearAdminAuth, adminFetch } from "@/lib/auth"
 import {
   Wallet,
   Copy,
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
 
   const fetchPaymentSettings = async () => {
     try {
-      const response = await fetch("/api/admin/payment-settings")
+      const response = await adminFetch("/api/admin/payment-settings")
       const data = await response.json()
       if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "" })
     } catch (error) {
@@ -88,13 +88,13 @@ export default function AdminDashboard() {
   const savePaymentSettings = async () => {
     setIsSavingPaymentSettings(true)
     try {
-      const response = await fetch("/api/admin/payment-settings", {
+      const response = await adminFetch("/api/admin/payment-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(paymentSettings),
       })
       if (!response.ok) throw new Error("Save failed")
-      toast({ title: "Saved", description: "TRC20 and BEP20 payment addresses updated" })
+      toast({ title: "Saved", description: "TRC20, BEP20, and ERC20 payment addresses updated" })
     } catch {
       toast({ title: "Save failed", description: "Unable to update payment addresses", variant: "destructive" })
     } finally {

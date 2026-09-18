@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Save, Wallet, Settings, Loader2, Check } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { adminFetch } from "@/lib/auth"
+
 export default function AdminSettingsPage() {
   const router = useRouter()
   const { toast } = useToast()
@@ -16,8 +18,10 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   
-  // Settings
+  // Wallet settings
   const [topupAddress, setTopupAddress] = useState("")
+  const [trc20Address, setTrc20Address] = useState("")
+  const [erc20Address, setErc20Address] = useState("")
 
   useEffect(() => {
     const checkAuth = () => {
@@ -34,9 +38,17 @@ export default function AdminSettingsPage() {
   const fetchSettings = async () => {
     setIsLoading(true)
     try {
-      const res = await fetch("/api/admin/settings")
-      const data = await res.json()
-      if (data.topup_address) setTopupAddress(data.topup_address)
+      const [legacyResponse, paymentResponse] = await Promise.all([
+        adminFetch("/api/admin/settings"),
+        adminFetch("/api/admin/payment-settings"),
+      ])
+      const [legacyData, paymentData] = await Promise.all([legacyResponse.json(), paymentResponse.json()])
+      if (legacyData.topup_address) setTopupAddress(legacyData.topup_address)
+      if (paymentData.success) {
+        setTopupAddress(paymentData.bep20_address || legacyData.topup_address || "")
+        setTrc20Address(paymentData.trc20_address || "")
+        setErc20Address(paymentData.erc20_address || "")
+      }
     } catch (error) {
       console.error("Error fetching settings:", error)
     } finally {
@@ -48,13 +60,22 @@ export default function AdminSettingsPage() {
     setIsSaving(true)
     setSaved(false)
     try {
-      const res = await fetch("/api/admin/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topup_address: topupAddress }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+      const [legacyResponse, paymentResponse] = await Promise.all([
+        adminFetch("/api/admin/settings", {
+          method: "POST",
+          body: JSON.stringify({ topup_address: topupAddress }),
+        }),
+        adminFetch("/api/admin/payment-settings", {
+          method: "POST",
+          body: JSON.stringify({
+            trc20_address: trc20Address,
+            bep20_address: topupAddress,
+            erc20_address: erc20Address,
+          }),
+        }),
+      ])
+      const [legacyData, paymentData] = await Promise.all([legacyResponse.json(), paymentResponse.json()])
+      if (!legacyData.success || !paymentData.success) throw new Error(legacyData.error || paymentData.error)
       setSaved(true)
       toast({ title: "Settings Saved", description: "Your settings have been updated successfully" })
       setTimeout(() => setSaved(false), 2000)
@@ -81,7 +102,7 @@ export default function AdminSettingsPage() {
     <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-lg border-b border-slate-200 shadow-sm">
-        <div className="px-6 py-4 flex items-center justify-between">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-4">
             <Link href="/finalflow/dashboard">
               <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-slate-100">
@@ -164,6 +185,35 @@ export default function AdminSettingsPage() {
                   <p className="text-xs text-slate-500">
                     This address will be displayed to users when they want to top up their wallet balance.
                   </p>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="trc20Address" className="text-sm font-semibold text-slate-700">
+                      TRC20 USDT wallet address
+                    </Label>
+                    <Input
+                      id="trc20Address"
+                      value={trc20Address}
+                      onChange={(e) => setTrc20Address(e.target.value)}
+                      placeholder="Enter TRC20 wallet address"
+                      className="h-12 text-base font-mono border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500/20"
+                    />
+                    <p className="text-xs text-slate-500">Used for USDT deposits on the Tron network.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="erc20Address" className="text-sm font-semibold text-slate-700">
+                      ERC20 USDT wallet address
+                    </Label>
+                    <Input
+                      id="erc20Address"
+                      value={erc20Address}
+                      onChange={(e) => setErc20Address(e.target.value)}
+                      placeholder="Enter ERC20 wallet address"
+                      className="h-12 text-base font-mono border-2 border-slate-200 focus:border-purple-500 focus:ring-purple-500/20"
+                    />
+                    <p className="text-xs text-slate-500">Used for USDT deposits on the Ethereum network.</p>
+                  </div>
                 </div>
 
                 {/* Preview */}

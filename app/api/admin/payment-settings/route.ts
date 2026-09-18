@@ -1,9 +1,12 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { query } from "@/lib/db"
+import { requireAdminSession } from "@/lib/auth-middleware"
 
 const keys = ["topup_trc20_address", "topup_bep20_address", "topup_erc20_address"] as const
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminSession(request)
+  if (!auth.ok) return auth.response
   try {
     const rows = (await query(
       `SELECT setting_key, setting_value FROM system_settings WHERE setting_key = ANY($1::text[])`,
@@ -21,7 +24,9 @@ export async function GET() {
     return NextResponse.json({ success: false, error: "Unable to load payment settings" }, { status: 500 })
   }
 }
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const auth = await requireAdminSession(request)
+  if (!auth.ok) return auth.response
   try {
     const body = await request.json()
     const trc20Address = typeof body.trc20_address === "string" ? body.trc20_address.trim() : ""
