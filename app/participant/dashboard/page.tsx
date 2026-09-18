@@ -1671,6 +1671,7 @@ export default function DashboardHome() {
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
+        isFundedAccount={participantData?.account_type === "funded"}
   onSuccess={async () => {
   setShowTopUpModal(false)
   if (participantData?.email) {

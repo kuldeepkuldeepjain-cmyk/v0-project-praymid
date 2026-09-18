@@ -16,6 +16,7 @@ interface TopUpModalProps {
   userId: string
   userEmail?: string
   onSuccess?: (amount: number) => void
+  isFundedAccount?: boolean
 }
 
 type Step = "form" | "submitting" | "success"
@@ -67,13 +68,15 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }
 
   const parsedAmount = parseFloat(amount)
-  const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5
+  const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
+  const isFundedAmountValid = !isFundedAccount || parsedAmount in fundedTiers
+  const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
   const handleSubmit = async () => {
     setErrorMessage("")
 
     if (!isAmountValid) {
-      setErrorMessage("Please enter a valid amount (minimum $5)")
+      setErrorMessage(isFundedAccount ? "Funded accounts require a $100, $250, $500, or $1,000 top-up tier" : "Please enter a valid amount (minimum $5)")
       return
     }
     if (!txHash.trim()) {
@@ -162,6 +165,27 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           {/* FORM STEP */}
           {(step === "form" || step === "submitting") && (
             <div className="space-y-3">
+
+              {isFundedAccount && (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+                  <p className="text-xs font-bold text-emerald-900">Funded Account Top-Up Rules</p>
+                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">Choose an exact tier. After admin approval, your funded trading balance is credited with the matching account size.</p>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    {[100, 250, 500, 1000].map((tier) => (
+                      <button
+                        key={tier}
+                        type="button"
+                        onClick={() => setAmount(String(tier))}
+                        disabled={step === "submitting"}
+                        className={`rounded-lg border px-2 py-2 text-left text-[11px] transition-colors ${Number(amount) === tier ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}
+                      >
+                        <span className="block font-bold">Top up ${tier.toLocaleString()}</span>
+                        <span className="block opacity-80">Get ${(tier * 100).toLocaleString()} funded</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Network selector */}
               <div className="space-y-1.5">
