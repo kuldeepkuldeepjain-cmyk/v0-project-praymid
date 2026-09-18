@@ -2223,6 +2223,9 @@ button, a, [role="button"] {
   min-height: 300px;
   background: #09121e !important;
 }
+.reference-terminal .apple-trading-chart {
+  background: #09121e !important;
+}
 .reference-terminal .apple-terminal-blotter {
   height: 218px !important;
   background: #080e16 !important;
