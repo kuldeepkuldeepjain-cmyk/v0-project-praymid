@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { isAdminAuthenticated, getAdminData, clearAdminAuth } from "@/lib/auth"
+import { isAdminAuthenticated, getAdminData, clearAdminAuth, adminFetch } from "@/lib/auth"
 import {
   Wallet,
   Copy,
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
 
   const fetchPaymentSettings = async () => {
     try {
-      const response = await fetch("/api/admin/payment-settings")
+      const response = await adminFetch("/api/admin/payment-settings")
       const data = await response.json()
       if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "" })
     } catch (error) {
@@ -88,13 +88,13 @@ export default function AdminDashboard() {
   const savePaymentSettings = async () => {
     setIsSavingPaymentSettings(true)
     try {
-      const response = await fetch("/api/admin/payment-settings", {
+      const response = await adminFetch("/api/admin/payment-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(paymentSettings),
       })
       if (!response.ok) throw new Error("Save failed")
-      toast({ title: "Saved", description: "TRC20 and BEP20 payment addresses updated" })
+      toast({ title: "Saved", description: "TRC20, BEP20, and ERC20 payment addresses updated" })
     } catch {
       toast({ title: "Save failed", description: "Unable to update payment addresses", variant: "destructive" })
     } finally {
@@ -398,26 +398,34 @@ export default function AdminDashboard() {
         {/* Payment Wallet Settings */}
         <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-white">Payment Wallet Addresses</CardTitle>
-            <CardDescription>These addresses are shown to traders when they top up their accounts.</CardDescription>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-white">Admin Wallet Addresses</CardTitle>
+                <CardDescription>Set the USDT deposit addresses shown to traders. Changes are saved to the database.</CardDescription>
+              </div>
+              <Badge className="w-fit border-cyan-500/30 bg-cyan-500/10 text-cyan-300">Admin only</Badge>
+            </div>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-3">
+          <CardContent className="grid gap-5 md:grid-cols-2">
             <div className="space-y-2">
               <label htmlFor="trc20-address" className="text-sm font-medium text-cyan-200">TRC20 USDT address</label>
-              <Input id="trc20-address" value={paymentSettings.trc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, trc20_address: event.target.value }))} placeholder="Enter TRC20 wallet address" className="border-cyan-500/30 bg-cyan-950/40 text-white placeholder:text-cyan-300/50" />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="bep20-address" className="text-sm font-medium text-cyan-200">BEP20 USDT address</label>
-              <Input id="bep20-address" value={paymentSettings.bep20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, bep20_address: event.target.value }))} placeholder="Enter BEP20 wallet address" className="border-cyan-500/30 bg-cyan-950/40 text-white placeholder:text-cyan-300/50" />
+              <Input id="trc20-address" value={paymentSettings.trc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, trc20_address: event.target.value }))} placeholder="Enter TRC20 wallet address" autoComplete="off" className="border-cyan-500/30 bg-cyan-950/40 font-mono text-white placeholder:text-cyan-300/50" />
+              <p className="text-xs text-cyan-300/70">Stored in the TRC20 admin wallet record.</p>
             </div>
             <div className="space-y-2">
               <label htmlFor="erc20-address" className="text-sm font-medium text-cyan-200">ERC20 USDT address</label>
-              <Input id="erc20-address" value={paymentSettings.erc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, erc20_address: event.target.value }))} placeholder="Enter ERC20 wallet address" className="border-cyan-500/30 bg-cyan-950/40 text-white placeholder:text-cyan-300/50" />
+              <Input id="erc20-address" value={paymentSettings.erc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, erc20_address: event.target.value }))} placeholder="Enter ERC20 wallet address" autoComplete="off" className="border-cyan-500/30 bg-cyan-950/40 font-mono text-white placeholder:text-cyan-300/50" />
+              <p className="text-xs text-cyan-300/70">Stored in the ERC20 admin wallet record.</p>
             </div>
-            <div className="md:col-span-3">
+            <div className="space-y-2 md:col-span-2">
+              <label htmlFor="bep20-address" className="text-sm font-medium text-cyan-200">BEP20 USDT address</label>
+              <Input id="bep20-address" value={paymentSettings.bep20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, bep20_address: event.target.value }))} placeholder="Enter BEP20 wallet address" autoComplete="off" className="border-cyan-500/30 bg-cyan-950/40 font-mono text-white placeholder:text-cyan-300/50" />
+              <p className="text-xs text-cyan-300/70">Legacy BEP20 setting retained for existing deposit flows.</p>
+            </div>
+            <div className="md:col-span-2">
               <Button onClick={savePaymentSettings} disabled={isSavingPaymentSettings} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
                 {isSavingPaymentSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Payment Addresses
+                Save Wallet Addresses
               </Button>
             </div>
           </CardContent>

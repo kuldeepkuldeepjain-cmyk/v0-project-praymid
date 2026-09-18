@@ -30,8 +30,12 @@ export function getFundedTopUpAmount(baseAmount: number): number {
   return plan?.topUpAmount ?? Math.max(0, baseAmount * 0.01)
 }
 
+export function getFundedLossLimit(baseAmount: number): number {
+  return getFundedTopUpAmount(baseAmount)
+}
+
 export function getFundedMinimumBalance(baseAmount: number): number {
-  return Math.max(0, baseAmount - getFundedTopUpAmount(baseAmount))
+  return Math.max(0, baseAmount - getFundedLossLimit(baseAmount))
 }
 
 export function getFundedPayoutAmount(accountBalance: unknown, configuredAmount?: unknown): number {

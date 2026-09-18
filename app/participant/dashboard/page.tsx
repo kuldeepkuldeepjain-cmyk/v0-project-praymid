@@ -220,7 +220,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
           <h2 className="text-2xl font-bold text-slate-800 mb-3">Account Frozen</h2>
           <p className="text-slate-600 mb-6">
             {isFundedAccount
-              ? "Your funded account is on hold because its balance fell below the minimum protected balance. Add balance to reactivate trading."
+              ? "Your funded account reached its 1% loss limit against the purchased account size. Trading is disabled until the account is reactivated."
               : "Your account has been frozen because you did not make your first contribution within the 48-hour deadline."}
           </p>
 
@@ -1457,9 +1457,11 @@ export default function DashboardHome() {
     total_earnings?: number
     referral_earnings?: number
     activation_deadline?: string
-    account_frozen?: boolean
-    account_type?: "normal" | "funded"
-    profile_image?: string
+  account_frozen?: boolean
+  is_frozen?: boolean
+  account_type?: "normal" | "funded"
+  funded_amount?: number
+  profile_image?: string
     details_completed?: boolean
     [key: string]: any
   } | null>(null)
@@ -1664,10 +1666,14 @@ export default function DashboardHome() {
     ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
     : 0
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
-  const isFundedAccountBelowBase = isFundedAccount && walletBalance > 0 && walletBalance < minimumFundedBalance
+  const isFundedAccountBelowBase = isFundedAccount && terminalStats.equity > 0 && terminalStats.equity <= minimumFundedBalance
 
   useEffect(() => {
-    if (!isFundedAccountBelowBase || participantData?.account_frozen || participantData?.is_frozen || !participantData?.email) return
+    if (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen") {
+      setShowFrozenModal(true)
+      return
+    }
+    if (!isFundedAccountBelowBase || !participantData?.email) return
     const holdAccount = async () => {
       try {
         const response = await fetch("/api/participant/freeze-account", {
@@ -1684,7 +1690,7 @@ export default function DashboardHome() {
       }
     }
     holdAccount()
-  }, [isFundedAccountBelowBase, participantData?.account_frozen, participantData?.email])
+  }, [isFundedAccountBelowBase, participantData?.account_frozen, participantData?.is_frozen, participantData?.status, participantData?.email])
 
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
@@ -2109,11 +2115,22 @@ export default function DashboardHome() {
             </header>
 
             <div className="elite-terminal-platform">
-              <ForexTradingPlatform
-                participantEmail={participantData?.email ?? ""}
-                walletBalance={walletBalance}
-                isFundedAccount={participantData?.account_type === "funded"}
-                onBalanceUpdated={(newBalance) => {
+  <ForexTradingPlatform
+  participantEmail={participantData?.email ?? ""}
+  walletBalance={walletBalance}
+  isFundedAccount={isFundedAccount}
+  fundedAmount={fundedBaseAmount}
+  isFrozen={Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")}
+  onAccountFrozen={() => {
+    setParticipantData((prev: any) => {
+      if (!prev) return prev
+      const updated = { ...prev, account_frozen: true, is_frozen: true, status: "frozen" }
+      try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+      return updated
+    })
+    setShowFrozenModal(true)
+  }}
+  onBalanceUpdated={(newBalance) => {
                   setParticipantData((prev: any) => {
                     if (!prev) return prev
                     const updated = { ...prev, account_balance: newBalance }

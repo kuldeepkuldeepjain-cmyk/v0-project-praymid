@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       await client.query("BEGIN")
 
       const { rows } = await client.query(
-        "SELECT id, account_balance FROM participants WHERE email = $1 FOR UPDATE",
+        "SELECT id, account_balance, account_frozen, is_frozen FROM participants WHERE email = $1 FOR UPDATE",
         [email]
       )
       if (!rows.length) {
@@ -57,6 +57,12 @@ export async function POST(req: NextRequest) {
 
       const participantId: string = rows[0].id
       const currentBalance: number = parseFloat(rows[0].account_balance) || 0
+      const isMarginLock = typeof description === "string" && description.startsWith("Margin locked")
+      if ((rows[0].account_frozen || rows[0].is_frozen) && delta < 0 && isMarginLock) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
+      }
+
       const newBalance = parseFloat((currentBalance + delta).toFixed(2))
 
       if (newBalance < 0) {

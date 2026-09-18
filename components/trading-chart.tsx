@@ -164,16 +164,22 @@ export function TradingChart({
   openTrades = [],
   onExpand,
   isExpanded = false,
+  onQuickTrade,
+  buyPrice,
+  sellPrice,
   darkTheme = false,
-}: {
+  }: {
   candles: Candle[]
   sym: string
   tf?: string
   openTrades?: OpenTrade[]
   onExpand?: () => void
   isExpanded?: boolean
+  onQuickTrade?: (direction: "BUY" | "SELL") => void
+  buyPrice?: number
+  sellPrice?: number
   darkTheme?: boolean
-}) {
+  }) {
   const palette = darkTheme ? DARK_T : T
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
@@ -913,6 +919,37 @@ export function TradingChart({
                 Clear all
               </button>
             )}
+          </div>
+        )}
+
+        {isExpanded && onQuickTrade && !isLoading && (
+          <div
+            className="absolute bottom-4 left-1/2 z-30 flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-stretch gap-2 rounded-xl p-2"
+            style={{
+              background: "rgba(4,8,15,0.92)",
+              border: "1px solid rgba(148,163,184,0.2)",
+              backdropFilter: "blur(14px)",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.42)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => onQuickTrade("SELL")}
+              className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
+              aria-label={`Sell ${sym} at ${sellPrice !== undefined ? fmtP(sellPrice) : "market price"}`}
+            >
+              <span className="relative z-10 flex items-center gap-1.5 text-xs font-black">SELL</span>
+              {sellPrice !== undefined && <span className="relative z-10 price-mono text-[9px] opacity-80">{fmtP(sellPrice)}</span>}
+            </button>
+            <button
+              type="button"
+              onClick={() => onQuickTrade("BUY")}
+              className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
+              aria-label={`Buy ${sym} at ${buyPrice !== undefined ? fmtP(buyPrice) : "market price"}`}
+            >
+              <span className="relative z-10 flex items-center gap-1.5 text-xs font-black">BUY</span>
+              {buyPrice !== undefined && <span className="relative z-10 price-mono text-[9px] opacity-80">{fmtP(buyPrice)}</span>}
+            </button>
           </div>
         )}
 
