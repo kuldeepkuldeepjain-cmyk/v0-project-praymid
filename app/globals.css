@@ -2154,15 +2154,15 @@ button, a, [role="button"] {
   overflow: hidden;
 }
 .reference-terminal .reference-watchlist {
-  min-height: 92px;
-  padding: 14px 18px;
+  min-height: 78px;
+  padding: 10px 14px;
   gap: 10px;
   background: linear-gradient(180deg, #0b131e 0%, #080e16 100%);
   box-shadow: inset 0 -1px 0 rgba(255,255,255,.025);
 }
 .reference-terminal .reference-watch-card {
-  min-width: 178px;
-  height: 62px;
+  min-width: 174px;
+  height: 56px;
   border-radius: 8px;
   border-color: #203349;
   background: #0d1723;
@@ -2194,16 +2194,25 @@ button, a, [role="button"] {
 }
 .reference-terminal .apple-terminal-grid {
   display: grid;
-  grid-template-columns: minmax(250px, 18%) minmax(0, 1fr) minmax(286px, 22%);
+  grid-template-columns: minmax(220px, 24%) minmax(0, 1fr) minmax(270px, 30%);
   align-items: stretch;
   gap: 1px;
+  min-height: 0;
+  overflow: hidden;
   background: #1a2a3d !important;
+}
+@media (min-width: 768px) {
+  .reference-terminal .apple-terminal-market {
+    display: flex !important;
+  }
 }
 .reference-terminal .apple-terminal-market,
 .reference-terminal .apple-terminal-chart-column,
 .reference-terminal .apple-terminal-order {
   width: auto !important;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
   background: var(--terminal-surface) !important;
 }
 .reference-terminal .apple-terminal-market { border-right: 0 !important; }
@@ -2234,29 +2243,29 @@ button, a, [role="button"] {
   background: #09121e !important;
 }
 .reference-terminal .apple-terminal-blotter {
-  height: 218px !important;
+  height: 152px !important;
   background: #080e16 !important;
   box-shadow: 0 -8px 24px rgba(0,0,0,.14);
 }
 .reference-terminal .apple-terminal-blotter-tabs {
-  min-height: 44px;
+  min-height: 38px;
   padding-inline: 8px;
   gap: 2px;
   background: #0a111a !important;
 }
 .reference-terminal .apple-terminal-blotter-tabs button {
-  min-height: 44px;
+  min-height: 38px;
   padding-inline: 13px;
   border-radius: 5px 5px 0 0;
 }
 .reference-terminal .reference-metrics {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  padding: 10px 16px;
+  padding: 8px 16px;
   background: #060b12;
 }
 .reference-terminal .reference-metric-card {
-  min-height: 68px;
+  min-height: 58px;
   padding: 10px 13px;
   border-radius: 8px;
   border-color: #1b2b3d;
@@ -2265,9 +2274,9 @@ button, a, [role="button"] {
 }
 .reference-terminal .reference-metric-card span { color: #7f91a6; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
 .reference-terminal .reference-metric-card strong { font-size: 17px; }
-.reference-terminal .reference-statusbar { height: 38px; padding-inline: 18px; background: #060b12; }
-@media (max-width: 1100px) {
-  .reference-terminal .apple-terminal-grid { grid-template-columns: minmax(220px, 22%) minmax(0, 1fr) minmax(260px, 26%); }
+.reference-terminal .reference-statusbar { height: 34px; padding-inline: 18px; background: #060b12; }
+@media (max-width: 1100px) and (min-width: 768px) {
+  .reference-terminal .apple-terminal-grid { grid-template-columns: minmax(210px, 24%) minmax(0, 1fr) minmax(250px, 29%); }
 }
 @media (max-width: 767px) {
   .reference-terminal .apple-terminal-grid { display: flex; gap: 0; background: #05090f !important; }
