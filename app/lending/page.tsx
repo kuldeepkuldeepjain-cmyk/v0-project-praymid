@@ -164,6 +164,58 @@ export default function LendingPage() {
         </div>
       </section>
 
+      {/* Funded Account Section */}
+      <section className="py-12 sm:py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs sm:text-sm font-medium mb-4">
+              <Wallet className="w-4 h-4" />
+              Funded Accounts
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3">Choose Your Funded Account</h2>
+            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
+              Top up your account and unlock a larger trading balance with a simple, transparent funding plan.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { topUp: "$100", funded: "$10,000" },
+              { topUp: "$250", funded: "$25,000" },
+              { topUp: "$500", funded: "$50,000" },
+              { topUp: "$1,000", funded: "$100,000", featured: true },
+            ].map((plan) => (
+              <Card
+                key={plan.topUp}
+                className={plan.featured
+                  ? "relative overflow-hidden bg-gradient-to-b from-emerald-500/20 to-slate-800/70 border-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.18)]"
+                  : "bg-slate-800/60 border-emerald-500/20 hover:border-emerald-500/50 transition-colors"}
+              >
+                {plan.featured && (
+                  <div className="absolute top-0 right-0 rounded-bl-lg bg-emerald-500 px-3 py-1 text-xs font-bold text-slate-950">Best Value</div>
+                )}
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-white text-lg">Funded Account</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-xs uppercase tracking-wider text-slate-400">Top up</p>
+                  <p className="text-2xl font-bold text-cyan-400 mb-4">{plan.topUp}</p>
+                  <div className="h-px bg-emerald-500/20 mb-4" />
+                  <p className="text-xs uppercase tracking-wider text-slate-400">Receive trading balance</p>
+                  <p className="text-3xl font-bold text-emerald-400">{plan.funded}</p>
+                  <Link href="/participant/register" className="block mt-6">
+                    <Button className="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-white hover:from-emerald-600 hover:to-cyan-600">
+                      Get Started
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Full-width Binary Trading Signal Banner */}
       <section className="py-0 relative overflow-hidden">
         <div className="relative h-64 sm:h-80 md:h-96 lg:h-[420px] w-full">
