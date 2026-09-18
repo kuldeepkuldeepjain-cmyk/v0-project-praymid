@@ -2236,7 +2236,7 @@ function PositionSizer({
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────���───────────────── */}
-        <div className={`apple-terminal-market flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
+        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-2.5 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -2393,7 +2393,7 @@ function PositionSizer({
         </div>
 
         {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
-        <div className={`apple-terminal-chart-column flex flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
+        <div className={`apple-terminal-chart-column flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2518,7 +2518,7 @@ function PositionSizer({
           </div>
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
-        <div className={`apple-terminal-order flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
+        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}

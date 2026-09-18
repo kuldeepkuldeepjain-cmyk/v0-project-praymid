@@ -2038,15 +2038,71 @@ button, a, [role="button"] {
     z-index: -1;
     background: rgba(0,0,0,.52);
   }
-  .elite-terminal-header { height: 60px; flex-basis: 60px; padding-inline: 14px; gap: 12px; }
-  .elite-terminal-search { width: auto; flex: 1; }
+  .elite-terminal-header { height: 60px; flex-basis: 60px; padding-inline: 10px; gap: 8px; }
+  .elite-terminal-menu { width: 34px; height: 40px; flex: 0 0 34px; }
+  .elite-terminal-search { width: auto; min-width: 0; height: 40px; flex: 1; padding-inline: 11px; gap: 8px; }
+  .elite-terminal-search input { font-size: 12px; }
   .elite-terminal-account-metrics, .elite-terminal-header-icon, .elite-terminal-user { display: none; }
-  .reference-terminal .apple-terminal-market { display: flex; width: 100% !important; }
-  .reference-terminal .apple-terminal-order { width: 100% !important; }
-  .reference-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .reference-terminal .apple-terminal-grid { min-height: 0; }
+  .reference-terminal .apple-terminal-market.flex { display: flex !important; }
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-order {
+    min-width: 0;
+    min-height: 0;
+    width: 100% !important;
+    height: 100%;
+    flex: 1 1 auto;
+  }
+  .reference-terminal .apple-terminal-chart-column > div:nth-child(2) { min-height: 0 !important; }
+  .reference-terminal .apple-terminal-order { border-left: 0 !important; }
+  .reference-terminal .apple-terminal-summary { height: 34px; }
+  .reference-terminal .apple-terminal-summary > div { padding-inline: 9px; gap: 6px; }
+  .reference-terminal .reference-watchlist { gap: 8px; padding: 8px 10px; }
+  .reference-terminal .reference-watch-card { height: 56px; min-width: 150px; padding-inline: 10px; gap: 8px; }
+  .reference-terminal .reference-watch-icon { width: 24px; height: 24px; font-size: 13px; }
+  .reference-terminal .reference-watch-copy strong { font-size: 11px; }
+  .reference-terminal .reference-watch-copy span { font-size: 11px; }
+  .reference-terminal .reference-watch-up,
+  .reference-terminal .reference-watch-down { font-size: 10px; }
+  .reference-terminal .reference-watch-add,
+  .reference-terminal .reference-watch-theme { width: 40px; height: 40px; flex-basis: 40px; }
+  .reference-terminal .apple-terminal-mobile-tabs button { min-height: 34px; }
+  .reference-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px; }
+  .reference-metric-card { min-height: 58px; gap: 5px; padding: 8px 9px; }
+  .reference-metric-card span { font-size: 10px; }
+  .reference-metric-card strong { font-size: 14px; }
   .reference-statusbar { padding-inline: 14px; font-size: 10px; }
   .reference-statusbar .reference-status-spacer, .reference-statusbar .reference-status-divider { display: none; }
 }
+
+@media (max-width: 767px) and (max-height: 700px) {
+  .reference-terminal .reference-watchlist { padding-block: 5px; }
+  .reference-terminal .reference-watch-card { height: 48px; }
+  .reference-terminal .reference-watch-add,
+  .reference-terminal .reference-watch-theme { width: 36px; height: 36px; flex-basis: 36px; }
+  .reference-terminal .apple-terminal-blotter { height: 112px !important; }
+  .reference-terminal .apple-terminal-blotter-tabs button { padding-block: 9px; }
+}
+
+@media (max-width: 380px) {
+  .reference-terminal .reference-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px;
+  }
+  .reference-terminal .reference-metric-card {
+    min-height: 52px;
+    gap: 4px;
+    padding: 7px 8px;
+  }
+  .reference-terminal .reference-metric-card span { font-size: 9px; }
+  .reference-terminal .reference-metric-card strong { font-size: 13px; }
+  .reference-terminal .reference-statusbar { height: 36px; padding-inline: 8px; gap: 8px; font-size: 9px; }
+  .reference-terminal .reference-statusbar strong { padding: 4px 6px; font-size: 9px; }
+}
+
 
 .chart-trade-float {
   position: absolute;
