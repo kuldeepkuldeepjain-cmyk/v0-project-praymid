@@ -1261,6 +1261,68 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participantEmail, onBalanceUpdated])
 
+  // ── Trade persistence API (all writes are best-effort/fire-and-forget so the
+  //    optimistic UI never blocks on network latency) ────────────────────────
+  const persistOpenTrade = useCallback((trade: OpenTrade) => {
+    participantFetch("/api/forex/trades", {
+      method: "POST",
+      body: JSON.stringify({ participant_email: participantEmail, action: "open", trade }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistPendingOrder = useCallback((order: PendingOrder) => {
+    participantFetch("/api/forex/trades", {
+      method: "POST",
+      body: JSON.stringify({ participant_email: participantEmail, action: "pending", trade: order }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistPartialClose = useCallback((closed: ClosedTrade) => {
+    participantFetch("/api/forex/trades", {
+      method: "POST",
+      body: JSON.stringify({ participant_email: participantEmail, action: "partial_close", trade: closed }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistClose = useCallback((closed: ClosedTrade) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({
+        participant_email: participantEmail, id: closed.id, action: "close",
+        closePrice: closed.closePrice, closeTime: closed.closeTime, closeDuration: closed.closeDuration,
+        finalPnl: closed.finalPnl, finalPips: closed.finalPips, finalSwap: closed.finalSwap,
+        closeReason: closed.closeReason, lotSize: closed.lotSize, margin: closed.margin,
+      }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => {
+    participantFetch("/api/forex/trades", {
+      method: "PATCH",
+      body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }),
+    }).catch(() => {})
+  }, [participantEmail])
+
+  const deletePendingOrder = useCallback((id: string) => {
+    participantFetch(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, {
+      method: "DELETE",
+    }).catch(() => {})
+  }, [participantEmail])
+
   // ── Fetch live rates ───────────────────────────────────────────────────────
   const fetchRates = useCallback(async () => {
     try {
@@ -1424,7 +1486,7 @@ function PositionSizer({
           const fillPrice = order.direction === "BUY" ? pairNow.ask : pairNow.bid
           const margin = calcMargin(order.pair, order.lotSize, fillPrice, order.leverage)
           const newTrade: OpenTrade = {
-            id: genId(), pair: order.pair, direction: order.direction,
+            id: order.id, pair: order.pair, direction: order.direction,
             lotSize: order.lotSize, leverage: order.leverage,
             openPrice: fillPrice, currentPrice: fillPrice,
             sl: order.sl, tp: order.tp,
@@ -1434,6 +1496,7 @@ function PositionSizer({
             pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
           }
           setOpenTrades(p => [newTrade, ...p])
+          persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
           showToast("info", `Pending ${order.orderType.replace("_"," ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
           return prev.filter(o => o.id !== id)
         })
@@ -1518,6 +1581,7 @@ function PositionSizer({
           if (prev.some(t => t.id === closed.id)) return prev
           return [closed, ...prev.slice(0, 99)]
         })
+        persistClose(closed)
 
         // 3. Return margin + P&L (called only once per trade)
         const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
@@ -1557,31 +1621,31 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickCount])
 
-  // ── Persist trades ─────────────────────────────────────────────────────────
-  // Guard: do not save until the load effect has run at least once
-  const localStorageLoaded = useRef(false)
+  // ── Load trades from the database ───────────────────────────────────────────
+  // All trade writes (open/close/modify/fill/cancel) are persisted directly to
+  // the forex_trades table via the persist* helpers above — this effect just
+  // hydrates state from the database on mount / participant change.
+  const tradesLoaded = useRef(false)
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`forex_v3_${participantEmail}`)
-      if (saved) {
-        const { open, closed, pending } = JSON.parse(saved)
-        setOpenTrades(open ?? [])
-        setClosedTrades(closed ?? [])
-        setPendingOrders(pending ?? [])
-      }
-    } catch {}
-    // Mark as loaded so the save effect is now allowed to run
-    localStorageLoaded.current = true
+    if (!participantEmail) return
+    let cancelled = false
+    tradesLoaded.current = false
+    ;(async () => {
+      try {
+        const res = await participantFetch(`/api/forex/trades?email=${encodeURIComponent(participantEmail)}`)
+        const json = await res.json()
+        if (!cancelled && json.success) {
+          setOpenTrades(json.open ?? [])
+          setClosedTrades(json.closed ?? [])
+          setPendingOrders(json.pending ?? [])
+          openTradesRef.current = json.open ?? []
+        }
+      } catch {}
+      tradesLoaded.current = true
+    })()
+    return () => { cancelled = true }
   }, [participantEmail])
-
-  useEffect(() => {
-    // Never save before the initial load — prevents empty state overwriting saved data
-    if (!localStorageLoaded.current) return
-    try {
-      localStorage.setItem(`forex_v3_${participantEmail}`, JSON.stringify({ open: openTrades, closed: closedTrades, pending: pendingOrders }))
-    } catch {}
-  }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
   // ── Execute market trade ───────────────────────────────────���───────────────
   // Opens the confirmation modal ����� called by both executeTrade and quickTrade
@@ -1665,6 +1729,7 @@ function PositionSizer({
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
       setPendingOrders(prev => [order, ...prev])
+      persistPendingOrder(order)
       showToast("info", `${order.orderType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(order.targetPrice, selectedPair.symbol)}`)
       setActivePanel("pending")
     } else {
@@ -1692,6 +1757,7 @@ function PositionSizer({
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
+      persistOpenTrade(trade)
       showToast("success",
         `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
       )
@@ -1763,6 +1829,7 @@ function PositionSizer({
       if (prev.some(t => t.id === closed.id)) return prev
       return [closed, ...prev.slice(0, 99)]
     })
+    persistClose(closed)
 
     // 3. Return margin + P&L to balance (called only once)
     const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
@@ -1819,8 +1886,10 @@ function PositionSizer({
     setOpenTrades(prev => prev.map(t =>
       t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
     ))
+    persistPartialReduce(id, remainingLots, remainingMargin)
 
     setClosedTrades(prev => [closed, ...prev.slice(0, 99)])
+    persistPartialClose(closed)
 
     const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
     adjustWalletBalance(returnAmt > 0 ? returnAmt : 0,
@@ -1831,15 +1900,16 @@ function PositionSizer({
 
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjustWalletBalance, showToast])
+  }, [adjustWalletBalance, showToast, persistPartialReduce, persistPartialClose])
 
   // ── Modify trade ───────────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
     setOpenTrades(prev => prev.map(t =>
       t.id === tradeId ? { ...t, sl: newSl, tp: newTp, trailingStopPips: newTrail } : t
     ))
+    persistModify(tradeId, newSl, newTp, newTrail)
     showToast("info", "Position updated")
-  }, [showToast])
+  }, [showToast, persistModify])
 
   // ── Price Alert checker (runs each tick) ─────────────────────────────────
   useEffect(() => {
@@ -1873,6 +1943,7 @@ function PositionSizer({
   // ── Cancel pending order ────────────────���──────────────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
+    deletePendingOrder(id)
     showToast("info", "Pending order cancelled")
   }
 
