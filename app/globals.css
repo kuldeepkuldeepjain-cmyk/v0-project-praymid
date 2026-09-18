@@ -1796,6 +1796,21 @@ button, a, [role="button"] {
   border-bottom: 1px solid #1a2634;
 }
 .elite-terminal-brand { gap: 10px; }
+.elite-terminal-brand > a { display: grid; place-items: center; flex: 0 0 auto; }
+.elite-terminal-brand-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(34,211,238,.35);
+  border-radius: 12px;
+  background: linear-gradient(135deg, #22d3ee, #2563eb);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: .03em;
+  box-shadow: 0 0 20px rgba(34,211,238,.22);
+}
 .elite-terminal-brand img {
   width: 44px;
   height: 44px;
@@ -1803,9 +1818,22 @@ button, a, [role="button"] {
   object-position: center 29%;
   mix-blend-mode: screen;
 }
-.elite-terminal-brand div { display: flex; flex-direction: column; gap: 4px; }
+.elite-terminal-brand > div { display: flex; flex-direction: column; gap: 4px; }
 .elite-terminal-brand strong { color: #f2f4f7; font-size: 17px; letter-spacing: .03em; }
 .elite-terminal-brand span { color: #d0ad6d; font-size: 8px; letter-spacing: .24em; }
+.elite-terminal-sidebar-close {
+  display: none;
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid #243447;
+  border-radius: 8px;
+  background: transparent;
+  color: #9aa9bc;
+}
+.elite-terminal-sidebar-close:hover { color: #fff; border-color: #22d3ee; }
+.elite-terminal-sidebar-close svg { width: 17px; height: 17px; }
 .elite-terminal-nav {
   display: flex;
   flex-direction: column;
@@ -1992,6 +2020,24 @@ button, a, [role="button"] {
 }
 @media (max-width: 767px) {
   .elite-terminal-sidebar { display: none; }
+  .elite-terminal-sidebar-close { display: grid; }
+  .elite-terminal-sidebar.is-open {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 80;
+    display: flex;
+    width: min(270px, 86vw);
+    flex-basis: min(270px, 86vw);
+    padding-inline: 16px;
+    box-shadow: 18px 0 48px rgba(0,0,0,.45);
+  }
+  .elite-terminal-sidebar.is-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: rgba(0,0,0,.52);
+  }
   .elite-terminal-header { height: 60px; flex-basis: 60px; padding-inline: 14px; gap: 12px; }
   .elite-terminal-search { width: auto; flex: 1; }
   .elite-terminal-account-metrics, .elite-terminal-header-icon, .elite-terminal-user { display: none; }

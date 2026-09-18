@@ -1438,6 +1438,7 @@ export default function DashboardHome() {
   const createRipple = useRipple()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
+  const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("trading")
   const [participantData, setParticipantData] = useState<{
     wallet: string
@@ -2020,9 +2021,47 @@ export default function DashboardHome() {
       ──────────────────────────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
         <div className="elite-terminal-shell">
+          <aside className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`} aria-label="Trading terminal navigation">
+            <div className="elite-terminal-brand">
+              <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} aria-label="Go to trading dashboard home">
+                <div className="elite-terminal-brand-mark">FC</div>
+              </Link>
+              <div>
+                <strong>Elite Fund</strong>
+                <span>TRADING TERMINAL</span>
+              </div>
+              <button
+                type="button"
+                className="elite-terminal-sidebar-close"
+                onClick={() => setIsTerminalMenuOpen(false)}
+                aria-label="Close terminal navigation"
+              >
+                <X />
+              </button>
+            </div>
+
+            <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
+              <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item is-active">
+                <Home />
+                <span>Home</span>
+              </Link>
+              <Link href="/participant/dashboard/profile" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <User />
+                <span>Profile</span>
+              </Link>
+            </nav>
+
+            <div className="elite-terminal-promo">
+              <div className="elite-terminal-promo-copy">
+                <strong>Trade with confidence</strong>
+                <span>Monitor your account and manage your profile from one place.</span>
+              </div>
+            </div>
+          </aside>
+
           <div className="elite-terminal-workspace">
             <header className="elite-terminal-header">
-              <button type="button" className="elite-terminal-menu" aria-label="Open terminal menu">
+              <button type="button" className="elite-terminal-menu" onClick={() => setIsTerminalMenuOpen(open => !open)} aria-label="Open terminal menu" aria-expanded={isTerminalMenuOpen}>
                 <Menu />
               </button>
               <label className="elite-terminal-search">
