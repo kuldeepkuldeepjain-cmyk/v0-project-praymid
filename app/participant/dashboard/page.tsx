@@ -1671,9 +1671,12 @@ export default function DashboardHome() {
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
-        onSuccess={(amount) => {
-          // Balance will be credited by admin — just close the modal
-        }}
+  onSuccess={async () => {
+  setShowTopUpModal(false)
+  if (participantData?.email) {
+  await refreshParticipantData(participantData.email)
+  }
+  }}
       />
 
       <header
