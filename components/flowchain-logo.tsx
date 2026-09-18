@@ -1,7 +1,9 @@
 "use client"
 
 import { cn } from "@/lib/utils"
-import Image from "next/image"
+
+const ELITE_FUND_LOGO_URL =
+  "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/7e62b303-6ca6-4561-b26a-1d2c98350071-DrAR4HbibRDvHK7ScdMNeSRXrHy2Sq.png"
 
 interface FlowChainLogoProps {
   variant?: "full" | "icon" | "wordmark" | "horizontal"
@@ -17,13 +19,14 @@ export function FlowChainLogo({ variant = "full", size = "md", className, showTa
 
   return (
     <div className={cn("inline-flex overflow-hidden", className)}>
-      <Image
-        src="/elite-fund-logo.jpg"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={ELITE_FUND_LOGO_URL}
         alt="Elite Fund — Trade Higher"
         width={logoWidth}
         height={logoHeight}
         className={cn("object-contain", variant === "icon" ? "aspect-square object-cover object-top" : "")}
-        priority
+        loading="eager"
       />
     </div>
   )
@@ -43,13 +46,14 @@ export function FlowChainLogoCompact({
 
   return (
     <div className={cn("relative shrink-0", className)} style={{ width: iconSize, height: iconSize }}>
-      <Image
-        src="/elite-fund-logo.jpg"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={ELITE_FUND_LOGO_URL}
         alt="Elite Fund"
         width={iconSize}
         height={iconSize}
         className="object-cover object-top"
-        priority
+        loading="eager"
       />
     </div>
   )

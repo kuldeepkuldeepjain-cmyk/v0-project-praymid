@@ -3,6 +3,7 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
+import { FlowChainLogo } from "@/components/flowchain-logo"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   TrendingUp,
@@ -31,8 +32,11 @@ export default function LendingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-emerald-500/20">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 sm:gap-5">
-            <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              Elite Fund Lending
+            <div className="flex items-center gap-2">
+              <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-lg" />
+              <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                Elite Fund
+              </div>
             </div>
             <Link href="#funded-accounts" className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors">
               Funded Accounts
@@ -118,7 +122,7 @@ export default function LendingPage() {
       <section className="py-12 sm:py-20 px-4 bg-gradient-to-b from-transparent to-emerald-900/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">Why Elite Fund Lending?</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">Why Elite Fund?</h2>
             <p className="text-sm sm:text-base md:text-xl text-slate-300">Unlock financial freedom with our revolutionary platform</p>
           </div>
 
@@ -600,7 +604,7 @@ export default function LendingPage() {
             Ready to <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Multiply Your Wealth?</span>
           </h2>
 
-          <p className="text-base sm:text-lg md:text-xl text-slate-300">Join thousands of successful traders earning 250%+ annual returns with Elite Fund Lending</p>
+          <p className="text-base sm:text-lg md:text-xl text-slate-300">Join thousands of successful traders building their future with Elite Fund</p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 sm:pt-8">
             <Link href="/participant/register" className="flex-1 sm:flex-none">

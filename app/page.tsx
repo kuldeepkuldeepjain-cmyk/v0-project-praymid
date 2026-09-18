@@ -106,9 +106,9 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <CandlestickChart className="w-6 h-6 text-cyan-400" />
-            <span suppressHydrationWarning className="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Elite Fund Trading
+            <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-lg" />
+            <span suppressHydrationWarning className="font-bold text-lg sm:text-xl bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+              Elite Fund
             </span>
           </div>
 
@@ -415,8 +415,8 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <CandlestickChart className="w-5 h-5 text-cyan-400" />
-                <span className="font-bold text-white">Elite Fund Trading</span>
+                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-8 w-8 rounded-md" />
+                <span className="font-bold text-white">Elite Fund</span>
               </div>
               <p className="text-slate-400 text-sm">Professional forex trading platform for everyone.</p>
             </div>
@@ -446,7 +446,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">© 2024 Elite Fund Trading. All rights reserved.</p>
+            <p className="text-slate-400 text-sm">© 2024 Elite Fund. All rights reserved.</p>
             <div className="flex gap-4 mt-4 sm:mt-0">
               <a href="#" className="text-slate-400 hover:text-white transition">Twitter</a>
               <a href="#" className="text-slate-400 hover:text-white transition">Discord</a>

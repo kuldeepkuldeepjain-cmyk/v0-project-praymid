@@ -1,5 +1,5 @@
 {
-  "name": "Elite Fund Trading",
+  "name": "Elite Fund",
   "short_name": "Elite Fund",
   "description": "Professional Forex, Crypto & Commodities trading platform",
   "start_url": "/",
@@ -46,7 +46,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Elite Fund Trading Platform"
+      "label": "Elite Fund Platform"
     }
   ]
 }

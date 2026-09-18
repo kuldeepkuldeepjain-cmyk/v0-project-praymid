@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "Elite Fund Trading",
+  title: "Elite Fund",
   description: "Professional Forex, Crypto & Commodities trading platform. Trade smarter with real-time market data.",
   generator: "v0.app",
   manifest: "/manifest.json",
@@ -35,13 +35,13 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    siteName: "Elite Fund Trading",
-    title: "Elite Fund Trading",
+    siteName: "Elite Fund",
+    title: "Elite Fund",
     description: "Professional Forex, Crypto & Commodities trading platform.",
   },
   twitter: {
     card: "summary",
-    title: "Elite Fund Trading",
+    title: "Elite Fund",
     description: "Professional Forex, Crypto & Commodities trading platform.",
   },
   icons: {

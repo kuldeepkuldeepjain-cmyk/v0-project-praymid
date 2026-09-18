@@ -254,9 +254,9 @@ export default function ParticipantLoginPage() {
           {/* Top bar — mobile logo + back */}
           <div className="flex items-center justify-between px-6 pt-6 lg:px-10 lg:pt-8">
             <div className="flex lg:hidden items-center gap-2">
-              <CandlestickChart className="w-5 h-5 text-cyan-400" />
-              <span className="font-bold text-base bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                Elite Fund Trading
+              <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-7 w-7 rounded-md" />
+              <span className="font-bold text-base bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+                Elite Fund
               </span>
             </div>
             <div className="hidden lg:block" />
@@ -456,7 +456,7 @@ export default function ParticipantLoginPage() {
           {/* Bottom bar */}
           <div className="px-6 pb-6 lg:px-10 lg:pb-8 flex items-center justify-between">
             <p className="text-[10px] text-slate-700">
-              &copy; {new Date().getFullYear()} Elite Fund Trading. All rights reserved.
+              &copy; {new Date().getFullYear()} Elite Fund. All rights reserved.
             </p>
             <div className="flex items-center gap-1.5 text-[10px] text-slate-700">
               <Shield className="w-3 h-3 text-emerald-700" />
