@@ -242,7 +242,7 @@ function pipValue(sym: string, lots: number, currentPrice: number): number {
   return lots * cs * ps
 }
 
-function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number }, currentPrice: number, sym: string): {
+function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number; leverage: number }, currentPrice: number, sym: string): {
   pnl: number; pipCount: number; returnOnMargin: number; margin: number
 } {
   const dir     = trade.direction === "BUY" ? 1 : -1
@@ -261,7 +261,7 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
   const notional = base === "USD"
     ? trade.lotSize * cs                      // already in USD
     : trade.lotSize * cs * trade.openPrice    // convert to USD
-  const margin = notional / (trade as any).leverage   // stored leverage
+  const margin = notional / trade.leverage                 // stored leverage
 
   const returnOnMargin = margin > 0 ? parseFloat(((pnl / margin) * 100).toFixed(2)) : 0
   return { pnl, pipCount: parseFloat(pipCount.toFixed(1)), returnOnMargin, margin }
@@ -1845,7 +1845,7 @@ export function ForexTradingPlatform({
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ───────────────────────────────────────────────────
+  // ── Cancel pending order ────────────────���──────────────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
     showToast("info", "Pending order cancelled")
