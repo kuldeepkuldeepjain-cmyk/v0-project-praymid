@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
+import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
 
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Load participant balance info
     const rows = await query(
-      "SELECT id, account_balance FROM participants WHERE email = $1 LIMIT 1",
+      "SELECT id, account_balance, funded_amount, account_type, account_frozen, is_frozen, status FROM participants WHERE email = $1 LIMIT 1",
       [email.toLowerCase().trim()]
     ) as any[]
     const participant = rows[0]
@@ -49,7 +50,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
+    if (participant.account_type === "funded" && (participant.account_frozen || participant.is_frozen || participant.status === "frozen")) {
+      return NextResponse.json({
+        success: false,
+        error: "This funded account is frozen. Trading, payouts, and account functions are blocked until it is reactivated.",
+      }, { status: 403 })
+    }
+
     const currentBalance = Number(participant.account_balance) || 0
+    if (participant.account_type === "funded") {
+      const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)
+      const maximumPayout = getFundedPayoutAmount(currentBalance, participant.funded_amount)
+      if (currentBalance <= fundedBaseAmount || maximumPayout <= 0) {
+        return NextResponse.json({ success: false, error: `Funded payouts are available only on profits above the $${fundedBaseAmount.toFixed(2)} funded amount.` }, { status: 400 })
+      }
+      if (Number(amount) > maximumPayout) {
+        return NextResponse.json({ success: false, error: `The maximum funded-account payout is 80% of excess profit: $${maximumPayout.toFixed(2)}.` }, { status: 400 })
+      }
+    }
+
     if (currentBalance < Number(amount)) {
       return NextResponse.json({
         success: false,

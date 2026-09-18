@@ -231,7 +231,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
                 onClick={onAddBalance}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Balance
+                Top Up Balance
               </Button>
             )}
             <a
@@ -1587,9 +1587,9 @@ export default function DashboardHome() {
           setParticipantData(data)
           setParticipantId(data.id || "")
 
-          if (data.account_frozen || data.is_frozen) {
-            setShowFrozenModal(true)
-          }
+  if (data.account_frozen || data.is_frozen || data.status === "frozen") {
+  setShowFrozenModal(true)
+  }
 
           if (data.contributed_amount && data.contributed_amount > 0) {
             setHasContributed(true)
@@ -1702,15 +1702,17 @@ export default function DashboardHome() {
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {/* Frozen Account Modal */}
-      <FrozenAccountModal
-        isOpen={showFrozenModal}
-        onClose={() => setShowFrozenModal(false)}
-        isFundedAccount={isFundedAccount}
-        onAddBalance={() => {
-          setShowFrozenModal(false)
-          setShowTopUpModal(true)
-        }}
-      />
+  <FrozenAccountModal
+  isOpen={showFrozenModal}
+  onClose={() => {
+  if (!isFundedAccount) setShowFrozenModal(false)
+  }}
+  isFundedAccount={isFundedAccount}
+  onAddBalance={() => {
+  setShowFrozenModal(false)
+  setShowTopUpModal(true)
+  }}
+  />
 
       <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} participantData={participantData} />
 
@@ -2110,6 +2112,7 @@ export default function DashboardHome() {
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
+                isFundedAccount={participantData?.account_type === "funded"}
                 onBalanceUpdated={(newBalance) => {
                   setParticipantData((prev: any) => {
                     if (!prev) return prev
