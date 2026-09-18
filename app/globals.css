@@ -2195,6 +2195,7 @@ button, a, [role="button"] {
 .reference-terminal .apple-terminal-grid {
   display: grid;
   grid-template-columns: minmax(220px, 24%) minmax(0, 1fr) minmax(270px, 30%);
+  grid-template-rows: minmax(0, 1fr);
   align-items: stretch;
   gap: 1px;
   min-height: 0;
@@ -2202,10 +2203,28 @@ button, a, [role="button"] {
   background: #1a2a3d !important;
 }
 @media (min-width: 768px) {
-  .reference-terminal .apple-terminal-market {
+  .reference-terminal:not(.is-chart-expanded) .apple-terminal-market {
     display: flex !important;
   }
 }
+.reference-terminal.is-chart-expanded .apple-terminal-market,
+.reference-terminal.is-chart-expanded .apple-terminal-order {
+  display: none !important;
+}
+.reference-terminal.is-chart-expanded .apple-terminal-grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+.reference-terminal .apple-terminal-chart-column {
+  height: 100%;
+  min-height: 0;
+}
+.reference-terminal .apple-terminal-chart-column > div:nth-child(2) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
 .reference-terminal .apple-terminal-market,
 .reference-terminal .apple-terminal-chart-column,
 .reference-terminal .apple-terminal-order {
@@ -2236,7 +2255,10 @@ button, a, [role="button"] {
 .reference-terminal .apple-terminal-order { box-shadow: -8px 0 24px rgba(0,0,0,.08); }
 .reference-terminal .apple-terminal-chart-column { box-shadow: 0 0 24px rgba(0,0,0,.08); }
 .reference-terminal .apple-terminal-chart-column > div:nth-child(2) {
-  min-height: 300px;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
   background: #09121e !important;
 }
 .reference-terminal .apple-trading-chart {
@@ -2280,6 +2302,8 @@ button, a, [role="button"] {
 }
 @media (max-width: 767px) {
   .reference-terminal .apple-terminal-grid { display: flex; gap: 0; background: #05090f !important; }
+  .reference-terminal:not(.is-chart-expanded) .apple-terminal-market.flex { display: flex !important; }
+  .reference-terminal:not(.is-chart-expanded) .apple-terminal-market:not(.flex) { display: none !important; }
   .reference-terminal .reference-watchlist { min-height: 78px; padding: 10px; }
   .reference-terminal .reference-watch-card { min-width: 154px; height: 54px; }
   .reference-terminal .apple-terminal-blotter { height: 172px !important; }

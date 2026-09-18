@@ -787,8 +787,11 @@ export function TradingChart({
         {/* Expand / Collapse */}
         {onExpand && (
           <button
-            onClick={onExpand}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md shrink-0 font-black text-[9px] tracking-widest transition-all active:scale-95"
+    type="button"
+    onClick={onExpand}
+    aria-pressed={isExpanded}
+    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md shrink-0 font-black text-[9px] tracking-widest transition-all active:scale-95"
+
             style={isExpanded
               ? { background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.4)", color: "#22d3ee", boxShadow: "0 0 8px rgba(34,211,238,0.15)" }
               : { background: "#0a1524", border: "1px solid rgba(255,255,255,0.08)", color: "#4a6580" }
