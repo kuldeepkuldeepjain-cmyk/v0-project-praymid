@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
 
-const keys = ["topup_trc20_address", "topup_bep20_address"] as const
+const keys = ["topup_trc20_address", "topup_bep20_address", "topup_erc20_address"] as const
 
 export async function GET() {
   try {
@@ -14,6 +14,7 @@ export async function GET() {
       success: true,
       trc20_address: settings.topup_trc20_address || "",
       bep20_address: settings.topup_bep20_address || "",
+      erc20_address: settings.topup_erc20_address || "",
     })
   } catch (error) {
     console.error("[v0] Failed to load payment settings:", error)
@@ -25,12 +26,13 @@ export async function POST(request: Request) {
     const body = await request.json()
     const trc20Address = typeof body.trc20_address === "string" ? body.trc20_address.trim() : ""
     const bep20Address = typeof body.bep20_address === "string" ? body.bep20_address.trim() : ""
+    const erc20Address = typeof body.erc20_address === "string" ? body.erc20_address.trim() : ""
 
     await query(
       `INSERT INTO system_settings (setting_key, setting_value, updated_at)
-       VALUES ($1, $2, NOW()), ($3, $4, NOW())
+       VALUES ($1, $2, NOW()), ($3, $4, NOW()), ($5, $6, NOW())
        ON CONFLICT (setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
-      ["topup_trc20_address", trc20Address, "topup_bep20_address", bep20Address],
+      ["topup_trc20_address", trc20Address, "topup_bep20_address", bep20Address, "topup_erc20_address", erc20Address],
     )
 
     return NextResponse.json({ success: true })

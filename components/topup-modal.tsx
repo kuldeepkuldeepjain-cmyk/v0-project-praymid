@@ -30,7 +30,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [screenshot, setScreenshot] = useState<File | null>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null }>({ TRC20: null, BEP20: null })
+  const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
@@ -50,9 +50,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       try {
         const res = await fetch("/api/public/settings")
         const data = await res.json()
-        setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null })
+        setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
       } catch {
-        setWalletAddresses({ TRC20: null, BEP20: null })
+        setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
       } finally {
         setLoadingAddress(false)
       }
@@ -61,14 +61,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }, [isOpen])
 
   const copyAddress = () => {
-    const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20
+    const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
     if (!walletAddress) return
     navigator.clipboard.writeText(walletAddress)
     setCopiedAddress(true)
     setTimeout(() => setCopiedAddress(false), 2000)
   }
 
-  const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20
+  const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
   const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   const isFundedAmountValid = !isFundedAccount || parsedAmount in fundedTiers
