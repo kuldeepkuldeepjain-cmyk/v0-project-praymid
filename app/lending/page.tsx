@@ -27,7 +27,7 @@ export default function LendingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-emerald-500/20">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
           <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            FlowChain Lending
+            Elite Fund Lending
           </div>
           <Link href="/">
             <Button variant="outline" className="text-xs sm:text-sm border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 h-9 sm:h-10">
@@ -105,7 +105,7 @@ export default function LendingPage() {
       <section className="py-12 sm:py-20 px-4 bg-gradient-to-b from-transparent to-emerald-900/20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">Why FlowChain Lending?</h2>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 sm:mb-4">Why Elite Fund Lending?</h2>
             <p className="text-sm sm:text-base md:text-xl text-slate-300">Unlock financial freedom with our revolutionary platform</p>
           </div>
 
@@ -457,7 +457,7 @@ export default function LendingPage() {
             Ready to <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Multiply Your Wealth?</span>
           </h2>
 
-          <p className="text-base sm:text-lg md:text-xl text-slate-300">Join thousands of successful traders earning 250%+ annual returns with FlowChain Lending</p>
+          <p className="text-base sm:text-lg md:text-xl text-slate-300">Join thousands of successful traders earning 250%+ annual returns with Elite Fund Lending</p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4 sm:pt-8">
             <Link href="/participant/register" className="flex-1 sm:flex-none">
@@ -492,7 +492,7 @@ export default function LendingPage() {
       {/* Footer */}
       <footer className="py-8 sm:py-12 px-4 border-t border-slate-700/50 bg-slate-900">
         <div className="max-w-6xl mx-auto text-center text-slate-400 text-xs sm:text-sm">
-          <p>&copy; 2024 FlowChain. All rights reserved. | Secure • Transparent • Profitable</p>
+          <p>&copy; 2024 Elite Fund. All rights reserved. | Secure • Transparent • Profitable</p>
         </div>
       </footer>
     </div>

@@ -108,7 +108,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <CandlestickChart className="w-6 h-6 text-cyan-400" />
             <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              FlowChain Trading
+              Elite Fund Trading
             </span>
           </div>
 
@@ -384,7 +384,7 @@ export default function LandingPage() {
       <section className="py-16 sm:py-24 bg-gradient-to-r from-slate-950 to-slate-900 border-t border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">Ready to Start Trading?</h2>
-          <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">Join thousands of traders on FlowChain. Get $50 bonus on your first deposit.</p>
+          <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">Join thousands of traders on Elite Fund. Get $50 bonus on your first deposit.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={() => router.push("/participant/register")}
@@ -409,7 +409,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CandlestickChart className="w-5 h-5 text-cyan-400" />
-                <span className="font-bold text-white">FlowChain Trading</span>
+                <span className="font-bold text-white">Elite Fund Trading</span>
               </div>
               <p className="text-slate-400 text-sm">Professional forex trading platform for everyone.</p>
             </div>
@@ -439,7 +439,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">© 2024 FlowChain Trading. All rights reserved.</p>
+            <p className="text-slate-400 text-sm">© 2024 Elite Fund Trading. All rights reserved.</p>
             <div className="flex gap-4 mt-4 sm:mt-0">
               <a href="#" className="text-slate-400 hover:text-white transition">Twitter</a>
               <a href="#" className="text-slate-400 hover:text-white transition">Discord</a>

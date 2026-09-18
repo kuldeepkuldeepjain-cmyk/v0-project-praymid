@@ -325,9 +325,9 @@ export default function ParticipantRegisterPage() {
       {/* Main content */}
       <div className="w-full max-w-2xl space-y-6 relative z-10 my-8">
         <div className="text-center space-y-2 animate-fade-in-up">
-          <FlowChainLogo size="lg" showTagline={true} className="justify-center mb-4" />
+          <Elite FundLogo size="lg" showTagline={true} className="justify-center mb-4" />
           <h1 className="text-3xl font-bold text-slate-900">Create your account</h1>
-          <p className="text-sm text-slate-500">Join FlowChain in less than a minute</p>
+          <p className="text-sm text-slate-500">Join Elite Fund in less than a minute</p>
         </div>
 
         <Card className="border-0 shadow-2xl shadow-slate-200/50 bg-white/90 backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group">

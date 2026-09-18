@@ -97,7 +97,7 @@ export default function NotificationsPage() {
       key: "announcements" as const,
       icon: Megaphone,
       label: "Platform Announcements",
-      description: "Important updates and announcements from FlowChain",
+      description: "Important updates and announcements from Elite Fund",
       color: "text-amber-600",
       bg: "bg-amber-100",
     },

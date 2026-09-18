@@ -179,12 +179,7 @@ export default function ParticipantLoginPage() {
           {/* Content */}
           <div className="relative z-10 space-y-10">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <CandlestickChart className="w-7 h-7 text-cyan-400" />
-              <span className="font-bold text-xl bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                FlowChain Trading
-              </span>
-            </div>
+            <FlowChainLogo size="sm" showTagline={false} />
 
             {/* Headline */}
             <div className="space-y-5 pt-8">
@@ -261,7 +256,7 @@ export default function ParticipantLoginPage() {
             <div className="flex lg:hidden items-center gap-2">
               <CandlestickChart className="w-5 h-5 text-cyan-400" />
               <span className="font-bold text-base bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-                FlowChain Trading
+                Elite Fund Trading
               </span>
             </div>
             <div className="hidden lg:block" />
@@ -461,7 +456,7 @@ export default function ParticipantLoginPage() {
           {/* Bottom bar */}
           <div className="px-6 pb-6 lg:px-10 lg:pb-8 flex items-center justify-between">
             <p className="text-[10px] text-slate-700">
-              &copy; {new Date().getFullYear()} FlowChain Trading. All rights reserved.
+              &copy; {new Date().getFullYear()} Elite Fund Trading. All rights reserved.
             </p>
             <div className="flex items-center gap-1.5 text-[10px] text-slate-700">
               <Shield className="w-3 h-3 text-emerald-700" />

@@ -167,7 +167,7 @@ export default function DashboardLayout({
               <span className="text-white text-sm font-black">FC</span>
             </div>
             <div>
-              <p className="text-white text-sm font-black tracking-wide">FlowChain</p>
+              <p className="text-white text-sm font-black tracking-wide">Elite Fund</p>
               <p className="text-slate-500 text-[10px] font-medium tracking-widest uppercase">Trading</p>
             </div>
           </div>
