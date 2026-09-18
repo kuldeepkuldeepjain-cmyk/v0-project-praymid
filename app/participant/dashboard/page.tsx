@@ -231,7 +231,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
                 onClick={onAddBalance}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Add Balance
+                Top Up Balance
               </Button>
             )}
             <a
@@ -1708,7 +1708,7 @@ export default function DashboardHome() {
   if (!isFundedAccount) setShowFrozenModal(false)
   }}
   isFundedAccount={isFundedAccount}
-  onAddBalance={isFundedAccount ? undefined : () => {
+  onAddBalance={() => {
   setShowFrozenModal(false)
   setShowTopUpModal(true)
   }}
