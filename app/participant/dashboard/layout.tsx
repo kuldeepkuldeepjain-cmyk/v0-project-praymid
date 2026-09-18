@@ -154,13 +154,13 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen min-h-dvh" style={{ background: "#030712" }}>
+    <div className="min-h-screen min-h-dvh" style={{ background: "#07111f" }}>
       <BgLayers />
 
       {/* ── DESKTOP LAYOUT (lg+): Sidebar + Content ─────────────────── */}
       <div className="hidden lg:flex h-screen h-dvh overflow-hidden relative z-10">
         {/* Left Sidebar */}
-        <aside className="flex-shrink-0 flex flex-col" style={{ width: 220, background: "rgba(3,7,18,0.9)", borderRight: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(24px)" }}>
+        <aside className="flex-shrink-0 flex flex-col" style={{ width: 220, background: "rgba(7,17,31,0.72)", borderRight: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(28px)" }}>
           {/* Logo area */}
           <div className="px-5 py-5 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center flex-shrink-0" style={{ boxShadow: "0 0 16px rgba(124,58,237,0.5)" }}>
@@ -173,7 +173,7 @@ export default function DashboardLayout({
           </div>
 
           {/* Nav Items */}
-          <nav className="flex-1 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 flex flex-col gap-1 overflow-y-auto py-4">
             {navItems.map((item, index) => (
               <NavItem key={item.href} item={item} index={index} vertical />
             ))}
@@ -199,7 +199,7 @@ export default function DashboardLayout({
       {/* ── TABLET LAYOUT (md): Compact sidebar ─────────────────────── */}
       <div className="hidden md:flex lg:hidden h-screen h-dvh overflow-hidden relative z-10">
         {/* Icon-only sidebar */}
-        <aside className="flex-shrink-0 flex flex-col items-center py-4 gap-2" style={{ width: 68, background: "rgba(3,7,18,0.9)", borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+        <aside className="flex-shrink-0 flex flex-col items-center py-4 gap-2" style={{ width: 68, background: "rgba(7,17,31,0.74)", borderRight: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(28px)" }}>
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center mb-3" style={{ boxShadow: "0 0 12px rgba(124,58,237,0.4)" }}>
             <span className="text-white text-sm font-black">FC</span>
           </div>
