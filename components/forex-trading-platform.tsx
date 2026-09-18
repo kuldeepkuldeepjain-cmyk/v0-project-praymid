@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
+import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
   PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
@@ -1047,15 +1048,21 @@ function PositionSizer({
   participantEmail,
   walletBalance: externalBalance = 0,
   isFundedAccount = false,
+  fundedAmount,
+  isFrozen = false,
   onBalanceUpdated,
+  onAccountFrozen,
   onStatsUpdate,
-  }: {
+}: {
   participantEmail: string
   walletBalance?: number
   isFundedAccount?: boolean
+  fundedAmount?: number
+  isFrozen?: boolean
   onBalanceUpdated?: (newBalance: number) => void
+  onAccountFrozen?: () => void
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
-  }) {
+}) {
   // ── State ──────────────────────────────────────────────────────────────────
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
@@ -1106,6 +1113,11 @@ function PositionSizer({
   const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
   const [watchlistReady, setWatchlistReady] = useState(false)
+  const fundedBaseAmount = isFundedAccount
+    ? getFundedBaseAmount(externalBalance, fundedAmount)
+    : 0
+  const fundedMinimumBalance = getFundedMinimumBalance(fundedBaseAmount)
+  const freezeRequestStarted = useRef(false)
   const [showAddInstrument, setShowAddInstrument] = useState(false)
   const [addInstrumentQuery, setAddInstrumentQuery] = useState("")
   const [addInstrumentPos, setAddInstrumentPos] = useState<{ top: number; left: number } | null>(null)
@@ -1207,6 +1219,31 @@ function PositionSizer({
   const dismissToast = useCallback((id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
+
+  const lockedMargin = openTrades.reduce((sum, trade) => sum + trade.margin, 0)
+  const accountEquity = walletBalance + lockedMargin + totalPnl
+  const fundedLossLimitReached = isFundedAccount && fundedBaseAmount > 0 && walletBalance > 0 && accountEquity <= fundedMinimumBalance
+
+  const freezeFundedAccount = useCallback(async () => {
+    if (!participantEmail || freezeRequestStarted.current || isFrozen) return
+    freezeRequestStarted.current = true
+    try {
+      const response = await participantFetch("/api/participant/freeze-account", {
+        method: "POST",
+        body: JSON.stringify({ email: participantEmail }),
+      })
+      if (!response.ok) throw new Error("Freeze request failed")
+      showToast("warning", `Funded account frozen at the ${((fundedBaseAmount - fundedMinimumBalance) / fundedBaseAmount * 100).toFixed(0)}% loss limit.`)
+      onAccountFrozen?.()
+    } catch {
+      freezeRequestStarted.current = false
+      showToast("error", "Could not freeze the account automatically. Please refresh and try again.")
+    }
+  }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
+
+  useEffect(() => {
+    if (fundedLossLimitReached) freezeFundedAccount()
+  }, [freezeFundedAccount, fundedLossLimitReached])
 
   // ── Balance API ────────────────────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
@@ -1591,8 +1628,11 @@ function PositionSizer({
     const newTotalPnl = updated.reduce((s, t) => s + t.pnl, 0)
     setTotalPnl(newTotalPnl)
 
-    // Update equity curve
-    const equity = walletBalance + newTotalPnl
+    // Equity includes margin locked in open positions plus floating P/L.
+    const lockedMargin = updated
+      .filter(t => !toClose.some(c => c.id === t.id))
+      .reduce((sum, t) => sum + t.margin, 0)
+    const equity = walletBalance + lockedMargin + newTotalPnl
     setEquityHistory(prev => {
       const next = [...prev, equity]
       return next.length > 120 ? next.slice(-120) : next
@@ -1660,6 +1700,7 @@ function PositionSizer({
   }
 
   const executeTrade = () => {
+    if (isFrozen) { showToast("warning", "Account frozen — trading is disabled"); return }
     if (!selectedPair) return
     const lot = parseFloat(lotSize); const lev = effectiveLeverage
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
@@ -1695,6 +1736,7 @@ function PositionSizer({
 
   // Actual placement — called after user confirms
   const confirmAndPlace = async () => {
+    if (isFrozen) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
     setConfirmLoading(true)
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
@@ -1748,8 +1790,9 @@ function PositionSizer({
     setConfirmLoading(false)
   }
 
-  // ── Quick trade — routes through confirmation modal ────────────────────────
+  // ��─ Quick trade — routes through confirmation modal ────────────────────────
   const quickTrade = (dir: TradeDirection) => {
+    if (isFrozen) { showToast("warning", "Account frozen — trading is disabled"); return }
     if (!selectedPair) return
     const lot = parseFloat(lotSize) || 0.01
     const lev = effectiveLeverage
@@ -1974,9 +2017,9 @@ function PositionSizer({
 
   const totalSwap = openTrades.reduce((s, t) => s + t.swap, 0)
   const totalMargin = openTrades.reduce((s, t) => s + t.margin, 0)
-  const freeMargin = Math.max(0, walletBalance - totalMargin)
-  const marginLevel = totalMargin > 0 ? ((walletBalance + totalPnl) / totalMargin * 100) : 0
-  const equity = walletBalance + totalPnl
+  const freeMargin = Math.max(0, walletBalance)
+  const equity = walletBalance + totalMargin + totalPnl
+  const marginLevel = totalMargin > 0 ? (equity / totalMargin * 100) : 0
 
   useEffect(() => {
     onStatsUpdate?.({
@@ -2678,7 +2721,7 @@ function PositionSizer({
                 {/* Execute (3D) */}
                 <button
                   onClick={executeTrade}
-                  disabled={balanceLoaded && estimatedMargin > walletBalance && orderType === "market"}
+                  disabled={isFrozen || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
                   className={`w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
                 >
                   <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
