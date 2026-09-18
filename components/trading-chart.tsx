@@ -163,7 +163,6 @@ export function TradingChart({
   tf = "5M",
   openTrades = [],
   onExpand,
-  onPriceClick,
   isExpanded = false,
   darkTheme = false,
 }: {
@@ -172,7 +171,6 @@ export function TradingChart({
   tf?: string
   openTrades?: OpenTrade[]
   onExpand?: () => void
-  onPriceClick?: (price: number) => void
   isExpanded?: boolean
   darkTheme?: boolean
 }) {
@@ -396,15 +394,12 @@ export function TradingChart({
       if (price == null) return
       const roundedPrice = parseFloat(price.toFixed(dec))
 
-      // Alert mode keeps its existing click behavior; normal clicks surface
-      // a floating trade action at the exact chart price.
       if (containerRef.current?.dataset.alertmode) {
         const id = alertNextId.current++
         setAlerts((prev) => [...prev, { id, price: roundedPrice, label: `Alert ${id}`, hit: false }])
         setShowAlertPanel(true)
         return
       }
-      onPriceClick?.(roundedPrice)
     })
 
     // ── Resize observer ──
