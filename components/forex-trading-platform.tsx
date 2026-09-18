@@ -1040,7 +1040,7 @@ function PositionSizer({
   )
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─��─ Main Component ───────────────────────────────────────────────────────────
 
   export function ForexTradingPlatform({
   participantEmail,
@@ -1876,20 +1876,29 @@ function PositionSizer({
   const rrRatio = slPips > 0 ? (tpPips / slPips).toFixed(2) : null
 
   const categoryTabs: (AssetCategory | "All")[] = ["All", "Forex", "Commodities", "Crypto"]
+  // Search always scans the complete catalog, regardless of the selected
+  // category tab. This makes the terminal search bar a true instrument finder:
+  // typing EURUSD while Crypto is selected still finds EUR/USD.
   const searchedPairs = pairSearch.trim()
     ? (() => {
-        const q = pairSearch.trim().toLowerCase().replace(/[\s/]/g, "")
+        const q = pairSearch.trim().toLowerCase().replace(/[\s/_-]/g, "")
         return pairs.filter(p => {
-          const symNoSlash = p.symbol.toLowerCase().replace(/\//g, "")
-          const name = FULL_NAMES[p.symbol]?.toLowerCase() ?? ""
-          return symNoSlash.includes(q) || name.includes(q)
+          const symbolNoSeparators = p.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+          const name = (FULL_NAMES[p.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+          return symbolNoSeparators.includes(q) || name.includes(q)
         })
       })()
     : pairs
-  const filteredPairs = searchedPairs.filter(p => {
-    const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)
-    return activeCategory === "All" || cfg?.category === activeCategory
-  })
+  const filteredPairs = pairSearch.trim()
+    ? searchedPairs
+    : searchedPairs.filter(p => {
+        const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)
+        return activeCategory === "All" || cfg?.category === activeCategory
+      })
+  const visibleInstrumentCount = pairSearch.trim() ? filteredPairs.length : pairs.length
+  const hasInstrumentSearch = pairSearch.trim().length > 0
+  const searchNoResults = hasInstrumentSearch && filteredPairs.length === 0
+  
 
   // Mini equity sparkline path
   const sparkPath = useMemo(() => {
@@ -2091,18 +2100,20 @@ function PositionSizer({
                 <div className="w-1.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg,#22d3ee,#0ea5e9)" }} />
                 <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
               </div>
-              <button onClick={() => setShowPairSearch(p => !p)} className="p-1 rounded transition-colors text-slate-600 hover:text-slate-300">
-                <Activity className="h-3.5 w-3.5" />
-              </button>
-            </div>
-            {showPairSearch && (
-              <input
-                type="text" value={pairSearch} onChange={e => setPairSearch(e.target.value)}
-                placeholder="Search instrument..."
-                className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 rounded-lg mb-2"
-                style={{ background: "#070a10", border: "1px solid #1e2d45" }}
-              />
-            )}
+  <button onClick={() => setShowPairSearch(p => !p)} aria-label="Toggle instrument search" className="p-1 rounded transition-colors text-slate-600 hover:text-slate-300">
+  <Activity className="h-3.5 w-3.5" />
+  </button>
+  </div>
+  <div className="relative">
+  <input
+  type="search" value={pairSearch} onChange={e => setPairSearch(e.target.value)}
+  placeholder={`Search all ${PAIRS_CONFIG.length} instruments...`}
+  aria-label="Search all instruments"
+  className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 pr-7 rounded-lg mb-2"
+  style={{ background: "#070a10", border: "1px solid #1e2d45" }}
+  />
+  {pairSearch && <button type="button" onClick={() => setPairSearch("")} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-500 hover:text-slate-200">×</button>}
+  </div>
             <div className="flex gap-1">
               {categoryTabs.map(cat => {
                 const isActive = activeCategory === cat
@@ -2137,14 +2148,19 @@ function PositionSizer({
             ) : (
               (() => {
                 const cats: AssetCategory[] = ["Forex", "Commodities", "Crypto"]
-                const toShow = activeCategory === "All" ? cats : [activeCategory as AssetCategory]
-                return toShow.map(cat => {
+                const toShow = hasInstrumentSearch || activeCategory === "All" ? cats : [activeCategory as AssetCategory]
+                return (
+                  <>
+                  {searchNoResults && (
+                    <div className="px-3 py-8 text-center text-[10px] text-slate-500">No instruments match “{pairSearch}”.</div>
+                  )}
+                  {toShow.map(cat => {
                   const catPairs = filteredPairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat)
                   if (catPairs.length === 0) return null
                   const cc = CATEGORY_COLOR[cat]
                   return (
                     <div key={cat}>
-                      {activeCategory === "All" && (
+                      {(activeCategory === "All" || hasInstrumentSearch) && (
                         <div className="apple-market-category-row flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
                           style={{ background: "rgba(255,255,255,0.58)", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid rgba(29,42,58,0.08)" }}>
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
@@ -2208,13 +2224,15 @@ function PositionSizer({
                       })}
                     </div>
                   )
-                })
+                  })}
+                  </>
+                )
               })()
             )}
           </div>
 
           <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid rgba(29,42,58,0.08)", background: "rgba(255,255,255,0.58)" }}>
-            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{filteredPairs.length} instruments</span>
+            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}instruments</span>
             <div className="flex items-center gap-1">
               {(["Forex", "Commodities", "Crypto"] as AssetCategory[]).map(cat => {
                 const count = pairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat).length
