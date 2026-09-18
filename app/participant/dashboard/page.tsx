@@ -203,7 +203,7 @@ function ContributionNotificationBar({
   )
 }
 
-function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: { isOpen: boolean; onClose: () => void; onAddBalance?: () => void; isFundedAccount?: boolean }) {
   const router = useRouter()
 
   if (!isOpen) return null
@@ -217,10 +217,21 @@ function FrozenAccountModal({ isOpen, onClose }: { isOpen: boolean; onClose: () 
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-3">Account Frozen</h2>
           <p className="text-slate-600 mb-6">
-            Your account has been frozen because you did not make your first contribution within the 48-hour deadline.
+            {isFundedAccount
+              ? "Your funded account is on hold because its balance fell below the minimum protected balance. Add balance to reactivate trading."
+              : "Your account has been frozen because you did not make your first contribution within the 48-hour deadline."}
           </p>
 
           <div className="space-y-3">
+            {isFundedAccount && onAddBalance && (
+              <Button
+                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg"
+                onClick={onAddBalance}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Balance
+              </Button>
+            )}
             <a
               href="https://wa.me/995574450590"
               target="_blank"
@@ -1444,6 +1455,7 @@ export default function DashboardHome() {
     referral_earnings?: number
     activation_deadline?: string
     account_frozen?: boolean
+    account_type?: "normal" | "funded"
     profile_image?: string
     details_completed?: boolean
     [key: string]: any
@@ -1650,6 +1662,33 @@ export default function DashboardHome() {
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
   const walletBalance = Number(participantData.account_balance) || 0
+  const isFundedAccount = participantData.account_type === "funded"
+  const fundedBaseAmount = isFundedAccount
+    ? ({ 10000: 10000, 25000: 25000, 50000: 50000, 100000: 100000 }[Number(participantData.funded_amount ?? participantData.account_balance)] ?? 10000)
+    : 0
+  const minimumFundedBalance = Math.max(0, fundedBaseAmount - 100)
+  const isFundedAccountBelowBase = isFundedAccount && walletBalance > 0 && walletBalance < minimumFundedBalance
+
+  useEffect(() => {
+    if (!isFundedAccountBelowBase || participantData.account_frozen || !participantData.email) return
+    const holdAccount = async () => {
+      try {
+        const response = await fetch("/api/participant/freeze-account", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: participantData.email }),
+        })
+        if (response.ok) {
+          setParticipantData((current: any) => ({ ...current, account_frozen: true, status: "frozen" }))
+          setShowFrozenModal(true)
+        }
+      } catch (error) {
+        console.error("[v0] Failed to place funded account on hold:", error)
+      }
+    }
+    holdAccount()
+  }, [isFundedAccountBelowBase, participantData.account_frozen, participantData.email])
+
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
   const referralCode = participantData.referral_code || ""
@@ -1660,7 +1699,15 @@ export default function DashboardHome() {
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {/* Frozen Account Modal */}
-      <FrozenAccountModal isOpen={showFrozenModal} onClose={() => setShowFrozenModal(false)} />
+      <FrozenAccountModal
+        isOpen={showFrozenModal}
+        onClose={() => setShowFrozenModal(false)}
+        isFundedAccount={isFundedAccount}
+        onAddBalance={() => {
+          setShowFrozenModal(false)
+          setShowTopUpModal(true)
+        }}
+      />
 
       <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} participantData={participantData} />
 
