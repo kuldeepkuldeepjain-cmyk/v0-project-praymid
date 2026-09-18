@@ -9,7 +9,7 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, MessageCircle, BarChart2, Menu, Search,
+  AlertCircle, Home, Plus, PlusCircle, MessageCircle, BarChart2, Menu, Search,
   ChevronDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -2048,6 +2048,14 @@ export default function DashboardHome() {
               <Link href="/participant/dashboard/profile" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
                 <User />
                 <span>Profile</span>
+              </Link>
+              <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <PlusCircle />
+                <span>Add Fund</span>
+              </Link>
+              <Link href="/participant/dashboard/payout" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <ArrowUpRight />
+                <span>Payout</span>
               </Link>
             </nav>
 

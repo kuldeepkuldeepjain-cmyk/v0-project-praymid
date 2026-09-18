@@ -3,7 +3,7 @@
 import type React from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Home, User, TrendingUp, Wallet, Gift, Settings, ChevronRight } from "lucide-react"
+import { Home, User, TrendingUp, Wallet, Gift, Settings, ChevronRight, PlusCircle } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 
 export default function DashboardLayout({
@@ -19,6 +19,7 @@ export default function DashboardLayout({
     { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", shortLabel: "Pred", color: "#10B981", gradient: "from-emerald-400 to-teal-500", glow: "shadow-emerald-500/40" },
     { href: "/participant/dashboard", icon: Home, label: "Dashboard", shortLabel: "Home", color: "#3b82f6", gradient: "from-blue-500 to-blue-700", glow: "shadow-blue-500/40" },
     { href: "/participant/dashboard/profile", icon: User, label: "Profile", shortLabel: "Prof", color: "#22d3ee", gradient: "from-cyan-400 to-blue-500", glow: "shadow-cyan-500/40" },
+    { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Add Fund", shortLabel: "Fund", color: "#14B8A6", gradient: "from-teal-400 to-cyan-500", glow: "shadow-teal-500/40" },
     { href: "/participant/dashboard/payout", icon: Wallet, label: "Payout", shortLabel: "Pay", color: "#F59E0B", gradient: "from-amber-400 to-yellow-500", glow: "shadow-amber-500/40" },
     { href: "/participant/dashboard/refer", icon: Gift, label: "Refer & Earn", shortLabel: "Refer", color: "#E85D3B", gradient: "from-orange-400 to-red-500", glow: "shadow-orange-500/40" },
   ]
