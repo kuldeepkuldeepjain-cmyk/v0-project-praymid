@@ -94,7 +94,7 @@ function AnimatedNumber({
   return (
     <span
       className={
-        gradient ? "bg-gradient-to-r from-[#E85D3B] via-[#7c3aed] to-[#22d3ee] bg-clip-text text-transparent" : ""
+        gradient ? "bg-gradient-to-r from-[#E85D3B] via-[#2563eb] to-[#22d3ee] bg-clip-text text-transparent" : ""
       }
       style={
         gradient
@@ -244,7 +244,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
             </a>
             <a
               href="mailto:support@flowchain.club"
-              className="flex items-center justify-center gap-2 w-full h-12 bg-[#7c3aed] hover:bg-[#6d28d9] text-white font-semibold rounded-lg transition-colors"
+              className="flex items-center justify-center gap-2 w-full h-12 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg transition-colors"
             >
               <Mail className="h-4 w-4" />
               Email Support
@@ -398,7 +398,7 @@ function HamburgerMenu({
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] flex items-center justify-center text-white font-bold">
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#2563eb] to-[#E85D3B] flex items-center justify-center text-white font-bold">
               {displayName.charAt(0).toUpperCase()}
             </div>
             <div>
@@ -741,8 +741,8 @@ function DailySpinWheel({
         ))}
         <div className="absolute top-5 left-5 w-64 h-64 bg-orange-500/20 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 4s ease-in-out infinite', willChange: 'transform' }} />
         <div className="absolute top-20 right-10 w-52 h-52 bg-pink-500/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float-reverse 5s ease-in-out infinite', willChange: 'transform' }} />
-        <div className="absolute bottom-32 left-10 w-72 h-72 bg-purple-600/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/12 rounded-full blur-3xl" />
+          <div className="absolute bottom-32 left-10 w-72 h-72 bg-blue-600/18 rounded-full blur-3xl hidden md:block" style={{ animation: 'float 6s ease-in-out infinite', animationDelay: '1s', willChange: 'transform' }} />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-600/12 rounded-full blur-3xl" />
       </div>
 
       {/* Header - Mobile Optimized */}
@@ -1386,7 +1386,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           <div
             className="absolute inset-0 rounded-full animate-spin-slow"
             style={{
-              background: "conic-gradient(from 0deg, #E85D3B, #7c3aed, #22d3ee, #E85D3B)",
+              background: "conic-gradient(from 0deg, #E85D3B, #2563eb, #22d3ee, #E85D3B)",
               padding: "4px",
               WebkitMask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
               WebkitMaskComposite: "xor",
@@ -1401,7 +1401,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         <defs>
           <linearGradient id="queueGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#E85D3B" />
-            <stop offset="50%" stopColor="#7c3aed" />
+            <stop offset="50%" stopColor="#2563eb" />
             <stop offset="100%" stopColor="#22d3ee" />
           </linearGradient>
         </defs>
@@ -1421,7 +1421,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       </svg>
       {/* Position number */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-black bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] bg-clip-text text-transparent">
+        <span className="text-3xl font-black bg-gradient-to-br from-[#2563eb] to-[#E85D3B] bg-clip-text text-transparent">
           #{position}
         </span>
         <span className="text-xs text-slate-500 font-medium">in queue</span>
@@ -1735,11 +1735,11 @@ export default function DashboardHome() {
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
-          boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(124,58,237,0.12)"
+          boxShadow: "0 4px 24px rgba(0,0,0,0.5), 0 1px 0 rgba(37,99,235,0.12)"
         }}
       >
         {/* Top accent line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(124,58,237,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
+        <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
 
         <div className="px-4 h-14 flex items-center justify-between gap-3">
           {/* Left — avatar + greeting */}
@@ -1747,9 +1747,9 @@ export default function DashboardHome() {
             <Link href="/participant/dashboard/profile">
               <div className="relative flex-shrink-0">
                 {participantData?.profile_image ? (
-                  <img src={participantData.profile_image} alt="Profile" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 2px rgba(124,58,237,0.6), 0 0 12px rgba(124,58,237,0.3)" }} />
+                  <img src={participantData.profile_image} alt="Profile" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.6), 0 0 12px rgba(37,99,235,0.3)" }} />
                 ) : (
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-violet-500 to-purple-800 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(124,58,237,0.5), 0 0 14px rgba(124,58,237,0.3)" }}>
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.5), 0 0 14px rgba(37,99,235,0.3)" }}>
                     <span className="text-white text-xs font-black">{displayName.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
@@ -1773,7 +1773,7 @@ export default function DashboardHome() {
             <button
               onClick={() => setActiveTab("wheel")}
               className="holo-shine flex items-center gap-1 rounded-full px-2.5 py-1.5 transition-all active:scale-95"
-              style={{ background: "linear-gradient(135deg,rgba(124,58,237,0.7),rgba(109,40,217,0.8))", border: "1px solid rgba(124,58,237,0.4)", boxShadow: "0 0 12px rgba(124,58,237,0.3), 0 2px 8px rgba(0,0,0,0.4)" }}
+                  style={{ background: "linear-gradient(135deg,rgba(37,99,235,0.7),rgba(29,78,216,0.8))", border: "1px solid rgba(37,99,235,0.4)", boxShadow: "0 0 12px rgba(37,99,235,0.3), 0 2px 8px rgba(0,0,0,0.4)" }}
             >
               <Sparkles className="h-3 w-3 text-white" />
               <span className="text-white text-[10px] font-black tracking-wide">SPIN</span>
@@ -1793,7 +1793,7 @@ export default function DashboardHome() {
               {/* Scan line */}
               <div className="scan-line pointer-events-none" />
               {/* Deep glow orbs */}
-              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(124,58,237,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
+              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
               <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)", filter: "blur(36px)" }} />
 
               {/* ── Mobile hero layout */}
@@ -1802,8 +1802,8 @@ export default function DashboardHome() {
                 <div className="relative text-center mb-5">
                   <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-2">Total Portfolio Balance</p>
                   <div className="relative inline-block">
-                    <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
-                    <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                    <div className="absolute inset-0 blur-2xl opacity-30 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(37,99,235,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[42px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(37,99,235,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
                       <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
                     </div>
                   </div>
@@ -1844,8 +1844,8 @@ export default function DashboardHome() {
                 <div className="flex-1 min-w-0">
                   <p className="text-slate-500 text-xs font-bold uppercase tracking-[0.2em] mb-3">Total Portfolio Balance</p>
                   <div className="relative inline-block mb-3">
-                    <div className="absolute inset-0 blur-2xl opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(124,58,237,0.6) 0%, transparent 70%)" }} />
-                    <div className="text-[56px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(124,58,237,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
+                    <div className="absolute inset-0 blur-2xl opacity-25 pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(37,99,235,0.6) 0%, transparent 70%)" }} />
+                    <div className="text-[56px] font-black text-white tracking-tight relative" style={{ textShadow: "0 0 40px rgba(37,99,235,0.4), 0 2px 4px rgba(0,0,0,0.8)" }}>
                       <AnimatedNumber value={walletBalance} prefix="$" gradient={false} decimals={2} />
                     </div>
                   </div>
@@ -2083,7 +2083,7 @@ export default function DashboardHome() {
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "dashboard" ? "text-[#7c3aed]" : "text-slate-400 hover:text-slate-600"
+              activeTab === "dashboard" ? "text-[#2563eb]" : "text-slate-400 hover:text-slate-600"
             }`}
           >
             <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
@@ -2125,7 +2125,7 @@ export default function DashboardHome() {
       {/* Floating AI Chat Button */}
       <Button
         onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:from-purple-700 hover:via-pink-600 hover:to-cyan-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
+            className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 hover:from-blue-700 hover:via-cyan-600 hover:to-blue-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
         size="icon"
       >
         <MessageCircle className="h-6 w-6 text-white" />

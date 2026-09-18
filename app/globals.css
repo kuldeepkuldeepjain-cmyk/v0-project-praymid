@@ -11,13 +11,13 @@
   --card-foreground: #102033;
   --popover: #ffffff;
   --popover-foreground: #102033;
-  --primary: #0f766e;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
   --secondary: #17324d;
   --secondary-foreground: #ffffff;
   --muted: #e9f0f5;
   --muted-foreground: #5e7184;
-  --accent: #0ea5a4;
+  --accent: #06b6d4;
   --accent-foreground: #ffffff;
   --destructive: #dc4c4c;
   --destructive-foreground: #ffffff;
@@ -25,13 +25,13 @@
   --success-foreground: #ffffff;
   --warning: #c98918;
   --warning-foreground: #ffffff;
-  --info: #2563a6;
+  --info: #2563eb;
   --info-foreground: #ffffff;
   --border: #d7e1e8;
   --input: #f8fafc;
-  --ring: #0ea5a4;
-  --chart-1: #0f766e;
-  --chart-2: #2563a6;
+  --ring: #06b6d4;
+  --chart-1: #06b6d4;
+  --chart-2: #2563eb;
   --chart-3: #c98918;
   --chart-4: #159a73;
   --chart-5: #dc4c4c;
@@ -67,24 +67,24 @@
   --success-foreground: #ffffff;
   --warning: #f59e0b;
   --warning-foreground: #0f172a;
-  --info: #7c3aed;
+  --info: #3b82f6;
   --info-foreground: #ffffff;
   --border: #262626;
   --input: #262626;
-  --ring: #525252;
-  --chart-1: #7c3aed;
-  --chart-2: #22d3ee;
+  --ring: #22d3ee;
+  --chart-1: #22d3ee;
+  --chart-2: #3b82f6;
   --chart-3: #f59e0b;
-  --chart-4: #a855f7;
+  --chart-4: #10b981;
   --chart-5: #ef4444;
   --sidebar: #171717;
   --sidebar-foreground: #fafafa;
-  --sidebar-primary: #7c3aed;
-  --sidebar-primary-foreground: #fafafa;
+  --sidebar-primary: #22d3ee;
+  --sidebar-primary-foreground: #0f172a;
   --sidebar-accent: #262626;
   --sidebar-accent-foreground: #fafafa;
   --sidebar-border: #262626;
-  --sidebar-ring: #525252;
+  --sidebar-ring: #22d3ee;
 }
 
 @theme {
@@ -370,7 +370,7 @@ button, a, [role="button"] {
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #e85d3b, #7c3aed);
+  background: linear-gradient(135deg, #e85d3b, #2563eb);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -473,12 +473,12 @@ button, a, [role="button"] {
 /* Premium hero card */
 .hero-card-deep {
   background:
-    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(124,58,237,0.28) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 50% -20%, rgba(37,99,235,0.28) 0%, transparent 60%),
     radial-gradient(ellipse 60% 40% at 100% 80%, rgba(34,211,238,0.12) 0%, transparent 50%),
     linear-gradient(160deg, #0d1117 0%, #0f172a 40%, #0d1b2a 100%);
   box-shadow:
-    0 0 0 1px rgba(124,58,237,0.18),
-    0 0 80px rgba(124,58,237,0.12),
+    0 0 0 1px rgba(37,99,235,0.18),
+    0 0 80px rgba(37,99,235,0.12),
     0 40px 80px rgba(0,0,0,0.6);
 }
 
@@ -487,7 +487,7 @@ button, a, [role="button"] {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent 0%, rgba(124,58,237,0.9) 30%, rgba(34,211,238,0.9) 70%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(37,99,235,0.9) 30%, rgba(34,211,238,0.9) 70%, transparent 100%);
   animation: scan-down 4s ease-in-out infinite;
   filter: blur(1px);
 }
@@ -502,9 +502,9 @@ button, a, [role="button"] {
 /* Neon glow border pulse */
 .glow-border-purple {
   box-shadow:
-    0 0 0 1px rgba(124,58,237,0.4),
-    0 0 12px rgba(124,58,237,0.25),
-    0 0 32px rgba(124,58,237,0.1);
+    0 0 0 1px rgba(37,99,235,0.4),
+    0 0 12px rgba(37,99,235,0.25),
+    0 0 32px rgba(37,99,235,0.1);
 }
 
 .glow-border-cyan {
@@ -534,18 +534,18 @@ button, a, [role="button"] {
 
 /* CTA button deep glow */
 .btn-deep-purple {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   box-shadow:
     0 1px 0 rgba(255,255,255,0.15) inset,
     0 -1px 0 rgba(0,0,0,0.3) inset,
-    0 4px 24px rgba(124,58,237,0.55),
-    0 12px 40px rgba(124,58,237,0.25);
+    0 4px 24px rgba(37,99,235,0.55),
+    0 12px 40px rgba(37,99,235,0.25);
   transition: all 0.2s ease;
 }
 .btn-deep-purple:active {
   box-shadow:
     0 1px 0 rgba(255,255,255,0.1) inset,
-    0 4px 12px rgba(124,58,237,0.4);
+    0 4px 12px rgba(37,99,235,0.4);
   transform: translateY(1px);
 }
 
@@ -595,8 +595,8 @@ button, a, [role="button"] {
 /* Depth grid for hero */
 .depth-grid {
   background-image:
-    linear-gradient(rgba(124,58,237,0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124,58,237,0.07) 1px, transparent 1px);
+    linear-gradient(rgba(37,99,235,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37,99,235,0.07) 1px, transparent 1px);
   background-size: 32px 32px;
   mask-image: radial-gradient(ellipse 100% 100% at 50% 0%, black 40%, transparent 100%);
 }

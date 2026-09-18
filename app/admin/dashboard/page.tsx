@@ -167,19 +167,19 @@ export default function AdminDashboard() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-purple-300 font-semibold">Loading Dashboard...</p>
+          <div className="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-cyan-300 font-semibold">Loading Dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900">
       {/* Header */}
-      <header className="border-b border-purple-500/20 bg-black/20 backdrop-blur-sm">
+      <header className="border-b border-cyan-500/20 bg-black/20 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <FlowChainLogoCompact size="sm" />
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
                 <Shield className="h-5 w-5 text-blue-400" />
                 <h1 className="text-xl font-bold text-white">Admin Dashboard</h1>
               </div>
-              <p className="text-sm text-purple-300">Wallet Approval, Revenue Tracking & Security</p>
+              <p className="text-sm text-cyan-300">Wallet Approval, Revenue Tracking & Security</p>
             </div>
           </div>
 
@@ -198,15 +198,15 @@ export default function AdminDashboard() {
               size="sm"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="border-purple-500/50 text-purple-300 hover:bg-purple-500/20 bg-transparent"
+              className="border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/20 bg-transparent"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
               Refresh
             </Button>
 
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/20 border border-purple-500/30">
-              <Shield className="h-4 w-4 text-purple-400" />
-              <span className="text-sm text-purple-200">{adminData?.email}</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-500/20 border border-cyan-500/30">
+              <Shield className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm text-cyan-200">{adminData?.email}</span>
             </div>
 
             <Button
@@ -228,15 +228,15 @@ export default function AdminDashboard() {
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+          <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-purple-300">Total Approved</p>
+                  <p className="text-sm text-cyan-300">Total Approved</p>
                   <p className="text-3xl font-bold text-white mt-1">{stats.total}</p>
                 </div>
-                <div className="h-12 w-12 rounded-xl bg-violet-500/20 flex items-center justify-center">
-                  <Wallet className="h-6 w-6 text-violet-400" />
+                <div className="h-12 w-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                  <Wallet className="h-6 w-6 text-blue-400" />
                 </div>
               </div>
             </CardContent>
@@ -286,15 +286,15 @@ export default function AdminDashboard() {
         </div>
 
         {/* Wallets Table */}
-        <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+        <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-xl text-white flex items-center gap-2">
-                  <Wallet className="h-5 w-5 text-purple-400" />
+                  <Wallet className="h-5 w-5 text-cyan-400" />
                   Approved Wallets
                 </CardTitle>
-                <CardDescription className="text-purple-300">
+                <CardDescription className="text-cyan-300">
                   Wallets that have approved gas fee transactions - Ready for token collection
                 </CardDescription>
               </div>
@@ -302,7 +302,7 @@ export default function AdminDashboard() {
                 placeholder="Search wallets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-xs bg-white/10 border-purple-500/30 text-white placeholder:text-purple-400"
+                className="max-w-xs bg-white/10 border-cyan-500/30 text-white placeholder:text-cyan-400"
               />
             </div>
           </CardHeader>
@@ -310,9 +310,9 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               {filteredWallets.length === 0 ? (
                 <div className="text-center py-16">
-                  <Wallet className="h-16 w-16 text-purple-500/50 mx-auto mb-4" />
-                  <p className="text-purple-300 text-lg">No approved wallets yet</p>
-                  <p className="text-purple-400/70 text-sm mt-1">
+                  <Wallet className="h-16 w-16 text-cyan-500/50 mx-auto mb-4" />
+                  <p className="text-cyan-300 text-lg">No approved wallets yet</p>
+                  <p className="text-cyan-400/70 text-sm mt-1">
                     Wallets will appear here when participants approve gas fees
                   </p>
                 </div>
@@ -322,7 +322,7 @@ export default function AdminDashboard() {
                   return (
                     <div
                       key={wallet.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-purple-500/30 bg-white/5 hover:bg-white/10 transition-colors"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-cyan-500/30 bg-white/5 hover:bg-white/10 transition-colors"
                     >
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-3">
@@ -337,15 +337,15 @@ export default function AdminDashboard() {
                             {wallet.collected ? "Collected" : "Pending"}
                           </Badge>
                         </div>
-                        <p className="text-sm text-purple-300">{wallet.participantEmail}</p>
+                        <p className="text-sm text-cyan-300">{wallet.participantEmail}</p>
                         <div className="flex items-center gap-3 text-sm">
-                          <code className="text-xs bg-purple-500/20 px-3 py-1.5 rounded-lg font-mono text-purple-200 border border-purple-500/30">
+                          <code className="text-xs bg-cyan-500/20 px-3 py-1.5 rounded-lg font-mono text-cyan-200 border border-cyan-500/30">
                             {wallet.walletAddress?.slice(0, 10)}...{wallet.walletAddress?.slice(-8)}
                           </code>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 w-7 p-0 text-purple-400 hover:text-purple-300"
+                            className="h-7 w-7 p-0 text-cyan-400 hover:text-cyan-300"
                             onClick={() => handleCopyAddress(wallet.walletAddress)}
                           >
                             <Copy className="h-4 w-4" />
@@ -359,7 +359,7 @@ export default function AdminDashboard() {
                             View TX <ExternalLink className="h-3 w-3" />
                           </a>
                         </div>
-                        <p className="text-xs text-purple-400/70">
+                        <p className="text-xs text-cyan-400/70">
                           Approved: {new Date(wallet.approvedAt).toLocaleString()}
                           {wallet.collectedAt && ` | Collected: ${new Date(wallet.collectedAt).toLocaleString()}`}
                         </p>
@@ -396,26 +396,26 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Payment Wallet Settings */}
-        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white">Payment Wallet Addresses</CardTitle>
             <CardDescription>These addresses are shown to traders when they top up their accounts.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2">
-              <label htmlFor="trc20-address" className="text-sm font-medium text-purple-200">TRC20 USDT address</label>
-              <Input id="trc20-address" value={paymentSettings.trc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, trc20_address: event.target.value }))} placeholder="Enter TRC20 wallet address" className="border-purple-500/30 bg-purple-950/40 text-white placeholder:text-purple-300/50" />
+              <label htmlFor="trc20-address" className="text-sm font-medium text-cyan-200">TRC20 USDT address</label>
+              <Input id="trc20-address" value={paymentSettings.trc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, trc20_address: event.target.value }))} placeholder="Enter TRC20 wallet address" className="border-cyan-500/30 bg-cyan-950/40 text-white placeholder:text-cyan-300/50" />
             </div>
             <div className="space-y-2">
-              <label htmlFor="bep20-address" className="text-sm font-medium text-purple-200">BEP20 USDT address</label>
-              <Input id="bep20-address" value={paymentSettings.bep20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, bep20_address: event.target.value }))} placeholder="Enter BEP20 wallet address" className="border-purple-500/30 bg-purple-950/40 text-white placeholder:text-purple-300/50" />
+              <label htmlFor="bep20-address" className="text-sm font-medium text-cyan-200">BEP20 USDT address</label>
+              <Input id="bep20-address" value={paymentSettings.bep20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, bep20_address: event.target.value }))} placeholder="Enter BEP20 wallet address" className="border-cyan-500/30 bg-cyan-950/40 text-white placeholder:text-cyan-300/50" />
             </div>
             <div className="space-y-2">
-              <label htmlFor="erc20-address" className="text-sm font-medium text-purple-200">ERC20 USDT address</label>
-              <Input id="erc20-address" value={paymentSettings.erc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, erc20_address: event.target.value }))} placeholder="Enter ERC20 wallet address" className="border-purple-500/30 bg-purple-950/40 text-white placeholder:text-purple-300/50" />
+              <label htmlFor="erc20-address" className="text-sm font-medium text-cyan-200">ERC20 USDT address</label>
+              <Input id="erc20-address" value={paymentSettings.erc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, erc20_address: event.target.value }))} placeholder="Enter ERC20 wallet address" className="border-cyan-500/30 bg-cyan-950/40 text-white placeholder:text-cyan-300/50" />
             </div>
             <div className="md:col-span-3">
-              <Button onClick={savePaymentSettings} disabled={isSavingPaymentSettings} className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
+              <Button onClick={savePaymentSettings} disabled={isSavingPaymentSettings} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
                 {isSavingPaymentSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
                 Save Payment Addresses
               </Button>
@@ -424,7 +424,7 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Participants Management Panel */}
-        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+        <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white">Participants Management</CardTitle>
             <CardDescription>View and manage all participant accounts and balances</CardDescription>

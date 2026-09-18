@@ -48,8 +48,8 @@ export default function SuperAdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-purple-900/20 via-transparent to-transparent" />
+    <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent" />
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center space-y-2">
@@ -59,14 +59,14 @@ export default function SuperAdminLoginPage() {
             <span className="text-sm font-bold text-amber-300">Super Admin Portal</span>
           </div>
           <h1 className="text-2xl font-semibold text-white">Wallet Approval Center</h1>
-          <p className="text-sm text-purple-300">Access wallet approvals and token collection</p>
+          <p className="text-sm text-cyan-300">Access wallet approvals and token collection</p>
         </div>
 
-        <Card className="bg-white/10 backdrop-blur-sm border-purple-500/30">
+        <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
           <CardContent className="p-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-purple-200 text-sm font-medium">
+                <Label htmlFor="email" className="text-cyan-200 text-sm font-medium">
                   Email
                 </Label>
                 <Input
@@ -76,16 +76,16 @@ export default function SuperAdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="h-11 bg-white/10 border-purple-500/30 text-white placeholder:text-purple-400"
+                  className="h-11 bg-white/10 border-cyan-500/30 text-white placeholder:text-cyan-400"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-purple-200 text-sm font-medium">
+                <Label htmlFor="password" className="text-cyan-200 text-sm font-medium">
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -93,11 +93,11 @@ export default function SuperAdminLoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="h-11 pl-10 pr-10 bg-white/10 border-purple-500/30 text-white placeholder:text-purple-400"
+                    className="h-11 pl-10 pr-10 bg-white/10 border-cyan-500/30 text-white placeholder:text-cyan-400"
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-purple-400 hover:text-purple-300"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-400 hover:text-cyan-300"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -130,7 +130,7 @@ export default function SuperAdminLoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-purple-400">Authorized Super Administrators only</p>
+        <p className="text-center text-xs text-cyan-400">Authorized Super Administrators only</p>
       </div>
     </div>
   )
