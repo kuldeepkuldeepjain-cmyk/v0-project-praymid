@@ -12,17 +12,12 @@ import {
   Zap,
   ArrowRight,
   CheckCircle2,
-  Wallet,
   BarChart3,
   Rocket,
   Lock,
   Shield,
   Users,
   MessageCircle,
-  Sparkles,
-  Crown,
-  Flame,
-  Star,
 } from "lucide-react"
 
 export default function LendingPage() {
@@ -38,10 +33,6 @@ export default function LendingPage() {
                 Elite Fund
               </div>
             </div>
-            <Link href="#funded-accounts" className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors">
-              Funded Accounts
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
           </div>
           <Link href="/">
             <Button variant="outline" className="text-xs sm:text-sm border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 h-9 sm:h-10">
@@ -74,12 +65,6 @@ export default function LendingPage() {
                 <Button className="w-full h-11 sm:h-12 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white font-semibold text-base sm:text-lg">
                   Start Trading Now
                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
-                </Button>
-              </Link>
-              <Link href="#funded-accounts" className="w-full">
-                <Button variant="outline" className="w-full h-11 sm:h-12 border-cyan-400/60 text-cyan-300 hover:bg-cyan-500/10 text-base sm:text-lg">
-                  View Funded Accounts
-                  <Wallet className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
             </div>
@@ -178,136 +163,6 @@ export default function LendingPage() {
               )
             })}
           </div>
-        </div>
-      </section>
-
-      {/* Funded Account Section */}
-      <section id="funded-accounts" className="relative scroll-mt-24 overflow-hidden py-14 sm:py-24 px-4">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-0 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-emerald-500/10 blur-3xl" />
-          <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
-        </div>
-
-        <div className="relative max-w-6xl mx-auto">
-          <div className="text-center mb-10 sm:mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-400/30 text-emerald-300 text-xs sm:text-sm font-semibold mb-4 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-              <Sparkles className="w-4 h-4" />
-              Instant Funded Accounts
-            </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 text-balance">
-              Turn <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">$100</span> Into a{" "}
-              <span className="bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent">$10,000</span> Trading
-              Account
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
-              Every plan multiplies your top-up by 100x trading power. Pick your tier, fund instantly, and start trading with real firepower.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-            {[
-              {
-                topUp: "$100",
-                funded: "$10,000",
-                icon: Wallet,
-                tag: "Starter",
-                gradient: "from-slate-600 to-slate-500",
-                ring: "border-slate-600/50 hover:border-cyan-400/60",
-                glow: "hover:shadow-[0_0_35px_rgba(34,211,238,0.18)]",
-              },
-              {
-                topUp: "$250",
-                funded: "$25,000",
-                icon: TrendingUp,
-                tag: "Popular",
-                gradient: "from-cyan-500 to-blue-500",
-                ring: "border-cyan-500/40 hover:border-cyan-400/70",
-                glow: "hover:shadow-[0_0_35px_rgba(34,211,238,0.25)]",
-                popular: true,
-              },
-              {
-                topUp: "$500",
-                funded: "$50,000",
-                icon: Flame,
-                tag: "Pro",
-                gradient: "from-orange-500 to-amber-500",
-                ring: "border-orange-500/30 hover:border-orange-400/60",
-                glow: "hover:shadow-[0_0_35px_rgba(249,115,22,0.2)]",
-              },
-              {
-                topUp: "$1,000",
-                funded: "$100,000",
-                icon: Crown,
-                tag: "Best Value",
-                gradient: "from-emerald-500 to-cyan-500",
-                ring: "border-emerald-400/60",
-                glow: "shadow-[0_0_40px_rgba(16,185,129,0.28)] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)]",
-                featured: true,
-              },
-            ].map((plan) => {
-              const Icon = plan.icon
-              return (
-                <div
-                  key={plan.topUp}
-                  className={`group relative rounded-[22px] p-[1.5px] bg-gradient-to-b ${plan.gradient} ${plan.featured ? "sm:-translate-y-2" : ""} transition-transform duration-300 hover:-translate-y-2`}
-                >
-                  {plan.featured && (
-                    <div className="absolute -inset-[1.5px] rounded-[22px] bg-gradient-to-b from-emerald-400 to-cyan-500 opacity-60 blur-md" />
-                  )}
-                  <Card
-                    className={`relative h-full overflow-hidden rounded-[20px] border-0 bg-slate-900 ${plan.ring} ${plan.glow} transition-all duration-300`}
-                  >
-                    {(plan.featured || plan.popular) && (
-                      <div
-                        className={`absolute top-0 right-0 flex items-center gap-1 rounded-bl-xl px-3 py-1.5 text-[11px] font-bold text-slate-950 ${plan.featured ? "bg-gradient-to-r from-emerald-400 to-cyan-400" : "bg-gradient-to-r from-cyan-400 to-blue-400"}`}
-                      >
-                        {plan.featured ? <Crown className="w-3 h-3" /> : <Star className="w-3 h-3" />}
-                        {plan.tag}
-                      </div>
-                    )}
-                    <CardHeader className="pb-3 pt-6">
-                      <div
-                        className={`flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br ${plan.gradient} shadow-lg`}
-                      >
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      <CardTitle className="text-white text-lg mt-4">{plan.tag} Account</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs uppercase tracking-wider text-slate-500">Top up</p>
-                      <p className="text-2xl font-bold text-slate-200 mb-4">{plan.topUp}</p>
-
-                      <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent mb-4" />
-
-                      <p className="text-xs uppercase tracking-wider text-slate-500">Receive trading balance</p>
-                      <p className="text-3xl sm:text-4xl font-extrabold text-white mb-1 text-balance">
-                        <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-                          {plan.funded}
-                        </span>
-                      </p>
-                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-400/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                        <Zap className="w-3 h-3" />
-                        100x buying power
-                      </div>
-
-                      <Link href="/participant/register" className="block mt-6">
-                        <Button
-                          className={`w-full font-semibold text-white transition-all bg-gradient-to-r ${plan.gradient} hover:brightness-110`}
-                        >
-                          Get Started
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                </div>
-              )
-            })}
-          </div>
-
-          <p className="mt-8 text-center text-xs sm:text-sm text-slate-400">
-            Funds are credited instantly after top-up confirmation. No hidden fees, no lock-in periods.
-          </p>
         </div>
       </section>
 
