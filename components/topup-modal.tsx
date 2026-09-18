@@ -30,6 +30,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
   // Fetch BEP20 address from DB when modal opens
@@ -108,8 +109,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           userEmail: userEmail || userId,
           amount: parsedAmount,
           transactionHash: txHash.trim(),
+          network,
           screenshotBase64: base64,
-          note: note.trim() || null,
+          note: `[Network: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })
 
@@ -142,7 +144,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           </div>
           <div>
             <h2 className="text-base font-bold text-white leading-tight">Top Up Wallet</h2>
-            <p className="text-[10px] text-white/70">Send USDT (BEP20) and submit proof</p>
+            <p className="text-[10px] text-white/70">Send USDT on your selected network and submit proof</p>
           </div>
           {step !== "submitting" && (
             <button
@@ -161,16 +163,31 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           {(step === "form" || step === "submitting") && (
             <div className="space-y-3">
 
-              {/* Network badge */}
-              <div className="flex justify-center">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                  BEP20 Network (BSC) — USDT only
-                </span>
+              {/* Network selector */}
+              <div className="space-y-1.5">
+                <Label htmlFor="topup-network" className="text-xs font-semibold text-slate-700">
+                  Deposit Network <span className="text-red-500">*</span>
+                </Label>
+                <select
+                  id="topup-network"
+                  value={network}
+                  onChange={(event) => setNetwork(event.target.value as typeof network)}
+                  disabled={step === "submitting"}
+                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
+                >
+                  <option value="ALL">All networks</option>
+                  <option value="TRC20">TRC20 (TRON)</option>
+                  <option value="BEP20">BEP20 (BSC)</option>
+                  <option value="ERC20">ERC20 (Ethereum)</option>
+                </select>
+                <p className="text-[10px] text-slate-500">
+                  Select the network used for your USDT transfer.
+                </p>
               </div>
 
               {/* Wallet Address */}
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">BEP20 Deposit Address (USDT)</Label>
+                <Label className="text-xs font-semibold text-slate-700">{network === "ALL" ? "USDT Deposit Address" : `${network} Deposit Address (USDT)`}</Label>
                 {loadingAddress ? (
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2.5 animate-pulse">
                     <div className="h-3 bg-slate-200 rounded flex-1" />
@@ -180,7 +197,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
                     {/* QR-like header strip */}
                     <div className="px-3 py-1.5 bg-violet-600 flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-white tracking-widest uppercase">BEP20 Network</span>
+                      <span className="text-[10px] font-bold text-white tracking-widest uppercase">{network === "ALL" ? "All Networks" : `${network} Network`}</span>
                       <span className="text-[10px] text-white/80">USDT Only</span>
                     </div>
                     {/* Address row */}
@@ -211,7 +228,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </div>
                 )}
                 <p className="text-[10px] text-slate-500">
-                  Send USDT (BEP20) to this address, then fill in your transaction details below.
+                  Send USDT using the selected network to this address, then fill in your transaction details below.
                 </p>
               </div>
 
