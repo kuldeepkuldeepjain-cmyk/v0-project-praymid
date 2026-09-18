@@ -384,7 +384,7 @@ export default function LandingPage() {
       <section className="py-16 sm:py-24 bg-gradient-to-r from-slate-950 to-slate-900 border-t border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">Ready to Start Trading?</h2>
-          <p className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">Join thousands of traders on Elite Fund. Get $50 bonus on your first deposit.</p>
+          <p suppressHydrationWarning className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">Join thousands of traders on Elite Fund. Get $50 bonus on your first deposit.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={() => router.push("/participant/register")}
