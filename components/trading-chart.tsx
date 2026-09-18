@@ -50,25 +50,25 @@ type PriceAlert = {
 // ─── Theme ────────────────────────────────────────────────────────────────────
 
 const T = {
-  bg:          "#060b15",
-  bgSurface:   "#0a1120",
-  bgHover:     "#0e1829",
-  border:      "rgba(255,255,255,0.06)",
-  borderMuted: "rgba(255,255,255,0.04)",
-  textMuted:   "#3d5573",
-  textDim:     "#5a7a9e",
-  textBase:    "#8ba3be",
-  green:       "#26a69a",
-  greenBright: "#4caf7d",
-  red:         "#ef5350",
-  redBright:   "#f44336",
-  cyan:        "#22d3ee",
-  amber:       "#f59e0b",
-  blue:        "#60a5fa",
-  pink:        "#f472b6",
-  purple:      "#818cf8",
-  orange:      "#fb923c",
-  emerald:     "#34d399",
+  bg:          "#f7f9fc",
+  bgSurface:   "#ffffff",
+  bgHover:     "#eef4fb",
+  border:      "rgba(29,42,58,0.10)",
+  borderMuted: "rgba(29,42,58,0.06)",
+  textMuted:   "#718096",
+  textDim:     "#5c6f85",
+  textBase:    "#1d2a3a",
+  green:       "#20a36a",
+  greenBright: "#2bb978",
+  red:         "#ff453a",
+  redBright:   "#ff625a",
+  cyan:        "#0071e3",
+  amber:       "#b7791f",
+  blue:        "#3b82c4",
+  pink:        "#d35d91",
+  purple:      "#6f65c7",
+  orange:      "#c96f2d",
+  emerald:     "#20a36a",
 }
 
 // ─── Math helpers ─────────────────────────────────────────────────────────────
@@ -243,8 +243,8 @@ export function TradingChart({
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.VerticalGradient, topColor: "#0a1220", bottomColor: "#050a13" },
-        textColor:  "#8ba3be",
+        background: { type: ColorType.VerticalGradient, topColor: "#ffffff", bottomColor: "#f3f7fb" },
+        textColor:  "#1d2a3a",
         fontFamily: "'Inter', 'SF Pro Display', monospace",
         fontSize:   12,
         attributionLogo: false,
@@ -257,20 +257,20 @@ export function TradingChart({
         mode: CrosshairMode.Normal,
         vertLine: {
           color: "rgba(120,200,255,0.55)",
-          labelBackgroundColor: "#1a3a5c",
+          labelBackgroundColor: "#0071e3",
           style: LineStyle.Dashed,
           width: 1,
         },
         horzLine: {
           color: "rgba(120,200,255,0.55)",
-          labelBackgroundColor: "#1a3a5c",
+          labelBackgroundColor: "#0071e3",
           style: LineStyle.Dashed,
           width: 1,
         },
       },
       rightPriceScale: {
         borderColor: "rgba(120,150,190,0.20)",
-        textColor:   "#9fb6d0",
+        textColor:   "#5c6f85",
         scaleMargins: { top: 0.06, bottom: 0.16 },
         entireTextOnly: true,
       },
@@ -604,7 +604,7 @@ export function TradingChart({
   const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
 
   return (
-    <div className="flex flex-col w-full h-full select-none" style={{ background: "#060b15" }}>
+    <div className="apple-trading-chart flex flex-col w-full h-full select-none" style={{ background: "#f7f9fc" }}>
 
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div
@@ -799,7 +799,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
-      <div ref={containerRef} className="relative flex-1 min-h-0 w-full" style={{ background: "#060b15" }}>
+      <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: "#f7f9fc" }}>
 
         {/* Sub-pane label overlay in bottom-left of chart */}
         {subPaneLabel && (

@@ -517,7 +517,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ────────────────────────────────────────────────────
+// ─── Market Sessions Panel ───────────────────────────────────────────────────���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -1900,7 +1900,7 @@ export function ForexTradingPlatform({
   const equity = walletBalance + totalPnl
 
   return (
-    <div className="flex flex-col forex-deep-bg text-white" style={{ height: "100%", width: "100%", position: "relative", fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col forex-deep-bg apple-trading-terminal text-slate-900" style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -1917,7 +1917,7 @@ export function ForexTradingPlatform({
       )}
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-topbar flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
         <div className="flex items-center gap-1.5 shrink-0">
           <CandlestickChart className="h-4 w-4 text-cyan-400" />
           <span className="text-[11px] font-black tracking-[0.18em] text-white">TRADE TERMINAL</span>
@@ -1982,7 +1982,7 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
-      <div className="flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+      <div className="apple-terminal-summary flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
         {[
           { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
           { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
@@ -2002,7 +2002,7 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ MOBILE TAB SWITCHER ═══════════════════════════════════════════════ */}
-      <div className="flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="apple-terminal-mobile-tabs flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
         {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map(tab => (
           <button key={tab.id} onClick={() => setMobileTab(tab.id as typeof mobileTab)}
             className="flex-1 py-2 text-[10px] font-black tracking-wider uppercase transition-all"
@@ -2017,10 +2017,10 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
-      <div className="flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
+        <div className={`apple-terminal-market flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "market" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-2.5 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -2059,7 +2059,7 @@ export function ForexTradingPlatform({
             </div>
           </div>
 
-          <div className="grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "#05080e", borderBottom: "1px solid #111827" }}>
+          <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "rgba(255,255,255,0.58)", borderBottom: "1px solid rgba(29,42,58,0.08)" }}>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#2d4565" }}>Instrument</span>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Bid / Ask</span>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Chg%</span>
@@ -2083,8 +2083,8 @@ export function ForexTradingPlatform({
                   return (
                     <div key={cat}>
                       {activeCategory === "All" && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
-                          style={{ background: "#06090f", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid #111827" }}>
+                        <div className="apple-market-category-row flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
+                          style={{ background: "rgba(255,255,255,0.58)", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid rgba(29,42,58,0.08)" }}>
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
                           <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
                             {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
@@ -2151,7 +2151,7 @@ export function ForexTradingPlatform({
             )}
           </div>
 
-          <div className="shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid #1a2640", background: "#05080e" }}>
+          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid rgba(29,42,58,0.08)", background: "rgba(255,255,255,0.58)" }}>
             <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{filteredPairs.length} instruments</span>
             <div className="flex items-center gap-1">
               {(["Forex", "Commodities", "Crypto"] as AssetCategory[]).map(cat => {
@@ -2168,7 +2168,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
-        <div className={`flex flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
+        <div className={`apple-terminal-chart-column flex flex-col min-w-0 transition-all duration-200 ${chartExpanded ? "flex-1" : "flex-1"} ${mobileTab !== "chart" ? "hidden md:flex" : "flex"}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2324,7 +2324,7 @@ export function ForexTradingPlatform({
         </div>
 
         {/* ── RIGHT: Order Ticket ────────────��────────────────────────────────── */}
-        <div className={`flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
+        <div className={`apple-terminal-order flex flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab !== "order" ? "hidden md:flex" : "flex"}`}
           style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
@@ -2348,7 +2348,7 @@ export function ForexTradingPlatform({
               <div className="flex flex-col gap-0 p-2">
 
                 {/* Order type tabs */}
-                <div className="flex mb-2 overflow-hidden" style={{ borderRadius: 4, border: "1px solid #1e2d45", background: "#060a12" }}>
+                <div className="apple-order-type-tabs flex mb-2 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
                   {(["market","limit","stop"] as typeof orderType[]).map(ot => (
                     <button key={ot} onClick={() => setOrderType(ot)}
                       className="flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-all"
@@ -2590,9 +2590,9 @@ export function ForexTradingPlatform({
       </div>
 
       {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
-      <div className="flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
-        <div className="flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
+        <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
@@ -2948,7 +2948,7 @@ export function ForexTradingPlatform({
         </div>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���────────────────────────────���───────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
