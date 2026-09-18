@@ -2105,6 +2105,13 @@ button, a, [role="button"] {
 
 
 /* Professional terminal workspace: a deliberate hierarchy of market context, execution, charting, and activity. */
+.reference-terminal .reference-terminal-brand-mark {
+  border-radius: 5px;
+  border: 1px solid rgba(240,200,110,.5);
+  object-position: center 27%;
+  box-shadow: 0 0 10px rgba(240,200,110,.14);
+}
+.reference-terminal .reference-terminal-brand { min-width: max-content; }
 .reference-terminal .reference-quick-trade {
   min-height: 48px;
   padding: 7px 10px !important;

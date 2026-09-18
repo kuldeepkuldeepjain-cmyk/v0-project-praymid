@@ -2019,9 +2019,16 @@ function PositionSizer({
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
       <div className="apple-terminal-topbar flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <CandlestickChart className="h-4 w-4 text-cyan-400" />
-          <span className="text-[11px] font-black tracking-[0.18em] text-white">TRADE TERMINAL</span>
+        <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund Trade Terminal">
+          <img
+            src="/elite-fund-logo.jpg"
+            alt="Elite Fund"
+            className="reference-terminal-brand-mark h-6 w-6 shrink-0 object-cover"
+          />
+          <div className="flex flex-col leading-none">
+            <span className="text-[10px] font-black tracking-[0.16em] text-amber-100">ELITE FUND</span>
+            <span className="text-[8px] font-bold tracking-[0.18em] text-cyan-300/80">TRADE TERMINAL</span>
+          </div>
         </div>
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
 
