@@ -1092,7 +1092,6 @@ function PositionSizer({
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
-  const [chartTradePrice, setChartTradePrice] = useState<number | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
@@ -1760,18 +1759,6 @@ function PositionSizer({
     requestConfirm(dir, lot, lev, price, null, null, null, false)
   }
 
-  const chartTrade = (dir: TradeDirection) => {
-    if (!selectedPair || chartTradePrice == null) return
-    const lot = parseFloat(lotSize) || 0.01
-    const lev = effectiveLeverage
-    const margin = calcMargin(selectedPair.symbol, lot, chartTradePrice, lev)
-    if (walletBalance < margin) {
-      showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
-      return
-    }
-    requestConfirm(dir, lot, lev, chartTradePrice, null, null, null, false)
-  }
-
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
@@ -2001,7 +1988,7 @@ function PositionSizer({
   }, [equity, totalPnl, walletBalance])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -2468,7 +2455,6 @@ function PositionSizer({
   tf={timeframe}
   openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
   onExpand={() => setChartExpanded(e => !e)}
-  onPriceClick={setChartTradePrice}
   isExpanded={chartExpanded}
   darkTheme={isDarkTheme}
   />
@@ -2479,51 +2465,6 @@ function PositionSizer({
   </div>
   )}
 
-  {selectedPair && chartTradePrice !== null && (
-  <div className="chart-trade-float" role="group" aria-label={`Trade ${selectedPair.symbol} at ${fmt(chartTradePrice, selectedPair.symbol)}`}>
-    <div className="chart-trade-float-heading">
-      <span>TRADE AT PRICE</span>
-      <button type="button" onClick={() => setChartTradePrice(null)} aria-label="Dismiss chart trade controls">×</button>
-    </div>
-    <strong className="chart-trade-float-price">{fmt(chartTradePrice, selectedPair.symbol)}</strong>
-    <div className="chart-trade-float-actions">
-      <button type="button" className="chart-trade-float-button is-sell" onClick={() => chartTrade("SELL")}>
-        <TrendingDown /> SELL
-      </button>
-      <button type="button" className="chart-trade-float-button is-buy" onClick={() => chartTrade("BUY")}>
-        <TrendingUp /> BUY
-      </button>
-    </div>
-    <span className="chart-trade-float-meta">{lotSize || "0.01"} lots · 1:{leverage}</span>
-  </div>
-  )}
-
-  {/* Persistent floating BUY/SELL, TradingView-style, anchored to the live price */}
-  {selectedPair && (
-  <div className="chart-live-trade-fab" role="group" aria-label="Quick trade at market price">
-    <button
-      type="button"
-      onClick={() => quickTrade("SELL")}
-      disabled={balanceLoaded && estimatedMargin > walletBalance}
-      className="chart-live-trade-fab-button is-sell"
-    >
-      <span className="chart-live-trade-fab-label"><TrendingDown /> SELL</span>
-      <span className="chart-live-trade-fab-price">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-    </button>
-    <div className="chart-live-trade-fab-spread">
-      {((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips
-    </div>
-    <button
-      type="button"
-      onClick={() => quickTrade("BUY")}
-      disabled={balanceLoaded && estimatedMargin > walletBalance}
-      className="chart-live-trade-fab-button is-buy"
-    >
-      <span className="chart-live-trade-fab-label"><TrendingUp /> BUY</span>
-      <span className="chart-live-trade-fab-price">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-    </button>
-  </div>
-  )}
   </div>
           </div>
         </div>
