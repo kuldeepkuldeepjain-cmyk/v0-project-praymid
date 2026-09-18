@@ -18,18 +18,27 @@ const ThemeContext = React.createContext<{
   setTheme: () => {},
 })
 
-export function ThemeProvider({ 
-  children, 
+export function ThemeProvider({
+  children,
   defaultTheme = "light",
   attribute = "class",
+  storageKey = "elite-fund-theme",
 }: ThemeProviderProps) {
   const [theme, setTheme] = React.useState(defaultTheme)
+
+  React.useEffect(() => {
+    const savedTheme = window.localStorage.getItem(storageKey)
+    if (savedTheme === "light" || savedTheme === "dark") {
+      setTheme(savedTheme)
+    }
+  }, [storageKey])
 
   React.useEffect(() => {
     if (attribute === "class") {
       document.documentElement.classList.toggle("dark", theme === "dark")
     }
-  }, [theme, attribute])
+    window.localStorage.setItem(storageKey, theme)
+  }, [theme, attribute, storageKey])
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

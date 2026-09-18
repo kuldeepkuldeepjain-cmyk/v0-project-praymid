@@ -166,6 +166,34 @@
   }
 }
 
+/* Register page theme controls */
+.register-page.theme-light input {
+  background: var(--card) !important;
+  background-image: none !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+.register-page.theme-light input::placeholder {
+  color: var(--muted-foreground) !important;
+}
+
+.register-page.theme-light label {
+  color: var(--foreground) !important;
+}
+
+.register-page.theme-light button[role="combobox"] {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+.register-page.theme-light button[aria-pressed="false"] {
+  background: var(--card) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
 /* ── Mobile-first responsive utilities ───────────────────────────────────── */
 
 /* Ensure images/media don't overflow */

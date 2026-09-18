@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, User, Gift, RefreshCcw } from "lucide-react"
+import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, User, Gift, RefreshCcw, Sun, Moon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useTheme } from "@/components/theme-provider"
+import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { setParticipantAuth } from "@/lib/auth"
 
@@ -86,6 +88,8 @@ export default function ParticipantRegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const { theme, setTheme } = useTheme()
+  const isLightTheme = theme === "light"
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -294,9 +298,32 @@ export default function ParticipantRegisterPage() {
   }))
 
   return (
-    <div className="min-h-screen min-h-dvh relative overflow-hidden flex items-center justify-center p-4 bg-slate-950 text-white">
+    <div className={cn(
+      "register-page min-h-screen min-h-dvh relative overflow-hidden flex items-center justify-center p-4 transition-colors duration-500",
+      isLightTheme ? "theme-light bg-slate-100 text-slate-950" : "theme-dark bg-slate-950 text-white",
+    )}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setTheme(isLightTheme ? "dark" : "light")}
+        aria-label={isLightTheme ? "Switch to dark theme" : "Switch to light theme"}
+        className={cn(
+          "fixed right-4 top-4 z-50 gap-2 rounded-full shadow-lg backdrop-blur transition-colors",
+          isLightTheme
+            ? "border-slate-300 bg-white/90 text-slate-800 hover:bg-white"
+            : "border-amber-400/30 bg-slate-900/90 text-amber-200 hover:bg-slate-800",
+        )}
+      >
+        {isLightTheme ? <Moon data-icon="inline-start" /> : <Sun data-icon="inline-start" />}
+        <span className="hidden sm:inline">{isLightTheme ? "Dark theme" : "Light theme"}</span>
+      </Button>
+
       {/* Elite Fund dark trading atmosphere */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 -z-10" />
+      <div className={cn(
+        "fixed inset-0 -z-10 transition-colors duration-500",
+        isLightTheme ? "bg-gradient-to-br from-slate-100 via-white to-slate-200" : "bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950",
+      )} />
       <div className="fixed inset-0 opacity-40 -z-10">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-400/10 via-transparent to-cyan-400/10 animate-gradient-shift" />
       </div>
@@ -322,11 +349,16 @@ export default function ParticipantRegisterPage() {
       <div className="w-full max-w-2xl space-y-6 relative z-10 my-8">
         <div className="text-center space-y-2 animate-fade-in-up">
           <FlowChainLogo size="lg" showTagline={true} className="justify-center mb-4" />
-          <h1 className="text-3xl font-bold text-white">Create your account</h1>
-          <p className="text-sm text-slate-500">Join Elite Fund in less than a minute</p>
+          <h1 className={cn("text-3xl font-bold", isLightTheme ? "text-slate-950" : "text-white")}>Create your account</h1>
+          <p className={cn("text-sm", isLightTheme ? "text-slate-600" : "text-slate-400")}>Join Elite Fund in less than a minute</p>
         </div>
 
-        <Card className="border border-amber-400/20 shadow-2xl shadow-black/40 bg-slate-900/90 backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group">
+        <Card className={cn(
+          "backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group transition-colors duration-500",
+          isLightTheme
+            ? "border-slate-200 bg-white/95 shadow-2xl shadow-slate-300/40"
+            : "border border-amber-400/20 bg-slate-900/90 shadow-2xl shadow-black/40",
+        )}>
           <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-amber-400/20 via-cyan-400/10 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
           <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-500 to-cyan-400 animate-gradient-shift" />
           <div className="absolute top-10 right-10 size-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" />
@@ -391,8 +423,8 @@ export default function ParticipantRegisterPage() {
                       onClick={() => handleChange("accountType", option.value)}
                       className={`rounded-xl border p-4 text-left transition-all ${formData.accountType === option.value ? "border-amber-400 bg-amber-400/10 shadow-md shadow-amber-400/10" : "border-slate-700 bg-slate-950/60 hover:border-cyan-400/60"}`}
                     >
-                      <span className="block text-sm font-semibold text-slate-200">{option.title}</span>
-                      <span className="mt-1 block text-xs text-slate-500">{option.description}</span>
+                      <span className={cn("block text-sm font-semibold", isLightTheme ? "text-slate-900" : "text-slate-200")}>{option.title}</span>
+                      <span className={cn("mt-1 block text-xs", isLightTheme ? "text-slate-600" : "text-slate-500")}>{option.description}</span>
                     </button>
                   ))}
                 </div>
@@ -450,7 +482,7 @@ export default function ParticipantRegisterPage() {
                   Country *
                 </Label>
                 
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-slate-950/60 border border-cyan-400/20">
+                <div className={cn("flex items-center gap-3 p-3 rounded-lg border", isLightTheme ? "bg-slate-50 border-slate-200" : "bg-slate-950/60 border-cyan-400/20")}>
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <span className="text-2xl">{selectedCountryData?.flag || "🌍"}</span>
                     <div className="min-w-0 flex-1">
@@ -472,7 +504,7 @@ export default function ParticipantRegisterPage() {
                       </Select>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-slate-900 rounded-md border border-cyan-400/30">
+                  <div className={cn("flex items-center gap-1 px-3 py-1 rounded-md border", isLightTheme ? "bg-white border-slate-200" : "bg-slate-900 border-cyan-400/30")}>
                     <span className="text-xs text-slate-500">Code:</span>
                     <span className="text-sm font-bold text-blue-600">{selectedCountryData?.code || "-"}</span>
                   </div>
@@ -488,7 +520,7 @@ export default function ParticipantRegisterPage() {
                   Mobile Number *
                 </Label>
                 <div className="flex gap-2">
-                <div className="w-[110px] h-12 px-3 rounded-lg bg-slate-950/80 border border-slate-700 flex items-center justify-center gap-1.5">
+                <div className={cn("w-[110px] h-12 px-3 rounded-lg border flex items-center justify-center gap-1.5", isLightTheme ? "bg-white border-slate-200" : "bg-slate-950/80 border-slate-700")}>
                   <span className="text-lg">{selectedCountryData?.flag || "🌍"}</span>
                   <span className="text-sm font-bold text-slate-700">{formData.countryCode || "+00"}</span>
                 </div>
@@ -509,7 +541,7 @@ export default function ParticipantRegisterPage() {
               </div>
 
               {/* WhatsApp OTP Section */}
-              <div className="space-y-3 p-5 bg-slate-950/60 rounded-xl border border-emerald-400/20 animate-fade-in-up" style={{ animationDelay: "0.28s" }}>
+              <div className={cn("space-y-3 p-5 rounded-xl border animate-fade-in-up", isLightTheme ? "bg-emerald-50/70 border-emerald-200" : "bg-slate-950/60 border-emerald-400/20")} style={{ animationDelay: "0.28s" }}>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>

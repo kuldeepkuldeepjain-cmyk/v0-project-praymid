@@ -76,7 +76,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
       </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="elite-fund-theme">
           <ToastProvider>
             {children}
             <Toaster />
