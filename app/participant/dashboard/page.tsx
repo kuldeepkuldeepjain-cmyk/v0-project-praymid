@@ -10,7 +10,7 @@ import {
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
   AlertCircle, Home, Plus, MessageCircle, BarChart2, Menu, Search,
-  ChevronDown, Layers, FileText, Award,
+  ChevronDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -2019,74 +2019,6 @@ export default function DashboardHome() {
       ──────────────────────────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
         <div className="elite-terminal-shell">
-          <aside className="elite-terminal-sidebar">
-            <div className="elite-terminal-brand">
-              <img src="/elite-fund-logo.jpg" alt="Elite Fund mark" />
-              <div>
-                <strong>ELITE FUND</strong>
-                <span>— TRADE HIGHER —</span>
-              </div>
-            </div>
-
-            <nav className="elite-terminal-nav" aria-label="Trading terminal navigation">
-              <button type="button" className="elite-terminal-nav-item is-active">
-                <BarChart2 />
-                <span>Trading Terminal</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item" onClick={() => setActiveTab("dashboard")}>
-                <Home />
-                <span>Dashboard</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <Layers />
-                <span>Positions</span>
-                <span className="elite-terminal-nav-count">{0}</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <CreditCard />
-                <span>Orders</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <History />
-                <span>History</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <BarChart2 />
-                <span>Analytics</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <FileText />
-                <span>Reports</span>
-              </button>
-              <div className="elite-terminal-nav-divider" />
-              <button type="button" className="elite-terminal-nav-item">
-                <Award />
-                <span>Challenges</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <Wallet />
-                <span>Payouts</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <User />
-                <span>Leaderboard</span>
-              </button>
-              <button type="button" className="elite-terminal-nav-item">
-                <Settings />
-                <span>Settings</span>
-              </button>
-            </nav>
-
-            <div className="elite-terminal-promo">
-              <img src="/elite-fund-logo.jpg" alt="" aria-hidden="true" />
-              <div className="elite-terminal-promo-copy">
-                <strong>Trade Your Edge.</strong>
-                <strong>We Provide the Capital.</strong>
-                <span>Discipline &nbsp; Opportunity &nbsp; Growth</span>
-              </div>
-            </div>
-          </aside>
-
           <div className="elite-terminal-workspace">
             <header className="elite-terminal-header">
               <button type="button" className="elite-terminal-menu" aria-label="Open terminal menu">

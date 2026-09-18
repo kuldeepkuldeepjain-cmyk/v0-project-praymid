@@ -1957,8 +1957,9 @@ button, a, [role="button"] {
 .reference-watch-add svg, .reference-watch-theme svg { width: 20px; height: 20px; }
 .reference-terminal .apple-terminal-grid { flex: 1; min-height: 0; border: 0 !important; background: #05090f !important; }
 .reference-terminal .apple-terminal-market { display: none; }
-.reference-terminal .apple-terminal-chart-column { background: #080e16 !important; }
+.reference-terminal .apple-terminal-chart-column { min-width: 0; background: #080e16 !important; }
 .reference-terminal .apple-terminal-chart-column > div:first-child { background: #090f17 !important; border-bottom-color: #1a2634 !important; }
+.reference-terminal .apple-terminal-chart-column > div:nth-child(2) { min-height: 300px; }
 .reference-terminal .apple-terminal-order { width: 300px !important; background: #080e16 !important; border-left-color: #263648 !important; }
 .reference-terminal .apple-terminal-order > div:first-child { background: #090f17 !important; }
 .reference-terminal .apple-terminal-blotter { height: 136px !important; background: #080e16 !important; border-top-color: #1a2634 !important; }
