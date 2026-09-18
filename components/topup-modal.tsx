@@ -148,8 +148,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
             <Wallet className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-white leading-tight">Top Up Wallet</h2>
-            <p className="text-[10px] text-white/70">Send USDT on your selected network and submit proof</p>
+            <h2 className="text-base font-bold text-white leading-tight">{isFundedAccount ? "Funded Account Top Up" : "Top Up Wallet"}</h2>
+            <p className="text-[10px] text-white/70">{isFundedAccount ? "Choose a tier, send USDT, and submit proof" : "Send USDT on your selected network and submit proof"}</p>
           </div>
           {step !== "submitting" && (
             <button

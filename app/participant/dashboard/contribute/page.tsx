@@ -16,6 +16,9 @@ interface ParticipantData {
   wallet_balance?: number
   account_balance?: number
   account_type?: string
+  account_frozen?: boolean
+  is_frozen?: boolean
+  status?: string
 }
 
 export default function AddFundPage() {
@@ -60,6 +63,8 @@ export default function AddFundPage() {
   }
 
   const currentBalance = Number(participantData.wallet_balance ?? participantData.account_balance ?? 0)
+  const isFrozenAccount = participantData.account_frozen === true || participantData.is_frozen === true || participantData.status === "frozen"
+  const isFundedTopUp = participantData.account_type === "funded" && !isFrozenAccount
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -80,13 +85,15 @@ export default function AddFundPage() {
       <main className="flex flex-1 items-start justify-center px-4 py-10">
         <Card className="w-full max-w-lg overflow-hidden border-2 border-violet-200 shadow-lg">
           <CardContent className="p-0">
-            <div className="bg-gradient-to-br from-violet-600 to-indigo-600 px-6 py-8 text-center text-white">
+            <div className={`px-6 py-8 text-center text-white ${isFundedTopUp ? "bg-gradient-to-br from-emerald-600 to-teal-600" : "bg-gradient-to-br from-violet-600 to-indigo-600"}`}>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
                 <Wallet className="h-8 w-8" />
               </div>
-              <h2 className="text-2xl font-bold">Top Up Your Wallet</h2>
-              <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-violet-100">
-                Add funds to your trading wallet using USDT. Your balance will update after payment verification.
+              <h2 className="text-2xl font-bold">{isFundedTopUp ? "Funded Account Top Up" : "Top Up Your Wallet"}</h2>
+              <p className={`mx-auto mt-2 max-w-sm text-sm leading-relaxed ${isFundedTopUp ? "text-emerald-100" : "text-violet-100"}`}>
+                {isFundedTopUp
+                  ? "Choose a funded account tier and submit your USDT payment for approval."
+                  : "Add funds to your trading wallet using USDT. Your balance will update after payment verification."}
               </p>
             </div>
 
@@ -102,11 +109,13 @@ export default function AddFundPage() {
                 className="h-12 w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-base font-semibold text-white shadow-md hover:from-violet-700 hover:to-indigo-700"
               >
                 <Wallet className="mr-2 h-5 w-5" />
-                Top Up Now
+                {isFundedTopUp ? "Start Funded Top Up" : "Top Up Now"}
               </Button>
 
               <p className="text-center text-xs leading-relaxed text-slate-500">
-                Select your network, enter the amount, and upload your transaction proof in the top-up form.
+                {isFundedTopUp
+                  ? "Select a funded tier, send USDT, and upload your transaction proof for approval."
+                  : "Select your network, enter the amount, and upload your transaction proof in the top-up form."}
               </p>
             </div>
           </CardContent>
@@ -119,7 +128,7 @@ export default function AddFundPage() {
         currentBalance={currentBalance}
         userId={participantData.username || participantData.email || ""}
         userEmail={participantData.email || ""}
-        isFundedAccount={participantData.account_type === "funded"}
+        isFundedAccount={isFundedTopUp}
         onSuccess={(amount) => {
           setParticipantData((previousData) => previousData ? {
             ...previousData,
