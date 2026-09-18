@@ -25,6 +25,8 @@ import { useState } from "react"
 import { LearnMoreDialog } from "@/components/learn-more-dialog"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 
+const BRAND_NAME = "Elite Fund Trading"
+
 export default function LandingPage() {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -108,7 +110,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <CandlestickChart className="w-6 h-6 text-cyan-400" />
             <span className="font-bold text-lg sm:text-xl bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Elite Fund Trading
+              {BRAND_NAME}
             </span>
           </div>
 
@@ -409,7 +411,7 @@ export default function LandingPage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <CandlestickChart className="w-5 h-5 text-cyan-400" />
-                <span className="font-bold text-white">Elite Fund Trading</span>
+                <span className="font-bold text-white">{BRAND_NAME}</span>
               </div>
               <p className="text-slate-400 text-sm">Professional forex trading platform for everyone.</p>
             </div>
@@ -439,7 +441,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">© 2024 Elite Fund Trading. All rights reserved.</p>
+            <p className="text-slate-400 text-sm">© 2024 {BRAND_NAME}. All rights reserved.</p>
             <div className="flex gap-4 mt-4 sm:mt-0">
               <a href="#" className="text-slate-400 hover:text-white transition">Twitter</a>
               <a href="#" className="text-slate-400 hover:text-white transition">Discord</a>
