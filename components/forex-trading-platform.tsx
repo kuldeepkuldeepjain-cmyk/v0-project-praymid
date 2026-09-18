@@ -1046,11 +1046,13 @@ function PositionSizer({
   export function ForexTradingPlatform({
   participantEmail,
   walletBalance: externalBalance = 0,
+  isFundedAccount = false,
   onBalanceUpdated,
   onStatsUpdate,
   }: {
   participantEmail: string
   walletBalance?: number
+  isFundedAccount?: boolean
   onBalanceUpdated?: (newBalance: number) => void
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
   }) {
@@ -1062,6 +1064,7 @@ function PositionSizer({
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize]         = useState("0.01")
   const [leverage, setLeverage]       = useState("100")
+  const effectiveLeverage = isFundedAccount ? 1 : parseFloat(leverage) || 1
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -1659,7 +1662,7 @@ function PositionSizer({
 
   const executeTrade = () => {
     if (!selectedPair) return
-    const lot = parseFloat(lotSize); const lev = parseFloat(leverage)
+    const lot = parseFloat(lotSize); const lev = effectiveLeverage
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
 
@@ -1750,7 +1753,7 @@ function PositionSizer({
   const quickTrade = (dir: TradeDirection) => {
     if (!selectedPair) return
     const lot = parseFloat(lotSize) || 0.01
-    const lev = parseFloat(leverage) || 100
+    const lev = effectiveLeverage
     const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
     if (walletBalance < margin) { showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return }
@@ -1760,7 +1763,7 @@ function PositionSizer({
   const chartTrade = (dir: TradeDirection) => {
     if (!selectedPair || chartTradePrice == null) return
     const lot = parseFloat(lotSize) || 0.01
-    const lev = parseFloat(leverage) || 100
+    const lev = effectiveLeverage
     const margin = calcMargin(selectedPair.symbol, lot, chartTradePrice, lev)
     if (walletBalance < margin) {
       showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
@@ -1927,7 +1930,7 @@ function PositionSizer({
   // ── Derived values ─────────────────────────────────────────────────────────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const estimatedMargin = selectedPair
-    ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, parseFloat(leverage) || 100)
+    ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
     : 0
   const pipVal = selectedPair
     ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
@@ -2630,15 +2633,21 @@ function PositionSizer({
                   </div>
                 </div>
 
-                {/* Leverage (3D select) */}
+                {/* Funded accounts always reserve the full actual-price notional. */}
                 <div className="mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#38bdf8" }}>
-                    Leverage
+                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
+                    {isFundedAccount ? "Actual Price Only" : "Leverage"}
                   </label>
-                  <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                    className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                    {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
-                  </select>
+                  {isFundedAccount ? (
+                    <div className="input-3d w-full price-mono text-sm font-black px-2.5 py-2" style={{ color: "#fbbf24" }}>
+                      No leverage · 1:1
+                    </div>
+                  ) : (
+                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
+                      className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
+                      {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
+                    </select>
+                  )}
                 </div>
 
                 {/* SL */}
@@ -2691,7 +2700,7 @@ function PositionSizer({
                     { label: "Margin",    value: `$${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}`, color: "#f59e0b" },
                     { label: "Pip Value", value: `$${pipVal.toFixed(4)}`, color: "#22d3ee" },
                     { label: "Notional",  value: `$${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}`, color: "#a78bfa" },
-                    { label: "Leverage",  value: `×${leverage}`, color: "#fb923c" },
+                    { label: isFundedAccount ? "Actual Price" : "Leverage", value: isFundedAccount ? "1:1" : `×${leverage}`, color: isFundedAccount ? "#fbbf24" : "#fb923c" },
                   ].map(item => (
                     <div key={item.label} className="px-2 py-1.5" style={{ background: "#070a10", border: "1px solid #1a2640", borderRadius: 3 }}>
                       <p className="text-[8px] text-slate-700 mb-0.5 tracking-wider uppercase">{item.label}</p>
@@ -2768,7 +2777,7 @@ function PositionSizer({
             <div className="flex-1 overflow-y-auto terminal-scroll">
               <PositionSizer
                 pair={selectedPair}
-                leverage={parseFloat(leverage) || 100}
+                leverage={effectiveLeverage}
                 walletBalance={walletBalance}
                 onApply={lots => { setLotSize(lots); setRightPanelTab("order") }}
               />

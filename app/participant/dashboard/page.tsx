@@ -2110,6 +2110,7 @@ export default function DashboardHome() {
               <ForexTradingPlatform
                 participantEmail={participantData?.email ?? ""}
                 walletBalance={walletBalance}
+                isFundedAccount={participantData?.account_type === "funded"}
                 onBalanceUpdated={(newBalance) => {
                   setParticipantData((prev: any) => {
                     if (!prev) return prev
