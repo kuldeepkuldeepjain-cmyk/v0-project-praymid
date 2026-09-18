@@ -11,6 +11,11 @@ import {
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
+import {
+  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
+  isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
+  type AssetCategory,
+} from "@/lib/forex-instruments"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -54,7 +59,6 @@ type ClosedTrade = OpenTrade & {
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "1H" | "4H" | "1D"
-type AssetCategory = "Forex" | "Commodities" | "Crypto"
 
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
@@ -98,47 +102,10 @@ type PerfStats = {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-
-const PAIRS_CONFIG: { base: string; quote: string; symbol: string; category: AssetCategory }[] = [
-  { base: "EUR", quote: "USD", symbol: "EUR/USD", category: "Forex" },
-  { base: "GBP", quote: "USD", symbol: "GBP/USD", category: "Forex" },
-  { base: "USD", quote: "JPY", symbol: "USD/JPY", category: "Forex" },
-  { base: "USD", quote: "CHF", symbol: "USD/CHF", category: "Forex" },
-  { base: "AUD", quote: "USD", symbol: "AUD/USD", category: "Forex" },
-  { base: "USD", quote: "CAD", symbol: "USD/CAD", category: "Forex" },
-  { base: "NZD", quote: "USD", symbol: "NZD/USD", category: "Forex" },
-  { base: "EUR", quote: "GBP", symbol: "EUR/GBP", category: "Forex" },
-  { base: "XAU", quote: "USD", symbol: "XAU/USD", category: "Commodities" },
-  { base: "XAG", quote: "USD", symbol: "XAG/USD", category: "Commodities" },
-  { base: "BTC", quote: "USD", symbol: "BTC/USD", category: "Crypto" },
-  { base: "ETH", quote: "USD", symbol: "ETH/USD", category: "Crypto" },
-  { base: "BNB", quote: "USD", symbol: "BNB/USD", category: "Crypto" },
-  { base: "SOL", quote: "USD", symbol: "SOL/USD", category: "Crypto" },
-  { base: "XRP", quote: "USD", symbol: "XRP/USD", category: "Crypto" },
-  { base: "ADA", quote: "USD", symbol: "ADA/USD", category: "Crypto" },
-]
-
-const TYPICAL_SPREADS: Record<string, number> = {
-  "EUR/USD": 0.00012, "GBP/USD": 0.00018, "USD/JPY": 0.012,
-  "USD/CHF": 0.00018, "AUD/USD": 0.00018, "USD/CAD": 0.00018,
-  "NZD/USD": 0.00022, "EUR/GBP": 0.00020,
-  "XAU/USD": 0.35, "XAG/USD": 0.025,
-  "BTC/USD": 8.0, "ETH/USD": 2.0, "BNB/USD": 0.40,
-  "SOL/USD": 0.12, "XRP/USD": 0.0008, "ADA/USD": 0.0004,
-}
-
-// Overnight swap rates per lot per day in USD (Long/Short)
-// Based on real broker approximate values
-const SWAP_RATES: Record<string, [number, number]> = {
-  "EUR/USD": [-5.80, 0.60],  "GBP/USD": [-4.20, 0.20],
-  "USD/JPY": [1.20, -3.40],  "USD/CHF": [0.80, -2.80],
-  "AUD/USD": [-2.60, -0.40], "USD/CAD": [0.60, -2.90],
-  "NZD/USD": [-1.80, -0.60], "EUR/GBP": [-4.10, 0.50],
-  "XAU/USD": [-10.50, -3.50],"XAG/USD": [-2.80, -1.20],
-  "BTC/USD": [-25.0, -25.0], "ETH/USD": [-8.0, -8.0],
-  "BNB/USD": [-5.0, -5.0],   "SOL/USD": [-3.0, -3.0],
-  "XRP/USD": [-1.5, -1.5],   "ADA/USD": [-1.2, -1.2],
-}
+// PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, and the
+// isJpy/isCrypto/isGold/isSilver/isCommodity/decimals/pip/contractSize helpers
+// live in @/lib/forex-instruments so the UI and the rates/candles API routes
+// share one instrument catalog.
 
 const CATEGORY_COLOR: Record<AssetCategory, { bg: string; text: string; border: string }> = {
   Forex:       { bg: "rgba(34,211,238,0.1)",  text: "#22d3ee", border: "rgba(34,211,238,0.25)" },
@@ -146,67 +113,9 @@ const CATEGORY_COLOR: Record<AssetCategory, { bg: string; text: string; border: 
   Crypto:      { bg: "rgba(167,139,250,0.1)", text: "#a78bfa", border: "rgba(167,139,250,0.25)" },
 }
 
-const ASSET_ICON: Record<string, string> = {
-  "XAU/USD": "Au", "XAG/USD": "Ag",
-  "BTC/USD": "₿", "ETH/USD": "Ξ",
-  "BNB/USD": "BNB", "SOL/USD": "◎",
-  "XRP/USD": "✕", "ADA/USD": "₳",
-}
-
-// Full names for display
-const FULL_NAMES: Record<string, string> = {
-  "EUR/USD": "Euro / US Dollar", "GBP/USD": "British Pound", "USD/JPY": "US Dollar / Yen",
-  "USD/CHF": "Swiss Franc", "AUD/USD": "Australian Dollar", "USD/CAD": "Canadian Dollar",
-  "NZD/USD": "New Zealand Dollar", "EUR/GBP": "Euro / Pound",
-  "XAU/USD": "Gold Spot", "XAG/USD": "Silver Spot",
-  "BTC/USD": "Bitcoin", "ETH/USD": "Ethereum", "BNB/USD": "BNB Chain",
-  "SOL/USD": "Solana", "XRP/USD": "Ripple XRP", "ADA/USD": "Cardano",
-}
-
-// ─── Instrument helpers ───────────────────────────────────────────────────────
-
-function isJpy(sym: string): boolean { return sym.includes("JPY") }
-function isCrypto(sym: string): boolean { return ["BTC","ETH","BNB","SOL","XRP","ADA"].some(c => sym.startsWith(c)) }
-function isGold(sym: string): boolean { return sym.startsWith("XAU") }
-function isSilver(sym: string): boolean { return sym.startsWith("XAG") }
-function isCommodity(sym: string): boolean { return isGold(sym) || isSilver(sym) }
-
-function decimals(sym: string): number {
-  if (isGold(sym)) return 2; if (isSilver(sym)) return 3
-  if (sym.startsWith("BTC")) return 1; if (sym.startsWith("ETH")) return 2
-  if (sym.startsWith("BNB")) return 2; if (sym.startsWith("SOL")) return 3
-  if (sym.startsWith("XRP") || sym.startsWith("ADA")) return 4
-  return isJpy(sym) ? 3 : 5
-}
-
 function fmt(price: number | null | undefined, sym: string): string {
   if (price == null || !isFinite(price)) return "—"
   return price.toFixed(decimals(sym))
-}
-
-// Contract sizes — standard lot
-function contractSize(sym: string): number {
-  if (isGold(sym)) return 100        // 100 troy oz
-  if (isSilver(sym)) return 5000     // 5000 troy oz
-  if (sym.startsWith("BTC")) return 1
-  if (sym.startsWith("ETH")) return 10
-  if (sym.startsWith("BNB")) return 100
-  if (sym.startsWith("SOL")) return 100
-  if (sym.startsWith("XRP")) return 10000
-  if (sym.startsWith("ADA")) return 10000
-  return 100000                       // standard forex lot
-}
-
-// Pip size — smallest meaningful price move
-function pip(sym: string): number {
-  if (isGold(sym)) return 0.01
-  if (isSilver(sym)) return 0.001
-  if (sym.startsWith("BTC")) return 1.0
-  if (sym.startsWith("ETH")) return 0.1
-  if (sym.startsWith("BNB")) return 0.01
-  if (sym.startsWith("SOL")) return 0.001
-  if (sym.startsWith("XRP") || sym.startsWith("ADA")) return 0.0001
-  return isJpy(sym) ? 0.01 : 0.0001
 }
 
 // ─── P&L Calculation (industry-accurate) ─────────────────────────────────────
@@ -517,7 +426,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ───────────────────────────────────────────────���───���
+// ─── Market Sessions Panel ───────────────────────────────────────────────����───���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -1967,8 +1876,15 @@ function PositionSizer({
   const rrRatio = slPips > 0 ? (tpPips / slPips).toFixed(2) : null
 
   const categoryTabs: (AssetCategory | "All")[] = ["All", "Forex", "Commodities", "Crypto"]
-  const searchedPairs = pairSearch
-    ? pairs.filter(p => p.symbol.toLowerCase().includes(pairSearch.toLowerCase()) || FULL_NAMES[p.symbol]?.toLowerCase().includes(pairSearch.toLowerCase()))
+  const searchedPairs = pairSearch.trim()
+    ? (() => {
+        const q = pairSearch.trim().toLowerCase().replace(/[\s/]/g, "")
+        return pairs.filter(p => {
+          const symNoSlash = p.symbol.toLowerCase().replace(/\//g, "")
+          const name = FULL_NAMES[p.symbol]?.toLowerCase() ?? ""
+          return symNoSlash.includes(q) || name.includes(q)
+        })
+      })()
     : pairs
   const filteredPairs = searchedPairs.filter(p => {
     const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)

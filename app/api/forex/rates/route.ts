@@ -1,64 +1,5 @@
 import { NextResponse } from "next/server"
-
-// Pairs we support + their Yahoo Finance symbols for live quote
-const YAHOO_SYMBOLS: Record<string, string> = {
-  // Forex
-  "EUR/USD": "EURUSD=X",
-  "GBP/USD": "GBPUSD=X",
-  "USD/JPY": "USDJPY=X",
-  "USD/CHF": "USDCHF=X",
-  "AUD/USD": "AUDUSD=X",
-  "USD/CAD": "USDCAD=X",
-  "NZD/USD": "NZDUSD=X",
-  "EUR/GBP": "EURGBP=X",
-  // Commodities
-  "XAU/USD": "GC=F",   // Gold futures
-  "XAG/USD": "SI=F",   // Silver futures
-  // Crypto
-  "BTC/USD": "BTC-USD",
-  "ETH/USD": "ETH-USD",
-  "BNB/USD": "BNB-USD",
-  "SOL/USD": "SOL-USD",
-  "XRP/USD": "XRP-USD",
-  "ADA/USD": "ADA-USD",
-}
-
-const TYPICAL_SPREADS: Record<string, number> = {
-  // Forex
-  "EUR/USD": 0.00015, "GBP/USD": 0.00020, "USD/JPY": 0.013,
-  "USD/CHF": 0.00020, "AUD/USD": 0.00018, "USD/CAD": 0.00020,
-  "NZD/USD": 0.00025, "EUR/GBP": 0.00018,
-  // Commodities
-  "XAU/USD": 0.50,    // ~$0.50 spread on Gold
-  "XAG/USD": 0.03,    // ~$0.03 spread on Silver
-  // Crypto
-  "BTC/USD": 5.0,     "ETH/USD": 1.5,
-  "BNB/USD": 0.30,    "SOL/USD": 0.10,
-  "XRP/USD": 0.001,   "ADA/USD": 0.0005,
-}
-
-function isJpy(sym: string) { return sym.includes("JPY") }
-function isCrypto(sym: string) { return ["BTC","ETH","BNB","SOL","XRP","ADA"].some(c => sym.startsWith(c)) }
-function isGold(sym: string) { return sym.startsWith("XAU") }
-function isSilver(sym: string) { return sym.startsWith("XAG") }
-function dec(sym: string): number {
-  if (isGold(sym))   return 2
-  if (isSilver(sym)) return 3
-  if (sym.startsWith("BTC")) return 1
-  if (sym.startsWith("ETH") || sym.startsWith("BNB")) return 2
-  if (sym.startsWith("SOL")) return 3
-  if (isCrypto(sym)) return 4
-  return isJpy(sym) ? 3 : 5
-}
-
-// Seed prices — used only when Yahoo Finance fails for a pair (ensures no 0 prices)
-const SEED_PRICES: Record<string, number> = {
-  "EUR/USD": 1.1050, "GBP/USD": 1.2750, "USD/JPY": 149.50, "USD/CHF": 0.9050,
-  "AUD/USD": 0.6550, "USD/CAD": 1.3650, "NZD/USD": 0.6050, "EUR/GBP": 0.8650,
-  "XAU/USD": 3350.0, "XAG/USD": 34.50,
-  "BTC/USD": 97000.0, "ETH/USD": 3200.0, "BNB/USD": 580.0,
-  "SOL/USD": 180.0, "XRP/USD": 0.55, "ADA/USD": 0.45,
-}
+import { YAHOO_SYMBOLS, TYPICAL_SPREADS, SEED_PRICES, decimals as dec } from "@/lib/forex-instruments"
 
 // Cache to avoid hammering Yahoo Finance (server-side, resets on cold start)
 let cache: {
@@ -96,6 +37,7 @@ export async function GET() {
         const lows = (quote.low ?? []).filter((v: number | null) => v != null) as number[]
 
         const mid = closes.length > 0 ? closes[closes.length - 1] : (meta.regularMarketPrice ?? 0)
+        if (!mid || mid <= 0) throw new Error("Invalid price")
         const openP = meta.chartPreviousClose ?? meta.regularMarketOpen ?? mid
         const high = highs.length > 0 ? Math.max(...highs) : mid * 1.002
         const low = lows.length > 0 ? Math.min(...lows) : mid * 0.998
