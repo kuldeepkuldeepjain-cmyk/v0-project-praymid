@@ -108,6 +108,7 @@ export default function ParticipantRegisterPage() {
     state: "",
     pinCode: "",
     referralCode: "",
+    accountType: "normal" as "normal" | "funded",
   })
   const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(null)
 
@@ -213,6 +214,7 @@ export default function ParticipantRegisterPage() {
           state: formData.state,
           pinCode: formData.pinCode,
           referralCode: formData.referralCode,
+          accountType: formData.accountType,
         }),
       })
 
@@ -383,6 +385,27 @@ export default function ParticipantRegisterPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-teal-500/0 via-teal-500/5 to-teal-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
+                <Label className="text-slate-700 text-sm font-medium">Account Type *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {([
+                    { value: "normal", title: "Normal Account", description: "Standard platform account" },
+                    { value: "funded", title: "Funded Account", description: "Trade with a funded balance" },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      aria-pressed={formData.accountType === option.value}
+                      onClick={() => handleChange("accountType", option.value)}
+                      className={`rounded-xl border p-4 text-left transition-all ${formData.accountType === option.value ? "border-emerald-500 bg-emerald-50 shadow-md shadow-emerald-500/10" : "border-slate-200 bg-white hover:border-emerald-300"}`}
+                    >
+                      <span className="block text-sm font-semibold text-slate-800">{option.title}</span>
+                      <span className="mt-1 block text-xs text-slate-500">{option.description}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
