@@ -2119,7 +2119,7 @@ function PositionSizer({
         ))}
       </div>
 
-      {/* ══ REFERENCE WATCHLIST ════════════════════════════════════════════════ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════════════════════════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-3 px-5 py-4 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -2749,7 +2749,7 @@ function PositionSizer({
                   <button
                     onClick={() => quickTrade("BUY")}
                     disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5"
+                    className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5"
                   >
                     <div className="flex items-center gap-1 relative z-10"><TrendingUp className="h-3.5 w-3.5" /><span className="font-black text-xs">BUY</span></div>
                     <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
@@ -2757,7 +2757,7 @@ function PositionSizer({
                   <button
                     onClick={() => quickTrade("SELL")}
                     disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5"
+                    className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5"
                   >
                     <div className="flex items-center gap-1 relative z-10"><TrendingDown className="h-3.5 w-3.5" /><span className="font-black text-xs">SELL</span></div>
                     <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.bid, selectedPair.symbol)}</span>

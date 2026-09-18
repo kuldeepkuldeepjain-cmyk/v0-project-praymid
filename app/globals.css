@@ -2105,6 +2105,35 @@ button, a, [role="button"] {
 
 
 /* Professional terminal workspace: a deliberate hierarchy of market context, execution, charting, and activity. */
+.reference-terminal .reference-quick-trade {
+  min-height: 48px;
+  padding: 7px 10px !important;
+  gap: 2px;
+  border-radius: 7px;
+  border-width: 1px;
+  letter-spacing: .04em;
+  transition: transform .16s ease, filter .16s ease, box-shadow .16s ease;
+}
+.reference-terminal .reference-quick-trade:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.015);
+  filter: brightness(1.12) saturate(1.12);
+}
+.reference-terminal .reference-quick-trade:active:not(:disabled) {
+  transform: translateY(1px) scale(.985);
+}
+.reference-terminal .reference-quick-trade-buy {
+  box-shadow: 0 5px 14px rgba(16,185,129,.16), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.reference-terminal .reference-quick-trade-sell {
+  box-shadow: 0 5px 14px rgba(239,68,68,.16), inset 0 1px 0 rgba(255,255,255,.2);
+}
+.reference-terminal .reference-quick-trade svg { width: 13px; height: 13px; }
+.reference-terminal .reference-quick-trade > div span { font-size: 11px; letter-spacing: .12em; }
+.reference-terminal .reference-quick-trade > span { font-size: 9px; opacity: .9; }
+@media (max-width: 767px) {
+  .reference-terminal .reference-quick-trade { min-height: 46px; }
+}
+
 .reference-terminal {
   --terminal-surface: #080e16;
   --terminal-surface-raised: #0c1420;
