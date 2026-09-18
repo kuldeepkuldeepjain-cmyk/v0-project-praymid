@@ -25,6 +25,9 @@ import { useState } from "react"
 import { LearnMoreDialog } from "@/components/learn-more-dialog"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export default function LandingPage() {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
