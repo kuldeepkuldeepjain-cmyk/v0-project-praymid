@@ -30,8 +30,14 @@ export default function LendingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-emerald-500/20">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
-          <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-            Elite Fund Lending
+          <div className="flex items-center gap-3 sm:gap-5">
+            <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+              Elite Fund Lending
+            </div>
+            <Link href="#funded-accounts" className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold text-cyan-300 hover:text-cyan-200 transition-colors">
+              Funded Accounts
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
           <Link href="/">
             <Button variant="outline" className="text-xs sm:text-sm border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10 h-9 sm:h-10">
@@ -66,9 +72,12 @@ export default function LendingPage() {
                   <ArrowRight className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
                 </Button>
               </Link>
-              <Button variant="outline" className="w-full h-11 sm:h-12 border-emerald-500/50 text-emerald-400 text-base sm:text-lg">
-                Learn More
-              </Button>
+              <Link href="#funded-accounts" className="w-full">
+                <Button variant="outline" className="w-full h-11 sm:h-12 border-cyan-400/60 text-cyan-300 hover:bg-cyan-500/10 text-base sm:text-lg">
+                  View Funded Accounts
+                  <Wallet className="ml-2 w-4 h-4 sm:w-5 sm:h-5" />
+                </Button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-2 gap-4 pt-4 sm:pt-8">
@@ -169,7 +178,7 @@ export default function LendingPage() {
       </section>
 
       {/* Funded Account Section */}
-      <section className="relative overflow-hidden py-14 sm:py-24 px-4">
+      <section id="funded-accounts" className="relative scroll-mt-24 overflow-hidden py-14 sm:py-24 px-4">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute left-1/2 top-0 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-emerald-500/10 blur-3xl" />
           <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
