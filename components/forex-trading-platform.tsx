@@ -517,7 +517,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ───────────────────────────────────────────────────���
+// ─── Market Sessions Panel ───────────────────────────────────────────────��───���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -1177,6 +1177,7 @@ export function ForexTradingPlatform({
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
+  const [chartTradePrice, setChartTradePrice] = useState<number | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
@@ -1581,7 +1582,7 @@ export function ForexTradingPlatform({
   }, [openTrades, closedTrades, pendingOrders, participantEmail])
 
   // ── Execute market trade ───────────────────────────────────────────────────
-  // Opens the confirmation modal ��� called by both executeTrade and quickTrade
+  // Opens the confirmation modal ����� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
     lot: number,
@@ -1709,6 +1710,18 @@ export function ForexTradingPlatform({
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
     if (walletBalance < margin) { showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return }
     requestConfirm(dir, lot, lev, price, null, null, null, false)
+  }
+
+  const chartTrade = (dir: TradeDirection) => {
+    if (!selectedPair || chartTradePrice == null) return
+    const lot = parseFloat(lotSize) || 0.01
+    const lev = parseFloat(leverage) || 100
+    const margin = calcMargin(selectedPair.symbol, lot, chartTradePrice, lev)
+    if (walletBalance < margin) {
+      showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
+      return
+    }
+    requestConfirm(dir, lot, lev, chartTradePrice, null, null, null, false)
   }
 
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
@@ -2273,29 +2286,49 @@ export function ForexTradingPlatform({
             </div>
           )}
 
-          {/* Chart + BUY/SELL strip */}
-          <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-            <div className="flex-1 min-h-0">
-              {selectedPair ? (
-                <TradingChart
-                  key={isDarkTheme ? "dark" : "light"}
-                  candles={selectedPair.candles}
-                  sym={selectedPair.symbol}
-                  tf={timeframe}
-                  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-                  onExpand={() => setChartExpanded(e => !e)}
-                  isExpanded={chartExpanded}
-                  darkTheme={isDarkTheme}
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full gap-3">
-                  <CandlestickChart className="h-12 w-12 text-slate-800" />
-                  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
-                </div>
-              )}
-            </div>
+  {/* Chart + BUY/SELL strip */}
+  <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
+  <div className="relative flex-1 min-h-0">
+  {selectedPair ? (
+  <TradingChart
+  key={isDarkTheme ? "dark" : "light"}
+  candles={selectedPair.candles}
+  sym={selectedPair.symbol}
+  tf={timeframe}
+  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+  onExpand={() => setChartExpanded(e => !e)}
+  onPriceClick={setChartTradePrice}
+  isExpanded={chartExpanded}
+  darkTheme={isDarkTheme}
+  />
+  ) : (
+  <div className="flex flex-col items-center justify-center h-full gap-3">
+  <CandlestickChart className="h-12 w-12 text-slate-800" />
+  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
+  </div>
+  )}
 
-            {/* ── Quick BUY/SELL strip (3D) ── */}
+  {selectedPair && chartTradePrice !== null && (
+  <div className="chart-trade-float" role="group" aria-label={`Trade ${selectedPair.symbol} at ${fmt(chartTradePrice, selectedPair.symbol)}`} style={{ position: "absolute", top: "50%", right: 22, zIndex: 30, width: 184, padding: 11, border: "1px solid #334b65", borderRadius: 12, background: "rgba(7,14,23,.94)", boxShadow: "0 14px 36px rgba(0,0,0,.42)", backdropFilter: "blur(12px)", transform: "translateY(-50%)" }}>
+    <div className="chart-trade-float-heading" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", color: "#8196ae", fontSize: 8, fontWeight: 800, letterSpacing: ".14em" }}>
+      <span>TRADE AT PRICE</span>
+      <button type="button" onClick={() => setChartTradePrice(null)} aria-label="Dismiss chart trade controls" style={{ padding: "0 3px", border: 0, background: "transparent", color: "#8196ae", fontSize: 18, lineHeight: "14px" }}>×</button>
+    </div>
+    <strong className="chart-trade-float-price" style={{ display: "block", margin: "8px 0 10px", color: "#f4f8fc", fontFamily: "ui-monospace, SFMono-Regular, monospace", fontSize: 17 }}>{fmt(chartTradePrice, selectedPair.symbol)}</strong>
+    <div className="chart-trade-float-actions" style={{ display: "flex", gap: 7 }}>
+      <button type="button" className="chart-trade-float-button is-sell" onClick={() => chartTrade("SELL")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 5px", border: "1px solid #f16b6f", borderRadius: 7, background: "#c64048", color: "#fff", fontSize: 10, fontWeight: 900, letterSpacing: ".08em" }}>
+        <TrendingDown /> SELL
+      </button>
+      <button type="button" className="chart-trade-float-button is-buy" onClick={() => chartTrade("BUY")} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "9px 5px", border: "1px solid #30d69e", borderRadius: 7, background: "#0fae78", color: "#fff", fontSize: 10, fontWeight: 900, letterSpacing: ".08em" }}>
+        <TrendingUp /> BUY
+      </button>
+    </div>
+    <span className="chart-trade-float-meta" style={{ display: "block", marginTop: 8, color: "#6e8299", fontFamily: "ui-monospace, SFMono-Regular, monospace", fontSize: 9, textAlign: "center" }}>{lotSize || "0.01"} lots · 1:{leverage}</span>
+  </div>
+  )}
+  </div>
+
+            {/* ── Quick BUY/SELL strip (3D) ─��� */}
             {selectedPair && (
               <div className="shrink-0 flex items-stretch" style={{ borderTop: "2px solid #1a2d4a", height: 72, background: "#04080f" }}>
 

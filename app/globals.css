@@ -1999,3 +1999,32 @@ button, a, [role="button"] {
   .reference-statusbar { padding-inline: 14px; font-size: 10px; }
   .reference-statusbar .reference-status-spacer, .reference-statusbar .reference-status-divider { display: none; }
 }
+
+.chart-trade-float {
+  position: absolute;
+  top: 50%;
+  right: 22px;
+  z-index: 30;
+  width: 184px;
+  padding: 11px;
+  border: 1px solid #334b65;
+  border-radius: 12px;
+  background: rgba(7, 14, 23, .94);
+  box-shadow: 0 14px 36px rgba(0,0,0,.42), 0 0 0 1px rgba(255,255,255,.03);
+  backdrop-filter: blur(12px);
+  transform: translateY(-50%);
+}
+.chart-trade-float-heading { display: flex; align-items: center; justify-content: space-between; color: #8196ae; font-size: 8px; font-weight: 800; letter-spacing: .14em; }
+.chart-trade-float-heading button { padding: 0 3px; border: 0; background: transparent; color: #8196ae; font-size: 18px; line-height: 14px; }
+.chart-trade-float-price { display: block; margin: 8px 0 10px; color: #f4f8fc; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 17px; letter-spacing: .03em; }
+.chart-trade-float-actions { display: flex; gap: 7px; }
+.chart-trade-float-button { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 9px 5px; border: 1px solid transparent; border-radius: 7px; color: #fff; font-size: 10px; font-weight: 900; letter-spacing: .08em; }
+.chart-trade-float-button svg { width: 13px; height: 13px; }
+.chart-trade-float-button.is-buy { background: #0fae78; border-color: #30d69e; box-shadow: 0 4px 12px rgba(15,174,120,.26); }
+.chart-trade-float-button.is-sell { background: #c64048; border-color: #f16b6f; box-shadow: 0 4px 12px rgba(198,64,72,.22); }
+.chart-trade-float-button:hover { filter: brightness(1.12); }
+.chart-trade-float-button:active { transform: translateY(1px); }
+.chart-trade-float-meta { display: block; margin-top: 8px; color: #6e8299; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 9px; text-align: center; }
+@media (max-width: 767px) {
+  .chart-trade-float { top: auto; right: 12px; bottom: 12px; transform: none; }
+}
