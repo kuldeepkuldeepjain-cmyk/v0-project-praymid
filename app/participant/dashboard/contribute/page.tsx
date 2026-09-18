@@ -19,11 +19,14 @@ interface ParticipantData {
   account_frozen?: boolean
   is_frozen?: boolean
   status?: string
+  top_up_count?: number
+  has_prior_top_up?: boolean
 }
 
 export default function AddFundPage() {
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
+  const [accountDataLoaded, setAccountDataLoaded] = useState(false)
   const [participantData, setParticipantData] = useState<ParticipantData | null>(null)
   const [showTopUpModal, setShowTopUpModal] = useState(false)
 
@@ -51,20 +54,25 @@ export default function AddFundPage() {
             }
           })
           .catch(() => {})
+          .finally(() => setAccountDataLoaded(true))
+      } else {
+        setAccountDataLoaded(true)
       }
     } catch {
       localStorage.removeItem("participantData")
       router.push("/participant/login")
+      setAccountDataLoaded(true)
     }
   }, [router])
 
-  if (!mounted || !participantData) {
+  if (!mounted || !participantData || !accountDataLoaded) {
     return <PageLoader variant="subpage" />
   }
 
   const currentBalance = Number(participantData.wallet_balance ?? participantData.account_balance ?? 0)
   const isFrozenAccount = participantData.account_frozen === true || participantData.is_frozen === true || participantData.status === "frozen"
-  const isFundedTopUp = participantData.account_type === "funded" && !isFrozenAccount
+  const hasPriorTopUp = participantData.has_prior_top_up === true || Number(participantData.top_up_count) > 0
+  const isFundedTopUp = participantData.account_type === "funded" && !isFrozenAccount && !hasPriorTopUp
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -132,6 +140,8 @@ export default function AddFundPage() {
         onSuccess={(amount) => {
           setParticipantData((previousData) => previousData ? {
             ...previousData,
+            has_prior_top_up: true,
+            top_up_count: Number(previousData.top_up_count) + 1,
             wallet_balance: Number(previousData.wallet_balance ?? previousData.account_balance ?? 0) + amount,
             account_balance: Number(previousData.account_balance ?? 0) + amount,
           } : previousData)

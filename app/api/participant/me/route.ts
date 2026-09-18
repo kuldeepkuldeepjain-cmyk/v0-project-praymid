@@ -61,6 +61,17 @@ export async function GET(request: Request) {
     const p = result.rows[0]
     if (!p) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
+    let topUpCount = 0
+    try {
+      const topUpResult = await db.query(
+        "SELECT COUNT(*)::int AS count FROM topup_requests WHERE participant_id = $1",
+        [p.id]
+      )
+      topUpCount = Number(topUpResult.rows[0]?.count) || 0
+    } catch {
+      topUpCount = 0
+    }
+
     return NextResponse.json({
       success: true,
       participant: {
@@ -75,6 +86,8 @@ export async function GET(request: Request) {
         total_earnings: Number(p.total_earnings) || 0,
         contributed_amount: Number(p.contributed_amount) || 0,
         participation_count: Number(p.participation_count) || 0,
+        top_up_count: topUpCount,
+        has_prior_top_up: topUpCount > 0,
       },
     })
   } catch {
