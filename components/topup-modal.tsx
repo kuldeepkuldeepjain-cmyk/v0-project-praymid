@@ -21,7 +21,7 @@ interface TopUpModalProps {
 
 type Step = "form" | "submitting" | "success"
 
-export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess }: TopUpModalProps) {
+export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false }: TopUpModalProps) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
