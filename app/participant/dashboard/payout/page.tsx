@@ -123,7 +123,20 @@ export default function PayoutPage() {
     (p) => p.status === "pending" || p.status === "processing" || p.status === "approved" || p.status === "assigned"
   )
 
+  const isFrozenFundedAccount = participantData?.account_type === "funded" && Boolean(
+    participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen"
+  )
+
   const handleRequestPayout = () => {
+    if (isFrozenFundedAccount) {
+      toast({
+        title: "Funded account frozen",
+        description: "Trading, payouts, and account functions are blocked until the account is reactivated.",
+        variant: "destructive",
+      })
+      return
+    }
+
     const walletBalance = participantData?.account_balance || 0
     const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
@@ -149,6 +162,15 @@ export default function PayoutPage() {
   }
 
   const handleWithdrawal = async () => {
+    if (isFrozenFundedAccount) {
+      toast({
+        title: "Funded account frozen",
+        description: "Payouts are blocked until the account is reactivated.",
+        variant: "destructive",
+      })
+      return
+    }
+
     const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
     if (!bep20Address || bep20Address.trim().length === 0) {
@@ -368,8 +390,15 @@ export default function PayoutPage() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-white relative overflow-hidden">
-      <div className="fixed inset-0 pointer-events-none">
+  <div className="min-h-screen min-h-dvh bg-white relative overflow-hidden">
+  {isFrozenFundedAccount && (
+  <div className="mx-auto max-w-5xl px-4 pt-4">
+  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+  <strong>Funded account frozen.</strong> Trading, payouts, and all account functions are blocked until reactivation.
+  </div>
+  </div>
+  )}
+  <div className="fixed inset-0 pointer-events-none">
         <div
           className="absolute inset-0"
           style={{
@@ -460,7 +489,7 @@ export default function PayoutPage() {
                 const canAfford = walletBalance >= plan.amount
                 const isDirectPlan = plan.id === "direct"
                 const isDirectEligible = isDirectPlan && walletBalance >= 300
-                const isDisabled = hasActivePayout || (isDirectPlan && !isDirectEligible)
+                const isDisabled = isFrozenFundedAccount || hasActivePayout || (isDirectPlan && !isDirectEligible)
                 return (
                   <button
                     key={plan.id}

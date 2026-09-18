@@ -41,12 +41,19 @@ export async function POST(request: NextRequest) {
 
     // Load participant balance info
     const rows = await query(
-      "SELECT id, account_balance FROM participants WHERE email = $1 LIMIT 1",
+      "SELECT id, account_balance, account_type, account_frozen, is_frozen, status FROM participants WHERE email = $1 LIMIT 1",
       [email.toLowerCase().trim()]
     ) as any[]
     const participant = rows[0]
     if (!participant) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
+    }
+
+    if (participant.account_type === "funded" && (participant.account_frozen || participant.is_frozen || participant.status === "frozen")) {
+      return NextResponse.json({
+        success: false,
+        error: "This funded account is frozen. Trading, payouts, and account functions are blocked until it is reactivated.",
+      }, { status: 403 })
     }
 
     const currentBalance = Number(participant.account_balance) || 0
