@@ -2075,19 +2075,47 @@ button, a, [role="button"] {
   .elite-terminal-search input { font-size: 12px; }
   .elite-terminal-account-metrics, .elite-terminal-header-icon, .elite-terminal-user { display: none; }
 
-  .reference-terminal .apple-terminal-grid { min-height: 0; }
-  .reference-terminal .apple-terminal-market.flex { display: flex !important; }
+  /* Keep the terminal in one vertical flow on phones. The chart is the primary
+     workspace; market/order panels render below it instead of sharing its row. */
+  .reference-terminal {
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .reference-terminal .apple-terminal-grid {
+    min-height: 0;
+    flex: 0 0 auto;
+    flex-direction: column;
+    overflow: visible;
+  }
   .reference-terminal .apple-terminal-market,
   .reference-terminal .apple-terminal-chart-column,
   .reference-terminal .apple-terminal-order {
     min-width: 0;
-    min-height: 0;
     width: 100% !important;
-    height: 100%;
-    flex: 1 1 auto;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    order: 1;
+    display: flex !important;
+    flex: 0 0 280px;
+    height: 280px;
+    min-height: 280px;
+  }
+  .reference-terminal .apple-terminal-market {
+    order: 2;
+    flex: 0 0 auto;
+    max-height: 360px;
+  }
+  .reference-terminal .apple-terminal-order {
+    order: 3;
+    flex: 0 0 auto;
+    max-height: 420px;
+    border-left: 0 !important;
+  }
+  .reference-terminal .apple-terminal-market > div:nth-child(3),
+  .reference-terminal .apple-terminal-order > div:not(:first-child) {
+    min-height: 0;
   }
   .reference-terminal .apple-terminal-chart-column > div:nth-child(2) { min-height: 0 !important; }
-  .reference-terminal .apple-terminal-order { border-left: 0 !important; }
   .reference-terminal .apple-terminal-summary { height: 34px; }
   .reference-terminal .apple-terminal-summary > div { padding-inline: 9px; gap: 6px; }
   .reference-terminal .reference-watchlist { gap: 8px; padding: 8px 10px; }
@@ -2100,6 +2128,7 @@ button, a, [role="button"] {
   .reference-terminal .reference-watch-add,
   .reference-terminal .reference-watch-theme { width: 40px; height: 40px; flex-basis: 40px; }
   .reference-terminal .apple-terminal-mobile-tabs button { min-height: 34px; }
+  .reference-terminal .apple-terminal-blotter { height: 112px !important; }
   .reference-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px; }
   .reference-metric-card { min-height: 58px; gap: 5px; padding: 8px 9px; }
   .reference-metric-card span { font-size: 10px; }
