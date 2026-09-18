@@ -2104,6 +2104,140 @@ button, a, [role="button"] {
 }
 
 
+/* Professional terminal workspace: a deliberate hierarchy of market context, execution, charting, and activity. */
+.reference-terminal {
+  --terminal-surface: #080e16;
+  --terminal-surface-raised: #0c1420;
+  --terminal-surface-soft: #0a111a;
+  --terminal-line: #1b2b3d;
+  --terminal-line-soft: #142235;
+  --terminal-muted: #718198;
+  --terminal-accent: #22d3ee;
+  --terminal-gold: #f0c86e;
+  gap: 0;
+  overflow: hidden;
+}
+.reference-terminal .reference-watchlist {
+  min-height: 92px;
+  padding: 14px 18px;
+  gap: 10px;
+  background: linear-gradient(180deg, #0b131e 0%, #080e16 100%);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.025);
+}
+.reference-terminal .reference-watch-card {
+  min-width: 178px;
+  height: 62px;
+  border-radius: 8px;
+  border-color: #203349;
+  background: #0d1723;
+  box-shadow: 0 5px 14px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.025);
+  transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+.reference-terminal .reference-watch-card:hover {
+  border-color: #315172;
+  background: #101d2c;
+  transform: translateY(-1px);
+}
+.reference-terminal .reference-watch-card.is-selected {
+  border-color: rgba(34,211,238,.72);
+  background: linear-gradient(135deg, rgba(34,211,238,.11), #0d1723 62%);
+  box-shadow: 0 0 0 1px rgba(34,211,238,.12), 0 8px 18px rgba(0,0,0,.2);
+}
+.reference-terminal .reference-watch-icon { background: #173451; }
+.reference-terminal .reference-watch-copy { gap: 3px; }
+.reference-terminal .reference-watch-copy strong { color: #f3f7fb; letter-spacing: .05em; }
+.reference-terminal .reference-watch-copy span { color: #a9b8c9; }
+.reference-terminal .reference-watch-add,
+.reference-terminal .reference-watch-theme {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border-radius: 8px;
+  background: #0d1723;
+  border-color: #203349;
+}
+.reference-terminal .apple-terminal-grid {
+  display: grid;
+  grid-template-columns: minmax(250px, 18%) minmax(0, 1fr) minmax(286px, 22%);
+  align-items: stretch;
+  gap: 1px;
+  background: #1a2a3d !important;
+}
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .apple-terminal-order {
+  width: auto !important;
+  min-width: 0;
+  background: var(--terminal-surface) !important;
+}
+.reference-terminal .apple-terminal-market { border-right: 0 !important; }
+.reference-terminal .apple-terminal-order { border-left: 0 !important; }
+.reference-terminal .apple-terminal-market > div:first-child,
+.reference-terminal .apple-terminal-order > div:first-child,
+.reference-terminal .apple-terminal-chart-column > div:first-child {
+  background: var(--terminal-surface-raised) !important;
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.035);
+}
+.reference-terminal .apple-terminal-market > div:first-child > div:first-child,
+.reference-terminal .apple-terminal-order > div:first-child,
+.reference-terminal .apple-terminal-chart-column > div:first-child {
+  min-height: 46px;
+}
+.reference-terminal .apple-terminal-market .apple-market-table-head {
+  background: #0a111a !important;
+  border-color: var(--terminal-line-soft) !important;
+}
+.reference-terminal .apple-terminal-market .apple-market-table-body { background: #080e16; }
+.reference-terminal .apple-terminal-order { box-shadow: -8px 0 24px rgba(0,0,0,.08); }
+.reference-terminal .apple-terminal-chart-column { box-shadow: 0 0 24px rgba(0,0,0,.08); }
+.reference-terminal .apple-terminal-chart-column > div:nth-child(2) {
+  min-height: 300px;
+  background: #09121e !important;
+}
+.reference-terminal .apple-terminal-blotter {
+  height: 218px !important;
+  background: #080e16 !important;
+  box-shadow: 0 -8px 24px rgba(0,0,0,.14);
+}
+.reference-terminal .apple-terminal-blotter-tabs {
+  min-height: 44px;
+  padding-inline: 8px;
+  gap: 2px;
+  background: #0a111a !important;
+}
+.reference-terminal .apple-terminal-blotter-tabs button {
+  min-height: 44px;
+  padding-inline: 13px;
+  border-radius: 5px 5px 0 0;
+}
+.reference-terminal .reference-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 16px;
+  background: #060b12;
+}
+.reference-terminal .reference-metric-card {
+  min-height: 68px;
+  padding: 10px 13px;
+  border-radius: 8px;
+  border-color: #1b2b3d;
+  background: #0b131e;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.reference-terminal .reference-metric-card span { color: #7f91a6; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.reference-terminal .reference-metric-card strong { font-size: 17px; }
+.reference-terminal .reference-statusbar { height: 38px; padding-inline: 18px; background: #060b12; }
+@media (max-width: 1100px) {
+  .reference-terminal .apple-terminal-grid { grid-template-columns: minmax(220px, 22%) minmax(0, 1fr) minmax(260px, 26%); }
+}
+@media (max-width: 767px) {
+  .reference-terminal .apple-terminal-grid { display: flex; gap: 0; background: #05090f !important; }
+  .reference-terminal .reference-watchlist { min-height: 78px; padding: 10px; }
+  .reference-terminal .reference-watch-card { min-width: 154px; height: 54px; }
+  .reference-terminal .apple-terminal-blotter { height: 172px !important; }
+  .reference-terminal .reference-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 .chart-trade-float {
   position: absolute;
   top: 50%;
