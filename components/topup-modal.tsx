@@ -30,7 +30,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [screenshot, setScreenshot] = useState<File | null>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [walletAddress, setWalletAddress] = useState<string | null>(null)
+  const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null }>({ TRC20: null, BEP20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
@@ -50,9 +50,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       try {
         const res = await fetch("/api/public/settings")
         const data = await res.json()
-        setWalletAddress(data.topup_address || null)
+        setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null })
       } catch {
-        setWalletAddress(null)
+        setWalletAddresses({ TRC20: null, BEP20: null })
       } finally {
         setLoadingAddress(false)
       }
@@ -61,12 +61,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }, [isOpen])
 
   const copyAddress = () => {
+    const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20
     if (!walletAddress) return
     navigator.clipboard.writeText(walletAddress)
     setCopiedAddress(true)
     setTimeout(() => setCopiedAddress(false), 2000)
   }
 
+  const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
   const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   const isFundedAmountValid = !isFundedAccount || parsedAmount in fundedTiers
@@ -217,7 +219,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     <div className="h-3 bg-slate-200 rounded flex-1" />
                     <div className="h-6 w-6 bg-slate-200 rounded" />
                   </div>
-                ) : walletAddress ? (
+                ) : selectedWalletAddress ? (
                   <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
                     {/* QR-like header strip */}
                     <div className="px-3 py-1.5 bg-violet-600 flex items-center justify-between">
@@ -227,7 +229,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     {/* Address row */}
                     <div className="flex items-center gap-2 px-3 py-2.5">
                       <code className="flex-1 text-[11px] text-violet-900 font-mono break-all leading-snug">
-                        {walletAddress}
+                        {network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20}
                       </code>
                       <button
                         onClick={copyAddress}

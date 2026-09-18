@@ -18,6 +18,7 @@ import {
   LogOut,
   Shield,
   RefreshCw,
+  Save,
 } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
@@ -45,6 +46,8 @@ export default function AdminDashboard() {
   const [collectingIds, setCollectingIds] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "" })
+  const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -57,6 +60,7 @@ export default function AdminDashboard() {
 
     setAdminData(data)
     fetchApprovedWallets()
+    fetchPaymentSettings()
   }, [router])
 
   const fetchApprovedWallets = async () => {
@@ -68,6 +72,33 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error("Error fetching wallets:", error)
+    }
+  }
+
+  const fetchPaymentSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/payment-settings")
+      const data = await response.json()
+      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "" })
+    } catch (error) {
+      console.error("[v0] Failed to fetch payment settings:", error)
+    }
+  }
+
+  const savePaymentSettings = async () => {
+    setIsSavingPaymentSettings(true)
+    try {
+      const response = await fetch("/api/admin/payment-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(paymentSettings),
+      })
+      if (!response.ok) throw new Error("Save failed")
+      toast({ title: "Saved", description: "TRC20 and BEP20 payment addresses updated" })
+    } catch {
+      toast({ title: "Save failed", description: "Unable to update payment addresses", variant: "destructive" })
+    } finally {
+      setIsSavingPaymentSettings(false)
     }
   }
 
@@ -360,6 +391,30 @@ export default function AdminDashboard() {
                   )
                 })
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Payment Wallet Settings */}
+        <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Payment Wallet Addresses</CardTitle>
+            <CardDescription>These addresses are shown to traders when they top up their accounts.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label htmlFor="trc20-address" className="text-sm font-medium text-purple-200">TRC20 USDT address</label>
+              <Input id="trc20-address" value={paymentSettings.trc20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, trc20_address: event.target.value }))} placeholder="Enter TRC20 wallet address" className="border-purple-500/30 bg-purple-950/40 text-white placeholder:text-purple-300/50" />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="bep20-address" className="text-sm font-medium text-purple-200">BEP20 USDT address</label>
+              <Input id="bep20-address" value={paymentSettings.bep20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, bep20_address: event.target.value }))} placeholder="Enter BEP20 wallet address" className="border-purple-500/30 bg-purple-950/40 text-white placeholder:text-purple-300/50" />
+            </div>
+            <div className="md:col-span-2">
+              <Button onClick={savePaymentSettings} disabled={isSavingPaymentSettings} className="bg-gradient-to-r from-cyan-500 to-purple-600 text-white">
+                {isSavingPaymentSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                Save Payment Addresses
+              </Button>
             </div>
           </CardContent>
         </Card>
