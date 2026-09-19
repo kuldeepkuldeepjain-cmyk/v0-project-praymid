@@ -48,14 +48,19 @@ export function isFundedBalanceBelowMinimum(
   accountType: unknown,
   balance: unknown,
   configuredAmount?: unknown,
+  amountInTrades: unknown = 0,
 ): boolean {
   if (accountType !== "funded") return false
 
-  const currentBalance = Number(balance)
-  const baseAmount = getFundedBaseAmount(balance, configuredAmount)
-  if (!Number.isFinite(currentBalance) || currentBalance < 0 || !baseAmount) return false
+  const availableBalance = Number(balance)
+  const committedFunds = Number(amountInTrades) || 0
+  const totalFunds = availableBalance + Math.max(0, committedFunds)
+  const baseAmount = getFundedBaseAmount(totalFunds, configuredAmount)
+  if (!Number.isFinite(availableBalance) || availableBalance < 0 || !baseAmount) return false
 
-  return currentBalance < getFundedMinimumBalance(baseAmount)
+  // Total funds are cash still available plus stakes/margin committed to open trades.
+  // Freeze only once equity falls below 99% of the funded amount (1% loss limit).
+  return totalFunds < getFundedMinimumBalance(baseAmount)
 }
 
 export { FUNDED_PLANS }
