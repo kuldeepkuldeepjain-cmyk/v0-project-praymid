@@ -2081,6 +2081,14 @@ function PositionSizer({
 
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
 
+        {/* Feed telemetry */}
+        <div className="hidden lg:flex items-center gap-2 shrink-0 px-2 py-1 rounded" style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.10)" }}>
+          <span className="text-[8px] font-black tracking-[0.14em] uppercase" style={{ color: "#3d5a80" }}>TICKS</span>
+          <span className="price-mono text-[10px] font-black text-cyan-400">{tickCount.toLocaleString()}</span>
+          <span className="text-[8px]" style={{ color: "#2d4565" }}>·</span>
+          <span className="text-[8px] font-black tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>3S FEED</span>
+        </div>
+
         {/* Live status */}
         <div className="flex items-center gap-1.5 shrink-0">
           <span className="live-dot" style={{ background: online ? "#10b981" : "#ef4444", boxShadow: online ? "0 0 6px #10b981" : "0 0 6px #ef4444" }} />
@@ -2088,6 +2096,7 @@ function PositionSizer({
             {online ? "LIVE" : "OFFLINE"}
           </span>
           {lastUpdated && <span className="text-[9px] text-slate-500 price-mono hidden md:block">{lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
+          <span className="hidden xl:inline text-[8px] font-bold tracking-wider uppercase" style={{ color: "#2d4565" }}>LP QUOTES</span>
         </div>
 
         {/* Balance chip with sparkline */}
@@ -2601,12 +2610,26 @@ function PositionSizer({
                   ))}
                 </div>
 
-                {/* Symbol + price */}
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <span className="text-[10px] text-slate-400">{selectedPair.symbol}</span>
-                  <span className="price-mono text-sm font-black" style={{ color: direction === "BUY" ? "#10b981" : "#ef4444" }}>
-                    {fmt(direction === "BUY" ? selectedPair.ask : selectedPair.bid, selectedPair.symbol)}
-                  </span>
+                {/* Executable quote snapshot */}
+                <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
+                  <div className="flex items-center justify-between px-2 py-1.5" style={{ borderBottom: "1px solid #1a2640" }}>
+                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} · MARKET</span>
+                    <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-px" style={{ background: "#1a2640" }}>
+                    <button type="button" onClick={() => setDirection("SELL")} className="px-2.5 py-2 text-left transition-colors hover:bg-red-500/10" style={{ background: "#090d15" }}>
+                      <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-red-400">Bid · Sell</span>
+                      <span className="price-mono text-sm font-black text-red-300">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                    </button>
+                    <button type="button" onClick={() => setDirection("BUY")} className="px-2.5 py-2 text-right transition-colors hover:bg-emerald-500/10" style={{ background: "#090d15" }}>
+                      <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-400">Ask · Buy</span>
+                      <span className="price-mono text-sm font-black text-emerald-300">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between px-2 py-1" style={{ borderTop: "1px solid #1a2640" }}>
+                    <span className="text-[8px] font-bold tracking-wider uppercase text-slate-600">Spread</span>
+                    <span className="price-mono text-[9px] font-black text-cyan-400">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
+                  </div>
                 </div>
 
                 {/* Pending price (only for limit/stop) */}
