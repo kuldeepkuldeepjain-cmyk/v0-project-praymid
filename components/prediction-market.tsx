@@ -146,7 +146,7 @@ export function PredictionMarket() {
         <defs>
           <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="#E85D3B" />
-            <stop offset="50%" stopColor="#7c3aed" />
+            <stop offset="50%" stopColor="#2563eb" />
             <stop offset="100%" stopColor="#22d3ee" />
           </linearGradient>
         </defs>
@@ -156,13 +156,13 @@ export function PredictionMarket() {
   }
 
   return (
-    <Card className="border-0 shadow-xl bg-gradient-to-br from-white via-white to-cyan-50/20 backdrop-blur-sm overflow-hidden relative group mb-6">
-      <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <Card className="border-blue-500/20 shadow-xl bg-slate-800/70 backdrop-blur-sm overflow-hidden relative group mb-6">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       <CardHeader className="pb-3 relative z-10">
-        <CardTitle className="text-lg text-slate-900 font-bold flex items-center gap-2">
+        <CardTitle className="text-lg text-white font-bold flex items-center gap-2">
           <Zap className="h-5 w-5 text-cyan-500 animate-pulse-soft" />
           Prediction Market
-          <span className="ml-auto text-xs font-normal text-slate-500 bg-cyan-50 px-2 py-1 rounded-full">
+          <span className="ml-auto text-xs font-normal text-slate-400 bg-cyan-50 px-2 py-1 rounded-full">
             MPL Style
           </span>
         </CardTitle>
@@ -176,7 +176,7 @@ export function PredictionMarket() {
               <AssetLogo symbol="BTCUSDT" name="Bitcoin" bgColor="#F7931A" size={40} />
               <div>
                 <p className="text-sm font-bold text-slate-900 leading-tight">BTC/USDT</p>
-                <p className="text-xs text-slate-500 leading-tight mt-0.5">Bitcoin</p>
+                <p className="text-xs text-slate-400 leading-tight mt-0.5">Bitcoin</p>
               </div>
               <TrendingUp className="h-4 w-4 text-[#F7931A] ml-auto" />
             </div>
@@ -190,7 +190,7 @@ export function PredictionMarket() {
               <AssetLogo symbol="ETHUSDT" name="Ethereum" bgColor="#627EEA" size={40} />
               <div>
                 <p className="text-sm font-bold text-slate-900 leading-tight">ETH/USDT</p>
-                <p className="text-xs text-slate-500 leading-tight mt-0.5">Ethereum</p>
+                <p className="text-xs text-slate-400 leading-tight mt-0.5">Ethereum</p>
               </div>
               <TrendingUp className="h-4 w-4 text-[#627EEA] ml-auto" />
             </div>
@@ -223,21 +223,21 @@ export function PredictionMarket() {
             </div>
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div>
-                <span className="text-slate-500">Entry:</span>
+                <span className="text-slate-400">Entry:</span>
                 <span className="font-bold ml-1">${activePrediction.entryPrice.toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-slate-500">Trade:</span>
+                <span className="text-slate-400">Trade:</span>
                 <span className="font-bold ml-1">${activePrediction.tradeAmount.toFixed(2)}</span>
               </div>
               {activePrediction.status !== "pending" && (
                 <>
                   <div>
-                    <span className="text-slate-500">Final:</span>
+                    <span className="text-slate-400">Final:</span>
                     <span className="font-bold ml-1">${activePrediction.currentPrice?.toFixed(2)}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">Result:</span>
+                    <span className="text-slate-400">Result:</span>
                     <span
                       className={`font-bold ml-1 ${activePrediction.status === "won" ? "text-emerald-600" : "text-red-600"}`}
                     >
@@ -262,13 +262,13 @@ export function PredictionMarket() {
         {!activePrediction || activePrediction.status !== "pending" ? (
           <div className="space-y-3">
             <div>
-              <label className="text-xs font-semibold text-slate-600 mb-1 block">Trade Amount (USD)</label>
+              <label className="text-xs font-semibold text-slate-300 mb-1 block">Trade Amount (USD)</label>
               <Input
                 type="number"
                 placeholder="Enter amount (min $5)"
                 value={tradeAmount}
                 onChange={(e) => setTradeAmount(e.target.value)}
-                className="border-slate-200 focus:border-cyan-400"
+                className="bg-slate-900/70 border-blue-500/30 text-white placeholder:text-slate-400 focus:border-cyan-400"
               />
             </div>
 
@@ -291,11 +291,11 @@ export function PredictionMarket() {
             </div>
 
             {/* Payout Info */}
-            <div className="p-3 rounded-lg bg-gradient-to-r from-purple-50 to-cyan-50 border border-purple-200/50">
+            <div className="p-3 rounded-lg bg-gradient-to-r from-blue-950/70 to-cyan-950/50 border border-blue-500/20">
               <p className="text-xs text-center text-slate-700">
                 <span className="font-bold text-[#7c3aed]">💰 Predict correctly to win 1.9x</span>
                 <br />
-                <span className="text-slate-500">
+                <span className="text-slate-400">
                   Trade $5 → Get $9.50 | Trade $10 → Get $19 | Trade $100 → Get $190
                 </span>
               </p>
