@@ -65,44 +65,60 @@ export function TopUpRequestsPanel() {
   const [bep20Input, setBep20Input] = useState("")
   const [isSavingBep20, setIsSavingBep20] = useState(false)
 
-  // Admin's global top-up BEP20 address (shown to participants for sending funds)
+  // Admin's global top-up deposit addresses (shown to participants for sending funds)
   const [topupBep20, setTopupBep20] = useState("")
   const [topupBep20Input, setTopupBep20Input] = useState("")
-  const [isSavingTopupBep20, setIsSavingTopupBep20] = useState(false)
+  const [topupTrc20, setTopupTrc20] = useState("")
+  const [topupTrc20Input, setTopupTrc20Input] = useState("")
+  const [topupErc20, setTopupErc20] = useState("")
+  const [topupErc20Input, setTopupErc20Input] = useState("")
+  const [isSavingTopupAddresses, setIsSavingTopupAddresses] = useState(false)
   const [topupBep20Copied, setTopupBep20Copied] = useState(false)
 
   const adminData = getAdminData()
 
-  // Load global topup BEP20 address from settings
+  // Load all global top-up addresses from the admin payment settings endpoint.
   useEffect(() => {
-    adminFetch("/api/admin/settings")
+    adminFetch("/api/admin/payment-settings")
       .then(r => r.json())
       .then(data => {
-        const addr = data.topup_bep20_address || ""
-        setTopupBep20(addr)
-        setTopupBep20Input(addr)
+        const bep20 = data.bep20_address || ""
+        const trc20 = data.trc20_address || ""
+        const erc20 = data.erc20_address || ""
+        setTopupBep20(bep20)
+        setTopupBep20Input(bep20)
+        setTopupTrc20(trc20)
+        setTopupTrc20Input(trc20)
+        setTopupErc20(erc20)
+        setTopupErc20Input(erc20)
       })
       .catch(() => {})
   }, [])
 
-  const handleSaveTopupBep20 = async () => {
-    setIsSavingTopupBep20(true)
+  const handleSaveTopupAddresses = async () => {
+    setIsSavingTopupAddresses(true)
     try {
-      const res = await adminFetch("/api/admin/settings", {
+      const res = await adminFetch("/api/admin/payment-settings", {
         method: "POST",
-        body: JSON.stringify({ topup_bep20_address: topupBep20Input.trim() }),
+        body: JSON.stringify({
+          trc20_address: topupTrc20Input.trim(),
+          erc20_address: topupErc20Input.trim(),
+          bep20_address: topupBep20Input.trim(),
+        }),
       })
       const data = await res.json()
       if (data.success) {
         setTopupBep20(topupBep20Input.trim())
-        toast({ title: "Saved", description: "Top-up BEP20 address updated successfully." })
+        setTopupTrc20(topupTrc20Input.trim())
+        setTopupErc20(topupErc20Input.trim())
+        toast({ title: "Saved", description: "Top-up TRC20 and ERC20 deposit addresses updated successfully." })
       } else {
         toast({ title: "Error", description: data.error || "Failed to save", variant: "destructive" })
       }
     } catch {
       toast({ title: "Error", description: "Request failed", variant: "destructive" })
     } finally {
-      setIsSavingTopupBep20(false)
+      setIsSavingTopupAddresses(false)
     }
   }
 
@@ -267,49 +283,34 @@ export function TopUpRequestsPanel() {
         </Button>
       </div>
 
-      {/* Admin Top-Up BEP20 Address — shown to participants for sending funds */}
+      {/* Admin top-up deposit addresses — shown to participants for sending funds */}
       <Card className="bg-slate-800 border-violet-700/50">
-        <CardContent className="p-4 space-y-3">
+        <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-violet-400" />
-            <p className="text-sm font-semibold text-white">Top-Up BEP20 Deposit Address</p>
-            <span className="text-xs text-slate-400 ml-1">(participants send funds to this address)</span>
+            <p className="text-sm font-semibold text-white">Top-Up Deposit Addresses</p>
+            <span className="text-xs text-slate-400 ml-1">(participants send funds to these addresses)</span>
           </div>
-
-          <div className="flex gap-2">
-            <Input
-              placeholder="0x... paste your BEP20 wallet address here"
-              value={topupBep20Input}
-              onChange={(e) => setTopupBep20Input(e.target.value)}
-              className="flex-1 bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs"
-              disabled={isSavingTopupBep20}
-            />
-            {topupBep20 && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={copyTopupBep20}
-                className="border-slate-600 text-slate-300 hover:bg-slate-700 flex-shrink-0"
-                title="Copy address"
-              >
-                {topupBep20Copied ? <Check className="h-4 w-4 text-green-400" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              onClick={handleSaveTopupBep20}
-              disabled={isSavingTopupBep20 || topupBep20Input.trim() === topupBep20}
-              className="bg-violet-600 hover:bg-violet-700 text-white flex-shrink-0"
-            >
-              {isSavingTopupBep20 ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Address"}
+          <div className="grid gap-3 md:grid-cols-3">
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-cyan-300">TRC20 address</span>
+              <Input placeholder="T... TRC20 wallet address" value={topupTrc20Input} onChange={(e) => setTopupTrc20Input(e.target.value)} className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs" disabled={isSavingTopupAddresses} />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-cyan-300">ERC20 address</span>
+              <Input placeholder="0x... ERC20 wallet address" value={topupErc20Input} onChange={(e) => setTopupErc20Input(e.target.value)} className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs" disabled={isSavingTopupAddresses} />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-xs font-medium text-cyan-300">BEP20 address</span>
+              <Input placeholder="0x... BEP20 wallet address" value={topupBep20Input} onChange={(e) => setTopupBep20Input(e.target.value)} className="bg-slate-900 border-slate-700 text-white placeholder:text-slate-500 focus:border-violet-500 font-mono text-xs" disabled={isSavingTopupAddresses} />
+            </label>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-slate-400">Saved addresses are used by the participant top-up flow.</p>
+            <Button size="sm" onClick={handleSaveTopupAddresses} disabled={isSavingTopupAddresses} className="bg-violet-600 hover:bg-violet-700 text-white">
+              {isSavingTopupAddresses ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Deposit Addresses"}
             </Button>
           </div>
-
-          {topupBep20 && (
-            <p className="text-xs text-violet-300 font-mono bg-violet-950/40 rounded px-3 py-1.5 border border-violet-800/50 truncate">
-              Active: {topupBep20}
-            </p>
-          )}
         </CardContent>
       </Card>
 
