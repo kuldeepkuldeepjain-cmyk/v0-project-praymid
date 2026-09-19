@@ -409,14 +409,34 @@ export function TradingChart({
     })
 
     // ── Resize observer ──
-    const ro = new ResizeObserver(() => {
-      if (!containerRef.current || !chartRef.current) return
-      chartRef.current.resize(containerRef.current.clientWidth, containerRef.current.clientHeight)
+    // lightweight-charts can synchronously change its internal layout while it is
+    // being resized. Coalesce observer callbacks and only resize when the actual
+    // container dimensions changed to avoid a ResizeObserver feedback loop.
+    let frameId: number | null = null
+    let lastWidth = containerRef.current.clientWidth
+    let lastHeight = containerRef.current.clientHeight
+
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0]
+      if (!entry || frameId !== null) return
+
+      frameId = requestAnimationFrame(() => {
+        frameId = null
+        const width = Math.round(entry.contentRect.width)
+        const height = Math.round(entry.contentRect.height)
+        if (!chartRef.current || width <= 0 || height <= 0) return
+        if (width === lastWidth && height === lastHeight) return
+
+        lastWidth = width
+        lastHeight = height
+        chartRef.current.resize(width, height)
+      })
     })
     ro.observe(containerRef.current)
 
     return () => {
       ro.disconnect()
+      if (frameId !== null) cancelAnimationFrame(frameId)
       chart.remove()
       chartRef.current     = null
       candleSerRef.current = null
@@ -593,7 +613,7 @@ export function TradingChart({
     }))
   }, [candles]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Last candle stats for header ─────────────────────────────────────────────
+  // ── Last candle stats for header ───────────────────────��─────────────────────
   const lastCandle = candles[candles.length - 1]
   const displayOhlcv = ohlcv ?? (lastCandle ? {
     open: lastCandle.open, high: lastCandle.high,

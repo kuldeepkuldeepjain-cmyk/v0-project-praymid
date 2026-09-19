@@ -229,7 +229,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     {/* Address row */}
                     <div className="flex items-center gap-2 px-3 py-2.5">
                       <code className="flex-1 text-[11px] text-violet-900 font-mono break-all leading-snug">
-                        {network === "TRC20" ? walletAddresses.TRC20 : walletAddresses.BEP20}
+                        {selectedWalletAddress}
                       </code>
                       <button
                         onClick={copyAddress}
