@@ -77,11 +77,12 @@ export async function POST(req: NextRequest) {
       const depositAmount = Number(topup.amount)
       const fundedSizes: Record<number, number> = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
       const isFundedAccount = participant.account_type === "funded"
+      const isInitialFundedTopUp = isFundedAccount && Number(participant.account_balance || 0) <= 0
       const fundedCredit = fundedSizes[depositAmount]
-      if (isFundedAccount && !fundedCredit) {
-        return NextResponse.json({ success: false, message: "Funded accounts require a $100, $250, $500, or $1,000 top-up tier" }, { status: 400 })
+      if (isInitialFundedTopUp && !fundedCredit) {
+        return NextResponse.json({ success: false, message: "The first funded top-up must be $100, $250, $500, or $1,000" }, { status: 400 })
       }
-      const creditedAmount = isFundedAccount ? fundedCredit : depositAmount
+      const creditedAmount = isInitialFundedTopUp ? fundedCredit : depositAmount
       const newBalance = Number(participant.account_balance || 0) + creditedAmount
       await execute(
         isFundedAccount
