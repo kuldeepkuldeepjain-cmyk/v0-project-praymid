@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
     }
 
     const topup = rows[0] as any
-    if (topup.status !== "pending") {
+    // Direct crypto deposits use `pending`; funded-account approval requests
+    // use `pending_collection` until an admin confirms the credited balance.
+    const pendingStatuses = new Set(["pending", "pending_collection"])
+    if (!pendingStatuses.has(String(topup.status).toLowerCase())) {
       return NextResponse.json({ success: false, message: "Request already processed" }, { status: 400 })
     }
 
@@ -82,9 +85,9 @@ export async function POST(req: NextRequest) {
       const newBalance = Number(participant.account_balance || 0) + creditedAmount
       await execute(
         isFundedAccount
-          ? "UPDATE participants SET account_balance = $1, funded_amount = COALESCE(funded_amount, $2), account_frozen = false, is_frozen = false, status = 'active', updated_at = NOW() WHERE id = $3"
+          ? "UPDATE participants SET account_balance = $1, account_frozen = false, is_frozen = false, status = 'active', updated_at = NOW() WHERE id = $2"
           : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-        isFundedAccount ? [newBalance, creditedAmount, topup.participant_id] : [newBalance, topup.participant_id]
+        [newBalance, topup.participant_id]
       )
       await execute(
         "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
