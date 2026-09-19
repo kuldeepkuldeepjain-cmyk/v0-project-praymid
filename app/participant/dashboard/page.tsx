@@ -1586,8 +1586,11 @@ export default function DashboardHome() {
       if (storedData) {
         try {
           const data = JSON.parse(storedData)
+          if (!data || typeof data !== "object" || Array.isArray(data) || !data.email) {
+            throw new Error("Invalid participant session data")
+          }
           setParticipantData(data)
-          setParticipantId(data.id || "")
+          setParticipantId(data.id || data.participantId || "")
 
   if (data.account_frozen || data.is_frozen || data.status === "frozen") {
   setShowFrozenModal(true)
