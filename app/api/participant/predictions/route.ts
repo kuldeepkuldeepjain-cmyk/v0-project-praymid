@@ -33,13 +33,22 @@ export async function POST(request: NextRequest) {
     const fundedBaseAmount = participant.account_type === "funded"
       ? getFundedBaseAmount(participant.account_balance)
       : 0
+    const committedRows = participant.account_type === "funded" && !useReferralBalance
+      ? await query(
+          `SELECT
+             (SELECT COALESCE(SUM(amount), 0) FROM predictions WHERE participant_email = $1 AND status = 'pending' AND balance_source = 'wallet')
+             + (SELECT COALESCE(SUM(margin), 0) FROM forex_trades WHERE participant_email = $1 AND status IN ('open', 'pending')) AS committed_funds`,
+          [participant_email],
+        ) as Array<{ committed_funds: number }>
+      : []
+    const committedFunds = Number(committedRows[0]?.committed_funds ?? 0)
 
-    if (!useReferralBalance && isFundedBalanceBelowMinimum(participant.account_type, availableBalance, fundedBaseAmount)) {
+    if (!useReferralBalance && isFundedBalanceBelowMinimum(participant.account_type, availableBalance, fundedBaseAmount, committedFunds)) {
       await execute(
         "UPDATE participants SET account_frozen = true, is_frozen = true, status = 'frozen', updated_at = NOW() WHERE id = $1",
         [participant.id]
       )
-      return NextResponse.json({ error: "Funded account frozen because its balance is below the required minimum." }, { status: 403 })
+      return NextResponse.json({ error: "Funded account frozen because total funds (available balance plus funds committed to trades) fell below the 1% loss limit." }, { status: 403 })
     }
 
     if (availableBalance < Number(amount)) {
