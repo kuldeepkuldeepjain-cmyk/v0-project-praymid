@@ -7,6 +7,7 @@ import { ExternalLink } from "lucide-react"
 import { BSC_CONFIG, ETH_CONFIG } from "@/lib/constants"
 import { useEffect, useState } from "react"
 import type { CollectionHistory as CollectionHistoryType } from "@/lib/types"
+import { formatRupees } from "@/lib/format-utils"
 
 export function CollectionHistory() {
   const [collections, setCollections] = useState<CollectionHistoryType[]>([])
@@ -74,7 +75,7 @@ export function CollectionHistory() {
                       {collection.chain}
                     </Badge>
                   </div>
-                  <div className="text-sm font-semibold">${collection.amount.toLocaleString()}</div>
+                  <div className="text-sm font-semibold">{formatRupees(collection.amount)}</div>
                   <div className="text-xs text-muted-foreground">
                     {new Date(collection.created_at).toLocaleString()}
                   </div>

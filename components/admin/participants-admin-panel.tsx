@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, RefreshCw, Download } from "lucide-react"
+import { formatRupees } from "@/lib/format-utils"
 
 interface Participant {
   id: string
@@ -110,7 +111,7 @@ export function ParticipantsAdminPanel() {
               <CardTitle className="text-sm text-slate-400">Total Balance</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-400">${stats.total_balance.toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-400">{formatRupees(stats.total_balance)}</div>
               <p className="text-xs text-slate-500 mt-1">Across all participants</p>
             </CardContent>
           </Card>
@@ -174,7 +175,7 @@ export function ParticipantsAdminPanel() {
                   </Badge>
                 </td>
                 <td className="py-3 px-4 text-right text-green-400 font-mono">
-                  ${participant.account_balance.toFixed(2)}
+                  {formatRupees(participant.account_balance)}
                 </td>
                 <td className="py-3 px-4 text-white">{participant.total_referrals || 0}</td>
                 <td className="py-3 px-4">
