@@ -9,19 +9,17 @@ export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
   try {
-    const walletRows = (await query(
-      `SELECT network, address FROM admin_wallet_addresses WHERE network IN ('TRC20', 'ERC20')`,
-    )) as Array<{ network: "TRC20" | "ERC20"; address: string }>
-    const bep20Rows = (await query(
-      `SELECT setting_value FROM system_settings WHERE setting_key = $1 LIMIT 1`,
+    const rows = (await query(
+      `SELECT setting_key, setting_value FROM system_settings
+       WHERE setting_key IN ('topup_trc20_address', 'topup_erc20_address', $1)`,
       [legacyBep20Key],
-    )) as Array<{ setting_value: string | null }>
-    const wallets = Object.fromEntries(walletRows.map((row) => [row.network, row.address || ""]))
+    )) as Array<{ setting_key: string; setting_value: string | null }>
+    const settings = Object.fromEntries(rows.map((row) => [row.setting_key, row.setting_value || ""]))
     return NextResponse.json({
       success: true,
-      trc20_address: wallets.TRC20 || "",
-      bep20_address: bep20Rows[0]?.setting_value || "",
-      erc20_address: wallets.ERC20 || "",
+      trc20_address: settings.topup_trc20_address || "",
+      bep20_address: settings[legacyBep20Key] || "",
+      erc20_address: settings.topup_erc20_address || "",
     })
   } catch (error) {
     console.error("[v0] Failed to load payment settings:", error)

@@ -85,9 +85,9 @@ export async function POST(req: NextRequest) {
       const newBalance = Number(participant.account_balance || 0) + creditedAmount
       await execute(
         isFundedAccount
-          ? "UPDATE participants SET account_balance = $1, funded_amount = COALESCE(funded_amount, $2), account_frozen = false, is_frozen = false, status = 'active', updated_at = NOW() WHERE id = $3"
+          ? "UPDATE participants SET account_balance = $1, account_frozen = false, is_frozen = false, status = 'active', updated_at = NOW() WHERE id = $2"
           : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-        isFundedAccount ? [newBalance, creditedAmount, topup.participant_id] : [newBalance, topup.participant_id]
+        [newBalance, topup.participant_id]
       )
       await execute(
         "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
