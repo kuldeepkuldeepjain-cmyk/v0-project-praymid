@@ -389,7 +389,7 @@ function PredictPageContent() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-100 via-purple-100/80 to-blue-100/80 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-slate-700 font-semibold">Loading Prediction Market...</p>
@@ -399,7 +399,7 @@ function PredictPageContent() {
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-slate-100 via-purple-100/80 to-blue-100/80 relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
       {/* Decorative Background Elements - Hidden on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
         <div className="absolute top-20 right-10 w-64 h-64 bg-purple-300/20 rounded-full blur-3xl" />
@@ -408,7 +408,7 @@ function PredictPageContent() {
       </div>
       
       {/* Header - Mobile Optimized */}
-      <div className="border-b bg-white/90 backdrop-blur-md sticky top-0 z-50 shadow-sm relative">
+      <div className="border-b bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 shadow-sm border-blue-500/20 relative">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 md:py-4">
           <div className="flex justify-between items-center gap-2">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
@@ -419,33 +419,33 @@ function PredictPageContent() {
               </Link>
               <div className="min-w-0">
                 <div className="flex items-center gap-2 sm:gap-2.5">
-                  <div className="hidden sm:flex h-8 w-8 md:h-9 md:w-9 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 items-center justify-center shadow-md flex-shrink-0">
+                  <div className="hidden sm:flex h-8 w-8 md:h-9 md:w-9 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 items-center justify-center shadow-md flex-shrink-0">
                     <BarChart3 className="h-4 w-4 md:h-5 md:w-5 text-white" />
                   </div>
-                  <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
+                  <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-black bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent truncate">
                     Prediction Market
                   </h1>
                 </div>
-                <p className="text-[10px] sm:text-xs md:text-sm text-slate-500 hidden sm:block">Trade crypto, commodities & forex with live prices</p>
+                <p className="text-[10px] sm:text-xs md:text-sm text-slate-400 hidden sm:block">Trade crypto, commodities & forex with live prices</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
               <div className="flex items-center gap-1.5">
                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-purple-200">
-                  <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Wallet</div>
+                  <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Wallet</div>
                   <div className="text-xs sm:text-sm font-black text-purple-600">${walletBalance.toFixed(2)}</div>
                 </div>
                 {referralBalance > 0 && (
                   <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-emerald-200">
-                    <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium">Referral</div>
+                    <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Referral</div>
                     <div className="text-xs sm:text-sm font-black text-emerald-600">${referralBalance.toFixed(2)}</div>
                   </div>
                 )}
               </div>
               <Button
                 onClick={() => setShowHistoryModal(true)}
-                className="rounded-lg sm:rounded-xl font-bold gap-1 sm:gap-2 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2 h-auto"
+                className="rounded-lg sm:rounded-xl font-bold gap-1 sm:gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-purple-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2 h-auto"
               >
                 <History className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">History</span>
@@ -458,7 +458,7 @@ function PredictPageContent() {
       {/* Main Content - Mobile Optimized */}
       <div className="container mx-auto px-2 sm:px-3 md:px-4 lg:px-6 py-3 sm:py-4 md:py-6 relative z-10 max-w-6xl">
         {/* Filter Tabs - Mobile Optimized */}
-        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4 md:mb-6 bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-1.5 md:p-2 border border-slate-200 sm:border-2 w-full overflow-x-auto shadow-md">
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4 md:mb-6 bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-1.5 md:p-2 border border-slate-200 sm:border-2 w-full overflow-x-auto shadow-md">
           {([
             { key: 'all',       label: 'All Assets'  },
             { key: 'crypto',    label: 'Crypto'      },
@@ -470,7 +470,7 @@ function PredictPageContent() {
               onClick={() => setAssetFilter(key)}
               className={`flex-none px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg sm:rounded-xl font-bold transition-all text-xs sm:text-sm md:text-base whitespace-nowrap ${
                 assetFilter === key
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
                   : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
@@ -507,7 +507,7 @@ function PredictPageContent() {
                 return (
                   <div
                     key={asset.symbol}
-                    className="relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-200 sm:border-2 shadow-md"
+                    className="relative overflow-hidden bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-200 sm:border-2 shadow-md"
                   >
                     <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 mb-3 sm:mb-4">
                       <AssetLogo
@@ -520,10 +520,10 @@ function PredictPageContent() {
                       />
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">{asset.displayName}</h3>
-                        <p className="text-[10px] sm:text-xs text-slate-500 truncate">{asset.name}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-400 truncate">{asset.name}</p>
                       </div>
                     </div>
-                    <div className="text-xs sm:text-sm text-slate-500">Loading price...</div>
+                    <div className="text-xs sm:text-sm text-slate-400">Loading price...</div>
                   </div>
                 )
               }
@@ -540,7 +540,7 @@ function PredictPageContent() {
                   onClick={() => {
                     setSelectedAssetSymbol(asset.symbol)
                   }}
-                  className={`relative overflow-hidden bg-white/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer ${
+                  className={`relative overflow-hidden bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer ${
                     flashColor === 'green' 
                       ? 'border-green-400 bg-green-50/30' 
                       : flashColor === 'red' 
@@ -569,7 +569,7 @@ function PredictPageContent() {
                       />
                       <div className="min-w-0 flex-1">
                         <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">{asset.displayName}</h3>
-                        <p className="text-[10px] sm:text-xs text-slate-500 truncate">{asset.name}</p>
+                        <p className="text-[10px] sm:text-xs text-slate-400 truncate">{asset.name}</p>
                       </div>
                     </div>
                     <a
@@ -592,7 +592,7 @@ function PredictPageContent() {
                         {isPositive ? <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" /> : <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4" />}
                         {isPositive ? '+' : ''}{priceData?.change ? priceData.change.toFixed(2) : '0.00'}%
                       </span>
-                      <span className="text-[10px] sm:text-xs text-slate-500">
+                      <span className="text-[10px] sm:text-xs text-slate-400">
                         Vol: {priceData?.volume ? formatVolume(priceData.volume) : '$0'}
                       </span>
                     </div>
@@ -663,7 +663,7 @@ function PredictPageContent() {
               />
               <div className="min-w-0">
                 <div className="text-sm font-bold leading-tight truncate">{selectedAsset?.displayName}</div>
-                <div className="text-[10px] text-slate-500">
+                <div className="text-[10px] text-slate-400">
                   ${selectedAsset && cryptoPrices[selectedAsset.symbol]?.price ? cryptoPrices[selectedAsset.symbol].price.toFixed(2) : '0.00'}
                 </div>
               </div>
@@ -682,7 +682,7 @@ function PredictPageContent() {
                       : "border-slate-200 hover:border-purple-300 bg-white"
                   }`}
                 >
-                  <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Wallet</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Wallet</span>
                   <span className={`text-sm font-black ${balanceSource === "wallet" ? "text-purple-700" : "text-slate-800"}`}>
                     ${walletBalance.toFixed(2)}
                   </span>
@@ -696,7 +696,7 @@ function PredictPageContent() {
                       : "border-slate-200 hover:border-emerald-300 bg-white"
                   }`}
                 >
-                  <span className="text-[9px] font-semibold text-slate-500 uppercase tracking-wide">Referral</span>
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Referral</span>
                   <span className={`text-sm font-black ${balanceSource === "referral" ? "text-emerald-700" : "text-slate-800"}`}>
                     ${referralBalance.toFixed(2)}
                   </span>
@@ -717,7 +717,7 @@ function PredictPageContent() {
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">USDT</span>
               </div>
-              <div className="text-[10px] text-slate-500">
+              <div className="text-[10px] text-slate-400">
                 Available: <span className={`font-semibold ${balanceSource === "referral" ? "text-emerald-600" : "text-purple-600"}`}>${activeBalance.toFixed(2)}</span>
               </div>
             </div>
@@ -734,7 +734,7 @@ function PredictPageContent() {
                     onClick={() => setSelectedTimeframe(tf)}
                     className={`h-8 rounded-lg text-xs font-bold transition-all ${
                       selectedTimeframe.value === tf.value
-                        ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md scale-105"
+                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md scale-105"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
