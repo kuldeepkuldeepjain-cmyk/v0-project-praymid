@@ -2097,6 +2097,42 @@ button, a, [role="button"] {
   .elite-terminal-search { width: min(420px, 40vw); }
 }
 @media (max-width: 767px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .participant-header-inner {
+    min-width: 0;
+    gap: 8px;
+  }
+  .participant-header-inner > div:first-child {
+    flex: 1 1 auto;
+  }
+  .participant-header-live {
+    display: none;
+  }
+  .participant-header-actions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+  .participant-header-balance {
+    max-width: 108px;
+    padding-inline: 7px !important;
+  }
+  .participant-header-balance > div {
+    min-width: 0;
+  }
+  .participant-header-balance .price-mono {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .participant-header-actions > a > span,
+  .participant-header-actions > button {
+    min-width: 34px;
+    justify-content: center;
+  }
+
   .elite-terminal-sidebar { display: none; }
   .elite-terminal-sidebar-close { display: grid; }
   .elite-terminal-sidebar.is-open {
@@ -2133,6 +2169,23 @@ button, a, [role="button"] {
     flex: 0 0 auto;
     flex-direction: column;
     overflow: visible;
+  }
+  .reference-terminal .apple-terminal-mobile-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #060a12;
+  }
+  .reference-terminal .apple-terminal-mobile-tabs button {
+    min-height: 44px;
+    padding-block: 10px;
+    touch-action: manipulation;
+  }
+  .reference-terminal .apple-terminal-grid,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-order {
+    overflow-x: hidden;
   }
   .reference-terminal .apple-terminal-market,
   .reference-terminal .apple-terminal-chart-column,
