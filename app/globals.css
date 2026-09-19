@@ -1337,7 +1337,30 @@ button, a, [role="button"] {
 
 @media (max-width: 767px) {
   .apple-trading-terminal .apple-terminal-blotter { height: 220px !important; }
-  .apple-trading-terminal .apple-terminal-topbar { padding-inline: 10px; }
+  .apple-trading-terminal .apple-terminal-topbar { padding-inline: 10px; gap: 8px; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand-copy,
+  .apple-trading-terminal .apple-terminal-topbar .terminal-desktop-only { display: none !important; }
+  .apple-trading-terminal .apple-terminal-summary { min-height: 42px; height: auto; }
+  .apple-trading-terminal .apple-terminal-summary > div { padding-inline: 8px; min-width: max-content; }
+  .apple-trading-terminal .apple-terminal-grid { min-height: 0; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-market,
+  .apple-trading-terminal .apple-terminal-order,
+  .apple-trading-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
+  .apple-trading-terminal .apple-terminal-chart-column { flex: 1 1 auto; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-chart-column > div { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-chart-column .apple-trading-chart { min-height: 270px; }
+  .apple-trading-terminal .apple-terminal-order,
+  .apple-trading-terminal .apple-terminal-market { flex: 1 1 auto; }
+  .apple-trading-terminal .apple-terminal-order > div,
+  .apple-trading-terminal .apple-terminal-market > div { max-width: 100%; }
+  .apple-trading-terminal .reference-watch-list { overflow-x: hidden; }
+  .apple-trading-terminal .apple-terminal-blotter { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-blotter table { min-width: 560px; }
+  .apple-trading-terminal .apple-terminal-blotter > div { overflow-x: auto; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand > div { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span { white-space: nowrap; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span:last-child { display: none; }
   .reference-terminal {
     min-height: min(760px, calc(100dvh - 150px));
     height: min(760px, calc(100dvh - 150px)) !important;

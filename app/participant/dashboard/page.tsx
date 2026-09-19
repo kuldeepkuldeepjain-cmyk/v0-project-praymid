@@ -1910,7 +1910,7 @@ export default function DashboardHome() {
                   </div>
                 </div>
                 {/* Right: stat chips */}
-                <div className="flex-shrink-0 grid grid-cols-3 gap-3" style={{ width: 360 }}>
+                <div className="flex-shrink-0 grid grid-cols-3 gap-3 w-full lg:w-[360px]">
                   {[
                     { label: "Referral Earnings", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.85)" },
                     { label: "Total Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.85)" },
@@ -1940,7 +1940,7 @@ export default function DashboardHome() {
             </div>
 
             {/* ─��� QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-3 md:grid-cols-5 gap-2.5">
+            <div className="px-3 sm:px-4 pt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
               {/* Trade — opens fullscreen terminal */}
               <button
                 onClick={() => setActiveTab("trading")}
