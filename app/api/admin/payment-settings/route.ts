@@ -37,19 +37,22 @@ export async function POST(request: NextRequest) {
     const bep20Address = typeof body.bep20_address === "string" ? body.bep20_address.trim() : ""
     const erc20Address = typeof body.erc20_address === "string" ? body.erc20_address.trim() : ""
 
-    const adminEmail = auth.email
-    await query(
-      `INSERT INTO admin_wallet_addresses (network, address, updated_by, updated_at)
-       VALUES ($1, $2, $3, NOW()), ($4, $5, $3, NOW())
-       ON CONFLICT (network) DO UPDATE
-       SET address = EXCLUDED.address, updated_by = EXCLUDED.updated_by, updated_at = NOW()`,
-      ["TRC20", trc20Address, adminEmail, "ERC20", erc20Address],
-    )
+    // Keep all deposit addresses in system_settings, which is present in every
+    // supported database setup. This avoids making the save depend on the
+    // optional admin_wallet_addresses migration being present in production.
     await query(
       `INSERT INTO system_settings(id, setting_key, setting_value, updated_at)
-       VALUES($1, $2, $3, NOW())
-       ON CONFLICT(setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
-      [randomUUID(), legacyBep20Key, bep20Address],
+       VALUES
+         ($1, $2, $3, NOW()),
+         ($4, $5, $6, NOW()),
+         ($7, $8, $9, NOW())
+       ON CONFLICT(setting_key) DO UPDATE
+       SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
+      [
+        randomUUID(), "topup_trc20_address", trc20Address,
+        randomUUID(), "topup_erc20_address", erc20Address,
+        randomUUID(), legacyBep20Key, bep20Address,
+      ],
     )
 
     return NextResponse.json({ success: true })
