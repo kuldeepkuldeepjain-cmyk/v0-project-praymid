@@ -51,25 +51,25 @@ type PriceAlert = {
 
 // TradingView-accurate palette: flat background, muted grid, #26a69a/#ef5350 candles
 const T = {
-  bg:          "#ffffff",
-  bgSurface:   "#ffffff",
-  bgHover:     "#f0f3fa",
-  border:      "#e0e3eb",
-  borderMuted: "#eef0f3",
-  textMuted:   "#787b86",
-  textDim:     "#4c525e",
-  textBase:    "#131722",
-  green:       "#089981",
-  greenBright: "#26a69a",
-  red:         "#f23645",
-  redBright:   "#ef5350",
-  cyan:        "#2962ff",
-  amber:       "#b7791f",
-  blue:        "#3b82c4",
-  pink:        "#d35d91",
-  purple:      "#6f65c7",
-  orange:      "#c96f2d",
-  emerald:     "#089981",
+  bg:          "#070b13",
+  bgSurface:   "#0d1625",
+  bgHover:     "#142238",
+  border:      "#1e2d45",
+  borderMuted: "#15243a",
+  textMuted:   "#7890ad",
+  textDim:     "#a7bad1",
+  textBase:    "#e5eef9",
+  green:       "#10b981",
+  greenBright: "#34d399",
+  red:         "#ef4444",
+  redBright:   "#f87171",
+  cyan:        "#22d3ee",
+  amber:       "#fbbf24",
+  blue:        "#60a5fa",
+  pink:        "#f472b6",
+  purple:      "#a78bfa",
+  orange:      "#fb923c",
+  emerald:     "#34d399",
 }
 
 const DARK_T = {
@@ -839,7 +839,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
-  <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: darkTheme ? DARK_T.bg : "#f7f9fc" }}>
+  <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
 
   {/* Compact floating trade actions keep the primary buy/sell controls visible on the chart. */}
   {onQuickTrade && (buyPrice != null || sellPrice != null) && (

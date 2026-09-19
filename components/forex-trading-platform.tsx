@@ -352,7 +352,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <LineChart className="h-3 w-3 text-cyan-400" />
-              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Equity Curve</span>
+              <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">Equity Curve</span>
             </div>
             <span className="price-mono text-[10px] font-black text-emerald-400">${walletBalance.toFixed(2)}</span>
           </div>
@@ -374,8 +374,8 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
         <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
           <div className="flex items-center gap-1.5 mb-2">
             <Flame className="h-3 w-3 text-amber-400" />
-            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Last {recent.length} Trades</span>
-            <span className="ml-auto text-[9px] text-slate-600">{stats.winCount}W / {stats.lossCount}L</span>
+            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">Last {recent.length} Trades</span>
+            <span className="ml-auto text-[9px] text-slate-500">{stats.winCount}W / {stats.lossCount}L</span>
           </div>
           <div className="flex gap-1 items-end h-8">
             {recent.map((t, i) => {
@@ -401,7 +401,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
         <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
           <div className="flex items-center gap-1.5 mb-2">
             <PieChart className="h-3 w-3 text-violet-400" />
-            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Top Instruments</span>
+            <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">Top Instruments</span>
           </div>
           <div className="flex flex-col gap-1.5">
             {topPairs.map(([pair, data]) => {
@@ -417,7 +417,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
                   <span className="price-mono text-[10px] font-black w-16 text-right shrink-0" style={{ color: isPos ? "#10b981" : "#ef4444" }}>
                     {isPos ? "+" : ""}${data.pnl.toFixed(2)}
                   </span>
-                  <span className="text-[9px] text-slate-600 w-6 text-right shrink-0">{data.count}t</span>
+                  <span className="text-[9px] text-slate-500 w-6 text-right shrink-0">{data.count}t</span>
                 </div>
               )
             })}
@@ -459,8 +459,8 @@ function MarketSessionsPanel() {
       <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 mb-3">
           <Globe2 className="h-3 w-3 text-cyan-400" />
-          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Market Sessions</span>
-          <span className="ml-auto price-mono text-[9px] text-slate-600">
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">Market Sessions</span>
+          <span className="ml-auto price-mono text-[9px] text-slate-500">
             {String(now.getUTCHours()).padStart(2,"0")}:{String(now.getUTCMinutes()).padStart(2,"0")} UTC
           </span>
         </div>
@@ -488,7 +488,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-600 mb-1.5">{s.tz} · {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} · {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -504,13 +504,13 @@ function MarketSessionsPanel() {
       <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 mb-2">
           <Newspaper className="h-3 w-3 text-amber-400" />
-          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Economic Calendar</span>
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">Economic Calendar</span>
           <span className="ml-auto text-[8px] px-1.5 py-0.5 rounded" style={{ background: "rgba(239,68,68,0.1)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>TODAY</span>
         </div>
         <div className="flex flex-col gap-1">
           {newsItems.map((n, i) => (
             <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded-lg" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid #111827" }}>
-              <span className="price-mono text-[9px] font-bold text-slate-600 w-8 shrink-0">{n.time}</span>
+              <span className="price-mono text-[9px] font-bold text-slate-500 w-8 shrink-0">{n.time}</span>
               <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: impactColor[n.impact as keyof typeof impactColor] }} />
               <span className="text-[9px] text-slate-400 flex-1 truncate">{n.title}</span>
               <span className="text-[8px] font-black px-1 py-0.5 rounded shrink-0" style={{ background: "rgba(255,255,255,0.04)", color: "#64748b" }}>{n.currency}</span>
@@ -523,7 +523,7 @@ function MarketSessionsPanel() {
       <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 mb-2">
           <Gauge className="h-3 w-3 text-violet-400" />
-          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">Market Sentiment</span>
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">Market Sentiment</span>
         </div>
         {[
           { pair: "EUR/USD", long: 58, short: 42 },
@@ -572,11 +572,11 @@ function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
       <div className="rounded-xl px-3 py-2.5" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 mb-2.5">
           <AlarmClock className="h-3 w-3 text-amber-400" />
-          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-500">New Price Alert</span>
+          <span className="text-[9px] font-black tracking-[0.15em] uppercase text-slate-400">New Price Alert</span>
         </div>
         <div className="flex flex-col gap-2">
           <div>
-            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">Instrument</label>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-500 block mb-1">Instrument</label>
             <select value={alertPair} onChange={e => setAlertPair(e.target.value)}
               className="w-full price-mono text-xs font-black text-white focus:outline-none px-2 py-1.5 rounded-lg"
               style={{ background: "#070a10", border: "1px solid #1e2d45" }}>
@@ -595,7 +595,7 @@ function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
             ))}
           </div>
           <div>
-            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-500 block mb-1">
               Target Price {mid > 0 && <span className="text-slate-700 normal-case tracking-normal font-normal">(current: {fmt(mid, alertPair)})</span>}
             </label>
             <input type="number" value={alertPrice} onChange={e => setAlertPrice(e.target.value)}
@@ -604,7 +604,7 @@ function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
               style={{ background: "#070a10", border: "1px solid #1e2d45" }} />
           </div>
           <div>
-            <label className="text-[8px] font-black tracking-widest uppercase text-slate-600 block mb-1">Label (optional)</label>
+            <label className="text-[8px] font-black tracking-widest uppercase text-slate-500 block mb-1">Label (optional)</label>
             <input type="text" value={alertLabel} onChange={e => setAlertLabel(e.target.value)}
               placeholder="e.g. Key resistance"
               className="w-full text-xs text-white focus:outline-none px-2 py-1.5 rounded-lg"
@@ -650,11 +650,11 @@ function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="price-mono text-sm font-black text-cyan-400">{fmt(a.price, a.pair)}</span>
-                    {dist > 0 && !a.triggered && <span className="text-[9px] text-slate-600">{dist.toFixed(1)}p away</span>}
+                    {dist > 0 && !a.triggered && <span className="text-[9px] text-slate-500">{dist.toFixed(1)}p away</span>}
                   </div>
-                  {a.label && <p className="text-[9px] text-slate-600 truncate mt-0.5">{a.label}</p>}
+                  {a.label && <p className="text-[9px] text-slate-500 truncate mt-0.5">{a.label}</p>}
                 </div>
-                <button onClick={() => onRemove(a.id)} className="p-1 rounded transition-colors text-slate-600 hover:text-red-400">
+                <button onClick={() => onRemove(a.id)} className="p-1 rounded transition-colors text-slate-500 hover:text-red-400">
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -702,14 +702,14 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
         <div key={i} className="relative grid px-3 py-[3px]" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
           <div className="absolute inset-y-0 right-0 opacity-15" style={{ width: `${(a.volume / maxVol) * 100}%`, background: "#ef4444" }} />
           <span className="price-mono text-[10px] font-black text-red-400">{fmt(a.price, pair.symbol)}</span>
-          <span className="price-mono text-[10px] text-slate-500">{a.volume.toLocaleString()}</span>
-          <span className="price-mono text-[10px] text-slate-600">{a.total.toLocaleString()}</span>
+          <span className="price-mono text-[10px] text-slate-400">{a.volume.toLocaleString()}</span>
+          <span className="price-mono text-[10px] text-slate-500">{a.total.toLocaleString()}</span>
         </div>
       ))}
       {/* Spread row */}
       <div className="flex items-center justify-between px-3 py-1.5" style={{ background: "rgba(34,211,238,0.05)", borderTop: "1px solid #1e2d45", borderBottom: "1px solid #1e2d45" }}>
         <span className="price-mono text-xs font-black text-cyan-400">{fmt((pair.bid + pair.ask) / 2, pair.symbol)}</span>
-        <span className="text-[9px] font-bold text-slate-600">
+        <span className="text-[9px] font-bold text-slate-500">
           SPREAD {((pair.spread / pip(pair.symbol)) || 0).toFixed(1)}p
           &nbsp;·&nbsp;{(pair.spread).toFixed(decimals(pair.symbol))}
         </span>
@@ -719,8 +719,8 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
         <div key={i} className="relative grid px-3 py-[3px]" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
           <div className="absolute inset-y-0 right-0 opacity-15" style={{ width: `${(b.volume / maxVol) * 100}%`, background: "#10b981" }} />
           <span className="price-mono text-[10px] font-black text-emerald-400">{fmt(b.price, pair.symbol)}</span>
-          <span className="price-mono text-[10px] text-slate-500">{b.volume.toLocaleString()}</span>
-          <span className="price-mono text-[10px] text-slate-600">{b.total.toLocaleString()}</span>
+          <span className="price-mono text-[10px] text-slate-400">{b.volume.toLocaleString()}</span>
+          <span className="price-mono text-[10px] text-slate-500">{b.total.toLocaleString()}</span>
         </div>
       ))}
     </div>
@@ -761,7 +761,7 @@ function ModifyTradeModal({
             <Edit3 className="h-4 w-4 text-cyan-400" />
             <span className="font-black text-white text-sm">Modify Position</span>
           </div>
-          <button onClick={onClose} className="p-1 rounded text-slate-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="p-1 rounded text-slate-400 hover:text-white transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -784,10 +784,10 @@ function ModifyTradeModal({
 
         {/* Entry reference */}
         <div className="flex items-center gap-1.5 mb-3 text-xs">
-          <span className="text-slate-600">Entry:</span>
+          <span className="text-slate-500">Entry:</span>
           <span className="price-mono font-black text-slate-300">{fmt(entryPrice, trade.pair)}</span>
           <span className="text-slate-700 mx-1">|</span>
-          <span className="text-slate-600">Mark:</span>
+          <span className="text-slate-500">Mark:</span>
           <span className="price-mono font-black" style={{ color: trade.pnl >= 0 ? "#10b981" : "#ef4444" }}>{fmt(trade.currentPrice, trade.pair)}</span>
         </div>
 
@@ -795,7 +795,7 @@ function ModifyTradeModal({
         <div className="mb-3">
           <label className="text-[9px] font-black tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#ef4444" }}>
             <ShieldAlert className="h-2.5 w-2.5" /> Stop Loss
-            {slNum !== null && <span className="ml-auto font-bold text-slate-600 normal-case tracking-normal">{slPipsCalc.toFixed(1)} pips away</span>}
+            {slNum !== null && <span className="ml-auto font-bold text-slate-500 normal-case tracking-normal">{slPipsCalc.toFixed(1)} pips away</span>}
           </label>
           <input type="number" value={sl} onChange={e => setSl(e.target.value)}
             placeholder={fmt(entryPrice * (trade.direction === "BUY" ? 0.999 : 1.001), trade.pair)}
@@ -807,7 +807,7 @@ function ModifyTradeModal({
         <div className="mb-3">
           <label className="text-[9px] font-black tracking-widest uppercase mb-1 flex items-center gap-1" style={{ color: "#10b981" }}>
             <Target className="h-2.5 w-2.5" /> Take Profit
-            {tpNum !== null && <span className="ml-auto font-bold text-slate-600 normal-case tracking-normal">{tpPipsCalc.toFixed(1)} pips away</span>}
+            {tpNum !== null && <span className="ml-auto font-bold text-slate-500 normal-case tracking-normal">{tpPipsCalc.toFixed(1)} pips away</span>}
           </label>
           <input type="number" value={tp} onChange={e => setTp(e.target.value)}
             placeholder={fmt(entryPrice * (trade.direction === "BUY" ? 1.001 : 0.999), trade.pair)}
@@ -830,7 +830,7 @@ function ModifyTradeModal({
         {rrRatio !== null && (
           <div className="flex items-center justify-between px-3 py-2 rounded-lg mb-4 text-xs"
             style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)" }}>
-            <span className="text-slate-600">Risk:Reward</span>
+            <span className="text-slate-500">Risk:Reward</span>
             <span className="price-mono font-black text-cyan-400">1:{rrRatio}</span>
           </div>
         )}
@@ -894,7 +894,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
               : "#a5f3fc" }}>
             {t.text}
           </span>
-          <button onClick={() => onDismiss(t.id)} className="shrink-0 text-slate-600 hover:text-slate-400 transition-colors ml-1">
+          <button onClick={() => onDismiss(t.id)} className="shrink-0 text-slate-500 hover:text-slate-400 transition-colors ml-1">
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -967,15 +967,15 @@ function PositionSizer({
       <div className="rounded-xl overflow-hidden" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 px-3 py-2" style={{ borderBottom: "1px solid #1a2640" }}>
           <Target className="h-3 w-3 text-violet-400" />
-          <span className="text-[10px] font-black tracking-widest uppercase text-slate-500">Position Sizer</span>
+          <span className="text-[10px] font-black tracking-widest uppercase text-slate-400">Position Sizer</span>
           {atrPips > 0 && (
-            <span className="ml-auto text-[9px] font-bold text-slate-600">ATR = {atrPips.toFixed(1)}p</span>
+            <span className="ml-auto text-[9px] font-bold text-slate-500">ATR = {atrPips.toFixed(1)}p</span>
           )}
         </div>
         <div className="p-3 flex flex-col gap-2">
           {/* Risk % */}
           <div>
-            <label className="text-[9px] font-black tracking-widest uppercase text-slate-600 mb-1 block">Risk %</label>
+            <label className="text-[9px] font-black tracking-widest uppercase text-slate-500 mb-1 block">Risk %</label>
             <div className="flex gap-1 mb-1">
               {["0.5","1","2","3"].map(v => (
                 <button key={v} onClick={() => setRiskPct(v)}
@@ -994,7 +994,7 @@ function PositionSizer({
           </div>
           {/* SL Pips */}
           <div>
-            <label className="text-[9px] font-black tracking-widest uppercase text-slate-600 mb-1 block">
+            <label className="text-[9px] font-black tracking-widest uppercase text-slate-500 mb-1 block">
               SL Distance (pips)
             </label>
             {atrPips > 0 && (
@@ -1017,15 +1017,15 @@ function PositionSizer({
           {lots > 0 && (
             <div className="rounded-lg p-2.5" style={{ background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)" }}>
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-600">Suggested Lots</span>
+                <span className="text-slate-500">Suggested Lots</span>
                 <span className="price-mono font-black text-emerald-400 text-sm">{lots.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between text-[10px]">
-                <span className="text-slate-600">Max Risk</span>
+                <span className="text-slate-500">Max Risk</span>
                 <span className="price-mono font-black text-red-400">${dollarRisk.toFixed(2)} ({riskPct}%)</span>
               </div>
               <div className="flex items-center justify-between text-[10px]">
-                <span className="text-slate-600">Pip Value</span>
+                <span className="text-slate-500">Pip Value</span>
                 <span className="price-mono font-black text-cyan-400">${(pipVal * lots).toFixed(4)}/pip</span>
               </div>
               <button
@@ -1906,7 +1906,7 @@ function PositionSizer({
       `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} �� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} ���� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2087,14 +2087,14 @@ function PositionSizer({
           <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: online ? "#10b981" : "#ef4444" }}>
             {online ? "LIVE" : "OFFLINE"}
           </span>
-          {lastUpdated && <span className="text-[9px] text-slate-600 price-mono hidden md:block">{lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
+          {lastUpdated && <span className="text-[9px] text-slate-500 price-mono hidden md:block">{lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
         </div>
 
         {/* Balance chip with sparkline */}
         <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
           <Wallet className="h-3 w-3 text-emerald-400" />
           <div className="flex flex-col">
-            <span className="text-[8px] text-slate-600 leading-none">BALANCE</span>
+            <span className="text-[8px] font-bold tracking-wider text-emerald-300/70 leading-none">BALANCE</span>
             <span className="price-mono text-[11px] font-black text-emerald-400 leading-none">
               ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -2112,7 +2112,36 @@ function PositionSizer({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/participant/dashboard" }}
+            className="hidden sm:flex items-center gap-1 rounded-md border border-cyan-500/25 bg-cyan-500/10 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-200 transition-colors hover:bg-cyan-500/20"
+            title="Open account balance"
+          >
+            <Wallet className="h-3 w-3" />
+            <span>Balance</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/participant/dashboard" }}
+            className="flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-blue-200 transition-colors hover:bg-blue-500/25"
+            title="Add funds"
+          >
+            <Plus className="h-3 w-3" />
+            <span className="hidden lg:inline">Add Fund</span>
+            <span className="lg:hidden">Fund</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/participant/dashboard/payout" }}
+            className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-200 transition-colors hover:bg-emerald-500/25"
+            title="Request payout"
+          >
+            <ArrowUpDown className="h-3 w-3" />
+            <span className="hidden lg:inline">Payout</span>
+            <span className="lg:hidden">Pay</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsDarkTheme(theme => !theme)}
@@ -2285,7 +2314,7 @@ function PositionSizer({
                 <div className="w-1.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg,#22d3ee,#0ea5e9)" }} />
                 <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
               </div>
-  <button onClick={() => setShowPairSearch(p => !p)} aria-label="Toggle instrument search" className="p-1 rounded transition-colors text-slate-600 hover:text-slate-300">
+  <button onClick={() => setShowPairSearch(p => !p)} aria-label="Toggle instrument search" className="p-1 rounded transition-colors text-slate-500 hover:text-slate-300">
   <Activity className="h-3.5 w-3.5" />
   </button>
   </div>
@@ -2297,7 +2326,7 @@ function PositionSizer({
   className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 pr-7 rounded-lg mb-2"
   style={{ background: "#070a10", border: "1px solid #1e2d45" }}
   />
-  {pairSearch && <button type="button" onClick={() => setPairSearch("")} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-500 hover:text-slate-200">×</button>}
+  {pairSearch && <button type="button" onClick={() => setPairSearch("")} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-200">×</button>}
   </div>
             <div className="flex gap-1">
               {categoryTabs.map(cat => {
@@ -2337,7 +2366,7 @@ function PositionSizer({
                 return (
                   <>
                   {searchNoResults && (
-                    <div className="px-3 py-8 text-center text-[10px] text-slate-500">No instruments match “{pairSearch}”.</div>
+                    <div className="px-3 py-8 text-center text-[10px] text-slate-400">No instruments match “{pairSearch}”.</div>
                   )}
                   {toShow.map(cat => {
                   const catPairs = filteredPairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat)
@@ -2453,14 +2482,14 @@ function PositionSizer({
               <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
               <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
               <div className="flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
-                <span className="text-slate-600 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
-                <span className="text-slate-600 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
-                <span className="text-slate-600 shrink-0">SPR <span className="text-cyan-400 font-bold">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span></span>
-                <span className="text-slate-600 shrink-0">H <span className="text-emerald-400 font-bold">{fmt(selectedPair.high, selectedPair.symbol)}</span></span>
-                <span className="text-slate-600 shrink-0">L <span className="text-red-400 font-bold">{fmt(selectedPair.low, selectedPair.symbol)}</span></span>
+                <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
+                <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
+                <span className="text-slate-500 shrink-0">SPR <span className="text-cyan-400 font-bold">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span></span>
+                <span className="text-slate-500 shrink-0">H <span className="text-emerald-400 font-bold">{fmt(selectedPair.high, selectedPair.symbol)}</span></span>
+                <span className="text-slate-500 shrink-0">L <span className="text-red-400 font-bold">{fmt(selectedPair.low, selectedPair.symbol)}</span></span>
                 {lastCandle && <>
                   <span className="text-slate-700 mx-0.5">|</span>
-                  <span className="text-slate-600 shrink-0">O<span className="text-slate-400 ml-0.5">{fmt(lastCandle.open, selectedPair.symbol)}</span></span>
+                  <span className="text-slate-500 shrink-0">O<span className="text-slate-400 ml-0.5">{fmt(lastCandle.open, selectedPair.symbol)}</span></span>
                   <span className="text-emerald-600 shrink-0">H<span className="text-emerald-400 ml-0.5">{fmt(lastCandle.high, selectedPair.symbol)}</span></span>
                   <span className="text-red-600 shrink-0">L<span className="text-red-400 ml-0.5">{fmt(lastCandle.low, selectedPair.symbol)}</span></span>
                   <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
@@ -2574,7 +2603,7 @@ function PositionSizer({
 
                 {/* Symbol + price */}
                 <div className="flex items-center justify-between mb-2 px-1">
-                  <span className="text-[10px] text-slate-500">{selectedPair.symbol}</span>
+                  <span className="text-[10px] text-slate-400">{selectedPair.symbol}</span>
                   <span className="price-mono text-sm font-black" style={{ color: direction === "BUY" ? "#10b981" : "#ef4444" }}>
                     {fmt(direction === "BUY" ? selectedPair.ask : selectedPair.bid, selectedPair.symbol)}
                   </span>
@@ -2709,9 +2738,9 @@ function PositionSizer({
                 {/* R:R display */}
                 {rrRatio !== null && (
                   <div className="mb-2 px-2 py-1.5 text-[10px]" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 3 }}>
-                    {slVal !== null && <div className="flex justify-between"><span className="text-slate-600">Max Loss</span><span className="price-mono font-black text-red-400">-${maxLoss.toFixed(2)} ({slPips.toFixed(1)}p)</span></div>}
-                    {tpVal !== null && <div className="flex justify-between"><span className="text-slate-600">Max Gain</span><span className="price-mono font-black text-emerald-400">+${maxGain.toFixed(2)} ({tpPips.toFixed(1)}p)</span></div>}
-                    <div className="flex justify-between"><span className="text-slate-600">R:R</span><span className="price-mono font-black text-cyan-400">1:{rrRatio}</span></div>
+                    {slVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Loss</span><span className="price-mono font-black text-red-400">-${maxLoss.toFixed(2)} ({slPips.toFixed(1)}p)</span></div>}
+                    {tpVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Gain</span><span className="price-mono font-black text-emerald-400">+${maxGain.toFixed(2)} ({tpPips.toFixed(1)}p)</span></div>}
+                    <div className="flex justify-between"><span className="text-slate-500">R:R</span><span className="price-mono font-black text-cyan-400">1:{rrRatio}</span></div>
                   </div>
                 )}
 
@@ -2880,7 +2909,7 @@ function PositionSizer({
                               </span>
                               <span className="text-[9px] font-bold text-amber-500">×{trade.leverage}</span>
                             </div>
-                            <span className="text-[9px] text-slate-600">{trade.lotSize} Lot · {duration}</span>
+                            <span className="text-[9px] text-slate-500">{trade.lotSize} Lot · {duration}</span>
                           </div>
                         </div>
                         {/* PnL big display */}
@@ -2889,36 +2918,36 @@ function PositionSizer({
                             {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
                           </p>
                           <p className="text-[9px]" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
-                          <p className="text-[9px] text-slate-600">ROE: <span style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
+                          <p className="text-[9px] text-slate-500">ROE: <span style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
                         </div>
                       </div>
 
                       {/* Price levels row */}
                       <div className="grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div><p className="text-[8px] text-slate-600 mb-0.5">Entry</p><p className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-600 mb-0.5">Mark</p><p className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-600 mb-0.5">Liq.</p><p className="font-bold text-orange-400">{fmt(liqPrice, trade.pair)}</p></div>
-                        <div className="text-right"><p className="text-[8px] text-slate-600 mb-0.5">Margin</p><p className="font-bold text-amber-400">${trade.margin.toFixed(2)}</p></div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">Entry</p><p className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</p></div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">Mark</p><p className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p></div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">Liq.</p><p className="font-bold text-orange-400">{fmt(liqPrice, trade.pair)}</p></div>
+                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${trade.margin.toFixed(2)}</p></div>
                       </div>
 
                       {/* SL/TP/Trailing/Swap row */}
                       <div className="grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div>
-                          <p className="text-[8px] text-slate-600 mb-0.5">SL</p>
+                          <p className="text-[8px] text-slate-500 mb-0.5">SL</p>
                           <p className="font-bold text-red-400 text-[11px]">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
                         </div>
                         <div>
-                          <p className="text-[8px] text-slate-600 mb-0.5">TP</p>
+                          <p className="text-[8px] text-slate-500 mb-0.5">TP</p>
                           <p className="font-bold text-emerald-400 text-[11px]">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</p>
                         </div>
                         <div>
-                          <p className="text-[8px] text-slate-600 mb-0.5">Trail</p>
+                          <p className="text-[8px] text-slate-500 mb-0.5">Trail</p>
                           <p className="font-bold text-violet-400 text-[11px]">
                             {trade.trailingStopPips ? `${trade.trailingStopPips}p` : "—"}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[8px] text-slate-600 mb-0.5">Swap</p>
+                          <p className="text-[8px] text-slate-500 mb-0.5">Swap</p>
                           <p className="font-bold text-[11px]" style={{ color: trade.swap >= 0 ? "#10b981" : "#ef4444" }}>
                             {trade.swap >= 0 ? "+" : ""}{trade.swap.toFixed(4)}
                           </p>
@@ -3001,19 +3030,19 @@ function PositionSizer({
                                 {o.orderType.replace("_"," ")}
                               </span>
                             </div>
-                            <span className="text-[9px] text-slate-600">{o.lotSize} Lot · ×{o.leverage} · {o.expiry} · {o.createdTime}</span>
+                            <span className="text-[9px] text-slate-500">{o.lotSize} Lot · ×{o.leverage} · {o.expiry} · {o.createdTime}</span>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-[9px] text-slate-600 mb-0.5">Target</p>
+                          <p className="text-[9px] text-slate-500 mb-0.5">Target</p>
                           <p className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</p>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div><p className="text-[8px] text-slate-600 mb-0.5">SL</p><p className="font-bold text-red-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</p></div>
-                        <div><p className="text-[8px] text-slate-600 mb-0.5">TP</p><p className="font-bold text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</p></div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">SL</p><p className="font-bold text-red-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</p></div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">TP</p><p className="font-bold text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</p></div>
                         <div className="text-right">
-                          <p className="text-[8px] text-slate-600 mb-0.5">Margin</p>
+                          <p className="text-[8px] text-slate-500 mb-0.5">Margin</p>
                           <p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p>
                         </div>
                       </div>
@@ -3092,7 +3121,7 @@ function PositionSizer({
                             <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
                             <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
                             <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
-                            <td className="px-2 py-1.5 text-slate-600 whitespace-nowrap">{trade.closeDuration}</td>
+                            <td className="px-2 py-1.5 text-slate-500 whitespace-nowrap">{trade.closeDuration}</td>
                             <td className="px-2 py-1.5">
                               <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
                                 style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
