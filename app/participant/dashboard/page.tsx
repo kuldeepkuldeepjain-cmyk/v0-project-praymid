@@ -1745,7 +1745,7 @@ export default function DashboardHome() {
       />
 
       <header
-        className="sticky top-0 z-40"
+        className="participant-header sticky top-0 z-40"
         style={{
           background: "linear-gradient(180deg, rgba(3,7,18,0.98) 0%, rgba(7,11,28,0.95) 100%)",
           backdropFilter: "blur(20px)",
@@ -1757,7 +1757,7 @@ export default function DashboardHome() {
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
 
-        <div className="px-4 h-14 flex items-center justify-between gap-3">
+        <div className="participant-header-inner px-4 h-14 flex items-center justify-between gap-3">
           {/* Left — avatar + greeting */}
           <div className="flex items-center gap-2.5 min-w-0">
             <Link href="/participant/dashboard/profile">
@@ -1779,15 +1779,15 @@ export default function DashboardHome() {
           </div>
 
           {/* Center — live ticker */}
-          <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", boxShadow: "0 0 12px rgba(16,185,129,0.1)" }}>
+          <div className="participant-header-live flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", boxShadow: "0 0 12px rgba(16,185,129,0.1)" }}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.9)" }} />
             <span className="text-emerald-400 text-[10px] font-bold tracking-widest">LIVE</span>
           </div>
 
           {/* Right — balance card and funding actions */}
-          <div className="flex items-center gap-1.5 min-w-0">
+          <div className="participant-header-actions flex items-center gap-1.5 min-w-0">
             <div
-              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
+              className="participant-header-balance flex items-center gap-1.5 rounded-lg px-2 py-1.5"
               style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(52,211,153,0.28)", boxShadow: "0 0 14px rgba(16,185,129,0.08)" }}
               aria-label={`Current balance $${walletBalance.toFixed(2)}`}
             >
@@ -1910,7 +1910,7 @@ export default function DashboardHome() {
                   </div>
                 </div>
                 {/* Right: stat chips */}
-                <div className="flex-shrink-0 grid grid-cols-3 gap-3" style={{ width: 360 }}>
+                <div className="flex-shrink-0 grid grid-cols-3 gap-3 w-full lg:w-[360px]">
                   {[
                     { label: "Referral Earnings", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.85)" },
                     { label: "Total Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.85)" },
@@ -1940,7 +1940,7 @@ export default function DashboardHome() {
             </div>
 
             {/* ─��� QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-4 pt-4 grid grid-cols-3 md:grid-cols-5 gap-2.5">
+            <div className="px-3 sm:px-4 pt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
               {/* Trade — opens fullscreen terminal */}
               <button
                 onClick={() => setActiveTab("trading")}

@@ -1337,7 +1337,30 @@ button, a, [role="button"] {
 
 @media (max-width: 767px) {
   .apple-trading-terminal .apple-terminal-blotter { height: 220px !important; }
-  .apple-trading-terminal .apple-terminal-topbar { padding-inline: 10px; }
+  .apple-trading-terminal .apple-terminal-topbar { padding-inline: 10px; gap: 8px; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand-copy,
+  .apple-trading-terminal .apple-terminal-topbar .terminal-desktop-only { display: none !important; }
+  .apple-trading-terminal .apple-terminal-summary { min-height: 42px; height: auto; }
+  .apple-trading-terminal .apple-terminal-summary > div { padding-inline: 8px; min-width: max-content; }
+  .apple-trading-terminal .apple-terminal-grid { min-height: 0; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-market,
+  .apple-trading-terminal .apple-terminal-order,
+  .apple-trading-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
+  .apple-trading-terminal .apple-terminal-chart-column { flex: 1 1 auto; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-chart-column > div { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-chart-column .apple-trading-chart { min-height: 270px; }
+  .apple-trading-terminal .apple-terminal-order,
+  .apple-trading-terminal .apple-terminal-market { flex: 1 1 auto; }
+  .apple-trading-terminal .apple-terminal-order > div,
+  .apple-trading-terminal .apple-terminal-market > div { max-width: 100%; }
+  .apple-trading-terminal .reference-watch-list { overflow-x: hidden; }
+  .apple-trading-terminal .apple-terminal-blotter { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-blotter table { min-width: 560px; }
+  .apple-trading-terminal .apple-terminal-blotter > div { overflow-x: auto; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand > div { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span { white-space: nowrap; }
+  .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span:last-child { display: none; }
   .reference-terminal {
     min-height: min(760px, calc(100dvh - 150px));
     height: min(760px, calc(100dvh - 150px)) !important;
@@ -2074,6 +2097,42 @@ button, a, [role="button"] {
   .elite-terminal-search { width: min(420px, 40vw); }
 }
 @media (max-width: 767px) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+
+  .participant-header-inner {
+    min-width: 0;
+    gap: 8px;
+  }
+  .participant-header-inner > div:first-child {
+    flex: 1 1 auto;
+  }
+  .participant-header-live {
+    display: none;
+  }
+  .participant-header-actions {
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+  .participant-header-balance {
+    max-width: 108px;
+    padding-inline: 7px !important;
+  }
+  .participant-header-balance > div {
+    min-width: 0;
+  }
+  .participant-header-balance .price-mono {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .participant-header-actions > a > span,
+  .participant-header-actions > button {
+    min-width: 34px;
+    justify-content: center;
+  }
+
   .elite-terminal-sidebar { display: none; }
   .elite-terminal-sidebar-close { display: grid; }
   .elite-terminal-sidebar.is-open {
@@ -2110,6 +2169,23 @@ button, a, [role="button"] {
     flex: 0 0 auto;
     flex-direction: column;
     overflow: visible;
+  }
+  .reference-terminal .apple-terminal-mobile-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: #060a12;
+  }
+  .reference-terminal .apple-terminal-mobile-tabs button {
+    min-height: 44px;
+    padding-block: 10px;
+    touch-action: manipulation;
+  }
+  .reference-terminal .apple-terminal-grid,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-order {
+    overflow-x: hidden;
   }
   .reference-terminal .apple-terminal-market,
   .reference-terminal .apple-terminal-chart-column,

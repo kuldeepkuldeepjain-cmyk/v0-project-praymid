@@ -31,7 +31,8 @@ export function getFundedTopUpAmount(baseAmount: number): number {
 }
 
 export function getFundedLossLimit(baseAmount: number): number {
-  return getFundedTopUpAmount(baseAmount)
+  // Funded accounts are frozen after a 2% loss of total funds.
+  return Math.max(0, baseAmount * 0.02)
 }
 
 export function getFundedMinimumBalance(baseAmount: number): number {
@@ -59,7 +60,7 @@ export function isFundedBalanceBelowMinimum(
   if (!Number.isFinite(availableBalance) || availableBalance < 0 || !baseAmount) return false
 
   // Total funds are cash still available plus stakes/margin committed to open trades.
-  // Freeze only once equity falls below 99% of the funded amount (1% loss limit).
+  // Freeze only once equity falls below 98% of the funded amount (2% loss limit).
   return totalFunds < getFundedMinimumBalance(baseAmount)
 }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
+import { getFundedBaseAmount, isFundedBalanceBelowMinimum } from "@/lib/funded-account"
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdminSession(req)
@@ -84,9 +85,25 @@ export async function POST(req: NextRequest) {
       }
       const creditedAmount = isInitialFundedTopUp ? fundedCredit : depositAmount
       const newBalance = Number(participant.account_balance || 0) + creditedAmount
+      const committedRows = isFundedAccount
+        ? await query(
+            `SELECT
+               (SELECT COALESCE(SUM(amount), 0) FROM predictions WHERE participant_email = $1 AND status = 'pending' AND balance_source = 'wallet')
+               + (SELECT COALESCE(SUM(margin), 0) FROM forex_trades WHERE participant_email = $1 AND status IN ('open', 'pending')) AS committed_funds`,
+            [topup.participant_email],
+          )
+        : []
+      const committedFunds = Number((committedRows[0] as any)?.committed_funds ?? 0)
+      const fundedBaseAmount = isFundedAccount ? getFundedBaseAmount(newBalance) : 0
+      const remainsBelowLossLimit = isFundedAccount
+        ? isFundedBalanceBelowMinimum("funded", newBalance, fundedBaseAmount, committedFunds)
+        : false
+      const revivalSql = remainsBelowLossLimit
+        ? "account_frozen = account_frozen, is_frozen = is_frozen, status = status"
+        : "account_frozen = false, is_frozen = false, status = 'active'"
       await execute(
         isFundedAccount
-          ? "UPDATE participants SET account_balance = $1, account_frozen = false, is_frozen = false, status = 'active', updated_at = NOW() WHERE id = $2"
+          ? `UPDATE participants SET account_balance = $1, ${revivalSql}, updated_at = NOW() WHERE id = $2`
           : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
         [newBalance, topup.participant_id]
       )
@@ -139,7 +156,15 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({ success: true, message: isFundedAccount ? `Top-up approved and $${creditedAmount.toLocaleString()} funded balance credited` : "Top-up approved and wallet credited", newBalance, creditedAmount })
+      return NextResponse.json({
+        success: true,
+        message: isFundedAccount
+          ? `Top-up approved and $${creditedAmount.toLocaleString()} funded balance credited${!remainsBelowLossLimit ? "; account is live again" : ""}`
+          : "Top-up approved and wallet credited",
+        newBalance,
+        creditedAmount,
+        accountRevived: isFundedAccount && !remainsBelowLossLimit,
+      })
     }
 
     await execute(
