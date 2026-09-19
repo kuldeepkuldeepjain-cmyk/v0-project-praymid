@@ -6,7 +6,7 @@ import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
-  ChevronDown, ChevronUp, ArrowUpDown, Award, Flame, TrendingUp as TUp,
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
 } from "lucide-react"
@@ -1081,6 +1081,7 @@ function PositionSizer({
   const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
+  const [rightPanelHidden, setRightPanelHidden] = useState(false)
   // Map of tradeId → partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
@@ -1906,7 +1907,7 @@ function PositionSizer({
       `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} ���� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} ����� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2553,6 +2554,19 @@ function PositionSizer({
           </div>
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
+        {rightPanelHidden ? (
+          <div className="hidden md:flex w-9 shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
+            <button
+              type="button"
+              onClick={() => setRightPanelHidden(false)}
+              aria-label="Show trading sidebar"
+              title="Show trading sidebar"
+              className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "order" ? "flex" : "hidden md:flex"}`}
           style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
@@ -2569,6 +2583,15 @@ function PositionSizer({
                 <Icon className="h-3 w-3" />{label}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setRightPanelHidden(true)}
+              aria-label="Hide trading sidebar"
+              title="Hide trading sidebar"
+              className="px-2 text-slate-500 transition-colors hover:text-cyan-400"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           {/* Order panel */}
@@ -2839,6 +2862,7 @@ function PositionSizer({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
