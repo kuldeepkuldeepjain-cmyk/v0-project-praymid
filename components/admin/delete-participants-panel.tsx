@@ -28,6 +28,8 @@ interface Participant {
   mobile_number?: string
   account_balance: number
   status: string
+  account_frozen?: boolean
+  is_frozen?: boolean
   created_at: string
 }
 
@@ -113,7 +115,7 @@ export function DeleteParticipantsPanel() {
                 Delete Participants
               </CardTitle>
               <CardDescription className="text-slate-400 text-xs mt-1">
-                Permanently removes participant and ALL related data from the database — transactions, predictions, payouts, contributions, etc.
+                Permanently removes participant and ALL related data, including frozen accounts — transactions, predictions, payouts, contributions, etc.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -196,7 +198,7 @@ export function DeleteParticipantsPanel() {
                               : "bg-slate-700 text-slate-400 border-slate-600"
                           }`}
                         >
-                          {p.status || "active"}
+                          {p.account_frozen || p.is_frozen || p.status === "frozen" ? "frozen" : p.status || "active"}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-2.5 text-xs text-slate-500">
