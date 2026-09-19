@@ -10,16 +10,25 @@ export async function GET() {
        WHERE setting_key IN ('topup_trc20_address','topup_bep20_address','topup_erc20_address','topup_address','bep20_address','usdt_address')`
     ) as any[]
 
-    const settings: Record<string, string> = {}
-    rows.forEach((r) => { settings[r.setting_key] = r.setting_value })
+  const settings: Record<string, string> = {}
+  rows.forEach((r) => { settings[r.setting_key] = r.setting_value })
 
-    return NextResponse.json({
-      success: true,
-      topup_address: settings.topup_bep20_address || settings.topup_address || settings.bep20_address || settings.usdt_address || null,
-      trc20_address: settings.topup_trc20_address || null,
-      bep20_address: settings.topup_bep20_address || settings.topup_address || settings.bep20_address || settings.usdt_address || null,
-      erc20_address: settings.topup_erc20_address || null,
-    })
+  const walletRows = await query(
+    `SELECT network, address FROM admin_wallet_addresses WHERE network IN ('TRC20', 'ERC20')`,
+  ) as Array<{ network: "TRC20" | "ERC20"; address: string }>
+  const wallets = Object.fromEntries(walletRows.map((row) => [row.network, row.address]))
+  const trc20Address = wallets.TRC20 || settings.topup_trc20_address || null
+  const erc20Address = wallets.ERC20 || settings.topup_erc20_address || null
+  const bep20Address = settings.topup_bep20_address || settings.topup_address || settings.bep20_address || settings.usdt_address || null
+
+  return NextResponse.json({
+    success: true,
+    topup_address: bep20Address,
+    trc20_address: trc20Address,
+    bep20_address: bep20Address,
+    erc20_address: erc20Address,
+  })
+
   } catch {
     return NextResponse.json({ success: false, topup_address: null })
   }
