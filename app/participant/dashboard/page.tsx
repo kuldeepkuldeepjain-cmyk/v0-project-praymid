@@ -231,7 +231,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
                 onClick={onAddBalance}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Top Up Balance
+                Add Normal Funds
               </Button>
             )}
             <a
@@ -1470,6 +1470,7 @@ export default function DashboardHome() {
   const [hasContributed, setHasContributed] = useState(false)
   const [participantId, setParticipantId] = useState<string>("")
   const [showTopUpModal, setShowTopUpModal] = useState(false)
+  const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
@@ -1719,6 +1720,7 @@ export default function DashboardHome() {
   isFundedAccount={isFundedAccount}
   onAddBalance={() => {
   setShowFrozenModal(false)
+  setTopUpIsFundedAccount(false)
   setShowTopUpModal(true)
   }}
   />
@@ -1732,7 +1734,7 @@ export default function DashboardHome() {
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
-        isFundedAccount={participantData?.account_type === "funded"}
+        isFundedAccount={topUpIsFundedAccount}
   onSuccess={async () => {
   setShowTopUpModal(false)
   if (participantData?.email) {
@@ -1796,7 +1798,10 @@ export default function DashboardHome() {
             </div>
             <button
               type="button"
-              onClick={() => setShowTopUpModal(true)}
+              onClick={() => {
+  setTopUpIsFundedAccount(participantData?.account_type === "funded")
+  setShowTopUpModal(true)
+}}
               className="flex h-8 items-center gap-1 rounded-lg border border-blue-400/30 bg-blue-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-blue-200 transition-colors hover:bg-blue-500/25 active:scale-95"
               aria-label="Top up balance"
             >
@@ -1858,7 +1863,10 @@ export default function DashboardHome() {
                   ))}
                 </div>
                 <div className="flex gap-2.5 relative">
-                  <button onClick={() => setShowTopUpModal(true)} className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                  <button onClick={() => {
+  setTopUpIsFundedAccount(participantData?.account_type === "funded")
+  setShowTopUpModal(true)
+}} className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
                     <Plus className="h-3.5 w-3.5" /> ADD FUNDS
                   </button>
                   <Link href="/participant/dashboard/payout" className="flex-1">
@@ -1887,7 +1895,10 @@ export default function DashboardHome() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={() => setShowTopUpModal(true)} className="btn-deep-purple flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
+                    <button onClick={() => {
+  setTopUpIsFundedAccount(participantData?.account_type === "funded")
+  setShowTopUpModal(true)
+}} className="btn-deep-purple flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
                       <Plus className="h-4 w-4" /> ADD FUNDS
                     </button>
                     <Link href="/participant/dashboard/payout">
