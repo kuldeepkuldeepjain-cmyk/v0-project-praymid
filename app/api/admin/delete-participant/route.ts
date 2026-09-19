@@ -14,6 +14,7 @@ export async function DELETE(request: NextRequest) {
 
     const db = getPool()!
 
+    // Admin deletion intentionally applies to every account state, including frozen participants.
     const res = await db.query("SELECT id, email FROM participants WHERE id = $1", [participantId])
     if (!res.rows.length) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
