@@ -60,7 +60,10 @@ export async function POST(req: NextRequest) {
     }
 
     const topup = rows[0] as any
-    if (topup.status !== "pending") {
+    // Direct crypto deposits use `pending`; funded-account approval requests
+    // use `pending_collection` until an admin confirms the credited balance.
+    const pendingStatuses = new Set(["pending", "pending_collection"])
+    if (!pendingStatuses.has(String(topup.status).toLowerCase())) {
       return NextResponse.json({ success: false, message: "Request already processed" }, { status: 400 })
     }
 
