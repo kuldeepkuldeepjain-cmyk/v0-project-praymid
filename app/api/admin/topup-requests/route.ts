@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
       const depositAmount = Number(topup.amount)
       const fundedSizes: Record<number, number> = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
       const isFundedAccount = participant.account_type === "funded"
+      // A funded account's first activation is tier-based regardless of active/frozen status.
       const isInitialFundedTopUp = isFundedAccount && Number(participant.account_balance || 0) <= 0
       const fundedCredit = fundedSizes[depositAmount]
       if (isInitialFundedTopUp && !fundedCredit) {
