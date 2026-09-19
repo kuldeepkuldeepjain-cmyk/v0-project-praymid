@@ -66,8 +66,12 @@ export async function setParticipantSession(data: ParticipantSessionData): Promi
 }
 
 export async function clearParticipantSession(): Promise<void> {
-  const session = await getParticipantSession()
-  session.destroy()
+  try {
+    const session = await getParticipantSession()
+    await session.destroy()
+  } catch {
+    // A stale or malformed cookie should not block logout.
+  }
 }
 
 // ── Admin session helpers ──────────────────────────────────────────────────

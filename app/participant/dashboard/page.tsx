@@ -1586,8 +1586,11 @@ export default function DashboardHome() {
       if (storedData) {
         try {
           const data = JSON.parse(storedData)
+          if (!data || typeof data !== "object" || Array.isArray(data) || !data.email) {
+            throw new Error("Invalid participant session data")
+          }
           setParticipantData(data)
-          setParticipantId(data.id || "")
+          setParticipantId(data.id || data.participantId || "")
 
   if (data.account_frozen || data.is_frozen || data.status === "frozen") {
   setShowFrozenModal(true)
@@ -1778,16 +1781,34 @@ export default function DashboardHome() {
             <span className="text-emerald-400 text-[10px] font-bold tracking-widest">LIVE</span>
           </div>
 
-          {/* Right — actions */}
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={() => setActiveTab("wheel")}
-              className="holo-shine flex items-center gap-1 rounded-full px-2.5 py-1.5 transition-all active:scale-95"
-                  style={{ background: "linear-gradient(135deg,rgba(37,99,235,0.7),rgba(29,78,216,0.8))", border: "1px solid rgba(37,99,235,0.4)", boxShadow: "0 0 12px rgba(37,99,235,0.3), 0 2px 8px rgba(0,0,0,0.4)" }}
+          {/* Right — balance card and funding actions */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            <div
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5"
+              style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(52,211,153,0.28)", boxShadow: "0 0 14px rgba(16,185,129,0.08)" }}
+              aria-label={`Current balance $${walletBalance.toFixed(2)}`}
             >
-              <Sparkles className="h-3 w-3 text-white" />
-              <span className="text-white text-[10px] font-black tracking-wide">SPIN</span>
+              <Wallet className="h-3.5 w-3.5 text-emerald-300" />
+              <div className="leading-none">
+                <span className="block text-[8px] font-bold uppercase tracking-widest text-emerald-300/70">Balance</span>
+                <span className="price-mono block text-[11px] font-black text-emerald-200">${walletBalance.toFixed(2)}</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowTopUpModal(true)}
+              className="flex h-8 items-center gap-1 rounded-lg border border-blue-400/30 bg-blue-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-blue-200 transition-colors hover:bg-blue-500/25 active:scale-95"
+              aria-label="Top up balance"
+            >
+              <Plus className="h-3 w-3" />
+              <span className="hidden md:inline">Top Up</span>
             </button>
+            <Link href="/participant/dashboard/payout" aria-label="Open payout">
+              <span className="flex h-8 items-center gap-1 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/25 active:scale-95">
+                <ArrowUpRight className="h-3 w-3" />
+                <span className="hidden md:inline">Payout</span>
+              </span>
+            </Link>
             <UserNotificationsBell userEmail={participantData.email ?? ""} />
           </div>
         </div>
@@ -2068,11 +2089,17 @@ export default function DashboardHome() {
               </Link>
             </nav>
 
-            <div className="elite-terminal-promo">
-              <div className="elite-terminal-promo-copy">
-                <strong>Trade with confidence</strong>
-                <span>Monitor your account and manage your profile from one place.</span>
+            <div className="elite-terminal-sidebar-footer">
+              <div className="elite-terminal-promo">
+                <div className="elite-terminal-promo-copy">
+                  <strong>Trade with confidence</strong>
+                  <span>Monitor your account and manage your profile from one place.</span>
+                </div>
               </div>
+              <button type="button" className="elite-terminal-logout" onClick={handleLogout}>
+                <LogOut />
+                <span>Logout</span>
+              </button>
             </div>
           </aside>
 
