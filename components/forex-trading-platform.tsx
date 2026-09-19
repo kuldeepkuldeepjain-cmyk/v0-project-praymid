@@ -1906,7 +1906,7 @@ function PositionSizer({
       `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} �� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2516,7 +2516,7 @@ function PositionSizer({
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "order" ? "flex" : "hidden md:flex"}`}
-          style={{ width: "min(224px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
+          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0" style={{ borderBottom: "1px solid #1a2640" }}>
@@ -2644,8 +2644,10 @@ function PositionSizer({
                   )}
                 </div>
 
+                {/* Risk controls */}
+                <div className="mb-2 grid grid-cols-2 gap-2">
                 {/* SL */}
-                <div className="mb-2">
+                <div>
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#ef4444" }}>
                     <ShieldAlert className="h-3 w-3" /> Stop Loss
                     {slVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
@@ -2660,7 +2662,7 @@ function PositionSizer({
                 </div>
 
                 {/* TP */}
-                <div className="mb-2">
+                <div>
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#10b981" }}>
                     <Target className="h-3 w-3" /> Take Profit
                     {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
@@ -2672,6 +2674,7 @@ function PositionSizer({
                     onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(16,185,129,0.2), 0 0 12px rgba(16,185,129,0.12)" }}
                     onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
                   />
+                </div>
                 </div>
 
                 {/* Trailing Stop */}
