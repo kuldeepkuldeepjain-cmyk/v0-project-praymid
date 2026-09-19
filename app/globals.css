@@ -1934,8 +1934,29 @@ button, a, [role="button"] {
   color: #f5dfaa;
 }
 .elite-terminal-promo-copy strong { font-size: 16px; line-height: 1.2; }
-.elite-terminal-promo-copy span { margin-top: 10px; color: #b4aa93; font-size: 12px; }
-.elite-terminal-workspace { min-width: 0; min-height: 0; flex: 1; display: flex; flex-direction: column; }
+  .elite-terminal-promo-copy span { margin-top: 10px; color: #b4aa93; font-size: 12px; }
+  .elite-terminal-sidebar-footer { display: flex; flex-direction: column; gap: 12px; margin-top: auto; }
+  .elite-terminal-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid rgba(248, 113, 113, .28);
+    border-radius: 9px;
+    background: rgba(127, 29, 29, .18);
+    color: #fca5a5;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    transition: background .2s, border-color .2s, color .2s;
+  }
+  .elite-terminal-logout:hover { border-color: rgba(248, 113, 113, .55); background: rgba(127, 29, 29, .36); color: #fecaca; }
+  .elite-terminal-logout svg { width: 16px; height: 16px; }
+  .elite-terminal-workspace { min-width: 0; min-height: 0; flex: 1; display: flex; flex-direction: column; }
+
 .elite-terminal-header {
   height: 74px;
   flex: 0 0 74px;

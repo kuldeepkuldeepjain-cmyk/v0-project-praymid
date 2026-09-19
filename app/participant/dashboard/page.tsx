@@ -2068,11 +2068,17 @@ export default function DashboardHome() {
               </Link>
             </nav>
 
-            <div className="elite-terminal-promo">
-              <div className="elite-terminal-promo-copy">
-                <strong>Trade with confidence</strong>
-                <span>Monitor your account and manage your profile from one place.</span>
+            <div className="elite-terminal-sidebar-footer">
+              <div className="elite-terminal-promo">
+                <div className="elite-terminal-promo-copy">
+                  <strong>Trade with confidence</strong>
+                  <span>Monitor your account and manage your profile from one place.</span>
+                </div>
               </div>
+              <button type="button" className="elite-terminal-logout" onClick={handleLogout}>
+                <LogOut />
+                <span>Logout</span>
+              </button>
             </div>
           </aside>
 
