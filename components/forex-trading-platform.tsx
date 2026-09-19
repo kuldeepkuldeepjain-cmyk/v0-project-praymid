@@ -1906,7 +1906,7 @@ function PositionSizer({
       `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} �� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} ��� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2094,7 +2094,7 @@ function PositionSizer({
         <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
           <Wallet className="h-3 w-3 text-emerald-400" />
           <div className="flex flex-col">
-            <span className="text-[8px] text-slate-600 leading-none">BALANCE</span>
+            <span className="text-[8px] font-bold tracking-wider text-emerald-300/70 leading-none">BALANCE</span>
             <span className="price-mono text-[11px] font-black text-emerald-400 leading-none">
               ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -2112,7 +2112,36 @@ function PositionSizer({
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/participant/dashboard" }}
+            className="hidden sm:flex items-center gap-1 rounded-md border border-cyan-500/25 bg-cyan-500/10 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-200 transition-colors hover:bg-cyan-500/20"
+            title="Open account balance"
+          >
+            <Wallet className="h-3 w-3" />
+            <span>Balance</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/participant/dashboard" }}
+            className="flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-blue-200 transition-colors hover:bg-blue-500/25"
+            title="Add funds"
+          >
+            <Plus className="h-3 w-3" />
+            <span className="hidden lg:inline">Add Fund</span>
+            <span className="lg:hidden">Fund</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { window.location.href = "/participant/dashboard/payout" }}
+            className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-200 transition-colors hover:bg-emerald-500/25"
+            title="Request payout"
+          >
+            <ArrowUpDown className="h-3 w-3" />
+            <span className="hidden lg:inline">Payout</span>
+            <span className="lg:hidden">Pay</span>
+          </button>
           <button
             type="button"
             onClick={() => setIsDarkTheme(theme => !theme)}
