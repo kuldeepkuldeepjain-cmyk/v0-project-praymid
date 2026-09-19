@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "node:crypto"
 import { query } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
@@ -45,10 +46,10 @@ export async function POST(request: NextRequest) {
       ["TRC20", trc20Address, adminEmail, "ERC20", erc20Address],
     )
     await query(
-      `INSERT INTO system_settings(setting_key, setting_value, updated_at)
-       VALUES($1, $2, NOW())
+      `INSERT INTO system_settings(id, setting_key, setting_value, updated_at)
+       VALUES($1, $2, $3, NOW())
        ON CONFLICT(setting_key) DO UPDATE SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
-      [legacyBep20Key, bep20Address],
+      [randomUUID(), legacyBep20Key, bep20Address],
     )
 
     return NextResponse.json({ success: true })
