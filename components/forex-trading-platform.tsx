@@ -1107,6 +1107,7 @@ function PositionSizer({
   const [rightPanelTab, setRightPanelTab] = useState<"order" | "sizer">("order")
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
+  const [headerInstrumentQuery, setHeaderInstrumentQuery] = useState("")
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
@@ -1190,6 +1191,16 @@ function PositionSizer({
       return sym.includes(q) || name.includes(q)
     })
   }, [addInstrumentQuery])
+
+  const headerInstrumentResults = useMemo(() => {
+    const q = headerInstrumentQuery.trim().toLowerCase().replace(/[\s/_-]/g, "")
+    if (!q) return []
+    return pairs.filter(pair => {
+      const symbol = pair.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+      const name = (FULL_NAMES[pair.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+      return symbol.includes(q) || name.includes(q)
+    })
+  }, [headerInstrumentQuery, pairs])
   
   const pairsRef        = useRef<ForexPair[]>([])
   const openTradesRef   = useRef<OpenTrade[]>([])
@@ -2049,7 +2060,7 @@ function PositionSizer({
       )}
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="apple-terminal-topbar flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
         <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund Trade Terminal">
           <img
             src="/elite-fund-logo.jpg"
@@ -2081,6 +2092,58 @@ function PositionSizer({
         </div>
 
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
+
+        {/* Live instrument search */}
+        <div className="relative hidden md:block w-44 lg:w-56 shrink-0">
+          <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" aria-hidden="true" />
+          <input
+            type="search"
+            value={headerInstrumentQuery}
+            onChange={event => setHeaderInstrumentQuery(event.target.value)}
+            onKeyDown={event => { if (event.key === "Escape") setHeaderInstrumentQuery("") }}
+            placeholder={`Search ${PAIRS_CONFIG.length} instruments`}
+            aria-label="Search live instruments"
+            className="w-full rounded-md py-1.5 pl-7 pr-2 text-[10px] font-bold text-white placeholder:text-slate-600 focus:outline-none"
+            style={{ background: "#070a10", border: "1px solid #1e2d45" }}
+          />
+          {headerInstrumentQuery.trim() && (
+            <div className="absolute left-0 right-0 top-9 z-50 max-h-80 overflow-y-auto rounded-lg terminal-scroll" role="listbox" aria-label="Live instrument results"
+              style={{ background: "#0b111d", border: "1px solid #263653", boxShadow: "0 12px 28px rgba(0,0,0,0.5)" }}>
+              {headerInstrumentResults.length > 0 ? headerInstrumentResults.map(pair => {
+                const up = pair.change >= 0
+                return (
+                  <button
+                    key={pair.symbol}
+                    type="button"
+                    role="option"
+                    aria-selected={selectedPair?.symbol === pair.symbol}
+                    onClick={() => {
+                      setSelectedPair(pair)
+                      setHeaderInstrumentQuery("")
+                      fetchCandles(pair.symbol, timeframe)
+                      setMobileTab("chart")
+                    }}
+                    className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-cyan-400/10"
+                  >
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[8px] font-black" style={{ background: CATEGORY_COLOR[PAIRS_CONFIG.find(c => c.symbol === pair.symbol)?.category ?? "Forex"].bg, color: CATEGORY_COLOR[PAIRS_CONFIG.find(c => c.symbol === pair.symbol)?.category ?? "Forex"].text }}>
+                      {ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block price-mono text-[10px] font-black text-white">{pair.symbol}</span>
+                      <span className="block truncate text-[8px] text-slate-500">{FULL_NAMES[pair.symbol] ?? pair.symbol}</span>
+                    </span>
+                    <span className="text-right">
+                      <span className="block price-mono text-[9px] font-black" style={{ color: up ? "#10b981" : "#ef4444" }}>{fmt(pair.bid, pair.symbol)}</span>
+                      <span className="block price-mono text-[8px]" style={{ color: up ? "#10b981" : "#ef4444" }}>{up ? "+" : ""}{pair.change.toFixed(2)}%</span>
+                    </span>
+                  </button>
+                )
+              }) : (
+                <div className="px-3 py-3 text-center text-[9px] text-slate-500">No live instruments found</div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Feed telemetry */}
         <div className="hidden lg:flex items-center gap-2 shrink-0 px-2 py-1 rounded" style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.10)" }}>
