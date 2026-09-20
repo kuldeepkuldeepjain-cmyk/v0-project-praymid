@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
+import { isFundedDrawdownBreached } from "@/lib/funded-account"
 
 /**
  * POST /api/forex/trade-balance
@@ -58,17 +59,23 @@ export async function POST(req: NextRequest) {
       const participantId: string = rows[0].id
       const currentBalance: number = parseFloat(rows[0].account_balance) || 0
       const isMarginLock = typeof description === "string" && description.startsWith("Margin locked")
+      const alreadyBreached = rows[0].funded_breach_status === "breached"
       if ((rows[0].account_frozen || rows[0].is_frozen) && delta < 0 && isMarginLock) {
         await client.query("ROLLBACK")
         return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
       }
+      // A funded account that already breached the fixed 2% drawdown rule may
+      // never open new positions again — there is no recovery after breach.
+      if (rows[0].account_type === "funded" && alreadyBreached && delta < 0 && isMarginLock) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading is permanently disabled." }, { status: 403 })
+      }
 
-  const newBalance = parseFloat((currentBalance + delta).toFixed(2))
-  const fundedInitial = Number(rows[0].funded_initial_balance) || 0
-  const fundedBreach = rows[0].account_type === "funded" && fundedInitial > 0 &&
-    newBalance < fundedInitial * 0.98
+      const newBalance = parseFloat((currentBalance + delta).toFixed(2))
+      const fundedInitial = Number(rows[0].funded_initial_balance) || 0
+      const fundedBreach = !alreadyBreached && isFundedDrawdownBreached(rows[0].account_type, fundedInitial, newBalance, 0)
 
-  if (newBalance < 0) {
+      if (newBalance < 0) {
         await client.query("ROLLBACK")
         return NextResponse.json({
           success: false,
@@ -86,6 +93,16 @@ export async function POST(req: NextRequest) {
    WHERE id = $2`,
   [newBalance, participantId, fundedBreach]
   )
+
+      if (fundedBreach) {
+        // No recovery after breach: cancel every not-yet-triggered pending
+        // limit/stop order so no further exposure can be taken on.
+        await client.query(
+          `UPDATE forex_trades SET status = 'cancelled', close_reason = 'funded_drawdown_breach', updated_at = NOW()
+           WHERE participant_email = $1 AND status = 'pending'`,
+          [email]
+        )
+      }
 
       // Write transaction ledger entry
       try {
