@@ -1471,6 +1471,7 @@ export default function DashboardHome() {
   const [participantId, setParticipantId] = useState<string>("")
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
+  const fundedOnboardingShown = useRef(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
@@ -1671,6 +1672,21 @@ export default function DashboardHome() {
     : 0
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
   const isFundedAccountBelowBase = isFundedAccount && terminalStats.equity > 0 && terminalStats.equity <= minimumFundedBalance
+
+  useEffect(() => {
+    // Newly created funded accounts start with a zero wallet balance. Show the
+    // funded tier Add Funds flow immediately after the first login.
+    if (
+      mounted &&
+      isFundedAccount &&
+      Number(participantData?.account_balance) <= 0 &&
+      !fundedOnboardingShown.current
+    ) {
+      fundedOnboardingShown.current = true
+      setTopUpIsFundedAccount(true)
+      setShowTopUpModal(true)
+    }
+  }, [mounted, isFundedAccount, participantData?.account_balance])
 
   useEffect(() => {
     if (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen") {
