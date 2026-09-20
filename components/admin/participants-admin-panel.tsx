@@ -14,6 +14,7 @@ interface Participant {
   username: string
   email: string
   account_balance: number
+  account_type?: string
   status: string
   is_active: boolean
   created_at: string
@@ -158,6 +159,7 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Email</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Username</th>
               <th className="text-right py-3 px-4 text-slate-400 font-medium">Balance</th>
+              <th className="text-left py-3 px-4 text-slate-400 font-medium">Account Type</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Referrals</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
@@ -175,6 +177,16 @@ export function ParticipantsAdminPanel() {
                 </td>
                 <td className="py-3 px-4 text-right text-green-400 font-mono">
                   ${participant.account_balance.toFixed(2)}
+                </td>
+                <td className="py-3 px-4">
+                  <Badge
+                    variant="outline"
+                    className={participant.account_type?.toLowerCase() === "funded"
+                      ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
+                      : "border-slate-600 bg-slate-800/60 text-slate-300"}
+                  >
+                    {participant.account_type?.toLowerCase() === "funded" ? "Funded" : "Normal"}
+                  </Badge>
                 </td>
                 <td className="py-3 px-4 text-white">{participant.total_referrals || 0}</td>
                 <td className="py-3 px-4">

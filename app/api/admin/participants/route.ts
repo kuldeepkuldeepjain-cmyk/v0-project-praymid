@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const rows = await query(
       `SELECT id, email, username, full_name, plain_password,
-              wallet_address, account_balance, is_active, status, referral_code, referred_by,
+              wallet_address, account_balance, account_type, is_active, status, referral_code, referred_by,
               whatsapp_otp, otp_verified, otp_verified_at, created_at, updated_at, rank,
               serial_number, mobile_number, country_code, country, state, pin_code, full_address,
               bep20_address, total_earnings, bonus_balance, referral_count, referral_earnings,
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       created_at: p.created_at,
       updated_at: p.updated_at,
       last_login: p.last_login,
+      account_type: p.account_type || "normal",
       status: p.status || "active",
       rank: p.rank || "",
       is_active: p.is_active !== false,

@@ -11,6 +11,7 @@ export async function GET() {
         username,
         email,
         account_balance,
+        account_type,
         status,
         is_active,
         created_at,
