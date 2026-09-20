@@ -13,7 +13,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
+import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import type { UserRank } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
@@ -1703,8 +1703,13 @@ export default function DashboardHome() {
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
   const fundedInitialBalance = Number(participantData.funded_initial_balance) || fundedBaseAmount
   const fundedEquity = Number(terminalStats.equity) || walletBalance
-  const fundedDrawdown = Math.max(0, fundedInitialBalance - fundedEquity)
-  const fundedDrawdownPercent = fundedInitialBalance > 0 ? (fundedDrawdown / fundedInitialBalance) * 100 : 0
+  const fundedDrawdownSnapshot = getFundedDrawdownSnapshot(
+    participantData.account_type,
+    fundedInitialBalance,
+    fundedEquity,
+    0,
+    isFundedAccountBreached,
+  )
 
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
@@ -1715,12 +1720,52 @@ export default function DashboardHome() {
 
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
-      {isFundedAccount && (
-        <div className="mx-4 mt-4 grid grid-cols-2 gap-3 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-xs text-slate-300 md:grid-cols-4">
-          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Initial balance</span><strong className="price-mono text-cyan-200">${fundedInitialBalance.toFixed(2)}</strong></div>
-          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Current equity</span><strong className="price-mono text-white">${fundedEquity.toFixed(2)}</strong></div>
-          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Drawdown</span><strong className="price-mono text-amber-300">${fundedDrawdown.toFixed(2)} ({fundedDrawdownPercent.toFixed(2)}%)</strong></div>
-          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Rule status</span><strong className={isFundedAccountBreached ? "text-red-300" : "text-emerald-300"}>{isFundedAccountBreached ? "Breached" : "Within 2% limit"}</strong></div>
+      {isFundedAccount && fundedDrawdownSnapshot && (
+        <div
+          className="mx-4 mt-4 rounded-xl border p-4 text-xs text-slate-300"
+          style={{
+            borderColor: fundedDrawdownSnapshot.warningLevel === "breached" ? "rgba(248,113,113,0.4)"
+              : fundedDrawdownSnapshot.warningLevel === "critical" ? "rgba(248,113,113,0.3)"
+              : fundedDrawdownSnapshot.warningLevel === "warning" ? "rgba(251,191,36,0.3)"
+              : "rgba(34,211,238,0.2)",
+            background: fundedDrawdownSnapshot.warningLevel === "breached" || fundedDrawdownSnapshot.warningLevel === "critical"
+              ? "rgba(248,113,113,0.06)"
+              : fundedDrawdownSnapshot.warningLevel === "warning" ? "rgba(251,191,36,0.06)" : "rgba(34,211,238,0.05)",
+          }}
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fixed 2% Drawdown Rule</span>
+            <span
+              className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider"
+              style={{
+                color: fundedDrawdownSnapshot.status === "BREACHED" ? "#fca5a5" : "#6ee7b7",
+                background: fundedDrawdownSnapshot.status === "BREACHED" ? "rgba(248,113,113,0.15)" : "rgba(16,185,129,0.15)",
+              }}
+            >
+              {fundedDrawdownSnapshot.status}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Initial Balance</span><strong className="price-mono text-cyan-200">${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Max Drawdown</span><strong className="price-mono text-white">{fundedDrawdownSnapshot.maxDrawdownPercent}%</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Max Loss Allowed</span><strong className="price-mono text-white">${fundedDrawdownSnapshot.maxLossAllowed.toFixed(2)}</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach Equity</span><strong className="price-mono text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Current Equity</span><strong className="price-mono text-white">${fundedDrawdownSnapshot.currentEquity.toFixed(2)}</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining Drawdown</span><strong className="price-mono text-emerald-300">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Drawdown Used</span><strong className="price-mono text-amber-300">{fundedDrawdownSnapshot.drawdownUsedPercent.toFixed(1)}%</strong></div>
+            <div>
+              <span className="block text-[10px] uppercase tracking-wider text-slate-500">Warning Level</span>
+              <strong
+                className="uppercase"
+                style={{
+                  color: fundedDrawdownSnapshot.warningLevel === "breached" || fundedDrawdownSnapshot.warningLevel === "critical" ? "#fca5a5"
+                    : fundedDrawdownSnapshot.warningLevel === "warning" ? "#fbbf24" : "#6ee7b7",
+                }}
+              >
+                {fundedDrawdownSnapshot.warningLevel}
+              </strong>
+            </div>
+          </div>
         </div>
       )}
 

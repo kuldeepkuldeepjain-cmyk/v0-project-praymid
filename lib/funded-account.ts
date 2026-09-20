@@ -50,7 +50,59 @@ export function isFundedDrawdownBreached(accountType: unknown, initialBalance: u
   if (accountType !== "funded") return false
   const initial = toPositiveNumber(initialBalance)
   const equity = getFundedEquity(initial, availableBalance, committedFunds)
-  return initial > 0 && equity < getFundedMinimumBalance(initial)
+  // Breach is triggered the instant equity reaches or falls below 98% of the
+  // initial funded balance — never rounded upward in the trader's favor.
+  const breachEquityLevel = Math.floor(getFundedMinimumBalance(initial) * 100) / 100
+  return initial > 0 && Math.floor(equity * 100) / 100 <= breachEquityLevel
+}
+
+export interface FundedDrawdownSnapshot {
+  initialBalance: number
+  maxDrawdownPercent: number
+  maxLossAllowed: number
+  breachEquity: number
+  currentEquity: number
+  remainingDrawdown: number
+  drawdownUsedPercent: number
+  status: "ACTIVE" | "BREACHED"
+  warningLevel: "normal" | "warning" | "critical" | "breached"
+}
+
+export function getFundedDrawdownSnapshot(
+  accountType: unknown,
+  initialBalance: unknown,
+  availableBalance: unknown,
+  committedFunds: unknown = 0,
+  isBreached = false,
+): FundedDrawdownSnapshot | null {
+  if (accountType !== "funded") return null
+  const initial = toPositiveNumber(initialBalance)
+  if (!initial) return null
+
+  const maxLossAllowed = getFundedLossLimit(initial)
+  const breachEquity = getFundedMinimumBalance(initial)
+  const currentEquity = getFundedEquity(initial, availableBalance, committedFunds)
+  const drawdown = Math.max(0, initial - currentEquity)
+  const remainingDrawdown = Math.max(0, maxLossAllowed - drawdown)
+  const drawdownUsedPercent = maxLossAllowed > 0 ? Math.min(100, (drawdown / maxLossAllowed) * 100) : 0
+  const breached = isBreached || isFundedDrawdownBreached(accountType, initial, availableBalance, committedFunds)
+
+  let warningLevel: FundedDrawdownSnapshot["warningLevel"] = "normal"
+  if (breached || drawdownUsedPercent >= 100) warningLevel = "breached"
+  else if (drawdownUsedPercent >= 90) warningLevel = "critical"
+  else if (drawdownUsedPercent >= 75) warningLevel = "warning"
+
+  return {
+    initialBalance: initial,
+    maxDrawdownPercent: 2,
+    maxLossAllowed,
+    breachEquity,
+    currentEquity,
+    remainingDrawdown,
+    drawdownUsedPercent,
+    status: breached ? "BREACHED" : "ACTIVE",
+    warningLevel,
+  }
 }
 
 export function getFundedPayoutAmount(accountBalance: unknown, configuredAmount?: unknown): number {

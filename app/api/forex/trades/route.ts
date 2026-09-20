@@ -58,12 +58,18 @@ export async function POST(req: NextRequest) {
     const db = getPool()
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
 
-    const participantRows = await db.query("SELECT id, account_frozen, is_frozen FROM participants WHERE email = $1", [participant_email])
+    const participantRows = await db.query("SELECT id, account_frozen, is_frozen, account_type, funded_breach_status FROM participants WHERE email = $1", [participant_email])
     const participant = participantRows.rows[0]
     const participantId = participant?.id ?? null
 
     if ((participant?.account_frozen || participant?.is_frozen) && (action === "open" || action === "pending")) {
       return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
+    }
+
+    // No recovery after breach: a funded account that hit the fixed 2%
+    // drawdown limit can never open a new position or pending order again.
+    if (participant?.account_type === "funded" && participant?.funded_breach_status === "breached" && (action === "open" || action === "pending")) {
+      return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading is permanently disabled." }, { status: 403 })
     }
 
     if (action === "open") {

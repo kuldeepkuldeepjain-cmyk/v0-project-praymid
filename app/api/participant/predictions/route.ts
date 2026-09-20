@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
     const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
     const fundedInitialBalance = Number(participant.funded_initial_balance) || fundedBaseAmount
-    const fundedEquity = getFundedEquity(fundedInitialBalance, newBalance, committedFunds + Number(amount))
-    const shouldBreach = isFundedDrawdownBreached(participant.account_type, fundedInitialBalance, newBalance, committedFunds + Number(amount))
+    const totalCommittedAfterBet = committedFunds + (useReferralBalance ? 0 : Number(amount))
+    const fundedEquity = getFundedEquity(fundedInitialBalance, newBalance, totalCommittedAfterBet)
+    const shouldBreach = isFundedDrawdownBreached(participant.account_type, fundedInitialBalance, newBalance, totalCommittedAfterBet)
     await execute(
       `UPDATE participants
        SET ${balanceField} = $1,
@@ -78,6 +79,16 @@ export async function POST(request: NextRequest) {
        WHERE id = $5`,
       [newBalance, fundedInitialBalance, shouldBreach, fundedEquity, participant.id]
     )
+
+    if (shouldBreach) {
+      // No recovery after breach: cancel every not-yet-triggered pending
+      // limit/stop forex order so no further exposure can be taken on.
+      await execute(
+        `UPDATE forex_trades SET status = 'cancelled', close_reason = 'funded_drawdown_breach', updated_at = NOW()
+         WHERE participant_email = $1 AND status = 'pending'`,
+        [participant_email]
+      ).catch(() => {})
+    }
 
     // Log to transactions
     await execute(
