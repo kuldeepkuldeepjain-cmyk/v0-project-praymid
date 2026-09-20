@@ -1671,7 +1671,7 @@ export default function DashboardHome() {
     ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
     : 0
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
-  const isFundedAccountBelowBase = isFundedAccount && terminalStats.equity > 0 && terminalStats.equity <= minimumFundedBalance
+  const isFundedAccountBreached = isFundedAccount && participantData?.funded_breach_status === "breached"
 
   useEffect(() => {
     // Newly created funded accounts start with a zero wallet balance. Show the
@@ -1693,30 +1693,18 @@ export default function DashboardHome() {
       setShowFrozenModal(true)
       return
     }
-    if (!isFundedAccountBelowBase || !participantData?.email) return
-    const holdAccount = async () => {
-      try {
-        const response = await fetch("/api/participant/freeze-account", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: participantData.email }),
-        })
-        if (response.ok) {
-          setParticipantData((current: any) => ({ ...current, account_frozen: true, status: "frozen" }))
-          setShowFrozenModal(true)
-        }
-      } catch (error) {
-        console.error("[v0] Failed to place funded account on hold:", error)
-      }
-    }
-    holdAccount()
-  }, [isFundedAccountBelowBase, participantData?.account_frozen, participantData?.is_frozen, participantData?.status, participantData?.email])
+    if (isFundedAccountBreached) setShowFrozenModal(true)
+  }, [isFundedAccountBreached, participantData?.account_frozen, participantData?.is_frozen, participantData?.status])
 
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
   }
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
+  const fundedInitialBalance = Number(participantData.funded_initial_balance) || fundedBaseAmount
+  const fundedEquity = Number(terminalStats.equity) || walletBalance
+  const fundedDrawdown = Math.max(0, fundedInitialBalance - fundedEquity)
+  const fundedDrawdownPercent = fundedInitialBalance > 0 ? (fundedDrawdown / fundedInitialBalance) * 100 : 0
 
   // Referral earnings = $5 per referral (not total_earnings which includes prediction profits)
   const referralEarnings = (participantData.total_referrals || 0) * 5
@@ -1727,6 +1715,15 @@ export default function DashboardHome() {
 
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
+      {isFundedAccount && (
+        <div className="mx-4 mt-4 grid grid-cols-2 gap-3 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4 text-xs text-slate-300 md:grid-cols-4">
+          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Initial balance</span><strong className="price-mono text-cyan-200">${fundedInitialBalance.toFixed(2)}</strong></div>
+          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Current equity</span><strong className="price-mono text-white">${fundedEquity.toFixed(2)}</strong></div>
+          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Drawdown</span><strong className="price-mono text-amber-300">${fundedDrawdown.toFixed(2)} ({fundedDrawdownPercent.toFixed(2)}%)</strong></div>
+          <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Rule status</span><strong className={isFundedAccountBreached ? "text-red-300" : "text-emerald-300"}>{isFundedAccountBreached ? "Breached" : "Within 2% limit"}</strong></div>
+        </div>
+      )}
+
       {/* Frozen Account Modal */}
   <FrozenAccountModal
   isOpen={showFrozenModal}
