@@ -62,13 +62,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
-    if (participant.account_type === "funded" && (participant.account_frozen || participant.is_frozen || participant.status === "frozen")) {
-      return NextResponse.json({
-        success: false,
-        error: "This funded account is frozen. Trading, payouts, and account functions are blocked until it is reactivated.",
-      }, { status: 403 })
-    }
-
     const currentBalance = Number(participant.account_balance) || 0
     if (participant.account_type === "funded") {
       const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)

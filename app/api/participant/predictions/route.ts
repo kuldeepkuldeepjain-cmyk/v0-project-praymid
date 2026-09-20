@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { query, execute } from "@/lib/db"
-import { getFundedBaseAmount, getFundedMinimumBalance, isFundedBalanceBelowMinimum } from "@/lib/funded-account"
+import { getFundedBaseAmount } from "@/lib/funded-account"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -23,10 +23,6 @@ export async function POST(request: NextRequest) {
     const participant = rows[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
-    if (participant.account_frozen || participant.is_frozen || participant.status === "frozen") {
-      return NextResponse.json({ error: "This account is frozen and cannot place trades." }, { status: 403 })
-    }
-
     const availableBalance = useReferralBalance
       ? Number(participant.bonus_balance ?? 0)
       : Number(participant.account_balance ?? 0)
@@ -42,14 +38,6 @@ export async function POST(request: NextRequest) {
         ) as Array<{ committed_funds: number }>
       : []
     const committedFunds = Number(committedRows[0]?.committed_funds ?? 0)
-
-    if (!useReferralBalance && isFundedBalanceBelowMinimum(participant.account_type, availableBalance, fundedBaseAmount, committedFunds)) {
-      await execute(
-        "UPDATE participants SET account_frozen = true, is_frozen = true, status = 'frozen', updated_at = NOW() WHERE id = $1",
-        [participant.id]
-      )
-      return NextResponse.json({ error: "Funded account frozen because total funds (available balance plus funds committed to trades) fell below the 1% loss limit." }, { status: 403 })
-    }
 
     if (availableBalance < Number(amount)) {
       return NextResponse.json({
@@ -72,21 +60,12 @@ export async function POST(request: NextRequest) {
 
     const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
-    const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
-    const shouldFreezeFundedAccount = !useReferralBalance
-      && participant.account_type === "funded"
-      && fundedBaseAmount > 0
-      && newBalance < minimumFundedBalance
-    
     await execute(
       `UPDATE participants
        SET ${balanceField} = $1,
-           account_frozen = CASE WHEN $2 THEN true ELSE account_frozen END,
-           is_frozen = CASE WHEN $2 THEN true ELSE is_frozen END,
-           status = CASE WHEN $2 THEN 'frozen' ELSE status END,
            updated_at = NOW()
-       WHERE id = $3`,
-      [newBalance, shouldFreezeFundedAccount, participant.id]
+       WHERE id = $2`,
+      [newBalance, participant.id]
     )
 
     // Log to transactions
