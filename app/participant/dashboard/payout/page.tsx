@@ -69,6 +69,7 @@ export default function PayoutPage() {
   const [selectedPayoutPlanId, setSelectedPayoutPlanId] = useState<PayoutPlanId>("platinum")
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
   const [bep20Address, setBep20Address] = useState("")
+  const [selectedNetwork, setSelectedNetwork] = useState<"BEP20" | "TRC20" | "ERC20">("BEP20")
   const [showDisputeDialog, setShowDisputeDialog] = useState(false)
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
   const [disputeReason, setDisputeReason] = useState("")
@@ -186,23 +187,28 @@ export default function PayoutPage() {
 
     const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
 
-    if (!bep20Address || bep20Address.trim().length === 0) {
-      toast({
-        title: "BEP20 Address Required",
-        description: "Please enter your BEP20 wallet address",
-        variant: "destructive",
-      })
-      return
-    }
+  if (!bep20Address.trim()) {
+  toast({
+  title: `${selectedNetwork} Address Required`,
+  description: `Please enter your ${selectedNetwork} wallet address`,
+  variant: "destructive",
+  })
+  return
+  }
 
-    if (!bep20Address.startsWith("0x") || bep20Address.length !== 42) {
-      toast({
-        title: "Invalid Address",
-        description: "Please enter a valid BEP20 address (starts with 0x)",
-        variant: "destructive",
-      })
-      return
-    }
+  const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(bep20Address.trim())
+  const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(bep20Address.trim())
+  const validNetworkAddress = selectedNetwork === "TRC20" ? isTronAddress : isEvmAddress
+  if (!validNetworkAddress) {
+  toast({
+  title: "Invalid Address",
+  description: selectedNetwork === "TRC20"
+  ? "Please enter a valid TRC20 address starting with T"
+  : `Please enter a valid ${selectedNetwork} address starting with 0x`,
+  variant: "destructive",
+  })
+  return
+  }
 
     setIsWithdrawing(true)
     try {
@@ -214,7 +220,7 @@ export default function PayoutPage() {
             ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
             : plan.amount,
           bep20_address: bep20Address,
-          payout_method: plan.method,
+          payout_method: isFundedAccount ? selectedNetwork : plan.method,
         }),
       })
 
@@ -516,7 +522,7 @@ export default function PayoutPage() {
   <span>Available profit above ${fundedBaseAmount.toFixed(2)}</span>
   <strong>${maximumFundedPayout.toFixed(2)}</strong>
   </div>
-  <p className="mt-1 text-xs text-emerald-700">Maximum payout: 80% of excess profit.</p>
+  <p className="mt-1 text-xs text-emerald-700">You receive 80% of total profit above your funded amount. Example: $250 profit = $200 payout; $50 remains with the firm.</p>
   </>
   ) : (
   <p>Payouts unlock only after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
@@ -822,20 +828,38 @@ export default function PayoutPage() {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900">Confirm Payout Details</DialogTitle>
             <DialogDescription className="text-slate-600">
-              Enter your BEP20 wallet address to receive ${selectedPayoutPlan.amount} {selectedPayoutPlan.label} payout
+              Enter your {isFundedAccount ? selectedNetwork : plan.method} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} payout
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-            {/* BEP20 Address Input */}
-            <div className="space-y-2">
-              <Label htmlFor="bep20Address" className="text-sm font-semibold text-slate-700">
-                BEP20 Wallet Address
-              </Label>
+  {isFundedAccount && (
+  <div className="space-y-2">
+  <Label htmlFor="payoutNetwork" className="text-sm font-semibold text-slate-700">Payout Network</Label>
+  <select
+  id="payoutNetwork"
+  value={selectedNetwork}
+  onChange={(event) => setSelectedNetwork(event.target.value as "BEP20" | "TRC20" | "ERC20")}
+  className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
+  disabled={isWithdrawing}
+  >
+  <option value="BEP20">BEP20 (BNB Smart Chain)</option>
+  <option value="TRC20">TRC20 (Tron)</option>
+  <option value="ERC20">ERC20 (Ethereum)</option>
+  </select>
+  <p className="text-xs text-slate-500">Choose the network that matches your receiving wallet.</p>
+  </div>
+  )}
+
+  {/* Wallet Address Input */}
+  <div className="space-y-2">
+  <Label htmlFor="bep20Address" className="text-sm font-semibold text-slate-700">
+  {selectedNetwork} Wallet Address
+  </Label>
               <Input
                 id="bep20Address"
                 type="text"
-                placeholder="Enter your BEP20 wallet address here"
+                placeholder={`Enter your ${selectedNetwork} wallet address here`}
                 value={bep20Address}
                 onChange={(e) => setBep20Address(e.target.value)}
                 className="h-12 text-sm font-mono"
