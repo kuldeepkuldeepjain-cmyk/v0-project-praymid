@@ -1,38 +1,5 @@
 import { NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
-import { isFundedBalanceBelowMinimum } from "@/lib/funded-account"
-
-async function freezeIfFundedLossLimitReached(db: ReturnType<typeof getPool>, email: string) {
-  if (!db) return false
-  const participantResult = await db.query(
-    "SELECT id, account_type, account_balance FROM participants WHERE email = $1 LIMIT 1",
-    [email],
-  )
-  const participant = participantResult.rows[0]
-  if (!participant || participant.account_type !== "funded") return false
-
-  const openTradesResult = await db.query(
-    `SELECT
-       (SELECT COALESCE(SUM(amount), 0) FROM predictions WHERE participant_email = $1 AND status = 'pending' AND balance_source = 'wallet')
-       + (SELECT COALESCE(SUM(margin), 0) FROM forex_trades WHERE participant_email = $1 AND status IN ('open', 'pending')) AS committed_funds`,
-    [email],
-  )
-  const committedFunds = Number(openTradesResult.rows[0]?.committed_funds ?? 0)
-  const shouldFreeze = isFundedBalanceBelowMinimum(
-    participant.account_type,
-    participant.account_balance,
-    undefined,
-    committedFunds,
-  )
-
-  if (shouldFreeze) {
-    await db.query(
-      "UPDATE participants SET account_frozen = true, is_frozen = true, status = 'frozen', updated_at = NOW() WHERE id = $1",
-      [participant.id],
-    )
-  }
-  return shouldFreeze
-}
 
 export async function POST(request: Request) {
   try {
@@ -75,8 +42,7 @@ export async function POST(request: Request) {
          VALUES ($1,'refund',$2,'Trade refunded - no price movement',$3,'completed') ON CONFLICT DO NOTHING`,
         [prediction.participant_email, prediction.amount, predictionId]
       ).catch(() => {})
-      const accountFrozen = await freezeIfFundedLossLimitReached(db, prediction.participant_email)
-      return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true, accountFrozen })
+    return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true, accountFrozen: false })
     }
 
     const isWin = prediction.prediction_type === "up" ? priceDiff > 0 : priceDiff < 0
@@ -105,8 +71,7 @@ export async function POST(request: Request) {
       ).catch(() => {})
     }
 
-    const accountFrozen = await freezeIfFundedLossLimitReached(db, prediction.participant_email)
-    return NextResponse.json({ success: true, result, profitLoss, payout, isWin, isRefund: false, accountFrozen })
+  return NextResponse.json({ success: true, result, profitLoss, payout, isWin, isRefund: false, accountFrozen: false })
   } catch (error) {
     console.error("Error in auto-settle:", error)
     return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 })

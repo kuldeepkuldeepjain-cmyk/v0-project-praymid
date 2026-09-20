@@ -39,6 +39,20 @@ export function getFundedMinimumBalance(baseAmount: number): number {
   return Math.max(0, baseAmount - getFundedLossLimit(baseAmount))
 }
 
+export function getFundedEquity(initialBalance: unknown, availableBalance: unknown, committedFunds: unknown = 0): number {
+  const initial = toPositiveNumber(initialBalance)
+  const available = Number(availableBalance)
+  const committed = Math.max(0, Number(committedFunds) || 0)
+  return initial > 0 && Number.isFinite(available) ? available + committed : 0
+}
+
+export function isFundedDrawdownBreached(accountType: unknown, initialBalance: unknown, availableBalance: unknown, committedFunds: unknown = 0): boolean {
+  if (accountType !== "funded") return false
+  const initial = toPositiveNumber(initialBalance)
+  const equity = getFundedEquity(initial, availableBalance, committedFunds)
+  return initial > 0 && equity < getFundedMinimumBalance(initial)
+}
+
 export function getFundedPayoutAmount(accountBalance: unknown, configuredAmount?: unknown): number {
   const balance = toPositiveNumber(accountBalance)
   const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)

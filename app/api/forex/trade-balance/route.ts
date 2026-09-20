@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       await client.query("BEGIN")
 
       const { rows } = await client.query(
-        "SELECT id, account_balance, account_frozen, is_frozen FROM participants WHERE email = $1 FOR UPDATE",
+        "SELECT id, account_balance, account_type, funded_initial_balance, funded_breach_status, account_frozen, is_frozen FROM participants WHERE email = $1 FOR UPDATE",
         [email]
       )
       if (!rows.length) {
@@ -63,9 +63,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
       }
 
-      const newBalance = parseFloat((currentBalance + delta).toFixed(2))
+  const newBalance = parseFloat((currentBalance + delta).toFixed(2))
+  const fundedInitial = Number(rows[0].funded_initial_balance) || 0
+  const fundedBreach = rows[0].account_type === "funded" && fundedInitial > 0 &&
+    newBalance < fundedInitial * 0.98
 
-      if (newBalance < 0) {
+  if (newBalance < 0) {
         await client.query("ROLLBACK")
         return NextResponse.json({
           success: false,
@@ -75,9 +78,14 @@ export async function POST(req: NextRequest) {
       }
 
       await client.query(
-        "UPDATE participants SET account_balance = $1 WHERE id = $2",
-        [newBalance, participantId]
-      )
+  `UPDATE participants SET account_balance = $1,
+     funded_breach_status = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 'breached' ELSE funded_breach_status END,
+     funded_breach_at = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN NOW() ELSE funded_breach_at END,
+     funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_balance END,
+     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_equity END
+   WHERE id = $2`,
+  [newBalance, participantId, fundedBreach]
+  )
 
       // Write transaction ledger entry
       try {

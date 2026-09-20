@@ -203,7 +203,7 @@ export async function PATCH(request: Request) {
           }
         } else {
           await execute(
-            "UPDATE participants SET status='active', is_active=true, account_balance=$1, activation_date=NOW() WHERE email=$2",
+            "UPDATE participants SET status='active', is_active=true, account_balance=$1, funded_initial_balance=CASE WHEN account_type='funded' AND funded_initial_balance IS NULL THEN $1 ELSE funded_initial_balance END, funded_breach_status=CASE WHEN account_type='funded' AND funded_initial_balance IS NULL THEN 'clear' ELSE funded_breach_status END, activation_date=NOW() WHERE email=$2",
             [newBalance, submission.participant_email]
           ).catch(() => {})
         }

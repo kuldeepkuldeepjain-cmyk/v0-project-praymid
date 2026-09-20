@@ -33,11 +33,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { email, amount, bep20_address, wallet_address, payout_method } = body
-    const walletAddr = bep20_address || wallet_address
-    const method = payout_method || "BEP20"
+    const walletAddr = String(bep20_address || wallet_address || "").trim()
+    const method = String(payout_method || "BEP20").toUpperCase()
 
     if (!email || !amount || !walletAddr) {
       return NextResponse.json({ success: false, error: "Missing required fields (email, amount, wallet address)" }, { status: 400 })
+    }
+
+    if (!["BEP20", "TRC20", "ERC20", "DIRECT"].includes(method)) {
+      return NextResponse.json({ success: false, error: "Unsupported payout network" }, { status: 400 })
+    }
+
+    if (method !== "DIRECT") {
+      const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(walletAddr)
+      const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(walletAddr)
+      if (method === "TRC20" ? !isTronAddress : !isEvmAddress) {
+        return NextResponse.json({ success: false, error: `Invalid ${method} wallet address` }, { status: 400 })
+      }
     }
 
     // Load participant balance info
@@ -48,13 +60,6 @@ export async function POST(request: NextRequest) {
     const participant = rows[0]
     if (!participant) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
-    }
-
-    if (participant.account_type === "funded" && (participant.account_frozen || participant.is_frozen || participant.status === "frozen")) {
-      return NextResponse.json({
-        success: false,
-        error: "This funded account is frozen. Trading, payouts, and account functions are blocked until it is reactivated.",
-      }, { status: 403 })
     }
 
     const currentBalance = Number(participant.account_balance) || 0

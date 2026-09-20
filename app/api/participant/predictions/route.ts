@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { query, execute } from "@/lib/db"
-import { getFundedBaseAmount, getFundedMinimumBalance, isFundedBalanceBelowMinimum } from "@/lib/funded-account"
+import { getFundedBaseAmount, getFundedEquity, isFundedDrawdownBreached } from "@/lib/funded-account"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -17,14 +17,13 @@ export async function POST(request: NextRequest) {
     const useReferralBalance = balance_source === "referral"
 
     const rows = await query(
-      "SELECT id, account_balance, bonus_balance, account_type, account_frozen, is_frozen, status FROM participants WHERE email = $1 LIMIT 1",
+      "SELECT id, account_balance, bonus_balance, account_type, account_frozen, is_frozen, status, funded_initial_balance, funded_breach_status FROM participants WHERE email = $1 LIMIT 1",
       [participant_email]
     ) as any[]
     const participant = rows[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-
-    if (participant.account_frozen || participant.is_frozen || participant.status === "frozen") {
-      return NextResponse.json({ error: "This account is frozen and cannot place trades." }, { status: 403 })
+    if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
+      return NextResponse.json({ error: "Funded account breached the fixed 2% drawdown rule." }, { status: 403 })
     }
 
     const availableBalance = useReferralBalance
@@ -42,14 +41,6 @@ export async function POST(request: NextRequest) {
         ) as Array<{ committed_funds: number }>
       : []
     const committedFunds = Number(committedRows[0]?.committed_funds ?? 0)
-
-    if (!useReferralBalance && isFundedBalanceBelowMinimum(participant.account_type, availableBalance, fundedBaseAmount, committedFunds)) {
-      await execute(
-        "UPDATE participants SET account_frozen = true, is_frozen = true, status = 'frozen', updated_at = NOW() WHERE id = $1",
-        [participant.id]
-      )
-      return NextResponse.json({ error: "Funded account frozen because total funds (available balance plus funds committed to trades) fell below the 1% loss limit." }, { status: 403 })
-    }
 
     if (availableBalance < Number(amount)) {
       return NextResponse.json({
@@ -72,21 +63,20 @@ export async function POST(request: NextRequest) {
 
     const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
-    const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
-    const shouldFreezeFundedAccount = !useReferralBalance
-      && participant.account_type === "funded"
-      && fundedBaseAmount > 0
-      && newBalance < minimumFundedBalance
-    
+    const fundedInitialBalance = Number(participant.funded_initial_balance) || fundedBaseAmount
+    const fundedEquity = getFundedEquity(fundedInitialBalance, newBalance, committedFunds + Number(amount))
+    const shouldBreach = isFundedDrawdownBreached(participant.account_type, fundedInitialBalance, newBalance, committedFunds + Number(amount))
     await execute(
       `UPDATE participants
        SET ${balanceField} = $1,
-           account_frozen = CASE WHEN $2 THEN true ELSE account_frozen END,
-           is_frozen = CASE WHEN $2 THEN true ELSE is_frozen END,
-           status = CASE WHEN $2 THEN 'frozen' ELSE status END,
+           funded_initial_balance = CASE WHEN account_type = 'funded' AND funded_initial_balance IS NULL THEN $2 ELSE funded_initial_balance END,
+           funded_breach_status = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 'breached' ELSE funded_breach_status END,
+           funded_breach_at = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN NOW() ELSE funded_breach_at END,
+           funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_balance END,
+           funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END,
            updated_at = NOW()
-       WHERE id = $3`,
-      [newBalance, shouldFreezeFundedAccount, participant.id]
+       WHERE id = $5`,
+      [newBalance, fundedInitialBalance, shouldBreach, fundedEquity, participant.id]
     )
 
     // Log to transactions
@@ -113,7 +103,7 @@ export async function POST(request: NextRequest) {
         expiry_timestamp: expiryTimestamp, // For frontend compatibility
       },
       new_balance: newBalance,
-      account_frozen: shouldFreezeFundedAccount,
+      account_frozen: false,
       balance_source: useReferralBalance ? "referral" : "wallet",
     })
   } catch (error) {
