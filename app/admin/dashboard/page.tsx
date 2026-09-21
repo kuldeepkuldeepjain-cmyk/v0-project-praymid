@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [collectingIds, setCollectingIds] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_ifsc_code: "", inr_account_holder_name: "" })
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
     try {
       const response = await adminFetch("/api/admin/payment-settings")
       const data = await response.json()
-      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "" })
+      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "" })
     } catch (error) {
       console.error("[v0] Failed to fetch payment settings:", error)
     }
@@ -427,13 +427,17 @@ export default function AdminDashboard() {
                 <h3 className="text-sm font-semibold text-amber-200">INR Bank Account Details</h3>
                 <p className="mt-1 text-xs text-amber-300/70">These details are shown to participants when they select INR in Add Funds.</p>
               </div>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
                   <label htmlFor="inr-bank-name" className="text-sm font-medium text-amber-200">Bank Name</label>
                   <Input id="inr-bank-name" value={paymentSettings.inr_bank_name} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_bank_name: event.target.value }))} placeholder="Enter bank name" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 text-white placeholder:text-amber-300/50" />
                 </div>
-                <div className="space-y-2">
-                  <label htmlFor="inr-ifsc-code" className="text-sm font-medium text-amber-200">IFSC Code</label>
+                  <div className="space-y-2">
+                    <label htmlFor="inr-account-number" className="text-sm font-medium text-amber-200">Account Number</label>
+                    <Input id="inr-account-number" value={paymentSettings.inr_account_number} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_account_number: event.target.value }))} placeholder="Enter account number" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="inr-ifsc-code" className="text-sm font-medium text-amber-200">IFSC Code</label>
                   <Input id="inr-ifsc-code" value={paymentSettings.inr_ifsc_code} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_ifsc_code: event.target.value.toUpperCase() }))} placeholder="Enter IFSC code" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
                 </div>
                 <div className="space-y-2">

@@ -4,7 +4,7 @@ import { query } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 const legacyBep20Key = "topup_bep20_address"
-const inrBankSettingKeys = ["topup_inr_bank_name", "topup_inr_ifsc_code", "topup_inr_account_holder_name"] as const
+const inrBankSettingKeys = ["topup_inr_bank_name", "topup_inr_account_number", "topup_inr_ifsc_code", "topup_inr_account_holder_name"] as const
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       bep20_address: settings[legacyBep20Key] || "",
       erc20_address: settings.topup_erc20_address || "",
       inr_bank_name: settings.topup_inr_bank_name || "",
+      inr_account_number: settings.topup_inr_account_number || "",
       inr_ifsc_code: settings.topup_inr_ifsc_code || "",
       inr_account_holder_name: settings.topup_inr_account_holder_name || "",
     })
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     const bep20Address = typeof body.bep20_address === "string" ? body.bep20_address.trim() : ""
     const erc20Address = typeof body.erc20_address === "string" ? body.erc20_address.trim() : ""
     const inrBankName = typeof body.inr_bank_name === "string" ? body.inr_bank_name.trim() : ""
+    const inrAccountNumber = typeof body.inr_account_number === "string" ? body.inr_account_number.trim() : ""
     const inrIfscCode = typeof body.inr_ifsc_code === "string" ? body.inr_ifsc_code.trim().toUpperCase() : ""
     const inrAccountHolderName = typeof body.inr_account_holder_name === "string" ? body.inr_account_holder_name.trim() : ""
 
@@ -53,7 +55,8 @@ export async function POST(request: NextRequest) {
          ($7, $8, $9, NOW()),
          ($10, $11, $12, NOW()),
          ($13, $14, $15, NOW()),
-         ($16, $17, $18, NOW())
+         ($16, $17, $18, NOW()),
+         ($19, $20, $21, NOW())
        ON CONFLICT(setting_key) DO UPDATE
        SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
       [
@@ -61,6 +64,7 @@ export async function POST(request: NextRequest) {
         randomUUID(), "topup_erc20_address", erc20Address,
         randomUUID(), legacyBep20Key, bep20Address,
         randomUUID(), "topup_inr_bank_name", inrBankName,
+        randomUUID(), "topup_inr_account_number", inrAccountNumber,
         randomUUID(), "topup_inr_ifsc_code", inrIfscCode,
         randomUUID(), "topup_inr_account_holder_name", inrAccountHolderName,
       ],

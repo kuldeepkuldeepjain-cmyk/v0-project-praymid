@@ -31,7 +31,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
-  const [inrBankDetails, setInrBankDetails] = useState({ bankName: "", ifscCode: "", accountHolderName: "" })
+  const [inrBankDetails, setInrBankDetails] = useState({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
@@ -45,7 +45,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
-    setInrBankDetails({ bankName: "", ifscCode: "", accountHolderName: "" })
+    setInrBankDetails({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
 
     const fetchAddress = async () => {
       setLoadingAddress(true)
@@ -53,10 +53,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         const res = await fetch("/api/public/settings")
         const data = await res.json()
         setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
-        setInrBankDetails({ bankName: data.inr_bank_name || "", ifscCode: data.inr_ifsc_code || "", accountHolderName: data.inr_account_holder_name || "" })
+        setInrBankDetails({ bankName: data.inr_bank_name || "", accountNumber: data.inr_account_number || "", ifscCode: data.inr_ifsc_code || "", accountHolderName: data.inr_account_holder_name || "" })
       } catch {
         setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
-        setInrBankDetails({ bankName: "", ifscCode: "", accountHolderName: "" })
+        setInrBankDetails({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
       } finally {
         setLoadingAddress(false)
       }
@@ -273,8 +273,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     <p className="text-xs font-bold text-amber-900">INR Bank Transfer Details</p>
                     <p className="mt-1 text-[10px] text-amber-700">Transfer INR to the account below, then enter the bank reference or UTR number.</p>
                   </div>
-                  <div className="grid gap-2 text-xs text-amber-950 sm:grid-cols-3">
+                  <div className="grid gap-2 text-xs text-amber-950 sm:grid-cols-2 lg:grid-cols-4">
                     <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Bank Name</p><p className="font-semibold">{inrBankDetails.bankName || "Not set"}</p></div>
+                    <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Account Number</p><p className="font-mono font-semibold">{inrBankDetails.accountNumber || "Not set"}</p></div>
                     <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">IFSC Code</p><p className="font-mono font-semibold">{inrBankDetails.ifscCode || "Not set"}</p></div>
                     <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Account Holder</p><p className="font-semibold">{inrBankDetails.accountHolderName || "Not set"}</p></div>
                   </div>
