@@ -137,6 +137,16 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+.lending-page {
+  --lending-ink: #f8fafc;
+  --lending-muted: #94a3b8;
+  --lending-panel: #111c2c;
+  --lending-line: #243449;
+  --lending-accent: #22d3ee;
+  --lending-positive: #34d399;
+}
+.lending-page .lending-footer a { text-underline-offset: 4px; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -1117,6 +1127,105 @@ button, a, [role="button"] {
   }
 }
 
+/* ── MT5 trading terminal workspace ───────────────────────────────────────── */
+.mt5-terminal {
+  --mt5-bg: #172536;
+  --mt5-panel: #1d2d3e;
+  --mt5-panel-deep: #152333;
+  --mt5-line: #344b62;
+  --mt5-blue: #3c9bd6;
+  --mt5-green: #28b487;
+  --mt5-red: #e05b5b;
+  background: var(--mt5-bg) !important;
+  color: #d8e2ec !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  border-radius: 0 !important;
+}
+.mt5-terminal .apple-terminal-topbar,
+.mt5-terminal .apple-terminal-summary,
+.mt5-terminal .apple-terminal-mobile-tabs,
+.mt5-terminal .apple-terminal-grid,
+.mt5-terminal .apple-terminal-blotter,
+.mt5-terminal .apple-terminal-blotter-tabs {
+  border-color: var(--mt5-line) !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+.mt5-terminal .apple-terminal-topbar {
+  background: #172536 !important;
+  min-height: 40px;
+}
+.mt5-terminal .apple-terminal-summary,
+.mt5-terminal .apple-terminal-mobile-tabs,
+.mt5-terminal .apple-terminal-blotter-tabs {
+  background: #202f40 !important;
+}
+.mt5-terminal .apple-terminal-grid { background: #101b29 !important; }
+.mt5-terminal .apple-terminal-market,
+.mt5-terminal .apple-terminal-order {
+  background: var(--mt5-panel-deep) !important;
+  border-color: var(--mt5-line) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+.mt5-terminal .apple-terminal-chart-column { background: #101b29 !important; }
+.mt5-terminal .apple-terminal-blotter {
+  background: #172536 !important;
+  border-color: var(--mt5-line) !important;
+}
+.mt5-terminal .apple-terminal-chart-column > div,
+.mt5-terminal .apple-terminal-order > div,
+.mt5-terminal .apple-terminal-market > div {
+  border-color: var(--mt5-line) !important;
+}
+.mt5-terminal .apple-terminal-chart-column > div { background: #152333 !important; }
+.mt5-terminal .apple-trading-chart > div { background: #0e1926 !important; }
+.mt5-terminal .apple-terminal-order > div:first-child { background: #203447 !important; }
+.mt5-terminal .text-white { color: #edf4fb !important; }
+.mt5-terminal .text-slate-300 { color: #c5d1dd !important; }
+.mt5-terminal .text-slate-400 { color: #9eafbf !important; }
+.mt5-terminal .text-slate-500 { color: #788da2 !important; }
+.mt5-terminal .text-slate-600 { color: #64798f !important; }
+.mt5-terminal .text-cyan-300,
+.mt5-terminal .text-cyan-400,
+.mt5-terminal .text-sky-400,
+.mt5-terminal .text-blue-400 { color: #65b5f3 !important; }
+.mt5-terminal .mw-row { border-bottom-color: #2c4054 !important; }
+.mt5-terminal .mw-row:hover,
+.mt5-terminal .mw-row:active { background: rgba(60, 155, 214, 0.16) !important; }
+.mt5-terminal .mw-badge { background: #263c50 !important; border-color: #466078 !important; box-shadow: none !important; }
+.mt5-terminal .param-chip,
+.mt5-terminal .input-3d {
+  background: #122131 !important;
+  border-color: #47617a !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.05) !important;
+  color: #e5edf5 !important;
+  animation: none !important;
+  border-radius: 2px !important;
+}
+.mt5-terminal input,
+.mt5-terminal select { color: #e5edf5 !important; caret-color: #65b5f3; }
+.mt5-terminal input::placeholder { color: #708398 !important; }
+.mt5-terminal option { background: #172536; color: #e5edf5; }
+.mt5-terminal .btn-3d-buy,
+.mt5-terminal .btn-3d-execute-buy {
+  background: #168b69 !important;
+  border-color: #28b487 !important;
+  box-shadow: none !important;
+  border-radius: 2px !important;
+}
+.mt5-terminal .btn-3d-sell,
+.mt5-terminal .btn-3d-execute-sell {
+  background: #b5484e !important;
+  border-color: #e05b5b !important;
+  box-shadow: none !important;
+  border-radius: 2px !important;
+}
+.mt5-terminal .terminal-scroll::-webkit-scrollbar-thumb { background: #466078 !important; border-radius: 0; }
+.mt5-terminal .terminal-scroll::-webkit-scrollbar-track { background: #122131 !important; }
+
 /* ── Apple glass trading terminal ─────────────────────────────────────────── */
 .apple-trading-terminal {
   --terminal-surface: #f7f9fc;
@@ -1406,6 +1515,64 @@ button, a, [role="button"] {
   background: rgba(255, 255, 255, 0.76) !important;
   border-color: rgba(29, 42, 58, 0.08) !important;
 }
+
+/* MT5 wins over the legacy glass theme because it is intentionally last. */
+.mt5-terminal,
+.mt5-terminal.is-dark {
+  background: #172536 !important;
+  color: #d8e2ec !important;
+}
+.mt5-terminal.is-dark .apple-terminal-topbar,
+.mt5-terminal.is-dark .apple-terminal-summary,
+.mt5-terminal.is-dark .apple-terminal-mobile-tabs,
+.mt5-terminal.is-dark .apple-terminal-grid,
+.mt5-terminal.is-dark .apple-terminal-blotter,
+.mt5-terminal.is-dark .apple-terminal-blotter-tabs {
+  background: #172536 !important;
+  border-color: #344b62 !important;
+  box-shadow: none !important;
+}
+.mt5-terminal.is-dark .apple-terminal-grid { background: #101b29 !important; }
+.mt5-terminal.is-dark .apple-terminal-market,
+.mt5-terminal.is-dark .apple-terminal-order { background: #152333 !important; }
+.mt5-terminal.is-dark .apple-terminal-chart-column { background: #101b29 !important; }
+.mt5-terminal.is-dark .apple-terminal-blotter { background: #172536 !important; }
+.mt5-terminal.is-dark .apple-terminal-chart-column > div,
+.mt5-terminal.is-dark .apple-terminal-order > div,
+.mt5-terminal.is-dark .apple-terminal-market > div {
+  background: #152333 !important;
+  border-color: #344b62 !important;
+}
+.mt5-terminal.is-dark .apple-terminal-chart-column .apple-trading-chart > div { background: #0e1926 !important; }
+.mt5-terminal.is-dark .apple-terminal-order > div:first-child { background: #203447 !important; }
+.mt5-terminal.is-dark .apple-market-table-head,
+.mt5-terminal.is-dark .apple-market-category-row,
+.mt5-terminal.is-dark .apple-market-footer,
+.mt5-terminal.is-dark .apple-order-type-tabs { background: #122131 !important; border-color: #344b62 !important; }
+.mt5-terminal.is-dark .apple-terminal-topbar button,
+.mt5-terminal.is-dark .apple-terminal-summary button,
+.mt5-terminal.is-dark .apple-terminal-mobile-tabs button,
+.mt5-terminal.is-dark .apple-terminal-blotter-tabs button { color: #b8c8d8 !important; }
+.mt5-terminal.is-dark .apple-terminal-mobile-tabs button[style*="border-bottom: 2px solid"],
+.mt5-terminal.is-dark .apple-terminal-blotter-tabs button[style*="border-bottom: 2px solid"] { color: #65b5f3 !important; }
+.mt5-terminal.is-dark .text-white { color: #edf4fb !important; }
+.mt5-terminal.is-dark .text-slate-300 { color: #c5d1dd !important; }
+.mt5-terminal.is-dark .text-slate-400 { color: #9eafbf !important; }
+.mt5-terminal.is-dark .text-slate-500 { color: #788da2 !important; }
+.mt5-terminal.is-dark .text-cyan-300,
+.mt5-terminal.is-dark .text-cyan-400,
+.mt5-terminal.is-dark .text-sky-400,
+.mt5-terminal.is-dark .text-blue-400 { color: #65b5f3 !important; }
+.mt5-terminal.is-dark .param-chip,
+.mt5-terminal.is-dark .input-3d,
+.mt5-terminal.is-dark .apple-terminal-order input:not(.input-3d),
+.mt5-terminal.is-dark .apple-terminal-order select:not(.input-3d) {
+  background: #122131 !important;
+  border-color: #47617a !important;
+  color: #e5edf5 !important;
+  box-shadow: none !important;
+}
+
 .apple-trading-terminal .apple-trading-chart .text-slate-500,
 .apple-trading-terminal .apple-trading-chart .text-slate-600,
 .apple-trading-terminal .apple-trading-chart .text-slate-700,

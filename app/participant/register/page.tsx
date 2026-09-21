@@ -110,7 +110,6 @@ export default function ParticipantRegisterPage() {
     confirmPassword: "",
     country: "",
     state: "",
-    pinCode: "",
     referralCode: "",
     accountType: "normal" as "normal" | "funded",
   })
@@ -215,9 +214,8 @@ export default function ParticipantRegisterPage() {
           countryCode: formData.countryCode,
           password: formData.password,
           country: formData.country,
-          state: formData.state,
-          pinCode: formData.pinCode,
-          referralCode: formData.referralCode,
+    state: formData.state,
+    referralCode: formData.referralCode,
           accountType: formData.accountType,
         }),
       })
@@ -540,10 +538,6 @@ export default function ParticipantRegisterPage() {
                 </div>
               </div>
 
-              {/* WhatsApp OTP Section */}
-              <div className={cn("space-y-3 p-5 rounded-xl border animate-fade-in-up", isLightTheme ? "bg-emerald-50/70 border-emerald-200" : "bg-slate-950/60 border-emerald-400/20")} style={{ animationDelay: "0.28s" }}>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
                 <div className="space-y-2">
                   <Label htmlFor="state" className="text-slate-200 text-sm font-medium flex items-center gap-2">
@@ -565,27 +559,7 @@ export default function ParticipantRegisterPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pinCode" className="text-slate-200 text-sm font-medium flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-md bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                      <span className="text-white text-[10px] font-bold">#</span>
-                    </div>
-                    PIN Code *
-                  </Label>
-                  <div className="relative group">
-                    <Input
-                      id="pinCode"
-                      placeholder="123456"
-                      value={formData.pinCode}
-                      onChange={(e) => handleChange("pinCode", e.target.value.replace(/\D/g, ""))}
-                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-violet-500 focus:ring-violet-500/20 transition-all hover:border-violet-500/50 focus:shadow-lg focus:shadow-violet-500/10 font-mono"
-                      maxLength={10}
-                      required
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-violet-500/0 via-violet-500/5 to-violet-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
-                  </div>
-                </div>
-              </div>
+  </div>
 
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
                 <Label htmlFor="referralCode" className="text-slate-200 text-sm font-medium flex items-center gap-2">

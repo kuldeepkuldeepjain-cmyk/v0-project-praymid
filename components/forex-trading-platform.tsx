@@ -2043,7 +2043,7 @@ function PositionSizer({
   }, [equity, totalPnl, walletBalance])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -2060,16 +2060,16 @@ function PositionSizer({
       )}
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
-        <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund Trade Terminal">
+      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-2 h-10 gap-2" style={{ background: "#172536", borderBottom: "1px solid #344b62" }}>
+        <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund MT5 Trading Terminal">
           <img
             src="/elite-fund-logo.jpg"
             alt="Elite Fund"
             className="reference-terminal-brand-mark h-6 w-6 shrink-0 object-cover"
           />
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-black tracking-[0.16em] text-amber-100">ELITE FUND</span>
-            <span className="text-[8px] font-bold tracking-[0.18em] text-cyan-300/80">TRADE TERMINAL</span>
+            <span className="text-[10px] font-black tracking-[0.12em] text-white">ELITE FUND</span>
+            <span className="text-[8px] font-bold tracking-[0.14em]" style={{ color: "#65b5f3" }}>MT5 TRADING TERMINAL</span>
           </div>
         </div>
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
@@ -2198,7 +2198,7 @@ function PositionSizer({
           <button
             type="button"
             onClick={() => { window.location.href = "/participant/dashboard" }}
-            className="flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-blue-200 transition-colors hover:bg-blue-500/25"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-colors hover:brightness-110" style={{ background: "#f58220", border: "1px solid #ff9f4a" }}
             title="Add funds"
           >
             <Plus className="h-3 w-3" />
@@ -2236,6 +2236,30 @@ function PositionSizer({
             <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
           </button>
         </div>
+      </div>
+
+      {/* MT5-style workspace toolbar */}
+      <div className="flex h-7 shrink-0 items-center gap-0 border-b px-1" style={{ background: "#202f40", borderColor: "#344b62" }} aria-label="MT5 workspace toolbar">
+        {[
+          { label: "Market Watch", icon: "▤" },
+          { label: "Navigator", icon: "⌘" },
+          { label: "Data Window", icon: "▥" },
+          { label: "Strategy Tester", icon: "▣" },
+        ].map(item => (
+          <button
+            key={item.label}
+            type="button"
+            onClick={() => {
+              if (item.label === "Market Watch") setMobileTab("market")
+              if (item.label === "Data Window") setMobileTab("chart")
+              if (item.label === "Strategy Tester") setActivePanel("performance")
+            }}
+            className="flex h-full items-center gap-1 border-r px-2 text-[9px] text-slate-300 transition-colors hover:bg-[#2b4056] hover:text-white"
+          >
+            <span className="text-[#75bff2]">{item.icon}</span>{item.label}
+          </button>
+        ))}
+        <span className="ml-auto px-2 text-[8px] uppercase tracking-[0.15em] text-slate-500">MT5 Workspace</span>
       </div>
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
@@ -2377,7 +2401,7 @@ function PositionSizer({
       {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
-        {/* ── LEFT: Market Watch ─────────────────────────────���───────────────── */}
+        {/* ── LEFT: Market Watch ─────────────────────────────�����───────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden md:flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
@@ -2699,7 +2723,7 @@ function PositionSizer({
                 {/* Executable quote snapshot */}
                 <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
                   <div className="flex items-center justify-between px-2 py-1.5" style={{ borderBottom: "1px solid #1a2640" }}>
-                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} · MARKET</span>
+                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-px" style={{ background: "#1a2640" }}>

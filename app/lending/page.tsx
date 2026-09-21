@@ -22,7 +22,7 @@ import {
 
 export default function LendingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
+    <div className="lending-page min-h-screen bg-slate-950 text-slate-100">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-lg border-b border-blue-500/20">
         <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex items-center justify-between">
@@ -492,9 +492,38 @@ export default function LendingPage() {
       </a>
 
       {/* Footer */}
-      <footer className="py-8 sm:py-12 px-4 border-t border-slate-700/50 bg-slate-900">
-        <div className="max-w-6xl mx-auto text-center text-slate-400 text-xs sm:text-sm">
-          <p>&copy; 2024 Elite Fund. All rights reserved. | Secure • Transparent • Profitable</p>
+      <footer className="lending-footer border-t border-slate-800 bg-slate-950 px-4 pt-12 sm:pt-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-10 border-b border-slate-800 pb-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-lg" />
+                <div>
+                  <p className="text-base font-bold tracking-tight text-white">Elite Fund</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-cyan-400">Built for disciplined growth</p>
+                </div>
+              </div>
+              <p className="max-w-sm text-sm leading-6 text-slate-400">A member-first financial platform for transparent participation, managed opportunities, and clear account reporting.</p>
+              <div className="flex items-center gap-2 text-xs text-emerald-300"><Shield className="h-4 w-4" /> Secure account access and encrypted data</div>
+            </div>
+            <div>
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Platform</h3>
+              <div className="grid gap-3 text-sm text-slate-400"><Link className="hover:text-cyan-300" href="/lending">Lending overview</Link><Link className="hover:text-cyan-300" href="/participant/register">Create an account</Link><Link className="hover:text-cyan-300" href="/participant/login">Member login</Link><Link className="hover:text-cyan-300" href="/participant/dashboard">Member dashboard</Link></div>
+            </div>
+            <div>
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Company</h3>
+              <div className="grid gap-3 text-sm text-slate-400"><Link className="hover:text-cyan-300" href="/">About Elite Fund</Link><a className="hover:text-cyan-300" href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer">Contact support</a><Link className="hover:text-cyan-300" href="/leaderboard">Community leaderboard</Link><Link className="hover:text-cyan-300" href="/terms">Terms of Use</Link><Link className="hover:text-cyan-300" href="/privacy">Privacy Policy</Link><Link className="hover:text-cyan-300" href="/cookies">Cookie Policy</Link><span>Cameroon · Online platform</span></div>
+            </div>
+            <div>
+              <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Member support</h3>
+              <p className="mb-4 text-sm leading-6 text-slate-400">Questions about your account, funding, or withdrawals? Our team is available through WhatsApp.</p>
+              <a href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300 transition-colors hover:bg-emerald-400/20"><MessageCircle className="h-4 w-4" /> Chat with support</a>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 py-6 text-xs text-slate-500 sm:flex-row sm:items-start sm:justify-between">
+            <p>&copy; 2026 Elite Fund. All rights reserved.</p>
+            <p className="max-w-xl leading-5 sm:text-right">Risk notice: returns are not guaranteed. Participation involves financial risk. Review the terms of each opportunity and only contribute funds you can afford to commit.</p>
+          </div>
         </div>
       </footer>
     </div>
