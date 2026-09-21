@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [collectingIds, setCollectingIds] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "" })
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
     try {
       const response = await adminFetch("/api/admin/payment-settings")
       const data = await response.json()
-      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "" })
+      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "" })
     } catch (error) {
       console.error("[v0] Failed to fetch payment settings:", error)
     }
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
         body: JSON.stringify(paymentSettings),
       })
       if (!response.ok) throw new Error("Save failed")
-      toast({ title: "Saved", description: "TRC20, BEP20, and ERC20 payment addresses updated" })
+      toast({ title: "Saved", description: "Wallet addresses and INR bank details updated" })
     } catch {
       toast({ title: "Save failed", description: "Unable to update payment addresses", variant: "destructive" })
     } finally {
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <CardTitle className="text-white">Admin Wallet Addresses</CardTitle>
-                <CardDescription>Set the USDT deposit addresses shown to traders. Changes are saved to the database.</CardDescription>
+                <CardDescription>Set the USDT deposit addresses and INR bank details shown in Add Funds.</CardDescription>
               </div>
               <Badge className="w-fit border-cyan-500/30 bg-cyan-500/10 text-cyan-300">Admin only</Badge>
             </div>
@@ -422,10 +422,34 @@ export default function AdminDashboard() {
               <Input id="bep20-address" value={paymentSettings.bep20_address} onChange={(event) => setPaymentSettings((current) => ({ ...current, bep20_address: event.target.value }))} placeholder="Enter BEP20 wallet address" autoComplete="off" className="border-cyan-500/30 bg-cyan-950/40 font-mono text-white placeholder:text-cyan-300/50" />
               <p className="text-xs text-cyan-300/70">Legacy BEP20 setting retained for existing deposit flows.</p>
             </div>
+            <div className="space-y-4 rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 md:col-span-2">
+              <div>
+                <h3 className="text-sm font-semibold text-amber-200">INR Bank Account Details</h3>
+                <p className="mt-1 text-xs text-amber-300/70">These details are shown to participants when they select INR in Add Funds.</p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-4">
+                <div className="space-y-2">
+                  <label htmlFor="inr-bank-name" className="text-sm font-medium text-amber-200">Bank Name</label>
+                  <Input id="inr-bank-name" value={paymentSettings.inr_bank_name} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_bank_name: event.target.value }))} placeholder="Enter bank name" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 text-white placeholder:text-amber-300/50" />
+                </div>
+                  <div className="space-y-2">
+                    <label htmlFor="inr-account-number" className="text-sm font-medium text-amber-200">Account Number</label>
+                    <Input id="inr-account-number" value={paymentSettings.inr_account_number} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_account_number: event.target.value }))} placeholder="Enter account number" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="inr-ifsc-code" className="text-sm font-medium text-amber-200">IFSC Code</label>
+                  <Input id="inr-ifsc-code" value={paymentSettings.inr_ifsc_code} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_ifsc_code: event.target.value.toUpperCase() }))} placeholder="Enter IFSC code" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="inr-account-holder" className="text-sm font-medium text-amber-200">Account Holder Name</label>
+                  <Input id="inr-account-holder" value={paymentSettings.inr_account_holder_name} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_account_holder_name: event.target.value }))} placeholder="Enter account holder name" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 text-white placeholder:text-amber-300/50" />
+                </div>
+              </div>
+            </div>
             <div className="md:col-span-2">
               <Button onClick={savePaymentSettings} disabled={isSavingPaymentSettings} className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
                 {isSavingPaymentSettings ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                Save Wallet Addresses
+                Save Payment Details
               </Button>
             </div>
           </CardContent>
