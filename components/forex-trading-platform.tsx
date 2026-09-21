@@ -1278,8 +1278,8 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participantEmail, onBalanceUpdated])
 
-  // ── Trade persistence API (all writes are best-effort/fire-and-forget so the
-  //    optimistic UI never blocks on network latency) ────────────────────────
+  // ── Trade persistence API. The UI remains optimistic, while every open,
+  //    fill, close, and partial-close event is sent to the server. ────────────
   const persistOpenTrade = useCallback((trade: OpenTrade) => {
     participantFetch("/api/forex/trades", {
       method: "POST",
@@ -1410,7 +1410,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Poll rates every 3s ─────────────────────────────────────���──────────────
+  // ── Poll rates every 3s ─────────────────────────────────────����──────────────
   useEffect(() => {
     ratesIntervalRef.current = setInterval(fetchRates, 3000)
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
@@ -1602,9 +1602,9 @@ function PositionSizer({
 
         // 3. Return margin + P&L (called only once per trade)
         const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-        adjustWalletBalance(
-          returnAmt > 0 ? returnAmt : 0,
-          `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+adjustWalletBalance(
+  returnAmt,
+  `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
         )
 
         showToast(
@@ -1857,9 +1857,9 @@ function PositionSizer({
 
     // 3. Return margin + P&L to balance (called only once)
     const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-    adjustWalletBalance(
-      returnAmt > 0 ? returnAmt : 0,
-      `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+adjustWalletBalance(
+  returnAmt,
+  `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
     )
 
     showToast(finalPnl >= 0 ? "success" : "error",
@@ -1916,8 +1916,8 @@ function PositionSizer({
     persistPartialClose(closed)
 
     const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
-    adjustWalletBalance(returnAmt > 0 ? returnAmt : 0,
-      `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+adjustWalletBalance(returnAmt,
+  `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     showToast(finalPnl >= 0 ? "success" : "error",
       `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} ����� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)

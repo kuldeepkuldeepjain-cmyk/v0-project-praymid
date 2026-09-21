@@ -144,6 +144,44 @@ CREATE INDEX IF NOT EXISTS idx_tx_participant ON transactions(participant_id);
 CREATE INDEX IF NOT EXISTS idx_tx_type        ON transactions(type);
 
 -- ──────────────────────────────────────────────
+-- 5b. FOREX TRADES (open and completed history)
+-- ──────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS forex_trades (
+  id TEXT PRIMARY KEY,
+  participant_id UUID REFERENCES participants(id),
+  participant_email TEXT NOT NULL,
+  pair TEXT NOT NULL,
+  direction TEXT NOT NULL CHECK (direction IN ('BUY', 'SELL')),
+  lot_size NUMERIC NOT NULL,
+  leverage NUMERIC NOT NULL,
+  open_price NUMERIC NOT NULL,
+  sl NUMERIC,
+  tp NUMERIC,
+  trailing_stop_pips NUMERIC,
+  trailing_peak NUMERIC,
+  margin NUMERIC NOT NULL DEFAULT 0,
+  swap NUMERIC NOT NULL DEFAULT 0,
+  order_type TEXT,
+  target_price NUMERIC,
+  expiry TEXT,
+  close_price NUMERIC,
+  close_reason TEXT,
+  final_pnl NUMERIC,
+  final_pips NUMERIC,
+  final_swap NUMERIC,
+  status TEXT NOT NULL DEFAULT 'open',
+  open_time TEXT,
+  open_timestamp BIGINT,
+  close_time TEXT,
+  close_duration TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_forex_trades_participant ON forex_trades(participant_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_forex_trades_email ON forex_trades(participant_email, created_at DESC);
+
+-- ──────────────────────────────────────────────
 -- 6. PREDICTIONS
 -- ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS predictions (

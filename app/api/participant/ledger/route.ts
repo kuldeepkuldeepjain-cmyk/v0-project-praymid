@@ -16,6 +16,9 @@ export async function GET(request: NextRequest) {
     if (!participantId) return NextResponse.json({ error: "participantId is required" }, { status: 400 })
 
     const db = getPool()!
+    const owner = await db.query("SELECT id FROM participants WHERE id = $1 AND LOWER(email) = LOWER($2)", [participantId, auth.email])
+    if (!owner.rows.length) return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
     const entries: any[] = []
 
     if (filterType === "all" || filterType === "transaction") {
@@ -65,6 +68,32 @@ export async function GET(request: NextRequest) {
         amount: Number(pred.profit_loss ?? pred.amount) || 0, status: pred.status || "pending", date: pred.created_at,
         description: `${pred.prediction_type || "Binary"} on ${pred.crypto_pair || "crypto"}` + (pred.result ? ` — ${pred.result}` : ""),
       }))
+    }
+
+    if (filterType === "all" || filterType === "forex_trade") {
+      const r = await db.query(
+        `SELECT id, pair, direction, lot_size, open_price, close_price, final_pnl, final_pips, final_swap, close_reason, status, open_time, close_time
+         FROM forex_trades
+         WHERE participant_id = $1 AND status = 'closed'
+         ORDER BY COALESCE(close_time, open_time) DESC
+         LIMIT 500`,
+        [participantId]
+      )
+      r.rows.forEach((trade: any) => {
+        const pnl = Number(trade.final_pnl) || 0
+        entries.push({
+          id: `forex-${trade.id}`, type: "forex_trade", subType: pnl >= 0 ? "profit" : "loss",
+          amount: pnl, status: "completed", date: trade.close_time || trade.open_time,
+          description: `${trade.direction} ${trade.pair} ${pnl >= 0 ? "profit" : "loss"} — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
+          balanceBefore: null, balanceAfter: null,
+          trade: {
+            pair: trade.pair, direction: trade.direction, lotSize: Number(trade.lot_size) || 0,
+            openPrice: Number(trade.open_price) || 0, closePrice: Number(trade.close_price) || 0,
+            pips: Number(trade.final_pips) || 0, swap: Number(trade.final_swap) || 0,
+            closeReason: trade.close_reason,
+          },
+        })
+      })
     }
 
     if (filterType === "all" || filterType === "topup") {
