@@ -19,6 +19,7 @@ interface ParticipantData {
   account_frozen?: boolean
   is_frozen?: boolean
   status?: string
+  funded_breach_status?: string
   top_up_count?: number
   has_prior_top_up?: boolean
 }
@@ -70,9 +71,8 @@ export default function AddFundPage() {
   }
 
   const currentBalance = Number(participantData.wallet_balance ?? participantData.account_balance ?? 0)
-  const isFrozenAccount = participantData.account_frozen === true || participantData.is_frozen === true || participantData.status === "frozen"
-  const hasPriorTopUp = participantData.has_prior_top_up === true || Number(participantData.top_up_count) > 0
-  const isFundedTopUp = participantData.account_type === "funded" && !isFrozenAccount && !hasPriorTopUp
+  const isFundedAccountBreached = participantData.account_type === "funded" && participantData.funded_breach_status === "breached"
+  const isFundedTopUp = isFundedAccountBreached
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -111,20 +111,25 @@ export default function AddFundPage() {
                 <span className="text-lg font-bold text-slate-900">${currentBalance.toFixed(2)} USDT</span>
               </div>
 
-              <Button
-                type="button"
-                onClick={() => setShowTopUpModal(true)}
-                className="h-12 w-full bg-gradient-to-r from-violet-600 to-indigo-600 text-base font-semibold text-white shadow-md hover:from-violet-700 hover:to-indigo-700"
-              >
-                <Wallet className="mr-2 h-5 w-5" />
-                {isFundedTopUp ? "Start Funded Top Up" : "Top Up Now"}
-              </Button>
-
-              <p className="text-center text-xs leading-relaxed text-slate-500">
-                {isFundedTopUp
-                  ? "Select a funded tier, send USDT, and upload your transaction proof for approval."
-                  : "Select your network, enter the amount, and upload your transaction proof in the top-up form."}
-              </p>
+              {isFundedAccountBreached ? (
+                <>
+                  <Button
+                    type="button"
+                    onClick={() => setShowTopUpModal(true)}
+                    className="h-12 w-full bg-gradient-to-r from-red-600 to-orange-600 text-base font-semibold text-white shadow-md hover:from-red-700 hover:to-orange-700"
+                  >
+                    <Wallet className="mr-2 h-5 w-5" />
+                    Add Funds to Reactivate
+                  </Button>
+                  <p className="text-center text-xs leading-relaxed text-red-600">
+                    Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.
+                  </p>
+                </>
+              ) : (
+                <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center text-sm leading-relaxed text-slate-600">
+                  Add Funds and Top Up are available only after a funded account breach requires reactivation.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

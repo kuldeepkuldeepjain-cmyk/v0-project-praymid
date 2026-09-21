@@ -344,13 +344,7 @@ export default function ParticipantRegisterPage() {
       </div>
 
       {/* Main content */}
-      <div className="w-full max-w-2xl space-y-6 relative z-10 my-8">
-        <div className="text-center space-y-2 animate-fade-in-up">
-          <FlowChainLogo size="lg" showTagline={true} className="justify-center mb-4" />
-          <h1 className={cn("text-3xl font-bold", isLightTheme ? "text-slate-950" : "text-white")}>Create your account</h1>
-          <p className={cn("text-sm", isLightTheme ? "text-slate-600" : "text-slate-400")}>Join Elite Fund in less than a minute</p>
-        </div>
-
+      <div className="w-full max-w-2xl relative z-10 my-8">
         <Card className={cn(
           "backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group transition-colors duration-500",
           isLightTheme
@@ -358,11 +352,21 @@ export default function ParticipantRegisterPage() {
             : "border border-amber-400/20 bg-slate-900/90 shadow-2xl shadow-black/40",
         )}>
           <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-amber-400/20 via-cyan-400/10 to-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-300 via-yellow-500 to-cyan-400 animate-gradient-shift" />
-          <div className="absolute top-10 right-10 size-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-400 to-blue-600 animate-gradient-shift" />
+          <div className="absolute top-10 right-10 size-32 bg-gradient-to-br from-blue-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" />
           <div className="absolute bottom-10 left-10 size-40 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: "1s" }} />
           
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-5 sm:p-6 relative z-10">
+            <div className={cn(
+              "mb-5 flex items-center gap-3 rounded-xl border px-3 py-3",
+              isLightTheme ? "border-blue-200 bg-blue-50/80" : "border-blue-400/20 bg-blue-950/40",
+            )}>
+              <FlowChainLogo size="xs" showTagline={false} className="shrink-0" />
+              <div>
+                <h1 className={cn("text-2xl font-bold", isLightTheme ? "text-blue-950" : "text-white")}>Create your account</h1>
+                <p className={cn("text-sm", isLightTheme ? "text-blue-700" : "text-blue-200/80")}>Join Elite Fund in less than a minute</p>
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name and Surname */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>

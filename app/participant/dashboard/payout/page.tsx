@@ -127,9 +127,7 @@ export default function PayoutPage() {
     (p) => p.status === "pending" || p.status === "processing" || p.status === "approved" || p.status === "assigned"
   )
 
-  const isFrozenFundedAccount = participantData?.account_type === "funded" && Boolean(
-    participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen" || participantData?.funded_breach_status === "breached"
-  )
+  const isFrozenFundedAccount = participantData?.account_type === "funded" && participantData?.funded_breach_status === "breached"
 
   const handleRequestPayout = () => {
     if (isFrozenFundedAccount) {

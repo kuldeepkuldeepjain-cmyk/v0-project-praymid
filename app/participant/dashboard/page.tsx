@@ -1471,7 +1471,6 @@ export default function DashboardHome() {
   const [participantId, setParticipantId] = useState<string>("")
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
-  const fundedOnboardingShown = useRef(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
@@ -1673,20 +1672,6 @@ export default function DashboardHome() {
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
   const isFundedAccountBreached = isFundedAccount && participantData?.funded_breach_status === "breached"
 
-  useEffect(() => {
-    // Newly created funded accounts start with a zero wallet balance. Show the
-    // funded tier Add Funds flow immediately after the first login.
-    if (
-      mounted &&
-      isFundedAccount &&
-      Number(participantData?.account_balance) <= 0 &&
-      !fundedOnboardingShown.current
-    ) {
-      fundedOnboardingShown.current = true
-      setTopUpIsFundedAccount(true)
-      setShowTopUpModal(true)
-    }
-  }, [mounted, isFundedAccount, participantData?.account_balance])
 
   useEffect(() => {
   // Funded breaches lock every account action and open the reactivation flow.
@@ -1799,11 +1784,11 @@ export default function DashboardHome() {
   if (!isFundedAccount) setShowFrozenModal(false)
   }}
   isFundedAccount={isFundedAccount}
-  onAddBalance={() => {
+  onAddBalance={isFundedAccountBreached ? () => {
   setShowFrozenModal(false)
-  setTopUpIsFundedAccount(false)
+  setTopUpIsFundedAccount(true)
   setShowTopUpModal(true)
-  }}
+  } : undefined}
   />
 
       <HamburgerMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} participantData={participantData} />
@@ -1883,18 +1868,20 @@ export default function DashboardHome() {
                 <span className="price-mono block text-[11px] font-black text-emerald-200">${walletBalance.toFixed(2)}</span>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-  setTopUpIsFundedAccount(participantData?.account_type === "funded")
-  setShowTopUpModal(true)
-}}
-              className="flex h-8 items-center gap-1 rounded-lg border border-blue-400/30 bg-blue-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-blue-200 transition-colors hover:bg-blue-500/25 active:scale-95"
-              aria-label="Top up balance"
-            >
-              <Plus className="h-3 w-3" />
-              <span className="hidden md:inline">Top Up</span>
-            </button>
+            {isFundedAccountBreached && (
+              <button
+                type="button"
+                onClick={() => {
+                  setTopUpIsFundedAccount(true)
+                  setShowTopUpModal(true)
+                }}
+                className="flex h-8 items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-red-200 transition-colors hover:bg-red-500/25 active:scale-95"
+                aria-label="Add funds to reactivate breached account"
+              >
+                <Plus className="h-3 w-3" />
+                <span className="hidden md:inline">Reactivate</span>
+              </button>
+            )}
             <Link href="/participant/dashboard/payout" aria-label="Open payout">
               <span className="flex h-8 items-center gap-1 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/25 active:scale-95">
                 <ArrowUpRight className="h-3 w-3" />
@@ -1950,12 +1937,14 @@ export default function DashboardHome() {
                   ))}
                 </div>
                 <div className="flex gap-2.5 relative">
-                  <button onClick={() => {
-  setTopUpIsFundedAccount(participantData?.account_type === "funded")
-  setShowTopUpModal(true)
-}} className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
-                    <Plus className="h-3.5 w-3.5" /> ADD FUNDS
-                  </button>
+                  {isFundedAccountBreached && (
+                    <button onClick={() => {
+                      setTopUpIsFundedAccount(true)
+                      setShowTopUpModal(true)
+                    }} className="btn-deep-purple flex-1 flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
+                      <Plus className="h-3.5 w-3.5" /> ADD FUNDS TO REACTIVATE
+                    </button>
+                  )}
                   <Link href="/participant/dashboard/payout" className="flex-1">
                     <button className="btn-deep-emerald w-full flex items-center justify-center gap-1.5 rounded-xl py-3 text-white text-xs font-black tracking-wide transition-all active:scale-95">
                       <ArrowUpRight className="h-3.5 w-3.5" /> PAYOUT
@@ -1982,12 +1971,14 @@ export default function DashboardHome() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <button onClick={() => {
-  setTopUpIsFundedAccount(participantData?.account_type === "funded")
-  setShowTopUpModal(true)
-}} className="btn-deep-purple flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
-                      <Plus className="h-4 w-4" /> ADD FUNDS
-                    </button>
+                    {isFundedAccountBreached && (
+                      <button onClick={() => {
+                        setTopUpIsFundedAccount(true)
+                        setShowTopUpModal(true)
+                      }} className="btn-deep-purple flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
+                        <Plus className="h-4 w-4" /> ADD FUNDS TO REACTIVATE
+                      </button>
+                    )}
                     <Link href="/participant/dashboard/payout">
                       <button className="btn-deep-emerald flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-white text-sm font-black tracking-wide transition-all active:scale-95">
                         <ArrowUpRight className="h-4 w-4" /> PAYOUT
