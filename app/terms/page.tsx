@@ -10,7 +10,7 @@ export default function TermsPage() {
     <h2>3. Risk and returns</h2><p>Participation involves the possible loss or delay of funds. Past performance and displayed projections do not guarantee future results. Do not contribute money you need for essential expenses. You are responsible for reviewing an opportunity before confirming a contribution.</p>
     <h2>4. Funding and withdrawals</h2><p>Funding requests may require proof, review, and manual approval. Processing times can vary because of payment networks, verification, weekends, and risk controls. Withdrawal requests are subject to account status, available balance, applicable rules, and verification.</p>
     <h2>5. Prohibited use</h2><p>Do not use the platform for fraud, money laundering, impersonation, unauthorized access, market manipulation, automated abuse, or any activity that violates applicable law.</p>
-    <h2>6. Changes and contact</h2><p>We may update these terms when the platform or requirements change. The latest version will be posted here. For questions, contact member support through the WhatsApp channel shown on the <Link href="/lending" className="text-cyan-300 underline">lending page</Link>.</p>
+    <h2>6. Changes and contact</h2><p>We may update these terms when the platform or requirements change. The latest version will be posted here. For questions, contact member support at <a href="mailto:help@elitefund.sbs" className="text-cyan-300 underline">help@elitefund.sbs</a> or through the WhatsApp channel shown on the <Link href="/lending" className="text-cyan-300 underline">lending page</Link>.</p>
   </PolicyPage>
 }
 
