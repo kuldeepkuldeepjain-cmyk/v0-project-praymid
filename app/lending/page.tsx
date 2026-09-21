@@ -512,7 +512,7 @@ export default function LendingPage() {
             </div>
             <div>
               <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Company</h3>
-              <div className="grid gap-3 text-sm text-slate-400"><Link className="hover:text-cyan-300" href="/">About Elite Fund</Link><a className="hover:text-cyan-300" href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer">Contact support</a><Link className="hover:text-cyan-300" href="/leaderboard">Community leaderboard</Link><span>Cameroon · Online platform</span></div>
+              <div className="grid gap-3 text-sm text-slate-400"><Link className="hover:text-cyan-300" href="/">About Elite Fund</Link><a className="hover:text-cyan-300" href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer">Contact support</a><Link className="hover:text-cyan-300" href="/leaderboard">Community leaderboard</Link><Link className="hover:text-cyan-300" href="/terms">Terms of Use</Link><Link className="hover:text-cyan-300" href="/privacy">Privacy Policy</Link><Link className="hover:text-cyan-300" href="/cookies">Cookie Policy</Link><span>Cameroon · Online platform</span></div>
             </div>
             <div>
               <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Member support</h3>
