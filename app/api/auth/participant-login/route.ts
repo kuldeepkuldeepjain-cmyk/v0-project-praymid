@@ -32,12 +32,15 @@ export async function POST(request: Request) {
       )
     } else if (mobileKey) {
       rows = await query(
-        `SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
+        `        SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
                 country, state, pin_code, full_address, details_completed, bep20_address
-         FROM participants WHERE mobile_number = $1 LIMIT 1`,
+         FROM participants
+         WHERE mobile_number = $1
+            OR regexp_replace(COALESCE(mobile_number, ''), '[^0-9]', '', 'g') = regexp_replace($1, '[^0-9]', '', 'g')
+         LIMIT 1`,
         [mobileKey]
       )
     }

@@ -359,10 +359,11 @@ export default function ParticipantLoginPage() {
                         type="tel"
                         placeholder="+95 9 123 456 789"
                         value={mobile_number}
-                        onChange={(e) => setMobileNumber(e.target.value)}
-                        className="h-12 rounded-xl border-white/[0.1] bg-black/15 text-white placeholder:text-slate-500 shadow-inner shadow-black/10 transition-all focus:border-cyan-400/60 focus:ring-cyan-400/20"
-                        required
-                        autoComplete="tel"
+  onChange={(e) => setMobileNumber(e.target.value.replace(/[^0-9+()\s-]/g, ""))}
+  className="h-12 rounded-xl border-white/[0.1] bg-black/15 text-white placeholder:text-slate-500 shadow-inner shadow-black/10 transition-all focus:border-cyan-400/60 focus:ring-cyan-400/20"
+  required
+  autoComplete="tel"
+  inputMode="tel"
                       />
                     </div>
                   )}
