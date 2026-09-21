@@ -26,6 +26,10 @@ import {
   X,
   Camera,
   Trash2,
+  FileCheck2,
+  Upload,
+  CheckCircle2,
+  Clock3,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -40,6 +44,9 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editedData, setEditedData] = useState<any>({})
   const [isUploading, setIsUploading] = useState(false)
+  const [kyc, setKyc] = useState<any>(null)
+  const [kycForm, setKycForm] = useState({ legal_name: "", date_of_birth: "", country: "", document_type: "", document_number: "" })
+  const [kycSubmitting, setKycSubmitting] = useState(false)
 
   const isAuthenticated = isParticipantAuthenticated()
 
@@ -80,6 +87,12 @@ export default function ProfilePage() {
           setParticipantData(merged)
           setEditedData(merged)
           localStorage.setItem("participantData", JSON.stringify(merged))
+          const kycRes = await participantFetch(`/api/participant/kyc?email=${encodeURIComponent(email)}`)
+          if (kycRes.ok) {
+            const kycJson = await kycRes.json()
+            setKyc(kycJson.verification)
+            if (kycJson.verification) setKycForm((current) => ({ ...current, ...kycJson.verification }))
+          }
         }
       } catch (err) {
         console.error("Exception in profile fetch:", err)
@@ -164,6 +177,22 @@ export default function ProfilePage() {
       toast({ title: "Success", description: "Profile updated successfully" })
     } catch {
       toast({ title: "Error", description: "Failed to update profile", variant: "destructive" })
+    }
+  }
+
+  const submitKyc = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setKycSubmitting(true)
+    try {
+      const res = await participantFetch("/api/participant/kyc", { method: "POST", body: JSON.stringify({ email: participantData.email, ...kycForm }) })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || "Unable to submit KYC")
+      setKyc(json.verification)
+      toast({ title: "KYC submitted", description: "Your documents are now awaiting verification." })
+    } catch (error) {
+      toast({ title: "KYC submission failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" })
+    } finally {
+      setKycSubmitting(false)
     }
   }
 
@@ -455,6 +484,28 @@ export default function ProfilePage() {
                 </Button>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-blue-500/20 shadow-lg sm:shadow-xl bg-slate-800/80 backdrop-blur-xl overflow-hidden relative animate-slide-up">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-400 via-blue-500 to-emerald-400" />
+          <CardContent className="p-4 sm:p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/15"><FileCheck2 className="h-5 w-5 text-cyan-300" /></div><div><h3 className="font-bold text-white">Identity verification</h3><p className="text-xs text-slate-400">Complete KYC to unlock your full account access.</p></div></div>
+              {kyc ? <Badge className={kyc.status === "approved" ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"}>{kyc.status === "under_review" ? "Under review" : kyc.status}</Badge> : <Badge variant="outline" className="border-amber-400/40 text-amber-300">Not submitted</Badge>}
+            </div>
+            {kyc && ["pending", "under_review", "approved"].includes(kyc.status) ? (
+              <div className="rounded-xl border border-blue-400/20 bg-slate-900/60 p-4 text-sm text-slate-300"><div className="flex items-center gap-2 font-semibold text-white"><Clock3 className="h-4 w-4 text-cyan-300" /> Verification request received</div><p className="mt-2 text-xs leading-5 text-slate-400">Our compliance team is reviewing your submitted information. You can continue using the dashboard while the review is in progress.</p></div>
+            ) : (
+              <form onSubmit={submitKyc} className="grid gap-3 sm:grid-cols-2">
+                <div><Label className="text-xs text-slate-300">Legal name</Label><Input required value={kycForm.legal_name} onChange={(e) => setKycForm({ ...kycForm, legal_name: e.target.value })} placeholder="As shown on your ID" className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
+                <div><Label className="text-xs text-slate-300">Country</Label><Input required value={kycForm.country} onChange={(e) => setKycForm({ ...kycForm, country: e.target.value })} placeholder="Country of residence" className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
+                <div><Label className="text-xs text-slate-300">Date of birth</Label><Input type="date" value={kycForm.date_of_birth} onChange={(e) => setKycForm({ ...kycForm, date_of_birth: e.target.value })} className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
+                <div><Label className="text-xs text-slate-300">Document type</Label><select required value={kycForm.document_type} onChange={(e) => setKycForm({ ...kycForm, document_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-slate-600 bg-slate-900 px-3 text-sm text-white"><option value="">Select document</option><option value="passport">Passport</option><option value="national_id">National ID</option><option value="drivers_license">Driver&apos;s license</option></select></div>
+                <div className="sm:col-span-2"><Label className="text-xs text-slate-300">Document number</Label><Input value={kycForm.document_number} onChange={(e) => setKycForm({ ...kycForm, document_number: e.target.value })} placeholder="Enter your document number" className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
+                <div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-3"><div className="flex items-center gap-2 text-xs text-slate-400"><Upload className="h-4 w-4 text-cyan-300" /> Document uploads can be requested during review.</div><Button type="submit" disabled={kycSubmitting} className="bg-cyan-600 text-white hover:bg-cyan-500">{kycSubmitting ? "Submitting..." : "Submit KYC"}</Button></div>
+              </form>
+            )}
           </CardContent>
         </Card>
 
