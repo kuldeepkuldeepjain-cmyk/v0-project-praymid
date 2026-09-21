@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useRef, useState, useEffect } from "react"
 import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Upload, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [txHash, setTxHash] = useState("")
   const [note, setNote] = useState("")
   const [screenshot, setScreenshot] = useState<File | null>(null)
+  const screenshotInputRef = useRef<HTMLInputElement>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
@@ -107,6 +108,25 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     }
   }
 
+  const handleScreenshotChange = (file: File | undefined) => {
+    setErrorMessage("")
+    if (!file) {
+      setScreenshot(null)
+      return
+    }
+    if (!file.type.startsWith("image/")) {
+      setScreenshot(null)
+      setErrorMessage("Please choose a PNG, JPG, or WebP image.")
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setScreenshot(null)
+      setErrorMessage("Screenshot must be under 10MB.")
+      return
+    }
+    setScreenshot(file)
+  }
+
   const handleSubmit = async () => {
     setErrorMessage("")
 
@@ -159,8 +179,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
       setStep("success")
       if (onSuccess) onSuccess(parsedAmount)
-    } catch {
-      setErrorMessage("Something went wrong. Please check your connection and try again.")
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to prepare the screenshot. Please choose a PNG, JPG, or WebP image and try again.")
       setStep("form")
     }
   }
@@ -368,12 +388,15 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   } ${step === "submitting" ? "pointer-events-none opacity-60" : ""}`}
                 >
                   <input
+                    ref={screenshotInputRef}
                     id="topup-screenshot"
                     type="file"
-                    accept="image/*"
-                    className="hidden"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
                     disabled={step === "submitting"}
-                    onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
+                    onClick={(e) => { e.currentTarget.value = "" }}
+                    onChange={(e) => handleScreenshotChange(e.target.files?.[0])}
+                    aria-describedby="topup-screenshot-help"
                   />
                   {screenshot ? (
                     <>
@@ -388,7 +411,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                       <Upload className="h-4 w-4 text-slate-400 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-slate-600 font-medium">Tap to upload screenshot</p>
-                        <p className="text-[10px] text-slate-400">PNG, JPG up to 10MB</p>
+                        <p id="topup-screenshot-help" className="text-[10px] text-slate-400">PNG, JPG, or WebP up to 10MB</p>
                       </div>
                     </>
                   )}
