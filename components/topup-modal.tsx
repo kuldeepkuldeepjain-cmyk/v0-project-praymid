@@ -32,6 +32,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [inrBankDetails, setInrBankDetails] = useState({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
+  const [usdtInrRate, setUsdtInrRate] = useState(102)
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
@@ -46,6 +47,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setErrorMessage("")
     setNetwork("ALL")
     setInrBankDetails({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
+    setUsdtInrRate(102)
 
     const fetchAddress = async () => {
       setLoadingAddress(true)
@@ -54,6 +56,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         const data = await res.json()
         setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
         setInrBankDetails({ bankName: data.inr_bank_name || "", accountNumber: data.inr_account_number || "", ifscCode: data.inr_ifsc_code || "", accountHolderName: data.inr_account_holder_name || "" })
+        setUsdtInrRate(Number(data.usdt_inr_rate) > 0 ? Number(data.usdt_inr_rate) : 102)
       } catch {
         setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
         setInrBankDetails({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
@@ -74,6 +77,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : network === "INR" ? null : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
+  const convertedInrAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount * usdtInrRate : 0
   const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   const isFundedAmountValid = !isFundedAccount || !isInitialFundedTopUp || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
@@ -301,6 +305,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     {network === "INR" ? "INR" : "USDT"}
                   </span>
                 </div>
+                {network !== "INR" && amount && convertedInrAmount > 0 && (
+                  <p className="text-[10px] font-medium text-emerald-700">
+                    {amount} USDT = ₹{convertedInrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹{usdtInrRate} per USDT
+                  </p>
+                )}
                 {amount && !isAmountValid && (
                   <p className="text-[10px] text-red-500">
                     {isFundedAccount && isInitialFundedTopUp

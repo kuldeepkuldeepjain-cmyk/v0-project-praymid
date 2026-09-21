@@ -7,7 +7,7 @@ export async function GET() {
   try {
     const rows = await query(
       `SELECT setting_key, setting_value FROM system_settings
-       WHERE setting_key IN ('topup_trc20_address','topup_bep20_address','topup_erc20_address','topup_address','bep20_address','usdt_address','topup_inr_bank_name','topup_inr_account_number','topup_inr_ifsc_code','topup_inr_account_holder_name')`
+       WHERE setting_key IN ('topup_trc20_address','topup_bep20_address','topup_erc20_address','topup_address','bep20_address','usdt_address','topup_inr_bank_name','topup_inr_account_number','topup_inr_ifsc_code','topup_inr_account_holder_name','topup_usdt_inr_rate')`
     ) as any[]
 
   const settings: Record<string, string> = {}
@@ -27,6 +27,7 @@ export async function GET() {
     inr_account_number: settings.topup_inr_account_number || null,
     inr_ifsc_code: settings.topup_inr_ifsc_code || null,
     inr_account_holder_name: settings.topup_inr_account_holder_name || null,
+    usdt_inr_rate: Number(settings.topup_usdt_inr_rate) > 0 ? Number(settings.topup_usdt_inr_rate) : 102,
   })
 
   } catch {

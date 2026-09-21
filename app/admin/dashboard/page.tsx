@@ -46,7 +46,7 @@ export default function AdminDashboard() {
   const [collectingIds, setCollectingIds] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "" })
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", usdt_inr_rate: "102" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
 
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AdminDashboard() {
     try {
       const response = await adminFetch("/api/admin/payment-settings")
       const data = await response.json()
-      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "" })
+      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "", usdt_inr_rate: data.usdt_inr_rate || "102" })
     } catch (error) {
       console.error("[v0] Failed to fetch payment settings:", error)
     }
@@ -439,6 +439,11 @@ export default function AdminDashboard() {
                   <div className="space-y-2">
                     <label htmlFor="inr-ifsc-code" className="text-sm font-medium text-amber-200">IFSC Code</label>
                   <Input id="inr-ifsc-code" value={paymentSettings.inr_ifsc_code} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_ifsc_code: event.target.value.toUpperCase() }))} placeholder="Enter IFSC code" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="usdt-inr-rate" className="text-sm font-medium text-amber-200">USDT to INR Rate</label>
+                  <Input id="usdt-inr-rate" type="number" min="0.01" step="0.01" value={paymentSettings.usdt_inr_rate} onChange={(event) => setPaymentSettings((current) => ({ ...current, usdt_inr_rate: event.target.value }))} placeholder="102" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+                  <p className="text-xs text-amber-300/70">Example: 100 USDT = ₹10,200 at rate 102.</p>
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="inr-account-holder" className="text-sm font-medium text-amber-200">Account Holder Name</label>
