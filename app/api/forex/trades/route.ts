@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const participant = participantRows.rows[0]
     const participantId = participant?.id ?? null
 
-    if ((participant?.account_frozen || participant?.is_frozen) && (action === "open" || action === "pending")) {
+    if (participant?.account_type !== "funded" && (participant?.account_frozen || participant?.is_frozen) && (action === "open" || action === "pending")) {
       return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
     }
 

@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       const currentBalance: number = parseFloat(rows[0].account_balance) || 0
       const isMarginLock = typeof description === "string" && description.startsWith("Margin locked")
       const alreadyBreached = rows[0].funded_breach_status === "breached"
-      if ((rows[0].account_frozen || rows[0].is_frozen) && delta < 0 && isMarginLock) {
+      if (rows[0].account_type !== "funded" && (rows[0].account_frozen || rows[0].is_frozen) && delta < 0 && isMarginLock) {
         await client.query("ROLLBACK")
         return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
       }

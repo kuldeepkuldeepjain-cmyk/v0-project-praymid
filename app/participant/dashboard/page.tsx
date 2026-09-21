@@ -219,9 +219,9 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
           </div>
           <h2 className="text-2xl font-bold text-slate-800 mb-3">Account Frozen</h2>
           <p className="text-slate-600 mb-6">
-            {isFundedAccount
-              ? "Your funded account reached its 1% loss limit against the purchased account size. Trading is disabled until the account is reactivated."
-              : "Your account has been frozen because you did not make your first contribution within the 48-hour deadline."}
+  {isFundedAccount
+  ? "Your funded account breached its 2% drawdown rule against the purchased account size. New trading is disabled under the funded-account rules."
+  : "Your account has been frozen because you did not make your first contribution within the 48-hour deadline."}
           </p>
 
           <div className="space-y-3">
@@ -1594,7 +1594,7 @@ export default function DashboardHome() {
           setParticipantData(data)
           setParticipantId(data.id || data.participantId || "")
 
-  if (data.account_frozen || data.is_frozen || data.status === "frozen") {
+  if (data.account_type !== "funded" && (data.account_frozen || data.is_frozen || data.status === "frozen")) {
   setShowFrozenModal(true)
   }
 
@@ -1689,12 +1689,12 @@ export default function DashboardHome() {
   }, [mounted, isFundedAccount, participantData?.account_balance])
 
   useEffect(() => {
-    if (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen") {
-      setShowFrozenModal(true)
-      return
-    }
-    if (isFundedAccountBreached) setShowFrozenModal(true)
-  }, [isFundedAccountBreached, participantData?.account_frozen, participantData?.is_frozen, participantData?.status])
+  // Funded accounts use the fixed 2% drawdown breach state, not the normal
+  // account-freeze modal. Only normal accounts can enter this modal flow.
+  if (!isFundedAccount && (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")) {
+  setShowFrozenModal(true)
+  }
+  }, [isFundedAccount, participantData?.account_frozen, participantData?.is_frozen, participantData?.status])
 
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
@@ -1771,7 +1771,7 @@ export default function DashboardHome() {
 
       {/* Frozen Account Modal */}
   <FrozenAccountModal
-  isOpen={showFrozenModal}
+  isOpen={showFrozenModal && !isFundedAccount}
   onClose={() => {
   if (!isFundedAccount) setShowFrozenModal(false)
   }}
@@ -2227,15 +2227,17 @@ export default function DashboardHome() {
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
-  isFrozen={Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")}
+  isFrozen={!isFundedAccount && Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")}
   onAccountFrozen={() => {
-    setParticipantData((prev: any) => {
-      if (!prev) return prev
-      const updated = { ...prev, account_frozen: true, is_frozen: true, status: "frozen" }
-      try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
-      return updated
-    })
-    setShowFrozenModal(true)
+  setParticipantData((prev: any) => {
+  if (!prev) return prev
+  const updated = isFundedAccount
+  ? { ...prev, funded_breach_status: "breached" }
+  : { ...prev, account_frozen: true, is_frozen: true, status: "frozen" }
+  try { localStorage.setItem("participantData", JSON.stringify(updated)) } catch {}
+  return updated
+  })
+  if (!isFundedAccount) setShowFrozenModal(true)
   }}
   onBalanceUpdated={(newBalance) => {
                   setParticipantData((prev: any) => {
