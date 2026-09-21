@@ -1107,6 +1107,7 @@ function PositionSizer({
   const [rightPanelTab, setRightPanelTab] = useState<"order" | "sizer">("order")
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
+  const pairSearchRef = useRef<HTMLInputElement>(null)
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
@@ -2361,19 +2362,54 @@ adjustWalletBalance(returnAmt,
                 <div className="w-1.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg,#22d3ee,#0ea5e9)" }} />
                 <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
               </div>
-  <button onClick={() => setShowPairSearch(p => !p)} aria-label="Toggle instrument search" className="p-1 rounded transition-colors text-slate-500 hover:text-slate-300">
+  <button
+    type="button"
+    onClick={() => {
+      setShowPairSearch(true)
+      pairSearchRef.current?.focus()
+    }}
+    aria-label="Focus instrument search"
+    className={`p-1 rounded transition-colors ${showPairSearch || pairSearch ? "text-cyan-300" : "text-slate-500 hover:text-slate-300"}`}
+  >
   <Activity className="h-3.5 w-3.5" />
   </button>
   </div>
   <div className="relative">
   <input
-  type="search" value={pairSearch} onChange={e => setPairSearch(e.target.value)}
+  ref={pairSearchRef}
+  type="search"
+  value={pairSearch}
+  onFocus={() => setShowPairSearch(true)}
+  onChange={e => {
+    setShowPairSearch(true)
+    setPairSearch(e.target.value)
+  }}
+  onKeyDown={e => {
+    if (e.key === "Escape") {
+      setPairSearch("")
+      setShowPairSearch(false)
+      e.currentTarget.blur()
+    }
+    if (e.key === "Enter" && filteredPairs[0]) {
+      const pair = filteredPairs[0]
+      setSelectedPair(pair)
+      fetchCandles(pair.symbol, timeframe)
+      setMobileTab("chart")
+    }
+  }}
   placeholder={`Search all ${PAIRS_CONFIG.length} instruments...`}
   aria-label="Search all instruments"
-  className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 pr-7 rounded-lg mb-2"
-  style={{ background: "#070a10", border: "1px solid #1e2d45" }}
+  aria-controls="market-watch-instruments"
+  className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 pr-7 rounded-lg mb-1"
+  style={{ background: "#070a10", border: `1px solid ${showPairSearch || pairSearch ? "#22d3ee" : "#1e2d45"}` }}
   />
-  {pairSearch && <button type="button" onClick={() => setPairSearch("")} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-200">×</button>}
+  {pairSearch && <button type="button" onClick={() => { setPairSearch(""); pairSearchRef.current?.focus() }} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-200">×</button>}
+  <div className="flex items-center justify-between px-1 pb-1.5 text-[8px]" aria-live="polite">
+    <span style={{ color: searchNoResults ? "#f87171" : "#3d5a80" }}>
+      {pairSearch ? (searchNoResults ? "No matching instruments" : `${filteredPairs.length} matching instruments`) : "Type a symbol or instrument name"}
+    </span>
+    <span style={{ color: "#2d4565" }}>Enter to select</span>
+  </div>
   </div>
             <div className="flex gap-1">
               {categoryTabs.map(cat => {
@@ -2399,7 +2435,7 @@ adjustWalletBalance(returnAmt,
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Chg%</span>
           </div>
 
-          <div className="flex-1 overflow-y-auto terminal-scroll">
+          <div id="market-watch-instruments" className="flex-1 overflow-y-auto terminal-scroll">
             {loading ? (
               <div className="p-2 flex flex-col gap-1">
                 {Array.from({ length: 10 }).map((_, i) => (
