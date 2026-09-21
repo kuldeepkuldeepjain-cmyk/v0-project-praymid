@@ -7,10 +7,11 @@ export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const { userId, userEmail, amount, transactionHash, screenshotBase64, note } = await request.json()
+    const { amount, transactionHash, screenshotBase64, note } = await request.json()
+    const authenticatedEmail = auth.email.toLowerCase().trim()
 
-    if (!userId || !userEmail || !amount || !transactionHash) {
-      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
+    if (!amount || !transactionHash) {
+      return NextResponse.json({ success: false, message: "Amount and transaction hash are required" }, { status: 400 })
     }
 
     const parsedAmount = Number(amount)
@@ -32,8 +33,8 @@ export async function POST(request: NextRequest) {
     }
 
     const participants = await query(
-      "SELECT id FROM participants WHERE email = $1 LIMIT 1",
-      [userEmail]
+      "SELECT id, email FROM participants WHERE LOWER(email) = $1 LIMIT 1",
+      [authenticatedEmail]
     ) as any[]
     if (participants.length === 0) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
@@ -63,13 +64,13 @@ export async function POST(request: NextRequest) {
     await execute(
       `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
        VALUES ($1, $2, $3, $4, 'crypto', 'pending', $5)`,
-      [participant.id, userEmail, parsedAmount, normalizedTransactionHash, screenshotUrl]
+      [participant.id, participant.email, parsedAmount, normalizedTransactionHash, screenshotUrl]
     )
 
     // Log activity (best-effort — table may not exist)
     await execute(
       `INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)`,
-      [participant.id, userEmail, "topup_requested", "wallet", `Submitted $${parsedAmount} top-up (tx: ${normalizedTransactionHash.slice(0, 12)}...)`]
+      [participant.id, participant.email, "topup_requested", "wallet", `Submitted $${parsedAmount} top-up (tx: ${normalizedTransactionHash.slice(0, 12)}...)`]
     ).catch(() => {})
 
     return NextResponse.json({ success: true, message: "Top-up request submitted successfully" })

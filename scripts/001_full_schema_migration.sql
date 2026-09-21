@@ -216,6 +216,7 @@ CREATE TABLE IF NOT EXISTS topup_requests (
   amount              NUMERIC     NOT NULL,
   payment_method      TEXT        DEFAULT 'crypto',
   transaction_id      TEXT        UNIQUE,
+  screenshot_url      TEXT,
   status              TEXT        DEFAULT 'pending',
   -- statuses: pending | approved | completed | failed | rejected
   admin_notes         TEXT,
