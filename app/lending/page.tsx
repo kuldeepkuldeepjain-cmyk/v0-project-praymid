@@ -512,11 +512,15 @@ export default function LendingPage() {
             </div>
             <div>
               <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Company</h3>
-              <div className="grid gap-3 text-sm text-slate-400"><Link className="hover:text-cyan-300" href="/">About Elite Fund</Link><a className="hover:text-cyan-300" href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer">Contact support</a><Link className="hover:text-cyan-300" href="/leaderboard">Community leaderboard</Link><Link className="hover:text-cyan-300" href="/terms">Terms of Use</Link><Link className="hover:text-cyan-300" href="/privacy">Privacy Policy</Link><Link className="hover:text-cyan-300" href="/cookies">Cookie Policy</Link><span>Cameroon · Online platform</span></div>
+              <div className="grid gap-3 text-sm text-slate-400"><Link className="hover:text-cyan-300" href="/">About Elite Fund</Link><a className="hover:text-cyan-300" href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer">Contact support</a><Link className="hover:text-cyan-300" href="/leaderboard">Community leaderboard</Link><Link className="hover:text-cyan-300" href="/terms">Terms of Use</Link><Link className="hover:text-cyan-300" href="/privacy">Privacy Policy</Link><Link className="hover:text-cyan-300" href="/cookies">Cookie Policy</Link><a className="hover:text-cyan-300" href="mailto:admin@elitefund.sbs">admin@elitefund.sbs</a><a className="hover:text-cyan-300" href="mailto:admin@elitefund.sbs">admin@elitefund.sbs</a><a className="hover:text-cyan-300" href="mailto:admin@elitefund.sbs">admin@elitefund.sbs</a><span>Cameroon · Online platform</span><a className="hover:text-cyan-300" href="mailto:admin@elitefund.sbs">admin@elitefund.sbs</a></div>
             </div>
             <div>
               <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-200">Member support</h3>
-              <p className="mb-4 text-sm leading-6 text-slate-400">Questions about your account, funding, or withdrawals? Our team is available through WhatsApp.</p>
+              <p className="mb-4 text-sm leading-6 text-slate-400">Questions about your account, funding, or withdrawals? Our team is available through WhatsApp and email.</p>
+              <div className="mb-4 grid gap-2 text-xs">
+                <a className="text-cyan-300 hover:text-cyan-200" href="mailto:support@elitefund.sbs">support@elitefund.sbs</a>
+                <a className="text-slate-400 hover:text-slate-200" href="mailto:help@elitefund.sbs">help@elitefund.sbs</a>
+              </div>
               <a href="https://wa.me/237651528626" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-md border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-sm font-semibold text-emerald-300 transition-colors hover:bg-emerald-400/20"><MessageCircle className="h-4 w-4" /> Chat with support</a>
             </div>
           </div>

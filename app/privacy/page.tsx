@@ -9,7 +9,7 @@ export default function PrivacyPage() {
     <h2>How we use information</h2><p>We use information to authenticate you, process contributions and withdrawals, maintain ledgers, deliver notifications, calculate referral rewards, investigate suspicious activity, improve the platform, and comply with legal or operational obligations.</p>
     <h2>Sharing and service providers</h2><p>We share information only when needed to provide the service, protect members, process a transaction, respond to lawful requests, or enforce our terms. We do not sell member information.</p>
     <h2>Security and retention</h2><p>We use access controls, encrypted transport, session protections, and audit records designed to protect your information. No internet service is completely risk-free. We retain records for as long as necessary for account operations, disputes, fraud prevention, and legal requirements.</p>
-    <h2>Your choices</h2><p>You may request correction of inaccurate profile information or ask questions about how your information is used. Some records must be retained to complete transactions or meet legal obligations. Contact support through the <Link href="/lending" className="text-cyan-300 underline">lending page</Link>.</p>
+    <h2>Your choices</h2><p>You may request correction of inaccurate profile information or ask questions about how your information is used. Some records must be retained to complete transactions or meet legal obligations. Contact support through <a href="mailto:privacy@elitefund.sbs" className="text-cyan-300 underline">privacy@elitefund.sbs</a> or the <Link href="/lending" className="text-cyan-300 underline">lending page</Link>.</p>
   </PolicyPage>
 }
 
