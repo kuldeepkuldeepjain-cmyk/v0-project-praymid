@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef, useState, useEffect } from "react"
-import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Upload, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,8 +28,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [amount, setAmount] = useState("")
   const [txHash, setTxHash] = useState("")
   const [note, setNote] = useState("")
-  const [screenshot, setScreenshot] = useState<File | null>(null)
-  const screenshotInputRef = useRef<HTMLInputElement>(null)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
@@ -43,7 +41,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setAmount("")
     setTxHash("")
     setNote("")
-    setScreenshot(null)
     setCopiedAddress(false)
     setErrorMessage("")
 
@@ -76,57 +73,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const isFundedAmountValid = !isFundedAccount || !isInitialFundedTopUp || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
-  const prepareScreenshot = async (file: File): Promise<string> => {
-    const objectUrl = URL.createObjectURL(file)
-    try {
-      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const loadedImage = new Image()
-        loadedImage.onload = () => resolve(loadedImage)
-        loadedImage.onerror = () => reject(new Error("Unable to read screenshot"))
-        loadedImage.src = objectUrl
-      })
-
-      const maxDimension = 1000
-      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
-      const canvas = document.createElement("canvas")
-      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
-      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
-      const context = canvas.getContext("2d")
-      if (!context) throw new Error("Unable to prepare screenshot")
-      context.drawImage(image, 0, 0, canvas.width, canvas.height)
-
-      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.55))
-      if (!blob) throw new Error("Unable to prepare screenshot")
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(blob)
-      })
-    } finally {
-      URL.revokeObjectURL(objectUrl)
-    }
-  }
-
-  const handleScreenshotChange = (file: File | undefined) => {
-    setErrorMessage("")
-    if (!file) {
-      setScreenshot(null)
-      return
-    }
-    if (!file.type.startsWith("image/")) {
-      setScreenshot(null)
-      setErrorMessage("Please choose a PNG, JPG, or WebP image.")
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setScreenshot(null)
-      setErrorMessage("Screenshot must be under 10MB.")
-      return
-    }
-    setScreenshot(file)
-  }
-
   const handleSubmit = async () => {
     setErrorMessage("")
 
@@ -138,24 +84,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       setErrorMessage("Please enter your transaction hash")
       return
     }
-    if (!screenshot) {
-      setErrorMessage("Please upload your payment screenshot")
-      return
-    }
-
     setStep("submitting")
 
     try {
-      // Resize and compress before encoding so the request stays below server
-      // body limits even when the original phone screenshot is very large.
-      const base64 = await prepareScreenshot(screenshot)
-      const base64Size = Math.ceil((base64.length * 3) / 4)
-      if (base64Size > 700 * 1024) {
-        setErrorMessage("Screenshot is still too large after compression. Please choose a smaller image.")
-        setStep("form")
-        return
-      }
-
       const response = await participantFetch("/api/participant/topup/submit", {
         method: "POST",
         body: JSON.stringify({
@@ -164,7 +95,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           amount: parsedAmount,
           transactionHash: txHash.trim(),
           network,
-          screenshotBase64: base64,
           note: `[Network: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })
@@ -180,7 +110,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       setStep("success")
       if (onSuccess) onSuccess(parsedAmount)
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Unable to prepare the screenshot. Please choose a PNG, JPG, or WebP image and try again.")
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong. Please check your connection and try again.")
       setStep("form")
     }
   }
@@ -198,7 +128,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           </div>
           <div>
             <h2 className="text-base font-bold text-white leading-tight">{isFundedAccount ? "Funded Account Top Up" : "Top Up Wallet"}</h2>
-            <p className="text-[10px] text-white/70">{isFundedAccount ? "Choose a tier, send USDT, and submit proof" : "Send USDT on your selected network and submit proof"}</p>
+            <p className="text-[10px] text-white/70">{isFundedAccount ? "Choose a tier, send USDT, and submit the transaction hash" : "Send USDT on your selected network and submit the transaction hash"}</p>
           </div>
           {step !== "submitting" && (
             <button
@@ -372,50 +302,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   className="h-9 font-mono text-xs border border-slate-200 focus:border-violet-500 rounded-lg"
                   disabled={step === "submitting"}
                 />
-              </div>
-
-              {/* Screenshot */}
-              <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Payment Screenshot <span className="text-red-500">*</span>
-                </Label>
-                <label
-                  htmlFor="topup-screenshot"
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-dashed cursor-pointer transition-colors ${
-                    screenshot
-                      ? "border-green-400 bg-green-50"
-                      : "border-slate-300 bg-slate-50 hover:border-violet-400 hover:bg-violet-50"
-                  } ${step === "submitting" ? "pointer-events-none opacity-60" : ""}`}
-                >
-                  <input
-                    ref={screenshotInputRef}
-                    id="topup-screenshot"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    className="sr-only"
-                    disabled={step === "submitting"}
-                    onClick={(e) => { e.currentTarget.value = "" }}
-                    onChange={(e) => handleScreenshotChange(e.target.files?.[0])}
-                    aria-describedby="topup-screenshot-help"
-                  />
-                  {screenshot ? (
-                    <>
-                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-green-700 font-semibold truncate">{screenshot.name}</p>
-                        <p className="text-[10px] text-green-600">Tap to change</p>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                      <div>
-                        <p className="text-xs text-slate-600 font-medium">Tap to upload screenshot</p>
-                        <p id="topup-screenshot-help" className="text-[10px] text-slate-400">PNG, JPG, or WebP up to 10MB</p>
-                      </div>
-                    </>
-                  )}
-                </label>
               </div>
 
               {/* Optional note */}
