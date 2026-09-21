@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS participants (
   total_referrals     INTEGER     DEFAULT 0,
   total_earnings      NUMERIC     DEFAULT 0,
   account_balance     NUMERIC     DEFAULT 0,
+  funded_initial_balance NUMERIC,
   bonus_balance       NUMERIC     DEFAULT 0,      -- also used for referral earnings
   is_active           BOOLEAN     DEFAULT TRUE,
   is_frozen           BOOLEAN     DEFAULT FALSE,

@@ -35,6 +35,16 @@ async function run() {
     await client.query(sql)
     console.log("[migration] Schema migration completed successfully!")
     
+    // Add funded-account columns used by the forex order and drawdown checks.
+    // Keep this idempotent so existing deployments can safely rerun migrations.
+    console.log("[migration] Adding funded account columns...")
+
+    await client.query(`
+      ALTER TABLE participants
+      ADD COLUMN IF NOT EXISTS funded_initial_balance NUMERIC
+    `)
+    console.log("[migration] ✅ funded_initial_balance column added or already exists")
+
     // Add bonus columns
     console.log("[migration] Adding bonus columns...")
     
