@@ -2150,8 +2150,10 @@ button, a, [role="button"] {
 }
 .elite-terminal-sidebar-account-copy { min-width: 0; display: grid; gap: 4px; }
 .elite-terminal-sidebar-account-copy strong { overflow: hidden; color: #edf5fc; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.elite-terminal-sidebar-account-copy span { display: flex; align-items: center; gap: 5px; color: #8298ad; font-size: 10px; }
-.elite-terminal-sidebar-account-copy i { width: 6px; height: 6px; border-radius: 50%; background: #35c995; box-shadow: 0 0 8px rgba(53,201,149,.8); }
+.elite-terminal-sidebar-account-copy span { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; }
+  .elite-terminal-account-funded { color: #f4c95d; }
+  .elite-terminal-account-normal { color: #8298ad; }
+  .elite-terminal-sidebar-account-copy i { width: 6px; height: 6px; border-radius: 50%; background: #35c995; box-shadow: 0 0 8px rgba(53,201,149,.8); }
 .elite-terminal-sidebar-account-arrow { width: 14px; height: 14px; margin-left: auto; color: #688198; }
 .elite-terminal-section-label { padding: 0 10px 8px; color: #5f7890; font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .elite-terminal-brand {

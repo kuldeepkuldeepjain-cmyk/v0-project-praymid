@@ -2172,7 +2172,9 @@ export default function DashboardHome() {
               <div className="elite-terminal-sidebar-avatar">{displayName.charAt(0).toUpperCase()}</div>
               <div className="elite-terminal-sidebar-account-copy">
                 <strong>{displayName}</strong>
-                <span><i /> Account online</span>
+                <span className={isFundedAccount ? "elite-terminal-account-funded" : "elite-terminal-account-normal"}>
+                  <i /> {isFundedAccount ? "Funded Account" : "Normal Account"}
+                </span>
               </div>
               <ChevronRight className="elite-terminal-sidebar-account-arrow" />
             </div>
