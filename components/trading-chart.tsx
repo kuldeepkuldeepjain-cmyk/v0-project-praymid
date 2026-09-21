@@ -848,7 +848,7 @@ export function TradingChart({
         type="button"
         onClick={() => onQuickTrade("SELL")}
         aria-label={`Sell ${sym} at ${sellPrice?.toFixed(5) ?? "market"}`}
-        className="min-w-20 rounded-lg border border-red-400/30 bg-red-500/15 px-3 py-1.5 text-left transition-colors hover:bg-red-500/25 active:scale-95"
+        className="min-w-16 rounded-lg border border-red-400/30 bg-red-500/15 px-2.5 py-1 text-left transition-colors hover:bg-red-500/25 active:scale-95"
       >
         <span className="block text-[9px] font-black uppercase tracking-widest text-red-300">Sell</span>
         <span className="price-mono block text-[11px] font-bold text-white">{sellPrice?.toFixed(5) ?? "—"}</span>
@@ -857,7 +857,7 @@ export function TradingChart({
         type="button"
         onClick={() => onQuickTrade("BUY")}
         aria-label={`Buy ${sym} at ${buyPrice?.toFixed(5) ?? "market"}`}
-        className="min-w-20 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-3 py-1.5 text-left transition-colors hover:bg-emerald-500/25 active:scale-95"
+        className="min-w-16 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1 text-left transition-colors hover:bg-emerald-500/25 active:scale-95"
       >
         <span className="block text-[9px] font-black uppercase tracking-widest text-emerald-300">Buy</span>
         <span className="price-mono block text-[11px] font-bold text-white">{buyPrice?.toFixed(5) ?? "—"}</span>
