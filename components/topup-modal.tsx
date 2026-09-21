@@ -102,7 +102,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         reader.readAsDataURL(screenshot)
       })
 
-      if (base64.length > 10_000_000) {
+      if (screenshot.size > 10 * 1024 * 1024) {
         setErrorMessage("Screenshot must be under 10MB.")
         setStep("form")
         return
@@ -121,10 +121,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({ message: "The server returned an invalid response." }))
 
-      if (!data.success) {
-        setErrorMessage(data.message || "Submission failed. Please try again.")
+      if (!response.ok || !data.success) {
+        setErrorMessage(data.message || data.error || "Submission failed. Please try again.")
         setStep("form")
         return
       }
