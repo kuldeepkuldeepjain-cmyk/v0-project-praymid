@@ -538,10 +538,6 @@ export default function ParticipantRegisterPage() {
                 </div>
               </div>
 
-              {/* WhatsApp OTP Section */}
-              <div className={cn("space-y-3 p-5 rounded-xl border animate-fade-in-up", isLightTheme ? "bg-emerald-50/70 border-emerald-200" : "bg-slate-950/60 border-emerald-400/20")} style={{ animationDelay: "0.28s" }}>
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
                 <div className="space-y-2">
                   <Label htmlFor="state" className="text-slate-200 text-sm font-medium flex items-center gap-2">
