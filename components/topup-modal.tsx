@@ -427,15 +427,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               {/* Submit */}
               <Button
                 onClick={handleSubmit}
-                disabled={step === "submitting" || !isAmountValid || !txHash.trim() || !screenshot}
+                disabled={step === "submitting"}
                 className="w-full h-10 rounded-lg font-semibold text-sm text-white"
                 style={{
-                  background: (step === "submitting" || !isAmountValid || !txHash.trim() || !screenshot)
-                    ? "#cbd5e1"
-                    : "linear-gradient(135deg, #7c3aed, #6366f1)",
-                  boxShadow: (step !== "submitting" && isAmountValid && txHash.trim() && screenshot)
-                    ? "0 4px 14px rgba(124,58,237,0.35)"
-                    : "none",
+                  background: step === "submitting" ? "#cbd5e1" : "linear-gradient(135deg, #7c3aed, #6366f1)",
+                  boxShadow: step !== "submitting" ? "0 4px 14px rgba(124,58,237,0.35)" : "none",
                 }}
               >
                 {step === "submitting" ? (
