@@ -2043,7 +2043,7 @@ function PositionSizer({
   }, [equity, totalPnl, walletBalance])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal xm-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif", borderTop: "3px solid #f58220" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -2060,7 +2060,7 @@ function PositionSizer({
       )}
 
       {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-3 h-10 gap-3" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-3 h-11 gap-3" style={{ background: "#101827", borderBottom: "1px solid #273449" }}>
         <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund Trade Terminal">
           <img
             src="/elite-fund-logo.jpg"
@@ -2068,8 +2068,8 @@ function PositionSizer({
             className="reference-terminal-brand-mark h-6 w-6 shrink-0 object-cover"
           />
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-black tracking-[0.16em] text-amber-100">ELITE FUND</span>
-            <span className="text-[8px] font-bold tracking-[0.18em] text-cyan-300/80">TRADE TERMINAL</span>
+            <span className="text-[10px] font-black tracking-[0.16em] text-white">ELITE FUND</span>
+            <span className="text-[8px] font-bold tracking-[0.18em]" style={{ color: "#f58220" }}>TRADING TERMINAL</span>
           </div>
         </div>
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
@@ -2198,7 +2198,7 @@ function PositionSizer({
           <button
             type="button"
             onClick={() => { window.location.href = "/participant/dashboard" }}
-            className="flex items-center gap-1 rounded-md border border-blue-500/30 bg-blue-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-blue-200 transition-colors hover:bg-blue-500/25"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-colors hover:brightness-110" style={{ background: "#f58220", border: "1px solid #ff9f4a" }}
             title="Add funds"
           >
             <Plus className="h-3 w-3" />
