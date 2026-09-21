@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Upload, Send } from "lucide-react"
+import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Upload, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -139,7 +139,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && step !== "submitting") onClose() }}>
-      <DialogContent className="w-[calc(100vw-24px)] max-w-sm bg-white border-none shadow-2xl p-0 overflow-hidden max-h-[90dvh] flex flex-col">
+      <DialogContent className="w-[calc(100vw-24px)] max-w-lg bg-slate-50 border border-slate-200 shadow-2xl p-0 overflow-hidden max-h-[92dvh] flex flex-col">
         {/* Header */}
         <div
           className="relative flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
@@ -162,8 +162,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           )}
         </div>
 
+        <div className="grid grid-cols-3 gap-px border-b border-slate-200 bg-slate-200">
+          <div className="flex items-center justify-center gap-1.5 bg-white px-2 py-2 text-[9px] font-semibold text-slate-600"><LockKeyhole className="h-3.5 w-3.5 text-emerald-600" /> Secure review</div>
+          <div className="flex items-center justify-center gap-1.5 bg-white px-2 py-2 text-[9px] font-semibold text-slate-600"><ShieldCheck className="h-3.5 w-3.5 text-blue-600" /> Verified payment</div>
+          <div className="flex items-center justify-center gap-1.5 bg-white px-2 py-2 text-[9px] font-semibold text-slate-600"><Clock3 className="h-3.5 w-3.5 text-amber-600" /> Up to 24h</div>
+        </div>
+
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-4 py-4">
+        <div className="overflow-y-auto flex-1 px-4 py-5 sm:px-6">
 
           {/* FORM STEP */}
           {(step === "form" || step === "submitting") && (
@@ -189,6 +195,24 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </div>}
                 </div>
               )}
+
+              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Funding request</p>
+                    <h3 className="mt-1 text-sm font-bold text-slate-900">Add funds securely</h3>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Send USDT, then submit the transfer hash and proof for manual verification.</p>
+                  </div>
+                  <div className="rounded-lg bg-blue-50 px-2.5 py-2 text-right">
+                    <p className="text-[9px] font-semibold uppercase text-blue-500">Balance</p>
+                    <p className="font-mono text-sm font-bold text-blue-900">${currentBalance.toFixed(2)}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3 text-[10px] text-slate-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Funds are credited after admin confirmation
+                  <ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-400" />
+                </div>
+              </div>
 
               {/* Network selector */}
               <div className="space-y-1.5">
@@ -221,9 +245,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     <div className="h-6 w-6 bg-slate-200 rounded" />
                   </div>
                 ) : selectedWalletAddress ? (
-                  <div className="rounded-xl border-2 border-violet-200 bg-violet-50 overflow-hidden">
+                  <div className="rounded-xl border border-blue-200 bg-white overflow-hidden shadow-sm">
                     {/* QR-like header strip */}
-                    <div className="px-3 py-1.5 bg-violet-600 flex items-center justify-between">
+                    <div className="px-3 py-2 bg-[#163e5c] flex items-center justify-between">
                       <span className="text-[10px] font-bold text-white tracking-widest uppercase">{network === "ALL" ? "All Networks" : `${network} Network`}</span>
                       <span className="text-[10px] text-white/80">USDT Only</span>
                     </div>
@@ -428,7 +452,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               <Button
                 onClick={onClose}
                 className="w-full h-10 rounded-lg font-semibold text-sm text-white"
-                style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}
+style={{ background: "linear-gradient(135deg, #0f2438, #163e5c)" }}
               >
                 Done
               </Button>

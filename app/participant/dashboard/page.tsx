@@ -2140,6 +2140,16 @@ export default function DashboardHome() {
               </button>
             </div>
 
+            <div className="elite-terminal-sidebar-account">
+              <div className="elite-terminal-sidebar-avatar">{displayName.charAt(0).toUpperCase()}</div>
+              <div className="elite-terminal-sidebar-account-copy">
+                <strong>{displayName}</strong>
+                <span><i /> Account online</span>
+              </div>
+              <ChevronRight className="elite-terminal-sidebar-account-arrow" />
+            </div>
+
+            <div className="elite-terminal-section-label">Workspace</div>
             <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
               <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item is-active">
                 <Home />
@@ -2248,11 +2258,11 @@ export default function DashboardHome() {
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "dashboard" ? "text-[#2563eb]" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Home</span>
+  activeTab === "dashboard" ? "text-[#2563eb]" : "text-slate-400 hover:text-slate-600"
+  }`}
+  >
+  <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
+  <span className="text-[10px] font-medium">Trade</span>
           </button>
 
           <button
