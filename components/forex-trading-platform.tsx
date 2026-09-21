@@ -1410,7 +1410,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Poll rates every 3s ─────────────────────────────────────��──────────────
+  // ── Poll rates every 3s ─────────────────────────────────────���──────────────
   useEffect(() => {
     ratesIntervalRef.current = setInterval(fetchRates, 3000)
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
@@ -1793,14 +1793,27 @@ function PositionSizer({
 
   // ��─ Quick trade — routes through confirmation modal ────────────────────────
   const quickTrade = (dir: TradeDirection) => {
-    if (isFrozen) { showToast("warning", "Account frozen — trading is disabled"); return }
-    if (!selectedPair) return
-    const lot = parseFloat(lotSize) || 0.01
-    const lev = effectiveLeverage
-    const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
-    const margin = calcMargin(selectedPair.symbol, lot, price, lev)
-    if (walletBalance < margin) { showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return }
-    requestConfirm(dir, lot, lev, price, null, null, null, false)
+  if (isFrozen) { showToast("warning", "Account frozen — trading is disabled"); return }
+  if (!selectedPair) return
+  if (!balanceLoaded) { showToast("info", "Loading account balance — try again in a moment"); return }
+
+  // Keep the ticket and confirmation state in sync with the quote the user clicked.
+  setDirection(dir)
+  const lot = parseFloat(lotSize)
+  if (!Number.isFinite(lot) || lot <= 0 || lot > 100) {
+    showToast("error", "Lot size must be between 0.01 and 100")
+    setMobileTab("order")
+    return
+  }
+  const lev = effectiveLeverage
+  const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
+  const margin = calcMargin(selectedPair.symbol, lot, price, lev)
+  if (walletBalance < margin) {
+    showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
+    setMobileTab("order")
+    return
+  }
+  requestConfirm(dir, lot, lev, price, null, null, null, false)
   }
 
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
@@ -2622,12 +2635,17 @@ function PositionSizer({
           {rightPanelTab === "order" && selectedPair ? (
             <div className="flex-1 overflow-y-auto terminal-scroll">
               <div className="flex flex-col gap-0 p-2">
-                <div className="mb-2 flex items-center justify-between rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] px-2.5 py-2">
+                <div className="sticky top-0 z-20 mb-2 flex items-center justify-between rounded-lg border border-cyan-400/30 bg-[#071221]/95 px-2.5 py-2 shadow-lg shadow-cyan-950/20 backdrop-blur">
                   <div>
-                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-cyan-300">Trade ticket</p>
-                    <p className="mt-0.5 text-[10px] text-slate-400">{selectedPair.symbol} · {orderType === "market" ? "Market execution" : `${orderType.toUpperCase()} order`}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">Order ticket</p>
+                    <p className="mt-0.5 text-[10px] text-slate-300">{selectedPair.symbol} · {orderType === "market" ? "Market execution" : `${orderType.toUpperCase()} order`}</p>
                   </div>
-                  <span className="rounded border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300">{online ? "Live" : "Offline"}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`rounded border px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-amber-400/20 bg-amber-400/10 text-amber-300"}`}>
+                      {balanceLoaded ? "Ready" : "Loading"}
+                    </span>
+                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
+                  </div>
                 </div>
 
                 {/* Order type tabs */}
@@ -2837,7 +2855,7 @@ function PositionSizer({
                 </div>
                 <button
                   onClick={executeTrade}
-                  disabled={isFrozen || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
+                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
                   className={`w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
                 >
                   <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
@@ -2855,16 +2873,16 @@ function PositionSizer({
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => quickTrade("BUY")}
-                    disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5"
+                    disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance}
+                    className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <div className="flex items-center gap-1 relative z-10"><TrendingUp className="h-3.5 w-3.5" /><span className="font-black text-xs">BUY</span></div>
                     <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                   </button>
                   <button
                     onClick={() => quickTrade("SELL")}
-                    disabled={balanceLoaded && estimatedMargin > walletBalance}
-                    className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5"
+                    disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance}
+                    className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <div className="flex items-center gap-1 relative z-10"><TrendingDown className="h-3.5 w-3.5" /><span className="font-black text-xs">SELL</span></div>
                     <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
