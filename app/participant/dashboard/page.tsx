@@ -2134,7 +2134,12 @@ export default function DashboardHome() {
         {/* Activity Tab Content */}
         {activeTab === "activity" && (
           <div className="space-y-4 px-4 pt-4">
-            <h2 className="text-2xl font-bold text-slate-800">Activity History</h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold text-slate-800">Activity History</h2>
+              <Link href="/participant/dashboard/activity" className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+                Open full history
+              </Link>
+            </div>
           </div>
         )}
 

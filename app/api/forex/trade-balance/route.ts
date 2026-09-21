@@ -104,25 +104,22 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // Write transaction ledger entry
-      try {
-        await client.query(
-          `INSERT INTO transactions
-             (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')`,
-          [
-            participantId,
-            email,
-            delta < 0 ? "forex_pnl_loss" : "forex_pnl_profit",
-            Math.abs(delta),
-            description || (delta < 0 ? "Forex trade loss" : "Forex trade profit"),
-            currentBalance,
-            newBalance,
-          ]
-        )
-      } catch {
-        // Ledger write failure is non-fatal — balance update takes priority
-      }
+      // The balance and its audit entry must commit together. A failed ledger
+      // insert rolls back the balance update instead of silently losing history.
+      await client.query(
+        `INSERT INTO transactions
+           (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')`,
+        [
+          participantId,
+          email,
+          delta < 0 ? "forex_pnl_loss" : "forex_pnl_profit",
+          Math.abs(delta),
+          description || (delta < 0 ? "Forex trade loss" : "Forex trade profit"),
+          currentBalance,
+          newBalance,
+        ]
+      )
 
       await client.query("COMMIT")
       return NextResponse.json({ success: true, newBalance })
