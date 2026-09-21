@@ -303,7 +303,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </span>
                 </div>
                 {amount && !isAmountValid && (
-                  <p className="text-[10px] text-red-500">Minimum amount is $5 USDT</p>
+                  <p className="text-[10px] text-red-500">
+                    {isFundedAccount && isInitialFundedTopUp
+                      ? "Choose one of the funded tiers: $100, $250, $500, or $1,000"
+                      : "Minimum amount is $5 USDT"}
+                  </p>
                 )}
               </div>
 
