@@ -2246,7 +2246,16 @@ function PositionSizer({
           { label: "Data Window", icon: "▥" },
           { label: "Strategy Tester", icon: "▣" },
         ].map(item => (
-          <button key={item.label} type="button" className="flex h-full items-center gap-1 border-r px-2 text-[9px] text-slate-300 transition-colors hover:bg-[#2b4056] hover:text-white">
+          <button
+            key={item.label}
+            type="button"
+            onClick={() => {
+              if (item.label === "Market Watch") setMobileTab("market")
+              if (item.label === "Data Window") setMobileTab("chart")
+              if (item.label === "Strategy Tester") setActivePanel("performance")
+            }}
+            className="flex h-full items-center gap-1 border-r px-2 text-[9px] text-slate-300 transition-colors hover:bg-[#2b4056] hover:text-white"
+          >
             <span className="text-[#75bff2]">{item.icon}</span>{item.label}
           </button>
         ))}
@@ -2714,7 +2723,7 @@ function PositionSizer({
                 {/* Executable quote snapshot */}
                 <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
                   <div className="flex items-center justify-between px-2 py-1.5" style={{ borderBottom: "1px solid #1a2640" }}>
-                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} · MARKET</span>
+                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-px" style={{ background: "#1a2640" }}>
