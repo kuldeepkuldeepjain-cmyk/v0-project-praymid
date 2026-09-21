@@ -137,6 +137,16 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+.lending-page {
+  --lending-ink: #f8fafc;
+  --lending-muted: #94a3b8;
+  --lending-panel: #111c2c;
+  --lending-line: #243449;
+  --lending-accent: #22d3ee;
+  --lending-positive: #34d399;
+}
+.lending-page .lending-footer a { text-underline-offset: 4px; }
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
