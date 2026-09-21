@@ -15,6 +15,7 @@ import {
   User,
   Mail,
   Wallet,
+  CreditCard,
   Calendar,
   Shield,
   Bell,
@@ -49,6 +50,8 @@ export default function ProfilePage() {
   const [kycSubmitting, setKycSubmitting] = useState(false)
 
   const isAuthenticated = isParticipantAuthenticated()
+  const isFundedAccount = participantData?.account_type === "funded"
+  const accountTypeLabel = isFundedAccount ? "Funded Account" : "Normal Account"
 
   useEffect(() => {
     setMounted(true)
@@ -365,15 +368,20 @@ export default function ProfilePage() {
           <h2 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
             @{displayName}
           </h2>
-          <Badge
-            className={`mt-2 sm:mt-2.5 md:mt-3 px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-medium animate-fade-in ${
-              participantData.activation_fee_paid 
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30" 
-                : "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30"
-            }`}
-          >
-            {participantData.activation_fee_paid ? "Verified Account" : "Pending Verification"}
-          </Badge>
+          <div className="mt-2 sm:mt-2.5 md:mt-3 flex flex-wrap items-center justify-center gap-2">
+            <Badge
+              className={`px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-medium animate-fade-in ${
+                participantData.activation_fee_paid
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30"
+                  : "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30"
+              }`}
+            >
+              {participantData.activation_fee_paid ? "Verified Account" : "Pending Verification"}
+            </Badge>
+            <Badge className={`px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-semibold ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/15 text-cyan-200"}`}>
+              {accountTypeLabel}
+            </Badge>
+          </div>
         </div>
 
         {/* Account Information Card - Mobile Optimized */}
@@ -391,6 +399,15 @@ export default function ProfilePage() {
             </h3>
 
             <div className="space-y-2 sm:space-y-2.5 md:space-y-3">
+              {/* Account type */}
+              <div className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl border hover:shadow-md transition-all hover:scale-[1.01] ${isFundedAccount ? "bg-amber-950/30 border-amber-400/25" : "bg-cyan-950/30 border-cyan-400/25"}`}>
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg flex-shrink-0 ${isFundedAccount ? "bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/30" : "bg-gradient-to-br from-cyan-500 to-blue-500 shadow-cyan-500/30"}`}>
+                  <CreditCard className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0"><Label className="text-[10px] sm:text-xs text-slate-300 font-medium">Account type</Label><p className="text-sm sm:text-base text-white font-semibold">{accountTypeLabel}</p></div>
+                <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide ${isFundedAccount ? "bg-amber-400/15 text-amber-200" : "bg-cyan-400/15 text-cyan-200"}`}>{isFundedAccount ? "2% rule" : "Standard"}</span>
+              </div>
+
               {/* Username */}
               <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl bg-blue-950/40 border border-blue-500/20 hover:shadow-md transition-all hover:scale-[1.01]">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#7c3aed] to-purple-600 flex items-center justify-center shadow-md sm:shadow-lg shadow-purple-500/30 flex-shrink-0">

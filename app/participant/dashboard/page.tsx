@@ -1832,7 +1832,12 @@ export default function DashboardHome() {
             </Link>
             <div className="min-w-0">
               <p className="text-white text-xs font-bold leading-none truncate">{displayName}</p>
-              <p className="text-slate-500 text-[10px] mt-0.5 leading-none tracking-wide">TRADING ACCOUNT</p>
+              <div className="mt-1 flex items-center gap-1.5">
+                <p className="text-slate-500 text-[10px] leading-none tracking-wide">TRADING ACCOUNT</p>
+                <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200"}`}>
+                  {isFundedAccount ? "Funded" : "Normal"}
+                </span>
+              </div>
             </div>
           </div>
 
