@@ -66,10 +66,10 @@ export async function POST(req: NextRequest) {
       }
       // A funded account that already breached the fixed 2% drawdown rule may
       // never open new positions again — there is no recovery after breach.
-      if (rows[0].account_type === "funded" && alreadyBreached && delta < 0 && isMarginLock) {
-        await client.query("ROLLBACK")
-        return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading is permanently disabled." }, { status: 403 })
-      }
+  if (rows[0].account_type === "funded" && alreadyBreached && delta < 0 && isMarginLock) {
+    await client.query("ROLLBACK")
+    return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading activity is disabled until the account is reactivated." }, { status: 403 })
+  }
 
       const newBalance = parseFloat((currentBalance + delta).toFixed(2))
       const fundedInitial = Number(rows[0].funded_initial_balance) || 0

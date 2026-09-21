@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
-import { getFundedBaseAmount } from "@/lib/funded-account"
+import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdminSession(req)
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "approve") {
-      const pRows = await query("SELECT account_balance, account_type FROM participants WHERE id = $1", [topup.participant_id])
+      const pRows = await query("SELECT account_balance, account_type, funded_amount, funded_breach_status FROM participants WHERE id = $1", [topup.participant_id])
       if (!pRows.length) {
         return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })
       }
@@ -86,9 +86,13 @@ export async function POST(req: NextRequest) {
       }
       const creditedAmount = isInitialFundedTopUp ? fundedCredit : depositAmount
       const newBalance = Number(participant.account_balance || 0) + creditedAmount
-  const revivalSql = isFundedAccount
-    ? "account_frozen = false, is_frozen = false, status = 'active'"
-    : "account_frozen = account_frozen, is_frozen = is_frozen, status = status"
+      const fundedBaseAmount = isFundedAccount
+        ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
+        : 0
+      const remainsBelowLossLimit = isFundedAccount && newBalance < getFundedMinimumBalance(fundedBaseAmount)
+      const revivalSql = isFundedAccount
+        ? `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
+        : "account_frozen = account_frozen, is_frozen = is_frozen, status = status"
       await execute(
         isFundedAccount
           ? `UPDATE participants SET account_balance = $1, ${revivalSql}, updated_at = NOW() WHERE id = $2`
