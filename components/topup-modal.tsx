@@ -75,6 +75,38 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const isFundedAmountValid = !isFundedAccount || !isInitialFundedTopUp || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
+  const prepareScreenshot = async (file: File): Promise<string> => {
+    const objectUrl = URL.createObjectURL(file)
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const loadedImage = new Image()
+        loadedImage.onload = () => resolve(loadedImage)
+        loadedImage.onerror = () => reject(new Error("Unable to read screenshot"))
+        loadedImage.src = objectUrl
+      })
+
+      const maxDimension = 1000
+      const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
+      const canvas = document.createElement("canvas")
+      canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+      canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+      const context = canvas.getContext("2d")
+      if (!context) throw new Error("Unable to prepare screenshot")
+      context.drawImage(image, 0, 0, canvas.width, canvas.height)
+
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.55))
+      if (!blob) throw new Error("Unable to prepare screenshot")
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+    } finally {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }
+
   const handleSubmit = async () => {
     setErrorMessage("")
 
@@ -94,16 +126,12 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setStep("submitting")
 
     try {
-      // Convert screenshot to base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(screenshot)
-      })
-
-      if (screenshot.size > 10 * 1024 * 1024) {
-        setErrorMessage("Screenshot must be under 10MB.")
+      // Resize and compress before encoding so the request stays below server
+      // body limits even when the original phone screenshot is very large.
+      const base64 = await prepareScreenshot(screenshot)
+      const base64Size = Math.ceil((base64.length * 3) / 4)
+      if (base64Size > 700 * 1024) {
+        setErrorMessage("Screenshot is still too large after compression. Please choose a smaller image.")
         setStep("form")
         return
       }
