@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
       // Credit $5 to referrer if this participant was referred (only once per referred user)
       const referrerRows = await query(
-        `SELECT id, email, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
+        `SELECT id, email, account_balance, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
         [topup.participant_email]
       )
       if (referrerRows.length > 0) {
@@ -120,16 +120,18 @@ export async function POST(req: NextRequest) {
         
         // Only add bonus if it hasn't been added yet for this referred user
         if (bonusCheckRows.length === 0) {
-          const referrerBonus = 5 // $5 per referral (one-time)
+          const referrerBonus = 5 // $5 per referred participant after the first approved fund add
+          const referrerBalanceBefore = Number(referrer.account_balance || 0)
+          const referrerNewBalance = referrerBalanceBefore + referrerBonus
           const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referrerBonus
           await execute(
-            `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
-            [referrerNewEarnings, referrer.id]
+            `UPDATE participants SET account_balance = $1, referral_earnings = $2 WHERE id = $3`,
+            [referrerNewBalance, referrerNewEarnings, referrer.id]
           )
           await execute(
             `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
              VALUES ($1, 'credit', $2, $3, $4, $5)`,
-            [referrer.email, referrerBonus, `Referral bonus - ${topup.participant_email} added funds`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
+            [referrer.email, referrerBonus, `Referral bonus - ${topup.participant_email} added funds`, referrerBalanceBefore, referrerNewBalance]
           ).catch(() => {})
           await execute(
             `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,

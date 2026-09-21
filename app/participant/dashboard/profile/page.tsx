@@ -425,6 +425,35 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
+
+              {/* Referral Code */}
+              <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl bg-emerald-950/30 border border-emerald-500/20 hover:shadow-md transition-all hover:scale-[1.01]">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-md sm:shadow-lg shadow-emerald-500/30 flex-shrink-0">
+                  <span className="text-sm font-black text-white">$</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <Label className="text-[10px] sm:text-xs text-emerald-300 font-medium">Referral Code</Label>
+                  <p className="text-sm sm:text-base text-white font-mono font-bold tracking-wider truncate">
+                    {participantData.referral_code || "Not available"}
+                  </p>
+                  <p className="text-[10px] text-emerald-200/70">Earn $5 when a referred participant adds funds.</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 border-emerald-400/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                  onClick={() => {
+                    if (participantData.referral_code) {
+                      navigator.clipboard.writeText(participantData.referral_code)
+                      toast({ title: "Referral code copied" })
+                    }
+                  }}
+                  disabled={!participantData.referral_code}
+                >
+                  Copy
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
