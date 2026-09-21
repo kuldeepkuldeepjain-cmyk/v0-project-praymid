@@ -1410,7 +1410,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Poll rates every 3s ────────────────────────────────────────────────────
+  // ── Poll rates every 3s ─────────────────────────────────────��──────────────
   useEffect(() => {
     ratesIntervalRef.current = setInterval(fetchRates, 3000)
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
@@ -2622,6 +2622,13 @@ function PositionSizer({
           {rightPanelTab === "order" && selectedPair ? (
             <div className="flex-1 overflow-y-auto terminal-scroll">
               <div className="flex flex-col gap-0 p-2">
+                <div className="mb-2 flex items-center justify-between rounded-lg border border-cyan-400/20 bg-cyan-400/[0.06] px-2.5 py-2">
+                  <div>
+                    <p className="text-[8px] font-black uppercase tracking-[0.18em] text-cyan-300">Trade ticket</p>
+                    <p className="mt-0.5 text-[10px] text-slate-400">{selectedPair.symbol} · {orderType === "market" ? "Market execution" : `${orderType.toUpperCase()} order`}</p>
+                  </div>
+                  <span className="rounded border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300">{online ? "Live" : "Offline"}</span>
+                </div>
 
                 {/* Order type tabs */}
                 <div className="apple-order-type-tabs flex mb-2 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
@@ -2824,6 +2831,10 @@ function PositionSizer({
                 )}
 
                 {/* Execute (3D) */}
+                <div className="mb-1 flex items-center justify-between px-0.5">
+                  <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-500">Ready to place</span>
+                  <span className={`text-[9px] font-black uppercase ${direction === "BUY" ? "text-emerald-300" : "text-red-300"}`}>{direction} {selectedPair.symbol}</span>
+                </div>
                 <button
                   onClick={executeTrade}
                   disabled={isFrozen || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
