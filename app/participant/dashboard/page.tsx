@@ -1689,6 +1689,14 @@ export default function DashboardHome() {
   }, [mounted, isFundedAccount, participantData?.account_balance])
 
   useEffect(() => {
+  // Funded breaches lock every account action and open the reactivation flow.
+  if (isFundedAccount && isFundedAccountBreached) {
+  setTopUpIsFundedAccount(true)
+  setShowTopUpModal(true)
+  }
+  }, [isFundedAccount, isFundedAccountBreached])
+
+  useEffect(() => {
   // Funded accounts use the fixed 2% drawdown breach state, not the normal
   // account-freeze modal. Only normal accounts can enter this modal flow.
   if (!isFundedAccount && (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")) {
@@ -1766,6 +1774,21 @@ export default function DashboardHome() {
               </strong>
             </div>
           </div>
+          {fundedDrawdownSnapshot.status === "BREACHED" && (
+            <div className="mt-4 flex flex-col gap-3 rounded-lg border border-red-400/20 bg-red-500/10 p-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs leading-5 text-red-100">Trading, payouts, and new orders are disabled. Add funds to restore the minimum funded equity and request reactivation.</p>
+              <Button
+                type="button"
+                onClick={() => {
+                  setTopUpIsFundedAccount(true)
+                  setShowTopUpModal(true)
+                }}
+                className="shrink-0 bg-red-500 text-white hover:bg-red-400"
+              >
+                Add funds to reactivate
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -2232,7 +2255,7 @@ export default function DashboardHome() {
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
-  isFrozen={!isFundedAccount && Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")}
+  isFrozen={isFundedAccountBreached || (!isFundedAccount && Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen"))}
   onAccountFrozen={() => {
   setParticipantData((prev: any) => {
   if (!prev) return prev

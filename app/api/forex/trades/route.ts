@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
 
     // No recovery after breach: a funded account that hit the fixed 2%
     // drawdown limit can never open a new position or pending order again.
-    if (participant?.account_type === "funded" && participant?.funded_breach_status === "breached" && (action === "open" || action === "pending")) {
-      return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading is permanently disabled." }, { status: 403 })
+    if (participant?.account_type === "funded" && participant?.funded_breach_status === "breached" && action !== "sync") {
+      return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading activity is disabled until the account is reactivated." }, { status: 403 })
     }
 
     if (action === "open") {

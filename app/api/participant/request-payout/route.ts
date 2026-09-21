@@ -62,9 +62,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
 
-    const currentBalance = Number(participant.account_balance) || 0
-    if (participant.account_type === "funded") {
-      const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)
+      const currentBalance = Number(participant.account_balance) || 0
+      if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
+        return NextResponse.json({
+          success: false,
+          error: "Funded account breached the fixed 2% drawdown rule. Payouts are disabled until the account is reactivated.",
+        }, { status: 403 })
+      }
+
+      if (participant.account_type === "funded") {
+        const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)
       const maximumPayout = getFundedPayoutAmount(currentBalance, participant.funded_amount)
       if (currentBalance <= fundedBaseAmount || maximumPayout <= 0) {
         return NextResponse.json({ success: false, error: `Funded payouts are available only on profits above the $${fundedBaseAmount.toFixed(2)} funded amount.` }, { status: 400 })

@@ -21,6 +21,7 @@ import { ArrowLeft, Clock, CheckCircle2, XCircle, Loader2, AlertTriangle, Wallet
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
+import { TopUpModal } from "@/components/topup-modal"
 
 
 const PAYOUT_PLANS = [
@@ -74,6 +75,7 @@ export default function PayoutPage() {
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
   const [disputeReason, setDisputeReason] = useState("")
   const [processingPayoutActionId, setProcessingPayoutActionId] = useState<string | null>(null)
+  const [showTopUpModal, setShowTopUpModal] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -126,16 +128,12 @@ export default function PayoutPage() {
   )
 
   const isFrozenFundedAccount = participantData?.account_type === "funded" && Boolean(
-    participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen"
+    participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen" || participantData?.funded_breach_status === "breached"
   )
 
   const handleRequestPayout = () => {
     if (isFrozenFundedAccount) {
-      toast({
-        title: "Funded account frozen",
-        description: "Trading, payouts, and account functions are blocked until the account is reactivated.",
-        variant: "destructive",
-      })
+      setShowTopUpModal(true)
       return
     }
 
@@ -177,11 +175,7 @@ export default function PayoutPage() {
 
   const handleWithdrawal = async () => {
     if (isFrozenFundedAccount) {
-      toast({
-        title: "Funded account frozen",
-        description: "Payouts are blocked until the account is reactivated.",
-        variant: "destructive",
-      })
+      setShowTopUpModal(true)
       return
     }
 
@@ -423,8 +417,9 @@ export default function PayoutPage() {
   <div className="min-h-screen min-h-dvh bg-white relative overflow-hidden">
   {isFrozenFundedAccount && (
   <div className="mx-auto max-w-5xl px-4 pt-4">
-  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-  <strong>Funded account frozen.</strong> Trading, payouts, and all account functions are blocked until reactivation.
+  <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
+  <p><strong>Funded account breached.</strong> Trading, payouts, and all account functions are blocked until reactivation.</p>
+  <Button type="button" onClick={() => setShowTopUpModal(true)} className="shrink-0 bg-red-600 text-white hover:bg-red-700">Add funds to reactivate</Button>
   </div>
   </div>
   )}
@@ -568,7 +563,7 @@ export default function PayoutPage() {
                           ) : (
                             <>
                               <p className={`text-xs ${isDirectPlan && plan.motivation ? "text-emerald-600 font-medium" : "text-slate-500"} mt-0.5`}>
-                                {plan.motivation || plan.description}
+                                {("motivation" in plan ? plan.motivation : plan.description) || plan.description}
                               </p>
                             </>
                           )}
@@ -828,7 +823,7 @@ export default function PayoutPage() {
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900">Confirm Payout Details</DialogTitle>
             <DialogDescription className="text-slate-600">
-              Enter your {isFundedAccount ? selectedNetwork : plan.method} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} payout
+              Enter your {isFundedAccount ? selectedNetwork : selectedPayoutPlan.method} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} payout
             </DialogDescription>
           </DialogHeader>
           
@@ -937,7 +932,21 @@ export default function PayoutPage() {
             </Button>
           </div>
         </DialogContent>
-      </Dialog>
-    </div>
+  </Dialog>
+
+  <TopUpModal
+    isOpen={showTopUpModal}
+    onClose={() => setShowTopUpModal(false)}
+    currentBalance={Number(participantData?.account_balance) || 0}
+    userId={participantData?.username || participantData?.email || ""}
+    userEmail={participantData?.email || ""}
+    isFundedAccount={participantData?.account_type === "funded"}
+    isInitialFundedTopUp={participantData?.account_type === "funded" && (Number(participantData?.account_balance) || 0) <= 0}
+    onSuccess={async () => {
+      setShowTopUpModal(false)
+      if (participantData?.email) router.refresh()
+    }}
+  />
+  </div>
   )
-}
+  }
