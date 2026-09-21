@@ -2140,6 +2140,16 @@ export default function DashboardHome() {
               </button>
             </div>
 
+            <div className="elite-terminal-sidebar-account">
+              <div className="elite-terminal-sidebar-avatar">{displayName.charAt(0).toUpperCase()}</div>
+              <div className="elite-terminal-sidebar-account-copy">
+                <strong>{displayName}</strong>
+                <span><i /> Account online</span>
+              </div>
+              <ChevronRight className="elite-terminal-sidebar-account-arrow" />
+            </div>
+
+            <div className="elite-terminal-section-label">Workspace</div>
             <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
               <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item is-active">
                 <Home />
