@@ -4,8 +4,10 @@ import { Pool } from "pg"
 const globalForPool = globalThis as unknown as { _pgPool?: Pool }
 
 function createPool() {
-  // Prioritize Neon/DATABASE_URL over legacy Supabase POSTGRES_URL
-  const url = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL
+  // Keep order routes on the current Neon project database. DATABASE_URL can
+  // point at an older Neon project in preview environments, while the explicit
+  // Neon integration URL is the schema that receives project migrations.
+  const url = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL
   if (!url) return null
   return new Pool({
     connectionString: url,
