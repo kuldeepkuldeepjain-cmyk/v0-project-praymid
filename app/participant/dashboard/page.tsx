@@ -2258,11 +2258,11 @@ export default function DashboardHome() {
           <button
             onClick={() => setActiveTab("dashboard")}
             className={`flex flex-col items-center justify-center w-full h-full transition-all ${
-              activeTab === "dashboard" ? "text-[#2563eb]" : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
-            <span className="text-[10px] font-medium">Home</span>
+  activeTab === "dashboard" ? "text-[#2563eb]" : "text-slate-400 hover:text-slate-600"
+  }`}
+  >
+  <Home className={`h-5 w-5 mb-0.5 ${activeTab === "dashboard" ? "scale-110" : ""}`} />
+  <span className="text-[10px] font-medium">Trade</span>
           </button>
 
           <button
