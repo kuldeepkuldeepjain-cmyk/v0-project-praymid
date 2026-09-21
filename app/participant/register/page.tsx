@@ -344,13 +344,7 @@ export default function ParticipantRegisterPage() {
       </div>
 
       {/* Main content */}
-      <div className="w-full max-w-2xl space-y-6 relative z-10 my-8">
-        <div className="text-center space-y-2 animate-fade-in-up">
-          <FlowChainLogo size="lg" showTagline={true} className="justify-center mb-4" />
-          <h1 className={cn("text-3xl font-bold", isLightTheme ? "text-slate-950" : "text-white")}>Create your account</h1>
-          <p className={cn("text-sm", isLightTheme ? "text-slate-600" : "text-slate-400")}>Join Elite Fund in less than a minute</p>
-        </div>
-
+      <div className="w-full max-w-2xl relative z-10 my-8">
         <Card className={cn(
           "backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group transition-colors duration-500",
           isLightTheme
@@ -362,7 +356,14 @@ export default function ParticipantRegisterPage() {
           <div className="absolute top-10 right-10 size-32 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" />
           <div className="absolute bottom-10 left-10 size-40 bg-gradient-to-br from-cyan-400/10 to-transparent rounded-full blur-2xl animate-pulse pointer-events-none" style={{ animationDelay: "1s" }} />
           
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-5 sm:p-6 relative z-10">
+            <div className="mb-5 flex items-center gap-3 border-b border-slate-200/20 pb-4">
+              <FlowChainLogo size="xs" showTagline={false} className="shrink-0" />
+              <div>
+                <h1 className={cn("text-2xl font-bold", isLightTheme ? "text-slate-950" : "text-white")}>Create your account</h1>
+                <p className={cn("text-sm", isLightTheme ? "text-slate-600" : "text-slate-400")}>Join Elite Fund in less than a minute</p>
+              </div>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Name and Surname */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
