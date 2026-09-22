@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       tradeRisk.flags.push("duplicate_account_signal")
       tradeRisk.riskScore = Math.max(tradeRisk.riskScore, 60)
     }
-    if (tradeRisk.riskScore >= 100 && action !== "sync") {
+    if (tradeRisk.riskScore >= 75 && action !== "sync") {
       await recordSecurityEvent({ eventType: "trade_blocked_high_risk", actorType: "participant", actorEmail: participant_email, request: req, resourceType: "forex_trade", resourceId: String(trade.id), riskScore: tradeRisk.riskScore, metadata: { flags: tradeRisk.flags } })
       return NextResponse.json({ success: false, error: "Trade blocked by risk controls" }, { status: 403 })
     }
@@ -261,7 +261,7 @@ export async function PATCH(req: NextRequest) {
 
 /**
  * DELETE /api/forex/trades?id=...&email=...
- * Cancels a pending order (hard delete — it was never filled).
+ * Cancels a pending order while preserving its audit history.
  */
 export async function DELETE(req: NextRequest) {
   const auth = await requireParticipantSession(req)
@@ -282,8 +282,12 @@ export async function DELETE(req: NextRequest) {
   if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
 
   try {
-    await db.query(`DELETE FROM forex_trades WHERE id = $1 AND participant_email = $2 AND status = 'pending'`, [id, email])
-    await recordSecurityEvent({ eventType: "trade_cancelled", actorType: "participant", actorEmail: email, request: req, resourceType: "forex_trade", resourceId: id })
+    const result = await db.query(
+      `UPDATE forex_trades SET status = 'cancelled', close_reason = 'cancelled_by_participant', close_time = NOW()
+       WHERE id = $1 AND participant_email = $2 AND status = 'pending'`,
+      [id, email],
+    )
+    await recordSecurityEvent({ eventType: "trade_cancelled", actorType: "participant", actorEmail: email, request: req, resourceType: "forex_trade", resourceId: id, metadata: { updated: result.rowCount === 1 } })
     return NextResponse.json({ success: true })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 })
