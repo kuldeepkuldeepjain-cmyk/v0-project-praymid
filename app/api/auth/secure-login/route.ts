@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { setAdminSession } from "@/lib/session"
+import { enforceRateLimit, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 
 // Valid admin credentials with Google Authenticator support
 const CREDENTIALS = [
@@ -13,6 +14,13 @@ const CREDENTIALS = [
 ]
 
 export async function POST(request: NextRequest) {
+  const context = getSecurityContext(request)
+  const rate = await enforceRateLimit("login", context.ipAddress || "unknown")
+  if (!rate.allowed) {
+    await recordSecurityEvent({ eventType: "login_rate_limited", actorType: "admin", request, riskScore: 70 })
+    return NextResponse.json({ success: false, error: "Too many login attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+  }
+
   try {
     const body = await request.json()
     const { email, otp, password } = body
@@ -30,6 +38,7 @@ export async function POST(request: NextRequest) {
     )
 
     if (!match) {
+      await recordSecurityEvent({ eventType: "login_failed", actorType: "admin", actorEmail: inputEmail, request, riskScore: 55, metadata: { reason: "invalid_credentials" } })
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -43,6 +52,9 @@ export async function POST(request: NextRequest) {
     } catch (_) {
       // Session save is best-effort — client uses localStorage auth
     }
+
+    await updateParticipantSecurityProfile(match.email, request, 0)
+    await recordSecurityEvent({ eventType: "login_success", actorType: "admin", actorEmail: match.email, request, metadata: { twoFactorVerified: true } })
 
     return NextResponse.json({
       success: true,
