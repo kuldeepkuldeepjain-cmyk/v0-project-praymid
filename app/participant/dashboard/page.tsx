@@ -1673,16 +1673,17 @@ export default function DashboardHome() {
     : 0
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
   const isFundedAccountBreached = isFundedAccount && participantData?.funded_breach_status === "breached"
-  const isFirstFundedTopUp = isFundedAccount && !isFundedAccountBreached && !participantData?.has_prior_top_up && Number(participantData?.top_up_count || 0) === 0
+  // Funding is always available from Add Fund. Only a breached funded account
+  // opens the reactivation flow automatically and uses funded-account rules.
+  const isFundedReactivation = isFundedAccount && isFundedAccountBreached
 
   useEffect(() => {
-  // Open once for a newly created funded account, or whenever a funded account
-  // is breached and needs reactivation. Normal accounts never enter this flow.
-  if (isFundedAccount && (isFirstFundedTopUp || isFundedAccountBreached)) {
+  if (isFundedReactivation) {
   setTopUpIsFundedAccount(true)
   setShowTopUpModal(true)
   }
-  }, [isFundedAccount, isFirstFundedTopUp, isFundedAccountBreached])
+  }, [isFundedReactivation])
+
 
   useEffect(() => {
   // Funded accounts use the fixed 2% drawdown breach state, not the normal
@@ -1804,7 +1805,7 @@ export default function DashboardHome() {
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
         isFundedAccount={topUpIsFundedAccount}
-  isInitialFundedTopUp={topUpIsFundedAccount && isFirstFundedTopUp}
+  isInitialFundedTopUp={false}
   onSuccess={async () => {
   setShowTopUpModal(false)
   if (participantData?.email) {

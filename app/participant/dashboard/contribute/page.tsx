@@ -72,7 +72,6 @@ export default function AddFundPage() {
 
   const currentBalance = Number(participantData.wallet_balance ?? participantData.account_balance ?? 0)
   const isFundedAccountBreached = participantData.account_type === "funded" && participantData.funded_breach_status === "breached"
-  const isFundedTopUp = isFundedAccountBreached
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -93,13 +92,13 @@ export default function AddFundPage() {
       <main className="flex flex-1 items-start justify-center px-4 py-10">
         <Card className="w-full max-w-lg overflow-hidden border-2 border-violet-200 shadow-lg">
           <CardContent className="p-0">
-            <div className={`px-6 py-8 text-center text-white ${isFundedTopUp ? "bg-gradient-to-br from-emerald-600 to-teal-600" : "bg-gradient-to-br from-violet-600 to-indigo-600"}`}>
+            <div className={`px-6 py-8 text-center text-white ${isFundedAccountBreached ? "bg-gradient-to-br from-emerald-600 to-teal-600" : "bg-gradient-to-br from-violet-600 to-indigo-600"}`}>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
                 <Wallet className="h-8 w-8" />
               </div>
-              <h2 className="text-2xl font-bold">{isFundedTopUp ? "Funded Account Top Up" : "Top Up Your Wallet"}</h2>
-              <p className={`mx-auto mt-2 max-w-sm text-sm leading-relaxed ${isFundedTopUp ? "text-emerald-100" : "text-violet-100"}`}>
-                {isFundedTopUp
+              <h2 className="text-2xl font-bold">{isFundedAccountBreached ? "Funded Account Top Up" : "Top Up Your Wallet"}</h2>
+              <p className={`mx-auto mt-2 max-w-sm text-sm leading-relaxed ${isFundedAccountBreached ? "text-emerald-100" : "text-violet-100"}`}>
+                {isFundedAccountBreached
                   ? "Choose a funded account tier and submit your USDT payment for approval."
                   : "Add funds to your trading wallet using USDT. Your balance will update after payment verification."}
               </p>
@@ -111,23 +110,17 @@ export default function AddFundPage() {
                 <span className="text-lg font-bold text-slate-900">${currentBalance.toFixed(2)} USDT</span>
               </div>
 
-              {isFundedAccountBreached ? (
-                <>
-                  <Button
-                    type="button"
-                    onClick={() => setShowTopUpModal(true)}
-                    className="h-12 w-full bg-gradient-to-r from-red-600 to-orange-600 text-base font-semibold text-white shadow-md hover:from-red-700 hover:to-orange-700"
-                  >
-                    <Wallet className="mr-2 h-5 w-5" />
-                    Add Funds to Reactivate
-                  </Button>
-                  <p className="text-center text-xs leading-relaxed text-red-600">
-                    Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.
-                  </p>
-                </>
-              ) : (
-                <p className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center text-sm leading-relaxed text-slate-600">
-                  Add Funds and Top Up are available only after a funded account breach requires reactivation.
+              <Button
+                type="button"
+                onClick={() => setShowTopUpModal(true)}
+                className={`h-12 w-full text-base font-semibold text-white shadow-md ${isFundedAccountBreached ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"}`}
+              >
+                <Wallet className="mr-2 h-5 w-5" />
+                {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}
+              </Button>
+              {isFundedAccountBreached && (
+                <p className="text-center text-xs leading-relaxed text-red-600">
+                  Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.
                 </p>
               )}
             </div>
@@ -141,7 +134,7 @@ export default function AddFundPage() {
         currentBalance={currentBalance}
         userId={participantData.username || participantData.email || ""}
         userEmail={participantData.email || ""}
-        isFundedAccount={isFundedTopUp}
+        isFundedAccount={isFundedAccountBreached}
         onSuccess={(amount) => {
           setParticipantData((previousData) => previousData ? {
             ...previousData,
