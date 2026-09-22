@@ -10,7 +10,7 @@ import {
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
   AlertCircle, Home, Plus, PlusCircle, MessageCircle, BarChart2, Menu, Search,
-  ChevronDown,
+  ChevronDown, FileText, ShieldCheck, Palette, BellRing, SlidersHorizontal,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
@@ -1440,6 +1440,8 @@ export default function DashboardHome() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
   const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
+  const [isTerminalSettingsOpen, setIsTerminalSettingsOpen] = useState(false)
+  const [activeSettingsSection, setActiveSettingsSection] = useState("Account")
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("trading")
   const [participantData, setParticipantData] = useState<{
     wallet: string
@@ -2197,6 +2199,21 @@ export default function DashboardHome() {
             </nav>
 
             <div className="elite-terminal-sidebar-footer">
+              <button
+                type="button"
+                className={`elite-terminal-nav-item ${isTerminalSettingsOpen ? "is-active" : ""}`}
+                onClick={() => {
+                  setActiveSettingsSection("Account")
+                  setIsTerminalSettingsOpen(true)
+                  setIsTerminalMenuOpen(false)
+                }}
+                aria-haspopup="dialog"
+                aria-expanded={isTerminalSettingsOpen}
+              >
+                <Settings />
+                <span>Settings</span>
+                <ChevronRight className="ml-auto" />
+              </button>
               <div className="elite-terminal-promo">
                 <div className="elite-terminal-promo-copy">
                   <strong>Trade with confidence</strong>
@@ -2209,6 +2226,110 @@ export default function DashboardHome() {
               </button>
             </div>
           </aside>
+
+          {isTerminalSettingsOpen && (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="terminal-settings-title">
+              <div className="flex max-h-[min(720px,calc(100vh-2rem))] w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-700 bg-[#0a111b] text-slate-200 shadow-2xl shadow-black/50">
+                <aside className="hidden w-56 shrink-0 border-r border-slate-800 bg-[#070d15] p-3 sm:block">
+                  <div className="mb-4 flex items-center justify-between px-2">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">Terminal</p>
+                      <h2 id="terminal-settings-title" className="mt-1 text-lg font-semibold text-slate-100">Settings</h2>
+                    </div>
+                    <button type="button" onClick={() => setIsTerminalSettingsOpen(false)} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white" aria-label="Close settings">
+                      <X className="size-4" />
+                    </button>
+                  </div>
+                  <nav className="flex flex-col gap-1" aria-label="Settings sections">
+                    {[
+                      { label: "Account", icon: User },
+                      { label: "Trading", icon: SlidersHorizontal },
+                      { label: "Notifications", icon: BellRing },
+                      { label: "Appearance", icon: Palette },
+                      { label: "Security", icon: ShieldCheck },
+                      { label: "MT5 API Docs", icon: FileText },
+                    ].map(({ label, icon: Icon }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => setActiveSettingsSection(label)}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${activeSettingsSection === label ? "bg-cyan-400/10 text-cyan-300" : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-100"}`}
+                      >
+                        <Icon className="size-4" />
+                        <span>{label}</span>
+                      </button>
+                    ))}
+                  </nav>
+                </aside>
+
+                <section className="min-w-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                  <div className="mb-6 flex items-start justify-between gap-4 sm:hidden">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">Terminal</p>
+                      <h2 className="mt-1 text-lg font-semibold text-slate-100">Settings</h2>
+                    </div>
+                    <button type="button" onClick={() => setIsTerminalSettingsOpen(false)} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white" aria-label="Close settings">
+                      <X className="size-4" />
+                    </button>
+                  </div>
+
+                  {activeSettingsSection === "MT5 API Docs" ? (
+                    <div className="flex flex-col gap-6">
+                      <div>
+                        <div className="mb-2 flex items-center gap-2 text-cyan-300"><FileText className="size-5" /><span className="text-xs font-bold uppercase tracking-[0.16em]">Developer resources</span></div>
+                        <h3 className="text-2xl font-semibold text-slate-100">MT5 API documentation</h3>
+                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Connect MetaTrader 5 to your trading terminal with secure account credentials, market data access, and automated order execution.</p>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {[
+                          { title: "Getting started", text: "Create a connection, verify your broker server, and authorize read-only access first." },
+                          { title: "Market data", text: "Stream symbols, ticks, candles, spreads, and account pricing into the terminal." },
+                          { title: "Trade execution", text: "Submit, modify, and close orders with validation for volume, margin, and risk." },
+                          { title: "Webhooks & events", text: "Receive position updates and execution events without exposing your secret key." },
+                        ].map(({ title, text }) => (
+                          <div key={title} className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                            <h4 className="text-sm font-semibold text-slate-100">{title}</h4>
+                            <p className="mt-2 text-xs leading-5 text-slate-400">{text}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">Authentication example</p>
+                        <code className="mt-3 block overflow-x-auto rounded-lg bg-slate-950 p-3 font-mono text-xs leading-5 text-slate-300">{"POST /api/mt5/connect\n{\"server\": \"Broker-Server\", \"login\": 123456, \"readOnly\": true}"}</code>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        <a href="https://www.mql5.com/en/docs/integration" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">Open MT5 reference <ChevronRight className="size-4" /></a>
+                        <button type="button" onClick={() => setActiveSettingsSection("Trading")} className="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white">Configure connection</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-7 flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">Terminal preferences</p>
+                          <h3 className="mt-1 text-2xl font-semibold text-slate-100">{activeSettingsSection}</h3>
+                          <p className="mt-2 text-sm leading-6 text-slate-400">Manage how your trading terminal behaves and keeps you informed.</p>
+                        </div>
+                        <button type="button" onClick={() => setIsTerminalSettingsOpen(false)} className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white sm:block" aria-label="Close settings"><X className="size-4" /></button>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        {[
+                          ["Live price updates", "Keep quotes and open P/L refreshed in real time."],
+                          ["Confirm before placing orders", "Review size, leverage, stop loss, and take profit before execution."],
+                          ["Compact chart layout", "Show more market data in the trading workspace."],
+                        ].map(([title, text], index) => (
+                          <div key={title} className="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                            <div><h4 className="text-sm font-medium text-slate-100">{title}</h4><p className="mt-1 text-xs text-slate-400">{text}</p></div>
+                            <button type="button" aria-label={`Toggle ${title}`} className={`relative h-6 w-11 shrink-0 rounded-full transition ${index < 2 ? "bg-cyan-400" : "bg-slate-700"}`}><span className={`absolute top-1 size-4 rounded-full bg-white transition ${index < 2 ? "left-6" : "left-1"}`} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
+            </div>
+          )}
 
           <div className="elite-terminal-workspace">
             <header className="elite-terminal-header">
