@@ -2364,6 +2364,41 @@ adjustWalletBalance(returnAmt,
         ))}
       </div>
 
+      {/* ══ UNIVERSAL TRADE ACTIONS ═══════════════════════════════════════════ */}
+      <div className="shrink-0 flex items-center gap-2 px-2.5 py-1.5" style={{ background: "#070b13", borderBottom: "1px solid #1e2d45" }}>
+        <div className="hidden sm:flex min-w-0 flex-1 items-center gap-2">
+          <Zap className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
+          <span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Trade now</span>
+          <span className="truncate text-[10px] font-bold text-slate-300">
+            {selectedPair ? `${selectedPair.symbol} · ${lotSize} lots` : "Select an instrument to trade"}
+          </span>
+        </div>
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
+          <button
+            type="button"
+            onClick={() => quickTrade("SELL")}
+            disabled={isFrozen || !selectedPair || !balanceLoaded || estimatedMargin > walletBalance}
+            aria-label={selectedPair ? `Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}` : "Select an instrument before selling"}
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-[10px] font-black tracking-wider text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+          >
+            <TrendingDown className="h-3.5 w-3.5" />
+            <span>SELL</span>
+            <span className="price-mono hidden text-[9px] opacity-80 sm:inline">{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => quickTrade("BUY")}
+            disabled={isFrozen || !selectedPair || !balanceLoaded || estimatedMargin > walletBalance}
+            aria-label={selectedPair ? `Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}` : "Select an instrument before buying"}
+            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black tracking-wider text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+          >
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span>BUY</span>
+            <span className="price-mono hidden text-[9px] opacity-80 sm:inline">{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</span>
+          </button>
+        </div>
+      </div>
+
       {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
