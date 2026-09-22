@@ -1279,67 +1279,35 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [participantEmail, onBalanceUpdated])
 
-  // ── Trade persistence API. The UI remains optimistic, while every open,
-  //    fill, close, and partial-close event is sent to the server. ────────────
-  const persistOpenTrade = useCallback((trade: OpenTrade) => {
-    participantFetch("/api/forex/trades", {
-      method: "POST",
-      body: JSON.stringify({ participant_email: participantEmail, action: "open", trade }),
-    }).catch(() => {})
-  }, [participantEmail])
+  // ── Trade persistence API. The UI remains optimistic, but failed writes are
+  //    retried once and surfaced instead of being silently discarded. ─────────
+  const persistTradeRequest = useCallback(async (input: string, init: RequestInit, label: string) => {
+    let lastError = ""
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      try {
+        const response = await participantFetch(input, init)
+        const payload = await response.json().catch(() => ({}))
+        if (response.ok && payload.success !== false) return true
+        lastError = payload.error || `Request failed (${response.status})`
+        if (response.status === 400 || response.status === 401 || response.status === 403) break
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : "Network error"
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400))
+    }
+    console.error("[v0] Trade persistence failed:", label, lastError)
+    showToast("error", `${label} could not be saved. Your screen is still updated; please refresh to reconcile.`)
+    return false
+  }, [showToast])
 
-  const persistPendingOrder = useCallback((order: PendingOrder) => {
-    participantFetch("/api/forex/trades", {
-      method: "POST",
-      body: JSON.stringify({ participant_email: participantEmail, action: "pending", trade: order }),
-    }).catch(() => {})
-  }, [participantEmail])
-
-  const persistPartialClose = useCallback((closed: ClosedTrade) => {
-    participantFetch("/api/forex/trades", {
-      method: "POST",
-      body: JSON.stringify({ participant_email: participantEmail, action: "partial_close", trade: closed }),
-    }).catch(() => {})
-  }, [participantEmail])
-
-  const persistClose = useCallback((closed: ClosedTrade) => {
-    participantFetch("/api/forex/trades", {
-      method: "PATCH",
-      body: JSON.stringify({
-        participant_email: participantEmail, id: closed.id, action: "close",
-        closePrice: closed.closePrice, closeTime: closed.closeTime, closeDuration: closed.closeDuration,
-        finalPnl: closed.finalPnl, finalPips: closed.finalPips, finalSwap: closed.finalSwap,
-        closeReason: closed.closeReason, lotSize: closed.lotSize, margin: closed.margin,
-      }),
-    }).catch(() => {})
-  }, [participantEmail])
-
-  const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
-    participantFetch("/api/forex/trades", {
-      method: "PATCH",
-      body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }),
-    }).catch(() => {})
-  }, [participantEmail])
-
-  const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => {
-    participantFetch("/api/forex/trades", {
-      method: "PATCH",
-      body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }),
-    }).catch(() => {})
-  }, [participantEmail])
-
-  const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => {
-    participantFetch("/api/forex/trades", {
-      method: "PATCH",
-      body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }),
-    }).catch(() => {})
-  }, [participantEmail])
-
-  const deletePendingOrder = useCallback((id: string) => {
-    participantFetch(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, {
-      method: "DELETE",
-    }).catch(() => {})
-  }, [participantEmail])
+  const persistOpenTrade = useCallback((trade: OpenTrade) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "open", trade }) }, "Opening trade"), [participantEmail, persistTradeRequest])
+  const persistPendingOrder = useCallback((order: PendingOrder) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "pending", trade: order }) }, "Saving pending order"), [participantEmail, persistTradeRequest])
+  const persistPartialClose = useCallback((closed: ClosedTrade) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "partial_close", trade: closed }) }, "Saving partial close"), [participantEmail, persistTradeRequest])
+  const persistClose = useCallback((closed: ClosedTrade) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id: closed.id, action: "close", closePrice: closed.closePrice, closeTime: closed.closeTime, closeDuration: closed.closeDuration, finalPnl: closed.finalPnl, finalPips: closed.finalPips, finalSwap: closed.finalSwap, closeReason: closed.closeReason, lotSize: closed.lotSize, margin: closed.margin }) }, "Saving closed trade"), [participantEmail, persistTradeRequest])
+  const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }) }, "Saving trade changes"), [participantEmail, persistTradeRequest])
+  const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }) }, "Saving partial reduction"), [participantEmail, persistTradeRequest])
+  const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }) }, "Saving filled order"), [participantEmail, persistTradeRequest])
+  const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
   // ── Fetch live rates ───────────────────────────────────────────────────────
   const fetchRates = useCallback(async () => {
@@ -1411,7 +1379,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Poll rates every 3s ─────────────────────────────────────����──────────────
+  // ── Poll rates every 3s ───────────────────────────��─────────����──────────────
   useEffect(() => {
     ratesIntervalRef.current = setInterval(fetchRates, 3000)
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
@@ -2193,7 +2161,7 @@ adjustWalletBalance(returnAmt,
       <div className="flex h-7 shrink-0 items-center gap-0 border-b px-1" style={{ background: "#202f40", borderColor: "#344b62" }} aria-label="MT5 workspace toolbar">
         {[
           { label: "Market Watch", icon: "▤" },
-          { label: "Navigator", icon: "⌘" },
+          { label: "Navigator", icon: "��" },
           { label: "Data Window", icon: "▥" },
           { label: "Strategy Tester", icon: "▣" },
         ].map(item => (

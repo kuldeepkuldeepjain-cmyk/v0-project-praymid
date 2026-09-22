@@ -41,7 +41,7 @@ const BASE_OPTIONS = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 30, // 30 days; users remain signed in across normal trading sessions
   },
 }
 

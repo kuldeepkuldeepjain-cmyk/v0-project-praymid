@@ -89,7 +89,7 @@ export function getAdminHeaders(): Record<string, string> {
 // Returns headers to authenticate participant API requests
 export function getParticipantHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {}
-  const email = sessionStorage.getItem("participant_email")
+  const email = localStorage.getItem("participant_email") || sessionStorage.getItem("participant_email")
   if (!email) return {}
   return { "X-Participant-Token": email }
 }
@@ -106,24 +106,33 @@ export async function adminFetch(input: string, init?: RequestInit): Promise<Res
 // Authenticated fetch for participant API calls — automatically injects X-Participant-Token header
 export async function participantFetch(input: string, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
-  const email = typeof window !== "undefined" ? sessionStorage.getItem("participant_email") : null
+  const email = typeof window !== "undefined"
+    ? localStorage.getItem("participant_email") || sessionStorage.getItem("participant_email")
+    : null
   if (email) headers.set("X-Participant-Token", email)
   if (init?.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
-  return fetch(input, { ...init, headers })
+  return fetch(input, { ...init, headers, credentials: "include" })
 }
 
 // Participant authentication
 export function isParticipantAuthenticated(): boolean {
   if (typeof window === "undefined") return false
-  const token = sessionStorage.getItem("participant_token")
-  const email = sessionStorage.getItem("participant_email")
+  const token = localStorage.getItem("participant_token") || sessionStorage.getItem("participant_token")
+  const email = localStorage.getItem("participant_email") || sessionStorage.getItem("participant_email")
+  // Migrate existing tab-scoped sessions so a normal tab close does not sign users out.
+  if (token && email && !localStorage.getItem("participant_token")) {
+    for (const key of ["participant_token", "participant_wallet", "participant_email", "participant_username", "participant_name", "participant_activation_fee_paid", "participant_created_at", "participant_is_frozen"]) {
+      const value = sessionStorage.getItem(key)
+      if (value !== null) localStorage.setItem(key, value)
+    }
+  }
   // wallet may be empty for new participants — only require token + email
   return !!(token && email)
 }
 
 export function getParticipantToken(): string | null {
   if (typeof window === "undefined") return null
-  return sessionStorage.getItem("participant_token")
+  return localStorage.getItem("participant_token") || sessionStorage.getItem("participant_token")
 }
 
 export function setParticipantAuth(
@@ -137,26 +146,26 @@ export function setParticipantAuth(
   is_frozen?: boolean,
 ) {
   if (typeof window === "undefined") return
+  const storage = localStorage
+  storage.setItem("participant_token", token)
+  storage.setItem("participant_wallet", walletAddress)
+  if (email) storage.setItem("participant_email", email)
+  if (username) storage.setItem("participant_username", username)
+  if (name) storage.setItem("participant_name", name)
+  storage.setItem("participant_activation_fee_paid", String(activation_fee_paid || false))
+  if (created_at) storage.setItem("participant_created_at", created_at)
+  storage.setItem("participant_is_frozen", String(is_frozen || false))
+  // Keep the session copy for older open tabs during the migration.
   sessionStorage.setItem("participant_token", token)
-  sessionStorage.setItem("participant_wallet", walletAddress)
-  if (email) sessionStorage.setItem("participant_email", email)
-  if (username) sessionStorage.setItem("participant_username", username)
-  if (name) sessionStorage.setItem("participant_name", name)
-  sessionStorage.setItem("participant_activation_fee_paid", String(activation_fee_paid || false))
-  if (created_at) sessionStorage.setItem("participant_created_at", created_at)
-  sessionStorage.setItem("participant_is_frozen", String(is_frozen || false))
+  sessionStorage.setItem("participant_email", email || "")
 }
 
 export function clearParticipantAuth() {
   if (typeof window === "undefined") return
-  sessionStorage.removeItem("participant_token")
-  sessionStorage.removeItem("participant_wallet")
-  sessionStorage.removeItem("participant_email")
-  sessionStorage.removeItem("participant_username")
-  sessionStorage.removeItem("participant_name")
-  sessionStorage.removeItem("participant_activation_fee_paid")
-  sessionStorage.removeItem("participant_created_at")
-  sessionStorage.removeItem("participant_is_frozen")
+  for (const key of ["participant_token", "participant_wallet", "participant_email", "participant_username", "participant_name", "participant_activation_fee_paid", "participant_created_at", "participant_is_frozen"]) {
+    localStorage.removeItem(key)
+    sessionStorage.removeItem(key)
+  }
   localStorage.removeItem("participantData")
   localStorage.removeItem("participantToken")
   // Also clear the httpOnly session cookie via the API
@@ -173,16 +182,16 @@ export function getParticipantData(): {
   is_frozen?: boolean
 } | null {
   if (typeof window === "undefined") return null
-  const token = sessionStorage.getItem("participant_token")
-  const email = sessionStorage.getItem("participant_email") || undefined
+  const token = localStorage.getItem("participant_token") || sessionStorage.getItem("participant_token")
+  const email = localStorage.getItem("participant_email") || sessionStorage.getItem("participant_email") || undefined
   // require token + email; wallet may be empty for new participants
   if (!token || !email) return null
-  const wallet = sessionStorage.getItem("participant_wallet") || ""
-  const username = sessionStorage.getItem("participant_username") || undefined
-  const name = sessionStorage.getItem("participant_name") || undefined
-  const activation_fee_paid = sessionStorage.getItem("participant_activation_fee_paid") === "true"
-  const created_at = sessionStorage.getItem("participant_created_at") || undefined
-  const is_frozen = sessionStorage.getItem("participant_is_frozen") === "true"
+  const wallet = localStorage.getItem("participant_wallet") || sessionStorage.getItem("participant_wallet") || ""
+  const username = localStorage.getItem("participant_username") || sessionStorage.getItem("participant_username") || undefined
+  const name = localStorage.getItem("participant_name") || sessionStorage.getItem("participant_name") || undefined
+  const activation_fee_paid = (localStorage.getItem("participant_activation_fee_paid") || sessionStorage.getItem("participant_activation_fee_paid")) === "true"
+  const created_at = localStorage.getItem("participant_created_at") || sessionStorage.getItem("participant_created_at") || undefined
+  const is_frozen = (localStorage.getItem("participant_is_frozen") || sessionStorage.getItem("participant_is_frozen")) === "true"
   return { wallet, email, username, name, activation_fee_paid, created_at, is_frozen }
 }
 

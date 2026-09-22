@@ -48,8 +48,13 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const { participant_email, action, trade } = body
-    if (!participant_email || !action || !trade?.id) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
+    const allowedActions = new Set(["open", "pending", "partial_close", "sync"])
+    if (typeof participant_email !== "string" || !participant_email.trim() || !allowedActions.has(action) || !trade?.id) {
+      return NextResponse.json({ success: false, error: "Invalid trade request" }, { status: 400 })
+    }
+    const numericTradeFields = [trade.lotSize, trade.leverage, trade.openPrice, trade.margin].filter((value) => value !== undefined && value !== null)
+    if (numericTradeFields.some((value) => typeof value !== "number" || !Number.isFinite(value))) {
+      return NextResponse.json({ success: false, error: "Invalid trade values" }, { status: 400 })
     }
     if (auth.email.toLowerCase() !== participant_email.toLowerCase()) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
@@ -141,8 +146,13 @@ export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json()
     const { participant_email, id, action } = body
-    if (!participant_email || !id || !action) {
-      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 })
+    const allowedActions = new Set(["close", "modify", "partial_reduce", "fill", "sync"])
+    if (typeof participant_email !== "string" || !participant_email.trim() || typeof id !== "string" || !id || !allowedActions.has(action)) {
+      return NextResponse.json({ success: false, error: "Invalid trade update" }, { status: 400 })
+    }
+    const numericUpdateFields = [body.closePrice, body.finalPnl, body.finalPips, body.finalSwap, body.lotSize, body.margin, body.sl, body.tp, body.trailingStopPips, body.openPrice].filter((value) => value !== undefined && value !== null)
+    if (numericUpdateFields.some((value) => typeof value !== "number" || !Number.isFinite(value))) {
+      return NextResponse.json({ success: false, error: "Invalid trade values" }, { status: 400 })
     }
     if (auth.email.toLowerCase() !== participant_email.toLowerCase()) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
