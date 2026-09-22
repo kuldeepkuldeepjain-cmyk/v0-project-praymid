@@ -50,10 +50,10 @@ export function isFundedDrawdownBreached(accountType: unknown, initialBalance: u
   if (accountType !== "funded") return false
   const initial = toPositiveNumber(initialBalance)
   const equity = getFundedEquity(initial, availableBalance, committedFunds)
-  // Breach is triggered the instant equity reaches or falls below 98% of the
-  // initial funded balance — never rounded upward in the trader's favor.
-  const breachEquityLevel = Math.floor(getFundedMinimumBalance(initial) * 100) / 100
-  return initial > 0 && Math.floor(equity * 100) / 100 <= breachEquityLevel
+  // The only breach condition is total equity strictly below 98% of the
+  // initial funded balance. Exactly 2% drawdown is still allowed.
+  const breachEquityLevel = getFundedMinimumBalance(initial)
+  return initial > 0 && equity < breachEquityLevel
 }
 
 export interface FundedDrawdownSnapshot {
@@ -88,7 +88,7 @@ export function getFundedDrawdownSnapshot(
   const breached = isBreached || isFundedDrawdownBreached(accountType, initial, availableBalance, committedFunds)
 
   let warningLevel: FundedDrawdownSnapshot["warningLevel"] = "normal"
-  if (breached || drawdownUsedPercent >= 100) warningLevel = "breached"
+  if (breached) warningLevel = "breached"
   else if (drawdownUsedPercent >= 90) warningLevel = "critical"
   else if (drawdownUsedPercent >= 75) warningLevel = "warning"
 
@@ -125,8 +125,8 @@ export function isFundedBalanceBelowMinimum(
   const baseAmount = getFundedBaseAmount(totalFunds, configuredAmount)
   if (!Number.isFinite(availableBalance) || availableBalance < 0 || !baseAmount) return false
 
-  // Total funds are cash still available plus stakes/margin committed to open trades.
-  // Freeze only once equity falls below 98% of the funded amount (2% loss limit).
+  // Total equity is available cash plus funds committed to open positions.
+  // Exactly 2% drawdown is allowed; breach only occurs strictly below the floor.
   return totalFunds < getFundedMinimumBalance(baseAmount)
 }
 

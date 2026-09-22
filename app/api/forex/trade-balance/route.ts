@@ -73,7 +73,18 @@ export async function POST(req: NextRequest) {
 
       const newBalance = parseFloat((currentBalance + delta).toFixed(2))
       const fundedInitial = Number(rows[0].funded_initial_balance) || 0
-      const fundedBreach = !alreadyBreached && isFundedDrawdownBreached(rows[0].account_type, fundedInitial, newBalance, 0)
+      const committedResult = await client.query(
+        `SELECT COALESCE(SUM(margin), 0) AS committed_funds
+         FROM forex_trades
+         WHERE participant_email = $1 AND status = 'open'`,
+        [email]
+      )
+      const existingCommittedFunds = Number(committedResult.rows[0]?.committed_funds) || 0
+      // Locking margin moves cash into an open position; it is still part of
+      // total equity and must not trigger a breach by itself.
+      const marginBeingCommitted = isMarginLock && delta < 0 ? Math.abs(delta) : 0
+      const totalEquity = newBalance + existingCommittedFunds + marginBeingCommitted
+      const fundedBreach = !alreadyBreached && isFundedDrawdownBreached(rows[0].account_type, fundedInitial, newBalance, existingCommittedFunds + marginBeingCommitted)
 
       if (newBalance < 0) {
         await client.query("ROLLBACK")
@@ -89,9 +100,9 @@ export async function POST(req: NextRequest) {
      funded_breach_status = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 'breached' ELSE funded_breach_status END,
      funded_breach_at = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN NOW() ELSE funded_breach_at END,
      funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_balance END,
-     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_equity END
+     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END
    WHERE id = $2`,
-  [newBalance, participantId, fundedBreach]
+  [newBalance, participantId, fundedBreach, totalEquity]
   )
 
       if (fundedBreach) {
