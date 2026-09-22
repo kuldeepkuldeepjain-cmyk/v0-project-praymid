@@ -51,6 +51,7 @@ type PendingOrder = {
   lotSize: number; leverage: number
   targetPrice: number; sl: number | null; tp: number | null
   createdTime: string
+  createdTimestamp?: number
   expiry: "GTC" | "TODAY"           // Good Till Cancel or expire end of day
 }
 
@@ -1449,8 +1450,20 @@ function PositionSizer({
     const toClose: { id: string; reason: ClosedTrade["closeReason"]; price: number }[] = []
     const toFillPending: string[] = []
 
-    // Check pending orders for fill
+    // Check pending orders for expiry and fill. TODAY orders expire at the next
+    // local calendar day, while GTC orders remain active until cancelled.
+    const now = new Date()
+    const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`
+    const expiredPending: string[] = []
     pendingOrders.forEach(o => {
+      if (o.expiry === "TODAY" && o.createdTimestamp) {
+        const created = new Date(o.createdTimestamp)
+        const createdKey = `${created.getFullYear()}-${created.getMonth()}-${created.getDate()}`
+        if (createdKey !== todayKey) {
+          expiredPending.push(o.id)
+          return
+        }
+      }
       const pairNow = pairsRef.current.find(p => p.symbol === o.pair)
       if (!pairNow) return
       const currentPrice = o.direction === "BUY" ? pairNow.ask : pairNow.bid
@@ -1462,6 +1475,14 @@ function PositionSizer({
       if (filled) toFillPending.push(o.id)
     })
 
+    if (expiredPending.length > 0) {
+      expiredPending.forEach(id => {
+        setPendingOrders(prev => prev.filter(o => o.id !== id))
+        deletePendingOrder(id)
+      })
+      showToast("info", `${expiredPending.length} TODAY order${expiredPending.length === 1 ? "" : "s"} expired`)
+    }
+
     if (toFillPending.length > 0) {
       toFillPending.forEach(id => {
         setPendingOrders(prev => {
@@ -1471,6 +1492,11 @@ function PositionSizer({
           if (!pairNow) return prev
           const fillPrice = order.direction === "BUY" ? pairNow.ask : pairNow.bid
           const margin = calcMargin(order.pair, order.lotSize, fillPrice, order.leverage)
+          if (walletBalance < margin) {
+            deletePendingOrder(order.id)
+            showToast("error", `${order.orderType.replace("_", " ")} cancelled — need $${margin.toFixed(2)} margin, have $${walletBalance.toFixed(2)}`)
+            return prev.filter(o => o.id !== id)
+          }
           const newTrade: OpenTrade = {
             id: order.id, pair: order.pair, direction: order.direction,
             lotSize: order.lotSize, leverage: order.leverage,
@@ -1482,6 +1508,10 @@ function PositionSizer({
             pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
           }
           setOpenTrades(p => [newTrade, ...p])
+          adjustWalletBalance(
+            -margin,
+            `Pending fill — ${order.direction} ${order.lotSize}L ${order.pair} @ ${fmt(fillPrice, order.pair)}`
+          )
           persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
           showToast("info", `Pending ${order.orderType.replace("_"," ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
           return prev.filter(o => o.id !== id)
@@ -1686,13 +1716,21 @@ adjustWalletBalance(
     if (slNum && direction === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
     if (tpNum && direction === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
     if (tpNum && direction === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
-    if (walletBalance < margin) {
+    if (orderType === "market" && walletBalance < margin) {
       showToast("error", `Insufficient balance — need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return
     }
 
     if (orderType !== "market") {
       const pPrice = parseFloat(pendingPrice)
       if (isNaN(pPrice) || pPrice <= 0) { showToast("error", "Enter a valid pending order price"); return }
+      const currentQuote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+      const isInvalidLevel = orderType === "limit"
+        ? (direction === "BUY" ? pPrice >= currentQuote : pPrice <= currentQuote)
+        : (direction === "BUY" ? pPrice <= currentQuote : pPrice >= currentQuote)
+      if (isInvalidLevel) {
+        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${direction === "BUY" ? "ask" : "bid"}`)
+        return
+      }
       const oType: PendingOrder["orderType"] =
         orderType === "limit"
           ? direction === "BUY" ? "BUY_LIMIT" : "SELL_LIMIT"
@@ -1717,6 +1755,7 @@ adjustWalletBalance(
         orderType: tradeConfirm.pendingOrderType, lotSize: lot, leverage: lev,
         targetPrice: tradeConfirm.pendingPrice, sl: slNum, tp: tpNum,
         createdTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        createdTimestamp: Date.now(),
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
       setPendingOrders(prev => [order, ...prev])
@@ -2170,7 +2209,15 @@ adjustWalletBalance(returnAmt,
             type="button"
             onClick={() => {
               if (item.label === "Market Watch") setMobileTab("market")
-              if (item.label === "Data Window") setMobileTab("chart")
+              if (item.label === "Navigator") {
+                setMobileTab("order")
+                setRightPanelTab("sizer")
+                showToast("info", "Navigator opened — use Position Sizer to plan risk")
+              }
+              if (item.label === "Data Window") {
+                setMobileTab("chart")
+                setActivePanel("stats")
+              }
               if (item.label === "Strategy Tester") setActivePanel("performance")
             }}
             className="flex h-full items-center gap-1 border-r px-2 text-[9px] text-slate-300 transition-colors hover:bg-[#2b4056] hover:text-white"
