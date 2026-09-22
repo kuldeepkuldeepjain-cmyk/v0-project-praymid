@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
 
   try {
     const { rows } = await db.query(
-      `SELECT * FROM forex_trades WHERE participant_email = $1 ORDER BY created_at DESC LIMIT 500`,
+      `SELECT * FROM forex_trades
+       WHERE LOWER(participant_email) = LOWER($1)
+       ORDER BY COALESCE(updated_at, created_at) DESC, created_at DESC`,
       [email]
     )
 
@@ -202,14 +204,17 @@ export async function PATCH(req: NextRequest) {
 
     if (action === "close") {
       const { closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize, margin } = body
-      await db.query(
+      const result = await db.query(
         `UPDATE forex_trades
            SET status = 'closed', close_price = $1, close_time = $2, close_duration = $3,
                final_pnl = $4, final_pips = $5, final_swap = $6, close_reason = $7,
                lot_size = COALESCE($8, lot_size), margin = COALESCE($9, margin), updated_at = NOW()
-         WHERE id = $10 AND participant_email = $11`,
+         WHERE id = $10 AND LOWER(participant_email) = LOWER($11) AND status = 'open'`,
         [closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize ?? null, margin ?? null, id, participant_email]
       )
+      if (result.rowCount !== 1) {
+        return NextResponse.json({ success: false, error: "Trade was not found or is already closed" }, { status: 404 })
+      }
     } else if (action === "modify") {
       const { sl, tp, trailingStopPips } = body
       await db.query(
@@ -294,7 +299,7 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// ─── Row mappers: DB snake_case → frontend camelCase shape ─────────────────
+// ─── Row mappers: DB snake_case → frontend camelCase shape ──────��──────────
 
 function toOpenTrade(r: any) {
   return {

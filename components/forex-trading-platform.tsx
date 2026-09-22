@@ -1592,24 +1592,35 @@ function PositionSizer({
         openTradesRef.current = openTradesRef.current.filter(t => t.id !== id)
         setOpenTrades(prev => prev.filter(t => t.id !== id))
 
-        // 2. Add to history once — guard with ID check to be safe
-        setClosedTrades(prev => {
-          if (prev.some(t => t.id === closed.id)) return prev
-          return [closed, ...prev.slice(0, 99)]
-        })
-        persistClose(closed)
+        // 2. Save the close before returning margin. This keeps the balance and
+        // trade history consistent if the network or database rejects the write.
+        void (async () => {
+          const saved = await persistClose(closed)
+          if (!saved) {
+            openTradesRef.current = [trade, ...openTradesRef.current]
+            setOpenTrades(prev => prev.some(item => item.id === trade.id) ? prev : [trade, ...prev])
+            setClosedTrades(prev => prev.filter(item => item.id !== closed.id))
+            closingTradeIds.current.delete(id)
+            return
+          }
 
-        // 3. Return margin + P&L (called only once per trade)
-        const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-adjustWalletBalance(
-  returnAmt,
-  `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
-        )
+          setClosedTrades(prev => {
+            if (prev.some(t => t.id === closed.id)) return prev
+            return [closed, ...prev]
+          })
 
-        showToast(
-          reason === "tp" ? "success" : "error",
-          `${icons[reason as keyof typeof icons]} — ${trade.pair} ${trade.direction}: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${finalPips >= 0 ? "+" : ""}${finalPips.toFixed(1)} pips)`
-        )
+          // 3. Return margin + P&L only after the close is durable.
+          const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
+          await adjustWalletBalance(
+            returnAmt,
+            `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+          )
+
+          showToast(
+            reason === "tp" ? "success" : "error",
+            `${icons[reason as keyof typeof icons]} — ${trade.pair} ${trade.direction}: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${finalPips >= 0 ? "+" : ""}${finalPips.toFixed(1)} pips)`
+          )
+        })()
 
         setTimeout(() => closingTradeIds.current.delete(id), 1000)
       })
@@ -1759,7 +1770,12 @@ adjustWalletBalance(
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
       setPendingOrders(prev => [order, ...prev])
-      persistPendingOrder(order)
+      const pendingSaved = await persistPendingOrder(order)
+      if (!pendingSaved) {
+        setPendingOrders(prev => prev.filter(item => item.id !== order.id))
+        setConfirmLoading(false)
+        return
+      }
       showToast("info", `${order.orderType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(order.targetPrice, selectedPair.symbol)}`)
       setActivePanel("pending")
     } else {
@@ -1787,7 +1803,17 @@ adjustWalletBalance(
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
-      persistOpenTrade(trade)
+      const tradeSaved = await persistOpenTrade(trade)
+      if (!tradeSaved) {
+        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
+        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
+        await adjustWalletBalance(
+          margin,
+          `Trade save rollback — ${dir} ${lot}L ${selectedPair.symbol}`
+        )
+        setConfirmLoading(false)
+        return
+      }
       showToast("success",
         `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
       )
@@ -2594,7 +2620,7 @@ adjustWalletBalance(returnAmt,
           </div>
         </div>
 
-        {/* ── CENTER: Chart ──────────────────────────────────────────────────── */}
+        {/* ── CENTER: Chart ────────────────────────────────────────────���─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
