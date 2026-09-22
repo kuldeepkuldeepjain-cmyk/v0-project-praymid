@@ -388,19 +388,19 @@ export function ParticipantDatabaseView() {
         <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-gradient-to-br from-cyan-300 to-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
 
-      <Card className="relative bg-gradient-to-br from-white/95 via-orange-50/30 to-rose-50/30 backdrop-blur-sm border-orange-200/50 shadow-xl">
-        <CardHeader className="border-b border-orange-200/30 pb-4 bg-gradient-to-r from-orange-50/50 to-rose-50/50">
+      <Card className="relative overflow-hidden border-slate-200 bg-white shadow-xl">
+        <CardHeader className="border-b border-slate-200 bg-slate-50 pb-4">
           <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent flex items-center gap-2">
-              <Database className="h-5 w-5 text-orange-500" />
+            <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
+              <Database className="h-5 w-5 text-blue-700" />
               Participants Database
             </CardTitle>
             <CardDescription className="text-slate-600 mt-1">
               Complete database of all registered participants with detailed information
             </CardDescription>
           </div>
-          <Button onClick={exportToCSV} className="bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+          <Button onClick={exportToCSV} className="bg-blue-700 text-white shadow-sm hover:bg-blue-800">
             <Download className="h-4 w-4 mr-2" />
             Export Database
           </Button>
@@ -414,7 +414,7 @@ export function ParticipantDatabaseView() {
               placeholder="Search participants by name, username, email, phone, country, #number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-gradient-to-r from-orange-50/50 to-rose-50/50 border-orange-200 focus:border-orange-400 focus:ring-orange-400/20"
+              className="border-slate-300 bg-white pl-9 text-slate-900 placeholder:text-slate-500 focus:border-blue-600 focus:ring-blue-600/20"
             />
           </div>
 
@@ -468,21 +468,21 @@ export function ParticipantDatabaseView() {
 
         {/* Stats Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-          <div className="bg-gradient-to-br from-orange-100 to-rose-100 rounded-lg p-3 border border-orange-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm transition-shadow hover:shadow-md">
             <p className="text-xs text-orange-700 font-semibold">Total Records</p>
             <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">{participants.length}</p>
           </div>
-          <div className="bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-lg p-3 border border-emerald-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 shadow-sm transition-shadow hover:shadow-md">
             <p className="text-xs text-emerald-700 font-semibold">Activated</p>
             <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
               {participants.filter((p) => p.activation_fee_paid).length}
             </p>
           </div>
-          <div className="bg-gradient-to-br from-purple-100 to-violet-100 rounded-lg p-3 border border-purple-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 shadow-sm transition-shadow hover:shadow-md">
             <p className="text-xs text-purple-700 font-semibold">Filtered Results</p>
             <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">{filteredParticipants.length}</p>
           </div>
-          <div className="bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg p-3 border border-amber-200 shadow-sm hover:shadow-md transition-all duration-300">
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 shadow-sm transition-shadow hover:shadow-md">
             <p className="text-xs text-amber-700 font-semibold">Total Volume</p>
             <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
               ${participants.reduce((sum, p) => sum + (p.totalContributed || 0), 0).toFixed(0)}
@@ -495,24 +495,24 @@ export function ParticipantDatabaseView() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gradient-to-r from-orange-100/50 via-rose-100/50 to-purple-100/50 border-b-2 border-orange-200">
-                  <TableHead className="font-semibold text-orange-600">#</TableHead>
-                  <TableHead className="font-semibold text-cyan-600">Serial No</TableHead>
-                  <TableHead className="font-semibold text-orange-600">User Info</TableHead>
-                  <TableHead className="font-semibold text-red-600">Password</TableHead>
-                  <TableHead className="font-semibold text-rose-600">Contact</TableHead>
-                  <TableHead className="font-semibold text-purple-600">Location</TableHead>
-                  <TableHead className="font-semibold text-violet-600">Personal</TableHead>
-                  <TableHead className="font-semibold text-cyan-600">Wallet</TableHead>
-                  <TableHead className="font-semibold text-emerald-600">Activation</TableHead>
-                  <TableHead className="font-semibold text-orange-600">Status</TableHead>
-                  <TableHead className="font-semibold text-purple-600">Activity</TableHead>
-                  <TableHead className="font-semibold text-rose-600 text-center">Actions</TableHead>
+                <TableRow className="border-b border-slate-300 bg-slate-800 hover:bg-slate-800">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">#</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Serial No</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">User Info</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Password</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Contact</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Location</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Personal</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Wallet</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Activation</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Status</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Activity</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-white">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
               {filteredParticipants.map((participant) => (
-                <TableRow key={participant.id} className="border-b border-orange-100/50 hover:bg-gradient-to-r hover:from-orange-50/50 hover:to-rose-50/50 transition-all duration-200">
+                <TableRow key={participant.id} className="border-b border-slate-200 bg-white text-slate-800 transition-colors hover:bg-blue-50/70">
                     {/* Participant Number */}
                     <TableCell>
                       <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200 font-mono text-xs">
@@ -619,7 +619,7 @@ export function ParticipantDatabaseView() {
 
                     {/* Personal Info */}
                     <TableCell>
-                      <div className="space-y-0.5 text-xs text-slate-600">
+                      <div className="space-y-0.5 text-xs text-slate-700">
                         {participant.date_of_birth && <p>DOB: {participant.date_of_birth}</p>}
                         {participant.gender && <p>Gender: {participant.gender}</p>}
                         {participant.occupation && <p>Occupation: {participant.occupation}</p>}
