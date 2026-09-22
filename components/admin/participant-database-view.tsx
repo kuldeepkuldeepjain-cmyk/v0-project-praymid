@@ -42,6 +42,8 @@ import {
   Copy,
   AlertTriangle,
   MessageCircle,
+  DollarSign,
+  RotateCcw,
 } from "lucide-react"
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
@@ -65,6 +67,10 @@ export function ParticipantDatabaseView() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
   const [activatingId, setActivatingId] = useState<string | null>(null)
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
+  const [showReactivationModal, setShowReactivationModal] = useState(false)
+  const [reactivationParticipant, setReactivationParticipant] = useState<ParticipantUser | null>(null)
+  const [reactivationAmount, setReactivationAmount] = useState("")
+  const [isReactivating, setIsReactivating] = useState(false)
 
   const activateParticipant = async (participantId: string, action: "activate" | "deactivate" | "suspend") => {
     setActivatingId(participantId)
@@ -90,6 +96,51 @@ export function ParticipantDatabaseView() {
       toast({ title: "Error", description: "Request failed", variant: "destructive" })
     } finally {
       setActivatingId(null)
+    }
+  }
+
+  const reactivateFundedAccount = async () => {
+    if (!reactivationParticipant) return
+    const amount = Number(reactivationAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({ title: "Invalid amount", description: "Enter a positive amount to add", variant: "destructive" })
+      return
+    }
+
+    setIsReactivating(true)
+    try {
+      const res = await adminFetch("/api/admin/reactivate-funded-account", {
+        method: "POST",
+        body: JSON.stringify({ participantId: reactivationParticipant.id, amount }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        toast({ title: "Reactivation failed", description: data.error || "Unable to reactivate account", variant: "destructive" })
+        return
+      }
+
+      setParticipants((previous) => previous.map((participant) =>
+        participant.id === reactivationParticipant.id
+          ? {
+              ...participant,
+              account_balance: data.newBalance,
+              wallet_balance: data.newBalance,
+              status: data.newStatus,
+              is_active: data.newIsActive,
+              funded_breach_status: data.fundedBreachStatus,
+              account_frozen: false,
+              is_frozen: false,
+            }
+          : participant,
+      ))
+      toast({ title: "Funded account reactivated", description: data.message })
+      setShowReactivationModal(false)
+      setReactivationParticipant(null)
+      setReactivationAmount("")
+    } catch {
+      toast({ title: "Error", description: "Reactivation request failed", variant: "destructive" })
+    } finally {
+      setIsReactivating(false)
     }
   }
 
@@ -714,6 +765,19 @@ export function ParticipantDatabaseView() {
                             Send Email
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
+                          {participant.account_type === "funded" && participant.funded_breach_status === "breached" && (
+                            <DropdownMenuItem
+                              className="text-blue-700 focus:text-blue-800 focus:bg-blue-50"
+                              onClick={() => {
+                                setReactivationParticipant(participant)
+                                setReactivationAmount("")
+                                setShowReactivationModal(true)
+                              }}
+                            >
+                              <RotateCcw className="h-4 w-4 mr-2" />
+                              Reactivate + Add Funds
+                            </DropdownMenuItem>
+                          )}
                           {participant.status !== "active" && (
                             <DropdownMenuItem
                               className="text-emerald-600 focus:text-emerald-700 focus:bg-emerald-50"
@@ -943,6 +1007,79 @@ export function ParticipantDatabaseView() {
               >
                 <Mail className="h-4 w-4 mr-2" />
                 Send Email
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* Funded account reactivation modal */}
+    <Dialog open={showReactivationModal} onOpenChange={setShowReactivationModal}>
+      <DialogContent className="max-w-md border-blue-200 bg-gradient-to-br from-white to-blue-50/40">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-blue-700">
+            <RotateCcw className="h-5 w-5" />
+            Reactivate funded account
+          </DialogTitle>
+          <DialogDescription>
+            Add funds directly and clear the breach lock for this funded account.
+          </DialogDescription>
+        </DialogHeader>
+
+        {reactivationParticipant && (
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-blue-100 bg-white p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500">Account</span>
+                <span className="font-semibold text-slate-800">{reactivationParticipant.email}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-slate-500">Current balance</span>
+                <span className="font-semibold text-slate-800">${Number(reactivationParticipant.account_balance || 0).toFixed(2)}</span>
+              </div>
+              <div className="mt-2 flex items-center justify-between">
+                <span className="text-slate-500">Status</span>
+                <Badge className="bg-red-100 text-red-700">Breach locked</Badge>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="reactivation-amount" className="text-sm font-medium text-slate-700">
+                Amount to add directly
+              </label>
+              <div className="relative">
+                <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="reactivation-amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={reactivationAmount}
+                  onChange={(event) => setReactivationAmount(event.target.value)}
+                  placeholder="Required amount"
+                  className="pl-9"
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) reactivateFundedAccount()
+                  }}
+                />
+              </div>
+              <p className="text-xs leading-relaxed text-slate-500">
+                The server will reject amounts that do not restore the account above its 2% drawdown floor.
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowReactivationModal(false)} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                onClick={reactivateFundedAccount}
+                disabled={isReactivating || !reactivationAmount}
+                className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {isReactivating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                {isReactivating ? "Reactivating..." : "Add Funds & Reactivate"}
               </Button>
             </div>
           </div>

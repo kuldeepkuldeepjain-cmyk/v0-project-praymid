@@ -31,7 +31,7 @@ export function AllPayoutsPanel() {
   const [payouts, setPayouts] = useState<PayoutRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
 
   useEffect(() => {
     const fetchPayouts = async () => {
@@ -39,7 +39,7 @@ export function AllPayoutsPanel() {
       setError(null)
       try {
         const params = new URLSearchParams()
-        if (statusFilter) params.append("status", statusFilter)
+        if (statusFilter !== "all") params.append("status", statusFilter)
 
         const response = await fetch(`/api/admin/all-payouts?${params.toString()}`)
         const data = await response.json()
@@ -143,7 +143,7 @@ export function AllPayoutsPanel() {
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Statuses</SelectItem>
+              <SelectItem value="all">All Statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="matched">Matched</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>

@@ -143,7 +143,16 @@ export type ParticipantUser = {
   plain_password?: string
   created_at: string
   last_active: string
-  status: "active" | "suspended" | "pending" | "frozen" // Added "frozen" status
+  status: "active" | "suspended" | "pending" | "frozen"
+  account_type?: string
+  funded_amount?: number
+  funded_initial_balance?: number
+  funded_breach_status?: "clear" | "breached"
+  funded_breach_at?: string | null
+  funded_breach_balance?: number
+  funded_breach_equity?: number
+  account_frozen?: boolean
+  is_frozen?: boolean
   role: "participant"
   rank: UserRank
   participation_count: number
