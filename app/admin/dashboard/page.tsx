@@ -24,6 +24,7 @@ import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
+import { AdminControlRoom } from "@/components/admin/admin-control-room"
 
 interface ApprovedWallet {
   id: string
@@ -225,6 +226,9 @@ export default function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Platform Revenue Tracker */}
         <PlatformRevenueTracker />
+
+        {/* Trading operations control room */}
+        <AdminControlRoom />
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
