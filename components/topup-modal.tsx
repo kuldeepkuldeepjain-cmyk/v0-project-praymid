@@ -31,9 +31,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
-  const [inrBankDetails, setInrBankDetails] = useState({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
-  const [usdtInrRate, setUsdtInrRate] = useState(102)
-  const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
+  const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
 
   // Fetch BEP20 address from DB when modal opens
@@ -46,20 +44,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
-    setInrBankDetails({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
-    setUsdtInrRate(102)
-
     const fetchAddress = async () => {
       setLoadingAddress(true)
       try {
         const res = await fetch("/api/public/settings")
         const data = await res.json()
         setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
-        setInrBankDetails({ bankName: data.inr_bank_name || "", accountNumber: data.inr_account_number || "", ifscCode: data.inr_ifsc_code || "", accountHolderName: data.inr_account_holder_name || "" })
-        setUsdtInrRate(Number(data.usdt_inr_rate) > 0 ? Number(data.usdt_inr_rate) : 102)
       } catch {
         setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
-        setInrBankDetails({ bankName: "", accountNumber: "", ifscCode: "", accountHolderName: "" })
       } finally {
         setLoadingAddress(false)
       }
@@ -69,15 +61,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
   const copyAddress = () => {
     const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
-    if (network === "INR" || !walletAddress) return
+    if (!walletAddress) return
     navigator.clipboard.writeText(walletAddress)
     setCopiedAddress(true)
     setTimeout(() => setCopiedAddress(false), 2000)
   }
 
-  const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : network === "INR" ? null : walletAddresses.BEP20
+  const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
-  const convertedInrAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount * usdtInrRate : 0
   const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   const isFundedAmountValid = !isFundedAccount || !isInitialFundedTopUp || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
@@ -90,7 +81,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       return
     }
     if (!txHash.trim()) {
-      setErrorMessage(network === "INR" ? "Please enter your bank reference or UTR number" : "Please enter your transaction hash")
+      setErrorMessage("Please enter your transaction hash")
       return
     }
     setStep("submitting")
@@ -217,15 +208,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   <option value="TRC20">TRC20 (TRON)</option>
                   <option value="BEP20">BEP20 (BSC)</option>
                   <option value="ERC20">ERC20 (Ethereum)</option>
-                  <option value="INR">INR Bank Transfer</option>
                 </select>
                 <p className="text-[10px] text-slate-500">
-                  Select a USDT network or choose INR Bank Transfer.
+                  Select the USDT network used for your transfer.
                 </p>
               </div>
 
               {/* Wallet Address */}
-              {network !== "INR" && <div className="space-y-1">
+              <div className="space-y-1">
                 <Label className="text-xs font-semibold text-slate-700">{network === "ALL" ? "USDT Deposit Address" : `${network} Deposit Address (USDT)`}</Label>
                 {loadingAddress ? (
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2.5 animate-pulse">
@@ -269,27 +259,12 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 <p className="text-[10px] text-slate-500">
                   Send USDT using the selected network to this address, then fill in your transaction details below.
                 </p>
-              </div>}
-
-              {network === "INR" && (
-                <div className="space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
-                  <div>
-                    <p className="text-xs font-bold text-amber-900">INR Bank Transfer Details</p>
-                    <p className="mt-1 text-[10px] text-amber-700">Transfer INR to the account below, then enter the bank reference or UTR number.</p>
-                  </div>
-                  <div className="grid gap-2 text-xs text-amber-950 sm:grid-cols-2 lg:grid-cols-4">
-                    <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Bank Name</p><p className="font-semibold">{inrBankDetails.bankName || "Not set"}</p></div>
-                    <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Account Number</p><p className="font-mono font-semibold">{inrBankDetails.accountNumber || "Not set"}</p></div>
-                    <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">IFSC Code</p><p className="font-mono font-semibold">{inrBankDetails.ifscCode || "Not set"}</p></div>
-                    <div><p className="text-[10px] font-semibold uppercase tracking-wide text-amber-600">Account Holder</p><p className="font-semibold">{inrBankDetails.accountHolderName || "Not set"}</p></div>
-                  </div>
-                </div>
-              )}
+              </div>
 
               {/* Amount */}
               <div className="space-y-1">
                   <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
-                  Amount Sent ({network === "INR" ? "INR" : "USDT"}) <span className="text-red-500">*</span>
+                  Amount Sent (USDT) <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -302,14 +277,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     disabled={step === "submitting"}
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    {network === "INR" ? "INR" : "USDT"}
+                    USDT
                   </span>
                 </div>
-                {network !== "INR" && amount && convertedInrAmount > 0 && (
-                  <p className="text-[10px] font-medium text-emerald-700">
-                    {amount} USDT = ₹{convertedInrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹{usdtInrRate} per USDT
-                  </p>
-                )}
                 {amount && !isAmountValid && (
                   <p className="text-[10px] text-red-500">
                     {isFundedAccount && isInitialFundedTopUp
@@ -322,11 +292,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               {/* Transaction Hash */}
               <div className="space-y-1">
                 <Label htmlFor="topup-txhash" className="text-xs font-semibold text-slate-700">
-                  {network === "INR" ? "Bank Reference / UTR Number" : "Transaction Hash"} <span className="text-red-500">*</span>
+                  Transaction Hash <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="topup-txhash"
-                  placeholder={network === "INR" ? "Enter bank reference or UTR number" : "0x1234567890abcdef..."}
+                  placeholder="0x1234567890abcdef..."
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
                   className="h-9 font-mono text-xs border border-slate-200 focus:border-violet-500 rounded-lg"
