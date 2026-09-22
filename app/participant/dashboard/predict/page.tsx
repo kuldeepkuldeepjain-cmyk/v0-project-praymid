@@ -389,17 +389,17 @@ function PredictPageContent() {
 
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-[#07111f] flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-slate-700 font-semibold">Loading Prediction Market...</p>
+          <p className="text-slate-200 font-semibold">Loading Prediction Market...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative overflow-hidden">
+    <div className="min-h-screen min-h-dvh bg-[#07111f] relative overflow-hidden text-slate-100">
       {/* Decorative Background Elements - Hidden on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
         <div className="absolute top-20 right-10 w-64 h-64 bg-purple-300/20 rounded-full blur-3xl" />
@@ -408,12 +408,12 @@ function PredictPageContent() {
       </div>
       
       {/* Header - Mobile Optimized */}
-      <div className="border-b bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 shadow-sm border-blue-500/20 relative">
+      <div className="border-b bg-[#0b1728]/95 backdrop-blur-md sticky top-0 z-50 shadow-lg border-slate-700/80 relative">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 md:py-4">
           <div className="flex justify-between items-center gap-2">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1 min-w-0">
               <Link href="/participant/dashboard">
-                <Button variant="ghost" size="icon" className="rounded-lg sm:rounded-xl hover:bg-slate-100 h-8 w-8 sm:h-10 sm:w-10">
+                <Button variant="ghost" size="icon" className="rounded-lg sm:rounded-xl hover:bg-slate-800 h-8 w-8 sm:h-10 sm:w-10">
                   <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
@@ -432,12 +432,12 @@ function PredictPageContent() {
 
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 flex-shrink-0">
               <div className="flex items-center gap-1.5">
-                <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-purple-200">
+                <div className="bg-slate-900/90 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-slate-700">
                   <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Wallet</div>
                   <div className="text-xs sm:text-sm font-black text-purple-600">${walletBalance.toFixed(2)}</div>
                 </div>
                 {referralBalance > 0 && (
-                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-emerald-200">
+                  <div className="bg-slate-900/90 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-emerald-500/40">
                     <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Referral</div>
                     <div className="text-xs sm:text-sm font-black text-emerald-600">${referralBalance.toFixed(2)}</div>
                   </div>
@@ -458,7 +458,7 @@ function PredictPageContent() {
       {/* Main Content - Mobile Optimized */}
       <div className="container mx-auto px-2 sm:px-3 md:px-4 lg:px-6 py-3 sm:py-4 md:py-6 relative z-10 max-w-6xl">
         {/* Filter Tabs - Mobile Optimized */}
-        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4 md:mb-6 bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-1.5 md:p-2 border border-slate-200 sm:border-2 w-full overflow-x-auto shadow-md">
+        <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2 mb-3 sm:mb-4 md:mb-6 bg-[#0b1728]/95 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-1.5 md:p-2 border border-slate-700 sm:border-2 w-full overflow-x-auto shadow-md">
           {([
             { key: 'all',       label: 'All Assets'  },
             { key: 'crypto',    label: 'Crypto'      },
@@ -471,7 +471,7 @@ function PredictPageContent() {
               className={`flex-none px-3 py-2 sm:px-4 sm:py-2 md:px-6 md:py-2.5 rounded-lg sm:rounded-xl font-bold transition-all text-xs sm:text-sm md:text-base whitespace-nowrap ${
                 assetFilter === key
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg'
-                  : 'text-slate-600 hover:bg-slate-100'
+                  : 'text-slate-300 hover:bg-slate-700/70'
               }`}
             >
               {label}
@@ -494,7 +494,7 @@ function PredictPageContent() {
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3 md:gap-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-40 sm:h-44 md:h-48 bg-white/50 rounded-xl sm:rounded-2xl shadow-sm" />
+              <div key={i} className="h-40 sm:h-44 md:h-48 bg-[#0d1b2e] rounded-xl sm:rounded-2xl shadow-lg shadow-black/10" />
             ))}
           </div>
         ) : (
@@ -507,7 +507,7 @@ function PredictPageContent() {
                 return (
                   <div
                     key={asset.symbol}
-                    className="relative overflow-hidden bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-200 sm:border-2 shadow-md"
+                    className="relative overflow-hidden bg-[#0d1b2e] backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border border-slate-700 sm:border-2 shadow-lg shadow-black/10"
                   >
                     <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 mb-3 sm:mb-4">
                       <AssetLogo
@@ -519,7 +519,7 @@ function PredictPageContent() {
                         className="rounded-xl"
                       />
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">{asset.displayName}</h3>
+                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-100 truncate">{asset.displayName}</h3>
                         <p className="text-[10px] sm:text-xs text-slate-400 truncate">{asset.name}</p>
                       </div>
                     </div>
@@ -542,12 +542,12 @@ function PredictPageContent() {
                   }}
                   className={`relative overflow-hidden bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer ${
                     flashColor === 'green' 
-                      ? 'border-green-400 bg-green-50/30' 
+                      ? 'border-green-400 bg-emerald-950/30'
                       : flashColor === 'red' 
-                      ? 'border-red-400 bg-red-50/30' 
+                      ? 'border-red-400 bg-rose-950/30'
                       : hasActiveTrade
-                      ? 'border-blue-400 sm:border-2 bg-blue-50/20'
-                      : 'border-slate-200 sm:border-2'
+                      ? 'border-blue-400 sm:border-2 bg-blue-500/10'
+                      : 'border-slate-700 sm:border-2'
                   }`}
                 >
                   {/* Active Trade Indicator */}
@@ -568,7 +568,7 @@ function PredictPageContent() {
                         className="rounded-xl"
                       />
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-900 truncate">{asset.displayName}</h3>
+                        <h3 className="font-bold text-sm sm:text-base md:text-lg text-slate-100 truncate">{asset.displayName}</h3>
                         <p className="text-[10px] sm:text-xs text-slate-400 truncate">{asset.name}</p>
                       </div>
                     </div>
@@ -576,7 +576,7 @@ function PredictPageContent() {
                       href={asset.chartUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg transition-colors flex-shrink-0"
+                      className="p-1.5 sm:p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
                     >
                       <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
                     </a>
@@ -584,7 +584,7 @@ function PredictPageContent() {
 
                   {/* Price - Responsive Sizing */}
                   <div className="mb-2 sm:mb-3">
-                    <div className="text-xl sm:text-2xl md:text-3xl font-black text-slate-900">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-black text-slate-100">
                       ${priceData?.price ? priceData.price.toFixed(priceData.price < 1 ? 6 : 2) : '0.00'}
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3 mt-1">
@@ -640,7 +640,10 @@ function PredictPageContent() {
 
       {/* Bet Dialog */}
       <Dialog open={showBetDialog} onOpenChange={setShowBetDialog}>
-        <DialogContent className="w-[calc(100vw-24px)] max-w-xs sm:max-w-sm p-0 overflow-hidden max-h-[90dvh] flex flex-col">
+        <DialogContent
+          className="w-[calc(100vw-24px)] max-w-xs sm:max-w-sm p-0 overflow-hidden max-h-[90dvh] flex flex-col border-slate-700 bg-[#0d1b2e] text-slate-100"
+          style={{ background: "#0d1b2e" }}
+        >
           {/* Compact header */}
           <DialogHeader className="px-4 pt-4 pb-2 flex-shrink-0">
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
@@ -653,7 +656,7 @@ function PredictPageContent() {
 
           <div className="overflow-y-auto flex-1 px-4 pb-4 space-y-3">
             {/* Asset Info */}
-            <div className="flex items-center gap-2 p-2.5 bg-slate-50 rounded-lg">
+            <div className="flex items-center gap-2 p-2.5 bg-slate-900/80 rounded-lg border border-slate-700">
               <Image
                 src={selectedAsset?.logo || "/placeholder.svg"}
                 alt={selectedAsset?.name || "Asset"}
@@ -671,7 +674,7 @@ function PredictPageContent() {
 
             {/* Balance Source Toggle */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-600">Use Balance From</Label>
+              <Label className="text-xs font-semibold text-slate-300">Use Balance From</Label>
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
@@ -679,11 +682,11 @@ function PredictPageContent() {
                   className={`flex flex-col items-start px-2.5 py-2 rounded-lg border-2 transition-all text-left ${
                     balanceSource === "wallet"
                       ? "border-purple-500 bg-purple-50"
-                      : "border-slate-200 hover:border-purple-300 bg-white"
+                      : "border-slate-700 hover:border-purple-400 bg-slate-900/70"
                   }`}
                 >
                   <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Wallet</span>
-                  <span className={`text-sm font-black ${balanceSource === "wallet" ? "text-purple-700" : "text-slate-800"}`}>
+                  <span className={`text-sm font-black ${balanceSource === "wallet" ? "text-purple-700" : "text-slate-100"}`}>
                     ${walletBalance.toFixed(2)}
                   </span>
                 </button>
@@ -693,11 +696,11 @@ function PredictPageContent() {
                   className={`flex flex-col items-start px-2.5 py-2 rounded-lg border-2 transition-all text-left ${
                     balanceSource === "referral"
                       ? "border-emerald-500 bg-emerald-50"
-                      : "border-slate-200 hover:border-emerald-300 bg-white"
+                      : "border-slate-700 hover:border-emerald-400 bg-slate-900/70"
                   }`}
                 >
                   <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Referral</span>
-                  <span className={`text-sm font-black ${balanceSource === "referral" ? "text-emerald-700" : "text-slate-800"}`}>
+                  <span className={`text-sm font-black ${balanceSource === "referral" ? "text-emerald-300" : "text-slate-100"}`}>
                     ${referralBalance.toFixed(2)}
                   </span>
                 </button>
@@ -706,14 +709,14 @@ function PredictPageContent() {
 
             {/* Amount Input */}
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-slate-600">Amount</Label>
+              <Label className="text-xs font-semibold text-slate-300">Amount</Label>
               <div className="relative">
                 <Input
                   type="number"
                   placeholder="0.00"
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
-                  className="h-9 text-sm pr-14 border-slate-300 focus:border-purple-500 rounded-lg"
+                  className="h-9 text-sm pr-14 border-slate-600 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 rounded-lg"
                 />
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">USDT</span>
               </div>
@@ -724,7 +727,7 @@ function PredictPageContent() {
 
             {/* Timeframe Selection */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-600">
+              <Label className="text-xs font-semibold text-slate-300">
                 Duration {selectedAsset?.type === 'commodity' && <span className="text-slate-400 font-normal">(Extended)</span>}
               </Label>
               <div className="grid grid-cols-3 gap-1.5">
@@ -735,7 +738,7 @@ function PredictPageContent() {
                     className={`h-8 rounded-lg text-xs font-bold transition-all ${
                       selectedTimeframe.value === tf.value
                         ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md scale-105"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                     }`}
                   >
                     {tf.label}
@@ -744,20 +747,20 @@ function PredictPageContent() {
               </div>
 
               {/* Payout Summary */}
-              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2.5 mt-1">
+              <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-lg p-2.5 mt-1">
                 <div className="flex items-center justify-between text-[11px] mb-1">
-                  <span className="text-emerald-700">Profit Rate</span>
-                  <span className="font-bold text-emerald-800">50%</span>
+                  <span className="text-emerald-300">Profit Rate</span>
+                  <span className="font-bold text-emerald-200">50%</span>
                 </div>
 
                 <div className="border-t border-emerald-200 mt-2 pt-1.5 space-y-1">
                   <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-emerald-700">Potential Profit</span>
-                    <span className="font-bold text-emerald-800">${((parseFloat(betAmount) || 0) * PROFIT_RATE).toFixed(2)}</span>
+                    <span className="text-emerald-300">Potential Profit</span>
+                    <span className="font-bold text-emerald-200">${((parseFloat(betAmount) || 0) * PROFIT_RATE).toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-emerald-700">Total Payout</span>
-                    <span className="font-bold text-sm text-emerald-900">${((parseFloat(betAmount) || 0) + (parseFloat(betAmount) || 0) * PROFIT_RATE).toFixed(2)}</span>
+                    <span className="text-[11px] text-emerald-300">Total Payout</span>
+                    <span className="font-bold text-sm text-emerald-100">${((parseFloat(betAmount) || 0) + (parseFloat(betAmount) || 0) * PROFIT_RATE).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
