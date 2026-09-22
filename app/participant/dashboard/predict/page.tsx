@@ -391,7 +391,7 @@ function PredictPageContent() {
     return (
       <div className="min-h-screen bg-[#07111f] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="text-slate-200 font-semibold">Loading Prediction Market...</p>
         </div>
       </div>
@@ -400,13 +400,6 @@ function PredictPageContent() {
 
   return (
     <div className="min-h-screen min-h-dvh bg-[#07111f] relative overflow-hidden text-slate-100">
-      {/* Decorative Background Elements - Hidden on mobile */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none hidden md:block">
-        <div className="absolute top-20 right-10 w-64 h-64 bg-purple-300/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-72 h-72 bg-blue-300/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-300/10 rounded-full blur-3xl" />
-      </div>
-      
       {/* Header - Mobile Optimized */}
       <div className="border-b bg-[#0b1728]/95 backdrop-blur-md sticky top-0 z-50 shadow-lg border-slate-700/80 relative">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 md:py-4">
@@ -434,7 +427,7 @@ function PredictPageContent() {
               <div className="flex items-center gap-1.5">
                 <div className="bg-slate-900/90 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-slate-700">
                   <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium">Wallet</div>
-                  <div className="text-xs sm:text-sm font-black text-purple-600">${walletBalance.toFixed(2)}</div>
+                  <div className="text-xs sm:text-sm font-black text-cyan-300">${walletBalance.toFixed(2)}</div>
                 </div>
                 {referralBalance > 0 && (
                   <div className="bg-slate-900/90 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border border-emerald-500/40">
@@ -445,7 +438,7 @@ function PredictPageContent() {
               </div>
               <Button
                 onClick={() => setShowHistoryModal(true)}
-                className="rounded-lg sm:rounded-xl font-bold gap-1 sm:gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-purple-700 hover:to-blue-700 shadow-lg text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2 h-auto"
+                className="rounded-lg sm:rounded-xl font-bold gap-1 sm:gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg text-xs sm:text-sm px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-2 h-auto"
               >
                 <History className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="hidden sm:inline">History</span>
@@ -544,7 +537,7 @@ function PredictPageContent() {
                     flashColor === 'green' 
                       ? 'border-green-400 bg-emerald-950/30'
                       : flashColor === 'red' 
-                      ? 'border-red-400 bg-rose-950/30'
+                      ? 'border-red-400 bg-red-950/30'
                       : hasActiveTrade
                       ? 'border-blue-400 sm:border-2 bg-blue-500/10'
                       : 'border-slate-700 sm:border-2'
@@ -552,8 +545,8 @@ function PredictPageContent() {
                 >
                   {/* Active Trade Indicator */}
                   {hasActiveTrade && (
-                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
-                      
+                    <div className="absolute top-2 right-2 sm:top-3 sm:right-3 inline-flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-cyan-200">
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" /> Active
                     </div>
                   )}
                   {/* Header - Compact on Mobile */}
@@ -577,8 +570,9 @@ function PredictPageContent() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 sm:p-2 hover:bg-slate-800 rounded-lg transition-colors flex-shrink-0"
+                      aria-label={`Open ${asset.displayName} chart`}
                     >
-                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                      <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-cyan-300" />
                     </a>
                   </div>
 
@@ -595,6 +589,9 @@ function PredictPageContent() {
                       <span className="text-[10px] sm:text-xs text-slate-400">
                         Vol: {priceData?.volume ? formatVolume(priceData.volume) : '$0'}
                       </span>
+                      <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-slate-500">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> Live
+                      </span>
                     </div>
                   </div>
 
@@ -610,7 +607,7 @@ function PredictPageContent() {
                         setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
                         setShowBetDialog(true)
                       }}
-                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg text-xs sm:text-sm"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg shadow-emerald-950/30 text-xs sm:text-sm"
                     >
                       <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       UP
@@ -625,7 +622,7 @@ function PredictPageContent() {
                         setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
                         setShowBetDialog(true)
                       }}
-                      className="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg text-xs sm:text-sm"
+                      className="bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg shadow-red-950/30 text-xs sm:text-sm"
                     >
                       <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       DOWN
@@ -681,12 +678,12 @@ function PredictPageContent() {
                   onClick={() => setBalanceSource("wallet")}
                   className={`flex flex-col items-start px-2.5 py-2 rounded-lg border-2 transition-all text-left ${
                     balanceSource === "wallet"
-                      ? "border-purple-500 bg-purple-50"
-                      : "border-slate-700 hover:border-purple-400 bg-slate-900/70"
+                      ? "border-cyan-400 bg-cyan-400/10"
+                      : "border-slate-700 hover:border-cyan-400 bg-slate-900/70"
                   }`}
                 >
                   <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wide">Wallet</span>
-                  <span className={`text-sm font-black ${balanceSource === "wallet" ? "text-purple-700" : "text-slate-100"}`}>
+                  <span className={`text-sm font-black ${balanceSource === "wallet" ? "text-cyan-200" : "text-slate-100"}`}>
                     ${walletBalance.toFixed(2)}
                   </span>
                 </button>
@@ -721,7 +718,7 @@ function PredictPageContent() {
                 <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">USDT</span>
               </div>
               <div className="text-[10px] text-slate-400">
-                Available: <span className={`font-semibold ${balanceSource === "referral" ? "text-emerald-600" : "text-purple-600"}`}>${activeBalance.toFixed(2)}</span>
+                Available: <span className={`font-semibold ${balanceSource === "referral" ? "text-emerald-600" : "text-cyan-300"}`}>${activeBalance.toFixed(2)}</span>
               </div>
             </div>
 
@@ -772,8 +769,8 @@ function PredictPageContent() {
               disabled={isPlacingTrade}
               className={`w-full h-9 rounded-lg font-bold text-sm text-white ${
                 betDirection === "up"
-                  ? "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                  : "bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700"
+                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-950/30"
+                  : "bg-red-600 hover:bg-red-500 shadow-lg shadow-red-950/30"
               } disabled:opacity-60`}
             >
               {isPlacingTrade ? (
