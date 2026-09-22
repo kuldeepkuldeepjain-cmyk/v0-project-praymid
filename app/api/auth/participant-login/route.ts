@@ -1,11 +1,19 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { setParticipantSession } from "@/lib/session"
 import { query, execute } from "@/lib/db"
+import { enforceRateLimit, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 import bcrypt from "bcryptjs"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const { email, password, mobile_number } = await request.json()
+    const context = getSecurityContext(request)
+    const identityKey = String(email || mobile_number || context.ipAddress || "unknown").toLowerCase()
+    const rate = await enforceRateLimit("login", identityKey)
+    if (!rate.allowed) {
+      await recordSecurityEvent({ eventType: "participant_login_rate_limited", actorType: "participant", request, riskScore: 70 })
+      return NextResponse.json({ success: false, error: "Too many login attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+    }
 
     if (!password) {
       return NextResponse.json({ success: false, error: "Password is required" }, { status: 400 })
@@ -19,7 +27,7 @@ export async function POST(request: Request) {
     let mobileKey = mobile_number ? mobile_number.toString().trim() : null
 
     // Query participant by email or mobile number
-    let rows = []
+    let rows: any[] = []
     if (emailKey) {
       rows = await query(
         `SELECT id, email, password_hash, plain_password, username, full_name, wallet_address,
@@ -46,6 +54,7 @@ export async function POST(request: Request) {
     }
 
     if (rows.length === 0) {
+      await recordSecurityEvent({ eventType: "participant_login_failed", actorType: "participant", actorEmail: emailKey, request, riskScore: 55, metadata: { reason: "unknown_account" } })
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -65,6 +74,7 @@ export async function POST(request: Request) {
     }
 
     if (!passwordValid) {
+      await recordSecurityEvent({ eventType: "participant_login_failed", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 60, metadata: { reason: "invalid_password" } })
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -76,6 +86,8 @@ export async function POST(request: Request) {
 
     // Block login if mobile OTP not yet verified by admin
     if (participant.otp_verified === false) {
+      await updateParticipantSecurityProfile(participant.email, request, 20)
+      await recordSecurityEvent({ eventType: "participant_login_pending_verification", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 20 })
       return NextResponse.json({
         success: false,
         error: "Your account is pending admin verification. Please wait for admin to verify your mobile OTP before logging in.",
@@ -85,6 +97,17 @@ export async function POST(request: Request) {
 
     // Update last login (best-effort, column may not exist)
     await execute("UPDATE participants SET updated_at = NOW() WHERE id = $1", [participant.id]).catch(() => {})
+
+    const securityProfile = await updateParticipantSecurityProfile(participant.email, request, 0)
+    await recordSecurityEvent({
+      eventType: "participant_login_success",
+      actorType: "participant",
+      actorEmail: participant.email,
+      actorId: String(participant.id),
+      request,
+      riskScore: securityProfile.duplicateAccountCount > 0 ? 60 : 0,
+      metadata: { duplicateAccountCount: securityProfile.duplicateAccountCount },
+    })
 
     await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
 
