@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getParticipantSession, getAdminSession } from "@/lib/session"
+import { recordSecurityEvent } from "@/lib/security"
 
 // Valid admin emails — used for token-based auth fallback
 const ADMIN_EMAILS = ["montyflowchain890@gmail.com"]
@@ -42,6 +43,7 @@ export async function requireAdminSession(
   if (req) {
     const token = req.headers.get("X-Admin-Token")
     if (token && ADMIN_EMAILS.includes(token.toLowerCase())) {
+      void recordSecurityEvent({ eventType: "admin_request", actorType: "admin", actorEmail: token, request: req, resourceType: "api_route", resourceId: req.nextUrl.pathname })
       return { ok: true, email: token, role: "admin" }
     }
   }
@@ -54,6 +56,7 @@ export async function requireAdminSession(
         response: NextResponse.json({ error: "Unauthorized — admin login required" }, { status: 401 }),
       }
     }
+    void recordSecurityEvent({ eventType: "admin_request", actorType: "admin", actorEmail: session.email, request: req, resourceType: "api_route", resourceId: req?.nextUrl.pathname || "unknown" })
     return { ok: true, email: session.email, role: "admin" }
   } catch {
     return {

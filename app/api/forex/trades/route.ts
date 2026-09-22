@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
+import { enforceRateLimit, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
 
 /**
  * GET /api/forex/trades?email=...
@@ -9,6 +10,9 @@ import { requireParticipantSession } from "@/lib/auth-middleware"
 export async function GET(req: NextRequest) {
   const auth = await requireParticipantSession(req)
   if (!auth.ok) return auth.response
+  const context = getSecurityContext(req)
+  const rate = await enforceRateLimit("api", `${auth.email}:${context.ipAddress || "unknown"}`)
+  if (!rate.allowed) return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
 
   const { searchParams } = new URL(req.url)
   const email = searchParams.get("email")
@@ -44,6 +48,12 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireParticipantSession(req)
   if (!auth.ok) return auth.response
+  const context = getSecurityContext(req)
+  const rate = await enforceRateLimit("trade", `${auth.email}:${context.ipAddress || "unknown"}`)
+  if (!rate.allowed) {
+    await recordSecurityEvent({ eventType: "trade_rate_limited", actorType: "participant", actorEmail: auth.email, request: req, riskScore: 70 })
+    return NextResponse.json({ success: false, error: "Trading request limit reached. Try again shortly." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+  }
 
   try {
     const body = await req.json()
@@ -66,6 +76,18 @@ export async function POST(req: NextRequest) {
     const participantRows = await db.query("SELECT id, account_frozen, is_frozen, account_type, funded_breach_status FROM participants WHERE email = $1", [participant_email])
     const participant = participantRows.rows[0]
     const participantId = participant?.id ?? null
+    const tradeRisk = action === "open" || action === "pending"
+      ? await inspectTradeRisk({ email: participant_email, trade })
+      : { riskScore: 0, flags: [] as string[] }
+    const securityProfile = await updateParticipantSecurityProfile(participant_email, req, tradeRisk.riskScore)
+    if (securityProfile.duplicateAccountCount > 0) {
+      tradeRisk.flags.push("duplicate_account_signal")
+      tradeRisk.riskScore = Math.max(tradeRisk.riskScore, 60)
+    }
+    if (tradeRisk.riskScore >= 100 && action !== "sync") {
+      await recordSecurityEvent({ eventType: "trade_blocked_high_risk", actorType: "participant", actorEmail: participant_email, request: req, resourceType: "forex_trade", resourceId: String(trade.id), riskScore: tradeRisk.riskScore, metadata: { flags: tradeRisk.flags } })
+      return NextResponse.json({ success: false, error: "Trade blocked by risk controls" }, { status: 403 })
+    }
 
     if (participant?.account_type !== "funded" && (participant?.account_frozen || participant?.is_frozen) && (action === "open" || action === "pending")) {
       return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
@@ -128,7 +150,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 })
     }
 
-    return NextResponse.json({ success: true })
+    await recordTradeRiskFlags(participant_email, String(trade.id), tradeRisk)
+    await recordSecurityEvent({
+      eventType: `trade_${action}`,
+      actorType: "participant",
+      actorEmail: participant_email,
+      request: req,
+      resourceType: "forex_trade",
+      resourceId: String(trade.id),
+      riskScore: tradeRisk.riskScore,
+      metadata: { flags: tradeRisk.flags, participantId },
+    })
+    return NextResponse.json({ success: true, riskFlags: tradeRisk.flags })
   } catch (e: any) {
     console.error("[v0] forex trades POST error:", e.message)
     return NextResponse.json({ success: false, error: e.message }, { status: 500 })
@@ -142,6 +175,12 @@ export async function POST(req: NextRequest) {
 export async function PATCH(req: NextRequest) {
   const auth = await requireParticipantSession(req)
   if (!auth.ok) return auth.response
+  const context = getSecurityContext(req)
+  const rate = await enforceRateLimit("trade", `${auth.email}:${context.ipAddress || "unknown"}`)
+  if (!rate.allowed) {
+    await recordSecurityEvent({ eventType: "trade_update_rate_limited", actorType: "participant", actorEmail: auth.email, request: req, riskScore: 70 })
+    return NextResponse.json({ success: false, error: "Trading request limit reached. Try again shortly." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+  }
 
   try {
     const body = await req.json()
@@ -204,6 +243,15 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 })
     }
 
+    await recordSecurityEvent({
+      eventType: `trade_${action}`,
+      actorType: "participant",
+      actorEmail: participant_email,
+      request: req,
+      resourceType: "forex_trade",
+      resourceId: id,
+      metadata: { fields: Object.keys(body).filter((key) => key !== "participant_email") },
+    })
     return NextResponse.json({ success: true })
   } catch (e: any) {
     console.error("[v0] forex trades PATCH error:", e.message)
@@ -218,6 +266,9 @@ export async function PATCH(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const auth = await requireParticipantSession(req)
   if (!auth.ok) return auth.response
+  const context = getSecurityContext(req)
+  const rate = await enforceRateLimit("trade", `${auth.email}:${context.ipAddress || "unknown"}`)
+  if (!rate.allowed) return NextResponse.json({ success: false, error: "Trading request limit reached. Try again shortly." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get("id")
@@ -232,6 +283,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     await db.query(`DELETE FROM forex_trades WHERE id = $1 AND participant_email = $2 AND status = 'pending'`, [id, email])
+    await recordSecurityEvent({ eventType: "trade_cancelled", actorType: "participant", actorEmail: email, request: req, resourceType: "forex_trade", resourceId: id })
     return NextResponse.json({ success: true })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 })
