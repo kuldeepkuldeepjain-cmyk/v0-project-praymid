@@ -41,8 +41,8 @@ export default function ReferPage() {
         const parsedData = JSON.parse(storedData)
         setParticipantData(parsedData)
 
-        // Build referral link using flowchain.club
-        const link = `https://flowchain.club/register?ref=${parsedData.referral_code}`
+        // Referral links use the production Elite Fund domain so shared links resolve correctly.
+        const link = `https://elitefund.sbs/register?ref=${encodeURIComponent(parsedData.referral_code || "")}`
         setReferralLink(link)
 
         // Fetch referral data from API
@@ -338,7 +338,7 @@ export default function ReferPage() {
                 <div>
                   <p className="font-semibold text-slate-900 text-sm">Share Your Link</p>
                   <p className="text-xs text-slate-600">
-                    Copy your unique referral link (flowchain.club) and share it with friends
+                    Copy your unique referral link (elitefund.sbs) and share it with friends
                   </p>
                 </div>
               </div>
@@ -400,7 +400,7 @@ export default function ReferPage() {
               </code>
             </div>
             <p className="text-xs text-slate-600 mt-2">
-              Your unique code for referral tracking (also included in link: flowchain.club)
+              Your unique code for referral tracking (also included in your elitefund.sbs link)
             </p>
           </CardContent>
         </Card>

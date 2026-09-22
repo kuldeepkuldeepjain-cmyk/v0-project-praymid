@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       referralCount: Number(userData.referral_count || userData.total_referrals || 0),
       referralEarnings: Number(userData.referral_earnings) || 0,
       referredUsers: referredUsers || [],
-      referralLink: `https://flowchain.club/register?ref=${userData.referral_code}`,
+      referralLink: `https://elitefund.sbs/register?ref=${encodeURIComponent(userData.referral_code || "")}`,
     })
   } catch (error) {
     console.error("[v0] Referrals API error:", error)

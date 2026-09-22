@@ -244,7 +244,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
               WhatsApp Support
             </a>
             <a
-              href="mailto:support@flowchain.club"
+              href="mailto:support@elitefund.sbs"
               className="flex items-center justify-center gap-2 w-full h-12 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-semibold rounded-lg transition-colors"
             >
               <Mail className="h-4 w-4" />
@@ -462,14 +462,14 @@ function HamburgerMenu({
               </div>
             </a>
             <a
-              href="mailto:support@flowchain.club"
+              href="mailto:support@elitefund.sbs"
               onClick={onClose}
               className="flex items-center gap-3 px-3 py-2.5 hover:bg-green-100 transition-colors border-t border-green-100"
             >
               <Mail className="h-4 w-4 text-green-600 flex-shrink-0" />
               <div>
                 <p className="text-sm font-medium text-green-800">Email</p>
-                <p className="text-xs text-green-600">support@flowchain.club</p>
+                <p className="text-xs text-green-600">support@elitefund.sbs</p>
               </div>
             </a>
           </div>
