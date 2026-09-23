@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
       const participant = pRows[0] as any
       const depositAmount = Number(topup.amount)
-      const fundedSizes: Record<number, number> = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
+      const fundedSizes: Record<number, number> = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
       const isFundedAccount = participant.account_type === "funded"
       // A funded account's first activation is tier-based regardless of active/frozen status.
       const isInitialFundedTopUp = isFundedAccount
@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
         && Number(participant.account_balance || 0) <= 0
       const fundedCredit = fundedSizes[depositAmount]
       if (isInitialFundedTopUp && !fundedCredit) {
-        return NextResponse.json({ success: false, message: "The first funded top-up must be $100, $250, $500, or $1,000" }, { status: 400 })
+        return NextResponse.json({ success: false, message: "The first funded top-up must be $50, $100, $250, $500, or $1,000" }, { status: 400 })
       }
       const creditedAmount = isInitialFundedTopUp ? fundedCredit : depositAmount
       const newBalance = Number(participant.account_balance || 0) + creditedAmount

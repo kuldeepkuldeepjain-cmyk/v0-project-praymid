@@ -341,12 +341,21 @@ export default function LandingPage() {
               Get Funded. <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Trade Bigger.</span>
             </h2>
             <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
-              Choose your account size and unlock professional trading power with Elite Fund. Start with $100 and access a $10,000 account.
+              Choose your account size and unlock professional trading power with Elite Fund. Start with $50 and access a $5,000 account.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6">
             {[
+              {
+                topUp: "$50",
+                funded: "$5,000",
+                icon: Sparkles,
+                tag: "Entry",
+                gradient: "from-purple-600 to-slate-500",
+                ring: "border-purple-600/50 hover:border-cyan-400/60",
+                glow: "hover:shadow-[0_0_35px_rgba(147,51,234,0.18)]",
+              },
               {
                 topUp: "$100",
                 funded: "$10,000",
