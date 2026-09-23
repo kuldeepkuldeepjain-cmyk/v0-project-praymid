@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { setParticipantSession } from "@/lib/session"
 import { query, execute } from "@/lib/db"
+import { getFundedBaseAmount, getFundedEquity, getFundedMinimumBalance } from "@/lib/funded-account"
 import { enforceRateLimit, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 import bcrypt from "bcryptjs"
 
@@ -34,6 +35,7 @@ export async function POST(request: NextRequest) {
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
+                account_type, funded_amount, funded_initial_balance, funded_breach_status,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants WHERE email = $1 LIMIT 1`,
         [emailKey]
@@ -44,6 +46,7 @@ export async function POST(request: NextRequest) {
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
+                account_type, funded_amount, funded_initial_balance, funded_breach_status,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants
          WHERE mobile_number = $1
@@ -109,6 +112,25 @@ export async function POST(request: NextRequest) {
       metadata: { duplicateAccountCount: securityProfile.duplicateAccountCount },
     })
 
+    const fundedInitialBalance = Number(participant.funded_initial_balance) || getFundedBaseAmount(participant.account_balance, participant.funded_amount)
+    const fundedEquity = getFundedEquity(fundedInitialBalance, participant.account_balance)
+    if (
+      participant.account_type === "funded" &&
+      participant.funded_breach_status === "breached" &&
+      fundedInitialBalance > 0 &&
+      fundedEquity >= getFundedMinimumBalance(fundedInitialBalance)
+    ) {
+      await execute(
+        `UPDATE participants
+         SET funded_breach_status = 'clear', funded_breach_at = NULL,
+             funded_breach_balance = NULL, funded_breach_equity = NULL,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [participant.id],
+      )
+      participant.funded_breach_status = "clear"
+    }
+
     await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
 
     return NextResponse.json({
@@ -130,6 +152,10 @@ export async function POST(request: NextRequest) {
       referred_by: participant.referred_by || "",
       serial_number: participant.serial_number || "",
       status: participant.status || "pending",
+      account_type: participant.account_type || "standard",
+      funded_amount: Number(participant.funded_amount) || 0,
+      funded_initial_balance: Number(participant.funded_initial_balance) || 0,
+      funded_breach_status: participant.funded_breach_status || "clear",
       rank: participant.rank || "bronze",
       is_active: participant.is_active !== false,
       otp_verified: participant.otp_verified || false,

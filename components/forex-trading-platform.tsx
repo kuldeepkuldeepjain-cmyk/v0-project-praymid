@@ -1053,8 +1053,11 @@ function PositionSizer({
   isFrozen = false,
   onBalanceUpdated,
   onAccountFrozen,
+  onAddFunds,
+  onAddFundedFunds,
+  fundedTopUpAvailable = false,
   onStatsUpdate,
-}: {
+  }: {
   participantEmail: string
   walletBalance?: number
   isFundedAccount?: boolean
@@ -1062,6 +1065,9 @@ function PositionSizer({
   isFrozen?: boolean
   onBalanceUpdated?: (newBalance: number) => void
   onAccountFrozen?: () => void
+  onAddFunds?: () => void
+  onAddFundedFunds?: () => void
+  fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
   // ── State ──────────────────────────────────────────────────────────────────
@@ -2179,16 +2185,28 @@ adjustWalletBalance(returnAmt,
             <Wallet className="h-3 w-3" />
             <span>Balance</span>
           </button>
-          <button
-            type="button"
-            onClick={() => { window.location.href = "/participant/dashboard" }}
-            className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-colors hover:brightness-110" style={{ background: "#f58220", border: "1px solid #ff9f4a" }}
-            title="Add funds"
-          >
-            <Plus className="h-3 w-3" />
-            <span className="hidden lg:inline">Add Fund</span>
-            <span className="lg:hidden">Fund</span>
-          </button>
+  {isFundedAccount && fundedTopUpAvailable && onAddFundedFunds && (
+  <button
+  type="button"
+  onClick={onAddFundedFunds}
+  className="flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-400/20 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/30"
+  title="Activate funded account"
+  >
+  <ShieldAlert className="h-3 w-3" />
+  <span className="hidden lg:inline">Funded Add Fund</span>
+  <span className="lg:hidden">Funded</span>
+  </button>
+  )}
+  <button
+  type="button"
+  onClick={onAddFunds}
+  className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-colors hover:brightness-110" style={{ background: "#f58220", border: "1px solid #ff9f4a" }}
+  title="Add normal funds"
+  >
+  <Plus className="h-3 w-3" />
+  <span className="hidden lg:inline">Normal Add Fund</span>
+  <span className="lg:hidden">Fund</span>
+  </button>
           <button
             type="button"
             onClick={() => { window.location.href = "/participant/dashboard/payout" }}

@@ -250,10 +250,11 @@ export default function ParticipantRegisterPage() {
           status: "active",
           rank: "bronze",
           is_active: true,
-          created_at: data.created_at || new Date().toISOString(),
-        }))
+  created_at: data.created_at || new Date().toISOString(),
+  }))
+  localStorage.setItem("participantNewAccountTopUpPending", String(data.participantId))
 
-        toast({
+  toast({
           title: "Account Created!",
           description: `Welcome @${formData.username}! Redirecting to your dashboard...`,
         })

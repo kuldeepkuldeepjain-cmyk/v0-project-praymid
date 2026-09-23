@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "approve") {
-      const pRows = await query("SELECT account_balance, account_type, funded_amount, funded_breach_status FROM participants WHERE id = $1", [topup.participant_id])
+      const pRows = await query("SELECT account_balance, account_type, funded_amount, funded_initial_balance, funded_breach_status FROM participants WHERE id = $1", [topup.participant_id])
       if (!pRows.length) {
         return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })
       }
@@ -79,7 +79,9 @@ export async function POST(req: NextRequest) {
       const fundedSizes: Record<number, number> = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
       const isFundedAccount = participant.account_type === "funded"
       // A funded account's first activation is tier-based regardless of active/frozen status.
-      const isInitialFundedTopUp = isFundedAccount && Number(participant.account_balance || 0) <= 0
+      const isInitialFundedTopUp = isFundedAccount
+        && !Number(participant.funded_initial_balance || 0)
+        && Number(participant.account_balance || 0) <= 0
       const fundedCredit = fundedSizes[depositAmount]
       if (isInitialFundedTopUp && !fundedCredit) {
         return NextResponse.json({ success: false, message: "The first funded top-up must be $100, $250, $500, or $1,000" }, { status: 400 })
@@ -95,9 +97,14 @@ export async function POST(req: NextRequest) {
         : "account_frozen = account_frozen, is_frozen = is_frozen, status = status"
       await execute(
         isFundedAccount
-          ? `UPDATE participants SET account_balance = $1, ${revivalSql}, updated_at = NOW() WHERE id = $2`
+          ? `UPDATE participants
+             SET account_balance = $1,
+                 funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
+                 funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
+                 ${revivalSql}, updated_at = NOW()
+             WHERE id = $2`
           : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-        [newBalance, topup.participant_id]
+        [newBalance, topup.participant_id, isInitialFundedTopUp, fundedBaseAmount]
       )
       await execute(
         "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",

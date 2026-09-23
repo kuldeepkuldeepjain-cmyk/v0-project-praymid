@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { query, execute } from "@/lib/db"
-import { getFundedBaseAmount, getFundedEquity, isFundedDrawdownBreached } from "@/lib/funded-account"
+import { getFundedBaseAmount, getFundedEquity, getFundedMinimumBalance, getFundedPredictionMaxAmount, isFundedDrawdownBreached } from "@/lib/funded-account"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -22,16 +22,30 @@ export async function POST(request: NextRequest) {
     ) as any[]
     const participant = rows[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-    if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
-      return NextResponse.json({ error: "Funded account breached the fixed 2% drawdown rule." }, { status: 403 })
-    }
-
     const availableBalance = useReferralBalance
       ? Number(participant.bonus_balance ?? 0)
       : Number(participant.account_balance ?? 0)
     const fundedBaseAmount = participant.account_type === "funded"
-      ? getFundedBaseAmount(participant.account_balance)
+      ? getFundedBaseAmount(participant.account_balance, participant.funded_initial_balance)
       : 0
+    const fundedPredictionMax = getFundedPredictionMaxAmount(
+      participant.account_type,
+      participant.account_balance,
+      participant.funded_initial_balance,
+    )
+    const requestedAmount = Number(amount)
+    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+      return NextResponse.json({ error: "Prediction amount must be greater than zero" }, { status: 400 })
+    }
+    if (!useReferralBalance && fundedPredictionMax !== null && requestedAmount > fundedPredictionMax) {
+      const limitText = fundedPredictionMax >= 100 && Number.isInteger(fundedPredictionMax)
+        ? `$${fundedPredictionMax.toLocaleString()}`
+        : `$${fundedPredictionMax.toFixed(2)}`
+      return NextResponse.json({
+        error: `Funded accounts can place prediction trades up to ${limitText}. At or below the funded amount, trades can be up to $100; above it, only profit is eligible.`,
+        funded_prediction_limit: fundedPredictionMax,
+      }, { status: 400 })
+    }
     const committedRows = participant.account_type === "funded" && !useReferralBalance
       ? await query(
           `SELECT
@@ -41,6 +55,33 @@ export async function POST(request: NextRequest) {
         ) as Array<{ committed_funds: number }>
       : []
     const committedFunds = Number(committedRows[0]?.committed_funds ?? 0)
+    const fundedInitialBalance = Number(participant.funded_initial_balance) || fundedBaseAmount
+    const currentFundedEquity = getFundedEquity(fundedInitialBalance, Number(participant.account_balance ?? 0), committedFunds)
+    const fundedBreachFloor = getFundedMinimumBalance(fundedInitialBalance)
+
+    // A prior breach is recoverable when the account is back at or above 98%
+    // of its funded amount. This also prevents a $10,020 balance on a $10,000
+    // account from remaining incorrectly locked in breach state.
+    if (
+      participant.account_type === "funded" &&
+      participant.funded_breach_status === "breached" &&
+      fundedInitialBalance > 0 &&
+      currentFundedEquity >= fundedBreachFloor
+    ) {
+      await execute(
+        `UPDATE participants
+         SET funded_breach_status = 'clear', funded_breach_at = NULL,
+             funded_breach_balance = NULL, funded_breach_equity = NULL,
+             updated_at = NOW()
+         WHERE id = $1`,
+        [participant.id],
+      )
+      participant.funded_breach_status = "clear"
+    }
+
+    if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
+      return NextResponse.json({ error: "Funded account breached the fixed 2% drawdown rule. Current equity must recover to at least 98% of the funded amount." }, { status: 403 })
+    }
 
     if (availableBalance < Number(amount)) {
       return NextResponse.json({
@@ -63,7 +104,6 @@ export async function POST(request: NextRequest) {
 
     const balanceField = useReferralBalance ? "bonus_balance" : "account_balance"
     const newBalance = availableBalance - Number(amount)
-    const fundedInitialBalance = Number(participant.funded_initial_balance) || fundedBaseAmount
     const totalCommittedAfterBet = committedFunds + (useReferralBalance ? 0 : Number(amount))
     const fundedEquity = getFundedEquity(fundedInitialBalance, newBalance, totalCommittedAfterBet)
     const shouldBreach = isFundedDrawdownBreached(participant.account_type, fundedInitialBalance, newBalance, totalCommittedAfterBet)
