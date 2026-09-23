@@ -290,7 +290,7 @@ function PredictPageContent() {
   toast({
     title: "Funded prediction limit exceeded",
     description: fundedPredictionMax < 100
-      ? `Prediction amount must be below $100. Current limit: $${fundedPredictionMax.toFixed(2)}.`
+      ? `Prediction amount can be up to $100. Current limit: $${fundedPredictionMax.toFixed(2)}.`
       : `Only profit above the funded amount can be used. Current limit: $${fundedPredictionMax.toFixed(2)}.`,
     variant: "destructive",
   })
@@ -746,7 +746,7 @@ function PredictPageContent() {
                   Funded prediction limit: ${fundedPredictionMax.toFixed(2)}
                   {walletBalance > Number(participantData?.funded_initial_balance || 0)
                     ? " (profit above funded amount)"
-                    : " (below $100)"}
+                    : " (up to $100)"}
                 </div>
               )}
             </div>

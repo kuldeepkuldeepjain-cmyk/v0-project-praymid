@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
         ? `$${fundedPredictionMax.toLocaleString()}`
         : `$${fundedPredictionMax.toFixed(2)}`
       return NextResponse.json({
-        error: `Funded accounts can place prediction trades up to ${limitText}. At or below the funded amount, the limit is below $100; above it, only profit is eligible.`,
+        error: `Funded accounts can place prediction trades up to ${limitText}. At or below the funded amount, trades can be up to $100; above it, only profit is eligible.`,
         funded_prediction_limit: fundedPredictionMax,
       }, { status: 400 })
     }

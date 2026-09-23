@@ -41,9 +41,9 @@ export function getFundedPredictionMaxAmount(
   const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)
   if (!Number.isFinite(balance) || !baseAmount) return 0
 
-  // At or below the purchased account size, prediction stakes stay below $100.
+  // At or below the purchased account size, prediction stakes can be up to $100.
   // Once the account is profitable, only the profit above that size is usable.
-  return balance > baseAmount ? balance - baseAmount : 99.99
+  return balance > baseAmount ? balance - baseAmount : 100
 }
 
 export function getFundedLossLimit(baseAmount: number): number {
