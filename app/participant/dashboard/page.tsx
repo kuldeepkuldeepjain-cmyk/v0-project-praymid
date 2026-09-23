@@ -1473,6 +1473,7 @@ export default function DashboardHome() {
   const [participantId, setParticipantId] = useState<string>("")
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
+  const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
@@ -1673,16 +1674,22 @@ export default function DashboardHome() {
     : 0
   const minimumFundedBalance = getFundedMinimumBalance(fundedBaseAmount)
   const isFundedAccountBreached = isFundedAccount && participantData?.funded_breach_status === "breached"
-  // Funding is always available from Add Fund. Only a breached funded account
-  // opens the reactivation flow automatically and uses funded-account rules.
-  const isFundedReactivation = isFundedAccount && isFundedAccountBreached
+  // Funding is always available from Add Fund. Breached funded accounts can
+  // be reactivated through an explicit button, never an automatic popup.
 
   useEffect(() => {
-  if (isFundedReactivation) {
-  setTopUpIsFundedAccount(true)
-  setShowTopUpModal(true)
-  }
-  }, [isFundedReactivation])
+    if (typeof window === "undefined" || !participantData?.id) return
+
+    const pendingAccountId = window.localStorage.getItem("participantNewAccountTopUpPending")
+    if (pendingAccountId !== participantData.id) return
+
+    // Consume the registration handoff before opening the modal so closing it
+    // never causes the new-account prompt to appear again.
+    window.localStorage.removeItem("participantNewAccountTopUpPending")
+    setTopUpIsFundedAccount(participantData.account_type === "funded")
+    setIsInitialFundedTopUp(participantData.account_type === "funded")
+    setShowTopUpModal(true)
+  }, [participantData?.id, participantData?.account_type])
 
 
   useEffect(() => {
@@ -1791,6 +1798,7 @@ export default function DashboardHome() {
   onAddBalance={isFundedAccountBreached ? () => {
   setShowFrozenModal(false)
   setTopUpIsFundedAccount(true)
+  setIsInitialFundedTopUp(false)
   setShowTopUpModal(true)
   } : undefined}
   />
@@ -1800,14 +1808,18 @@ export default function DashboardHome() {
       {/* Top Up Modal */}
       <TopUpModal
         isOpen={showTopUpModal}
-        onClose={() => setShowTopUpModal(false)}
+        onClose={() => {
+          setShowTopUpModal(false)
+          setIsInitialFundedTopUp(false)
+        }}
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
         isFundedAccount={topUpIsFundedAccount}
-  isInitialFundedTopUp={false}
+  isInitialFundedTopUp={isInitialFundedTopUp}
   onSuccess={async () => {
   setShowTopUpModal(false)
+  setIsInitialFundedTopUp(false)
   if (participantData?.email) {
   await refreshParticipantData(participantData.email)
   }
