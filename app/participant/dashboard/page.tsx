@@ -2388,6 +2388,17 @@ export default function DashboardHome() {
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
+  fundedTopUpAvailable={isFundedAccount && !Number(participantData?.funded_initial_balance)}
+  onAddFunds={() => {
+  setTopUpIsFundedAccount(false)
+  setIsInitialFundedTopUp(false)
+  setShowTopUpModal(true)
+  }}
+  onAddFundedFunds={() => {
+  setTopUpIsFundedAccount(true)
+  setIsInitialFundedTopUp(true)
+  setShowTopUpModal(true)
+  }}
   isFrozen={isFundedAccountBreached || (!isFundedAccount && Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen"))}
   onAccountFrozen={() => {
   setParticipantData((prev: any) => {
