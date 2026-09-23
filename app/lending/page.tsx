@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { FlowChainLogo } from "@/components/flowchain-logo"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   TrendingUp,
   DollarSign,
@@ -204,6 +204,41 @@ export default function LendingPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Funded Account Plans */}
+      <section className="border-y border-blue-500/20 bg-blue-950/20 px-4 py-12 sm:py-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-400">Funded account plans</p>
+            <h2 className="mt-3 text-2xl font-bold text-white sm:text-4xl">Choose your starting plan</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-300 sm:text-base">Activate a funded trading account with a plan that matches your goals. All plans are subject to review and approval.</p>
+          </div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              { payment: "$50", account: "$5,000", featured: true },
+              { payment: "$100", account: "$10,000" },
+              { payment: "$250", account: "$25,000" },
+              { payment: "$500", account: "$50,000" },
+              { payment: "$1,000", account: "$100,000" },
+            ].map((plan) => (
+              <Card key={plan.payment} className={`border-blue-500/25 bg-slate-900/80 ${plan.featured ? "ring-2 ring-cyan-400/60" : ""}`}>
+                <CardHeader className="pb-3">
+                  {plan.featured && <span className="w-fit rounded-full bg-cyan-400/15 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-cyan-300">New plan</span>}
+                  <CardTitle className="text-2xl text-white">{plan.payment}</CardTitle>
+                  <CardDescription className="text-slate-400">Activation payment</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-slate-400">Funded account</p>
+                  <p className="mt-1 text-xl font-bold text-cyan-300">{plan.account}</p>
+                  <Link href="/participant/register" className="mt-4 block">
+                    <Button variant="outline" className="h-9 w-full border-blue-400/40 text-xs text-blue-200 hover:bg-blue-500/10">Get started</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
