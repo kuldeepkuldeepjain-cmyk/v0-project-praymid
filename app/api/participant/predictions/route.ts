@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { query, execute } from "@/lib/db"
-import { getFundedBaseAmount, getFundedEquity, isFundedDrawdownBreached } from "@/lib/funded-account"
+import { getFundedBaseAmount, getFundedEquity, getFundedPredictionMaxAmount, isFundedDrawdownBreached } from "@/lib/funded-account"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -30,8 +30,26 @@ export async function POST(request: NextRequest) {
       ? Number(participant.bonus_balance ?? 0)
       : Number(participant.account_balance ?? 0)
     const fundedBaseAmount = participant.account_type === "funded"
-      ? getFundedBaseAmount(participant.account_balance)
+      ? getFundedBaseAmount(participant.account_balance, participant.funded_initial_balance)
       : 0
+    const fundedPredictionMax = getFundedPredictionMaxAmount(
+      participant.account_type,
+      participant.account_balance,
+      participant.funded_initial_balance,
+    )
+    const requestedAmount = Number(amount)
+    if (!Number.isFinite(requestedAmount) || requestedAmount <= 0) {
+      return NextResponse.json({ error: "Prediction amount must be greater than zero" }, { status: 400 })
+    }
+    if (!useReferralBalance && fundedPredictionMax !== null && requestedAmount > fundedPredictionMax) {
+      const limitText = fundedPredictionMax >= 100 && Number.isInteger(fundedPredictionMax)
+        ? `$${fundedPredictionMax.toLocaleString()}`
+        : `$${fundedPredictionMax.toFixed(2)}`
+      return NextResponse.json({
+        error: `Funded accounts can place prediction trades up to ${limitText}. At or below the funded amount, the limit is below $100; above it, only profit is eligible.`,
+        funded_prediction_limit: fundedPredictionMax,
+      }, { status: 400 })
+    }
     const committedRows = participant.account_type === "funded" && !useReferralBalance
       ? await query(
           `SELECT

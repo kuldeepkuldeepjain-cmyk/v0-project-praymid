@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
+import { getFundedPredictionMaxAmount } from "@/lib/funded-account"
 import { LivePredictionMonitor } from "@/components/live-prediction-monitor"
 import { ActiveTradeTracker } from "@/components/active-trade-tracker"
 import { AssetLogo } from "@/components/asset-logo"
@@ -134,6 +135,12 @@ function PredictPageContent() {
     0
   )
   const activeBalance = balanceSource === "referral" ? referralBalance : walletBalance
+  const fundedPredictionMax = getFundedPredictionMaxAmount(
+    participantData?.account_type,
+    walletBalance,
+    participantData?.funded_initial_balance,
+  )
+  const predictionAmountMax = balanceSource === "wallet" ? fundedPredictionMax ?? activeBalance : activeBalance
   
   // Filtered assets based on selected filter
   const filteredAssets = CRYPTO_ASSETS.filter(asset => {
@@ -274,12 +281,23 @@ function PredictPageContent() {
     if (isPlacingTrade) return // Prevent double-click
     
     const amount = parseFloat(betAmount)
-    if (!amount || amount <= 0) {
-      toast({ title: "Invalid amount", variant: "destructive" })
-      return
-    }
+  if (!amount || amount <= 0) {
+  toast({ title: "Invalid amount", variant: "destructive" })
+  return
+  }
 
-    const availableBalance = balanceSource === "referral" ? referralBalance : walletBalance
+  if (balanceSource === "wallet" && fundedPredictionMax !== null && amount > fundedPredictionMax) {
+  toast({
+    title: "Funded prediction limit exceeded",
+    description: fundedPredictionMax < 100
+      ? `Prediction amount must be below $100. Current limit: $${fundedPredictionMax.toFixed(2)}.`
+      : `Only profit above the funded amount can be used. Current limit: $${fundedPredictionMax.toFixed(2)}.`,
+    variant: "destructive",
+  })
+  return
+  }
+
+  const availableBalance = balanceSource === "referral" ? referralBalance : walletBalance
     if (availableBalance < amount) {
       toast({
         title: "Insufficient balance",
@@ -711,6 +729,9 @@ function PredictPageContent() {
                 <Input
                   type="number"
                   placeholder="0.00"
+                  min="0.01"
+                  max={predictionAmountMax > 0 ? predictionAmountMax : undefined}
+                  step="0.01"
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
                   className="h-9 text-sm pr-14 border-slate-600 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-cyan-400 rounded-lg"
@@ -720,6 +741,14 @@ function PredictPageContent() {
               <div className="text-[10px] text-slate-400">
                 Available: <span className={`font-semibold ${balanceSource === "referral" ? "text-emerald-600" : "text-cyan-300"}`}>${activeBalance.toFixed(2)}</span>
               </div>
+              {balanceSource === "wallet" && fundedPredictionMax !== null && (
+                <div className="text-[10px] text-amber-300">
+                  Funded prediction limit: ${fundedPredictionMax.toFixed(2)}
+                  {walletBalance > Number(participantData?.funded_initial_balance || 0)
+                    ? " (profit above funded amount)"
+                    : " (below $100)"}
+                </div>
+              )}
             </div>
 
             {/* Timeframe Selection */}

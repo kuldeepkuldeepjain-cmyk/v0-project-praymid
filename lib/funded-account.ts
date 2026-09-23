@@ -30,6 +30,22 @@ export function getFundedTopUpAmount(baseAmount: number): number {
   return plan?.topUpAmount ?? Math.max(0, baseAmount * 0.01)
 }
 
+export function getFundedPredictionMaxAmount(
+  accountType: unknown,
+  accountBalance: unknown,
+  configuredAmount?: unknown,
+): number | null {
+  if (accountType !== "funded") return null
+
+  const balance = Number(accountBalance)
+  const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)
+  if (!Number.isFinite(balance) || !baseAmount) return 0
+
+  // At or below the purchased account size, prediction stakes stay below $100.
+  // Once the account is profitable, only the profit above that size is usable.
+  return balance > baseAmount ? balance - baseAmount : 99.99
+}
+
 export function getFundedLossLimit(baseAmount: number): number {
   // Funded accounts are frozen after a 2% loss of total funds.
   return Math.max(0, baseAmount * 0.02)
