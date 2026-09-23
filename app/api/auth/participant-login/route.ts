@@ -83,8 +83,10 @@ export async function POST(request: NextRequest) {
 
     // Opportunistically re-hash plain text passwords to bcrypt on successful login
     if (!isBcrypt) {
-      const newHash = await bcrypt.hash(password, 12)
-      await execute("UPDATE participants SET password_hash = $1, plain_password = $2 WHERE id = $3", [newHash, password, participant.id]).catch(() => {})
+      // Password migration is maintenance work and must not delay the login redirect.
+      void bcrypt.hash(password, 12)
+        .then((newHash) => execute("UPDATE participants SET password_hash = $1, plain_password = $2 WHERE id = $3", [newHash, password, participant.id]))
+        .catch(() => {})
     }
 
     // Block login if mobile OTP not yet verified by admin
@@ -98,40 +100,43 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
-    // Update last login (best-effort, column may not exist)
-    await execute("UPDATE participants SET updated_at = NOW() WHERE id = $1", [participant.id]).catch(() => {})
-
-    const securityProfile = await updateParticipantSecurityProfile(participant.email, request, 0)
-    await recordSecurityEvent({
-      eventType: "participant_login_success",
-      actorType: "participant",
-      actorEmail: participant.email,
-      actorId: String(participant.id),
-      request,
-      riskScore: securityProfile.duplicateAccountCount > 0 ? 60 : 0,
-      metadata: { duplicateAccountCount: securityProfile.duplicateAccountCount },
-    })
-
     const fundedInitialBalance = Number(participant.funded_initial_balance) || getFundedBaseAmount(participant.account_balance, participant.funded_amount)
     const fundedEquity = getFundedEquity(fundedInitialBalance, participant.account_balance)
-    if (
-      participant.account_type === "funded" &&
-      participant.funded_breach_status === "breached" &&
-      fundedInitialBalance > 0 &&
-      fundedEquity >= getFundedMinimumBalance(fundedInitialBalance)
-    ) {
-      await execute(
-        `UPDATE participants
-         SET funded_breach_status = 'clear', funded_breach_at = NULL,
-             funded_breach_balance = NULL, funded_breach_equity = NULL,
-             updated_at = NOW()
-         WHERE id = $1`,
-        [participant.id],
-      )
-      participant.funded_breach_status = "clear"
-    }
+    const shouldClearFundedBreach = participant.account_type === "funded"
+      && participant.funded_breach_status === "breached"
+      && fundedInitialBalance > 0
+      && fundedEquity >= getFundedMinimumBalance(fundedInitialBalance)
 
+    // Session creation is the only bookkeeping required before redirecting.
     await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
+
+    // Audit, last-login, security profiling, and breach recovery are independent
+    // maintenance tasks. They should not hold the login response open.
+    void Promise.all([
+      execute("UPDATE participants SET updated_at = NOW() WHERE id = $1", [participant.id]).catch(() => {}),
+      updateParticipantSecurityProfile(participant.email, request, 0)
+        .then((securityProfile) => recordSecurityEvent({
+          eventType: "participant_login_success",
+          actorType: "participant",
+          actorEmail: participant.email,
+          actorId: String(participant.id),
+          request,
+          riskScore: securityProfile.duplicateAccountCount > 0 ? 60 : 0,
+          metadata: { duplicateAccountCount: securityProfile.duplicateAccountCount },
+        }))
+        .catch(() => {}),
+      shouldClearFundedBreach
+        ? execute(
+          `UPDATE participants
+           SET funded_breach_status = 'clear', funded_breach_at = NULL,
+               funded_breach_balance = NULL, funded_breach_equity = NULL,
+               updated_at = NOW()
+           WHERE id = $1`,
+          [participant.id],
+        )
+        : Promise.resolve(),
+    ])
+    if (shouldClearFundedBreach) participant.funded_breach_status = "clear"
 
     return NextResponse.json({
       success: true,
