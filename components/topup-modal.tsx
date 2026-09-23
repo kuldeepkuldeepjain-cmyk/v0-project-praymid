@@ -71,7 +71,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
-  const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
+  const fundedTiers = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   const isFundedAmountValid = !isFundedAccount || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
@@ -79,7 +79,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setErrorMessage("")
 
     if (!isAmountValid) {
-      setErrorMessage(isFundedAccount && isInitialFundedTopUp ? "The first funded top-up must be $100, $250, $500, or $1,000" : "Please enter a valid amount (minimum $5)")
+      setErrorMessage(isFundedAccount && isInitialFundedTopUp ? "The first funded top-up must be $50, $100, $250, $500, or $1,000" : "Please enter a valid amount (minimum $5)")
       return
     }
     if (!txHash.trim()) {
@@ -202,7 +202,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                         <span className="text-[10px] font-semibold text-emerald-700">Select one</span>
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-2">
-                        {[100, 250, 500, 1000].map((tier) => (
+                        {[50, 100, 250, 500, 1000].map((tier) => (
                           <button
                             key={tier}
                             type="button"
