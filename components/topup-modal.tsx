@@ -121,26 +121,32 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && step !== "submitting") onClose() }}>
       <DialogContent className="w-[calc(100vw-24px)] max-w-lg bg-slate-50 border border-slate-200 shadow-2xl p-0 overflow-hidden max-h-[92dvh] flex flex-col">
-        {/* Header */}
-        <div
-          className="relative flex items-center gap-2.5 px-4 py-3 flex-shrink-0"
-          style={{ background: "linear-gradient(135deg, #7c3aed, #6366f1)" }}
-        >
-          <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-            <Wallet className="h-4 w-4 text-white" />
+        {/* Payment gateway header */}
+        <div className="relative flex-shrink-0 overflow-hidden bg-[#102a43] px-5 py-5 text-white">
+          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-cyan-400/10 to-transparent" />
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10">
+                <Wallet className="size-5 text-cyan-200" />
+              </div>
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-cyan-200/75">Secure checkout</p>
+                <h2 className="mt-1 text-lg font-bold leading-tight">Add funds</h2>
+                <p className="mt-1 max-w-xs text-[11px] leading-4 text-slate-300">Choose how you want to fund your trading account.</p>
+              </div>
+            </div>
+            {step !== "submitting" && (
+              <button onClick={onClose} aria-label="Close funding checkout" className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
+                <X className="size-4" />
+              </button>
+            )}
           </div>
-          <div>
-            <h2 className="text-base font-bold text-white leading-tight">{isFundedAccount ? "Funded Account Top Up" : "Top Up Wallet"}</h2>
-            <p className="text-[10px] text-white/70">{isFundedAccount ? "Choose a tier, send USDT, and submit the transaction hash" : "Send USDT on your selected network and submit the transaction hash"}</p>
+          <div className="relative mt-4 flex items-center gap-2 text-[10px] font-semibold text-slate-300">
+            <ShieldCheck className="size-3.5 text-emerald-300" />
+            <span>Payment request reviewed manually</span>
+            <span className="text-slate-500">•</span>
+            <span>USDT supported</span>
           </div>
-          {step !== "submitting" && (
-            <button
-              onClick={onClose}
-              className="absolute right-3 top-3 rounded-md p-1 bg-white/20 hover:bg-white/30 transition-colors"
-            >
-              <X className="h-4 w-4 text-white" />
-            </button>
-          )}
         </div>
 
         <div className="grid grid-cols-3 gap-px border-b border-slate-200 bg-slate-200">
@@ -157,30 +163,32 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
             <div className="space-y-3">
 
               {isFundedAccount && (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
-                  <p className="text-xs font-bold text-emerald-900">Funded Account Top-Up Rules</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">{isInitialFundedTopUp ? "Choose a top-up method. Funded Amount is available only for the first activation." : "Your funded account is already activated. Enter the exact amount you paid; no funded tier conversion will be applied."}</p>
-                  {isInitialFundedTopUp && (
-                    <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-1">
-                      <button
-                        type="button"
-                        onClick={() => { setFundingMode("actual"); setAmount("") }}
-                        disabled={step === "submitting"}
-                        className={`rounded-md px-2 py-2 text-[10px] font-bold transition-colors ${fundingMode === "actual" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-                      >
-                        Actual Amount
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setFundingMode("funded"); setAmount("") }}
-                        disabled={step === "submitting"}
-                        className={`rounded-md px-2 py-2 text-[10px] font-bold transition-colors ${fundingMode === "funded" ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
-                      >
-                        Funded Amount
-                      </button>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Funding method</p>
+                      <h3 className="mt-1 text-sm font-bold text-slate-900">Choose an account option</h3>
                     </div>
-                  )}
-                  {isInitialFundedTopUp && fundingMode === "funded" && <div className="mt-2 grid grid-cols-2 gap-2">
+                    <span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">Available now</span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <button type="button" onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting"} className={`rounded-xl border p-3 text-left transition-all ${fundingMode === "actual" ? "border-[#1769aa] bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-slate-300"}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-900">Normal Fund</span>
+                        <span className={`size-2.5 rounded-full ${fundingMode === "actual" ? "bg-[#1769aa]" : "bg-slate-200"}`} />
+                      </div>
+                      <p className="mt-1 text-[10px] leading-4 text-slate-500">Add the exact USDT amount you send. Available for regular top-ups.</p>
+                    </button>
+                    <button type="button" onClick={() => isInitialFundedTopUp && (setFundingMode("funded"), setAmount(""))} disabled={step === "submitting" || !isInitialFundedTopUp} className={`rounded-xl border p-3 text-left transition-all ${fundingMode === "funded" ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-slate-50"} ${!isInitialFundedTopUp ? "cursor-not-allowed opacity-60" : "hover:border-emerald-300"}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-slate-900">Funded-tier Account</span>
+                        <span className={`size-2.5 rounded-full ${fundingMode === "funded" ? "bg-emerald-600" : "bg-slate-200"}`} />
+                      </div>
+                      <p className="mt-1 text-[10px] leading-4 text-slate-500">Choose a tier and receive the corresponding funded account balance.</p>
+                      {!isInitialFundedTopUp && <p className="mt-1 text-[9px] font-semibold text-amber-600">Available for first activation only</p>}
+                    </button>
+                  </div>
+                  {fundingMode === "funded" && isInitialFundedTopUp && <div className="mt-3 grid grid-cols-2 gap-2">
                     {[100, 250, 500, 1000].map((tier) => (
                       <button
                         key={tier}
@@ -197,21 +205,21 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </div>
               )}
 
-              <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Funding request</p>
-                    <h3 className="mt-1 text-sm font-bold text-slate-900">Add funds securely</h3>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Send USDT, then submit the transfer hash and proof for manual verification.</p>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Order summary</p>
+                    <h3 className="mt-1 text-sm font-bold text-slate-900">Payment details</h3>
+                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Send USDT to the verified address, then submit your transfer hash for review.</p>
                   </div>
-                  <div className="rounded-lg bg-blue-50 px-2.5 py-2 text-right">
-                    <p className="text-[9px] font-semibold uppercase text-blue-500">Balance</p>
+                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-right">
+                    <p className="text-[9px] font-semibold uppercase tracking-wide text-blue-500">Current balance</p>
                     <p className="font-mono text-sm font-bold text-blue-900">${currentBalance.toFixed(2)}</p>
                   </div>
                 </div>
-                <div className="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3 text-[10px] text-slate-500">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Funds are credited after admin confirmation
-                  <ArrowRight className="ml-auto h-3.5 w-3.5 text-slate-400" />
+                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
+                  <div><p className="text-[9px] uppercase tracking-wide text-slate-400">Selected option</p><p className="mt-1 text-xs font-bold text-slate-800">{isFundedAccount && fundingMode === "funded" ? "Funded-tier Account" : "Normal Fund"}</p></div>
+                  <div className="text-right"><p className="text-[9px] uppercase tracking-wide text-slate-400">Settlement</p><p className="mt-1 text-xs font-bold text-emerald-700">Manual review</p></div>
                 </div>
               </div>
 
