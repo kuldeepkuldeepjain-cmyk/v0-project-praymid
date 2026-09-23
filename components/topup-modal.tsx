@@ -33,6 +33,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
+  const [fundingMode, setFundingMode] = useState<"actual" | "funded">(isFundedAccount && isInitialFundedTopUp ? "funded" : "actual")
 
   // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
@@ -44,6 +45,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
+    setFundingMode(isFundedAccount && isInitialFundedTopUp ? "funded" : "actual")
     const fetchAddress = async () => {
       setLoadingAddress(true)
       try {
@@ -70,7 +72,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
   const fundedTiers = { 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
-  const isFundedAmountValid = !isFundedAccount || !isInitialFundedTopUp || parsedAmount in fundedTiers
+  const isFundedAmountValid = !isFundedAccount || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
   const handleSubmit = async () => {
@@ -95,6 +97,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           amount: parsedAmount,
           transactionHash: txHash.trim(),
           network,
+          fundingMode: isFundedAccount && isInitialFundedTopUp ? fundingMode : "actual",
           note: `[Payment method: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })
@@ -156,8 +159,28 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               {isFundedAccount && (
                 <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                   <p className="text-xs font-bold text-emerald-900">Funded Account Top-Up Rules</p>
-                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">{isInitialFundedTopUp ? "Choose your first funded tier. After this activation, every top-up credits only the actual amount you enter." : "Your funded account is already activated. Enter the exact amount you paid; no funded tier conversion will be applied."}</p>
-                  {isInitialFundedTopUp && <div className="mt-2 grid grid-cols-2 gap-2">
+                  <p className="mt-1 text-[11px] leading-relaxed text-emerald-800">{isInitialFundedTopUp ? "Choose a top-up method. Funded Amount is available only for the first activation." : "Your funded account is already activated. Enter the exact amount you paid; no funded tier conversion will be applied."}</p>
+                  {isInitialFundedTopUp && (
+                    <div className="mt-3 grid grid-cols-2 gap-2 rounded-lg border border-emerald-200 bg-white p-1">
+                      <button
+                        type="button"
+                        onClick={() => { setFundingMode("actual"); setAmount("") }}
+                        disabled={step === "submitting"}
+                        className={`rounded-md px-2 py-2 text-[10px] font-bold transition-colors ${fundingMode === "actual" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                      >
+                        Actual Amount
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setFundingMode("funded"); setAmount("") }}
+                        disabled={step === "submitting"}
+                        className={`rounded-md px-2 py-2 text-[10px] font-bold transition-colors ${fundingMode === "funded" ? "bg-emerald-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}
+                      >
+                        Funded Amount
+                      </button>
+                    </div>
+                  )}
+                  {isInitialFundedTopUp && fundingMode === "funded" && <div className="mt-2 grid grid-cols-2 gap-2">
                     {[100, 250, 500, 1000].map((tier) => (
                       <button
                         key={tier}
@@ -282,8 +305,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </div>
                 {amount && !isAmountValid && (
                   <p className="text-[10px] text-red-500">
-                    {isFundedAccount && isInitialFundedTopUp
-                      ? "Choose one of the funded tiers: $100, $250, $500, or $1,000"
+                    {isFundedAccount && isInitialFundedTopUp && fundingMode === "funded"
+                      ? "Choose one funded amount: $100, $250, $500, or $1,000"
                       : "Minimum amount is $5 USDT"}
                   </p>
                 )}

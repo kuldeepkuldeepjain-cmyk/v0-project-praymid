@@ -80,6 +80,7 @@ export async function POST(req: NextRequest) {
       const isFundedAccount = participant.account_type === "funded"
       // A funded account's first activation is tier-based regardless of active/frozen status.
       const isInitialFundedTopUp = isFundedAccount
+        && topup.payment_method === "funded_tier"
         && !Number(participant.funded_initial_balance || 0)
         && Number(participant.account_balance || 0) <= 0
       const fundedCredit = fundedSizes[depositAmount]

@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const { amount, transactionHash, screenshotBase64, note, network } = await request.json()
+    const { amount, transactionHash, screenshotBase64, note, network, fundingMode } = await request.json()
     const authenticatedEmail = auth.email.toLowerCase().trim()
 
     if (!amount || !transactionHash) {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     await execute(
       `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
        VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
-      [participant.id, participant.email, parsedAmount, normalizedTransactionHash, network === "INR" ? "inr_bank" : "crypto", screenshotUrl]
+      [participant.id, participant.email, parsedAmount, normalizedTransactionHash, fundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto", screenshotUrl]
     )
 
     // Log activity (best-effort — table may not exist)
