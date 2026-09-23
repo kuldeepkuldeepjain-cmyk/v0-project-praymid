@@ -171,37 +171,52 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     </div>
                     <span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">Available now</span>
                   </div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    <button type="button" onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting"} className={`rounded-xl border p-3 text-left transition-all ${fundingMode === "actual" ? "border-[#1769aa] bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-slate-300"}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-900">Normal Fund</span>
-                        <span className={`size-2.5 rounded-full ${fundingMode === "actual" ? "bg-[#1769aa]" : "bg-slate-200"}`} />
-                      </div>
-                      <p className="mt-1 text-[10px] leading-4 text-slate-500">Add the exact USDT amount you send. Available for regular top-ups.</p>
-                    </button>
-                    <button type="button" onClick={() => isInitialFundedTopUp && (setFundingMode("funded"), setAmount(""))} disabled={step === "submitting" || !isInitialFundedTopUp} className={`rounded-xl border p-3 text-left transition-all ${fundingMode === "funded" ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-slate-50"} ${!isInitialFundedTopUp ? "cursor-not-allowed opacity-60" : "hover:border-emerald-300"}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-900">Funded-tier Account</span>
-                        <span className={`size-2.5 rounded-full ${fundingMode === "funded" ? "bg-emerald-600" : "bg-slate-200"}`} />
-                      </div>
-                      <p className="mt-1 text-[10px] leading-4 text-slate-500">Choose a tier and receive the corresponding funded account balance.</p>
-                      {!isInitialFundedTopUp && <p className="mt-1 text-[9px] font-semibold text-amber-600">Available for first activation only</p>}
-                    </button>
+                  <div className="mt-3">
+                    <Label htmlFor="funding-option" className="text-xs font-semibold text-slate-700">
+                      Activate account with <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      id="funding-option"
+                      value={fundingMode}
+                      onChange={(event) => {
+                        const nextMode = event.target.value as "actual" | "funded"
+                        setFundingMode(nextMode)
+                        setAmount("")
+                      }}
+                      disabled={step === "submitting"}
+                      className="mt-1.5 h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm outline-none transition-colors focus:border-[#1769aa] focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <option value="actual">Normal Fund — exact amount sent</option>
+                      <option value="funded" disabled={!isInitialFundedTopUp}>Funded-tier Account — choose a funded tier</option>
+                    </select>
+                    <p className="mt-1.5 text-[10px] text-slate-500">
+                      {fundingMode === "funded"
+                        ? "Select one funded tier below. This option is available for first activation only."
+                        : "Use Normal Fund for regular deposits and future top-ups."}
+                    </p>
                   </div>
-                  {fundingMode === "funded" && isInitialFundedTopUp && <div className="mt-3 grid grid-cols-2 gap-2">
-                    {[100, 250, 500, 1000].map((tier) => (
-                      <button
-                        key={tier}
-                        type="button"
-                        onClick={() => setAmount(String(tier))}
-                        disabled={step === "submitting"}
-                        className={`rounded-lg border px-2 py-2 text-left text-[11px] transition-colors ${Number(amount) === tier ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}
-                      >
-                        <span className="block font-bold">Top up ${tier.toLocaleString()}</span>
-                        <span className="block opacity-80">Get ${(tier * 100).toLocaleString()} funded</span>
-                      </button>
-                    ))}
-                  </div>}
+                  {fundingMode === "funded" && isInitialFundedTopUp && (
+                    <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-800">All funded tiers</p>
+                        <span className="text-[10px] font-semibold text-emerald-700">Select one</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2">
+                        {[100, 250, 500, 1000].map((tier) => (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() => setAmount(String(tier))}
+                            disabled={step === "submitting"}
+                            className={`rounded-lg border px-3 py-2.5 text-left text-[11px] transition-colors ${Number(amount) === tier ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}
+                          >
+                            <span className="block font-bold">${tier.toLocaleString()} payment</span>
+                            <span className="mt-0.5 block opacity-80">${(tier * 100).toLocaleString()} funded account</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
