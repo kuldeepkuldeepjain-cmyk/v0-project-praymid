@@ -225,7 +225,8 @@ export function TradingChart({
     const closes: number[]              = []
     const times: Time[]                 = []
     const tfSecs = TF_SECONDS[tf] ?? 300
-  candles.forEach((c, i) => {
+    let previousTime = 0
+    candles.forEach((c, i) => {
   const open = Number(c.open)
   const high = Number(c.high)
   const low = Number(c.low)
@@ -237,9 +238,13 @@ export function TradingChart({
   // incomplete candle instead of taking down the entire participant dashboard.
   if (![open, high, low, close, volume].every(Number.isFinite) || high < low || open <= 0 || close <= 0) return
 
-  const t = toTimestamp(c, i, tfSecs)
+  const rawTime = Number(toTimestamp(c, i, tfSecs))
+  const t = Math.max(rawTime, previousTime + tfSecs) as Time
+  previousTime = Number(t)
+  const normalizedHigh = Math.max(high, open, close)
+  const normalizedLow = Math.min(low, open, close)
   const isUp = close >= open
-  candleData.push({ time: t, open, high, low, close })
+  candleData.push({ time: t, open, high: normalizedHigh, low: normalizedLow, close })
   volData.push({
   time: t,
   value: Math.max(0, volume),
@@ -477,8 +482,8 @@ export function TradingChart({
       chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
     }
     // Seed OHLCV from last candle
-    const last = candles[candles.length - 1]
-    if (last) setOhlcv({ open: last.open, high: last.high, low: last.low, close: last.close, volume: last.volume, isUp: last.close >= last.open })
+    const last = candleData[candleData.length - 1]
+    if (last) setOhlcv({ open: last.open, high: last.high, low: last.low, close: last.close, volume: volData[volData.length - 1]?.value ?? 0, isUp: last.close >= last.open })
   }, [candleData, volData, candles])
 
   // ── Update EMA ───────────────────────────────────��───────────────────────────
