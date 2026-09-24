@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Loader2, Download } from "lucide-react"
+import { CheckCircle2, Copy, Download, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { adminFetch } from "@/lib/auth"
 
@@ -35,33 +35,64 @@ export function AllPayoutsPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [completingId, setCompletingId] = useState<string | null>(null)
+
+  const fetchPayouts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (statusFilter !== "all") params.append("status", statusFilter)
+
+      const response = await adminFetch(`/api/admin/all-payouts?${params.toString()}`)
+      const data = await response.json()
+
+      if (data.success) {
+        setPayouts(data.payouts || [])
+      } else {
+        setError(data.error || "Failed to fetch payout records")
+      }
+    } catch (err) {
+      console.error("[v0] Failed to fetch payouts:", err)
+      setError("Network error. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }, [statusFilter])
 
   useEffect(() => {
-    const fetchPayouts = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        const params = new URLSearchParams()
-        if (statusFilter !== "all") params.append("status", statusFilter)
-
-        const response = await adminFetch(`/api/admin/all-payouts?${params.toString()}`)
-        const data = await response.json()
-
-        if (data.success) {
-          setPayouts(data.payouts || [])
-        } else {
-          setError(data.error || "Failed to fetch payout records")
-        }
-      } catch (err) {
-        console.error("[v0] Failed to fetch payouts:", err)
-        setError("Network error. Please try again.")
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchPayouts()
-  }, [statusFilter])
+  }, [fetchPayouts])
+
+  const handleCompletePayout = async (payout: PayoutRecord) => {
+    if (["completed", "rejected", "cancelled"].includes(payout.status.toLowerCase())) return
+
+    const transactionHash = window.prompt("Enter the blockchain transaction hash (optional):", "")
+    if (transactionHash === null) return
+    if (!window.confirm(`Mark the $${payout.amount.toFixed(2)} payout to ${payout.wallet_address || payout.participant_email} as completed?`)) return
+
+    setCompletingId(payout.id)
+    try {
+      const response = await adminFetch("/api/admin/update-payout-status", {
+        method: "POST",
+        body: JSON.stringify({ payoutId: payout.id, status: "completed", transactionHash: transactionHash.trim() || null }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Could not complete payout")
+      toast({ title: "Payout completed", description: `Record ${payout.serial_number} was marked as completed.` })
+      await fetchPayouts()
+    } catch (err) {
+      toast({ title: "Payout update failed", description: err instanceof Error ? err.message : "Could not complete payout", variant: "destructive" })
+    } finally {
+      setCompletingId(null)
+    }
+  }
+
+  const copyAddress = async (address: string) => {
+    if (!address) return
+    await navigator.clipboard.writeText(address)
+    toast({ title: "Address copied", description: "The payout address was copied to your clipboard." })
+  }
 
   const handleExportCSV = () => {
     const headers = [
@@ -171,17 +202,19 @@ export function AllPayoutsPanel() {
                 <TableHead className="font-semibold text-slate-700">Amount</TableHead>
                 <TableHead className="font-semibold text-slate-700">Status</TableHead>
                 <TableHead className="font-semibold text-slate-700">Method</TableHead>
+                <TableHead className="font-semibold text-slate-700">Payout Address</TableHead>
                 <TableHead className="font-semibold text-slate-700">Balance</TableHead>
                 <TableHead className="font-semibold text-slate-700">Before</TableHead>
                 <TableHead className="font-semibold text-slate-700">After</TableHead>
                 <TableHead className="font-semibold text-slate-700">Redirect To</TableHead>
                 <TableHead className="font-semibold text-slate-700">Created</TableHead>
+                <TableHead className="font-semibold text-slate-700">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12">
+                  <TableCell colSpan={13} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Loading all payout records...
@@ -190,13 +223,13 @@ export function AllPayoutsPanel() {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12 text-red-500">
+                  <TableCell colSpan={13} className="text-center py-12 text-red-500">
                     {error}
                   </TableCell>
                 </TableRow>
               ) : payouts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={13} className="text-center py-12 text-slate-500">
                     No payout records found
                   </TableCell>
                 </TableRow>
@@ -213,6 +246,16 @@ export function AllPayoutsPanel() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">{payout.payout_method || "—"}</TableCell>
+                    <TableCell className="min-w-[240px]">
+                      {payout.wallet_address ? (
+                        <div className="flex items-center gap-2">
+                          <code className="max-w-[190px] truncate text-xs text-slate-700" title={payout.wallet_address}>{payout.wallet_address}</code>
+                          <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => copyAddress(payout.wallet_address)} aria-label="Copy payout address">
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ) : <span className="text-xs text-red-600">No address</span>}
+                    </TableCell>
                     <TableCell className="font-semibold text-blue-700">${payout.account_balance.toFixed(2)}</TableCell>
                     <TableCell className="text-xs text-slate-600">${payout.wallet_balance_before.toFixed(2)}</TableCell>
                     <TableCell className="text-xs text-slate-600">${payout.wallet_balance_after.toFixed(2)}</TableCell>
@@ -221,6 +264,20 @@ export function AllPayoutsPanel() {
                     </TableCell>
                     <TableCell className="text-xs text-slate-500">
                       {payout.created_at ? new Date(payout.created_at).toLocaleDateString() : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {payout.status.toLowerCase() === "completed" ? (
+                        <Badge variant="outline" className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700">
+                          <CheckCircle2 className="h-3.5 w-3.5" /> Completed
+                        </Badge>
+                      ) : ["rejected", "cancelled"].includes(payout.status.toLowerCase()) ? (
+                        <span className="text-xs text-slate-500">Closed</span>
+                      ) : (
+                        <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700" disabled={completingId === payout.id || !payout.wallet_address} onClick={() => handleCompletePayout(payout)}>
+                          {completingId === payout.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                          {completingId === payout.id ? "Completing..." : "Complete payout"}
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
