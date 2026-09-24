@@ -7,13 +7,18 @@ const DEFAULT_ADMIN_PASSWORD = "final@1593"
 
 function getCredentials(loginType: string) {
   const isSuperAdminLogin = loginType === "superadmin"
-  return {
-    email: (isSuperAdminLogin ? process.env.SUPER_ADMIN_EMAIL : process.env.ADMIN_EMAIL)?.trim().toLowerCase() || DEFAULT_ADMIN_EMAIL,
-    password: (isSuperAdminLogin ? process.env.SUPER_ADMIN_PASSWORD : process.env.ADMIN_PASSWORD) || DEFAULT_ADMIN_PASSWORD,
-    role: isSuperAdminLogin ? "super_admin" as const : "admin" as const,
-    name: isSuperAdminLogin ? "Super Admin" : "Admin",
-    permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
-  }
+  const configuredEmail = (isSuperAdminLogin ? process.env.SUPER_ADMIN_EMAIL : process.env.ADMIN_EMAIL)?.trim().toLowerCase()
+  const configuredPassword = isSuperAdminLogin ? process.env.SUPER_ADMIN_PASSWORD : process.env.ADMIN_PASSWORD
+  const requestedRole = isSuperAdminLogin ? "super_admin" as const : "admin" as const
+  const requestedName = isSuperAdminLogin ? "Super Admin" : "Admin"
+  const basePermissions = { canViewParticipants: true, canViewPayments: true, canManageAccounts: true }
+
+  return [
+    { email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD, role: "admin" as const, name: "Admin", permissions: basePermissions },
+    ...(configuredEmail && configuredPassword
+      ? [{ email: configuredEmail, password: configuredPassword, role: requestedRole, name: requestedName, permissions: basePermissions }]
+      : []),
+  ]
 }
 
 export async function POST(request: NextRequest) {
@@ -36,7 +41,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
     }
 
-    const match = credentials.email === inputEmail && credentials.password === inputPass ? credentials : null
+    const match = credentials.find((credential) => credential.email === inputEmail && credential.password === inputPass)
 
     if (!match) {
       void recordSecurityEvent({ eventType: "login_failed", actorType: "admin", actorEmail: inputEmail, request, riskScore: 55, metadata: { reason: "invalid_credentials" } })
