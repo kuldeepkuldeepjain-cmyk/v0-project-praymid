@@ -210,10 +210,10 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
                     </p>
                     <p className="text-2xl font-black tabular-nums leading-tight">
                       {resultType === "refunded"
-                        ? `$${normalizedTrade.amount.toFixed(2)} back`
+                        ? `$${formatRupees(normalizedTrade.amount)} back`
                         : resultType === "won"
-                        ? `+$${Math.abs(resultPL).toFixed(2)}`
-                        : `-$${Math.abs(resultPL).toFixed(2)}`}
+                        ? `+$${formatRupees(Math.abs(resultPL))}`
+                        : `-$${formatRupees(Math.abs(resultPL))}`}
                     </p>
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
                   </div>
                   <div className="bg-white/10 rounded-lg p-1.5">
                     <p className="text-[9px] text-white/60 uppercase">Stake</p>
-                    <p className="text-[11px] font-bold">${normalizedTrade.amount.toFixed(2)}</p>
+                    <p className="text-[11px] font-bold">${formatRupees(normalizedTrade.amount)}</p>
                   </div>
                 </div>
 
@@ -271,7 +271,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-800">{normalizedTrade.crypto_pair}</p>
-                <p className="text-[9px] text-slate-500">${normalizedTrade.amount.toFixed(2)} stake</p>
+                <p className="text-[9px] text-slate-500">${formatRupees(normalizedTrade.amount)} stake</p>
               </div>
             </div>
             <div className="flex items-center gap-1 bg-slate-900 text-white px-2 py-1 rounded-lg">
@@ -290,7 +290,7 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
                   {isTie ? "Flat Market" : "Live P/L"}
                 </p>
                 <p className="text-xl font-black text-white tabular-nums">
-                  {isTie ? "$0.00" : `${currentPL >= 0 ? "+" : ""}$${Math.abs(currentPL).toFixed(2)}`}
+                  {isTie ? "$0.00" : `${currentPL >= 0 ? "+" : ""}$${formatRupees(Math.abs(currentPL))}`}
                 </p>
               </div>
               <div className="p-1.5 rounded-lg bg-white/20">
