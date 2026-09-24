@@ -72,7 +72,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
   const parsedAmount = parseFloat(amount)
   const fundedTiers = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
-  const isFundedAmountValid = !isFundedAccount || fundingMode !== "funded" || parsedAmount in fundedTiers
+  // Keep the two funded-account choices visible even if the parent updates
+  // the modal mode and open state in the same batched click event.
+  const showFundingOptions = isFundedAccount || isInitialFundedTopUp
+  const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
   const handleSubmit = async () => {
@@ -97,7 +100,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           amount: parsedAmount,
           transactionHash: txHash.trim(),
           network,
-          fundingMode: isFundedAccount && isInitialFundedTopUp ? fundingMode : "actual",
+          fundingMode: showFundingOptions && isInitialFundedTopUp ? fundingMode : "actual",
           note: `[Payment method: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })
@@ -162,7 +165,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           {(step === "form" || step === "submitting") && (
             <div className="space-y-3">
 
-              {isFundedAccount && (
+              {showFundingOptions && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="flex items-start justify-between gap-3">
                     <div>
