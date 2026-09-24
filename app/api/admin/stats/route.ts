@@ -17,6 +17,9 @@ export async function GET(request: NextRequest) {
       topupStats,
       predictionStats,
       balanceStats,
+      tradingStats,
+      openTradingStats,
+      todayPnlStats,
     ] = await Promise.all([
       // Total + active participants
       query(`
@@ -104,6 +107,34 @@ export async function GET(request: NextRequest) {
         FROM participants
         WHERE is_deleted IS NOT TRUE
       `),
+
+      // Trading account health and open positions. The forex table is optional in older deployments.
+      query(`
+        SELECT
+          COUNT(*) FILTER (WHERE is_active = true AND is_frozen IS NOT TRUE)::int AS active_traders,
+          COUNT(*) FILTER (WHERE funded_initial_balance > 0 AND account_balance < funded_initial_balance AND is_frozen IS NOT TRUE)::int AS traders_in_drawdown,
+          COUNT(*) FILTER (WHERE is_frozen = true)::int AS accounts_locked,
+          COUNT(*) FILTER (WHERE funded_initial_balance > 0 AND account_balance < funded_initial_balance * 0.98)::int AS breached_accounts,
+          COALESCE(SUM(funded_initial_balance) FILTER (WHERE funded_initial_balance > 0), 0) AS funded_capital,
+          COALESCE(SUM(GREATEST(funded_initial_balance - account_balance, 0)) FILTER (WHERE funded_initial_balance > 0), 0) AS total_drawdown,
+          COUNT(*) FILTER (WHERE funded_initial_balance > 0 AND account_balance < funded_initial_balance * 0.985)::int AS risk_alerts
+        FROM participants
+        WHERE is_deleted IS NOT TRUE
+      `).catch(() => [{ active_traders: 0, traders_in_drawdown: 0, accounts_locked: 0, breached_accounts: 0, funded_capital: 0, total_drawdown: 0, risk_alerts: 0 }]),
+
+      query(`
+        SELECT
+          COUNT(DISTINCT participant_email)::int AS currently_trading,
+          COALESCE(SUM(final_pnl), 0) AS floating_pnl
+        FROM forex_trades
+        WHERE status = 'open'
+      `).catch(() => [{ currently_trading: 0, floating_pnl: 0 }]),
+
+      query(`
+        SELECT COALESCE(SUM(final_pnl), 0) AS todays_pnl
+        FROM forex_trades
+        WHERE status = 'closed' AND close_time::timestamp >= CURRENT_DATE
+      `).catch(() => [{ todays_pnl: 0 }]),
     ])
 
     const p   = participantStats[0]
@@ -112,6 +143,9 @@ export async function GET(request: NextRequest) {
     const top = topupStats[0]
     const pr  = predictionStats[0]
     const b   = balanceStats[0]
+    const t   = tradingStats[0]
+    const live = openTradingStats[0]
+    const today = todayPnlStats[0]
     const total = p.total || 0
 
     return NextResponse.json({
@@ -153,7 +187,19 @@ export async function GET(request: NextRequest) {
         // Platform balance
         totalPlatformBalance:   Number(b.total_balance) || 0,
         avgParticipantBalance:  Number(b.avg_balance) || 0,
-        positiveBalanceCount:   Number(b.positive_balance_count) || 0,
+        positiveBalanceCount:  Number(b.positive_balance_count) || 0,
+
+        // Trading overview
+        activeTraders:       Number(t.active_traders) || 0,
+        tradersInDrawdown:   Number(t.traders_in_drawdown) || 0,
+        breachedAccounts:   Number(t.breached_accounts) || 0,
+        totalFundedCapital: Number(t.funded_capital) || 0,
+        totalFloatingPnl:   Number(live.floating_pnl) || 0,
+        todaysPnl:          Number(today.todays_pnl) || 0,
+        totalDrawdown:      Number(t.total_drawdown) || 0,
+        riskAlerts:         Number(t.risk_alerts) || 0,
+        accountsLocked:     Number(t.accounts_locked) || 0,
+        currentlyTrading:   Number(live.currently_trading) || 0,
       },
       generatedAt: new Date().toISOString(),
     })

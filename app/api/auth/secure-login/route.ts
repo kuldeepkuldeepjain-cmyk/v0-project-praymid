@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from "next/server"
 import { setAdminSession } from "@/lib/session"
 import { enforceRateLimit, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 
-// Valid admin credentials with Google Authenticator support
-const CREDENTIALS = [
-  {
-    email: "montyflowchain890@gmail.com",
-    password: "final@1593",
-    role: "admin" as const,
-    name: "Admin",
+const DEFAULT_ADMIN_EMAIL = "montyflowchain890@gmail.com"
+const DEFAULT_ADMIN_PASSWORD = "final@1593"
+
+function getCredentials(loginType: string) {
+  const isSuperAdminLogin = loginType === "superadmin"
+  return {
+    email: (isSuperAdminLogin ? process.env.SUPER_ADMIN_EMAIL : process.env.ADMIN_EMAIL)?.trim().toLowerCase() || DEFAULT_ADMIN_EMAIL,
+    password: (isSuperAdminLogin ? process.env.SUPER_ADMIN_PASSWORD : process.env.ADMIN_PASSWORD) || DEFAULT_ADMIN_PASSWORD,
+    role: isSuperAdminLogin ? "super_admin" as const : "admin" as const,
+    name: isSuperAdminLogin ? "Super Admin" : "Admin",
     permissions: { canViewParticipants: true, canViewPayments: true, canManageAccounts: true },
-  },
-]
+  }
+}
 
 export async function POST(request: NextRequest) {
   const context = getSecurityContext(request)
@@ -23,7 +26,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { email, otp, password } = body
+    const { email, otp, password, loginType = "admin" } = body
+    const credentials = getCredentials(loginType)
 
     const inputEmail = ((email ?? "") as string).trim().toLowerCase()
     const inputPass = ((otp ?? password ?? "") as string).trim()
@@ -32,13 +36,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Email and password are required" }, { status: 400 })
     }
 
-    // Find matching credential (case-insensitive email)
-    const match = CREDENTIALS.find(
-      (c) => c.email.toLowerCase() === inputEmail && c.password === inputPass
-    )
+    const match = credentials.email === inputEmail && credentials.password === inputPass ? credentials : null
 
     if (!match) {
-      await recordSecurityEvent({ eventType: "login_failed", actorType: "admin", actorEmail: inputEmail, request, riskScore: 55, metadata: { reason: "invalid_credentials" } })
+      void recordSecurityEvent({ eventType: "login_failed", actorType: "admin", actorEmail: inputEmail, request, riskScore: 55, metadata: { reason: "invalid_credentials" } })
       return NextResponse.json({ success: false, error: "Invalid credentials" }, { status: 401 })
     }
 
@@ -53,8 +54,10 @@ export async function POST(request: NextRequest) {
       // Session save is best-effort — client uses localStorage auth
     }
 
-    await updateParticipantSecurityProfile(match.email, request, 0)
-    await recordSecurityEvent({ eventType: "login_success", actorType: "admin", actorEmail: match.email, request, metadata: { twoFactorVerified: true } })
+    void updateParticipantSecurityProfile(match.email, request, 0).catch((error) => {
+      console.error("[v0] admin security profile update failed", error)
+    })
+    void recordSecurityEvent({ eventType: "login_success", actorType: "admin", actorEmail: match.email, request, metadata: { twoFactorVerified: true } })
 
     return NextResponse.json({
       success: true,

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 
-// Valid admin credentials
-const ADMIN_CREDENTIALS = [
-  {
-    email: "montyflowchain890@gmail.com",
-    password: "final@1593",
+const DEFAULT_ADMIN_EMAIL = "montyflowchain890@gmail.com"
+const DEFAULT_ADMIN_PASSWORD = "final@1593"
+
+function getAdminCredentials() {
+  return {
+    email: (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase(),
+    password: process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD,
     role: "admin",
-  },
-]
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +22,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Find matching admin credential (case-insensitive email)
-    const admin = ADMIN_CREDENTIALS.find(
-      (c) => c.email.toLowerCase() === email.toLowerCase() && c.password === password
-    )
+    const credentials = getAdminCredentials()
+    const admin = credentials.email === email.trim().toLowerCase() && credentials.password === password
+      ? credentials
+      : null
 
     if (!admin) {
       return NextResponse.json(
