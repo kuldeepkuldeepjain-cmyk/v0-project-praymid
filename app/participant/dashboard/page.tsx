@@ -2388,7 +2388,7 @@ export default function DashboardHome() {
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
-  fundedTopUpAvailable={isFundedAccount && !Number(participantData?.funded_initial_balance)}
+  fundedTopUpAvailable={isFundedAccount}
   onAddFunds={() => {
   // The funded plan stays visible until the first funded payment is recorded.
   setTopUpIsFundedAccount(isFundedAccount)

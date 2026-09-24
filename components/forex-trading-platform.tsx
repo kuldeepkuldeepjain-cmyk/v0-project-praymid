@@ -2203,10 +2203,10 @@ adjustWalletBalance(returnAmt,
   type="button"
   onClick={onAddFundedFunds}
   className="flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-400/20 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/30"
-  title="Activate funded account"
+  title="Add the first fund to activate your funded account"
   >
   <ShieldAlert className="h-3 w-3" />
-  <span className="hidden lg:inline">Funded Add Fund</span>
+  <span className="hidden lg:inline">Funded-tier Fund</span>
   <span className="lg:hidden">Funded</span>
   </button>
   )}
