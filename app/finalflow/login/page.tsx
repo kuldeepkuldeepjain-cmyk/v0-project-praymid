@@ -68,7 +68,13 @@ export default function AdminLoginPage() {
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center space-y-2 animate-[fadeInUp_0.5s_ease-out]">
-          <FlowChainLogo size="lg" showTagline={false} className="justify-center mb-4" />
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-12 w-12 justify-center rounded-lg" />
+            <div className="text-left leading-none">
+              <p className="text-base font-black tracking-[0.16em] text-white">ELITE FUND</p>
+              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-300">Trade higher</p>
+            </div>
+          </div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-2">
             <Shield className="h-4 w-4 text-white" />
             <span className="text-xs font-semibold text-white">Admin Access</span>
