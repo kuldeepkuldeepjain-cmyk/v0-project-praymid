@@ -4,11 +4,20 @@ const DEFAULT_ADMIN_EMAIL = "montyflowchain890@gmail.com"
 const DEFAULT_ADMIN_PASSWORD = "final@1593"
 
 function getAdminCredentials() {
-  return {
-    email: (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase(),
-    password: process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD,
-    role: "admin",
-  }
+  return [
+    {
+      email: (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase(),
+      password: process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD,
+      role: "admin",
+    },
+    ...(process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD
+      ? [{
+          email: process.env.SUPER_ADMIN_EMAIL.trim().toLowerCase(),
+          password: process.env.SUPER_ADMIN_PASSWORD,
+          role: "super_admin",
+        }]
+      : []),
+  ]
 }
 
 export async function POST(request: NextRequest) {
@@ -23,9 +32,9 @@ export async function POST(request: NextRequest) {
     }
 
     const credentials = getAdminCredentials()
-    const admin = credentials.email === email.trim().toLowerCase() && credentials.password === password
-      ? credentials
-      : null
+    const admin = credentials.find(
+      (credential) => credential.email === email.trim().toLowerCase() && credential.password === password
+    )
 
     if (!admin) {
       return NextResponse.json(

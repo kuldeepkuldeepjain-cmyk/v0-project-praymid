@@ -39,7 +39,11 @@ export default function AdminLoginPage() {
         const loginResponse = await fetch("/api/auth/secure-login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password, loginType: "admin" }),
+          body: JSON.stringify({
+            email,
+            password,
+            loginType: data.role === "super_admin" ? "superadmin" : "admin",
+          }),
         })
 
         const loginData = await loginResponse.json()
