@@ -2275,17 +2275,17 @@ adjustWalletBalance(returnAmt,
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
       <div className="apple-terminal-summary flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
         {[
-          { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
-          { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
-          { label: "LIVE P&L",     value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                        color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)" },
-          { label: "SWAP",         value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                      color: totalSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
-          { label: "MARGIN USED",  value: `$${totalMargin.toFixed(2)}`,                                                 color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
-          { label: "FREE MARGIN",  value: `$${freeMargin.toFixed(2)}`,                                                  color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
-          { label: "MARGIN LVL",   value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                         color: marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171", bg: "transparent" },
-          { label: "POSITIONS",    value: String(openTrades.length),                                                     color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-          { label: "PENDING",      value: String(pendingOrders.length),                                                  color: "#93c5fd", bg: "transparent" },
+          { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  hint: "Cash available", color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
+          { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          hint: "Balance plus open P&L", color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
+          { label: "OPEN P&L",     value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                        hint: "Profit or loss now", color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)" },
+          { label: "SWAP",         value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                      hint: "Overnight cost", color: totalSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+          { label: "MARGIN USED",  value: `$${totalMargin.toFixed(2)}`,                                                 hint: "Reserved for trades", color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
+          { label: "FREE MARGIN",  value: `$${freeMargin.toFixed(2)}`,                                                  hint: "Available to trade", color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
+          { label: "MARGIN LEVEL", value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                         hint: "Account safety", color: marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171", bg: "transparent" },
+          { label: "OPEN TRADES",  value: String(openTrades.length),                                                     hint: "Active positions", color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+          { label: "PENDING",      value: String(pendingOrders.length),                                                  hint: "Waiting orders", color: "#93c5fd", bg: "transparent" },
         ].map((item, i) => (
-          <div key={i} className="flex items-center gap-2 px-3 h-full shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+          <div key={i} title={item.hint} className="flex items-center gap-2 px-3 h-full shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
             <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
             <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
           </div>
@@ -2767,8 +2767,8 @@ adjustWalletBalance(returnAmt,
               <div className="flex flex-col gap-0 p-2">
                 <div className="sticky top-0 z-20 mb-2 flex items-center justify-between rounded-lg border border-cyan-400/30 bg-[#071221]/95 px-2.5 py-2 shadow-lg shadow-cyan-950/20 backdrop-blur">
                   <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">Order ticket</p>
-                    <p className="mt-0.5 text-[10px] text-slate-300">{selectedPair.symbol} · {orderType === "market" ? "Market execution" : `${orderType.toUpperCase()} order`}</p>
+                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">1. Build your trade</p>
+                    <p className="mt-0.5 text-[10px] text-slate-300">{selectedPair.symbol} · {orderType === "market" ? "Buy or sell at the live price" : `${orderType.toUpperCase()} order`}</p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className={`rounded border px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-amber-400/20 bg-amber-400/10 text-amber-300"}`}>
@@ -2791,23 +2791,27 @@ adjustWalletBalance(returnAmt,
                   ))}
                 </div>
 
-                {/* BUY/SELL toggle — 3D */}
-                <div className="flex mb-2 gap-1.5">
+                {/* BUY/SELL toggle — keep the direction choice explicit for beginners */}
+                <div className="mb-2 grid grid-cols-2 gap-1.5">
                   {(["BUY","SELL"] as TradeDirection[]).map(d => (
                     <button key={d} onClick={() => setDirection(d)}
-                      className={`flex-1 py-2.5 text-sm font-black flex items-center justify-center gap-1.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
+                      aria-label={d === "BUY" ? "Buy because you expect the price to rise" : "Sell because you expect the price to fall"}
+                      className={`flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
                       style={direction !== d ? {
                         background: "#080c14",
                         border: "1px solid #1a2640",
                         borderBottom: "2px solid #050810",
                         borderRadius: 8,
-                        color: "#374151",
+                        color: "#64748b",
                         boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
                       } : {}}>
-                      {d === "BUY"
-                        ? <TrendingUp  className="h-3.5 w-3.5 relative z-10" />
-                        : <TrendingDown className="h-3.5 w-3.5 relative z-10" />}
-                      <span className="relative z-10">{d}</span>
+                      <span className="relative z-10 flex items-center gap-1.5 text-sm font-black">
+                        {d === "BUY" ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
+                        {d}
+                      </span>
+                      <span className="relative z-10 text-[8px] font-bold normal-case tracking-normal opacity-80">
+                        {d === "BUY" ? "Expect price to rise" : "Expect price to fall"}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -2861,7 +2865,8 @@ adjustWalletBalance(returnAmt,
                 {/* Volume (3D input) */}
                 <div className="mb-2">
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#a855f7" }}>
-                    Volume (Lots)
+                    Trade size (lots)
+                    <span className="ml-1.5 normal-case tracking-normal font-medium text-slate-500">How much you trade</span>
                   </label>
                   <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
                     step="0.01" min="0.01" max="100"
