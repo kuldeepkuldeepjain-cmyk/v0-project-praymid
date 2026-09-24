@@ -109,7 +109,7 @@ export function PayoutTrackerPanel() {
             contributor_email: contributor.email,
             contributor_name: contributor.full_name || contributor.username || "N/A",
             contributor_serial: contributor.serial_number || "N/A",
-            contribution_amount: 100, // Fixed contribution amount
+            contribution_amount: Number(payout.amount) || 0,
             contribution_created_at: payout.created_at,
             wallet_address: requester.wallet_address || "N/A"
           })
@@ -273,7 +273,7 @@ export function PayoutTrackerPanel() {
                           <ArrowRight className="h-5 w-5 text-purple-600 animate-pulse" />
                           <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
                         </div>
-                        <p className="text-xs text-slate-500 mt-1">$100 → ${flow.payout_amount}</p>
+                        <p className="text-xs text-slate-500 mt-1">Payout amount → ${flow.payout_amount}</p>
                       </TableCell>
 
                       {/* Contributor */}

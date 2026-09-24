@@ -428,23 +428,23 @@ export function ContributionPayoutPanel() {
         </CardContent>
       </Card>
 
-      {/* Pending Payouts Reference List */}
+      {/* All Payout Requests */}
       <Card className="bg-gradient-to-br from-slate-900 to-slate-800 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Pending Payout Requests</CardTitle>
+          <CardTitle className="text-white text-lg">All Payout Requests</CardTitle>
           <CardDescription className="text-slate-400 text-sm">
-            These are available to be matched with a contribution above.
+            Complete payout history loaded from the database. Only pending requests can be matched.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {pendingPayouts.filter(p => p.status === "pending").length === 0 ? (
+          {pendingPayouts.length === 0 ? (
             <div className="text-center py-10">
               <Wallet className="h-10 w-10 text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-400 text-sm">No pending payout requests</p>
+              <p className="text-slate-400 text-sm">No payout requests found</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {pendingPayouts.filter(p => p.status === "pending").map((p) => (
+            <div className="space-y-3 max-h-[32rem] overflow-y-auto pr-1">
+              {pendingPayouts.map((p) => (
                 <div key={p.id} className="rounded-lg border border-blue-500/20 bg-blue-950/20 p-3 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="h-8 w-8 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400 font-bold text-sm flex-shrink-0">
@@ -462,7 +462,10 @@ export function ContributionPayoutPanel() {
                   </div>
                   <div className="text-right flex-shrink-0">
                     <p className="text-sm font-bold text-blue-400">${p.amount}</p>
-                    <p className="text-xs text-slate-400">#{p.serial_number}</p>
+                    <div className="flex items-center justify-end gap-2">
+                      <p className="text-xs text-slate-400">#{p.serial_number}</p>
+                      <Badge className={p.status === "pending" ? "border-amber-400/30 bg-amber-500/10 text-amber-300" : p.status === "completed" ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-300" : "border-slate-500/30 bg-slate-500/10 text-slate-300"}>{p.status}</Badge>
+                    </div>
                   </div>
                 </div>
               ))}
