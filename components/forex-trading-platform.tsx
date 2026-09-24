@@ -1760,8 +1760,21 @@ function PositionSizer({
   }
 
   // Actual placement — called after user confirms
+  const updateConfirmLotSize = (value: string) => {
+  if (!tradeConfirm || !selectedPair) return
+  const nextLot = Math.min(100, Math.max(0.01, Number(value) || 0.01))
+  const margin = calcMargin(selectedPair.symbol, nextLot, tradeConfirm.price, tradeConfirm.leverage)
+  const pipVal = pipValue(selectedPair.symbol, nextLot, tradeConfirm.price)
+  const cs = contractSize(selectedPair.symbol)
+  const liqDist = margin / (nextLot * cs)
+  const liqPrice = tradeConfirm.direction === "BUY"
+    ? parseFloat((tradeConfirm.price - liqDist).toFixed(5))
+    : parseFloat((tradeConfirm.price + liqDist).toFixed(5))
+  setTradeConfirm({ ...tradeConfirm, lotSize: nextLot, margin, pipVal, liqPrice })
+  }
+
   const confirmAndPlace = async () => {
-    if (isFrozen) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
+  if (isFrozen) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
     setConfirmLoading(true)
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
@@ -2443,7 +2456,7 @@ adjustWalletBalance(returnAmt,
         </div>
       </div>
 
-      {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�����───────────────── */}
@@ -3505,6 +3518,33 @@ adjustWalletBalance(returnAmt,
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+
+            {/* Quantity can be adjusted before the final confirmation. */}
+            <div className="mx-5 mt-4 rounded-xl px-4 py-3" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label htmlFor="confirm-lot-size" className="block text-[9px] font-black uppercase tracking-widest text-cyan-300">Trade quantity</label>
+                  <p className="mt-1 text-[9px] text-slate-400">Adjust the position size in lots before placing.</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => updateConfirmLotSize(String(tradeConfirm.lotSize - 0.01))} disabled={confirmLoading} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 text-sm font-bold text-slate-300 hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-40" aria-label="Decrease lots">−</button>
+                  <input
+                    id="confirm-lot-size"
+                    type="number"
+                    min="0.01"
+                    max="100"
+                    step="0.01"
+                    value={tradeConfirm.lotSize}
+                    onChange={(event) => updateConfirmLotSize(event.target.value)}
+                    disabled={confirmLoading}
+                    className="h-8 w-20 rounded-lg border border-cyan-500/40 bg-slate-950 px-2 text-center font-mono text-sm font-bold text-white outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/30 disabled:opacity-40"
+                    aria-label="Trade quantity in lots"
+                  />
+                  <span className="text-[10px] font-bold text-slate-400">lots</span>
+                  <button type="button" onClick={() => updateConfirmLotSize(String(tradeConfirm.lotSize + 0.01))} disabled={confirmLoading} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 text-sm font-bold text-slate-300 hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-40" aria-label="Increase lots">+</button>
+                </div>
+              </div>
             </div>
 
             {/* Order summary grid */}
