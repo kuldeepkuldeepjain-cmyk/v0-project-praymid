@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
-const VALID_STATUSES = new Set(["pending", "matched", "approved", "completed", "rejected", "cancelled"])
+const VALID_STATUSES = new Set(["pending", "matched", "approved", "processing", "completed", "rejected", "cancelled"])
 const TERMINAL_STATUSES = new Set(["completed", "rejected", "cancelled"])
 
 export async function POST(request: NextRequest) {
