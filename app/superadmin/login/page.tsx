@@ -53,8 +53,12 @@ export default function SuperAdminLoginPage() {
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center space-y-2">
-          <div className="mb-3 flex items-center justify-center">
-            <FlowChainLogo size="sm" showTagline={false} className="h-20 w-40 justify-center" />
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-12 w-12 justify-center rounded-lg" />
+            <div className="text-left leading-none">
+              <p className="text-base font-black tracking-[0.16em] text-white">ELITE FUND</p>
+              <p className="mt-1 text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-300">Trade higher</p>
+            </div>
           </div>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 mb-2">
             <Crown className="h-5 w-5 text-amber-400" />
