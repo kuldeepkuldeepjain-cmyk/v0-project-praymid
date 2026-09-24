@@ -1,4 +1,5 @@
 const FUNDED_PLANS = [
+  { baseAmount: 5_000, topUpAmount: 50 },
   { baseAmount: 10_000, topUpAmount: 100 },
   { baseAmount: 25_000, topUpAmount: 250 },
   { baseAmount: 50_000, topUpAmount: 500 },
