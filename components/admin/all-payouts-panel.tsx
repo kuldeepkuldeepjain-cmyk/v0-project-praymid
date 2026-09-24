@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { adminFetch } from "@/lib/auth"
 
 interface PayoutRecord {
   id: string
@@ -25,6 +26,8 @@ interface PayoutRecord {
   full_name: string
   mobile_number: string
   account_balance: number
+  wallet_balance_before: number
+  wallet_balance_after: number
 }
 
 export function AllPayoutsPanel() {
@@ -41,7 +44,7 @@ export function AllPayoutsPanel() {
         const params = new URLSearchParams()
         if (statusFilter !== "all") params.append("status", statusFilter)
 
-        const response = await fetch(`/api/admin/all-payouts?${params.toString()}`)
+        const response = await adminFetch(`/api/admin/all-payouts?${params.toString()}`)
         const data = await response.json()
 
         if (data.success) {
@@ -73,6 +76,8 @@ export function AllPayoutsPanel() {
       "Redirect Email",
       "Redirect Serial",
       "Account Balance",
+      "Balance Before",
+      "Balance After",
       "Admin Notes",
       "Created At",
       "Updated At",
@@ -90,6 +95,8 @@ export function AllPayoutsPanel() {
       p.redirect_to_email || "N/A",
       p.redirect_to_serial || "N/A",
       p.account_balance.toFixed(2),
+      p.wallet_balance_before.toFixed(2),
+      p.wallet_balance_after.toFixed(2),
       p.admin_notes || "",
       p.created_at ? new Date(p.created_at).toLocaleString() : "N/A",
       p.updated_at ? new Date(p.updated_at).toLocaleString() : "N/A",
@@ -165,6 +172,8 @@ export function AllPayoutsPanel() {
                 <TableHead className="font-semibold text-slate-700">Status</TableHead>
                 <TableHead className="font-semibold text-slate-700">Method</TableHead>
                 <TableHead className="font-semibold text-slate-700">Balance</TableHead>
+                <TableHead className="font-semibold text-slate-700">Before</TableHead>
+                <TableHead className="font-semibold text-slate-700">After</TableHead>
                 <TableHead className="font-semibold text-slate-700">Redirect To</TableHead>
                 <TableHead className="font-semibold text-slate-700">Created</TableHead>
               </TableRow>
@@ -172,7 +181,7 @@ export function AllPayoutsPanel() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12">
+                  <TableCell colSpan={11} className="text-center py-12">
                     <div className="flex items-center justify-center gap-2 text-slate-500">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Loading all payout records...
@@ -181,13 +190,13 @@ export function AllPayoutsPanel() {
                 </TableRow>
               ) : error ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-red-500">
+                  <TableCell colSpan={11} className="text-center py-12 text-red-500">
                     {error}
                   </TableCell>
                 </TableRow>
               ) : payouts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-12 text-slate-500">
+                  <TableCell colSpan={11} className="text-center py-12 text-slate-500">
                     No payout records found
                   </TableCell>
                 </TableRow>
@@ -205,6 +214,8 @@ export function AllPayoutsPanel() {
                     </TableCell>
                     <TableCell className="text-sm text-slate-600">{payout.payout_method || "—"}</TableCell>
                     <TableCell className="font-semibold text-blue-700">${payout.account_balance.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-slate-600">${payout.wallet_balance_before.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-slate-600">${payout.wallet_balance_after.toFixed(2)}</TableCell>
                     <TableCell className="text-xs text-slate-500">
                       {payout.redirect_to_email || payout.redirect_to_serial || "—"}
                     </TableCell>

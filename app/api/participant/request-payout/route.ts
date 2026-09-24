@@ -1,25 +1,26 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { query, execute } from "@/lib/db"
+import { getPool, query } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
+
+const SUPPORTED_METHODS = ["BEP20", "TRC20", "ERC20", "DIRECT"] as const
 
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
-  try {
-    const email = request.nextUrl.searchParams.get("email")
-    if (!email) return NextResponse.json({ success: false, error: "email required" }, { status: 400 })
 
-    // Only select columns that actually exist in payout_requests
+  try {
+    const email = auth.email.toLowerCase().trim()
     const payouts = await query(
       `SELECT id, amount, status, wallet_address, created_at,
               payout_method, transaction_hash, admin_notes,
-              matched_contribution_id, matched_at, processed_at
+              matched_contribution_id, matched_at, processed_at,
+              wallet_balance_before, wallet_balance_after
        FROM payout_requests
-       WHERE participant_email = $1
+       WHERE LOWER(participant_email) = $1
        ORDER BY created_at DESC`,
-      [email]
-    ) as any[]
+      [email],
+    )
 
     return NextResponse.json({ success: true, payouts })
   } catch {
@@ -30,142 +31,107 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
+
   try {
     const body = await request.json()
-    const { email, amount, bep20_address, wallet_address, payout_method } = body
-    const walletAddr = String(bep20_address || wallet_address || "").trim()
-    const method = String(payout_method || "BEP20").toUpperCase()
+    const email = auth.email.toLowerCase().trim()
+    const amount = Number(body.amount)
+    const walletAddress = String(body.bep20_address || body.wallet_address || "").trim()
+    const method = String(body.payout_method || "BEP20").toUpperCase()
 
-    if (!email || !amount || !walletAddr) {
-      return NextResponse.json({ success: false, error: "Missing required fields (email, amount, wallet address)" }, { status: 400 })
+    if (!Number.isFinite(amount) || amount <= 0 || !walletAddress) {
+      return NextResponse.json({ success: false, error: "A valid amount and wallet address are required" }, { status: 400 })
     }
-
-    if (!["BEP20", "TRC20", "ERC20", "DIRECT"].includes(method)) {
+    if (!SUPPORTED_METHODS.includes(method as (typeof SUPPORTED_METHODS)[number])) {
       return NextResponse.json({ success: false, error: "Unsupported payout network" }, { status: 400 })
     }
 
     if (method !== "DIRECT") {
-      const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(walletAddr)
-      const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(walletAddr)
+      const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(walletAddress)
+      const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(walletAddress)
       if (method === "TRC20" ? !isTronAddress : !isEvmAddress) {
         return NextResponse.json({ success: false, error: `Invalid ${method} wallet address` }, { status: 400 })
       }
     }
 
-    // Load participant balance info
-    const rows = await query(
-      "SELECT id, account_balance, funded_amount, account_type, account_frozen, is_frozen, status FROM participants WHERE email = $1 LIMIT 1",
-      [email.toLowerCase().trim()]
+    const participantRows = await query(
+      `SELECT id, email, account_balance, funded_amount, account_type,
+              funded_breach_status, account_frozen, is_frozen, status
+       FROM participants WHERE LOWER(email) = $1 LIMIT 1`,
+      [email],
     ) as any[]
-    const participant = rows[0]
-    if (!participant) {
-      return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
+    const participant = participantRows[0]
+    if (!participant) return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
+
+    const currentBalance = Number(participant.account_balance) || 0
+    if (participant.account_frozen || participant.is_frozen || participant.status === "frozen") {
+      return NextResponse.json({ success: false, error: "Payouts are disabled for this account" }, { status: 403 })
     }
-
-      const currentBalance = Number(participant.account_balance) || 0
-      if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
-        return NextResponse.json({
-          success: false,
-          error: "Funded account breached the fixed 2% drawdown rule. Payouts are disabled until the account is reactivated.",
-        }, { status: 403 })
-      }
-
-      if (participant.account_type === "funded") {
-        const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)
+    if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
+      return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Payouts are disabled until the account is reactivated." }, { status: 403 })
+    }
+    if (participant.account_type === "funded") {
+      const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)
       const maximumPayout = getFundedPayoutAmount(currentBalance, participant.funded_amount)
       if (currentBalance <= fundedBaseAmount || maximumPayout <= 0) {
         return NextResponse.json({ success: false, error: `Funded payouts are available only on profits above the $${fundedBaseAmount.toFixed(2)} funded amount.` }, { status: 400 })
       }
-      if (Number(amount) > maximumPayout) {
+      if (amount > maximumPayout) {
         return NextResponse.json({ success: false, error: `The maximum funded-account payout is 80% of excess profit: $${maximumPayout.toFixed(2)}.` }, { status: 400 })
       }
     }
-
-    if (currentBalance < Number(amount)) {
-      return NextResponse.json({
-        success: false,
-        error: `Insufficient balance. Available: $${currentBalance.toFixed(2)}, Requested: $${Number(amount).toFixed(2)}`,
-      }, { status: 400 })
+    if (currentBalance < amount) {
+      return NextResponse.json({ success: false, error: `Insufficient balance. Available: $${currentBalance.toFixed(2)}, Requested: $${amount.toFixed(2)}` }, { status: 400 })
     }
 
-    const newBalance = currentBalance - Number(amount)
+    const pool = getPool()
+    if (!pool) throw new Error("No database connection")
+    const client = await pool.connect()
+    const newBalance = currentBalance - amount
+    let payoutId: string
 
-    // Deduct balance and save wallet address (no cooldown set on payout)
-    await execute(
-      "UPDATE participants SET account_balance = $1, wallet_address = $2 WHERE email = $3",
-      [newBalance, walletAddr, email.toLowerCase().trim()]
-    )
-
-    // Insert payout request
-    const payoutRows = await query(
-      `INSERT INTO payout_requests
-         (participant_id, participant_email, wallet_address, amount, status, payout_method)
-       VALUES ($1, $2, $3, $4, 'pending', $5)
-       RETURNING id`,
-      [participant.id, email.toLowerCase().trim(), walletAddr, Number(amount), method]
-    ) as any[]
-    const payoutRequest = payoutRows[0]
-
-    // Activity log (non-critical)
-    await execute(
-      "INSERT INTO activity_logs (actor_email, action, details, target_type) VALUES ($1,'payout_requested',$2,'payout_request')",
-      [email, `Requested payout of $${Number(amount).toFixed(2)} to ${walletAddr}`]
-    ).catch(() => {})
-
-    // Credit $5 referral bonus to referrer after contribution completed (only once per referred user)
-    const REFERRAL_BONUS = 5
     try {
-      // Find the referrer by looking up who referred this participant
-      const referrerRows = await query(
-        `SELECT id, email, referral_earnings FROM participants 
-         WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
-        [email.toLowerCase().trim()]
-      ) as any[]
-      
-      const referrer = referrerRows[0]
-      if (referrer) {
-        // Check if bonus was already given for this referred user
-        const bonusCheckRows = await query(
-          `SELECT id FROM referral_bonuses WHERE referred_email = $1 AND referrer_id = $2`,
-          [email.toLowerCase().trim(), referrer.id]
-        ) as any[]
-        
-        // Only add bonus if it hasn't been added yet
-        if (bonusCheckRows.length === 0) {
-          const referrerNewEarnings = Number(referrer.referral_earnings || 0) + REFERRAL_BONUS
-          
-          // Update referrer's referral_earnings
-          await execute(
-            `UPDATE participants SET referral_earnings = $1 WHERE id = $2`,
-            [referrerNewEarnings, referrer.id]
-          )
-          
-          // Log the referral bonus transaction
-          await execute(
-            `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
-             VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
-            [referrer.email, REFERRAL_BONUS, `Referral bonus - ${email} completed contribution`, Number(referrer.referral_earnings || 0), referrerNewEarnings]
-          ).catch(() => {})
-          
-          // Track that bonus was given for this referred user
-          await execute(
-            `INSERT INTO referral_bonuses (referred_email, referrer_id, bonus_amount, given_date) VALUES ($1, $2, $3, NOW())`,
-            [email.toLowerCase().trim(), referrer.id, REFERRAL_BONUS]
-          ).catch(() => {})
-        }
+      await client.query("BEGIN")
+      const locked = await client.query(
+        "SELECT account_balance FROM participants WHERE id = $1 FOR UPDATE",
+        [participant.id],
+      )
+      const lockedBalance = Number(locked.rows[0]?.account_balance) || 0
+      if (lockedBalance < amount) {
+        throw new Error("INSUFFICIENT_BALANCE")
       }
-    } catch (referralError) {
-      // Non-critical - don't fail the payout if referral credit fails
-      console.error("Failed to credit referral bonus:", referralError)
+      const lockedNewBalance = lockedBalance - amount
+      await client.query(
+        "UPDATE participants SET account_balance = $1, wallet_address = $2, updated_at = NOW() WHERE id = $3",
+        [lockedNewBalance, walletAddress, participant.id],
+      )
+      const inserted = await client.query(
+        `INSERT INTO payout_requests
+          (participant_id, participant_email, wallet_address, amount, status,
+           payout_method, wallet_balance_before, wallet_balance_after)
+         VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7)
+         RETURNING id`,
+        [participant.id, email, walletAddress, amount, method, lockedBalance, lockedNewBalance],
+      )
+      payoutId = inserted.rows[0].id
+      await client.query(
+        "INSERT INTO activity_logs (actor_email, action, details, target_type) VALUES ($1, 'payout_requested', $2, 'payout_request')",
+        [email, `Requested payout of $${amount.toFixed(2)} to ${walletAddress}`],
+      )
+      await client.query("COMMIT")
+    } catch (error) {
+      await client.query("ROLLBACK")
+      if (error instanceof Error && error.message === "INSUFFICIENT_BALANCE") {
+        return NextResponse.json({ success: false, error: "Balance changed while submitting. Please try again." }, { status: 409 })
+      }
+      throw error
+    } finally {
+      client.release()
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Payout request submitted successfully",
-      newBalance,
-      requestId: payoutRequest.id,
-    })
-  } catch {
+    return NextResponse.json({ success: true, message: "Payout request submitted successfully", newBalance, requestId: payoutId })
+  } catch (error) {
+    console.error("[v0] Error creating payout request:", error)
     return NextResponse.json({ success: false, error: "Unable to submit payout request. Please try again." }, { status: 500 })
   }
 }
