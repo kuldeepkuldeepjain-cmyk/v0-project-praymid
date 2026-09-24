@@ -1668,7 +1668,8 @@ export default function DashboardHome() {
 
   const walletBalance = Number(participantData?.account_balance) || 0
   const [terminalStats, setTerminalStats] = useState({ equity: walletBalance, openPnl: 0, openPnlPct: 0 })
-  const isFundedAccount = participantData?.account_type === "funded"
+  const normalizedAccountType = String(participantData?.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
+  const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
   const fundedBaseAmount = isFundedAccount
     ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
     : 0
