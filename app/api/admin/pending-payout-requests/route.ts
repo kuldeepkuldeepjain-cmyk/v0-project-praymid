@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
         p.serial_number AS participant_serial
       FROM payout_requests pr
       LEFT JOIN participants p ON p.email = pr.participant_email
-      WHERE pr.status IN ('pending', 'matched')
+      WHERE 1 = 1
       ${amountFilter}
       ORDER BY pr.created_at ASC`,
       params

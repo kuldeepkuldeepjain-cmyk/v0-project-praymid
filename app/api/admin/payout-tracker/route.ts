@@ -40,7 +40,7 @@ export async function GET() {
       contributor_email: r.contributor_email || "N/A",
       contributor_name: r.contributor_name || r.contributor_username || "N/A",
       contributor_serial: r.contributor_serial || "N/A",
-      contribution_amount: 100,
+      contribution_amount: Number(r.payout_amount) || 0,
       wallet_address: r.requester_wallet || "N/A",
     }))
     return NextResponse.json({ success: true, flows: result })
