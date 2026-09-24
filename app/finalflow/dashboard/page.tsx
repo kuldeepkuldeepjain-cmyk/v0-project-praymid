@@ -47,8 +47,10 @@ import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
-import { AllPayoutsPanel } from "@/components/admin/all-payouts-panel"
-import Loading from "./loading"
+  import { AllPayoutsPanel } from "@/components/admin/all-payouts-panel"
+  import { SuspiciousActivityPanel } from "@/components/admin/suspicious-activity-panel"
+  import { TraderBehaviourPanel } from "@/components/admin/trader-behaviour-panel"
+  import Loading from "./loading"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 interface NavItem {
@@ -121,6 +123,8 @@ export default function AdminDashboard() {
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
     { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
     { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
+    { id: "suspicious-activity", label: "Suspicious Activity / Fraud", icon: Shield, section: "MANAGEMENT" },
+    { id: "trader-behaviour", label: "Trader Behaviour Analytics", icon: Activity, section: "MANAGEMENT" },
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
     { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
@@ -163,6 +167,10 @@ export default function AdminDashboard() {
         return <SendNotificationPanel />
       case "otp-approvals":
         return <OtpApprovalsPanel />
+      case "suspicious-activity":
+        return <SuspiciousActivityPanel />
+      case "trader-behaviour":
+        return <TraderBehaviourPanel />
       default:
         return <OverviewAnalytics />
     }
