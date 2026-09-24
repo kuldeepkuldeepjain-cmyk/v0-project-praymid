@@ -53,8 +53,10 @@ export default function SuperAdminLoginPage() {
 
       <div className="w-full max-w-sm space-y-6 relative z-10">
         <div className="text-center space-y-2">
-          <FlowChainLogo size="lg" showTagline={false} className="justify-center mb-4" />
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 mb-2">
+          <div className="mb-3 flex items-center justify-center">
+            <FlowChainLogo size="sm" showTagline={false} className="h-20 w-40 justify-center" />
+          </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 mb-2">
             <Crown className="h-5 w-5 text-amber-400" />
             <span className="text-sm font-bold text-amber-300">Super Admin Portal</span>
           </div>
