@@ -2024,7 +2024,7 @@ adjustWalletBalance(returnAmt,
     showToast("info", "Pending order cancelled")
   }
 
-  // ── Derived values ─────────────────────────────────────────────────────────
+  // ── Derived values ───────────────────────────────────────────────────���─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
@@ -2198,18 +2198,18 @@ adjustWalletBalance(returnAmt,
             <Wallet className="h-3 w-3" />
             <span>Balance</span>
           </button>
-  {isFundedAccount && fundedTopUpAvailable && onAddFundedFunds && (
-  <button
-  type="button"
-  onClick={onAddFundedFunds}
-  className="flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-400/20 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/30"
-  title="Add the first fund to activate your funded account"
-  >
-  <ShieldAlert className="h-3 w-3" />
-  <span className="hidden lg:inline">Funded-tier Fund</span>
-  <span className="lg:hidden">Funded</span>
-  </button>
-  )}
+          {isFundedAccount && onAddFundedFunds && (
+            <button
+              type="button"
+              onClick={onAddFundedFunds}
+              className="flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-400/20 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/30"
+              title="Open funded-tier funding plans"
+            >
+              <ShieldAlert className="h-3 w-3" />
+              <span className="hidden lg:inline">Funded-tier Fund</span>
+              <span className="lg:hidden">Funded</span>
+            </button>
+          )}
   <button
   type="button"
   onClick={onAddFunds}
