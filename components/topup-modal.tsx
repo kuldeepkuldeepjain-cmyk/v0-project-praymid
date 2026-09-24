@@ -74,7 +74,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const fundedTiers = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
-  const showFundingOptions = isFundedAccount || isInitialFundedTopUp
+  const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp)
+  const canUseFundedTier = Boolean(isFundedAccount || isInitialFundedTopUp)
   const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
@@ -182,7 +183,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                       <p className="mt-1 text-[10px] text-slate-500">Select one payment option below. Funded-tier activation appears first for new funded accounts.</p>
                     </div>
 
-                    <div className={`w-full rounded-xl border p-3 text-left transition-all ${fundingMode === "funded" && isInitialFundedTopUp ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-slate-50"} ${!isInitialFundedTopUp ? "cursor-not-allowed opacity-60" : "hover:border-emerald-300"}`}>
+                    <div className={`w-full rounded-xl border p-3 text-left transition-all ${fundingMode === "funded" && canUseFundedTier ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-slate-50"} ${!canUseFundedTier ? "cursor-not-allowed opacity-60" : "hover:border-emerald-300"}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <div className="flex items-center gap-2">
@@ -192,9 +193,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                           </div>
                           <p className="mt-1 pl-7 text-[10px] leading-4 text-slate-500">Activate a funded account by choosing one of the plans below.</p>
                         </div>
-                        <span className={`mt-1 size-3 rounded-full border-2 ${fundingMode === "funded" && isInitialFundedTopUp ? "border-emerald-600 bg-emerald-600 ring-2 ring-emerald-200" : "border-slate-300"}`} />
+                        <span className={`mt-1 size-3 rounded-full border-2 ${fundingMode === "funded" && canUseFundedTier ? "border-emerald-600 bg-emerald-600 ring-2 ring-emerald-200" : "border-slate-300"}`} />
                       </div>
-                      {isInitialFundedTopUp ? (
+                      {canUseFundedTier ? (
                         <div className="mt-3 grid grid-cols-2 gap-2 pl-7">
                           {[50, 100, 250, 500, 1000].map((tier) => (
                             <button key={tier} type="button" onClick={() => { setFundingMode("funded"); setAmount(String(tier)) }} disabled={step === "submitting"} className={`rounded-lg border px-2.5 py-2 text-left text-[10px] transition-colors ${Number(amount) === tier && fundingMode === "funded" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}>
