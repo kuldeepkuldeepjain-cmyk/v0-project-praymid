@@ -19,11 +19,12 @@ interface TopUpModalProps {
   isFundedAccount?: boolean
   isInitialFundedTopUp?: boolean
   openFundedTier?: boolean
+  fundedTierAvailable?: boolean
 }
 
 type Step = "form" | "submitting" | "success"
 
-export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false }: TopUpModalProps) {
+export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable }: TopUpModalProps) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
@@ -76,7 +77,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
   const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp)
-  const canUseFundedTier = Boolean(isFundedAccount || isInitialFundedTopUp)
+  const canUseFundedTier = fundedTierAvailable ?? Boolean(isFundedAccount || isInitialFundedTopUp)
   const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
@@ -102,7 +103,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           amount: parsedAmount,
           transactionHash: txHash.trim(),
           network,
-          fundingMode: showFundingOptions && isInitialFundedTopUp ? fundingMode : "actual",
+          fundingMode: showFundingOptions && fundingMode === "funded" ? "funded" : "actual",
           note: `[Payment method: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })

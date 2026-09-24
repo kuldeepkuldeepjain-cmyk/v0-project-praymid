@@ -62,14 +62,21 @@ export async function GET(request: Request) {
     if (!p) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
     let topUpCount = 0
+    let fundedTierTopUpCount = 0
     try {
       const topUpResult = await db.query(
-        "SELECT COUNT(*)::int AS count FROM topup_requests WHERE participant_id = $1",
+        `SELECT
+          COUNT(*)::int AS count,
+          COUNT(*) FILTER (WHERE payment_method = 'funded_tier')::int AS funded_tier_count
+         FROM topup_requests
+         WHERE participant_id = $1`,
         [p.id]
       )
       topUpCount = Number(topUpResult.rows[0]?.count) || 0
+      fundedTierTopUpCount = Number(topUpResult.rows[0]?.funded_tier_count) || 0
     } catch {
       topUpCount = 0
+      fundedTierTopUpCount = 0
     }
 
     return NextResponse.json({
@@ -87,6 +94,8 @@ export async function GET(request: Request) {
         contributed_amount: Number(p.contributed_amount) || 0,
         participation_count: Number(p.participation_count) || 0,
         top_up_count: topUpCount,
+        funded_tier_top_up_count: fundedTierTopUpCount,
+        has_funded_tier_top_up: fundedTierTopUpCount > 0,
         has_prior_top_up: topUpCount > 0,
       },
     })

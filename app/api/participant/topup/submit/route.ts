@@ -40,6 +40,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
     }
     const participant = participants[0]
+    const requestedFundingMode = String(fundingMode || "actual").toLowerCase()
+
+    if (requestedFundingMode === "funded") {
+      const fundedTierRequests = await query(
+        "SELECT id FROM topup_requests WHERE participant_id = $1 AND payment_method = 'funded_tier' LIMIT 1",
+        [participant.id]
+      ) as any[]
+      if (fundedTierRequests.length > 0) {
+        return NextResponse.json({ success: false, message: "Funded-tier funding is available only for the first funded deposit." }, { status: 409 })
+      }
+    }
 
     // Upload screenshot to R2 if provided
     let screenshotUrl: string | null = null
@@ -64,7 +75,7 @@ export async function POST(request: NextRequest) {
     await execute(
       `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
        VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
-      [participant.id, participant.email, parsedAmount, normalizedTransactionHash, fundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto", screenshotUrl]
+      [participant.id, participant.email, parsedAmount, normalizedTransactionHash, requestedFundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto", screenshotUrl]
     )
 
     // Log activity (best-effort — table may not exist)

@@ -22,6 +22,7 @@ interface ParticipantData {
   funded_breach_status?: string
   top_up_count?: number
   has_prior_top_up?: boolean
+  has_funded_tier_top_up?: boolean
 }
 
 export default function AddFundPage() {
@@ -75,6 +76,8 @@ export default function AddFundPage() {
   const normalizedAccountType = String(participantData.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
   const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
   const isFundedAccountBreached = isFundedAccount && participantData.funded_breach_status === "breached"
+  const hasFundedTierTopUp = Boolean(participantData.has_funded_tier_top_up)
+  const canUseFundedTier = isFundedAccount && !hasFundedTierTopUp
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -122,14 +125,18 @@ export default function AddFundPage() {
                 {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}
               </Button>
               {isFundedAccount && (
-                <Button
-                  type="button"
-                  onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }}
-                  className="h-12 w-full border border-emerald-200 bg-emerald-50 text-base font-semibold text-emerald-800 shadow-sm hover:bg-emerald-100"
-                >
-                  <ShieldCheck className="mr-2 h-5 w-5" />
-                  Funded-tier Fund
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    disabled={!canUseFundedTier}
+                    onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }}
+                    className="h-12 w-full border border-emerald-200 bg-emerald-50 text-base font-semibold text-emerald-800 shadow-sm hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <ShieldCheck className="mr-2 h-5 w-5" />
+                    {canUseFundedTier ? "Funded-tier Fund" : "Funded-tier Fund Used"}
+                  </Button>
+                  {!canUseFundedTier && <p className="text-center text-xs text-slate-500">Funded-tier funding is available only for your first funded deposit.</p>}
+                </div>
               )}
               {isFundedAccountBreached && (
                 <p className="text-center text-xs leading-relaxed text-red-600">
@@ -149,10 +156,12 @@ export default function AddFundPage() {
         userEmail={participantData.email || ""}
         isFundedAccount={isFundedAccount}
         openFundedTier={openFundedTier}
+        fundedTierAvailable={canUseFundedTier}
         onSuccess={(amount) => {
           setParticipantData((previousData) => previousData ? {
             ...previousData,
             has_prior_top_up: true,
+            has_funded_tier_top_up: openFundedTier ? true : previousData.has_funded_tier_top_up,
             top_up_count: Number(previousData.top_up_count) + 1,
             wallet_balance: Number(previousData.wallet_balance ?? previousData.account_balance ?? 0) + amount,
             account_balance: Number(previousData.account_balance ?? 0) + amount,
