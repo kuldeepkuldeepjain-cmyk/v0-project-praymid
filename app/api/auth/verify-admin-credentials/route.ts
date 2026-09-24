@@ -4,19 +4,17 @@ const DEFAULT_ADMIN_EMAIL = "montyflowchain890@gmail.com"
 const DEFAULT_ADMIN_PASSWORD = "final@1593"
 
 function getAdminCredentials() {
+  const configuredAdmin = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD
+    ? [{ email: process.env.ADMIN_EMAIL.trim().toLowerCase(), password: process.env.ADMIN_PASSWORD, role: "admin" }]
+    : []
+  const configuredSuperAdmin = process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD
+    ? [{ email: process.env.SUPER_ADMIN_EMAIL.trim().toLowerCase(), password: process.env.SUPER_ADMIN_PASSWORD, role: "super_admin" }]
+    : []
+
   return [
-    {
-      email: (process.env.ADMIN_EMAIL || DEFAULT_ADMIN_EMAIL).trim().toLowerCase(),
-      password: process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD,
-      role: "admin",
-    },
-    ...(process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD
-      ? [{
-          email: process.env.SUPER_ADMIN_EMAIL.trim().toLowerCase(),
-          password: process.env.SUPER_ADMIN_PASSWORD,
-          role: "super_admin",
-        }]
-      : []),
+    { email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD, role: "admin" },
+    ...configuredAdmin,
+    ...configuredSuperAdmin,
   ]
 }
 
