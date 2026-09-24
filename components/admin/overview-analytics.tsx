@@ -42,6 +42,16 @@ interface Stats {
   totalPlatformBalance: number
   avgParticipantBalance: number
   positiveBalanceCount: number
+  activeTraders: number
+  tradersInDrawdown: number
+  breachedAccounts: number
+  totalFundedCapital: number
+  totalFloatingPnl: number
+  todaysPnl: number
+  totalDrawdown: number
+  riskAlerts: number
+  accountsLocked: number
+  currentlyTrading: number
 }
 
 function fmt(n: number) {
@@ -243,6 +253,21 @@ export function OverviewAnalytics() {
           accent="bg-rose-600"
           highlight={stats.pendingOtpVerification > 0}
         />
+      </div>
+
+      {/* ── TRADING OVERVIEW ── */}
+      <Section title="Trading Overview" badge={stats.riskAlerts} />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <StatCard title="Active Traders" value={fmt(stats.activeTraders)} sub="Active funded accounts" icon={Users} accent="bg-emerald-600" />
+        <StatCard title="Traders in Drawdown" value={fmt(stats.tradersInDrawdown)} sub="Below starting balance" icon={TrendingUp} accent="bg-amber-600" highlight={stats.tradersInDrawdown > 0} />
+        <StatCard title="Breached Accounts" value={fmt(stats.breachedAccounts)} sub="Below 2% loss floor" icon={ShieldAlert} accent="bg-red-600" highlight={stats.breachedAccounts > 0} />
+        <StatCard title="Total Funded Capital" value={fmtUSDT(stats.totalFundedCapital)} sub="Funded account sizes" icon={Wallet} accent="bg-cyan-600" />
+        <StatCard title="Total Floating P&L" value={`${stats.totalFloatingPnl >= 0 ? "+" : "−"}${fmtUSDT(Math.abs(stats.totalFloatingPnl))}`} sub="Open trades" icon={Activity} accent="bg-blue-600" />
+        <StatCard title="Today's P&L" value={`${stats.todaysPnl >= 0 ? "+" : "−"}${fmtUSDT(Math.abs(stats.todaysPnl))}`} sub="Closed trades today" icon={BarChart3} accent="bg-indigo-600" />
+        <StatCard title="Total Drawdown" value={fmtUSDT(stats.totalDrawdown)} sub="Across funded accounts" icon={ArrowDownCircle} accent="bg-orange-600" highlight={stats.totalDrawdown > 0} />
+        <StatCard title="Risk Alerts" value={fmt(stats.riskAlerts)} sub="Accounts near loss limit" icon={AlertCircle} accent="bg-amber-600" highlight={stats.riskAlerts > 0} />
+        <StatCard title="Accounts Locked" value={fmt(stats.accountsLocked)} sub="Frozen accounts" icon={Shield} accent="bg-red-700" highlight={stats.accountsLocked > 0} />
+        <StatCard title="Currently Trading" value={fmt(stats.currentlyTrading)} sub="With open positions" icon={CircleDot} accent="bg-violet-600" />
       </div>
 
       {/* ── CONTRIBUTIONS ── */}
