@@ -225,18 +225,29 @@ export function TradingChart({
     const closes: number[]              = []
     const times: Time[]                 = []
     const tfSecs = TF_SECONDS[tf] ?? 300
-    candles.forEach((c, i) => {
-      const t = toTimestamp(c, i, tfSecs)
-      const isUp = c.close >= c.open
-      candleData.push({ time: t, open: c.open, high: c.high, low: c.low, close: c.close })
-      volData.push({
-        time: t,
-        value: c.volume,
-        color: isUp ? "rgba(22,217,130,0.55)" : "rgba(255,71,87,0.55)",
-      })
-      closes.push(c.close)
-      times.push(t)
-    })
+  candles.forEach((c, i) => {
+  const open = Number(c.open)
+  const high = Number(c.high)
+  const low = Number(c.low)
+  const close = Number(c.close)
+  const volume = Number(c.volume)
+
+  // Market feeds can briefly return null OHLCV values while a symbol is loading.
+  // lightweight-charts rejects those values with "Value is null", so skip the
+  // incomplete candle instead of taking down the entire participant dashboard.
+  if (![open, high, low, close, volume].every(Number.isFinite) || high < low || open <= 0 || close <= 0) return
+
+  const t = toTimestamp(c, i, tfSecs)
+  const isUp = close >= open
+  candleData.push({ time: t, open, high, low, close })
+  volData.push({
+  time: t,
+  value: Math.max(0, volume),
+  color: isUp ? "rgba(22,217,130,0.55)" : "rgba(255,71,87,0.55)",
+  })
+  closes.push(close)
+  times.push(t)
+  })
     return { candleData, volData, closes, times }
   }, [candles])
 
