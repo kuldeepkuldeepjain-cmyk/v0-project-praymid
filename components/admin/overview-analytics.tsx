@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import {
   Users, DollarSign, TrendingUp, Activity, UserCheck, Wallet,
   Clock, CheckCircle, ArrowDownCircle, BarChart3, RefreshCw,
-  AlertCircle, ShieldAlert, Repeat2, BadgeDollarSign, CircleDot,
+  AlertCircle, Shield, ShieldAlert, Repeat2, BadgeDollarSign, CircleDot,
   ArrowUpCircle, Hourglass,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
