@@ -18,11 +18,12 @@ interface TopUpModalProps {
   onSuccess?: (amount: number) => void
   isFundedAccount?: boolean
   isInitialFundedTopUp?: boolean
+  openFundedTier?: boolean
 }
 
 type Step = "form" | "submitting" | "success"
 
-export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false }: TopUpModalProps) {
+export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false }: TopUpModalProps) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
@@ -33,7 +34,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
-  const [fundingMode, setFundingMode] = useState<"actual" | "funded">(isFundedAccount && isInitialFundedTopUp ? "funded" : "actual")
+  const [fundingMode, setFundingMode] = useState<"actual" | "funded">(openFundedTier || (isFundedAccount && isInitialFundedTopUp) ? "funded" : "actual")
 
   // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
@@ -45,7 +46,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
-    setFundingMode(isFundedAccount && isInitialFundedTopUp ? "funded" : "actual")
+    setFundingMode(openFundedTier || (isFundedAccount && isInitialFundedTopUp) ? "funded" : "actual")
     const fetchAddress = async () => {
       setLoadingAddress(true)
       try {
@@ -59,7 +60,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       }
     }
     fetchAddress()
-  }, [isOpen, isFundedAccount, isInitialFundedTopUp])
+  }, [isOpen, isFundedAccount, isInitialFundedTopUp, openFundedTier])
 
   const copyAddress = () => {
     const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20

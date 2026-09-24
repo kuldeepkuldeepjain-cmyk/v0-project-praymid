@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Wallet } from "lucide-react"
+import { ArrowLeft, ShieldCheck, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageLoader } from "@/components/ui/page-loader"
@@ -30,6 +30,7 @@ export default function AddFundPage() {
   const [accountDataLoaded, setAccountDataLoaded] = useState(false)
   const [participantData, setParticipantData] = useState<ParticipantData | null>(null)
   const [showTopUpModal, setShowTopUpModal] = useState(false)
+  const [openFundedTier, setOpenFundedTier] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -71,7 +72,9 @@ export default function AddFundPage() {
   }
 
   const currentBalance = Number(participantData.wallet_balance ?? participantData.account_balance ?? 0)
-  const isFundedAccountBreached = participantData.account_type === "funded" && participantData.funded_breach_status === "breached"
+  const normalizedAccountType = String(participantData.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
+  const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
+  const isFundedAccountBreached = isFundedAccount && participantData.funded_breach_status === "breached"
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -112,12 +115,22 @@ export default function AddFundPage() {
 
               <Button
                 type="button"
-                onClick={() => setShowTopUpModal(true)}
+                onClick={() => { setOpenFundedTier(false); setShowTopUpModal(true) }}
                 className={`h-12 w-full text-base font-semibold text-white shadow-md ${isFundedAccountBreached ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"}`}
               >
                 <Wallet className="mr-2 h-5 w-5" />
                 {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}
               </Button>
+              {isFundedAccount && (
+                <Button
+                  type="button"
+                  onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }}
+                  className="h-12 w-full border border-emerald-200 bg-emerald-50 text-base font-semibold text-emerald-800 shadow-sm hover:bg-emerald-100"
+                >
+                  <ShieldCheck className="mr-2 h-5 w-5" />
+                  Funded-tier Fund
+                </Button>
+              )}
               {isFundedAccountBreached && (
                 <p className="text-center text-xs leading-relaxed text-red-600">
                   Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.
@@ -134,7 +147,8 @@ export default function AddFundPage() {
         currentBalance={currentBalance}
         userId={participantData.username || participantData.email || ""}
         userEmail={participantData.email || ""}
-        isFundedAccount={isFundedAccountBreached}
+        isFundedAccount={isFundedAccount}
+        openFundedTier={openFundedTier}
         onSuccess={(amount) => {
           setParticipantData((previousData) => previousData ? {
             ...previousData,
