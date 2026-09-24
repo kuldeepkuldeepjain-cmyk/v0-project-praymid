@@ -1816,7 +1816,7 @@ export default function DashboardHome() {
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
         isFundedAccount={isFundedAccount || topUpIsFundedAccount}
-  isInitialFundedTopUp={isInitialFundedTopUp || (isFundedAccount && walletBalance <= 0)}
+  isInitialFundedTopUp={isInitialFundedTopUp || isFundedAccount}
   onSuccess={async () => {
   setShowTopUpModal(false)
   setIsInitialFundedTopUp(false)
@@ -1912,7 +1912,7 @@ export default function DashboardHome() {
       <main className="pb-24 md:pb-6" style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            {/* ── PORTFOLIO HERO ──────────────────────────────────── */}
+            {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
             <div className="relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
               <div className="absolute inset-0 depth-grid opacity-50 pointer-events-none" />
@@ -2388,11 +2388,11 @@ export default function DashboardHome() {
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
-  fundedTopUpAvailable={isFundedAccount && walletBalance <= 0}
+  fundedTopUpAvailable={isFundedAccount && !Number(participantData?.funded_initial_balance)}
   onAddFunds={() => {
-  // Keep both choices active until the account receives its first fund payment.
+  // The funded plan stays visible until the first funded payment is recorded.
   setTopUpIsFundedAccount(isFundedAccount)
-  setIsInitialFundedTopUp(isFundedAccount && walletBalance <= 0)
+  setIsInitialFundedTopUp(isFundedAccount)
   setShowTopUpModal(true)
   }}
   onAddFundedFunds={() => {
