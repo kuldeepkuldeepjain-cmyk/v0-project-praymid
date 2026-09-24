@@ -59,7 +59,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       }
     }
     fetchAddress()
-  }, [isOpen])
+  }, [isOpen, isFundedAccount, isInitialFundedTopUp])
 
   const copyAddress = () => {
     const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
