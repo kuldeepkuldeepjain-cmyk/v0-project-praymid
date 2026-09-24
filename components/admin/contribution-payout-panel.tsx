@@ -87,6 +87,13 @@ export function ContributionPayoutPanel() {
       const contribJson = await contribRes.json()
       const payoutJson = await payoutRes.json()
 
+      if (!contribRes.ok || !contribJson.success) {
+        throw new Error(contribJson.error || "Failed to load activation payments")
+      }
+      if (!payoutRes.ok || !payoutJson.success) {
+        throw new Error(payoutJson.error || "Failed to load payout requests")
+      }
+
       const contribs: Contribution[] = (contribJson.payments || []).map((c: any) => ({
         id: c.id,
         participant_name: c.full_name || c.username || c.participant_email,

@@ -25,6 +25,7 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 import { AdminControlRoom } from "@/components/admin/admin-control-room"
+import { ContributionPayoutPanel } from "@/components/admin/contribution-payout-panel"
 
 interface ApprovedWallet {
   id: string
@@ -463,6 +464,9 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Payout Requests Panel */}
+        <ContributionPayoutPanel />
 
         {/* Participants Management Panel */}
         <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
