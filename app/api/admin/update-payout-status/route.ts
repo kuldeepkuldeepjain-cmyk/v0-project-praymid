@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
+import { getFundedBaseAmount } from "@/lib/funded-account"
 
 const VALID_STATUSES = new Set(["pending", "matched", "approved", "processing", "completed", "rejected", "cancelled"])
 const TERMINAL_STATUSES = new Set(["completed", "rejected", "cancelled"])
@@ -62,6 +63,45 @@ export async function POST(request: NextRequest) {
           "INSERT INTO transactions (participant_email, type, amount, description, reference_id) VALUES ($1, $2, $3, $4, $5)",
           [payout.participant_email, "payout_completed", payout.amount, `Payout completed - $${payout.amount} sent`, String(payoutId)],
         )
+
+        const participantResult = await client.query(
+          "SELECT account_balance, account_type, funded_amount FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE",
+          [payout.participant_email],
+        )
+        const participant = participantResult.rows[0]
+        const normalizedAccountType = String(participant?.account_type ?? "").trim().toLowerCase().replace(/[\\s_-]+/g, "")
+        const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
+
+        if (participant && isFundedAccount) {
+          const balanceBeforeLapse = Number(participant.account_balance || 0)
+          const fundedBaseAmount = getFundedBaseAmount(balanceBeforeLapse, participant.funded_amount)
+          const forfeitedProfit = Math.max(0, Math.round((balanceBeforeLapse - fundedBaseAmount) * 100) / 100)
+
+          if (forfeitedProfit > 0) {
+            await client.query(
+              "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE LOWER(email) = LOWER($2)",
+              [fundedBaseAmount, payout.participant_email],
+            )
+            await client.query(
+              "INSERT INTO transactions (participant_email, type, amount, description, reference_id, balance_before, balance_after, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+              [
+                payout.participant_email,
+                "debit",
+                forfeitedProfit,
+                `Remaining funded profit forfeited after 80% payout; account reset to $${fundedBaseAmount.toFixed(2)}`,
+                String(payoutId),
+                balanceBeforeLapse,
+                fundedBaseAmount,
+                "completed",
+              ],
+            )
+            await client.query(
+              "INSERT INTO activity_logs (actor_email, action, target_type, details) VALUES ($1, $2, $3, $4)",
+              [auth.email, "funded_profit_forfeited", "payout", `Forfeited remaining $${forfeitedProfit.toFixed(2)} funded profit for ${payout.participant_email}`],
+            )
+          }
+        }
+
         await client.query(
           "INSERT INTO activity_logs (actor_email, action, target_type, details) VALUES ($1, $2, $3, $4)",
           [auth.email, "payout_completed", "payout", `Completed payout of $${payout.amount} to ${payout.participant_email}`],
