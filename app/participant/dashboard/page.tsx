@@ -1816,7 +1816,7 @@ export default function DashboardHome() {
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
         isFundedAccount={isFundedAccount || topUpIsFundedAccount}
-  isInitialFundedTopUp={isInitialFundedTopUp || (isFundedAccount && !Number(participantData?.funded_initial_balance) && walletBalance <= 0)}
+  isInitialFundedTopUp={isInitialFundedTopUp || (isFundedAccount && !Number(participantData?.funded_initial_balance))}
   onSuccess={async () => {
   setShowTopUpModal(false)
   setIsInitialFundedTopUp(false)
@@ -2388,11 +2388,11 @@ export default function DashboardHome() {
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
-  fundedTopUpAvailable={isFundedAccount && !Number(participantData?.funded_initial_balance) && walletBalance <= 0}
+  fundedTopUpAvailable={isFundedAccount && !Number(participantData?.funded_initial_balance)}
   onAddFunds={() => {
-  // Keep the funded-account context so both funding options remain visible.
+  // Keep the funded-account context and show funded plans until the first funded payment is recorded.
   setTopUpIsFundedAccount(isFundedAccount)
-  setIsInitialFundedTopUp(isFundedAccount && !Number(participantData?.funded_initial_balance) && walletBalance <= 0)
+  setIsInitialFundedTopUp(isFundedAccount && !Number(participantData?.funded_initial_balance))
   setShowTopUpModal(true)
   }}
   onAddFundedFunds={() => {
