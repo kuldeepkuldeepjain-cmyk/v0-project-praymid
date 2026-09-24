@@ -2390,8 +2390,9 @@ export default function DashboardHome() {
   fundedAmount={fundedBaseAmount}
   fundedTopUpAvailable={isFundedAccount && !Number(participantData?.funded_initial_balance)}
   onAddFunds={() => {
-  setTopUpIsFundedAccount(false)
-  setIsInitialFundedTopUp(false)
+  // Keep the funded-account context so both funding options remain visible.
+  setTopUpIsFundedAccount(isFundedAccount)
+  setIsInitialFundedTopUp(isFundedAccount && !Number(participantData?.funded_initial_balance))
   setShowTopUpModal(true)
   }}
   onAddFundedFunds={() => {
