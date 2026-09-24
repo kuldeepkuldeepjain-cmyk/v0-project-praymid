@@ -42,7 +42,9 @@ export async function enforceRateLimit(
   key: string,
 ): Promise<{ allowed: boolean; retryAfter?: number }> {
   const limiter = limiters[bucket]
-  if (!limiter) return { allowed: false, retryAfter: 60 }
+  // Keep authentication available when the optional Redis rate-limit service is not configured.
+  // Production deployments should configure KV_REST_API_URL and KV_REST_API_TOKEN.
+  if (!limiter) return { allowed: true }
   const result = await limiter.limit(key)
   return { allowed: result.success, retryAfter: Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)) }
 }

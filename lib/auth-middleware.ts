@@ -3,7 +3,9 @@ import { getParticipantSession, getAdminSession } from "@/lib/session"
 import { recordSecurityEvent } from "@/lib/security"
 
 // Valid admin emails — used for token-based auth fallback
-const ADMIN_EMAILS = ["montyflowchain890@gmail.com"]
+const ADMIN_EMAILS = [process.env.ADMIN_EMAIL, process.env.SUPER_ADMIN_EMAIL, "montyflowchain890@gmail.com"]
+  .filter((email): email is string => Boolean(email))
+  .map((email) => email.toLowerCase())
 
 // ── Participant route guard ────────────────────────────────────────────────
 export async function requireParticipantSession(
