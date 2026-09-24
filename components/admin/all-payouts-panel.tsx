@@ -35,7 +35,7 @@ export function AllPayoutsPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
-  const [completingId, setCompletingId] = useState<string | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const fetchPayouts = useCallback(async () => {
     setLoading(true)
@@ -64,28 +64,41 @@ export function AllPayoutsPanel() {
     fetchPayouts()
   }, [fetchPayouts])
 
-  const handleCompletePayout = async (payout: PayoutRecord) => {
+  const updatePayoutStatus = async (payout: PayoutRecord, status: "processing" | "completed", transactionHash?: string | null) => {
     if (["completed", "rejected", "cancelled"].includes(payout.status.toLowerCase())) return
 
-    const transactionHash = window.prompt("Enter the blockchain transaction hash (optional):", "")
-    if (transactionHash === null) return
-    if (!window.confirm(`Mark the $${payout.amount.toFixed(2)} payout to ${payout.wallet_address || payout.participant_email} as completed?`)) return
-
-    setCompletingId(payout.id)
+    setUpdatingId(payout.id)
     try {
       const response = await adminFetch("/api/admin/update-payout-status", {
         method: "POST",
-        body: JSON.stringify({ payoutId: payout.id, status: "completed", transactionHash: transactionHash.trim() || null }),
+        body: JSON.stringify({ payoutId: payout.id, status, transactionHash: transactionHash ?? undefined }),
       })
       const data = await response.json()
-      if (!response.ok || !data.success) throw new Error(data.error || "Could not complete payout")
-      toast({ title: "Payout completed", description: `Record ${payout.serial_number} was marked as completed.` })
+      if (!response.ok || !data.success) throw new Error(data.error || "Could not update payout")
+      toast({
+        title: status === "processing" ? "Payout moved to in process" : "Payout completed",
+        description: `Record ${payout.serial_number} was updated successfully.`,
+      })
       await fetchPayouts()
     } catch (err) {
-      toast({ title: "Payout update failed", description: err instanceof Error ? err.message : "Could not complete payout", variant: "destructive" })
+      toast({ title: "Payout update failed", description: err instanceof Error ? err.message : "Could not update payout", variant: "destructive" })
     } finally {
-      setCompletingId(null)
+      setUpdatingId(null)
     }
+  }
+
+  const handleStartPayout = async (payout: PayoutRecord) => {
+    if (!payout.wallet_address) return
+    if (!window.confirm(`Move the $${payout.amount.toFixed(2)} payout to ${payout.wallet_address} into process?`)) return
+    await updatePayoutStatus(payout, "processing")
+  }
+
+  const handleCompletePayout = async (payout: PayoutRecord) => {
+    if (!payout.wallet_address) return
+    const transactionHash = window.prompt("Enter the blockchain transaction hash (optional):", "")
+    if (transactionHash === null) return
+    if (!window.confirm(`Mark the $${payout.amount.toFixed(2)} payout to ${payout.wallet_address} as completed?`)) return
+    await updatePayoutStatus(payout, "completed", transactionHash.trim() || null)
   }
 
   const copyAddress = async (address: string) => {
@@ -149,6 +162,7 @@ export function AllPayoutsPanel() {
       case "pending":   return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "matched":   return "bg-blue-100 text-blue-800 border-blue-200"
       case "approved":  return "bg-green-100 text-green-800 border-green-200"
+      case "processing": return "bg-orange-100 text-orange-800 border-orange-200"
       case "completed": return "bg-emerald-100 text-emerald-800 border-emerald-200"
       case "rejected":  return "bg-red-100 text-red-800 border-red-200"
       case "cancelled": return "bg-gray-100 text-gray-800 border-gray-200"
@@ -185,6 +199,7 @@ export function AllPayoutsPanel() {
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="matched">Matched</SelectItem>
               <SelectItem value="approved">Approved</SelectItem>
+              <SelectItem value="processing">In process</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="rejected">Rejected</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
@@ -273,10 +288,18 @@ export function AllPayoutsPanel() {
                       ) : ["rejected", "cancelled"].includes(payout.status.toLowerCase()) ? (
                         <span className="text-xs text-slate-500">Closed</span>
                       ) : (
-                        <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700" disabled={completingId === payout.id || !payout.wallet_address} onClick={() => handleCompletePayout(payout)}>
-                          {completingId === payout.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                          {completingId === payout.id ? "Completing..." : "Complete payout"}
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          {payout.status.toLowerCase() !== "processing" && (
+                            <Button type="button" size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" disabled={updatingId === payout.id || !payout.wallet_address} onClick={() => handleStartPayout(payout)}>
+                              {updatingId === payout.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                              {updatingId === payout.id ? "Updating..." : "In process"}
+                            </Button>
+                          )}
+                          <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700" disabled={updatingId === payout.id || !payout.wallet_address} onClick={() => handleCompletePayout(payout)}>
+                            {updatingId === payout.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {updatingId === payout.id ? "Updating..." : "Complete payout"}
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
