@@ -131,6 +131,13 @@ export function ForexHeader({
   const marketColor = marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171"
   const formatMoney = (value: number) => `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   const formatLocalTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+  const filteredMenuItems = menuItems.filter((item) => !query.trim() || item.label.toLowerCase().includes(query.trim().toLowerCase()))
+  const navigateFromMenu = (panel: string) => {
+    onNavigate(panel)
+    setSearchOpen(false)
+    setMenuOpen(false)
+    setQuery("")
+  }
 
   useEffect(() => {
     const updateLocalClock = () => setLocalTime(formatLocalTime())
@@ -166,8 +173,12 @@ export function ForexHeader({
                 <input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event.target.value) }} placeholder="EUR/USD, GOLD, BTC..." className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-slate-600" />
                 <button type="button" onClick={() => { setSearchOpen(false); setQuery("") }} aria-label="Close search"><X className="h-3.5 w-3.5 text-slate-500" /></button>
               </div>
-              <div className="p-1.5">
-                {menuItems.slice(0, 3).map((item) => <button key={item.id} type="button" onClick={() => { onNavigate(item.id); setSearchOpen(false) }} className="w-full rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{item.label}</button>)}
+              <div className="max-h-64 overflow-y-auto p-1.5">
+                {filteredMenuItems.length > 0 ? filteredMenuItems.map((item) => (
+                  <button key={item.id} type="button" onClick={() => navigateFromMenu(item.id)} className="w-full rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">
+                    {item.label}
+                  </button>
+                )) : <p className="px-2.5 py-3 text-[10px] text-slate-500">No terminal option found</p>}
               </div>
             </div>
           )}
@@ -198,12 +209,16 @@ export function ForexHeader({
         <div className="relative">
           <button type="button" onClick={() => setMenuOpen((value) => !value)} className="terminal-icon-button" aria-label="Open terminal menu"><Menu className="h-4 w-4" /></button>
           {menuOpen && <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-lg border p-1.5 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}>
-            {menuItems.map((item) => <button key={item.id} type="button" onClick={() => { onNavigate(item.id); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
-            <button type="button" onClick={onToggleWatchlist} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Wallet className="h-3.5 w-3.5 text-cyan-300" />Focus watchlist</button>
-            <button type="button" onClick={onToggleFullscreen} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</button>
-            <button type="button" onClick={onToggleLock} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{isLocked ? "Unlock trading" : "Lock trading"}</button>
-            <button type="button" onClick={onToggleSound} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">Sound {soundEnabled ? "on" : "off"}</button>
-            <button type="button" onClick={onToggleTheme} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">Switch to {theme === "dark" ? "light" : "dark"} mode</button>
+            {menuItems.map((item) => <button key={item.id} type="button" onClick={() => navigateFromMenu(item.id)} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
+            <div className="my-1 border-t" style={{ borderColor: "#1b2b40" }} />
+            <button type="button" onClick={() => { onToggleWatchlist(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Wallet className="h-3.5 w-3.5 text-cyan-300" />Focus watchlist</button>
+            <button type="button" onClick={() => { onOpenDeposit(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-emerald-300 hover:bg-white/5"><ArrowDownRight className="h-3.5 w-3.5" />Deposit funds</button>
+            <button type="button" onClick={() => { onOpenWithdraw(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-amber-300 hover:bg-white/5"><ArrowUpRight className="h-3.5 w-3.5" />Withdraw funds</button>
+            <button type="button" onClick={() => { onOpenTransfer(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Wallet className="h-3.5 w-3.5" />Transfer funds</button>
+            <button type="button" onClick={() => { onToggleFullscreen(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</button>
+            <button type="button" onClick={() => { onToggleLock(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{isLocked ? "Unlock trading" : "Lock trading"}</button>
+            <button type="button" onClick={() => { onToggleSound(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">Sound {soundEnabled ? "on" : "off"}</button>
+            <button type="button" onClick={() => { onToggleTheme(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">Switch to {theme === "dark" ? "light" : "dark"} mode</button>
           </div>}
         </div>
 
