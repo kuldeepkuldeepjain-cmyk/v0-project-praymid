@@ -2264,7 +2264,7 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
-      {/* ══ REFERENCE WATCHLIST ════════════════════════���══════════════════��════ */}
+      {/* ══ REFERENCE WATCHLIST ════════════════════════�����══════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -2570,7 +2570,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────────────────────���───────────────────────�����─────── */}
+        {/* ── CENTER: Chart ──────────────────���─���───────────────────────�����─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""} ${mobileTab !== "chart" ? "tablet-chart-hidden" : ""}`} style={{ display: isCompactViewport && mobileTab !== "chart" ? "none" : undefined }}>
           {/* Pair header */}
           {selectedPair ? (
@@ -3011,7 +3011,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═══════════════════════════════���═══��════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════════════════════════════����═══��════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
@@ -3419,7 +3419,7 @@ adjustWalletBalance(
           { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
           { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
         ].map(item => (
-          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
+          <div key={item.label} className={`reference-metric-card tone-${item.tone} ${item.label === "Balance" || item.label === "Equity" ? "reference-metric-primary" : ""}`}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
             {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
