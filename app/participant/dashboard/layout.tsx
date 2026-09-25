@@ -55,23 +55,6 @@ export default function DashboardLayout({
     setTimeout(() => setBouncingIndex(null), 300)
   }
 
-  const [particles, setParticles] = useState<
-    { id: number; left: string; delay: string; size: number; color: string; duration: string }[]
-  >([])
-
-  useEffect(() => {
-    setParticles(
-      Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        delay: `${Math.random() * 15}s`,
-        size: Math.random() * 6 + 3,
-        color: ["#E85D3B", "#3b82f6", "#22d3ee", "#10b981"][Math.floor(Math.random() * 4)],
-        duration: `${15 + Math.random() * 10}s`,
-      }))
-    )
-  }, [])
-
   // ── BACKGROUND LAYERS (shared across breakpoints) ─────────────────────
   const BgLayers = () => (
     <>
@@ -83,11 +66,6 @@ export default function DashboardLayout({
         <div className="glow-orb absolute w-[600px] h-[600px] -top-48 -left-32 bg-gradient-to-br from-blue-600/12 to-transparent" style={{ animationDelay: "0s" }} />
         <div className="glow-orb absolute w-[500px] h-[500px] top-1/2 -right-48 bg-gradient-to-br from-cyan-500/8 to-transparent" style={{ animationDelay: "2s" }} />
         <div className="glow-orb absolute w-[400px] h-[400px] bottom-0 left-1/3 bg-gradient-to-br from-blue-500/8 to-transparent" style={{ animationDelay: "4s" }} />
-      </div>
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-[5]">
-        {particles.map((p) => (
-          <div key={p.id} className="floating-particle" style={{ left: p.left, width: p.size, height: p.size, backgroundColor: p.color, animationDelay: p.delay, animationDuration: p.duration, opacity: 0.25 }} />
-        ))}
       </div>
     </>
   )
@@ -102,7 +80,8 @@ export default function DashboardLayout({
           key={item.href}
           href={item.href}
           onClick={() => handleNavClick(index)}
-          className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative mx-2"
+          aria-current={active ? "page" : undefined}
+          className="group relative mx-2 flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200"
           style={active ? {
             background: `linear-gradient(135deg, ${item.color}22 0%, ${item.color}10 100%)`,
             border: `1px solid ${item.color}35`,
@@ -133,7 +112,8 @@ export default function DashboardLayout({
         key={item.href}
         href={item.href}
         onClick={() => handleNavClick(index)}
-        className="flex flex-col items-center justify-center w-full h-full transition-all duration-300 group relative"
+        aria-current={active ? "page" : undefined}
+        className="group relative flex h-full min-h-16 w-full flex-col items-center justify-center transition-all duration-300"
       >
         {active && <div className="absolute top-1 w-14 h-14 rounded-full opacity-30 blur-2xl pointer-events-none" style={{ background: `radial-gradient(circle, ${item.color} 0%, transparent 70%)` }} />}
         <div className={`relative p-2.5 rounded-2xl transition-all duration-300 ${isBouncing ? "animate-bounce" : ""}`} style={active ? {
@@ -190,7 +170,7 @@ export default function DashboardLayout({
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: "transparent" }}>
+        <main aria-label="Participant dashboard" className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: "transparent" }}>
           <div className="relative z-10 page-slide-enter h-full">
             <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
               {children}
@@ -210,7 +190,8 @@ export default function DashboardLayout({
             const active = isActive(item.href)
             return (
               <Link key={item.href} href={item.href} onClick={() => handleNavClick(index)}
-                className="relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200"
+                aria-current={active ? "page" : undefined}
+                className="relative flex size-12 items-center justify-center rounded-xl transition-all duration-200"
                 style={active ? {
                   background: `linear-gradient(135deg, ${item.color}25 0%, ${item.color}12 100%)`,
                   border: `1px solid ${item.color}40`,
@@ -227,7 +208,7 @@ export default function DashboardLayout({
         </aside>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+        <main aria-label="Participant dashboard" className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative z-10 page-slide-enter h-full">
             <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
               {children}

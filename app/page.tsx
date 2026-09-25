@@ -31,8 +31,8 @@ import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 function FooterColumn({ title, links }: { title: string; links: [string, string][] }) {
   return (
     <div>
-      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{title}</h2>
-      <ul className="flex flex-col gap-3 text-sm text-slate-500">
+      <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300">{title}</h2>
+      <ul className="flex flex-col gap-2 text-xs text-slate-500">
         {links.map(([label, href]) => (
           <li key={label}>
             <Link href={href} className="transition-colors hover:text-white">{label}</Link>
@@ -90,8 +90,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-cyan-400 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-slate-950">Skip to content</a>
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800">
+      <nav aria-label="Primary navigation" className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-lg" />
@@ -130,14 +131,14 @@ export default function LandingPage() {
             >
               Login
             </button>
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-1">
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <button aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen(!isMenuOpen)} className="rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white">
+              {isMenuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
             </button>
           </div>
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden absolute top-14 left-0 right-0 bg-slate-900 border-b border-slate-800 p-4 space-y-2">
+          <div id="mobile-navigation" aria-label="Mobile navigation" className="absolute left-0 right-0 top-14 space-y-2 border-b border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-slate-950/50 md:hidden">
             <a href="#platform" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Platform</a>
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#programs" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Programs</a>
@@ -147,7 +148,8 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section id="platform" className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden pt-10 sm:pt-16 lg:pt-24 pb-8 sm:pb-12">
+      <main id="main-content">
+      <section id="platform" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-8 pt-10 sm:pb-12 sm:pt-16 lg:pb-16 lg:pt-24">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
@@ -196,10 +198,10 @@ export default function LandingPage() {
                 >
                   <span className="relative flex items-center justify-center gap-2">Start Trading <ArrowRight className="w-4 h-4" /></span>
                 </button>
-                <button className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold flex items-center justify-center gap-2 transition-all duration-300">
-                  <TrendingUp className="w-4 h-4" />
-                  View Platform
-                </button>
+                <a href="#features" className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-6 py-3 font-bold text-slate-200 transition-all duration-300 hover:bg-slate-700 hover:text-white sm:w-auto sm:px-8 sm:py-4">
+                  <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                  Explore platform
+                </a>
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-800 pt-5 text-xs text-slate-400">
@@ -314,8 +316,8 @@ export default function LandingPage() {
                   <p className="text-xs uppercase tracking-wider text-slate-500">Trading balance</p>
                   <p className="mt-1 text-2xl font-extrabold text-cyan-300">{plan.balance}</p>
                   <p className="mt-4 text-xs leading-5 text-slate-500">Rules, drawdown limits, and eligibility apply. Review terms before registration.</p>
-                  <Link href="/participant/register" className="mt-5 block">
-                    <Button variant={plan.featured ? "default" : "outline"} className="w-full">Review program <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                  <Link href="/participant/register" className={`mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${plan.featured ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-input bg-background hover:bg-accent hover:text-accent-foreground"}`}>
+                    Review program <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </div>
               )
@@ -411,17 +413,19 @@ export default function LandingPage() {
         </div>
       </section>
 
+      </main>
+
       {/* Footer */}
       <footer className="border-t border-slate-800 bg-slate-950" aria-label="Footer">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 py-14 lg:grid-cols-[1.6fr_repeat(4,1fr)] lg:gap-8 lg:py-20">
+          <div className="grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-[1.8fr_repeat(4,1fr)] lg:gap-6">
             <div className="max-w-xs">
-              <div className="mb-5 flex items-center gap-3">
-                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-md" />
-                <span className="text-lg font-bold tracking-tight text-white">ELITE FUND</span>
+              <div className="mb-3 flex items-center gap-2.5">
+                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-8 w-8 rounded-md" />
+                <span className="text-base font-bold tracking-tight text-white">ELITE FUND</span>
               </div>
-              <p className="text-base font-semibold leading-7 text-slate-200">Professional Trading Infrastructure for Modern Traders</p>
-              <p className="mt-4 text-sm leading-6 text-slate-400">Trade Smart. Manage Risk. Trade with Confidence.</p>
+              <p className="text-sm font-semibold leading-6 text-slate-200">Professional trading infrastructure for modern traders.</p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">Trade smart. Manage risk. Trade with confidence.</p>
             </div>
 
             <FooterColumn title="Platform" links={[
@@ -453,22 +457,20 @@ export default function LandingPage() {
             ]} />
           </div>
 
-          <div className="border-y border-slate-800 py-6" role="note">
-            <div className="flex items-start gap-3">
-              <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Risk Disclosure</p>
-                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">Trading involves significant risk. Past performance does not guarantee future results. No profit is guaranteed. Only trade with funds you can afford to lose.</p>
-              </div>
+          <div className="flex flex-col gap-3 border-y border-slate-800 py-4 text-xs md:flex-row md:items-center md:justify-between" role="note">
+            <div className="flex items-start gap-2.5 text-slate-400">
+              <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
+              <p><span className="font-semibold text-amber-300">Risk disclosure:</span> Trading involves significant risk. Past performance does not guarantee future results.</p>
             </div>
+            <Link href="/terms" className="shrink-0 font-semibold text-slate-300 transition hover:text-white">Read terms</Link>
           </div>
 
-          <div className="flex flex-col gap-5 py-7 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 py-4 text-xs sm:flex-row sm:items-center sm:justify-between">
             <p className="text-slate-500">© 2026 Elite Fund. All rights reserved.</p>
-            <div className="flex items-center gap-5 text-slate-400">
+            <div className="flex items-center gap-4 text-slate-400">
               <a href="#" aria-label="Elite Fund on X" className="font-semibold transition hover:text-white">X</a>
-              <a href="#" aria-label="Elite Fund on Discord" className="inline-flex items-center gap-2 transition hover:text-white"><MessageCircle className="h-4 w-4" aria-hidden="true" />Discord</a>
-              <a href="#" aria-label="Elite Fund on Telegram" className="inline-flex items-center gap-2 transition hover:text-white"><Send className="h-4 w-4" aria-hidden="true" />Telegram</a>
+              <a href="#" aria-label="Elite Fund on Discord" className="inline-flex items-center gap-1.5 transition hover:text-white"><MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />Discord</a>
+              <a href="#" aria-label="Elite Fund on Telegram" className="inline-flex items-center gap-1.5 transition hover:text-white"><Send className="h-3.5 w-3.5" aria-hidden="true" />Telegram</a>
             </div>
           </div>
         </div>
