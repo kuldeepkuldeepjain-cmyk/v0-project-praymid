@@ -1981,7 +1981,32 @@ button, a, [role="button"] {
 }
 
 @media (max-width: 767px) {
-  .reference-terminal { width: 100%; max-width: 100%; }
+  .elite-terminal-shell,
+  .elite-terminal-workspace,
+  .elite-terminal-platform,
+  .reference-terminal { height: 100dvh !important; max-height: 100dvh; }
+  .reference-terminal { width: 100%; max-width: 100%; overflow: hidden; }
+  .reference-terminal .apple-terminal-blotter { height: clamp(150px, 28dvh, 190px) !important; min-height: 150px; }
+  .reference-terminal .apple-terminal-grid { min-height: 0; overflow: hidden; }
+  .reference-terminal .apple-terminal-chart-column { min-height: 0; }
+  .elite-terminal-platform > .reference-terminal {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+  .reference-terminal .apple-terminal-grid {
+    flex: 1 1 0% !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+  .reference-terminal .apple-terminal-blotter {
+    height: clamp(92px, 16dvh, 112px) !important;
+    min-height: 92px;
+  }
+  .reference-terminal .apple-terminal-blotter-tabs { min-height: 38px; }
+  .reference-terminal .apple-terminal-blotter > div:last-child { min-height: 0; }
+
   .reference-terminal .terminal-toolbar > div:first-child { min-width: 0; }
   .reference-terminal .terminal-toolbar .terminal-toolbar-action { display: none; }
   .reference-terminal .terminal-toolbar .terminal-icon-button { width: 32px; height: 32px; }
@@ -3007,12 +3032,30 @@ button, a, [role="button"] {
   .reference-terminal .apple-terminal-grid { grid-template-columns: minmax(210px, 24%) minmax(0, 1fr) minmax(250px, 29%); }
 }
 @media (max-width: 767px) {
-  .reference-terminal .apple-terminal-grid { display: flex; gap: 0; background: #05090f !important; }
+  .reference-terminal .apple-terminal-grid {
+    display: flex;
+    flex: 1 1 0% !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    gap: 0;
+    overflow: hidden;
+    background: #05090f !important;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    flex: 1 1 0% !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
   .reference-terminal:not(.is-chart-expanded) .apple-terminal-market.flex { display: flex !important; }
   .reference-terminal:not(.is-chart-expanded) .apple-terminal-market:not(.flex) { display: none !important; }
   .reference-terminal .reference-watchlist { min-height: 78px; padding: 10px; }
   .reference-terminal .reference-watch-card { min-width: 154px; height: 54px; }
-  .reference-terminal .apple-terminal-blotter { height: 172px !important; }
+  .reference-terminal .apple-terminal-blotter {
+    flex: 0 0 96px !important;
+    height: 96px !important;
+    min-height: 96px !important;
+  }
+  .reference-terminal .apple-terminal-blotter > div:last-child { overflow-y: auto; }
   .reference-terminal .reference-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
