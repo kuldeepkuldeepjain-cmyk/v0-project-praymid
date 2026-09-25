@@ -2972,3 +2972,132 @@ button, a, [role="button"] {
   .chart-live-trade-fab { top: auto; bottom: 12px; right: 12px; left: 12px; justify-content: center; }
   .chart-live-trade-fab-button { flex: 1; padding: 10px 8px; }
 }
+
+/* Institutional terminal polish: denser hierarchy, clear active states, and restrained motion. */
+.mt5-terminal.reference-terminal {
+  --terminal-ink: #e7eef7;
+  --terminal-muted: #7890a8;
+  --terminal-line: #1d3045;
+  --terminal-accent: #38bdf8;
+  --terminal-positive: #25d3a0;
+  --terminal-negative: #f36b72;
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  background: #07101b !important;
+  letter-spacing: .005em;
+}
+.mt5-terminal.reference-terminal .price-mono,
+.mt5-terminal.reference-terminal input,
+.mt5-terminal.reference-terminal select,
+.mt5-terminal.reference-terminal button .price-mono {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+.mt5-terminal.reference-terminal .apple-terminal-topbar {
+  min-height: 46px;
+  padding-inline: 14px !important;
+  background: #0a1523 !important;
+  border-bottom-color: #20364d !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18);
+}
+.mt5-terminal.reference-terminal .apple-terminal-summary {
+  min-height: 42px;
+  height: 42px;
+  background: #050b13 !important;
+  border-bottom-color: #20364d !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-summary > div {
+  padding-inline: 14px !important;
+  border-right-color: #142538 !important;
+}
+.mt5-terminal.reference-terminal .reference-watchlist {
+  padding: 12px 16px !important;
+  gap: 10px !important;
+  background: #081321 !important;
+  border-bottom: 1px solid #1d3045;
+}
+.mt5-terminal.reference-terminal .reference-watch-card {
+  min-width: 156px;
+  min-height: 58px;
+  border: 1px solid #1c3349;
+  border-radius: 7px;
+  background: #0d1a2a !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+  transition: transform .16s ease, border-color .16s ease, background .16s ease;
+}
+.mt5-terminal.reference-terminal .reference-watch-card:hover,
+.mt5-terminal.reference-terminal .reference-watch-card.is-selected {
+  transform: translateY(-1px);
+  border-color: rgba(56,189,248,.65);
+  background: #10253a !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.mt5-terminal.reference-terminal .apple-terminal-grid {
+  background: #07101b !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market,
+.mt5-terminal.reference-terminal .apple-terminal-order {
+  background: #0a1624 !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-chart-column {
+  background: #07101b !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-chart-column > div {
+  background: #0a1624 !important;
+  border-color: #1d3045 !important;
+}
+.mt5-terminal.reference-terminal .apple-trading-chart > div {
+  background: #07111e !important;
+  border-color: #1d3045 !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-order > div:first-child,
+.mt5-terminal.reference-terminal .apple-market-table-head,
+.mt5-terminal.reference-terminal .apple-market-category-row,
+.mt5-terminal.reference-terminal .apple-market-footer,
+.mt5-terminal.reference-terminal .apple-order-type-tabs {
+  background: #0d1b2b !important;
+  border-color: #20364d !important;
+}
+.mt5-terminal.reference-terminal .mw-row {
+  min-height: 58px !important;
+}
+.mt5-terminal.reference-terminal .mw-row:hover,
+.mt5-terminal.reference-terminal .mw-row:focus-visible {
+  background: #10283e !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-blotter {
+  background: #091522 !important;
+  border-top-color: #20364d !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-blotter-tabs {
+  background: #0d1b2b !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-blotter table tbody tr {
+  transition: background .12s ease;
+}
+.mt5-terminal.reference-terminal .apple-terminal-blotter table tbody tr:hover {
+  background: rgba(56,189,248,.06) !important;
+}
+.mt5-terminal.reference-terminal .live-dot {
+  animation: terminal-live-pulse 1.8s ease-in-out infinite;
+}
+.mt5-terminal.reference-terminal button:focus-visible,
+.mt5-terminal.reference-terminal input:focus-visible,
+.mt5-terminal.reference-terminal select:focus-visible {
+  outline: 2px solid rgba(56,189,248,.72);
+  outline-offset: 2px;
+}
+@keyframes terminal-live-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(37,211,160,.35); }
+  50% { opacity: .7; box-shadow: 0 0 0 5px rgba(37,211,160,0); }
+}
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .apple-terminal-topbar { min-height: 44px; padding-inline: 10px !important; }
+  .mt5-terminal.reference-terminal .reference-watchlist { padding: 10px !important; }
+  .mt5-terminal.reference-terminal .reference-watch-card { min-width: 146px; }
+  .mt5-terminal.reference-terminal .apple-terminal-summary { min-height: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mt5-terminal.reference-terminal .live-dot,
+  .mt5-terminal.reference-terminal .reference-watch-card { animation: none; transition: none; }
+}
