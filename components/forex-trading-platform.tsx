@@ -1216,7 +1216,6 @@ function PositionSizer({
   const [marketError, setMarketError] = useState<string | null>(null)
   const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [rateFeed, setRateFeed] = useState<{ source: string; provider: string; refreshIntervalSeconds: number } | null>(null)
   const [toasts, setToasts]           = useState<ToastItem[]>([])
   const [totalPnl, setTotalPnl]       = useState(0)
   const [tickCount, setTickCount]     = useState(0)
@@ -1480,8 +1479,6 @@ function PositionSizer({
       const json = await res.json()
       if (json.error) throw new Error(json.error)
   const rateMap = json.rates as Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
-  setRateFeed({ source: json.source ?? "live", provider: json.provider ?? "Live market feed", refreshIntervalSeconds: Number(json.refreshIntervalSeconds) || 3 })
-  
   setPairs(prev => {
         const updated = prev.map(p => {
           const r = rateMap[p.symbol]
@@ -2188,9 +2185,6 @@ adjustWalletBalance(
     ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
     : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
-  const quoteRefreshSeconds = rateFeed?.refreshIntervalSeconds ?? 3
-  const isSelectedGold = selectedPair?.symbol === "XAU/USD"
-  const quoteSourceLabel = isSelectedGold ? "XAU spot" : "Live market feed"
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
   const entryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
   const slVal = sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null
@@ -2346,10 +2340,6 @@ adjustWalletBalance(
           <button type="button" onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="shrink-0 font-bold uppercase tracking-wider underline underline-offset-2">Retry</button>
         </div>
       )}
-      <div className="flex items-center justify-between gap-2 border-b border-slate-800/70 bg-slate-950/70 px-3 py-1 text-[9px] text-slate-400">
-        <span className="flex items-center gap-1.5"><span className={`size-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-400"}`} />{quoteSourceLabel} live rate</span>
-        <span className="truncate text-right">Live quotes · refresh {quoteRefreshSeconds}s{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ""}</span>
-      </div>
 
       {/* ── Modify Modal ── */}
       {modifyTarget && (
