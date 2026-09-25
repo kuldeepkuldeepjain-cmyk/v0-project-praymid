@@ -2274,15 +2274,6 @@ adjustWalletBalance(
   const dailyPnl = dailyClosedPnl + Math.min(0, totalPnl)
   const dailyDrawdownPct = walletBalance > 0 ? Math.max(0, (-dailyPnl / walletBalance) * 100) : 0
   const currentLots = parseFloat(lotSize) || 0
-  const selectedAtr = selectedPair ? calcATR(selectedPair.candles) : 0
-  const selectedAtrPips = selectedPair ? selectedAtr / pip(selectedPair.symbol) : 0
-  const selectedRangePct = selectedPair && selectedPair.low > 0
-    ? ((selectedPair.high - selectedPair.low) / selectedPair.low) * 100
-    : 0
-  const activeSessions = SESSIONS.filter(session => isSessionOpen(session, new Date().getUTCHours()))
-  const selectedPairExposure = selectedPair
-    ? openTrades.filter(trade => trade.pair === selectedPair.symbol).reduce((sum, trade) => sum + trade.lotSize, 0)
-    : 0
   const selectedRiskPct = selectedPair && sl && walletBalance > 0
     ? (Math.abs(selectedPair.ask - parseFloat(sl)) / pip(selectedPair.symbol) * pipValue(selectedPair.symbol, currentLots, selectedPair.ask) / walletBalance) * 100
     : 0
@@ -2581,48 +2572,6 @@ adjustWalletBalance(
           {isDarkTheme ? <Sun /> : <Moon />}
         </button>
       </div>
-
-      {/* ══ MARKET INTELLIGENCE RAIL ═══════════════════════════════════════════ */}
-      <section className="terminal-intelligence-rail shrink-0" aria-label="Market intelligence">
-        <div className="terminal-intelligence-context">
-          <div className="terminal-intelligence-kicker"><Activity className="h-3 w-3" /> Market pulse</div>
-          {selectedPair ? (
-            <div className="terminal-intelligence-title">
-              <strong>{selectedPair.symbol}</strong>
-              <span className={isUp ? "terminal-positive" : "terminal-negative"}>{isUp ? "Bullish" : "Bearish"}</span>
-              <span className="terminal-intelligence-muted">{FULL_NAMES[selectedPair.symbol] ?? "Live instrument"}</span>
-            </div>
-          ) : <div className="terminal-intelligence-title"><strong>Select an instrument</strong></div>}
-        </div>
-        <div className="terminal-intelligence-stat">
-          <span>ATR(14)</span>
-          <strong>{selectedPair ? `${selectedAtrPips.toFixed(1)} pips` : "—"}</strong>
-          <small>volatility</small>
-        </div>
-        <div className="terminal-intelligence-stat">
-          <span>DAY RANGE</span>
-          <strong>{selectedPair ? `${selectedRangePct.toFixed(2)}%` : "—"}</strong>
-          <small>{selectedPair ? `${fmt(selectedPair.low, selectedPair.symbol)} — ${fmt(selectedPair.high, selectedPair.symbol)}` : "waiting for quote"}</small>
-        </div>
-        <div className="terminal-intelligence-stat">
-          <span>EXPOSURE</span>
-          <strong>{selectedPair ? `${selectedPairExposure.toFixed(2)} lots` : "—"}</strong>
-          <small>{openTrades.length} open {openTrades.length === 1 ? "position" : "positions"}</small>
-        </div>
-        <div className={`terminal-intelligence-guard ${riskWarning ? "is-warning" : "is-ready"}`}>
-          <ShieldAlert className="h-3.5 w-3.5" />
-          <div><span>RISK GUARD</span><strong>{riskWarning ? "Review ticket" : "Protected setup"}</strong></div>
-        </div>
-        <div className="terminal-intelligence-sessions" title="Currently open trading sessions">
-          <Clock className="h-3 w-3" />
-          <span>{activeSessions.length ? activeSessions.map(session => session.name).join(" · ") : "Market closed"}</span>
-        </div>
-        <div className="terminal-intelligence-actions">
-          <button type="button" onClick={() => setActivePanel("dom")} aria-label="Open depth of market"><Layers className="h-3 w-3" /> DOM</button>
-          <button type="button" onClick={() => setActivePanel("risk")} aria-label="Open risk analytics"><Gauge className="h-3 w-3" /> RISK</button>
-          <button type="button" onClick={() => setRightPanelTab("sizer")} aria-label="Open position sizer"><Target className="h-3 w-3" /> SIZER</button>
-        </div>
-      </section>
 
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
