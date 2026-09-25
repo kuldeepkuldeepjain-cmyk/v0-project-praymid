@@ -43,12 +43,12 @@ export async function POST(request: NextRequest) {
     const requestedFundingMode = String(fundingMode || "actual").toLowerCase()
 
     if (requestedFundingMode === "funded") {
-      const fundedTierRequests = await query(
-        "SELECT id FROM topup_requests WHERE participant_id = $1 AND payment_method = 'funded_tier' LIMIT 1",
+      const priorFundingRequests = await query(
+        "SELECT id FROM topup_requests WHERE participant_id = $1 LIMIT 1",
         [participant.id]
       ) as any[]
-      if (fundedTierRequests.length > 0) {
-        return NextResponse.json({ success: false, message: "Funded-tier funding is available only for the first funded deposit." }, { status: 409 })
+      if (priorFundingRequests.length > 0) {
+        return NextResponse.json({ success: false, message: "Funded-tier funding is available only for the first funding request. Please use Normal Add Fund." }, { status: 409 })
       }
     }
 
