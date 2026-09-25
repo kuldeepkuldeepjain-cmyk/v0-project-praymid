@@ -3380,22 +3380,47 @@ button, a, [role="button"] {
   padding-inline: 13px;
   border-radius: 5px 5px 0 0;
 }
-.reference-terminal .reference-metrics {
+.reference-terminal .reference-metrics-header {
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  padding: 8px 16px;
-  background: #060b12;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #07101a;
 }
 .reference-terminal .reference-metric-card {
-  min-height: 58px;
-  padding: 10px 13px;
-  border-radius: 8px;
+  min-height: 44px;
+  padding: 6px 9px;
+  border-radius: 5px;
   border-color: #1b2b3d;
   background: #0b131e;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
-.reference-terminal .reference-metric-card span { color: #7f91a6; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
-.reference-terminal .reference-metric-card strong { font-size: 17px; }
+.reference-terminal .reference-metric-card span {
+  color: #7f91a6;
+  font-size: 8px;
+  letter-spacing: .08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.reference-terminal .reference-metric-card strong {
+  font-size: 13px;
+  line-height: 1.15;
+}
+.reference-terminal .reference-metric-card .reference-margin-bar {
+  height: 4px;
+  margin-top: 1px;
+}
+@media (max-width: 767px) {
+  .reference-terminal .reference-metrics-header {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px 8px;
+  }
+  .reference-terminal .reference-metric-card {
+    min-height: 42px;
+    padding: 6px 7px;
+  }
+  .reference-terminal .reference-metric-card strong { font-size: 11px; }
+}
 .reference-terminal .reference-statusbar { height: 34px; padding-inline: 18px; background: #060b12; }
 @media (max-width: 1100px) and (min-width: 768px) {
   .reference-terminal .apple-terminal-grid { grid-template-columns: minmax(210px, 24%) minmax(0, 1fr) minmax(250px, 29%); }
