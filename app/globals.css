@@ -1987,7 +1987,7 @@ button, a, [role="button"] {
 }
 .mt5-terminal .reference-fund-rail-label { color: #91a7ba; font-size: 9px; letter-spacing: .16em; }
 .mt5-terminal .reference-fund-action { min-height: 29px; border-radius: 3px; box-shadow: none; font-size: 9px; letter-spacing: .08em; }
-.mt5-terminal .reference-fund-action-primary { background: #a67d24; border-color: #c9a340; color: #fff6d6; }
+.mt5-terminal .reference-fund-action-primary { background: #263b4e; border-color: #49647d; color: #cad8e5; }
 .mt5-terminal .reference-fund-action-payout { background: #263b4e; border-color: #49647d; color: #cad8e5; }
 .mt5-terminal .reference-fund-action-prediction { background: #263b4e; border-color: #49647d; color: #8ec9ee; }
 
@@ -2146,7 +2146,7 @@ button, a, [role="button"] {
 }
 .reference-fund-action:hover,
 .reference-fund-action:focus-visible { border-color: #60d9f5; background: #12324a; outline: none; transform: translateY(-1px); }
-.reference-fund-action-primary { border-color: #176a75; color: #7ff5d4; background: #0b292d; }
+.reference-fund-action-primary { border-color: #594a2b; color: #f5d37b; background: #251d11; }
 .reference-fund-action-payout { border-color: #594a2b; color: #f5d37b; background: #251d11; }
 .reference-fund-action-prediction { border-color: #245e57; color: #8ff5c9; background: #102d2b; }
 .reference-terminal .reference-watchlist { min-width: 0; }
