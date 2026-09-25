@@ -3938,19 +3938,47 @@ button, a, [role="button"] {
   .mt5-terminal.reference-terminal .chart-header {
     gap: 4px;
     padding-inline: 8px;
+    overflow: visible;
   }
   .mt5-terminal.reference-terminal .chart-timeframe-toolbar {
-    padding-inline: 3px;
+    display: flex !important;
+    width: 100%;
+    min-width: 0;
+    padding: 3px;
+    overflow: visible;
   }
   .mt5-terminal.reference-terminal .chart-timeframe-label {
-    font-size: 7px;
-    letter-spacing: .08em;
+    display: none;
   }
-  .mt5-terminal.reference-terminal .chart-timeframes { gap: 0 !important; }
-  .mt5-terminal.reference-terminal .chart-timeframes button {
-    min-width: 31px;
-    padding-inline: 4px;
+  .mt5-terminal.reference-terminal .chart-timeframes {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    width: 100%;
+    gap: 3px !important;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes button,
+  .mt5-terminal.reference-terminal .chart-timeframes button:first-child {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    padding: 0;
+    color: #b7cbd8 !important;
+    background: #102638 !important;
+    border: 1px solid #35566d !important;
     font-size: 8px;
+    visibility: visible;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes button:first-child {
+    background: #142b3e !important;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes button:hover,
+  .mt5-terminal.reference-terminal .chart-timeframes button[style*="22d3ee"] {
+    color: #22d3ee !important;
+    background: #173e53 !important;
+    border-color: #22d3ee !important;
   }
 }
 
