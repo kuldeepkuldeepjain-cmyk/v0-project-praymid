@@ -1117,6 +1117,7 @@ function PositionSizer({
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
   const pairSearchRef = useRef<HTMLInputElement>(null)
+  const headerPairSearchRef = useRef<HTMLInputElement>(null)
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
@@ -2152,8 +2153,88 @@ adjustWalletBalance(
         </div>
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
 
+        {/* Header instrument finder */}
+        <div className="relative z-30 w-[170px] shrink-0 sm:w-[220px]">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cyan-400/70" />
+          <input
+            ref={headerPairSearchRef}
+            type="search"
+            value={pairSearch}
+            onFocus={() => setShowPairSearch(true)}
+            onChange={e => { setShowPairSearch(true); setPairSearch(e.target.value) }}
+            onKeyDown={e => {
+              if (e.key === "Escape") {
+                setPairSearch("")
+                setShowPairSearch(false)
+                e.currentTarget.blur()
+              }
+              if (e.key === "Enter" && filteredPairs[0]) {
+                const pair = filteredPairs[0]
+                setSelectedPair(pair)
+                fetchCandles(pair.symbol, timeframe)
+                setPairSearch(pair.symbol)
+                setShowPairSearch(false)
+                setMobileTab("chart")
+              }
+            }}
+            placeholder="Search instrument..."
+            aria-label="Search instrument in terminal header"
+            className="h-7 w-full rounded border pl-7 pr-7 price-mono text-[10px] text-white placeholder:text-slate-500 focus:outline-none"
+            style={{ background: "#0d1826", borderColor: showPairSearch || pairSearch ? "#22d3ee" : "#344b62" }}
+          />
+          {pairSearch && (
+            <button
+              type="button"
+              onClick={() => { setPairSearch(""); headerPairSearchRef.current?.focus() }}
+              aria-label="Clear header instrument search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+          {showPairSearch && (
+            <div className="absolute left-0 top-8 w-[280px] overflow-hidden rounded-md border shadow-2xl" style={{ background: "#0b111d", borderColor: "#1e2d45" }}>
+              <div className="flex items-center justify-between border-b px-2.5 py-1.5" style={{ borderColor: "#1a2640" }}>
+                <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-500">Instrument search</span>
+                <span className="price-mono text-[8px] text-cyan-400">{filteredPairs.length} found</span>
+              </div>
+              <div className="max-h-64 overflow-y-auto terminal-scroll">
+                {filteredPairs.slice(0, 8).map(pair => {
+                  const cfg = PAIRS_CONFIG.find(item => item.symbol === pair.symbol)
+                  const category = cfg?.category ?? "Forex"
+                  return (
+                    <button
+                      key={pair.symbol}
+                      type="button"
+                      onMouseDown={event => event.preventDefault()}
+                      onClick={() => {
+                        setSelectedPair(pair)
+                        fetchCandles(pair.symbol, timeframe)
+                        setPairSearch(pair.symbol)
+                        setShowPairSearch(false)
+                        setMobileTab("chart")
+                      }}
+                      className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-white/5"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[8px] font-black" style={{ background: CATEGORY_COLOR[category].bg, color: CATEGORY_COLOR[category].text }}>
+                        {ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="price-mono text-[10px] font-black text-white">{pair.symbol}</span>
+                        <span className="truncate text-[8px] text-slate-500">{FULL_NAMES[pair.symbol] ?? pair.symbol}</span>
+                      </span>
+                      <span className="price-mono text-[9px] font-bold" style={{ color: pair.change >= 0 ? "#10b981" : "#ef4444" }}>{pair.change >= 0 ? "+" : ""}{pair.change.toFixed(2)}%</span>
+                    </button>
+                  )
+                })}
+                {filteredPairs.length === 0 && <div className="px-3 py-5 text-center text-[9px] text-slate-500">No matching instruments</div>}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Ticker tape */}
-        <div className="flex-1 overflow-hidden relative" style={{ mask: "linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)" }}>
+        <div className="hidden min-w-0 flex-1 overflow-hidden relative sm:block" style={{ mask: "linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)" }}>
           <div className="ticker-scroll flex gap-6 items-center">
             {[...pairs, ...pairs].map((p, i) => {
               const up = p.change >= 0
