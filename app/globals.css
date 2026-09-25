@@ -3436,18 +3436,25 @@ button, a, [role="button"] {
     min-height: 0 !important;
     overflow: visible !important;
   }
-  .mt5-terminal.reference-terminal .apple-terminal-chart-column {
+  .reference-terminal.compact-terminal .apple-terminal-chart-column {
     display: flex !important;
-    flex: 0 0 240px !important;
+    flex: 0 0 380px !important;
     width: 100% !important;
-    height: 240px !important;
-    min-height: 240px !important;
+    height: 380px !important;
+    min-height: 380px !important;
     order: 1 !important;
     overflow: hidden !important;
   }
-  .mt5-terminal.reference-terminal .apple-terminal-chart-column > div:nth-child(2) {
+  .reference-terminal.compact-terminal .apple-terminal-chart-column > div:first-child {
     display: flex !important;
     flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  .reference-terminal.compact-terminal .apple-terminal-chart-column > .reference-chart-trade-dock {
+    display: block !important;
+    flex: 0 0 auto !important;
     height: auto !important;
     min-height: 0 !important;
   }
