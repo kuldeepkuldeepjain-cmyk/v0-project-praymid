@@ -227,16 +227,6 @@ export function ForexHeader({
           {notificationsOpen && <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: "#1b2b40" }}><span className="text-[11px] font-bold text-white">Notifications</span><button type="button" onClick={onClearNotifications} className="text-[9px] uppercase text-cyan-300">Clear</button></div>{notifications.length === 0 ? <p className="px-3 py-6 text-center text-[11px] text-slate-500">No notifications</p> : notifications.map((item) => <button key={item.id} type="button" onClick={() => onMarkNotificationRead(item.id)} className="block w-full border-b px-3 py-2 text-left hover:bg-white/5" style={{ borderColor: "#1b2b40" }}><span className="block text-[11px] font-semibold text-white">{item.title}</span><span className="block text-[10px] text-slate-400">{item.message}</span></button>)}</div>}
         </div>
 
-        <button
-          type="button"
-          onClick={onLogout}
-          className="hidden items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-500/10 px-2.5 py-2 text-[10px] font-bold text-red-300 transition hover:border-red-300/60 hover:bg-red-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300/70 sm:flex"
-          aria-label="Sign out of trading terminal"
-          title="Sign out"
-        >
-          <LogOut className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Sign out</span>
-        </button>
 
         <div className="relative">
           <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
