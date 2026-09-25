@@ -412,7 +412,7 @@ export default function PayoutPage() {
   }
 
   return (
-  <div className="min-h-screen min-h-dvh bg-white relative overflow-hidden">
+  <div className="payout-page min-h-screen min-h-dvh relative overflow-hidden">
   {isFrozenFundedAccount && (
   <div className="mx-auto max-w-5xl px-4 pt-4">
   <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
@@ -436,8 +436,8 @@ export default function PayoutPage() {
       </div>
 
       <header
-        className="bg-white sticky top-0 z-40 border-b border-slate-100"
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+        className="payout-header sticky top-0 z-40 border-b"
+        style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}
       >
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -455,18 +455,18 @@ export default function PayoutPage() {
         </div>
       </header>
 
-      <main className="px-4 lg:px-8 py-6 lg:py-8 space-y-5 relative z-10 pb-24 max-w-3xl lg:mx-auto">
+      <main className="payout-main px-4 lg:px-8 py-6 lg:py-8 space-y-5 relative z-10 pb-24 max-w-4xl lg:mx-auto">
         {/* Queue Position */}
         <div 
-          className="rounded-xl p-3 backdrop-blur-md flex items-center justify-between"
+          className="payout-queue rounded-xl p-3 backdrop-blur-md flex items-center justify-between"
           style={{
             background: "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(34, 211, 238, 0.08) 100%)",
             border: "1px solid rgba(124, 58, 237, 0.15)",
           }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-base">🎯</span>
-            <span className="text-sm font-medium text-slate-700">Your payout number is</span>
+            <ShieldAlert className="h-4 w-4 text-cyan-300" />
+            <span className="text-sm font-medium text-slate-700">Payout queue reference</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm">
             <span 
@@ -485,8 +485,8 @@ export default function PayoutPage() {
 
 
         {/* Payout Request Card */}
-        <Card className="border border-slate-100 shadow-lg rounded-2xl overflow-hidden">
-          <CardContent className="p-6">
+        <Card className="payout-request-card border shadow-lg rounded-2xl overflow-hidden">
+          <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
               <Wallet className="h-5 w-5 text-[#10b981]" />
               <p className="text-sm text-slate-500 font-medium">Available Balance</p>
@@ -619,10 +619,10 @@ export default function PayoutPage() {
         </Card>
 
         {/* Payout History */}
-        <Card className="border border-slate-100 shadow-lg rounded-2xl">
+        <Card className="payout-history-card border shadow-lg rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-lg">📜</span>
+              <Clock className="h-4 w-4 text-cyan-300" />
               <h3 className="font-semibold text-slate-900">Payout History</h3>
             </div>
 
