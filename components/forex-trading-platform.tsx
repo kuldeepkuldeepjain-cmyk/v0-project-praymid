@@ -24,6 +24,7 @@ import {
   TradeJournalPanel, CommandPalette, useTradingHotkeys,
   MiniChartGrid, ConnectionStatus,
 } from "@/components/forex-institutional"
+import { ForexHeader } from "@/components/forex-header"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1129,6 +1130,7 @@ function PositionSizer({
   const [themeReady, setThemeReady] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
+  const [soundEnabled, setSoundEnabled] = useState(true)
 
   const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
@@ -2187,231 +2189,48 @@ adjustWalletBalance(
         />
       )}
 
-      {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-2 h-10 gap-2" style={{ background: "#172536", borderBottom: "1px solid #344b62" }}>
-        <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund MT5 Trading Terminal">
-          <img
-            src="/elite-fund-logo.jpg"
-            alt="Elite Fund"
-            className="reference-terminal-brand-mark h-6 w-6 shrink-0 object-cover"
-          />
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-black tracking-[0.12em] text-white">ELITE FUND</span>
-            <span className="text-[8px] font-bold tracking-[0.14em]" style={{ color: "#65b5f3" }}>MT5 TRADING TERMINAL</span>
-          </div>
-        </div>
-        <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
-
-        {/* Header instrument finder */}
-        <div className="relative z-30 w-[170px] shrink-0 sm:w-[220px]">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cyan-400/70" />
-          <input
-            ref={headerPairSearchRef}
-            type="search"
-            value={pairSearch}
-            onFocus={() => setShowPairSearch(true)}
-            onChange={e => { setShowPairSearch(true); setPairSearch(e.target.value) }}
-            onKeyDown={e => {
-              if (e.key === "Escape") {
-                setPairSearch("")
-                setShowPairSearch(false)
-                e.currentTarget.blur()
-              }
-              if (e.key === "Enter" && filteredPairs[0]) {
-                const pair = filteredPairs[0]
-                setSelectedPair(pair)
-                fetchCandles(pair.symbol, timeframe)
-                setPairSearch(pair.symbol)
-                setShowPairSearch(false)
-                setMobileTab("chart")
-              }
-            }}
-            placeholder="Search instrument..."
-            aria-label="Search instrument in terminal header"
-            className="h-7 w-full rounded border pl-7 pr-7 price-mono text-[10px] text-white placeholder:text-slate-500 focus:outline-none"
-            style={{ background: "#0d1826", borderColor: showPairSearch || pairSearch ? "#22d3ee" : "#344b62" }}
-          />
-          {pairSearch && (
-            <button
-              type="button"
-              onClick={() => { setPairSearch(""); headerPairSearchRef.current?.focus() }}
-              aria-label="Clear header instrument search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-          {showPairSearch && (
-            <div className="absolute left-0 top-8 w-[280px] overflow-hidden rounded-md border shadow-2xl" style={{ background: "#0b111d", borderColor: "#1e2d45" }}>
-              <div className="flex items-center justify-between border-b px-2.5 py-1.5" style={{ borderColor: "#1a2640" }}>
-                <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-500">Instrument search</span>
-                <span className="price-mono text-[8px] text-cyan-400">{filteredPairs.length} found</span>
-              </div>
-              <div className="max-h-64 overflow-y-auto terminal-scroll">
-                {filteredPairs.slice(0, 8).map(pair => {
-                  const cfg = PAIRS_CONFIG.find(item => item.symbol === pair.symbol)
-                  const category = cfg?.category ?? "Forex"
-                  return (
-                    <button
-                      key={pair.symbol}
-                      type="button"
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => {
-                        setSelectedPair(pair)
-                        fetchCandles(pair.symbol, timeframe)
-                        setPairSearch(pair.symbol)
-                        setShowPairSearch(false)
-                        setMobileTab("chart")
-                      }}
-                      className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-white/5"
-                    >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[8px] font-black" style={{ background: CATEGORY_COLOR[category].bg, color: CATEGORY_COLOR[category].text }}>
-                        {ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}
-                      </span>
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="price-mono text-[10px] font-black text-white">{pair.symbol}</span>
-                        <span className="truncate text-[8px] text-slate-500">{FULL_NAMES[pair.symbol] ?? pair.symbol}</span>
-                      </span>
-                      <span className="price-mono text-[9px] font-bold" style={{ color: pair.change >= 0 ? "#10b981" : "#ef4444" }}>{pair.change >= 0 ? "+" : ""}{pair.change.toFixed(2)}%</span>
-                    </button>
-                  )
-                })}
-                {filteredPairs.length === 0 && <div className="px-3 py-5 text-center text-[9px] text-slate-500">No matching instruments</div>}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Ticker tape */}
-        <div className="hidden min-w-0 flex-1 overflow-hidden relative sm:block" style={{ mask: "linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)" }}>
-          <div className="ticker-scroll flex gap-6 items-center">
-            {[...pairs, ...pairs].map((p, i) => {
-              const up = p.change >= 0
-              return (
-                <button key={i} onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
-                  className="flex items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity">
-                  <span className="text-[10px] font-bold text-slate-400">{p.symbol}</span>
-                  <span className="price-mono text-[10px] font-bold" style={{ color: up ? "#10b981" : "#ef4444" }}>{fmt(p.bid, p.symbol)}</span>
-                  <span className="text-[9px] font-bold" style={{ color: up ? "#10b981" : "#ef4444" }}>{up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
-
-        {/* Feed telemetry */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0 px-2 py-1 rounded" style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.10)" }}>
-          <span className="text-[8px] font-black tracking-[0.14em] uppercase" style={{ color: "#3d5a80" }}>TICKS</span>
-          <span className="price-mono text-[10px] font-black text-cyan-400">{tickCount.toLocaleString()}</span>
-          <span className="text-[8px]" style={{ color: "#2d4565" }}>·</span>
-          <span className="text-[8px] font-black tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>3S FEED</span>
-        </div>
-
-        {/* Live status — institutional connection panel with latency + server time */}
-        <ConnectionStatus online={online} lastUpdated={lastUpdated} />
-
-        {/* Command palette trigger */}
-        <button
-          type="button"
-          onClick={() => setCommandPaletteOpen(true)}
-          aria-label="Open command palette"
-          title="Open command palette (Ctrl+K)"
-          className="hidden md:flex items-center gap-1.5 px-2 py-1.5 transition-colors shrink-0"
-          style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.20)", borderRadius: 4 }}
-        >
-          <Command className="h-3 w-3 text-purple-300" />
-          <span className="text-[9px] font-black tracking-wider text-purple-200">CMD</span>
-          <kbd className="text-[8px] font-black px-1 py-0.5 rounded ml-0.5" style={{ background: "rgba(168,85,247,0.15)", color: "#c084fc" }}>⌘K</kbd>
-        </button>
-
-        {/* Balance chip with sparkline */}
-        <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
-          <Wallet className="h-3 w-3 text-emerald-400" />
-          <div className="flex flex-col">
-            <span className="text-[8px] font-bold tracking-wider text-emerald-300/70 leading-none">BALANCE</span>
-            <span className="price-mono text-[11px] font-black text-emerald-400 leading-none">
-              ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          {sparkPath && (
-            <svg width="80" height="24" viewBox="0 0 80 24" fill="none" className="shrink-0">
-              <path d={sparkPath} stroke={totalPnl >= 0 ? "#10b981" : "#ef4444"} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-          {balanceDelta && (
-            <span key={balanceDelta.id} className="absolute -top-5 left-1/2 price-mono text-[10px] font-black pointer-events-none animate-bounce"
-              style={{ transform: "translateX(-50%)", color: balanceDelta.value >= 0 ? "#10b981" : "#ef4444" }}>
-              {balanceDelta.value >= 0 ? "+" : ""}${Math.abs(balanceDelta.value).toFixed(2)}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => { window.location.href = "/participant/dashboard" }}
-            className="hidden sm:flex items-center gap-1 rounded-md border border-cyan-500/25 bg-cyan-500/10 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-200 transition-colors hover:bg-cyan-500/20"
-            title="Open account balance"
-          >
-            <Wallet className="h-3 w-3" />
-            <span>Balance</span>
-          </button>
-          {isFundedAccount && onAddFundedFunds && (
-            <button
-              type="button"
-              onClick={onAddFundedFunds}
-              className="flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-400/20 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/30"
-              title="Open funded-tier funding plans"
-            >
-              <ShieldAlert className="h-3 w-3" />
-              <span className="hidden lg:inline">Funded-tier Fund</span>
-              <span className="lg:hidden">Funded</span>
-            </button>
-          )}
-  <button
-  type="button"
-  onClick={onAddFunds}
-  className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-colors hover:brightness-110" style={{ background: "#f58220", border: "1px solid #ff9f4a" }}
-  title="Add normal funds"
-  >
-  <Plus className="h-3 w-3" />
-  <span className="hidden lg:inline">Normal Add Fund</span>
-  <span className="lg:hidden">Fund</span>
-  </button>
-          <button
-            type="button"
-            onClick={() => { window.location.href = "/participant/dashboard/payout" }}
-            className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-200 transition-colors hover:bg-emerald-500/25"
-            title="Request payout"
-          >
-            <ArrowUpDown className="h-3 w-3" />
-            <span className="hidden lg:inline">Payout</span>
-            <span className="lg:hidden">Pay</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsDarkTheme(theme => !theme)}
-            aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
-            aria-pressed={isDarkTheme}
-            title={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
-            className="flex items-center gap-1.5 px-2 py-1.5 transition-colors"
-            style={{ background: isDarkTheme ? "rgba(251,191,36,0.10)" : "rgba(0,113,227,0.08)", border: isDarkTheme ? "1px solid rgba(251,191,36,0.24)" : "1px solid rgba(0,113,227,0.16)", borderRadius: 5 }}>
-            {isDarkTheme ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-blue-500" />}
-            <span className="hidden text-[8px] font-black tracking-[0.14em] uppercase sm:inline" style={{ color: isDarkTheme ? "#b7791f" : "#0071e3" }}>
-              {isDarkTheme ? "Light" : "Dark"}
-            </span>
-          </button>
-          <button onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
-            aria-label="Refresh market data"
-            title="Refresh market data"
-            className="p-1.5 transition-colors"
-            style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: 4 }}>
-            <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-      </div>
+      {/* ══ PROFESSIONAL HEADER ═══════════════════════════════════════════════ */}
+      <ForexHeader
+        accountType={isFundedAccount ? "funded" : "live"}
+        accountId="LF-100247"
+        accountName="Trading Account"
+        walletBalance={walletBalance}
+        equity={equity}
+        totalPnl={totalPnl}
+        totalMargin={totalMargin}
+        freeMargin={freeMargin}
+        marginLevel={marginLevel}
+        openTradesCount={openTrades.length}
+        pendingOrdersCount={pendingOrders.length}
+        online={online}
+        lastUpdated={lastUpdated}
+        tickCount={tickCount}
+        isDarkTheme={isDarkTheme}
+        onToggleTheme={() => setIsDarkTheme(t => !t)}
+        onRefresh={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
+        candleLoading={candleLoading}
+        onAddFunds={onAddFunds}
+        onPayout={() => { window.location.href = "/participant/dashboard/payout" }}
+        onBalance={() => { window.location.href = "/participant/dashboard" }}
+        onFundedFunds={onAddFundedFunds}
+        isFundedAccount={isFundedAccount}
+        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+        notifications={[
+          { id: "n1", type: "order", title: "Order Filled", message: "BUY 0.10 EUR/USD at 1.0847 executed", time: "2 min ago", read: false },
+          { id: "n2", type: "price", title: "Price Alert", message: "GBP/USD crossed above 1.2650", time: "15 min ago", read: false },
+          { id: "n3", type: "news", title: "ECB Statement", message: "European Central Bank held rates steady", time: "1 hr ago", read: true },
+          { id: "n4", type: "system", title: "System Update", message: "New charting tools available", time: "3 hrs ago", read: true },
+        ]}
+        onMarkAllRead={() => {}}
+        priceAlerts={priceAlerts.map(a => ({ id: a.id, symbol: a.pair, condition: a.condition, price: a.price, active: !a.triggered }))}
+        onToggleAlert={(id) => {}}
+        chartLayout={chartLayout}
+        onToggleChartLayout={() => setChartLayout(v => v === "single" ? "grid" : "single")}
+        chartExpanded={chartExpanded}
+        onToggleChartExpand={() => setChartExpanded(e => !e)}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled(s => !s)}
+      />
 
       {/* MT5-style workspace toolbar */}
       <div className="flex h-7 shrink-0 items-center gap-0 border-b px-1" style={{ background: "#202f40", borderColor: "#344b62" }} aria-label="MT5 workspace toolbar">
@@ -2819,7 +2638,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────────────────────────────────────────────���─────── */}
+        {/* ── CENTER: Chart ────────────────────────────────────────────�����─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
