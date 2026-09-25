@@ -90,8 +90,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-cyan-400 focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-slate-950">Skip to content</a>
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800">
+      <nav aria-label="Primary navigation" className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-lg" />
@@ -130,14 +131,14 @@ export default function LandingPage() {
             >
               Login
             </button>
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-1">
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            <button aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={isMenuOpen} onClick={() => setIsMenuOpen(!isMenuOpen)} className="rounded-lg p-2 text-slate-300 hover:bg-slate-800 hover:text-white">
+              {isMenuOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
             </button>
           </div>
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden absolute top-14 left-0 right-0 bg-slate-900 border-b border-slate-800 p-4 space-y-2">
+          <div id="mobile-navigation" aria-label="Mobile navigation" className="absolute left-0 right-0 top-14 space-y-2 border-b border-slate-800 bg-slate-900 p-4 shadow-2xl shadow-slate-950/50 md:hidden">
             <a href="#platform" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Platform</a>
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#programs" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Programs</a>
@@ -147,7 +148,8 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section id="platform" className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden pt-10 sm:pt-16 lg:pt-24 pb-8 sm:pb-12">
+      <main id="main-content">
+      <section id="platform" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-8 pt-10 sm:pb-12 sm:pt-16 lg:pb-16 lg:pt-24">
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
@@ -196,10 +198,10 @@ export default function LandingPage() {
                 >
                   <span className="relative flex items-center justify-center gap-2">Start Trading <ArrowRight className="w-4 h-4" /></span>
                 </button>
-                <button className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 hover:text-white font-bold flex items-center justify-center gap-2 transition-all duration-300">
-                  <TrendingUp className="w-4 h-4" />
-                  View Platform
-                </button>
+                <a href="#features" className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-6 py-3 font-bold text-slate-200 transition-all duration-300 hover:bg-slate-700 hover:text-white sm:w-auto sm:px-8 sm:py-4">
+                  <TrendingUp className="h-4 w-4" aria-hidden="true" />
+                  Explore platform
+                </a>
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-800 pt-5 text-xs text-slate-400">
@@ -314,8 +316,8 @@ export default function LandingPage() {
                   <p className="text-xs uppercase tracking-wider text-slate-500">Trading balance</p>
                   <p className="mt-1 text-2xl font-extrabold text-cyan-300">{plan.balance}</p>
                   <p className="mt-4 text-xs leading-5 text-slate-500">Rules, drawdown limits, and eligibility apply. Review terms before registration.</p>
-                  <Link href="/participant/register" className="mt-5 block">
-                    <Button variant={plan.featured ? "default" : "outline"} className="w-full">Review program <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                  <Link href="/participant/register" className={`mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition-colors ${plan.featured ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-input bg-background hover:bg-accent hover:text-accent-foreground"}`}>
+                    Review program <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </div>
               )
@@ -410,6 +412,8 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      </main>
 
       {/* Footer */}
       <footer className="border-t border-slate-800 bg-slate-950" aria-label="Footer">
