@@ -1,6 +1,7 @@
 import { getIronSession, IronSession } from "iron-session"
 import { cookies } from "next/headers"
 import { NextRequest, NextResponse } from "next/server"
+import { execute } from "@/lib/db"
 
 // ── Session data shapes ────────────────────────────────────────────────────
 
@@ -8,6 +9,7 @@ export interface ParticipantSessionData {
   participantId: string
   email: string
   role: "participant"
+  sessionId?: string
 }
 
 export interface AdminSessionData {
@@ -61,6 +63,7 @@ export async function setParticipantSession(data: ParticipantSessionData): Promi
   session.participantId = data.participantId
   session.email = data.email
   session.role = "participant"
+  if (data.sessionId) session.sessionId = data.sessionId
   session.isLoggedIn = true
   await session.save()
 }
@@ -68,6 +71,7 @@ export async function setParticipantSession(data: ParticipantSessionData): Promi
 export async function clearParticipantSession(): Promise<void> {
   try {
     const session = await getParticipantSession()
+    if (session.email) await execute("UPDATE participant_sessions SET is_active = false, last_activity = NOW() WHERE LOWER(participant_email) = LOWER($1)", [session.email]).catch(() => {})
     await session.destroy()
   } catch {
     // A stale or malformed cookie should not block logout.

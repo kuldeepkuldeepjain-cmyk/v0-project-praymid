@@ -52,6 +52,7 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
   import { SuspiciousActivityPanel } from "@/components/admin/suspicious-activity-panel"
   import { TraderBehaviourPanel } from "@/components/admin/trader-behaviour-panel"
   import { ParticipantManagementPanel } from "@/components/admin/participant-management-panel"
+  import { SecurityOperationsPanel } from "@/components/admin/security-operations-panel"
   import Loading from "./loading"
 import { ErrorBoundary } from "@/components/error-boundary"
 
@@ -126,6 +127,7 @@ export default function AdminDashboard() {
     { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
     { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
     { id: "suspicious-activity", label: "Suspicious Activity / Fraud", icon: Shield, section: "MANAGEMENT" },
+    { id: "security-operations", label: "Security Operations", icon: ShieldCheck, section: "MANAGEMENT" },
     { id: "trader-behaviour", label: "Trader Behaviour Analytics", icon: Activity, section: "MANAGEMENT" },
     { id: "participant-management", label: "Participant Management", icon: UserCog, section: "MANAGEMENT" },
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
@@ -172,6 +174,8 @@ export default function AdminDashboard() {
         return <OtpApprovalsPanel />
       case "suspicious-activity":
         return <SuspiciousActivityPanel />
+      case "security-operations":
+        return <SecurityOperationsPanel />
       case "trader-behaviour":
         return <TraderBehaviourPanel />
       case "participant-management":

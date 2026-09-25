@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-import { enforceRateLimit, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
+import { enforceRateLimit, getActiveRestriction, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
 
 /**
  * GET /api/forex/trades?email=...
@@ -60,6 +60,11 @@ export async function POST(req: NextRequest) {
   if (!rate.allowed) {
     await recordSecurityEvent({ eventType: "trade_rate_limited", actorType: "participant", actorEmail: auth.email, request: req, riskScore: 70 })
     return NextResponse.json({ success: false, error: "Trading request limit reached. Try again shortly." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+  }
+  const restriction = await getActiveRestriction(auth.email, "trading")
+  if (restriction) {
+    await recordSecurityEvent({ eventType: "trade_blocked_restriction", actorType: "participant", actorEmail: auth.email, request: req, riskScore: 100, metadata: { restrictionType: restriction.restrictionType } })
+    return NextResponse.json({ success: false, error: "Trading is temporarily restricted while your account is under security review." }, { status: 403 })
   }
 
   try {

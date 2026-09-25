@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getPool, query } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
+import { getActiveRestriction, getSecurityContext, recordSecurityEvent } from "@/lib/security"
 
 const SUPPORTED_METHODS = ["BEP20", "TRC20", "ERC20", "DIRECT"] as const
 
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const email = auth.email.toLowerCase().trim()
+    const restriction = await getActiveRestriction(email, "withdrawal")
+    if (restriction) {
+      await recordSecurityEvent({ eventType: "withdrawal_blocked_restriction", actorType: "participant", actorEmail: email, request, riskScore: 100, metadata: { restrictionType: restriction.restrictionType } })
+      return NextResponse.json({ success: false, error: "Withdrawals are temporarily held while your account is under security review." }, { status: 403 })
+    }
     const amount = Number(body.amount)
     const walletAddress = String(body.bep20_address || body.wallet_address || "").trim()
     const method = String(body.payout_method || "BEP20").toUpperCase()
@@ -114,6 +120,17 @@ export async function POST(request: NextRequest) {
         [participant.id, email, walletAddress, amount, method, lockedBalance, lockedNewBalance],
       )
       payoutId = inserted.rows[0].id
+      await client.query(
+        `INSERT INTO withdrawal_security_holds (payout_request_id, participant_email, reason_code, risk_score)
+         SELECT $1, $2, 'standard_manual_review', CASE WHEN EXISTS (
+           SELECT 1 FROM participant_security_profiles WHERE LOWER(participant_email) = LOWER($2) AND risk_score >= 70
+         ) THEN 70 ELSE 0 END
+         WHERE EXISTS (
+           SELECT 1 FROM participant_security_profiles WHERE LOWER(participant_email) = LOWER($2) AND risk_score >= 70
+         )
+         ON CONFLICT (payout_request_id) DO NOTHING`,
+        [payoutId, email],
+      )
       await client.query(
         "INSERT INTO activity_logs (actor_email, action, details, target_type) VALUES ($1, 'payout_requested', $2, 'payout_request')",
         [email, `Requested payout of $${amount.toFixed(2)} to ${walletAddress}`],

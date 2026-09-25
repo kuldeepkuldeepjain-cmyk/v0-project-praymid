@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "node:crypto"
 import { setParticipantSession } from "@/lib/session"
 import { query, execute } from "@/lib/db"
 import { getFundedBaseAmount, getFundedEquity, getFundedMinimumBalance } from "@/lib/funded-account"
-import { enforceRateLimit, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
+import { enforceRateLimit, getActiveRestriction, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
@@ -89,6 +90,12 @@ export async function POST(request: NextRequest) {
         .catch(() => {})
     }
 
+    const loginRestriction = await getActiveRestriction(participant.email, "login")
+    if (loginRestriction) {
+      await recordSecurityEvent({ eventType: "participant_login_blocked_restriction", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 100, metadata: { restrictionType: loginRestriction.restrictionType } })
+      return NextResponse.json({ success: false, error: "Sign-in is temporarily unavailable while your account is under security review." }, { status: 403 })
+    }
+
     // Block login if mobile OTP not yet verified by admin
     if (participant.otp_verified === false) {
       await updateParticipantSecurityProfile(participant.email, request, 20)
@@ -107,8 +114,15 @@ export async function POST(request: NextRequest) {
       && fundedInitialBalance > 0
       && fundedEquity >= getFundedMinimumBalance(fundedInitialBalance)
 
-    // Session creation is the only bookkeeping required before redirecting.
-    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant" })
+    // Keep a server-side session registry so active sessions can be monitored and revoked.
+    const sessionId = randomUUID()
+    await execute("UPDATE participant_sessions SET is_active = false, last_activity = NOW() WHERE LOWER(participant_email) = LOWER($1)", [participant.email]).catch(() => {})
+    await execute(
+      `INSERT INTO participant_sessions (id, participant_id, participant_email, token, device_fingerprint, ip_address, user_agent)
+       VALUES ($1, $2, $3, $1, $4, $5, $6)`,
+      [sessionId, participant.id, participant.email, context.deviceHash, context.ipAddress, context.userAgent],
+    ).catch(() => {})
+    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId })
 
     // Audit, last-login, security profiling, and breach recovery are independent
     // maintenance tasks. They should not hold the login response open.
