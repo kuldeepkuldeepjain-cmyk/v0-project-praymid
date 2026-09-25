@@ -746,12 +746,12 @@ function SupportCenterPanel() {
 
   const supportTopics = [
     { label: "Account-specific support", description: "Balance, rules, verification, and account access", icon: UserRound },
-    { label: "Payout support", description: "Eligibility, requests, and payout status", icon: CreditCard },
+    { label: "Withdrawal support", description: "Eligibility, requests, and withdrawal status", icon: CreditCard },
     { label: "Technical support", description: "Platform errors, charts, and connection issues", icon: Wrench },
     { label: "MT5 troubleshooting", description: "Login, server, symbols, and Expert Advisors", icon: Headphones },
   ]
   const faqs = [
-    { question: "How do I request a payout?", answer: "Open a payout ticket after your account meets the target, minimum balance, and drawdown rules. Our team will review the request and update its status in your ticket history." },
+    { question: "How do I request a withdrawal?", answer: "Open a withdrawal request after your account meets the target, minimum balance, and drawdown rules. Our team will review the request and update its status in your transaction history." },
     { question: "Why is my MT5 account not connecting?", answer: "Confirm the exact server name, login number, and trading password. If the issue continues, create an MT5 troubleshooting ticket and include a screenshot of the error." },
     { question: "Where can I see my account rules?", answer: "Your active challenge or funded-account rules are available from Account Overview. Support can also confirm any account-specific limits before you trade." },
   ]
@@ -765,7 +765,7 @@ function SupportCenterPanel() {
   return (
     <div className="flex h-full flex-col overflow-y-auto terminal-scroll p-3" style={{ background: "#070d18" }}>
       <div className="flex items-start justify-between gap-3 rounded-xl p-3" style={{ background: "linear-gradient(135deg,#0b2940,#0a1322)", border: "1px solid rgba(34,211,238,.25)" }}>
-        <div className="flex items-start gap-2.5"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,.13)", border: "1px solid rgba(34,211,238,.3)" }}><LifeBuoy className="size-4 text-cyan-300" /></div><div><p className="text-[12px] font-black uppercase tracking-[.14em] text-white">24/7 Support Center</p><p className="mt-1 text-[9px] leading-relaxed text-slate-400">Get help with your account, payouts, platform, or MT5.</p></div></div>
+        <div className="flex items-start gap-2.5"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,.13)", border: "1px solid rgba(34,211,238,.3)" }}><LifeBuoy className="size-4 text-cyan-300" /></div><div><p className="text-[12px] font-black uppercase tracking-[.14em] text-white">24/7 Support Center</p><p className="mt-1 text-[9px] leading-relaxed text-slate-400">Get help with your account, withdrawals, platform, or MT5.</p></div></div>
         <span className="flex shrink-0 items-center gap-1 rounded border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-emerald-300"><span className="size-1.5 rounded-full bg-emerald-400" />Online</span>
       </div>
 
@@ -2286,7 +2286,7 @@ adjustWalletBalance(
     { id: "news", label: "News event approaching", description: "High-impact economic events are monitored before execution.", status: "monitoring", value: "Monitoring calendar", threshold: "30-minute lookahead", icon: Newspaper },
     { id: "day-target", label: "Trading-day target", description: "Track progress toward today’s funded-account target.", status: dailyPnl >= walletBalance * 0.01 ? "triggered" : "monitoring", value: walletBalance > 0 ? `${Math.max(0, dailyPnl / walletBalance * 100).toFixed(2)}% today` : "0.00% today", threshold: "Target +1.00%", icon: Target },
     { id: "profit-target", label: "Profit target reached", description: "Your profit target is calculated from the funded account base.", status: isFundedAccount && fundedBaseAmount > 0 && totalPnl >= fundedBaseAmount * 0.1 ? "triggered" : "monitoring", value: fundedBaseAmount > 0 ? `${Math.max(0, totalPnl / fundedBaseAmount * 100).toFixed(2)}%` : "Not configured", threshold: "Target +10.00%", icon: Trophy },
-    { id: "payout", label: "Payout eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
+    { id: "payout", label: "Withdrawal eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
   ]
 
   useEffect(() => {

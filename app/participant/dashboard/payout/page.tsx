@@ -27,7 +27,7 @@ import { TopUpModal } from "@/components/topup-modal"
 const PAYOUT_PLANS = [
   {
     id: "platinum",
-    label: "P2P Payout",
+    label: "Crypto Withdrawal",
     amount: 100,
     minAmount: 100,
     method: "BEP20",
@@ -36,8 +36,8 @@ const PAYOUT_PLANS = [
     bg: "bg-violet-50",
     badge: "bg-violet-200 text-violet-800",
     ring: "ring-violet-500",
-    icon: "💎",
-    description: "Peer-to-peer payout via BEP20 wallet",
+    icon: "USDT",
+    description: "Secure wallet settlement via BEP20 network",
   },
   {
     id: "direct",
@@ -50,9 +50,9 @@ const PAYOUT_PLANS = [
     bg: "bg-emerald-50",
     badge: "bg-emerald-200 text-emerald-800",
     ring: "ring-emerald-500",
-    icon: "⚡",
+    icon: "FAST",
     description: "Direct instant withdrawal when balance exceeds $300",
-    motivation: "If you win you can Direct Withdrawal",
+    motivation: "Settle eligible profits directly to your wallet",
   },
 ] as const
 
@@ -129,7 +129,7 @@ export default function PayoutPage() {
 
   const isFrozenFundedAccount = participantData?.account_type === "funded" && participantData?.funded_breach_status === "breached"
 
-  const handleRequestPayout = () => {
+  const handleRequestWithdrawal = () => {
     if (isFrozenFundedAccount) {
       setShowTopUpModal(true)
       return
@@ -143,8 +143,8 @@ export default function PayoutPage() {
 
     if (hasActivePayout) {
       toast({
-        title: "Active Payout Exists",
-        description: "You can only place a new payout request after your current one is completed.",
+        title: "Active Withdrawal Exists",
+        description: "You can only place a new withdrawal request after your current one is completed.",
         variant: "destructive",
       })
       return
@@ -153,7 +153,7 @@ export default function PayoutPage() {
     if (isFundedAccount && requestedAmount <= 0) {
       toast({
         title: "No funded profit available",
-        description: `Payouts are allowed only above your $${fundedBaseAmount.toFixed(2)} funded amount.`,
+        description: `Withdrawals are available only above your $${fundedBaseAmount.toFixed(2)} funded amount.`,
         variant: "destructive",
       })
       return
@@ -162,7 +162,7 @@ export default function PayoutPage() {
     if (!isFundedAccount && walletBalance < plan.amount) {
       toast({
         title: "Insufficient Balance",
-        description: `You need $${plan.amount} to request a ${plan.label} payout`,
+        description: `You need $${plan.amount} to request a ${plan.label} withdrawal`,
         variant: "destructive",
       })
       return
@@ -222,8 +222,8 @@ export default function PayoutPage() {
         setShowPayoutDialog(false)
         
         toast({ 
-          title: "Payout Requested!", 
-          description: "You'll be notified when the payout is successfully sent to your address",
+          title: "Withdrawal Submitted",
+          description: "You’ll be notified when the withdrawal is settled to your address",
           duration: 5000,
         })
         
@@ -239,7 +239,7 @@ export default function PayoutPage() {
       } else {
         toast({
           title: "Request Failed",
-          description: data.error || data.message || "Unable to submit payout request. Please try again.",
+          description: data.error || data.message || "Unable to submit withdrawal request. Please try again.",
           variant: "destructive",
         })
       }
@@ -416,7 +416,7 @@ export default function PayoutPage() {
   {isFrozenFundedAccount && (
   <div className="mx-auto max-w-5xl px-4 pt-4">
   <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
-  <p><strong>Funded account breached.</strong> Trading, payouts, and all account functions are blocked until reactivation.</p>
+  <p><strong>Funded account breached.</strong> Trading, withdrawals, and all account functions are blocked until reactivation.</p>
   <Button type="button" onClick={() => setShowTopUpModal(true)} className="shrink-0 bg-red-600 text-white hover:bg-red-700">Add funds to reactivate</Button>
   </div>
   </div>
@@ -446,7 +446,7 @@ export default function PayoutPage() {
                 <ArrowLeft className="h-5 w-5 text-[#E85D3B]" />
               </button>
             </Link>
-            <h1 className="text-lg font-semibold text-slate-900">Payout Requests</h1>
+            <h1 className="text-lg font-semibold text-slate-900">Withdraw Funds</h1>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full">
             <Wallet className="h-4 w-4 text-[#10b981]" />
@@ -466,7 +466,7 @@ export default function PayoutPage() {
         >
           <div className="flex items-center gap-2">
             <ShieldAlert className="h-4 w-4 text-cyan-300" />
-            <span className="text-sm font-medium text-slate-700">Payout queue reference</span>
+            <span className="text-sm font-medium text-slate-700">Withdrawal reference</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm">
             <span 
@@ -484,7 +484,7 @@ export default function PayoutPage() {
 
 
 
-        {/* Payout Request Card */}
+        {/* Withdrawal Request Card */}
         <Card className="payout-request-card border shadow-lg rounded-2xl overflow-hidden">
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
@@ -504,9 +504,9 @@ export default function PayoutPage() {
               ${walletBalance.toFixed(2)}
             </p>
 
-  {/* Payout Plan Selector */}
+  {/* Withdrawal method selector */}
   <div className="space-y-2 mb-5">
-  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Payout" : "Select Payout Amount"}</p>
+  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Withdrawal" : "Select Withdrawal Amount"}</p>
   {isFundedAccount ? (
   <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
   {maximumFundedPayout > 0 ? (
@@ -515,10 +515,10 @@ export default function PayoutPage() {
   <span>Available profit above ${fundedBaseAmount.toFixed(2)}</span>
   <strong>${maximumFundedPayout.toFixed(2)}</strong>
   </div>
-  <p className="mt-1 text-xs text-emerald-700">You receive 80% of total profit above your funded amount. Example: $250 profit = $200 payout; $50 remains with the firm.</p>
+  <p className="mt-1 text-xs text-emerald-700">You receive 80% of total profit above your funded amount. Example: $250 profit = $200 withdrawal; $50 remains with the firm.</p>
   </>
   ) : (
-  <p>Payouts unlock only after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
+  <p>Withdrawals unlock after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
   )}
   </div>
   ) : PAYOUT_PLANS.map((plan) => {
@@ -590,7 +590,7 @@ export default function PayoutPage() {
             </div>
 
             <button
-              onClick={handleRequestPayout}
+              onClick={handleRequestWithdrawal}
               disabled={!canWithdraw}
               className="w-full h-14 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.97] bg-transparent"
               style={{
@@ -602,32 +602,32 @@ export default function PayoutPage() {
             >
               <Wallet className="h-5 w-5" />
               {isFundedAccount
-                ? `Request $${maximumFundedPayout.toFixed(2)} Funded Profit Payout`
-                : `Request $${selectedPayoutPlan.amount} ${selectedPayoutPlan.label} Payout`}
+                ? `Withdraw $${maximumFundedPayout.toFixed(2)} Funded Profit`
+                : `Withdraw $${selectedPayoutPlan.amount} via ${selectedPayoutPlan.label}`}
             </button>
 
             {!canWithdraw && (
               <p className="text-center text-xs text-red-400 mt-3 font-medium">
                 {hasActivePayout
-                  ? "Complete your current payout request before placing a new one"
+                  ? "Complete your current withdrawal before placing a new one"
                   : isFundedAccount
-                  ? `Your balance must exceed $${fundedBaseAmount.toFixed(2)} to unlock an 80% excess-profit payout`
-                  : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} payout`}
+                  ? `Your balance must exceed $${fundedBaseAmount.toFixed(2)} to unlock an 80% excess-profit withdrawal`
+                  : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} withdrawal`}
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Payout History */}
+        {/* Withdrawal History */}
         <Card className="payout-history-card border shadow-lg rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="h-4 w-4 text-cyan-300" />
-              <h3 className="font-semibold text-slate-900">Payout History</h3>
+              <h3 className="font-semibold text-slate-900">Withdrawal History</h3>
             </div>
 
             {payoutHistory.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">No payout history yet</p>
+              <p className="text-sm text-slate-400 text-center py-6">No withdrawal history yet</p>
             ) : (
               <div className="space-y-4">
                 {payoutHistory.map((payout) => (
