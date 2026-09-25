@@ -31,8 +31,8 @@ import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 function FooterColumn({ title, links }: { title: string; links: [string, string][] }) {
   return (
     <div>
-      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{title}</h2>
-      <ul className="flex flex-col gap-3 text-sm text-slate-500">
+      <h2 className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-300">{title}</h2>
+      <ul className="flex flex-col gap-2 text-xs text-slate-500">
         {links.map(([label, href]) => (
           <li key={label}>
             <Link href={href} className="transition-colors hover:text-white">{label}</Link>
@@ -418,14 +418,14 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-800 bg-slate-950" aria-label="Footer">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 py-14 lg:grid-cols-[1.6fr_repeat(4,1fr)] lg:gap-8 lg:py-20">
+          <div className="grid gap-8 py-10 sm:grid-cols-2 lg:grid-cols-[1.8fr_repeat(4,1fr)] lg:gap-6">
             <div className="max-w-xs">
-              <div className="mb-5 flex items-center gap-3">
-                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-md" />
-                <span className="text-lg font-bold tracking-tight text-white">ELITE FUND</span>
+              <div className="mb-3 flex items-center gap-2.5">
+                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-8 w-8 rounded-md" />
+                <span className="text-base font-bold tracking-tight text-white">ELITE FUND</span>
               </div>
-              <p className="text-base font-semibold leading-7 text-slate-200">Professional Trading Infrastructure for Modern Traders</p>
-              <p className="mt-4 text-sm leading-6 text-slate-400">Trade Smart. Manage Risk. Trade with Confidence.</p>
+              <p className="text-sm font-semibold leading-6 text-slate-200">Professional trading infrastructure for modern traders.</p>
+              <p className="mt-2 text-xs leading-5 text-slate-500">Trade smart. Manage risk. Trade with confidence.</p>
             </div>
 
             <FooterColumn title="Platform" links={[
@@ -457,22 +457,20 @@ export default function LandingPage() {
             ]} />
           </div>
 
-          <div className="border-y border-slate-800 py-6" role="note">
-            <div className="flex items-start gap-3">
-              <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Risk Disclosure</p>
-                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">Trading involves significant risk. Past performance does not guarantee future results. No profit is guaranteed. Only trade with funds you can afford to lose.</p>
-              </div>
+          <div className="flex flex-col gap-3 border-y border-slate-800 py-4 text-xs md:flex-row md:items-center md:justify-between" role="note">
+            <div className="flex items-start gap-2.5 text-slate-400">
+              <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" aria-hidden="true" />
+              <p><span className="font-semibold text-amber-300">Risk disclosure:</span> Trading involves significant risk. Past performance does not guarantee future results.</p>
             </div>
+            <Link href="/terms" className="shrink-0 font-semibold text-slate-300 transition hover:text-white">Read terms</Link>
           </div>
 
-          <div className="flex flex-col gap-5 py-7 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 py-4 text-xs sm:flex-row sm:items-center sm:justify-between">
             <p className="text-slate-500">© 2026 Elite Fund. All rights reserved.</p>
-            <div className="flex items-center gap-5 text-slate-400">
+            <div className="flex items-center gap-4 text-slate-400">
               <a href="#" aria-label="Elite Fund on X" className="font-semibold transition hover:text-white">X</a>
-              <a href="#" aria-label="Elite Fund on Discord" className="inline-flex items-center gap-2 transition hover:text-white"><MessageCircle className="h-4 w-4" aria-hidden="true" />Discord</a>
-              <a href="#" aria-label="Elite Fund on Telegram" className="inline-flex items-center gap-2 transition hover:text-white"><Send className="h-4 w-4" aria-hidden="true" />Telegram</a>
+              <a href="#" aria-label="Elite Fund on Discord" className="inline-flex items-center gap-1.5 transition hover:text-white"><MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />Discord</a>
+              <a href="#" aria-label="Elite Fund on Telegram" className="inline-flex items-center gap-1.5 transition hover:text-white"><Send className="h-3.5 w-3.5" aria-hidden="true" />Telegram</a>
             </div>
           </div>
         </div>
