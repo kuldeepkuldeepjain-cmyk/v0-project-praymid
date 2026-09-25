@@ -27,32 +27,17 @@ import { TopUpModal } from "@/components/topup-modal"
 const PAYOUT_PLANS = [
   {
     id: "platinum",
-    label: "P2P Payout",
-    amount: 100,
-    minAmount: 100,
+    label: "Crypto Withdrawal",
+    amount: 50,
+    minAmount: 50,
     method: "BEP20",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",
     bg: "bg-violet-50",
     badge: "bg-violet-200 text-violet-800",
     ring: "ring-violet-500",
-    icon: "💎",
-    description: "Peer-to-peer payout via BEP20 wallet",
-  },
-  {
-    id: "direct",
-    label: "Direct Withdrawal",
-    amount: 300,
-    minAmount: 300,
-    method: "DIRECT",
-    accent: "from-emerald-500 to-teal-600",
-    border: "border-emerald-300",
-    bg: "bg-emerald-50",
-    badge: "bg-emerald-200 text-emerald-800",
-    ring: "ring-emerald-500",
-    icon: "⚡",
-    description: "Direct instant withdrawal when balance exceeds $300",
-    motivation: "If you win you can Direct Withdrawal",
+    icon: "USDT",
+    description: "Secure wallet settlement via BEP20 network",
   },
 ] as const
 
@@ -129,7 +114,7 @@ export default function PayoutPage() {
 
   const isFrozenFundedAccount = participantData?.account_type === "funded" && participantData?.funded_breach_status === "breached"
 
-  const handleRequestPayout = () => {
+  const handleRequestWithdrawal = () => {
     if (isFrozenFundedAccount) {
       setShowTopUpModal(true)
       return
@@ -143,8 +128,8 @@ export default function PayoutPage() {
 
     if (hasActivePayout) {
       toast({
-        title: "Active Payout Exists",
-        description: "You can only place a new payout request after your current one is completed.",
+        title: "Active Withdrawal Exists",
+        description: "You can only place a new withdrawal request after your current one is completed.",
         variant: "destructive",
       })
       return
@@ -153,7 +138,7 @@ export default function PayoutPage() {
     if (isFundedAccount && requestedAmount <= 0) {
       toast({
         title: "No funded profit available",
-        description: `Payouts are allowed only above your $${fundedBaseAmount.toFixed(2)} funded amount.`,
+        description: `Withdrawals are available only above your $${fundedBaseAmount.toFixed(2)} funded amount.`,
         variant: "destructive",
       })
       return
@@ -162,7 +147,7 @@ export default function PayoutPage() {
     if (!isFundedAccount && walletBalance < plan.amount) {
       toast({
         title: "Insufficient Balance",
-        description: `You need $${plan.amount} to request a ${plan.label} payout`,
+        description: `You need $${plan.amount} to request a ${plan.label} withdrawal`,
         variant: "destructive",
       })
       return
@@ -212,7 +197,7 @@ export default function PayoutPage() {
             ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
             : plan.amount,
           bep20_address: bep20Address,
-          payout_method: isFundedAccount ? selectedNetwork : plan.method,
+          payout_method: selectedNetwork,
         }),
       })
 
@@ -222,8 +207,8 @@ export default function PayoutPage() {
         setShowPayoutDialog(false)
         
         toast({ 
-          title: "Payout Requested!", 
-          description: "You'll be notified when the payout is successfully sent to your address",
+          title: "Withdrawal Submitted",
+          description: "You’ll be notified when the withdrawal is settled to your address",
           duration: 5000,
         })
         
@@ -239,7 +224,7 @@ export default function PayoutPage() {
       } else {
         toast({
           title: "Request Failed",
-          description: data.error || data.message || "Unable to submit payout request. Please try again.",
+          description: data.error || data.message || "Unable to submit withdrawal request. Please try again.",
           variant: "destructive",
         })
       }
@@ -412,11 +397,11 @@ export default function PayoutPage() {
   }
 
   return (
-  <div className="min-h-screen min-h-dvh bg-white relative overflow-hidden">
+  <div className="payout-page min-h-screen min-h-dvh relative overflow-hidden">
   {isFrozenFundedAccount && (
   <div className="mx-auto max-w-5xl px-4 pt-4">
   <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
-  <p><strong>Funded account breached.</strong> Trading, payouts, and all account functions are blocked until reactivation.</p>
+  <p><strong>Funded account breached.</strong> Trading, withdrawals, and all account functions are blocked until reactivation.</p>
   <Button type="button" onClick={() => setShowTopUpModal(true)} className="shrink-0 bg-red-600 text-white hover:bg-red-700">Add funds to reactivate</Button>
   </div>
   </div>
@@ -436,8 +421,8 @@ export default function PayoutPage() {
       </div>
 
       <header
-        className="bg-white sticky top-0 z-40 border-b border-slate-100"
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+        className="payout-header sticky top-0 z-40 border-b"
+        style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}
       >
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -446,7 +431,7 @@ export default function PayoutPage() {
                 <ArrowLeft className="h-5 w-5 text-[#E85D3B]" />
               </button>
             </Link>
-            <h1 className="text-lg font-semibold text-slate-900">Payout Requests</h1>
+            <h1 className="text-lg font-semibold text-slate-900">Withdraw Funds</h1>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full">
             <Wallet className="h-4 w-4 text-[#10b981]" />
@@ -455,18 +440,18 @@ export default function PayoutPage() {
         </div>
       </header>
 
-      <main className="px-4 lg:px-8 py-6 lg:py-8 space-y-5 relative z-10 pb-24 max-w-3xl lg:mx-auto">
+      <main className="payout-main px-4 lg:px-8 py-6 lg:py-8 space-y-5 relative z-10 pb-24 max-w-4xl lg:mx-auto">
         {/* Queue Position */}
         <div 
-          className="rounded-xl p-3 backdrop-blur-md flex items-center justify-between"
+          className="payout-queue rounded-xl p-3 backdrop-blur-md flex items-center justify-between"
           style={{
             background: "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(34, 211, 238, 0.08) 100%)",
             border: "1px solid rgba(124, 58, 237, 0.15)",
           }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-base">🎯</span>
-            <span className="text-sm font-medium text-slate-700">Your payout number is</span>
+            <ShieldAlert className="h-4 w-4 text-cyan-300" />
+            <span className="text-sm font-medium text-slate-700">Withdrawal reference</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm">
             <span 
@@ -484,9 +469,9 @@ export default function PayoutPage() {
 
 
 
-        {/* Payout Request Card */}
-        <Card className="border border-slate-100 shadow-lg rounded-2xl overflow-hidden">
-          <CardContent className="p-6">
+        {/* Withdrawal Request Card */}
+        <Card className="payout-request-card border shadow-lg rounded-2xl overflow-hidden">
+          <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
               <Wallet className="h-5 w-5 text-[#10b981]" />
               <p className="text-sm text-slate-500 font-medium">Available Balance</p>
@@ -504,9 +489,9 @@ export default function PayoutPage() {
               ${walletBalance.toFixed(2)}
             </p>
 
-  {/* Payout Plan Selector */}
+  {/* Withdrawal method selector */}
   <div className="space-y-2 mb-5">
-  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Payout" : "Select Payout Amount"}</p>
+  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Withdrawal" : "Select Withdrawal Amount"}</p>
   {isFundedAccount ? (
   <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
   {maximumFundedPayout > 0 ? (
@@ -515,66 +500,49 @@ export default function PayoutPage() {
   <span>Available profit above ${fundedBaseAmount.toFixed(2)}</span>
   <strong>${maximumFundedPayout.toFixed(2)}</strong>
   </div>
-  <p className="mt-1 text-xs text-emerald-700">You receive 80% of total profit above your funded amount. Example: $250 profit = $200 payout; $50 remains with the firm.</p>
+  <p className="mt-1 text-xs text-emerald-700">You receive 80% of total profit above your funded amount. Example: $250 profit = $200 withdrawal; $50 remains with the firm.</p>
   </>
   ) : (
-  <p>Payouts unlock only after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
+  <p>Withdrawals unlock after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
   )}
   </div>
   ) : PAYOUT_PLANS.map((plan) => {
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
-                const isDirectPlan = plan.id === "direct"
-                const isDirectEligible = isDirectPlan && walletBalance >= 300
-                const isDisabled = isFrozenFundedAccount || hasActivePayout || (isDirectPlan && !isDirectEligible)
+                const isDisabled = isFrozenFundedAccount || hasActivePayout
                 return (
                   <button
                     key={plan.id}
                     onClick={() => !isDisabled && setSelectedPayoutPlanId(plan.id)}
                     disabled={isDisabled}
                     className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
-                      isDisabled && isDirectPlan
+                      isDisabled
                         ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
                         : isSelected
                         ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
                         : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout && !isDirectPlan ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${isDirectPlan && !isDirectEligible ? "from-slate-300 to-slate-400" : plan.accent} flex items-center justify-center text-base shadow-sm`}>
+                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
                           {plan.icon}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${isDirectPlan && !isDirectEligible ? "text-slate-400" : "text-slate-900"}`}>{plan.label}</span>
-                            {isDirectPlan && isDirectEligible && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">
-                                AVAILABLE
-                              </span>
-                            )}
+                            <span className="text-sm font-bold text-slate-900">{plan.label}</span>
                           </div>
-                          {isDirectPlan && !isDirectEligible ? (
-                            <p className="text-xs text-emerald-500 mt-0.5 font-medium">
-                              Withdraw your winnings
-                            </p>
-                          ) : (
-                            <>
-                              <p className={`text-xs ${isDirectPlan && plan.motivation ? "text-emerald-600 font-medium" : "text-slate-500"} mt-0.5`}>
-                                {("motivation" in plan ? plan.motivation : plan.description) || plan.description}
-                              </p>
-                            </>
-                          )}
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {plan.description}
+                          </p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {!isDirectEligible && isDirectPlan ? (
-                          <span className="text-xs text-red-500 font-medium">Need ${(300 - walletBalance).toFixed(2)} more</span>
-                        ) : !canAfford && !isDirectPlan ? (
+                        {!canAfford ? (
                           <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
                         ) : null}
                         <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          isDisabled && isDirectPlan
+                          isDisabled
                             ? "border-slate-200 bg-slate-100"
                             : isSelected
                             ? `${plan.border} bg-gradient-to-br ${plan.accent}`
@@ -590,7 +558,7 @@ export default function PayoutPage() {
             </div>
 
             <button
-              onClick={handleRequestPayout}
+              onClick={handleRequestWithdrawal}
               disabled={!canWithdraw}
               className="w-full h-14 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.97] bg-transparent"
               style={{
@@ -602,32 +570,32 @@ export default function PayoutPage() {
             >
               <Wallet className="h-5 w-5" />
               {isFundedAccount
-                ? `Request $${maximumFundedPayout.toFixed(2)} Funded Profit Payout`
-                : `Request $${selectedPayoutPlan.amount} ${selectedPayoutPlan.label} Payout`}
+                ? `Withdraw $${maximumFundedPayout.toFixed(2)} Funded Profit`
+                : `Withdraw $${selectedPayoutPlan.amount} via ${selectedPayoutPlan.label}`}
             </button>
 
             {!canWithdraw && (
               <p className="text-center text-xs text-red-400 mt-3 font-medium">
                 {hasActivePayout
-                  ? "Complete your current payout request before placing a new one"
+                  ? "Complete your current withdrawal before placing a new one"
                   : isFundedAccount
-                  ? `Your balance must exceed $${fundedBaseAmount.toFixed(2)} to unlock an 80% excess-profit payout`
-                  : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} payout`}
+                  ? `Your balance must exceed $${fundedBaseAmount.toFixed(2)} to unlock an 80% excess-profit withdrawal`
+                  : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} withdrawal`}
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Payout History */}
-        <Card className="border border-slate-100 shadow-lg rounded-2xl">
+        {/* Withdrawal History */}
+        <Card className="payout-history-card border shadow-lg rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-lg">📜</span>
-              <h3 className="font-semibold text-slate-900">Payout History</h3>
+              <Clock className="h-4 w-4 text-cyan-300" />
+              <h3 className="font-semibold text-slate-900">Withdrawal History</h3>
             </div>
 
             {payoutHistory.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">No payout history yet</p>
+              <p className="text-sm text-slate-400 text-center py-6">No withdrawal history yet</p>
             ) : (
               <div className="space-y-4">
                 {payoutHistory.map((payout) => (
@@ -819,16 +787,15 @@ export default function PayoutPage() {
       <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">Confirm Payout Details</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-slate-900">Confirm Withdrawal Details</DialogTitle>
             <DialogDescription className="text-slate-600">
-              Enter your {isFundedAccount ? selectedNetwork : selectedPayoutPlan.method} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} payout
+              Enter your {selectedNetwork} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} withdrawal
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-  {isFundedAccount && (
   <div className="space-y-2">
-  <Label htmlFor="payoutNetwork" className="text-sm font-semibold text-slate-700">Payout Network</Label>
+  <Label htmlFor="payoutNetwork" className="text-sm font-semibold text-slate-700">Withdrawal Network</Label>
   <select
   id="payoutNetwork"
   value={selectedNetwork}
@@ -842,7 +809,6 @@ export default function PayoutPage() {
   </select>
   <p className="text-xs text-slate-500">Choose the network that matches your receiving wallet.</p>
   </div>
-  )}
 
   {/* Wallet Address Input */}
   <div className="space-y-2">
@@ -878,8 +844,7 @@ export default function PayoutPage() {
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-slate-900 mb-1">Notification</h4>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    After the payout is successfully sent to your address, you'll be notified via email and 
-                    the status will be updated to "Completed" in your payout history.
+                    After the withdrawal is successfully sent to your address, you&apos;ll be notified via email and the status will be updated to "Completed" in your withdrawal history.
                   </p>
                 </div>
               </div>
@@ -888,7 +853,7 @@ export default function PayoutPage() {
             {/* Payout Summary */}
             <div className="bg-slate-50 rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Payout Amount</span>
+                <span className="text-sm text-slate-600">Withdrawal Amount</span>
                 <span className="text-lg font-bold text-[#10b981]">${selectedPayoutPlan.amount} ({selectedPayoutPlan.label})</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-200">
@@ -925,7 +890,7 @@ export default function PayoutPage() {
                   Processing...
                 </>
               ) : (
-                "Confirm Payout"
+                "Confirm Withdrawal"
               )}
             </Button>
           </div>

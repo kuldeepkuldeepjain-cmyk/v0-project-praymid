@@ -26,10 +26,6 @@ interface ForexHeaderProps {
   walletBalance: number
   equity: number
   totalPnl: number
-  totalSwap: number
-  totalMargin: number
-  freeMargin: number
-  marginLevel: number
   openTradesCount: number
   pendingOrdersCount: number
   leverage: number
@@ -145,14 +141,14 @@ export function ForexHeader({
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
       <div className="flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
-        <div className="flex shrink-0 items-center gap-2 border-r pr-3" style={{ borderColor: "#1b2b40" }}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "#1d78b5" }}>
-            <LineChart className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </div>
-          <div className="hidden leading-none sm:block">
-            <strong className="block text-[12px] tracking-tight text-white">ELITEFUND</strong>
-            <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">Trading terminal</span>
-          </div>
+        <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-A7KakQah7xwcxtqtqlfe43SgNoWIkP.png"
+            onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
+            alt="Elite Fund — Trade Higher"
+            className="terminal-brand-logo"
+          />
+          <span className="sr-only">Elite Fund Trading Terminal</span>
         </div>
 
         <div className="relative min-w-0 flex-1 lg:max-w-sm">
@@ -179,13 +175,11 @@ export function ForexHeader({
           )}
         </div>
 
-        <div className="hidden items-center gap-1.5 xl:flex">
+
+        <div className="hidden items-center gap-1 md:flex">
           <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
-        </div>
-
-        <div className="hidden items-center gap-1 md:flex">
           <button type="button" onClick={onOpenDeposit} className="terminal-toolbar-action text-emerald-300"><ArrowDownRight className="h-3 w-3" />Deposit</button>
           <button type="button" onClick={onOpenWithdraw} className="terminal-toolbar-action text-amber-300"><ArrowUpRight className="h-3 w-3" />Withdraw</button>
         </div>

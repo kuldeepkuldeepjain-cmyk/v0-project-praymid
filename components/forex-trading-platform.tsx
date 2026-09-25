@@ -746,12 +746,12 @@ function SupportCenterPanel() {
 
   const supportTopics = [
     { label: "Account-specific support", description: "Balance, rules, verification, and account access", icon: UserRound },
-    { label: "Payout support", description: "Eligibility, requests, and payout status", icon: CreditCard },
+    { label: "Withdrawal support", description: "Eligibility, requests, and withdrawal status", icon: CreditCard },
     { label: "Technical support", description: "Platform errors, charts, and connection issues", icon: Wrench },
     { label: "MT5 troubleshooting", description: "Login, server, symbols, and Expert Advisors", icon: Headphones },
   ]
   const faqs = [
-    { question: "How do I request a payout?", answer: "Open a payout ticket after your account meets the target, minimum balance, and drawdown rules. Our team will review the request and update its status in your ticket history." },
+    { question: "How do I request a withdrawal?", answer: "Open a withdrawal request after your account meets the target, minimum balance, and drawdown rules. Our team will review the request and update its status in your transaction history." },
     { question: "Why is my MT5 account not connecting?", answer: "Confirm the exact server name, login number, and trading password. If the issue continues, create an MT5 troubleshooting ticket and include a screenshot of the error." },
     { question: "Where can I see my account rules?", answer: "Your active challenge or funded-account rules are available from Account Overview. Support can also confirm any account-specific limits before you trade." },
   ]
@@ -765,7 +765,7 @@ function SupportCenterPanel() {
   return (
     <div className="flex h-full flex-col overflow-y-auto terminal-scroll p-3" style={{ background: "#070d18" }}>
       <div className="flex items-start justify-between gap-3 rounded-xl p-3" style={{ background: "linear-gradient(135deg,#0b2940,#0a1322)", border: "1px solid rgba(34,211,238,.25)" }}>
-        <div className="flex items-start gap-2.5"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,.13)", border: "1px solid rgba(34,211,238,.3)" }}><LifeBuoy className="size-4 text-cyan-300" /></div><div><p className="text-[12px] font-black uppercase tracking-[.14em] text-white">24/7 Support Center</p><p className="mt-1 text-[9px] leading-relaxed text-slate-400">Get help with your account, payouts, platform, or MT5.</p></div></div>
+        <div className="flex items-start gap-2.5"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,.13)", border: "1px solid rgba(34,211,238,.3)" }}><LifeBuoy className="size-4 text-cyan-300" /></div><div><p className="text-[12px] font-black uppercase tracking-[.14em] text-white">24/7 Support Center</p><p className="mt-1 text-[9px] leading-relaxed text-slate-400">Get help with your account, withdrawals, platform, or MT5.</p></div></div>
         <span className="flex shrink-0 items-center gap-1 rounded border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-emerald-300"><span className="size-1.5 rounded-full bg-emerald-400" />Online</span>
       </div>
 
@@ -2286,7 +2286,7 @@ adjustWalletBalance(
     { id: "news", label: "News event approaching", description: "High-impact economic events are monitored before execution.", status: "monitoring", value: "Monitoring calendar", threshold: "30-minute lookahead", icon: Newspaper },
     { id: "day-target", label: "Trading-day target", description: "Track progress toward today’s funded-account target.", status: dailyPnl >= walletBalance * 0.01 ? "triggered" : "monitoring", value: walletBalance > 0 ? `${Math.max(0, dailyPnl / walletBalance * 100).toFixed(2)}% today` : "0.00% today", threshold: "Target +1.00%", icon: Target },
     { id: "profit-target", label: "Profit target reached", description: "Your profit target is calculated from the funded account base.", status: isFundedAccount && fundedBaseAmount > 0 && totalPnl >= fundedBaseAmount * 0.1 ? "triggered" : "monitoring", value: fundedBaseAmount > 0 ? `${Math.max(0, totalPnl / fundedBaseAmount * 100).toFixed(2)}%` : "Not configured", threshold: "Target +10.00%", icon: Trophy },
-    { id: "payout", label: "Payout eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
+    { id: "payout", label: "Withdrawal eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
   ]
 
   useEffect(() => {
@@ -2348,7 +2348,7 @@ adjustWalletBalance(
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
-    { id: "payout", label: "Request payout", hint: "Open the payout page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+    { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
@@ -2382,15 +2382,11 @@ adjustWalletBalance(
 
 
 {/* ══ PROFESSIONAL HEADER (brand, search, tools, account, metrics) ══ */}
-      <ForexHeader
-        walletBalance={walletBalance}
-        equity={equity}
-        totalPnl={totalPnl}
-        totalSwap={totalSwap}
-        totalMargin={totalMargin}
-        freeMargin={freeMargin}
-        marginLevel={marginLevel}
-        openTradesCount={openTrades.length}
+<ForexHeader
+  walletBalance={walletBalance}
+  equity={equity}
+  totalPnl={totalPnl}
+  openTradesCount={openTrades.length}
         pendingOrdersCount={pendingOrders.length}
         leverage={Number(leverage) || 100}
         accountType={isFundedAccount ? "Funded" : "Live"}
@@ -2456,6 +2452,22 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
+      <div className="reference-metrics reference-metrics-header" aria-label="Account metrics">
+        {[
+          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
+          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
+          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+        ].map(item => (
+          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+          </div>
+        ))}
+      </div>
+
       <nav className="reference-fund-rail" aria-label="Account actions">
         <div className="reference-fund-rail-label">Account</div>
         <button type="button" className="reference-fund-action reference-fund-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
@@ -2464,12 +2476,12 @@ adjustWalletBalance(
         </button>
         <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
           <ArrowUpDown className="h-4 w-4" />
-          <span>Payout</span>
+          <span>Withdraw</span>
         </button>
-        <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
-          <TrendingUp className="h-4 w-4" />
-          <span>Prediction</span>
-        </button>
+  <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+  <TrendingUp className="h-4 w-4" />
+  <span>Prediction</span>
+  </button>
       </nav>
 
       {/* ══ REFERENCE WATCHLIST ════════════════════════�������══════════════════��════ */}
@@ -2732,7 +2744,8 @@ adjustWalletBalance(
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+              <div className="chart-header-market flex min-w-0 items-center gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-black text-white tracking-wider">
                   {ASSET_ICON[selectedPair.symbol] && <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>}
@@ -2762,29 +2775,32 @@ adjustWalletBalance(
                   <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
                 </>}
               </div>
-              {/* TF selector */}
-              <div className="ml-auto flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
-                  aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
-                  title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
-                  className="p-1 transition-colors"
-                  style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
-                >
-                  {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
-                </button>
-                {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
+              </div>
+              <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
+                <span className="chart-timeframe-label">Chart interval</span>
+                <div className="chart-timeframes flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
+                    aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
+                    title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
+                    className="chart-layout-toggle p-1 transition-colors"
+                    style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
+                  >
+                    {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
+                  </button>
+                  {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
                   <button key={tf} onClick={() => setTimeframe(tf)}
                     className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
                     style={{ borderRadius: 3,
                       background: timeframe === tf ? "rgba(34,211,238,0.12)" : "transparent",
-                      color: timeframe === tf ? "#22d3ee" : "#374151",
+                      color: timeframe === tf ? "#22d3ee" : "#9ab0c0",
                       border: timeframe === tf ? "1px solid rgba(34,211,238,0.25)" : "1px solid transparent" }}>
                     {tf}
                   </button>
                 ))}
                 {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-1" />}
+                </div>
               </div>
             </div>
           ) : (
@@ -2836,14 +2852,14 @@ adjustWalletBalance(
       <span>{selectedPair ? `${selectedPair.symbol} · market` : "Select an instrument"}</span>
     </div>
     <div className="reference-chart-trade-actions">
-      <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
-        <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
-        <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
-      </button>
-      <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
-        <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
-        <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
-      </button>
+  <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
+  <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
+  <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+  </button>
+  <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
+  <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
+  <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+  </button>
     </div>
   </div>
         </div>
@@ -3354,7 +3370,7 @@ adjustWalletBalance(
             )
           )}
 
-          {/* ── Pending Orders ── */}
+          {/* ─��� Pending Orders ── */}
           {activePanel === "pending" && (
             pendingOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
@@ -3362,11 +3378,19 @@ adjustWalletBalance(
                 <span className="text-[11px] tracking-wider font-bold uppercase">No pending orders</span>
               </div>
             ) : (
-              <div className="p-2 flex flex-col gap-2">
+              <div className="order-panel flex flex-col h-full">
+                <div className="order-panel-header flex items-center justify-between shrink-0">
+                  <div>
+                    <p className="order-panel-kicker">Order Management</p>
+                    <h3 className="order-panel-title">Pending Orders</h3>
+                  </div>
+                  <span className="order-panel-count">{pendingOrders.length} active</span>
+                </div>
+                <div className="order-panel-list p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll">
                 {pendingOrders.map(o => {
                   const isBuy = o.direction === "BUY"
                   return (
-                    <div key={o.id} className="rounded-xl price-mono text-[11px]"
+                    <div key={o.id} className="order-card rounded-xl price-mono text-[11px]"
                       style={{ background: "#0d1625", border: "1px solid #1a2a42" }}>
                       <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div className="flex items-center gap-2">
@@ -3389,17 +3413,15 @@ adjustWalletBalance(
                           <p className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
+                      <div className="order-card-details grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div><p className="text-[8px] text-slate-500 mb-0.5">SL</p><p className="font-bold text-red-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</p></div>
                         <div><p className="text-[8px] text-slate-500 mb-0.5">TP</p><p className="font-bold text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</p></div>
-                        <div className="text-right">
-                          <p className="text-[8px] text-slate-500 mb-0.5">Margin</p>
-                          <p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p>
-                        </div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p></div>
+                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Status</p><p className="font-bold text-cyan-400">Queued</p></div>
                       </div>
                       <div className="px-3 py-2">
                         <button onClick={() => cancelPending(o.id)}
-                          className="w-full py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
+                          className="w-full py-2 rounded-lg font-black text-[10px] tracking-wide uppercase transition-all active:scale-95 flex items-center justify-center gap-1"
                           style={{ background: "rgba(239,68,68,0.08)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
                           <X className="h-3 w-3" /> Cancel Order
                         </button>
@@ -3407,6 +3429,7 @@ adjustWalletBalance(
                     </div>
                   )
                 })}
+                </div>
               </div>
             )
           )}
@@ -3571,21 +3594,6 @@ adjustWalletBalance(
         </div>
       </div>
 
-      <div className="reference-metrics shrink-0">
-        {[
-          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
-          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
-          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-        ].map(item => (
-          <div key={item.label} className={`reference-metric-card tone-${item.tone} ${item.label === "Balance" || item.label === "Equity" ? "reference-metric-primary" : ""}`}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
-          </div>
-        ))}
-      </div>
 
       <div className="reference-statusbar shrink-0">
         <span><i />Connected</span>

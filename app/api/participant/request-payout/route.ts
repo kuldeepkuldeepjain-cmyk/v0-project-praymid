@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const walletAddress = String(body.bep20_address || body.wallet_address || "").trim()
     const method = String(body.payout_method || "BEP20").toUpperCase()
 
-    if (!Number.isFinite(amount) || amount <= 0 || !walletAddress) {
-      return NextResponse.json({ success: false, error: "A valid amount and wallet address are required" }, { status: 400 })
+    if (!Number.isFinite(amount) || amount < 50 || !walletAddress) {
+      return NextResponse.json({ success: false, error: "Withdrawals require a minimum amount of $50 and a valid wallet address" }, { status: 400 })
     }
     if (!SUPPORTED_METHODS.includes(method as (typeof SUPPORTED_METHODS)[number])) {
       return NextResponse.json({ success: false, error: "Unsupported payout network" }, { status: 400 })

@@ -1977,6 +1977,20 @@ button, a, [role="button"] {
   --tw-enter-translate-y: 100%;
 }
 
+/* Institutional account action hierarchy. */
+.mt5-terminal .reference-fund-rail {
+  min-height: 42px;
+  padding: 5px 12px;
+  gap: 6px;
+  border-bottom-color: #263d52;
+  background: #172536;
+}
+.mt5-terminal .reference-fund-rail-label { color: #91a7ba; font-size: 9px; letter-spacing: .16em; }
+.mt5-terminal .reference-fund-action { min-height: 29px; border-radius: 3px; box-shadow: none; font-size: 9px; letter-spacing: .08em; }
+.mt5-terminal .reference-fund-action-primary { background: #263b4e; border-color: #49647d; color: #cad8e5; }
+.mt5-terminal .reference-fund-action-payout { background: #263b4e; border-color: #49647d; color: #cad8e5; }
+.mt5-terminal .reference-fund-action-prediction { background: #263b4e; border-color: #49647d; color: #8ec9ee; }
+
 /* XM 360-style terminal sizing: keep every workspace usable from phones to ultrawide screens. */
 .reference-terminal {
   min-width: 0;
@@ -2132,7 +2146,7 @@ button, a, [role="button"] {
 }
 .reference-fund-action:hover,
 .reference-fund-action:focus-visible { border-color: #60d9f5; background: #12324a; outline: none; transform: translateY(-1px); }
-.reference-fund-action-primary { border-color: #176a75; color: #7ff5d4; background: #0b292d; }
+.reference-fund-action-primary { border-color: #594a2b; color: #f5d37b; background: #251d11; }
 .reference-fund-action-payout { border-color: #594a2b; color: #f5d37b; background: #251d11; }
 .reference-fund-action-prediction { border-color: #245e57; color: #8ff5c9; background: #102d2b; }
 .reference-terminal .reference-watchlist { min-width: 0; }
@@ -2473,8 +2487,9 @@ button, a, [role="button"] {
     }
     to {
       width: 100%;
-    }
   }
+}
+
 
   .animate-\[slide-right_3s_ease-out_forwards\] {
     animation: slide-right 3s ease-out forwards;
@@ -2824,7 +2839,9 @@ button, a, [role="button"] {
 .reference-terminal .apple-terminal-blotter-tabs button[style*="border-bottom: 2px solid"] { color: #f1d28e !important; border-bottom-color: #e7c776 !important; }
 .reference-terminal .apple-terminal-blotter .text-slate-700 { color: #76869a !important; }
 .reference-terminal .apple-terminal-blotter .text-slate-800 { color: #54657a !important; }
-.reference-metrics { display: grid; grid-template-columns: 1.15fr 1.15fr repeat(3, 1fr); gap: 5px; padding: 4px 12px; background: #05090f; border-top: 1px solid #1a2634; }
+.reference-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 6px 12px; background: #05090f; border-top: 1px solid #1a2634; }
+.reference-metrics-header { border-top: 0; border-bottom: 1px solid #263d52; background: #0b1623; }
+
  .reference-metric-card { min-width: 0; min-height: 52px; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 7px 11px; border: 1px solid #17283a; border-radius: 7px; background: #09121d; }
  .reference-metric-card span { color: #71869d; font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
  .reference-metric-card strong { color: #eef5fb; font-family: var(--font-mono); font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
@@ -3364,22 +3381,47 @@ button, a, [role="button"] {
   padding-inline: 13px;
   border-radius: 5px 5px 0 0;
 }
-.reference-terminal .reference-metrics {
+.reference-terminal .reference-metrics-header {
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  padding: 8px 16px;
-  background: #060b12;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #07101a;
 }
 .reference-terminal .reference-metric-card {
-  min-height: 58px;
-  padding: 10px 13px;
-  border-radius: 8px;
+  min-height: 44px;
+  padding: 6px 9px;
+  border-radius: 5px;
   border-color: #1b2b3d;
   background: #0b131e;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
-.reference-terminal .reference-metric-card span { color: #7f91a6; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
-.reference-terminal .reference-metric-card strong { font-size: 17px; }
+.reference-terminal .reference-metric-card span {
+  color: #7f91a6;
+  font-size: 8px;
+  letter-spacing: .08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.reference-terminal .reference-metric-card strong {
+  font-size: 13px;
+  line-height: 1.15;
+}
+.reference-terminal .reference-metric-card .reference-margin-bar {
+  height: 4px;
+  margin-top: 1px;
+}
+@media (max-width: 767px) {
+  .reference-terminal .reference-metrics-header {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px 8px;
+  }
+  .reference-terminal .reference-metric-card {
+    min-height: 42px;
+    padding: 6px 7px;
+  }
+  .reference-terminal .reference-metric-card strong { font-size: 11px; }
+}
 .reference-terminal .reference-statusbar { height: 34px; padding-inline: 18px; background: #060b12; }
 @media (max-width: 1100px) and (min-width: 768px) {
   .reference-terminal .apple-terminal-grid { grid-template-columns: minmax(210px, 24%) minmax(0, 1fr) minmax(250px, 29%); }
@@ -3694,4 +3736,409 @@ button, a, [role="button"] {
     min-height: 0 !important;
     overflow-y: auto !important;
   }
+}
+
+/* Institutional payout workspace. */
+.payout-page {
+  color: #dce8f2;
+  background: #07111c;
+  background-image: radial-gradient(circle at 10% 0%, rgba(43, 101, 145, .18), transparent 36%), linear-gradient(180deg, #0b1a29 0%, #07111c 52%, #050b12 100%);
+}
+.payout-page .payout-header {
+  background: rgba(8, 20, 32, .96);
+  border-color: #223d55;
+  backdrop-filter: blur(14px);
+}
+.payout-page .payout-header h1 { color: #f2f7fb; letter-spacing: -.01em; }
+.payout-page .payout-header a > button { background: #102538; border: 1px solid #2c4a63; }
+.payout-page .payout-header a > button:hover { background: #18344b; }
+.payout-page .payout-header .bg-emerald-50 { background: #102d2d; border: 1px solid #206b61; }
+.payout-page .payout-header .text-\[\#10b981\] { color: #48d3ad; }
+.payout-page .payout-main { max-width: 920px; }
+.payout-page .payout-queue {
+  background: linear-gradient(100deg, rgba(24, 73, 105, .48), rgba(15, 41, 61, .7));
+  border: 1px solid #2d5b78 !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .18);
+}
+.payout-page .payout-queue span { color: #b9cedd; }
+.payout-page .payout-queue > div:last-child { background: #0b1c2c; border: 1px solid #3b718e; }
+.payout-page .payout-request-card,
+.payout-page .payout-history-card {
+  border-color: #233e56;
+  background: linear-gradient(180deg, rgba(14, 31, 47, .98), rgba(8, 19, 30, .98));
+  box-shadow: 0 16px 36px rgba(0, 0, 0, .22);
+}
+.payout-page .payout-request-card p,
+.payout-page .payout-history-card p,
+.payout-page .payout-request-card label { color: #91a9bc; }
+.payout-page .payout-request-card .text-slate-900,
+.payout-page .payout-history-card .text-slate-900,
+.payout-page .payout-request-card .text-slate-700 { color: #e6f0f7; }
+.payout-page .payout-request-card .text-slate-500,
+.payout-page .payout-history-card .text-slate-500 { color: #829bae; }
+.payout-page .payout-request-card input,
+.payout-page .payout-request-card textarea {
+  color: #edf6fb;
+  border-color: #31516a;
+  background: #091824;
+}
+.payout-page .payout-request-card input::placeholder { color: #61788b; }
+.payout-page .payout-request-card button:not([disabled]) { filter: saturate(.92); }
+.payout-page .payout-request-card .border-slate-200.bg-white { border-color: #29465d; background: #0b1a28; }
+.payout-page .payout-request-card .border-slate-200.bg-slate-50 { border-color: #2d4050; background: #111d28; }
+.payout-page .payout-request-card .border-emerald-300,
+.payout-page .payout-request-card .border-violet-300 { border-color: #2d6f78; }
+.payout-page .payout-request-card .bg-emerald-50 { background: #0d2d2b; border-color: #23665e; color: #c7f4e6; }
+.payout-page .payout-request-card .text-emerald-900,
+.payout-page .payout-request-card .text-emerald-700,
+.payout-page .payout-request-card .text-emerald-600 { color: #8de3c7; }
+.payout-page .payout-history-card .border-slate-200 { border-color: #29465d; }
+.payout-page .payout-history-card .bg-slate-50 { background: #0b1a28; }
+.payout-page .payout-history-card .bg-purple-50 { background: #1a1732; border-color: #403a78; }
+.payout-page .payout-history-card .text-purple-700,
+.payout-page .payout-history-card .text-purple-600 { color: #c6baff; }
+.payout-page > .fixed { display: none; }
+@media (max-width: 640px) {
+  .payout-page .payout-main { padding-inline: 12px; }
+  .payout-page .payout-request-card .p-5 { padding: 16px; }
+  .payout-page .payout-request-card .text-\[42px\] { font-size: 32px; }
+}
+
+/* Power workspace composition: chart-first hierarchy with compact command rails. */
+.mt5-terminal.reference-terminal .apple-terminal-grid {
+  grid-template-columns: minmax(218px, 22%) minmax(0, 1fr) minmax(278px, 26%);
+  gap: 2px;
+  background: #1d3045 !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-topbar {
+  min-height: 50px;
+  padding-inline: 16px !important;
+}
+.mt5-terminal.reference-terminal .reference-metrics-header {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  padding: 6px 14px;
+  background: #07121f;
+}
+.mt5-terminal.reference-terminal .reference-metric-card {
+  min-height: 48px;
+  padding: 7px 10px;
+  border-color: #24405a;
+  background: linear-gradient(180deg, #0e1c2c 0%, #09131f 100%);
+}
+.mt5-terminal.reference-terminal .reference-metric-card span { color: #8ba2b9; font-size: 8px; }
+.mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 14px; }
+.mt5-terminal.reference-terminal .reference-fund-rail {
+  min-height: 48px;
+  padding: 6px 14px;
+  gap: 7px;
+  background: #0a1827;
+}
+.mt5-terminal.reference-terminal .reference-fund-action {
+  min-height: 34px;
+  flex: 0 1 150px;
+  border-radius: 5px;
+  font-size: 9px;
+}
+.mt5-terminal.reference-terminal .reference-watchlist {
+  min-height: 68px;
+  padding: 8px 14px !important;
+  gap: 8px !important;
+}
+.mt5-terminal.reference-terminal .reference-watch-card {
+  min-width: 150px;
+  min-height: 52px;
+  height: 52px;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market > div:first-child,
+.mt5-terminal.reference-terminal .apple-terminal-order > div:first-child,
+.mt5-terminal.reference-terminal .apple-terminal-chart-column > div:first-child {
+  min-height: 50px;
+  border-bottom: 1px solid #294661 !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market,
+.mt5-terminal.reference-terminal .apple-terminal-order {
+  box-shadow: inset 0 0 0 1px rgba(52, 91, 122, .22);
+}
+.mt5-terminal.reference-terminal .apple-terminal-chart-column {
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, .14), 0 0 26px rgba(0,0,0,.16);
+}
+.mt5-terminal.reference-terminal .reference-chart-trade-dock {
+  padding: 7px 10px 8px;
+  background: #0a1827;
+}
+@media (max-width: 1100px) and (min-width: 768px) {
+  .mt5-terminal.reference-terminal .apple-terminal-grid {
+    grid-template-columns: minmax(198px, 21%) minmax(0, 1fr) minmax(248px, 29%);
+  }
+  .mt5-terminal.reference-terminal .reference-fund-action { flex-basis: 126px; }
+}
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .apple-terminal-grid { display: flex !important; }
+  .mt5-terminal.reference-terminal .reference-metrics-header {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px 8px;
+  }
+  .mt5-terminal.reference-terminal .reference-metric-card { min-height: 42px; padding: 6px 7px; }
+  .mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 11px; }
+  .mt5-terminal.reference-terminal .reference-fund-rail { min-height: 50px; padding: 6px 8px; }
+  .mt5-terminal.reference-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
+}
+
+/* Clear chart header and timeframe strip. */
+.mt5-terminal.reference-terminal .chart-header {
+  gap: 5px;
+  padding-top: 7px;
+  padding-bottom: 6px;
+}
+.mt5-terminal.reference-terminal .chart-header-market {
+  min-height: 22px;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .chart-timeframe-toolbar {
+  min-height: 26px;
+  padding: 3px 5px;
+  border: 1px solid #1d3a51;
+  border-radius: 4px;
+  background: #0b1a28;
+}
+.mt5-terminal.reference-terminal .chart-timeframe-label {
+  color: #6d8ba2;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.mt5-terminal.reference-terminal .chart-timeframes {
+  flex-shrink: 0;
+}
+.mt5-terminal.reference-terminal .chart-timeframes button {
+  min-width: 32px;
+  padding: 4px 5px;
+  color: #9ab0c0 !important;
+  background: #0e2232 !important;
+  border: 1px solid #294a61 !important;
+  border-radius: 3px;
+  opacity: 1 !important;
+}
+.mt5-terminal.reference-terminal .chart-timeframes button:first-child {
+  min-width: 28px;
+  padding-inline: 4px;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+.mt5-terminal.reference-terminal .chart-timeframes button:hover,
+.mt5-terminal.reference-terminal .chart-timeframes button[style*="22d3ee"] {
+  color: #22d3ee !important;
+  background: rgba(34, 211, 238, .16) !important;
+  border-color: rgba(34, 211, 238, .38) !important;
+}
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .chart-header {
+    gap: 4px;
+    padding-inline: 8px;
+    overflow: visible;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframe-toolbar {
+    display: flex !important;
+    width: 100%;
+    min-width: 0;
+    padding: 3px;
+    overflow: visible;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframe-label {
+    display: none;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    width: 100%;
+    gap: 3px !important;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes button,
+  .mt5-terminal.reference-terminal .chart-timeframes button:first-child {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+    height: 24px;
+    padding: 0;
+    color: #b7cbd8 !important;
+    background: #102638 !important;
+    border: 1px solid #35566d !important;
+    font-size: 8px;
+    visibility: visible;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes button:first-child {
+    background: #142b3e !important;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes button:hover,
+  .mt5-terminal.reference-terminal .chart-timeframes button[style*="22d3ee"] {
+    color: #22d3ee !important;
+    background: #173e53 !important;
+    border-color: #22d3ee !important;
+  }
+}
+
+/* Elite Fund terminal branding. */
+.mt5-terminal.reference-terminal .terminal-brand-lockup {
+  min-width: 48px;
+  width: 48px;
+  height: 34px;
+  padding-right: 8px;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .terminal-brand-logo {
+  display: block;
+  width: 40px;
+  height: 30px;
+  object-fit: contain;
+  object-position: center;
+  filter: saturate(.9) contrast(1.08);
+}
+@media (max-width: 639px) {
+  .mt5-terminal.reference-terminal .terminal-brand-lockup {
+    min-width: 40px;
+    width: 40px;
+    height: 30px;
+    padding-right: 6px;
+  }
+  .mt5-terminal.reference-terminal .terminal-brand-logo {
+    width: 34px;
+    height: 26px;
+  }
+}
+
+/* Pending order workspace: clear hierarchy for quick execution review. */
+.mt5-terminal.reference-terminal .order-panel {
+  background: #07111d;
+}
+.mt5-terminal.reference-terminal .order-panel-header {
+  min-height: 52px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e3951;
+  background: linear-gradient(180deg, #0d2031, #091725);
+}
+.mt5-terminal.reference-terminal .order-panel-kicker {
+  margin: 0 0 3px;
+  color: #63829a;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.mt5-terminal.reference-terminal .order-panel-title {
+  margin: 0;
+  color: #e9f3f8;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+.mt5-terminal.reference-terminal .order-panel-count {
+  padding: 4px 7px;
+  border: 1px solid #31556e;
+  border-radius: 4px;
+  color: #8fb7cd;
+  background: #0c1c2b;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.mt5-terminal.reference-terminal .order-panel-list {
+  min-height: 0;
+}
+.mt5-terminal.reference-terminal .order-card {
+  border-color: #23445d !important;
+  border-radius: 7px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+.mt5-terminal.reference-terminal .order-card > div:first-child {
+  padding-block: 9px;
+  background: rgba(18, 42, 61, .32);
+}
+.mt5-terminal.reference-terminal .order-card-details {
+  background: rgba(7, 18, 29, .5);
+}
+.mt5-terminal.reference-terminal .order-card button {
+  border-radius: 4px;
+}
+.mt5-terminal.reference-terminal .order-card button:hover {
+  background: rgba(239, 68, 68, .16) !important;
+  border-color: rgba(239, 68, 68, .42) !important;
+}
+
+/* Compact premium account metrics: small footprint, strong scanning hierarchy. */
+.mt5-terminal.reference-terminal .reference-metrics-header {
+  gap: 5px;
+  padding: 5px 12px;
+  border-bottom: 1px solid #294761;
+  background: #08131f;
+}
+.mt5-terminal.reference-terminal .reference-metric-card {
+  position: relative;
+  min-height: 42px;
+  gap: 2px;
+  padding: 5px 9px 6px;
+  overflow: hidden;
+  border: 1px solid #20384e;
+  border-radius: 5px;
+  background: #0c1825;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255, 255, 255, .035);
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.mt5-terminal.reference-terminal .reference-metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: #47657e;
+}
+.mt5-terminal.reference-terminal .reference-metric-card:hover {
+  border-color: #3d6685;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.mt5-terminal.reference-terminal .reference-metric-card span {
+  color: #849bb0;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  line-height: 1;
+}
+.mt5-terminal.reference-terminal .reference-metric-card strong {
+  color: #f2f7fb;
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.mt5-terminal.reference-terminal .reference-metric-card.tone-gold::before { background: #e4b957; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-gold strong { color: #f0c86e; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-green::before { background: #18c995; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-green strong { color: #39dca8; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-red::before { background: #f26467; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-red strong { color: #ff777a; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-neutral::before { background: #4c89b5; }
+.mt5-terminal.reference-terminal .reference-margin-bar {
+  height: 3px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: #172a3b;
+}
+.mt5-terminal.reference-terminal .reference-margin-bar span { background: #e4b957; }
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .reference-metrics-header {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    padding: 4px 7px;
+  }
+  .mt5-terminal.reference-terminal .reference-metric-card {
+    min-height: 39px;
+    padding: 5px 6px 5px 8px;
+  }
+  .mt5-terminal.reference-terminal .reference-metric-card span { font-size: 6px; letter-spacing: .1em; }
+  .mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 10px; }
 }
