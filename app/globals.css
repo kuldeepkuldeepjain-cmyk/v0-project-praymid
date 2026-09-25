@@ -2025,6 +2025,7 @@ button, a, [role="button"] {
 .reference-fund-action:focus-visible { border-color: #60d9f5; background: #12324a; outline: none; transform: translateY(-1px); }
 .reference-fund-action-primary { border-color: #176a75; color: #7ff5d4; background: #0b292d; }
 .reference-fund-action-payout { border-color: #594a2b; color: #f5d37b; background: #251d11; }
+.reference-fund-action-prediction { border-color: #245e57; color: #8ff5c9; background: #102d2b; }
 .reference-terminal .reference-watchlist { min-width: 0; }
 .reference-terminal .reference-watch-card { max-width: 170px; }
 .reference-terminal .apple-terminal-grid { min-width: 0; }
@@ -3031,7 +3032,8 @@ button, a, [role="button"] {
   padding: 7px 10px;
 }
 .compact-terminal .reference-fund-rail-label { display: none; }
-.compact-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; max-width: 220px; }
+.compact-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; max-width: 220px; padding-left: 8px; padding-right: 8px; }
+.compact-terminal .reference-fund-action span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .compact-terminal {
   overflow-y: auto !important;

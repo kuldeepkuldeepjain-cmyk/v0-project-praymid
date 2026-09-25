@@ -2270,6 +2270,22 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
+      <nav className="reference-fund-rail" aria-label="Account actions">
+        <div className="reference-fund-rail-label">Account</div>
+        <button type="button" className="reference-fund-action reference-fund-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
+          <Wallet className="h-4 w-4" />
+          <span>Add Funds</span>
+        </button>
+        <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+          <ArrowUpDown className="h-4 w-4" />
+          <span>Payout</span>
+        </button>
+        <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+          <TrendingUp className="h-4 w-4" />
+          <span>Prediction</span>
+        </button>
+      </nav>
+
       {/* ══ REFERENCE WATCHLIST ════════════════════════�������══════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
@@ -2370,18 +2386,6 @@ adjustWalletBalance(
           {isDarkTheme ? <Sun /> : <Moon />}
         </button>
       </div>
-
-      <nav className="reference-fund-rail" aria-label="Account actions">
-        <div className="reference-fund-rail-label">Account</div>
-        <button type="button" className="reference-fund-action reference-fund-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
-          <Wallet className="h-4 w-4" />
-          <span>Add Funds</span>
-        </button>
-        <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
-          <ArrowUpDown className="h-4 w-4" />
-          <span>Payout</span>
-        </button>
-      </nav>
 
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
@@ -2538,7 +2542,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────────────────���─���─���───────────────────────�����─────── */}
+        {/* ── CENTER: Chart ────���───────────���─���─���───────────────────────�����─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
           {/* Pair header */}
           {selectedPair ? (
