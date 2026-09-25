@@ -2567,11 +2567,19 @@ adjustWalletBalance(
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden md:flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
-          <div className="shrink-0 px-3 pt-2.5 pb-2" style={{ borderBottom: "1px solid #1a2640" }}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-4 rounded-sm" style={{ background: "linear-gradient(180deg,#22d3ee,#0ea5e9)" }} />
-                <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
+          <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+            <div className="mb-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.32)", boxShadow: "0 0 14px rgba(34,211,238,0.14)" }}>
+                  <Activity className="h-3.5 w-3.5 text-cyan-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
+                    <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-emerald-300">Live</span>
+                  </div>
+                  <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-slate-500">Real-time instruments</span>
+                </div>
               </div>
   <button
     type="button"
@@ -2611,8 +2619,8 @@ adjustWalletBalance(
   placeholder={`Search all ${PAIRS_CONFIG.length} instruments...`}
   aria-label="Search all instruments"
   aria-controls="market-watch-instruments"
-  className="w-full price-mono text-xs text-white focus:outline-none px-2 py-1.5 pr-7 rounded-lg mb-1"
-  style={{ background: "#070a10", border: `1px solid ${showPairSearch || pairSearch ? "#22d3ee" : "#1e2d45"}` }}
+  className="w-full price-mono text-xs text-white focus:outline-none px-3 py-2 pr-8 rounded-lg mb-1.5 placeholder:text-slate-600"
+  style={{ background: "rgba(3,9,18,0.9)", border: `1px solid ${showPairSearch || pairSearch ? "#22d3ee" : "rgba(71,103,135,0.55)"}`, boxShadow: showPairSearch || pairSearch ? "0 0 0 2px rgba(34,211,238,0.10), 0 0 18px rgba(34,211,238,0.08)" : "inset 0 1px 8px rgba(0,0,0,0.25)" }}
   />
   {pairSearch && <button type="button" onClick={() => { setPairSearch(""); pairSearchRef.current?.focus() }} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-200">×</button>}
   <div className="flex items-center justify-between px-1 pb-1.5 text-[8px]" aria-live="polite">
@@ -2855,10 +2863,14 @@ adjustWalletBalance(
           style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
-          <div className="flex shrink-0" style={{ borderBottom: "1px solid #1a2640" }}>
+          <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+            <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.32)", boxShadow: "0 0 14px rgba(168,85,247,0.14)" }}><Zap className="h-3.5 w-3.5 text-purple-300" /></div>
+              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-white">Order Panel</div><div className="truncate text-[8px] uppercase tracking-wider text-slate-500">Fast execution</div></div>
+            </div>
             {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setRightPanelTab(id as typeof rightPanelTab)}
-                className="flex-1 flex items-center justify-center gap-1 py-2 text-[9px] font-black tracking-wider uppercase transition-all"
+                className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2.5 text-[9px] font-black tracking-wider uppercase transition-all"
                 style={{
                   color: rightPanelTab === id ? "#22d3ee" : "#374151",
                   borderBottom: rightPanelTab === id ? "2px solid #22d3ee" : "2px solid transparent",
