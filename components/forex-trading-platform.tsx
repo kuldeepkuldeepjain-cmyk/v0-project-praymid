@@ -2348,7 +2348,7 @@ adjustWalletBalance(
       )}
       <div className="flex items-center justify-between gap-2 border-b border-slate-800/70 bg-slate-950/70 px-3 py-1 text-[9px] text-slate-400">
         <span className="flex items-center gap-1.5"><span className={`size-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-400"}`} />{quoteSourceLabel} live rate</span>
-        <span className="truncate text-right">{rateFeed?.provider ?? "Live market feed"} · refresh {quoteRefreshSeconds}s{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ""}</span>
+        <span className="truncate text-right">Live quotes · refresh {quoteRefreshSeconds}s{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ""}</span>
       </div>
 
       {/* ── Modify Modal ── */}
