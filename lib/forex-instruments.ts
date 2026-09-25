@@ -22,45 +22,48 @@ const FOREX_CONFIG: PairConfig[] = [
 const COMMODITIES_CONFIG: PairConfig[] = [
   { base: "XAU", quote: "USD", symbol: "XAU/USD", category: "Commodities" },
   { base: "XAG", quote: "USD", symbol: "XAG/USD", category: "Commodities" },
+  { base: "XPT", quote: "USD", symbol: "XPT/USD", category: "Commodities" },
+  { base: "XPD", quote: "USD", symbol: "XPD/USD", category: "Commodities" },
+  { base: "XCU", quote: "USD", symbol: "XCU/USD", category: "Commodities" },
 ]
 
 const FOREX_YAHOO: Record<string, string> = {
   "EUR/USD": "EURUSD=X", "GBP/USD": "GBPUSD=X", "USD/JPY": "USDJPY=X", "USD/CHF": "USDCHF=X",
   "AUD/USD": "AUDUSD=X", "USD/CAD": "USDCAD=X", "NZD/USD": "NZDUSD=X", "EUR/GBP": "EURGBP=X",
-  "XAU/USD": "GC=F", "XAG/USD": "SI=F",
+  "XAU/USD": "GC=F", "XAG/USD": "SI=F", "XPT/USD": "PL=F", "XPD/USD": "PA=F", "XCU/USD": "HG=F",
 }
 
 const FOREX_SPREADS: Record<string, number> = {
   "EUR/USD": 0.00015, "GBP/USD": 0.00020, "USD/JPY": 0.013, "USD/CHF": 0.00020,
   "AUD/USD": 0.00018, "USD/CAD": 0.00020, "NZD/USD": 0.00025, "EUR/GBP": 0.00018,
-  "XAU/USD": 0.50, "XAG/USD": 0.03,
+  "XAU/USD": 0.50, "XAG/USD": 0.03, "XPT/USD": 0.80, "XPD/USD": 1.50, "XCU/USD": 0.012,
 }
 
 const FOREX_SWAPS: Record<string, [number, number]> = {
   "EUR/USD": [-5.80, 0.60], "GBP/USD": [-4.20, 0.20], "USD/JPY": [1.20, -3.40],
   "USD/CHF": [0.80, -2.80], "AUD/USD": [-2.60, -0.40], "USD/CAD": [0.60, -2.90],
   "NZD/USD": [-1.80, -0.60], "EUR/GBP": [-4.10, 0.50],
-  "XAU/USD": [-10.50, -3.50], "XAG/USD": [-2.80, -1.20],
+  "XAU/USD": [-10.50, -3.50], "XAG/USD": [-2.80, -1.20], "XPT/USD": [-7.20, -3.10], "XPD/USD": [-8.50, -4.00], "XCU/USD": [-1.40, -0.80],
 }
 
 const FOREX_SEEDS: Record<string, number> = {
   "EUR/USD": 1.1050, "GBP/USD": 1.2750, "USD/JPY": 149.50, "USD/CHF": 0.9050,
   "AUD/USD": 0.6550, "USD/CAD": 1.3650, "NZD/USD": 0.6050, "EUR/GBP": 0.8650,
-  "XAU/USD": 3350.0, "XAG/USD": 34.50,
+  "XAU/USD": 3350.0, "XAG/USD": 34.50, "XPT/USD": 980.0, "XPD/USD": 960.0, "XCU/USD": 4.15,
 }
 
 const FOREX_FULL_NAMES: Record<string, string> = {
   "EUR/USD": "Euro / US Dollar", "GBP/USD": "British Pound", "USD/JPY": "US Dollar / Yen",
   "USD/CHF": "Swiss Franc", "AUD/USD": "Australian Dollar", "USD/CAD": "Canadian Dollar",
   "NZD/USD": "New Zealand Dollar", "EUR/GBP": "Euro / Pound",
-  "XAU/USD": "Gold Spot", "XAG/USD": "Silver Spot",
+  "XAU/USD": "Gold Spot", "XAG/USD": "Silver Spot", "XPT/USD": "Platinum Spot", "XPD/USD": "Palladium Spot", "XCU/USD": "Copper Spot",
 }
 
-const FOREX_ICONS: Record<string, string> = { "XAU/USD": "Au", "XAG/USD": "Ag" }
+const FOREX_ICONS: Record<string, string> = { "XAU/USD": "Au", "XAG/USD": "Ag", "XPT/USD": "Pt", "XPD/USD": "Pd", "XCU/USD": "Cu" }
 
 const FOREX_DECIMALS: Record<string, number> = {
   "USD/JPY": 3,
-  "XAU/USD": 2, "XAG/USD": 3,
+  "XAU/USD": 2, "XAG/USD": 3, "XPT/USD": 2, "XPD/USD": 2, "XCU/USD": 4,
 }
 
 // ── Crypto catalog (generated from a seed price so every downstream value
@@ -223,7 +226,11 @@ export function isJpy(sym: string): boolean { return sym.includes("JPY") }
 export function isCrypto(sym: string): boolean { return CRYPTO_TICKERS.has(sym.split("/")[0]) }
 export function isGold(sym: string): boolean { return sym.startsWith("XAU") }
 export function isSilver(sym: string): boolean { return sym.startsWith("XAG") }
-export function isCommodity(sym: string): boolean { return isGold(sym) || isSilver(sym) }
+export function isPlatinum(sym: string): boolean { return sym.startsWith("XPT") }
+export function isPalladium(sym: string): boolean { return sym.startsWith("XPD") }
+export function isCopper(sym: string): boolean { return sym.startsWith("XCU") }
+export function isMetal(sym: string): boolean { return isGold(sym) || isSilver(sym) || isPlatinum(sym) || isPalladium(sym) || isCopper(sym) }
+export function isCommodity(sym: string): boolean { return isMetal(sym) }
 
 export function decimals(sym: string): number {
   if (FOREX_DECIMALS[sym] != null) return FOREX_DECIMALS[sym]
@@ -233,8 +240,9 @@ export function decimals(sym: string): number {
 }
 
 export function pip(sym: string): number {
-  if (isGold(sym)) return 0.01
+  if (isGold(sym) || isPlatinum(sym) || isPalladium(sym)) return 0.01
   if (isSilver(sym)) return 0.001
+  if (isCopper(sym)) return 0.0001
   const ticker = sym.split("/")[0]
   if (CRYPTO_PRECISION[ticker]) return CRYPTO_PRECISION[ticker].pip
   return isJpy(sym) ? 0.01 : 0.0001
@@ -243,6 +251,8 @@ export function pip(sym: string): number {
 export function contractSize(sym: string): number {
   if (isGold(sym)) return 100        // 100 troy oz
   if (isSilver(sym)) return 5000     // 5000 troy oz
+  if (isPlatinum(sym) || isPalladium(sym)) return 50 // 50 troy oz
+  if (isCopper(sym)) return 25000 // 25,000 pounds
   const ticker = sym.split("/")[0]
   if (CRYPTO_PRECISION[ticker]) return CRYPTO_PRECISION[ticker].contractSize
   return 100000                       // standard forex lot
