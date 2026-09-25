@@ -22,6 +22,7 @@ import {
   Users,
   Award,
   MessageCircle,
+  Send,
   Sparkles,
   Crown,
   Flame,
@@ -30,6 +31,21 @@ import {
 import { useState } from "react"
 import { LearnMoreDialog } from "@/components/learn-more-dialog"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
+
+function FooterColumn({ title, links }: { title: string; links: [string, string][] }) {
+  return (
+    <div>
+      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{title}</h2>
+      <ul className="flex flex-col gap-3 text-sm text-slate-500">
+        {links.map(([label, href]) => (
+          <li key={label}>
+            <Link href={href} className="transition-colors hover:text-white">{label}</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export default function LandingPage() {
   const router = useRouter()
@@ -541,47 +557,64 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-slate-950 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-8 w-8 rounded-md" />
-                <span className="font-bold text-white">Elite Fund</span>
+      <footer className="border-t border-slate-800 bg-slate-950" aria-label="Footer">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 py-14 lg:grid-cols-[1.6fr_repeat(4,1fr)] lg:gap-8 lg:py-20">
+            <div className="max-w-xs">
+              <div className="mb-5 flex items-center gap-3">
+                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-md" />
+                <span className="text-lg font-bold tracking-tight text-white">ELITE FUND</span>
               </div>
-              <p className="text-slate-400 text-sm">Professional forex trading platform for everyone.</p>
+              <p className="text-base font-semibold leading-7 text-slate-200">Professional Trading Infrastructure for Modern Traders</p>
+              <p className="mt-4 text-sm leading-6 text-slate-400">Trade Smart. Manage Risk. Trade with Confidence.</p>
             </div>
-            <div>
-              <h4 className="font-bold text-white mb-3">Platform</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition">Trading Terminal</a></li>
-                <li><a href="#" className="hover:text-white transition">API Docs</a></li>
-                <li><a href="#" className="hover:text-white transition">Mobile App</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-3">Company</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition">About</a></li>
-                <li><a href="#" className="hover:text-white transition">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition">Terms</a></li>
-                <li><a href="#" className="hover:text-white transition">Privacy</a></li>
-                <li><a href="#" className="hover:text-white transition">Cookies</a></li>
-              </ul>
+
+            <FooterColumn title="Platform" links={[
+              ["Trading Terminal", "/participant/dashboard"],
+              ["Trader Dashboard", "/participant/dashboard"],
+              ["Funded Accounts", "/participant/register"],
+              ["API Docs", "/privacy"],
+              ["Mobile App", "/participant/dashboard"],
+            ]} />
+            <FooterColumn title="For Traders" links={[
+              ["How It Works", "#features"],
+              ["Programs", "/participant/register"],
+              ["Payouts", "/participant/dashboard/payout"],
+              ["FAQ", "/lending"],
+              ["Affiliate", "/participant/dashboard/refer"],
+            ]} />
+            <FooterColumn title="Company" links={[
+              ["About Us", "#security"],
+              ["Contact", "/participant/dashboard/settings/help"],
+              ["Help Center", "/participant/dashboard/settings/help"],
+              ["Blog", "/lending"],
+              ["Careers", "/participant/register"],
+            ]} />
+            <FooterColumn title="Legal" links={[
+              ["Terms", "/terms"],
+              ["Privacy", "/privacy"],
+              ["Risk Disclosure", "/terms"],
+              ["AML/KYC", "/privacy"],
+              ["Cookies", "/cookies"],
+            ]} />
+          </div>
+
+          <div className="border-y border-slate-800 py-6" role="note">
+            <div className="flex items-start gap-3">
+              <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Risk Disclosure</p>
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">Trading involves significant risk. Past performance does not guarantee future results. No profit is guaranteed. Only trade with funds you can afford to lose.</p>
+              </div>
             </div>
           </div>
-          <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">© 2024 Elite Fund. All rights reserved.</p>
-            <div className="flex gap-4 mt-4 sm:mt-0">
-              <a href="#" className="text-slate-400 hover:text-white transition">Twitter</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Discord</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Github</a>
+
+          <div className="flex flex-col gap-5 py-7 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-slate-500">© 2026 Elite Fund. All rights reserved.</p>
+            <div className="flex items-center gap-5 text-slate-400">
+              <a href="#" aria-label="Elite Fund on X" className="font-semibold transition hover:text-white">X</a>
+              <a href="#" aria-label="Elite Fund on Discord" className="inline-flex items-center gap-2 transition hover:text-white"><MessageCircle className="h-4 w-4" aria-hidden="true" />Discord</a>
+              <a href="#" aria-label="Elite Fund on Telegram" className="inline-flex items-center gap-2 transition hover:text-white"><Send className="h-4 w-4" aria-hidden="true" />Telegram</a>
             </div>
           </div>
         </div>
