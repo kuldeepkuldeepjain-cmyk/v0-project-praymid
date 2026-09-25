@@ -63,7 +63,8 @@ const FOREX_ICONS: Record<string, string> = { "XAU/USD": "Au", "XAG/USD": "Ag", 
 
 const FOREX_DECIMALS: Record<string, number> = {
   "USD/JPY": 3,
-  "XAU/USD": 2, "XAG/USD": 3, "XPT/USD": 2, "XPD/USD": 2, "XCU/USD": 4,
+  // Gold quotes are displayed to 3 decimals to match the market feed/chart.
+  "XAU/USD": 3, "XAG/USD": 3, "XPT/USD": 2, "XPD/USD": 2, "XCU/USD": 4,
 }
 
 // ── Crypto catalog (generated from a seed price so every downstream value
