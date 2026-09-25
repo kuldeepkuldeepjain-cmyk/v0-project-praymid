@@ -1031,7 +1031,35 @@ button, a, [role="button"] {
   transition: background 160ms ease, border-color 160ms ease;
 }
 .terminal-toolbar-action:hover { background: rgba(255,255,255,0.06); border-color: #3b6386; }
-.terminal-icon-button {
+  .reference-sidebar-collapsed {
+  display: flex;
+  width: 36px;
+  }
+  .terminal-sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  border: 1px solid #28506d;
+  border-radius: 6px;
+  padding: 0 8px;
+  color: #8dddf2;
+  background: #0c1c2c;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+  }
+  .terminal-sidebar-toggle:hover,
+  .terminal-sidebar-toggle:focus-visible {
+  border-color: #3dd5f3;
+  color: #d7f8ff;
+  background: #12304a;
+  outline: none;
+  }
+  .terminal-icon-button {
   position: relative;
   display: inline-flex;
   height: 34px;
@@ -1488,6 +1516,18 @@ button, a, [role="button"] {
 .apple-trading-terminal.is-dark .terminal-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.22); }
 
 @media (max-width: 767px) {
+  .terminal-sidebar-toggle {
+    min-width: 30px;
+    padding: 0 7px;
+  }
+  .reference-sidebar-collapsed {
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    border-left: 0 !important;
+    border-top: 1px solid #1e2d45;
+  }
   .apple-trading-terminal .apple-terminal-blotter { height: 220px !important; }
   .apple-trading-terminal .apple-terminal-topbar { padding-inline: 10px; gap: 8px; }
   .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand-copy,

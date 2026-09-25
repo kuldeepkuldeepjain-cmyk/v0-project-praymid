@@ -2243,6 +2243,8 @@ adjustWalletBalance(
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
         onToggleWatchlist={() => setMobileTab("market")}
+        onToggleSidebar={() => setRightPanelHidden((hidden) => !hidden)}
+        sidebarOpen={!rightPanelHidden}
         onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
         onOpenWithdraw={() => showToast("info", "Withdraw flow opened")}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
@@ -2645,8 +2647,8 @@ adjustWalletBalance(
         </div>
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
-        {rightPanelHidden && !isCompactViewport ? (
-          <div className="hidden lg:flex w-9 shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
+        {rightPanelHidden ? (
+          <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
               type="button"
               onClick={() => setRightPanelHidden(false)}
