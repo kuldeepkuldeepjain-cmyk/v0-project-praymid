@@ -103,6 +103,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#platform" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Platform</a>
             <a href="#features" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Features</a>
+            <a href="#programs" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Programs</a>
             <a href="#security" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Security</a>
           </div>
 
@@ -139,6 +140,7 @@ export default function LandingPage() {
           <div className="md:hidden absolute top-14 left-0 right-0 bg-slate-900 border-b border-slate-800 p-4 space-y-2">
             <a href="#platform" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Platform</a>
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
+            <a href="#programs" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Programs</a>
             <a href="#security" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Security</a>
           </div>
         )}
@@ -281,6 +283,47 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Funded account plans */}
+      <section id="programs" className="border-t border-slate-800 bg-slate-900 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">Funded account programs</p>
+            <h2 className="text-3xl font-bold text-white sm:text-4xl">Choose the trading capacity that fits your plan.</h2>
+            <p className="mt-4 text-base leading-7 text-slate-400">Review the account size, rules, eligibility, and risk limits before selecting a program. Program availability and terms may vary.</p>
+          </div>
+
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              { name: "Entry", fee: "$50", balance: "$5,000", icon: Sparkles, tone: "from-cyan-500/20 to-blue-500/20" },
+              { name: "Starter", fee: "$100", balance: "$10,000", icon: Wallet, tone: "from-blue-500/20 to-indigo-500/20" },
+              { name: "Popular", fee: "$250", balance: "$25,000", icon: TrendingUp, tone: "from-cyan-500/30 to-blue-500/30", featured: true },
+              { name: "Pro", fee: "$500", balance: "$50,000", icon: Award, tone: "from-amber-500/20 to-orange-500/20" },
+              { name: "Advanced", fee: "$1,000", balance: "$100,000", icon: Globe, tone: "from-emerald-500/20 to-cyan-500/20" },
+            ].map((plan) => {
+              const Icon = plan.icon
+              return (
+                <div key={plan.name} className={`relative rounded-2xl border p-5 ${plan.featured ? "border-cyan-400/70 bg-slate-800/80 shadow-lg shadow-cyan-500/10" : "border-slate-700 bg-slate-950/60"}`}>
+                  {plan.featured && <span className="absolute -top-3 right-4 rounded-full bg-cyan-400 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-950">Most selected</span>}
+                  <div className={`flex size-11 items-center justify-center rounded-xl bg-gradient-to-br ${plan.tone}`}>
+                    <Icon className="h-5 w-5 text-cyan-300" aria-hidden="true" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-bold text-white">{plan.name} plan</h3>
+                  <p className="mt-4 text-xs uppercase tracking-wider text-slate-500">Program fee</p>
+                  <p className="mt-1 text-2xl font-bold text-slate-100">{plan.fee}</p>
+                  <div className="my-4 h-px bg-slate-800" />
+                  <p className="text-xs uppercase tracking-wider text-slate-500">Trading balance</p>
+                  <p className="mt-1 text-2xl font-extrabold text-cyan-300">{plan.balance}</p>
+                  <p className="mt-4 text-xs leading-5 text-slate-500">Rules, drawdown limits, and eligibility apply. Review terms before registration.</p>
+                  <Link href="/participant/register" className="mt-5 block">
+                    <Button variant={plan.featured ? "default" : "outline"} className="w-full">Review program <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                  </Link>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* Operating principles */}
       <section className="border-t border-slate-800 bg-slate-900 py-16 sm:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -389,7 +432,7 @@ export default function LandingPage() {
             ]} />
             <FooterColumn title="For Traders" links={[
               ["How It Works", "#features"],
-              ["Programs", "/participant/register"],
+              ["Programs", "#programs"],
               ["Payouts", "/participant/dashboard/payout"],
               ["FAQ", "/lending"],
               ["Affiliate", "/participant/dashboard/refer"],
