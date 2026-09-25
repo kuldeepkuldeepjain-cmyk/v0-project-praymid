@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
+  Command, Grid3x3, Square, BellRing,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -18,6 +19,12 @@ import {
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
   type AssetCategory,
 } from "@/lib/forex-instruments"
+import {
+  DepthOfMarketLadder, RiskAnalyticsPanel, NewsCalendarPanel,
+  TradeJournalPanel, CommandPalette, useTradingHotkeys,
+  MiniChartGrid, ConnectionStatus,
+} from "@/components/forex-institutional"
+import { ForexHeader } from "@/components/forex-header"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,15 +32,15 @@ export type Candle = {
   time: string; open: number; high: number; low: number; close: number; volume: number; ts?: number
 }
 
-type ForexPair = {
+export type ForexPair = {
   symbol: string; base: string; quote: string
   bid: number; ask: number; change: number; high: number; low: number; open: number
   candles: Candle[]; spread: number
 }
 
-type TradeDirection = "BUY" | "SELL"
+export type TradeDirection = "BUY" | "SELL"
 
-type OpenTrade = {
+export type OpenTrade = {
   id: string; pair: string; direction: TradeDirection
   lotSize: number; leverage: number
   openPrice: number; currentPrice: number
@@ -45,7 +52,7 @@ type OpenTrade = {
   swap: number                      // accumulated overnight swap in USD
 }
 
-type PendingOrder = {
+export type PendingOrder = {
   id: string; pair: string; direction: TradeDirection
   orderType: "BUY_LIMIT" | "BUY_STOP" | "SELL_LIMIT" | "SELL_STOP"
   lotSize: number; leverage: number
@@ -55,7 +62,7 @@ type PendingOrder = {
   expiry: "GTC" | "TODAY"           // Good Till Cancel or expire end of day
 }
 
-type ClosedTrade = OpenTrade & {
+export type ClosedTrade = OpenTrade & {
   closePrice: number; closeTime: string; closeDuration: string
   finalPnl: number; finalPips: number; finalSwap: number
   closeReason: "manual" | "sl" | "tp" | "trailing_sl"
@@ -1085,7 +1092,7 @@ function PositionSizer({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
@@ -1107,6 +1114,7 @@ function PositionSizer({
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
+  const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
@@ -1121,6 +1129,9 @@ function PositionSizer({
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
+  const [soundEnabled, setSoundEnabled] = useState(true)
 
   const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
@@ -1137,7 +1148,14 @@ function PositionSizer({
   const addInstrumentBtnRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    setThemeReady(true)
+  const updateViewport = () => setIsCompactViewport(window.innerWidth < 1024)
+  updateViewport()
+  window.addEventListener("resize", updateViewport)
+  return () => window.removeEventListener("resize", updateViewport)
+  }, [])
+
+  useEffect(() => {
+  setThemeReady(true)
     try {
       const saved = window.localStorage.getItem("trade-terminal-theme")
       if (saved) setIsDarkTheme(saved === "dark")
@@ -2005,7 +2023,7 @@ adjustWalletBalance(
     showToast("info", "Position updated")
   }, [showToast, persistModify])
 
-  // ── Price Alert checker (runs each tick) ─────────────────────────────────
+  // ── Price Alert checker (runs each tick) ��────────────────────────────────
   useEffect(() => {
     if (priceAlerts.length === 0) return
     setPriceAlerts(prev => prev.map(a => {
@@ -2114,11 +2132,52 @@ adjustWalletBalance(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equity, totalPnl, walletBalance])
 
+  // ── Institutional hotkeys (B/S buy/sell, X close all, Ctrl+K palette, +/- lot) ──
+  useTradingHotkeys({
+    onBuy: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("BUY") },
+    onSell: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("SELL") },
+    onCloseAll: () => { openTrades.forEach(t => closeTrade(t.id)) },
+    onCancelPending: () => { setTradeConfirm(null); setModifyTarget(null) },
+    onToggleCommand: () => setCommandPaletteOpen(v => !v),
+    onIncreaseLot: () => setLotSize(prev => { const n = parseFloat(prev) || 0.01; return String(Math.min(100, Math.round((n + 0.01) * 100) / 100)) }),
+    onDecreaseLot: () => setLotSize(prev => { const n = parseFloat(prev) || 0.01; return String(Math.max(0.01, Math.round((n - 0.01) * 100) / 100)) }),
+  })
+
+  // ── Command palette actions ──────────────────────────────────────────────────
+  const commandActions = useMemo(() => [
+    { id: "buy", label: "Quick BUY at market", hint: "Open a long position at the current ask", icon: TrendingUp, shortcut: "B", action: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("BUY") } },
+    { id: "sell", label: "Quick SELL at market", hint: "Open a short position at the current bid", icon: TrendingDown, shortcut: "S", action: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("SELL") } },
+    { id: "close-all", label: "Close all positions", hint: "Manually close every open trade", icon: X, shortcut: "X", action: () => { openTrades.forEach(t => closeTrade(t.id)) } },
+    { id: "cancel-pending", label: "Cancel all pending orders", hint: "Remove every working limit/stop order", icon: Clock, action: () => { pendingOrders.forEach(o => cancelPending(o.id)) } },
+    { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
+    { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
+    { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
+    { id: "panel-positions", label: "Show open positions", hint: "Switch the bottom blotter to positions", icon: Layers, action: () => setActivePanel("positions") },
+    { id: "panel-pending", label: "Show pending orders", hint: "Switch the bottom blotter to pending orders", icon: Clock, action: () => setActivePanel("pending") },
+    { id: "panel-history", label: "Show trade history", hint: "Switch the bottom blotter to closed trades", icon: History, action: () => setActivePanel("history") },
+    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book ladder", icon: BarChart2, action: () => setActivePanel("dom") },
+    { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics panel", icon: ShieldAlert, action: () => setActivePanel("risk") },
+    { id: "panel-journal", label: "Show trade journal", hint: "Open the performance journal", icon: BookOpen, action: () => setActivePanel("journal") },
+    { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar", icon: Newspaper, action: () => setActivePanel("news") },
+    { id: "panel-performance", label: "Show performance dashboard", hint: "Open the equity curve and KPIs", icon: BarChart, action: () => setActivePanel("performance") },
+    { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alert manager", icon: Bell, action: () => setActivePanel("alerts") },
+    { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
+    { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
+    { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
+    { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
+    { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
+    { id: "payout", label: "Request payout", hint: "Open the payout page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
+
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
+
+      {/* ── Command Palette (Ctrl+K) ── */}
+      <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} actions={commandActions} />
 
       {(marketError || candleError) && (
         <div className="absolute left-2 right-2 top-12 z-40 flex items-center justify-between gap-2 rounded border border-amber-400/30 bg-amber-950/95 px-2.5 py-1.5 text-[9px] text-amber-100 shadow-lg">
@@ -2138,279 +2197,75 @@ adjustWalletBalance(
         />
       )}
 
-      {/* ══ TOP NAV BAR ══════════════════════════════════════════════════════ */}
-      <div className="apple-terminal-topbar relative flex items-center shrink-0 px-2 h-10 gap-2" style={{ background: "#172536", borderBottom: "1px solid #344b62" }}>
-        <div className="reference-terminal-brand flex items-center gap-2 shrink-0" aria-label="Elite Fund MT5 Trading Terminal">
-          <img
-            src="/elite-fund-logo.jpg"
-            alt="Elite Fund"
-            className="reference-terminal-brand-mark h-6 w-6 shrink-0 object-cover"
-          />
-          <div className="flex flex-col leading-none">
-            <span className="text-[10px] font-black tracking-[0.12em] text-white">ELITE FUND</span>
-            <span className="text-[8px] font-bold tracking-[0.14em]" style={{ color: "#65b5f3" }}>MT5 TRADING TERMINAL</span>
-          </div>
-        </div>
-        <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
 
-        {/* Header instrument finder */}
-        <div className="relative z-30 w-[170px] shrink-0 sm:w-[220px]">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cyan-400/70" />
-          <input
-            ref={headerPairSearchRef}
-            type="search"
-            value={pairSearch}
-            onFocus={() => setShowPairSearch(true)}
-            onChange={e => { setShowPairSearch(true); setPairSearch(e.target.value) }}
-            onKeyDown={e => {
-              if (e.key === "Escape") {
-                setPairSearch("")
-                setShowPairSearch(false)
-                e.currentTarget.blur()
-              }
-              if (e.key === "Enter" && filteredPairs[0]) {
-                const pair = filteredPairs[0]
-                setSelectedPair(pair)
-                fetchCandles(pair.symbol, timeframe)
-                setPairSearch(pair.symbol)
-                setShowPairSearch(false)
-                setMobileTab("chart")
-              }
-            }}
-            placeholder="Search instrument..."
-            aria-label="Search instrument in terminal header"
-            className="h-7 w-full rounded border pl-7 pr-7 price-mono text-[10px] text-white placeholder:text-slate-500 focus:outline-none"
-            style={{ background: "#0d1826", borderColor: showPairSearch || pairSearch ? "#22d3ee" : "#344b62" }}
-          />
-          {pairSearch && (
-            <button
-              type="button"
-              onClick={() => { setPairSearch(""); headerPairSearchRef.current?.focus() }}
-              aria-label="Clear header instrument search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-          {showPairSearch && (
-            <div className="absolute left-0 top-8 w-[280px] overflow-hidden rounded-md border shadow-2xl" style={{ background: "#0b111d", borderColor: "#1e2d45" }}>
-              <div className="flex items-center justify-between border-b px-2.5 py-1.5" style={{ borderColor: "#1a2640" }}>
-                <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-500">Instrument search</span>
-                <span className="price-mono text-[8px] text-cyan-400">{filteredPairs.length} found</span>
-              </div>
-              <div className="max-h-64 overflow-y-auto terminal-scroll">
-                {filteredPairs.slice(0, 8).map(pair => {
-                  const cfg = PAIRS_CONFIG.find(item => item.symbol === pair.symbol)
-                  const category = cfg?.category ?? "Forex"
-                  return (
-                    <button
-                      key={pair.symbol}
-                      type="button"
-                      onMouseDown={event => event.preventDefault()}
-                      onClick={() => {
-                        setSelectedPair(pair)
-                        fetchCandles(pair.symbol, timeframe)
-                        setPairSearch(pair.symbol)
-                        setShowPairSearch(false)
-                        setMobileTab("chart")
-                      }}
-                      className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-white/5"
-                    >
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[8px] font-black" style={{ background: CATEGORY_COLOR[category].bg, color: CATEGORY_COLOR[category].text }}>
-                        {ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}
-                      </span>
-                      <span className="flex min-w-0 flex-1 flex-col">
-                        <span className="price-mono text-[10px] font-black text-white">{pair.symbol}</span>
-                        <span className="truncate text-[8px] text-slate-500">{FULL_NAMES[pair.symbol] ?? pair.symbol}</span>
-                      </span>
-                      <span className="price-mono text-[9px] font-bold" style={{ color: pair.change >= 0 ? "#10b981" : "#ef4444" }}>{pair.change >= 0 ? "+" : ""}{pair.change.toFixed(2)}%</span>
-                    </button>
-                  )
-                })}
-                {filteredPairs.length === 0 && <div className="px-3 py-5 text-center text-[9px] text-slate-500">No matching instruments</div>}
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Ticker tape */}
-        <div className="hidden min-w-0 flex-1 overflow-hidden relative sm:block" style={{ mask: "linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)" }}>
-          <div className="ticker-scroll flex gap-6 items-center">
-            {[...pairs, ...pairs].map((p, i) => {
-              const up = p.change >= 0
-              return (
-                <button key={i} onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe) }}
-                  className="flex items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity">
-                  <span className="text-[10px] font-bold text-slate-400">{p.symbol}</span>
-                  <span className="price-mono text-[10px] font-bold" style={{ color: up ? "#10b981" : "#ef4444" }}>{fmt(p.bid, p.symbol)}</span>
-                  <span className="text-[9px] font-bold" style={{ color: up ? "#10b981" : "#ef4444" }}>{up ? "+" : ""}{(p.change ?? 0).toFixed(2)}%</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+{/* ══ PROFESSIONAL HEADER (brand, search, tools, account, metrics) ══ */}
+      <ForexHeader
+        walletBalance={walletBalance}
+        equity={equity}
+        totalPnl={totalPnl}
+        totalSwap={totalSwap}
+        totalMargin={totalMargin}
+        freeMargin={freeMargin}
+        marginLevel={marginLevel}
+        openTradesCount={openTrades.length}
+        pendingOrdersCount={pendingOrders.length}
+        leverage={Number(leverage) || 100}
+        accountType={isFundedAccount ? "Funded" : "Live"}
+        accountId={participantEmail ? participantEmail.split("@")[0].toUpperCase().slice(0, 8) : "DEMO-001"}
+        userName={participantEmail ? participantEmail.split("@")[0] : "Trader"}
+        userEmail={participantEmail || "trayer@praysmid.com"}
+        isConnected={online}
+        onNavigate={(panel) => {
+          if (panel === "sizer") { setMobileTab("order"); setRightPanelTab("sizer") }
+          else if (panel === "calendar") { setActivePanel("news") }
+          else if (panel === "news") { setActivePanel("news") }
+          else if (panel === "performance") { setActivePanel("performance") }
+          else if (panel === "history") { setActivePanel("history") }
+          else if (panel === "journal") { setActivePanel("journal") }
+          else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
+          else if (panel === "support") { showToast("info", "Live support: support@praysmid.com") }
+          else { setActivePanel(panel as typeof activePanel) }
+        }}
+        onToggleFullscreen={() => {
+          if (document.fullscreenElement) document.exitFullscreen()
+          else document.documentElement.requestFullscreen()
+        }}
+        isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
+        onToggleLock={() => showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")}
+        isLocked={isFrozen}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        soundEnabled={soundEnabled}
+        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
+        theme={isDarkTheme ? "dark" : "light"}
+        onToggleWatchlist={() => setMobileTab("market")}
+        onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
+        onOpenWithdraw={() => showToast("info", "Withdraw flow opened")}
+        onOpenTransfer={() => showToast("info", "Transfer flow opened")}
+        onOpenSettings={() => showToast("info", "Settings opened")}
+        onOpenProfile={() => showToast("info", "Profile opened")}
+        onLogout={() => showToast("info", "Sign out requested")}
+        onSearch={(q) => { if (q) { setPairSearch(q); setShowPairSearch(true) } }}
+        notifications={toasts.slice(0, 5).map(t => ({
+          id: t.id,
+          type: t.type,
+          title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
+          message: t.text,
+          time: "just now",
+          read: false,
+        }))}
+        onMarkNotificationRead={(id) => setToasts(ts => ts.filter(t => t.id !== id))}
+        onClearNotifications={() => setToasts([])}
+        activeLanguage="en"
+        onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
+        activeLayout={chartLayout === "grid" ? "pro" : "default"}
+        onChangeLayout={(layout) => { setChartLayout(layout === "pro" ? "grid" : "single"); showToast("info", `Layout: ${layout}`) }}
+        serverTime={new Date().toISOString().slice(11, 19) + " UTC"}
+        marketStatus={online ? "open" : "closed"}
+      />
 
-        <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
-
-        {/* Feed telemetry */}
-        <div className="hidden lg:flex items-center gap-2 shrink-0 px-2 py-1 rounded" style={{ background: "rgba(34,211,238,0.04)", border: "1px solid rgba(34,211,238,0.10)" }}>
-          <span className="text-[8px] font-black tracking-[0.14em] uppercase" style={{ color: "#3d5a80" }}>TICKS</span>
-          <span className="price-mono text-[10px] font-black text-cyan-400">{tickCount.toLocaleString()}</span>
-          <span className="text-[8px]" style={{ color: "#2d4565" }}>·</span>
-          <span className="text-[8px] font-black tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>3S FEED</span>
-        </div>
-
-        {/* Live status */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="live-dot" style={{ background: online ? "#10b981" : "#ef4444", boxShadow: online ? "0 0 6px #10b981" : "0 0 6px #ef4444" }} />
-          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: online ? "#10b981" : "#ef4444" }}>
-            {online ? "LIVE" : "OFFLINE"}
-          </span>
-          {lastUpdated && <span className="text-[9px] text-slate-500 price-mono hidden md:block">{lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
-          <span className="hidden xl:inline text-[8px] font-bold tracking-wider uppercase" style={{ color: "#2d4565" }}>LP QUOTES</span>
-        </div>
-
-        {/* Balance chip with sparkline */}
-        <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
-          <Wallet className="h-3 w-3 text-emerald-400" />
-          <div className="flex flex-col">
-            <span className="text-[8px] font-bold tracking-wider text-emerald-300/70 leading-none">BALANCE</span>
-            <span className="price-mono text-[11px] font-black text-emerald-400 leading-none">
-              ${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-          {sparkPath && (
-            <svg width="80" height="24" viewBox="0 0 80 24" fill="none" className="shrink-0">
-              <path d={sparkPath} stroke={totalPnl >= 0 ? "#10b981" : "#ef4444"} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-          {balanceDelta && (
-            <span key={balanceDelta.id} className="absolute -top-5 left-1/2 price-mono text-[10px] font-black pointer-events-none animate-bounce"
-              style={{ transform: "translateX(-50%)", color: balanceDelta.value >= 0 ? "#10b981" : "#ef4444" }}>
-              {balanceDelta.value >= 0 ? "+" : ""}${Math.abs(balanceDelta.value).toFixed(2)}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={() => { window.location.href = "/participant/dashboard" }}
-            className="hidden sm:flex items-center gap-1 rounded-md border border-cyan-500/25 bg-cyan-500/10 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-cyan-200 transition-colors hover:bg-cyan-500/20"
-            title="Open account balance"
-          >
-            <Wallet className="h-3 w-3" />
-            <span>Balance</span>
-          </button>
-          {isFundedAccount && onAddFundedFunds && (
-            <button
-              type="button"
-              onClick={onAddFundedFunds}
-              className="flex items-center gap-1 rounded-md border border-amber-300/40 bg-amber-400/20 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-amber-100 transition-colors hover:bg-amber-400/30"
-              title="Open funded-tier funding plans"
-            >
-              <ShieldAlert className="h-3 w-3" />
-              <span className="hidden lg:inline">Funded-tier Fund</span>
-              <span className="lg:hidden">Funded</span>
-            </button>
-          )}
-  <button
-  type="button"
-  onClick={onAddFunds}
-  className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-white transition-colors hover:brightness-110" style={{ background: "#f58220", border: "1px solid #ff9f4a" }}
-  title="Add normal funds"
-  >
-  <Plus className="h-3 w-3" />
-  <span className="hidden lg:inline">Normal Add Fund</span>
-  <span className="lg:hidden">Fund</span>
-  </button>
-          <button
-            type="button"
-            onClick={() => { window.location.href = "/participant/dashboard/payout" }}
-            className="flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-2 py-1.5 text-[9px] font-black uppercase tracking-wider text-emerald-200 transition-colors hover:bg-emerald-500/25"
-            title="Request payout"
-          >
-            <ArrowUpDown className="h-3 w-3" />
-            <span className="hidden lg:inline">Payout</span>
-            <span className="lg:hidden">Pay</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsDarkTheme(theme => !theme)}
-            aria-label={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
-            aria-pressed={isDarkTheme}
-            title={`Switch to ${isDarkTheme ? "light" : "dark"} theme`}
-            className="flex items-center gap-1.5 px-2 py-1.5 transition-colors"
-            style={{ background: isDarkTheme ? "rgba(251,191,36,0.10)" : "rgba(0,113,227,0.08)", border: isDarkTheme ? "1px solid rgba(251,191,36,0.24)" : "1px solid rgba(0,113,227,0.16)", borderRadius: 5 }}>
-            {isDarkTheme ? <Sun className="h-3.5 w-3.5 text-amber-400" /> : <Moon className="h-3.5 w-3.5 text-blue-500" />}
-            <span className="hidden text-[8px] font-black tracking-[0.14em] uppercase sm:inline" style={{ color: isDarkTheme ? "#b7791f" : "#0071e3" }}>
-              {isDarkTheme ? "Light" : "Dark"}
-            </span>
-          </button>
-          <button onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
-            aria-label="Refresh market data"
-            title="Refresh market data"
-            className="p-1.5 transition-colors"
-            style={{ background: "rgba(34,211,238,0.06)", border: "1px solid rgba(34,211,238,0.15)", borderRadius: 4 }}>
-            <RefreshCw className={`h-3.5 w-3.5 text-cyan-400 ${candleLoading ? "animate-spin" : ""}`} />
-          </button>
-        </div>
-      </div>
-
-      {/* MT5-style workspace toolbar */}
-      <div className="flex h-7 shrink-0 items-center gap-0 border-b px-1" style={{ background: "#202f40", borderColor: "#344b62" }} aria-label="MT5 workspace toolbar">
-        {[
-          { label: "Market Watch", icon: "▤" },
-          { label: "Navigator", icon: "��" },
-          { label: "Data Window", icon: "▥" },
-          { label: "Strategy Tester", icon: "▣" },
-        ].map(item => (
-          <button
-            key={item.label}
-            type="button"
-            onClick={() => {
-              if (item.label === "Market Watch") setMobileTab("market")
-              if (item.label === "Navigator") {
-                setMobileTab("order")
-                setRightPanelTab("sizer")
-                showToast("info", "Navigator opened — use Position Sizer to plan risk")
-              }
-              if (item.label === "Data Window") {
-                setMobileTab("chart")
-                setActivePanel("stats")
-              }
-              if (item.label === "Strategy Tester") setActivePanel("performance")
-            }}
-            className="flex h-full items-center gap-1 border-r px-2 text-[9px] text-slate-300 transition-colors hover:bg-[#2b4056] hover:text-white"
-          >
-            <span className="text-[#75bff2]">{item.icon}</span>{item.label}
-          </button>
-        ))}
-        <span className="ml-auto px-2 text-[8px] uppercase tracking-[0.15em] text-slate-500">MT5 Workspace</span>
-      </div>
-
-      {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
-      <div className="apple-terminal-summary flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
-        {[
-          { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  hint: "Cash available", color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
-          { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          hint: "Balance plus open P&L", color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
-          { label: "OPEN P&L",     value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                        hint: "Profit or loss now", color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)" },
-          { label: "SWAP",         value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                      hint: "Overnight cost", color: totalSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
-          { label: "MARGIN USED",  value: `$${totalMargin.toFixed(2)}`,                                                 hint: "Reserved for trades", color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
-          { label: "FREE MARGIN",  value: `$${freeMargin.toFixed(2)}`,                                                  hint: "Available to trade", color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
-          { label: "MARGIN LEVEL", value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                         hint: "Account safety", color: marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171", bg: "transparent" },
-          { label: "OPEN TRADES",  value: String(openTrades.length),                                                     hint: "Active positions", color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-          { label: "PENDING",      value: String(pendingOrders.length),                                                  hint: "Waiting orders", color: "#93c5fd", bg: "transparent" },
-        ].map((item, i) => (
-          <div key={i} title={item.hint} className="flex items-center gap-2 px-3 h-full shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-            <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* ══ REFERENCE WATCHLIST ═══════════════════════════════════════════��════ */}
-      <div className="reference-watchlist shrink-0 flex items-center gap-3 px-5 py-4 overflow-x-auto terminal-scroll">
+      {/* ══ REFERENCE WATCHLIST ════════════════════════���══════════════════��════ */}
+      <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
           if (!pair) return null
@@ -2511,7 +2366,7 @@ adjustWalletBalance(
       </div>
 
       {/* ══ MOBILE TAB SWITCHER ══════════════════════════════════════════════��� */}
-      <div className="apple-terminal-mobile-tabs flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
+      <div className="apple-terminal-mobile-tabs flex shrink-0 lg:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
         {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map(tab => (
           <button key={tab.id} onClick={() => setMobileTab(tab.id as typeof mobileTab)}
             className="flex-1 py-2 text-[10px] font-black tracking-wider uppercase transition-all"
@@ -2563,9 +2418,9 @@ adjustWalletBalance(
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
-        {/* ── LEFT: Market Watch ─────────────────────────────�����───────────────── */}
-        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden md:flex"}`}
-          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+        {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
+        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport && mobileTab !== "market" ? "none" : undefined }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -2581,55 +2436,7 @@ adjustWalletBalance(
                   <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-slate-500">Real-time instruments</span>
                 </div>
               </div>
-  <button
-    type="button"
-    onClick={() => {
-      setShowPairSearch(true)
-      pairSearchRef.current?.focus()
-    }}
-    aria-label="Focus instrument search"
-    className={`p-1 rounded transition-colors ${showPairSearch || pairSearch ? "text-cyan-300" : "text-slate-500 hover:text-slate-300"}`}
-  >
-  <Activity className="h-3.5 w-3.5" />
-  </button>
-  </div>
-  <div className="relative">
-  <input
-  ref={pairSearchRef}
-  type="search"
-  value={pairSearch}
-  onFocus={() => setShowPairSearch(true)}
-  onChange={e => {
-    setShowPairSearch(true)
-    setPairSearch(e.target.value)
-  }}
-  onKeyDown={e => {
-    if (e.key === "Escape") {
-      setPairSearch("")
-      setShowPairSearch(false)
-      e.currentTarget.blur()
-    }
-    if (e.key === "Enter" && filteredPairs[0]) {
-      const pair = filteredPairs[0]
-      setSelectedPair(pair)
-      fetchCandles(pair.symbol, timeframe)
-      setMobileTab("chart")
-    }
-  }}
-  placeholder={`Search all ${PAIRS_CONFIG.length} instruments...`}
-  aria-label="Search all instruments"
-  aria-controls="market-watch-instruments"
-  className="w-full price-mono text-xs text-white focus:outline-none px-3 py-2 pr-8 rounded-lg mb-1.5 placeholder:text-slate-600"
-  style={{ background: "rgba(3,9,18,0.9)", border: `1px solid ${showPairSearch || pairSearch ? "#22d3ee" : "rgba(71,103,135,0.55)"}`, boxShadow: showPairSearch || pairSearch ? "0 0 0 2px rgba(34,211,238,0.10), 0 0 18px rgba(34,211,238,0.08)" : "inset 0 1px 8px rgba(0,0,0,0.25)" }}
-  />
-  {pairSearch && <button type="button" onClick={() => { setPairSearch(""); pairSearchRef.current?.focus() }} aria-label="Clear instrument search" className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-200">×</button>}
-  <div className="flex items-center justify-between px-1 pb-1.5 text-[8px]" aria-live="polite">
-    <span style={{ color: searchNoResults ? "#f87171" : "#3d5a80" }}>
-      {pairSearch ? (searchNoResults ? "No matching instruments" : `${filteredPairs.length} matching instruments`) : "Type a symbol or instrument name"}
-    </span>
-    <span style={{ color: "#2d4565" }}>Enter to select</span>
-  </div>
-  </div>
+            </div>
             <div className="flex gap-1">
               {categoryTabs.map(cat => {
                 const isActive = activeCategory === cat
@@ -2763,8 +2570,8 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────────────────────────────────────────────���─────── */}
-        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        {/* ── CENTER: Chart ────────────────────���───────────────────────�����─────── */}
+        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""} ${mobileTab !== "chart" ? "tablet-chart-hidden" : ""}`} style={{ display: isCompactViewport && mobileTab !== "chart" ? "none" : undefined }}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2799,6 +2606,16 @@ adjustWalletBalance(
               </div>
               {/* TF selector */}
               <div className="ml-auto flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
+                  aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
+                  title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
+                  className="p-1 transition-colors"
+                  style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
+                >
+                  {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
+                </button>
                 {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
                   <button key={tf} onClick={() => setTimeframe(tf)}
                     className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
@@ -2818,10 +2635,10 @@ adjustWalletBalance(
             </div>
           )}
 
-  {/* Chart + BUY/SELL strip */}
+{/* Chart + BUY/SELL strip */}
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
   <div className="relative flex-1 min-h-0">
-  {selectedPair ? (
+  {selectedPair && chartLayout === "single" ? (
   <TradingChart
   key={isDarkTheme ? "dark" : "light"}
   candles={selectedPair.candles}
@@ -2835,19 +2652,31 @@ adjustWalletBalance(
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   />
+  ) : selectedPair && chartLayout === "grid" ? (
+  <MiniChartGrid
+  pairs={pairs}
+  selectedSymbol={selectedPair.symbol}
+  onSelect={(sym) => {
+    const p = pairs.find(x => x.symbol === sym)
+    if (p) {
+      setSelectedPair(p)
+      fetchCandles(sym, timeframe)
+    }
+  }}
+  tickCount={tickCount}
+  />
   ) : (
   <div className="flex flex-col items-center justify-center h-full gap-3">
   <CandlestickChart className="h-12 w-12 text-slate-800" />
   <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
   </div>
   )}
-
   </div>
-          </div>
+  </div>
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
         {rightPanelHidden ? (
-          <div className="hidden md:flex w-9 shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
+          <div className="hidden lg:flex w-9 shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
               type="button"
               onClick={() => setRightPanelHidden(false)}
@@ -2859,8 +2688,8 @@ adjustWalletBalance(
             </button>
           </div>
         ) : (
-        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "order" ? "flex" : "hidden md:flex"}`}
-          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
+        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "order" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport && mobileTab !== "order" ? "none" : undefined }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3182,7 +3011,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════════════════════════════���═══��════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
@@ -3190,6 +3019,10 @@ adjustWalletBalance(
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
+            { id: "dom",         label: "Order Book",                         icon: BarChart2 },
+            { id: "risk",        label: "Risk",                               icon: ShieldAlert },
+            { id: "journal",     label: "Journal",                            icon: BookOpen },
+            { id: "news",        label: "News",                               icon: Newspaper },
             { id: "performance", label: "Performance",                        icon: BarChart },
             { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
@@ -3540,6 +3373,40 @@ adjustWalletBalance(
 
           {/* ── Market Sessions ── */}
           {activePanel === "sessions" && <MarketSessionsPanel />}
+
+          {/* ── Depth-of-Market (L2 ladder) ── */}
+          {activePanel === "dom" && (
+            selectedPair
+              ? <DepthOfMarketLadder pair={selectedPair} tickCount={tickCount} onPlaceOrder={(side, price) => {
+                  setDirection(side)
+                  setOrderType("limit")
+                  setPendingPrice(price.toFixed(decimals(selectedPair.symbol)))
+                  setMobileTab("order")
+                  setRightPanelTab("order")
+                  showToast("info", `${side} limit pre-filled at ${price.toFixed(decimals(selectedPair.symbol))} — review and place`)
+                }} />
+              : <div className="flex items-center justify-center h-full text-slate-700 text-[11px] tracking-wider">Select an instrument</div>
+          )}
+
+          {/* ── Portfolio Risk Analytics ── */}
+          {activePanel === "risk" && (
+            <RiskAnalyticsPanel
+              openTrades={openTrades}
+              walletBalance={walletBalance}
+              equity={equity}
+              totalMargin={totalMargin}
+              totalPnl={totalPnl}
+              pairs={pairs}
+            />
+          )}
+
+          {/* ── Trade Journal ── */}
+          {activePanel === "journal" && (
+            <TradeJournalPanel closed={closedTrades} equityHistory={equityHistory} />
+          )}
+
+          {/* ── News & Economic Calendar ── */}
+          {activePanel === "news" && <NewsCalendarPanel />}
 
         </div>
       </div>

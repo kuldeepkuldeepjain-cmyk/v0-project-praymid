@@ -1828,7 +1828,7 @@ export default function DashboardHome() {
       />
 
       <header
-        className="participant-header sticky top-0 z-40"
+        className={`participant-header sticky top-0 z-40 ${activeTab === "trading" ? "hidden" : ""}`}
         style={{
           background: "linear-gradient(180deg, rgba(3,7,18,0.98) 0%, rgba(7,11,28,0.95) 100%)",
           backdropFilter: "blur(20px)",
@@ -1910,7 +1910,7 @@ export default function DashboardHome() {
         </div>
       </header>
 
-      <main className="pb-24 md:pb-6" style={{ background: "transparent" }}>
+      <main className={activeTab === "trading" ? "hidden" : "pb-24 md:pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
@@ -2346,43 +2346,6 @@ export default function DashboardHome() {
           )}
 
           <div className="elite-terminal-workspace">
-            <header className="elite-terminal-header">
-              <button type="button" className="elite-terminal-menu" onClick={() => setIsTerminalMenuOpen(open => !open)} aria-label="Open terminal menu" aria-expanded={isTerminalMenuOpen}>
-                <Menu />
-              </button>
-              <label className="elite-terminal-search">
-                <Search />
-                <input aria-label="Search instruments" placeholder="Search instruments (e.g. EURUSD, GOLD, BTC)..." />
-              </label>
-              <div className="elite-terminal-account-metrics">
-                <div className="elite-terminal-account-card">
-                  <span>Account Balance</span>
-                  <strong>${walletBalance.toFixed(2)}</strong>
-                </div>
-                <div className="elite-terminal-account-metric">
-                  <span>Equity</span>
-                  <strong>${terminalStats.equity.toFixed(2)}</strong>
-                </div>
-                <div className="elite-terminal-account-metric">
-                  <span>Open P/L</span>
-                  <strong className={terminalStats.openPnl >= 0 ? "tone-up" : "tone-down"}>
-                    {terminalStats.openPnl >= 0 ? "+" : ""}${terminalStats.openPnl.toFixed(2)} ({terminalStats.openPnlPct >= 0 ? "+" : ""}{terminalStats.openPnlPct.toFixed(2)}%)
-                  </strong>
-                </div>
-              </div>
-              <button type="button" className="elite-terminal-header-icon" aria-label="Notifications">
-                <Bell />
-              </button>
-              <div className="elite-terminal-user">
-                <div className="elite-terminal-avatar">{displayName.charAt(0).toUpperCase()}</div>
-                <div>
-                  <strong>{displayName}</strong>
-                  <span>Trader</span>
-                </div>
-                <ChevronDown />
-              </div>
-            </header>
-
             <div className="elite-terminal-platform">
   <ForexTradingPlatform
   participantEmail={participantData?.email ?? ""}
