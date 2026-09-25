@@ -2371,6 +2371,18 @@ adjustWalletBalance(
         </button>
       </div>
 
+      <nav className="reference-fund-rail" aria-label="Account actions">
+        <div className="reference-fund-rail-label">Account</div>
+        <button type="button" className="reference-fund-action reference-fund-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
+          <Wallet className="h-4 w-4" />
+          <span>Add Funds</span>
+        </button>
+        <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+          <ArrowUpDown className="h-4 w-4" />
+          <span>Payout</span>
+        </button>
+      </nav>
+
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
