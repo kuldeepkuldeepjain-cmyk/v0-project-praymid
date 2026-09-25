@@ -3819,3 +3819,74 @@ button, a, [role="button"] {
   .mt5-terminal.reference-terminal .reference-fund-rail { min-height: 50px; padding: 6px 8px; }
   .mt5-terminal.reference-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
 }
+
+/* Compact premium account metrics: small footprint, strong scanning hierarchy. */
+.mt5-terminal.reference-terminal .reference-metrics-header {
+  gap: 5px;
+  padding: 5px 12px;
+  border-bottom: 1px solid #294761;
+  background: #08131f;
+}
+.mt5-terminal.reference-terminal .reference-metric-card {
+  position: relative;
+  min-height: 42px;
+  gap: 2px;
+  padding: 5px 9px 6px;
+  overflow: hidden;
+  border: 1px solid #20384e;
+  border-radius: 5px;
+  background: #0c1825;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255, 255, 255, .035);
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.mt5-terminal.reference-terminal .reference-metric-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: #47657e;
+}
+.mt5-terminal.reference-terminal .reference-metric-card:hover {
+  border-color: #3d6685;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.mt5-terminal.reference-terminal .reference-metric-card span {
+  color: #849bb0;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .13em;
+  line-height: 1;
+}
+.mt5-terminal.reference-terminal .reference-metric-card strong {
+  color: #f2f7fb;
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+.mt5-terminal.reference-terminal .reference-metric-card.tone-gold::before { background: #e4b957; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-gold strong { color: #f0c86e; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-green::before { background: #18c995; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-green strong { color: #39dca8; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-red::before { background: #f26467; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-red strong { color: #ff777a; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-neutral::before { background: #4c89b5; }
+.mt5-terminal.reference-terminal .reference-margin-bar {
+  height: 3px;
+  margin-top: 1px;
+  border-radius: 999px;
+  background: #172a3b;
+}
+.mt5-terminal.reference-terminal .reference-margin-bar span { background: #e4b957; }
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .reference-metrics-header {
+    gap: 3px;
+    padding: 4px 7px;
+  }
+  .mt5-terminal.reference-terminal .reference-metric-card {
+    min-height: 39px;
+    padding: 5px 6px 5px 8px;
+  }
+  .mt5-terminal.reference-terminal .reference-metric-card span { font-size: 6px; letter-spacing: .1em; }
+  .mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 10px; }
+}
