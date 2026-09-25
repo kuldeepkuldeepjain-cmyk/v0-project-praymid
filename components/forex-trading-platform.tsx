@@ -1155,6 +1155,10 @@ function PositionSizer({
   }, [])
 
   useEffect(() => {
+  if (isCompactViewport) setActivePanel("dom")
+  }, [isCompactViewport])
+  
+  useEffect(() => {
   setThemeReady(true)
     try {
       const saved = window.localStorage.getItem("trade-terminal-theme")
@@ -2171,7 +2175,7 @@ adjustWalletBalance(
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -2264,7 +2268,7 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
-      {/* ══ REFERENCE WATCHLIST ════════════════════════���══════════════════��════ */}
+      {/* ══ REFERENCE WATCHLIST ════════════════════════�������══════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -2365,62 +2369,12 @@ adjustWalletBalance(
         </button>
       </div>
 
-      {/* ══ MOBILE TAB SWITCHER ══════════════════════════════════════════════��� */}
-      <div className="apple-terminal-mobile-tabs flex shrink-0 lg:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
-        {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map(tab => (
-          <button key={tab.id} onClick={() => setMobileTab(tab.id as typeof mobileTab)}
-            className="flex-1 py-2 text-[10px] font-black tracking-wider uppercase transition-all"
-            style={{
-              color: mobileTab === tab.id ? "#22d3ee" : "#3d5a80",
-              borderBottom: mobileTab === tab.id ? "2px solid #22d3ee" : "2px solid transparent",
-              background: mobileTab === tab.id ? "rgba(34,211,238,0.04)" : "transparent",
-            }}>
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ══ UNIVERSAL TRADE ACTIONS ═══════════════════════════════════════════ */}
-      <div className="shrink-0 flex items-center gap-2 px-2.5 py-1.5" style={{ background: "#070b13", borderBottom: "1px solid #1e2d45" }}>
-        <div className="hidden sm:flex min-w-0 flex-1 items-center gap-2">
-          <Zap className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-          <span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Trade now</span>
-          <span className="truncate text-[10px] font-bold text-slate-300">
-            {selectedPair ? `${selectedPair.symbol} · ${lotSize} lots` : "Select an instrument to trade"}
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
-          <button
-            type="button"
-            onClick={() => quickTrade("SELL")}
-            disabled={isFrozen || !selectedPair || !balanceLoaded || estimatedMargin > walletBalance}
-            aria-label={selectedPair ? `Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}` : "Select an instrument before selling"}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-[10px] font-black tracking-wider text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
-          >
-            <TrendingDown className="h-3.5 w-3.5" />
-            <span>SELL</span>
-            <span className="price-mono hidden text-[9px] opacity-80 sm:inline">{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => quickTrade("BUY")}
-            disabled={isFrozen || !selectedPair || !balanceLoaded || estimatedMargin > walletBalance}
-            aria-label={selectedPair ? `Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}` : "Select an instrument before buying"}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black tracking-wider text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>BUY</span>
-            <span className="price-mono hidden text-[9px] opacity-80 sm:inline">{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</span>
-          </button>
-        </div>
-      </div>
-
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport && mobileTab !== "market" ? "none" : undefined }}>
+          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport ? "none" : undefined }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -2570,8 +2524,8 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────────────────────���───────────────────────�����─────── */}
-        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""} ${mobileTab !== "chart" ? "tablet-chart-hidden" : ""}`} style={{ display: isCompactViewport && mobileTab !== "chart" ? "none" : undefined }}>
+        {/* ── CENTER: Chart ────────────────���─���─���───────────────────────�����─────── */}
+        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2672,10 +2626,26 @@ adjustWalletBalance(
   </div>
   )}
   </div>
+  <div className="reference-chart-trade-dock shrink-0">
+    <div className="reference-chart-trade-heading">
+      <span>Quick trade</span>
+      <span>{selectedPair ? `${selectedPair.symbol} · market` : "Select an instrument"}</span>
+    </div>
+    <div className="reference-chart-trade-actions">
+      <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
+        <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
+        <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+      </button>
+      <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
+        <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
+        <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+      </button>
+    </div>
   </div>
         </div>
+        </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
-        {rightPanelHidden ? (
+        {rightPanelHidden && !isCompactViewport ? (
           <div className="hidden lg:flex w-9 shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
               type="button"
@@ -2688,8 +2658,8 @@ adjustWalletBalance(
             </button>
           </div>
         ) : (
-        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "order" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport && mobileTab !== "order" ? "none" : undefined }}>
+        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13", display: "flex" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -2959,28 +2929,6 @@ adjustWalletBalance(
                   </span>
                 </button>
 
-                <div className="my-2" style={{ height: 1, background: "#111927" }} />
-
-                {/* Quick Market Trade (3D) */}
-                <p className="text-[7px] font-black tracking-[0.2em] uppercase mb-1.5" style={{ color: "#1e2d45" }}>Quick Market Trade</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => quickTrade("BUY")}
-                    disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance}
-                    className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <div className="flex items-center gap-1 relative z-10"><TrendingUp className="h-3.5 w-3.5" /><span className="font-black text-xs">BUY</span></div>
-                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-                  </button>
-                  <button
-                    onClick={() => quickTrade("SELL")}
-                    disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance}
-                    className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <div className="flex items-center gap-1 relative z-10"><TrendingDown className="h-3.5 w-3.5" /><span className="font-black text-xs">SELL</span></div>
-                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-                  </button>
-                </div>
               </div>
             </div>
           ) : rightPanelTab === "order" ? (
@@ -3011,8 +2959,8 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═══════════════════════════════���═══��════════════════ */}
-      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      {/* ══ BOTTOM BLOTTER ═════════════════════════════��═����═══��════════════════ */}
+      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
@@ -3419,7 +3367,7 @@ adjustWalletBalance(
           { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
           { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
         ].map(item => (
-          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
+          <div key={item.label} className={`reference-metric-card tone-${item.tone} ${item.label === "Balance" || item.label === "Equity" ? "reference-metric-primary" : ""}`}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
             {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
