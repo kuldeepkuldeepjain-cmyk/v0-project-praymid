@@ -2744,7 +2744,8 @@ adjustWalletBalance(
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className="shrink-0 flex items-center gap-3 px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+              <div className="chart-header-market flex min-w-0 items-center gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-black text-white tracking-wider">
                   {ASSET_ICON[selectedPair.symbol] && <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>}
@@ -2774,19 +2775,21 @@ adjustWalletBalance(
                   <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
                 </>}
               </div>
-              {/* TF selector */}
-              <div className="ml-auto flex items-center gap-1 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
-                  aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
-                  title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
-                  className="p-1 transition-colors"
-                  style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
-                >
-                  {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
-                </button>
-                {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
+              </div>
+              <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
+                <span className="chart-timeframe-label">Chart interval</span>
+                <div className="chart-timeframes flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
+                    aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
+                    title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
+                    className="chart-layout-toggle p-1 transition-colors"
+                    style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
+                  >
+                    {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
+                  </button>
+                  {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
                   <button key={tf} onClick={() => setTimeframe(tf)}
                     className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
                     style={{ borderRadius: 3,
@@ -2797,6 +2800,7 @@ adjustWalletBalance(
                   </button>
                 ))}
                 {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-1" />}
+                </div>
               </div>
             </div>
           ) : (

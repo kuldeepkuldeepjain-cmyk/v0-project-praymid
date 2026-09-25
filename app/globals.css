@@ -3886,6 +3886,63 @@ button, a, [role="button"] {
   .mt5-terminal.reference-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
 }
 
+/* Clear chart header and timeframe strip. */
+.mt5-terminal.reference-terminal .chart-header {
+  gap: 5px;
+  padding-top: 7px;
+  padding-bottom: 6px;
+}
+.mt5-terminal.reference-terminal .chart-header-market {
+  min-height: 22px;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .chart-timeframe-toolbar {
+  min-height: 26px;
+  padding: 3px 5px;
+  border: 1px solid #1d3a51;
+  border-radius: 4px;
+  background: #0b1a28;
+}
+.mt5-terminal.reference-terminal .chart-timeframe-label {
+  color: #6d8ba2;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.mt5-terminal.reference-terminal .chart-timeframes {
+  flex-shrink: 0;
+}
+.mt5-terminal.reference-terminal .chart-timeframes button {
+  min-width: 29px;
+  color: #87a0b3 !important;
+  background: transparent;
+}
+.mt5-terminal.reference-terminal .chart-timeframes button:hover,
+.mt5-terminal.reference-terminal .chart-timeframes button[style*="22d3ee"] {
+  color: #22d3ee !important;
+  background: rgba(34, 211, 238, .12) !important;
+}
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .chart-header {
+    gap: 4px;
+    padding-inline: 8px;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframe-toolbar {
+    padding-inline: 3px;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframe-label {
+    font-size: 7px;
+    letter-spacing: .08em;
+  }
+  .mt5-terminal.reference-terminal .chart-timeframes { gap: 0 !important; }
+  .mt5-terminal.reference-terminal .chart-timeframes button {
+    min-width: 27px;
+    padding-inline: 3px;
+    font-size: 8px;
+  }
+}
+
 /* Elite Fund terminal branding. */
 .mt5-terminal.reference-terminal .terminal-brand-lockup {
   min-width: 48px;
