@@ -13,7 +13,7 @@ import {
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
-import { participantFetch } from "@/lib/auth"
+import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
   PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
@@ -730,7 +730,7 @@ function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
   )
 }
 
-// ─── Support Center Panel ─────────────────────────────────────────────────────
+// ─── Support Center Panel ────────────────���────────────────────────────────────
 
 function SupportCenterPanel() {
   const [view, setView] = useState<"overview" | "chat" | "ticket" | "faq">("overview")
@@ -2172,7 +2172,7 @@ adjustWalletBalance(
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ─��──────────────���──────────────────────────────────
+  // ── Cancel pending order ─��──────────────���────────���─────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
     deletePendingOrder(id)
@@ -2397,8 +2397,11 @@ adjustWalletBalance(
           else document.documentElement.requestFullscreen()
         }}
         isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
-        onToggleLock={() => showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")}
-        isLocked={isFrozen}
+  onToggleLock={() => {
+    setIsFrozen((locked) => !locked)
+    showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")
+  }}
+  isLocked={isFrozen}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         soundEnabled={soundEnabled}
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
@@ -2409,9 +2412,13 @@ adjustWalletBalance(
         onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
         onOpenWithdraw={() => showToast("info", "Withdraw flow opened")}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
-        onOpenSettings={() => showToast("info", "Settings opened")}
-        onOpenProfile={() => showToast("info", "Profile opened")}
-        onLogout={() => showToast("info", "Sign out requested")}
+  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
+  onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
+  onLogout={async () => {
+    clearParticipantAuth()
+    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
+    window.location.assign("/participant/login")
+  }}
         onSearch={(q) => { if (q) { setPairSearch(q); setShowPairSearch(true) } }}
         notifications={toasts.slice(0, 5).map(t => ({
           id: t.id,
@@ -3138,7 +3145,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═════════════════════════════��═����═══��════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════���═════════════════════��═����═══��════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
