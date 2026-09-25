@@ -2794,7 +2794,7 @@ adjustWalletBalance(
                     className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
                     style={{ borderRadius: 3,
                       background: timeframe === tf ? "rgba(34,211,238,0.12)" : "transparent",
-                      color: timeframe === tf ? "#22d3ee" : "#374151",
+                      color: timeframe === tf ? "#22d3ee" : "#9ab0c0",
                       border: timeframe === tf ? "1px solid rgba(34,211,238,0.25)" : "1px solid transparent" }}>
                     {tf}
                   </button>
