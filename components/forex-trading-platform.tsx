@@ -1465,9 +1465,22 @@ function PositionSizer({
       const res = await participantFetch(`/api/forex/trades?email=${encodeURIComponent(participantEmail)}`, { cache: "no-store" })
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.success) return false
-      const open = Array.isArray(json.open) ? json.open : []
-      const closed = Array.isArray(json.closed) ? json.closed : []
-      const pending = Array.isArray(json.pending) ? json.pending : []
+      const isFinitePositive = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0
+      const open = (Array.isArray(json.open) ? json.open : []).filter((trade) =>
+        trade && typeof trade.id === "string" && typeof trade.pair === "string" &&
+        (trade.direction === "BUY" || trade.direction === "SELL") &&
+        isFinitePositive(trade.openPrice) && isFinitePositive(trade.currentPrice) &&
+        isFinitePositive(trade.lotSize) && isFinitePositive(trade.leverage) &&
+        Number.isFinite(trade.margin) && Number.isFinite(trade.pnl),
+      )
+      const closed = (Array.isArray(json.closed) ? json.closed : []).filter((trade) =>
+        trade && typeof trade.id === "string" && typeof trade.pair === "string" &&
+        isFinitePositive(trade.openPrice) && Number.isFinite(trade.finalPnl),
+      )
+      const pending = (Array.isArray(json.pending) ? json.pending : []).filter((order) =>
+        order && typeof order.id === "string" && typeof order.pair === "string" &&
+        isFinitePositive(order.targetPrice) && isFinitePositive(order.lotSize) && isFinitePositive(order.leverage),
+      )
       setOpenTrades(open)
       setClosedTrades(closed)
       setPendingOrders(pending)
@@ -1607,7 +1620,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tickCount])
 
-  // ── Overnight swap accrual (every 60s, proportional) ──────────────────────
+  // ─��� Overnight swap accrual (every 60s, proportional) ──────────────────────
   useEffect(() => {
     swapIntervalRef.current = setInterval(() => {
       setOpenTrades(prev => prev.map(t => {

@@ -239,6 +239,7 @@ export function TradingChart({
   if (![open, high, low, close, volume].every(Number.isFinite) || high < low || open <= 0 || close <= 0) return
 
   const rawTime = Number(toTimestamp(c, i, tfSecs))
+  if (!Number.isFinite(rawTime) || rawTime <= 0) return
   const t = Math.max(rawTime, previousTime + tfSecs) as Time
   previousTime = Number(t)
   const normalizedHigh = Math.max(high, open, close)
@@ -264,12 +265,14 @@ export function TradingChart({
   const macdd  = useMemo(() => calcMACD(closes),     [closes])
 
   function toLineData(arr: (number | null)[]): LineData[] {
-    return arr.map((v, i) => ({ time: times[i], value: v ?? NaN })).filter((d) => isFinite(d.value as number))
+    return arr
+      .map((v, i) => ({ time: times[i], value: v ?? NaN }))
+      .filter((d) => Number.isFinite(Number(d.time)) && Number(d.time) > 0 && Number.isFinite(d.value as number))
   }
   function toHistData(arr: (number | null)[], pos: string, neg: string): HistogramData[] {
     return arr
       .map((v, i) => ({ time: times[i], value: v ?? NaN, color: (v ?? 0) >= 0 ? pos : neg }))
-      .filter((d) => isFinite(d.value as number))
+      .filter((d) => Number.isFinite(Number(d.time)) && Number(d.time) > 0 && Number.isFinite(d.value as number))
   }
 
   // ── Create chart on mount ──────────────────────────────────────────────────
@@ -544,7 +547,7 @@ export function TradingChart({
     })
   }, [macdd, indicators.macd, chartPane, times]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Volume visibility ─────────────────────���──────────────────────────────────
+  // ── Volume visibility ─────────────────────�����──────────────────────────────────
   useEffect(() => {
     if (!volSerRef.current) return
     volSerRef.current.applyOptions({ visible: indicators.volume })
@@ -557,15 +560,15 @@ export function TradingChart({
   useEffect(() => {
     if (!candleSerRef.current) return
     openTrades.forEach((t) => {
-      if (!candleSerRef.current) return
+      if (!candleSerRef.current || !Number.isFinite(t.openPrice) || t.openPrice <= 0) return
       candleSerRef.current.createPriceLine({
         price: t.openPrice,
         color: t.direction === "BUY" ? palette.green : palette.red,
         lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true,
         title: `${t.direction}`,
       })
-      if (t.sl) candleSerRef.current.createPriceLine({ price: t.sl, color: palette.red,     lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "SL" })
-      if (t.tp) candleSerRef.current.createPriceLine({ price: t.tp, color: palette.emerald, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "TP" })
+      if (Number.isFinite(t.sl) && t.sl > 0) candleSerRef.current.createPriceLine({ price: t.sl, color: palette.red, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "SL" })
+      if (Number.isFinite(t.tp) && t.tp > 0) candleSerRef.current.createPriceLine({ price: t.tp, color: palette.emerald, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "TP" })
     })
   }, [openTrades])
 
@@ -602,7 +605,7 @@ export function TradingChart({
     })
     // Add new lines
     alerts.forEach(a => {
-      if (alertLineRefs.current.has(a.id)) return
+      if (alertLineRefs.current.has(a.id) || !Number.isFinite(a.price) || a.price <= 0) return
       const line = ser.createPriceLine({
         price:              a.price,
         color:              a.hit ? "rgba(245,158,11,0.4)" : "#f59e0b",
