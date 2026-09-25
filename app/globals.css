@@ -3888,27 +3888,30 @@ button, a, [role="button"] {
 
 /* Elite Fund terminal branding. */
 .mt5-terminal.reference-terminal .terminal-brand-lockup {
-  min-width: 108px;
-  height: 40px;
+  min-width: 48px;
+  width: 48px;
+  height: 34px;
+  padding-right: 8px;
   overflow: hidden;
 }
 .mt5-terminal.reference-terminal .terminal-brand-logo {
   display: block;
-  width: 104px;
-  height: 36px;
+  width: 40px;
+  height: 30px;
   object-fit: contain;
   object-position: center;
   filter: saturate(.9) contrast(1.08);
 }
 @media (max-width: 639px) {
   .mt5-terminal.reference-terminal .terminal-brand-lockup {
-    min-width: 74px;
-    height: 34px;
-    padding-right: 8px;
+    min-width: 40px;
+    width: 40px;
+    height: 30px;
+    padding-right: 6px;
   }
   .mt5-terminal.reference-terminal .terminal-brand-logo {
-    width: 72px;
-    height: 30px;
+    width: 34px;
+    height: 26px;
   }
 }
 
