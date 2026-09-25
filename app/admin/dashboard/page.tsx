@@ -47,6 +47,8 @@ export default function AdminDashboard() {
   const [collectingIds, setCollectingIds] = useState<Set<string>>(new Set())
   const [searchTerm, setSearchTerm] = useState("")
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [walletsError, setWalletsError] = useState<string | null>(null)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
   const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", usdt_inr_rate: "102" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
 
@@ -66,23 +68,31 @@ export default function AdminDashboard() {
 
   const fetchApprovedWallets = async () => {
     try {
-      const response = await fetch("/api/participant/gas-approval")
-      if (response.ok) {
-        const data = await response.json()
-        setWallets(data.approvals || [])
-      }
+      const response = await adminFetch("/api/participant/gas-approval")
+      if (!response.ok) throw new Error(`Wallet approvals unavailable (${response.status})`)
+      const data = await response.json()
+      if (!Array.isArray(data.approvals)) throw new Error("Wallet approvals returned an invalid response")
+      setWallets(data.approvals)
+      setWalletsError(null)
+      return true
     } catch (error) {
-      console.error("Error fetching wallets:", error)
+      console.error("[v0] Error fetching wallets:", error)
+      setWalletsError("Wallet approvals could not be refreshed. Existing data is still shown.")
+      return false
     }
   }
 
   const fetchPaymentSettings = async () => {
     try {
       const response = await adminFetch("/api/admin/payment-settings")
+      if (!response.ok) throw new Error(`Payment settings unavailable (${response.status})`)
       const data = await response.json()
-      if (data.success) setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "", usdt_inr_rate: data.usdt_inr_rate || "102" })
+      if (!data.success) throw new Error(data.error || "Payment settings returned an invalid response")
+      setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "", usdt_inr_rate: data.usdt_inr_rate || "102" })
+      setSettingsError(null)
     } catch (error) {
       console.error("[v0] Failed to fetch payment settings:", error)
+      setSettingsError("Payment settings could not be loaded. You can retry without affecting trading activity.")
     }
   }
 
@@ -105,9 +115,11 @@ export default function AdminDashboard() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true)
-    await fetchApprovedWallets()
+    const refreshed = await fetchApprovedWallets()
     setIsRefreshing(false)
-    toast({ title: "Refreshed", description: "Wallet data updated" })
+    toast(refreshed
+      ? { title: "Refreshed", description: "Wallet data updated" }
+      : { title: "Refresh unavailable", description: "Existing wallet data is still shown.", variant: "destructive" })
   }
 
   const handleCopyAddress = async (address: string) => {
@@ -222,6 +234,15 @@ export default function AdminDashboard() {
           </div>
         </div>
       </header>
+
+      {(walletsError || settingsError) && (
+        <div className="mx-auto mt-4 flex max-w-7xl items-center justify-between gap-4 rounded-lg border border-amber-400/30 bg-amber-950/60 px-4 py-3 text-sm text-amber-100">
+          <span>{walletsError || settingsError}</span>
+          <Button type="button" variant="outline" size="sm" onClick={() => { if (walletsError) fetchApprovedWallets(); if (settingsError) fetchPaymentSettings() }} className="shrink-0 border-amber-400/40 bg-transparent text-amber-100 hover:bg-amber-400/10">
+            Retry
+          </Button>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Platform Revenue Tracker */}

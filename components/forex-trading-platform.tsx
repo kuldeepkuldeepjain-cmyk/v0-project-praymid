@@ -1093,6 +1093,8 @@ function PositionSizer({
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(true)
+  const [marketError, setMarketError] = useState<string | null>(null)
+  const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [toasts, setToasts]           = useState<ToastItem[]>([])
   const [totalPnl, setTotalPnl]       = useState(0)
@@ -1355,14 +1357,17 @@ function PositionSizer({
         return pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev
       })
       setOnline(true)
+      setMarketError(null)
       setLastUpdated(new Date())
       setTickCount(n => n + 1)
-    } catch {
+    } catch (error) {
+      console.error("[v0] Live rate refresh failed:", error)
       setOnline(false)
+      setMarketError(lastUpdated ? "Live prices are temporarily unavailable. Existing quotes remain visible." : "Live prices are unavailable. Trading will resume when the feed reconnects.")
     }
   }, [])
 
-  // ── Fetch candles ──────────────────────────────────────────────────────────
+  // ── Fetch candles ───────────────────────────────────────���──────────────────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
     const key = `${sym}|${tf}`
     setCandleLoading(true)
@@ -1382,8 +1387,10 @@ function PositionSizer({
         if (!prev || prev.symbol !== sym) return prev
         return pairsRef.current.find(p => p.symbol === sym) ?? prev
       })
-    } catch {
-      // keep existing
+      setCandleError(null)
+    } catch (error) {
+      console.error("[v0] Candle refresh failed:", error)
+      setCandleError("Chart history could not be refreshed. Existing chart data remains available.")
     } finally {
       setCandleLoading(false)
     }
@@ -2026,7 +2033,7 @@ adjustWalletBalance(
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ────────────────���──────────────────────────────────
+  // ── Cancel pending order ─��──────────────���──────────────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
     deletePendingOrder(id)
@@ -2111,6 +2118,13 @@ adjustWalletBalance(
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
+
+      {(marketError || candleError) && (
+        <div className="absolute left-2 right-2 top-12 z-40 flex items-center justify-between gap-2 rounded border border-amber-400/30 bg-amber-950/95 px-2.5 py-1.5 text-[9px] text-amber-100 shadow-lg">
+          <span>{marketError || candleError}</span>
+          <button type="button" onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="shrink-0 font-bold uppercase tracking-wider underline underline-offset-2">Retry</button>
+        </div>
+      )}
 
       {/* ── Modify Modal ── */}
       {modifyTarget && (
@@ -2415,7 +2429,7 @@ adjustWalletBalance(
         </button>
       </div>
 
-      {/* ══ MOBILE TAB SWITCHER ═══════════════════════════════════════════════ */}
+      {/* ══ MOBILE TAB SWITCHER ══════════════════════════════════════════════��� */}
       <div className="apple-terminal-mobile-tabs flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
         {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map(tab => (
           <button key={tab.id} onClick={() => setMobileTab(tab.id as typeof mobileTab)}
