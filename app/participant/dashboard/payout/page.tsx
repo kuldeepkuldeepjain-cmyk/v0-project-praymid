@@ -28,8 +28,8 @@ const PAYOUT_PLANS = [
   {
     id: "platinum",
     label: "Crypto Withdrawal",
-    amount: 100,
-    minAmount: 100,
+    amount: 50,
+    minAmount: 50,
     method: "BEP20",
     accent: "from-violet-500 to-purple-600",
     border: "border-violet-300",
@@ -38,21 +38,6 @@ const PAYOUT_PLANS = [
     ring: "ring-violet-500",
     icon: "USDT",
     description: "Secure wallet settlement via BEP20 network",
-  },
-  {
-    id: "direct",
-    label: "Direct Withdrawal",
-    amount: 300,
-    minAmount: 300,
-    method: "DIRECT",
-    accent: "from-emerald-500 to-teal-600",
-    border: "border-emerald-300",
-    bg: "bg-emerald-50",
-    badge: "bg-emerald-200 text-emerald-800",
-    ring: "ring-emerald-500",
-    icon: "FAST",
-    description: "Direct instant withdrawal when balance exceeds $300",
-    motivation: "Settle eligible profits directly to your wallet",
   },
 ] as const
 
@@ -212,7 +197,7 @@ export default function PayoutPage() {
             ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
             : plan.amount,
           bep20_address: bep20Address,
-          payout_method: isFundedAccount ? selectedNetwork : plan.method,
+          payout_method: selectedNetwork,
         }),
       })
 
@@ -524,57 +509,40 @@ export default function PayoutPage() {
   ) : PAYOUT_PLANS.map((plan) => {
                 const isSelected = selectedPayoutPlanId === plan.id
                 const canAfford = walletBalance >= plan.amount
-                const isDirectPlan = plan.id === "direct"
-                const isDirectEligible = isDirectPlan && walletBalance >= 300
-                const isDisabled = isFrozenFundedAccount || hasActivePayout || (isDirectPlan && !isDirectEligible)
+                const isDisabled = isFrozenFundedAccount || hasActivePayout
                 return (
                   <button
                     key={plan.id}
                     onClick={() => !isDisabled && setSelectedPayoutPlanId(plan.id)}
                     disabled={isDisabled}
                     className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
-                      isDisabled && isDirectPlan
+                      isDisabled
                         ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
                         : isSelected
                         ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
                         : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout && !isDirectPlan ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${isDirectPlan && !isDirectEligible ? "from-slate-300 to-slate-400" : plan.accent} flex items-center justify-center text-base shadow-sm`}>
+                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
                           {plan.icon}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${isDirectPlan && !isDirectEligible ? "text-slate-400" : "text-slate-900"}`}>{plan.label}</span>
-                            {isDirectPlan && isDirectEligible && (
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">
-                                AVAILABLE
-                              </span>
-                            )}
+                            <span className="text-sm font-bold text-slate-900">{plan.label}</span>
                           </div>
-                          {isDirectPlan && !isDirectEligible ? (
-                            <p className="text-xs text-emerald-500 mt-0.5 font-medium">
-                              Withdraw your winnings
-                            </p>
-                          ) : (
-                            <>
-                              <p className={`text-xs ${isDirectPlan && plan.motivation ? "text-emerald-600 font-medium" : "text-slate-500"} mt-0.5`}>
-                                {("motivation" in plan ? plan.motivation : plan.description) || plan.description}
-                              </p>
-                            </>
-                          )}
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {plan.description}
+                          </p>
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {!isDirectEligible && isDirectPlan ? (
-                          <span className="text-xs text-red-500 font-medium">Need ${(300 - walletBalance).toFixed(2)} more</span>
-                        ) : !canAfford && !isDirectPlan ? (
+                        {!canAfford ? (
                           <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
                         ) : null}
                         <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          isDisabled && isDirectPlan
+                          isDisabled
                             ? "border-slate-200 bg-slate-100"
                             : isSelected
                             ? `${plan.border} bg-gradient-to-br ${plan.accent}`
@@ -819,16 +787,15 @@ export default function PayoutPage() {
       <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">Confirm Payout Details</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-slate-900">Confirm Withdrawal Details</DialogTitle>
             <DialogDescription className="text-slate-600">
-              Enter your {isFundedAccount ? selectedNetwork : selectedPayoutPlan.method} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} payout
+              Enter your {selectedNetwork} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} withdrawal
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-  {isFundedAccount && (
   <div className="space-y-2">
-  <Label htmlFor="payoutNetwork" className="text-sm font-semibold text-slate-700">Payout Network</Label>
+  <Label htmlFor="payoutNetwork" className="text-sm font-semibold text-slate-700">Withdrawal Network</Label>
   <select
   id="payoutNetwork"
   value={selectedNetwork}
@@ -842,7 +809,6 @@ export default function PayoutPage() {
   </select>
   <p className="text-xs text-slate-500">Choose the network that matches your receiving wallet.</p>
   </div>
-  )}
 
   {/* Wallet Address Input */}
   <div className="space-y-2">
@@ -878,8 +844,7 @@ export default function PayoutPage() {
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-slate-900 mb-1">Notification</h4>
                   <p className="text-xs text-slate-600 leading-relaxed">
-                    After the payout is successfully sent to your address, you'll be notified via email and 
-                    the status will be updated to "Completed" in your payout history.
+                    After the withdrawal is successfully sent to your address, you&apos;ll be notified via email and the status will be updated to "Completed" in your withdrawal history.
                   </p>
                 </div>
               </div>
@@ -888,7 +853,7 @@ export default function PayoutPage() {
             {/* Payout Summary */}
             <div className="bg-slate-50 rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Payout Amount</span>
+                <span className="text-sm text-slate-600">Withdrawal Amount</span>
                 <span className="text-lg font-bold text-[#10b981]">${selectedPayoutPlan.amount} ({selectedPayoutPlan.label})</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-200">
@@ -925,7 +890,7 @@ export default function PayoutPage() {
                   Processing...
                 </>
               ) : (
-                "Confirm Payout"
+                "Confirm Withdrawal"
               )}
             </Button>
           </div>
