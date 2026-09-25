@@ -2264,7 +2264,7 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
-      {/* ══ REFERENCE WATCHLIST ═══════════════════════════════════════════��════ */}
+      {/* ══ REFERENCE WATCHLIST ════════════════════════���══════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -2570,7 +2570,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────────────────────────────────────────────�����─────── */}
+        {/* ── CENTER: Chart ────────────────────���───────────────────────�����─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""} ${mobileTab !== "chart" ? "tablet-chart-hidden" : ""}`} style={{ display: isCompactViewport && mobileTab !== "chart" ? "none" : undefined }}>
           {/* Pair header */}
           {selectedPair ? (
@@ -3011,7 +3011,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═══════════════════════════════���════════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════════════════════════════���═══��════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
@@ -3019,7 +3019,7 @@ adjustWalletBalance(
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
-            { id: "dom",         label: "DOM",                                icon: BarChart2 },
+            { id: "dom",         label: "Order Book",                         icon: BarChart2 },
             { id: "risk",        label: "Risk",                               icon: ShieldAlert },
             { id: "journal",     label: "Journal",                            icon: BookOpen },
             { id: "news",        label: "News",                               icon: Newspaper },
