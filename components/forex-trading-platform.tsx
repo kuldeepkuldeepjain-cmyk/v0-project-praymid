@@ -2172,7 +2172,7 @@ adjustWalletBalance(
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ─��──────────────���────────���─────────────────────────
+  // ── Cancel pending order ─��──────────────����────────���─────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
     deletePendingOrder(id)
@@ -2406,10 +2406,8 @@ adjustWalletBalance(
         soundEnabled={soundEnabled}
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
-        onToggleWatchlist={() => setMobileTab("market")}
-        onToggleSidebar={() => setRightPanelHidden((hidden) => !hidden)}
-        sidebarOpen={!rightPanelHidden}
-        onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
+  onToggleWatchlist={() => setMobileTab("market")}
+  onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
         onOpenWithdraw={() => showToast("info", "Withdraw flow opened")}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
   onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
