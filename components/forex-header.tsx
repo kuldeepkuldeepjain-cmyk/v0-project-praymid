@@ -237,47 +237,8 @@ export function ForexHeader(props: ForexHeaderProps) {
         </div>
       </div>
 
-      {/* ═══ CENTER: Balance + P&L + Margin ═══════════════════════════════════ */}
+      {/* ═══ CENTER: Margin + Positions ════════════════════════════════════════ */}
       <div className="flex items-center h-full shrink-0" style={{ borderRight: "1px solid rgba(34,211,238,0.08)" }}>
-        {/* Balance */}
-        <button
-          type="button"
-          onClick={() => setShowBalance(s => !s)}
-          className="flex items-center gap-2 h-full px-3 transition-colors hover:bg-white/5"
-          title={showBalance ? "Hide balance" : "Show balance"}
-        >
-          <Wallet className="h-3.5 w-3.5 text-emerald-400" />
-          <div className="flex flex-col items-start leading-none">
-            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>Balance</span>
-            <span className="price-mono text-[12px] font-black text-emerald-400 mt-0.5">
-              {showBalance ? `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "••••••"}
-            </span>
-          </div>
-          {showBalance ? <Eye className="h-3 w-3 text-slate-600" /> : <EyeOff className="h-3 w-3 text-slate-600" />}
-        </button>
-
-        {/* Equity */}
-        <div className="flex items-center gap-2 h-full px-3" style={{ borderLeft: "1px solid rgba(34,211,238,0.06)" }}>
-          <Activity className="h-3.5 w-3.5 text-cyan-400" />
-          <div className="flex flex-col items-start leading-none">
-            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>Equity</span>
-            <span className="price-mono text-[12px] font-black mt-0.5" style={{ color: totalPnl >= 0 ? "#10b981" : "#ef4444" }}>
-              {showBalance ? `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}` : "••••••"}
-            </span>
-          </div>
-        </div>
-
-        {/* Open P&L */}
-        <div className="flex items-center gap-2 h-full px-3" style={{ borderLeft: "1px solid rgba(34,211,238,0.06)" }}>
-          {totalPnl >= 0 ? <TrendingUp className="h-3.5 w-3.5 text-emerald-400" /> : <TrendingDown className="h-3.5 w-3.5 text-red-400" />}
-          <div className="flex flex-col items-start leading-none">
-            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>Open P&L</span>
-            <span className="price-mono text-[12px] font-black mt-0.5" style={{ color: pnlColor }}>
-              {showBalance ? `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}` : "••••"}
-            </span>
-          </div>
-        </div>
-
         {/* Margin */}
         <div className="flex items-center gap-2 h-full px-3" style={{ borderLeft: "1px solid rgba(34,211,238,0.06)" }}>
           <Gauge className="h-3.5 w-3.5 text-amber-400" />
