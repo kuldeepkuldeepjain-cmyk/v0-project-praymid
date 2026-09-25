@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -123,10 +123,22 @@ export function ForexHeader({
   const [accountOpen, setAccountOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [query, setQuery] = useState("")
+  const [useLocalTime, setUseLocalTime] = useState(false)
+  const [localTime, setLocalTime] = useState(serverTime)
+  const [localZone, setLocalZone] = useState("Local")
   const unreadCount = notifications.filter((item) => !item.read).length
   const pnlUp = totalPnl >= 0
   const marketColor = marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171"
   const formatMoney = (value: number) => `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const formatLocalTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+
+  useEffect(() => {
+    const updateLocalClock = () => setLocalTime(formatLocalTime())
+    setLocalZone(Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, " "))
+    updateLocalClock()
+    const interval = window.setInterval(updateLocalClock, 1000)
+    return () => window.clearInterval(interval)
+  }, [])
 
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
@@ -213,7 +225,18 @@ export function ForexHeader({
       <div className="flex h-7 items-center gap-3 overflow-x-auto border-t px-3 text-[9px] font-semibold uppercase tracking-wider terminal-scroll" style={{ borderColor: "#122238", color: "#7187a0" }}>
         <span className="flex items-center gap-1" style={{ color: isConnected ? "#34d399" : "#f87171" }}>{isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}{isConnected ? "Connected" : "Offline"}</span>
         <span className="flex items-center gap-1" style={{ color: marketColor }}><CircleDot className="h-3 w-3" />Market {marketStatus}</span>
-        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{serverTime}</span>
+        <button
+          type="button"
+          className="terminal-time-switch"
+          onClick={() => setUseLocalTime((value) => !value)}
+          aria-pressed={useLocalTime}
+          aria-label={useLocalTime ? `Use UTC time. Current local zone: ${localZone}` : `Use local time. Current zone: ${localZone}`}
+          title={useLocalTime ? `Switch to UTC · ${localZone}` : `Switch to local time · ${localZone}`}
+        >
+          <Clock className="h-3 w-3" />
+          <span>{useLocalTime ? localTime : serverTime}</span>
+          <span className="terminal-time-mode">{useLocalTime ? "LOCAL" : "UTC"}</span>
+        </button>
         <span className="hidden sm:inline">{activeLayout} layout</span>
         <span className="hidden sm:inline">{openTradesCount} positions · {pendingOrdersCount} pending</span>
         <span className="ml-auto hidden items-center gap-1 lg:flex"><Globe className="h-3 w-3" />{activeLanguage.toUpperCase()}</span>
