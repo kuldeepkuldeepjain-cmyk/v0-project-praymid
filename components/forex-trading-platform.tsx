@@ -2848,14 +2848,14 @@ adjustWalletBalance(
       <span>{selectedPair ? `${selectedPair.symbol} · market` : "Select an instrument"}</span>
     </div>
     <div className="reference-chart-trade-actions">
-      <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
-        <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
-        <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
-      </button>
-      <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
-        <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
-        <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
-      </button>
+  <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
+  <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
+  <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+  </button>
+  <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
+  <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
+  <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+  </button>
     </div>
   </div>
         </div>
