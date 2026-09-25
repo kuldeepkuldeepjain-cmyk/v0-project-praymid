@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
     const volumes: (number | null)[] = quote.volume ?? []
     const d = dec(pair)
 
-    const candles = timestamps
+    let candles = timestamps
       .map((ts, i) => ({
         time:   fmtTime(ts, tf),
         open:   parseFloat((opens[i]   ?? closes[i-1] ?? 0).toFixed(d)),
@@ -114,6 +114,25 @@ export async function GET(req: NextRequest) {
       .slice(-150)
 
     if (candles.length === 0) throw new Error("No usable candles")
+
+    if (pair === "XAU/USD") {
+      const futuresMid = result.meta?.regularMarketPrice
+      const spotResponse = await fetch("https://api.gold-api.com/price/XAU", { next: { revalidate: 0 } })
+      if (spotResponse.ok && Number.isFinite(futuresMid) && futuresMid > 0) {
+        const spot = await spotResponse.json()
+        const spotMid = Number(spot?.price)
+        if (Number.isFinite(spotMid) && spotMid > 0) {
+          const basis = spotMid - futuresMid
+          candles = candles.map(candle => ({
+            ...candle,
+            open: parseFloat((candle.open + basis).toFixed(d)),
+            high: parseFloat((candle.high + basis).toFixed(d)),
+            low: parseFloat((candle.low + basis).toFixed(d)),
+            close: parseFloat((candle.close + basis).toFixed(d)),
+          }))
+        }
+      }
+    }
 
     candleCache.set(cacheKey, { candles, ts: now })
     return NextResponse.json({ candles, source: "live", ts: now })

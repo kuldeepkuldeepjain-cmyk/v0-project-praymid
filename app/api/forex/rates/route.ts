@@ -35,12 +35,25 @@ export async function GET() {
         const closes = (quote.close ?? []).filter((v: number | null) => v != null) as number[]
         const highs = (quote.high ?? []).filter((v: number | null) => v != null) as number[]
         const lows = (quote.low ?? []).filter((v: number | null) => v != null) as number[]
+        const futuresMid = meta.regularMarketPrice ?? (closes.length > 0 ? closes[closes.length - 1] : 0)
+        if (!futuresMid || futuresMid <= 0) throw new Error("Invalid price")
 
-        const mid = closes.length > 0 ? closes[closes.length - 1] : (meta.regularMarketPrice ?? 0)
-        if (!mid || mid <= 0) throw new Error("Invalid price")
-        const openP = meta.chartPreviousClose ?? meta.regularMarketOpen ?? mid
-        const high = highs.length > 0 ? Math.max(...highs) : mid * 1.002
-        const low = lows.length > 0 ? Math.min(...lows) : mid * 0.998
+        // XAU/USD is a spot quote. GC=F is useful for history, but its futures
+        // price can diverge from spot, which made the terminal disagree with
+        // TradingView. Use the live spot feed and translate the Yahoo ranges by
+        // the same basis so the quote, chart levels, and daily change agree.
+        let mid = futuresMid
+        if (pair === "XAU/USD") {
+          const spotResponse = await fetch("https://api.gold-api.com/price/XAU", { next: { revalidate: 0 } })
+          if (spotResponse.ok) {
+            const spot = await spotResponse.json()
+            if (Number.isFinite(spot?.price) && spot.price > 0) mid = Number(spot.price)
+          }
+        }
+        const basis = mid - futuresMid
+        const openP = (meta.chartPreviousClose ?? meta.regularMarketOpen ?? mid) + basis
+        const high = (highs.length > 0 ? Math.max(...highs) : futuresMid * 1.002) + basis
+        const low = (lows.length > 0 ? Math.min(...lows) : futuresMid * 0.998) + basis
         const change = openP > 0 ? parseFloat((((mid - openP) / openP) * 100).toFixed(3)) : 0
         const spread = TYPICAL_SPREADS[pair] ?? 0.0002
         const d = dec(pair)
