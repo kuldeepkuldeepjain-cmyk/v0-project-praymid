@@ -2191,37 +2191,70 @@ adjustWalletBalance(
 
 
 
-      {/* MT5-style workspace toolbar */}
-      <div className="flex h-7 shrink-0 items-center gap-0 border-b px-1" style={{ background: "#202f40", borderColor: "#344b62" }} aria-label="MT5 workspace toolbar">
-        {[
-          { label: "Market Watch", icon: "▤" },
-          { label: "Navigator", icon: "��" },
-          { label: "Data Window", icon: "▥" },
-          { label: "Strategy Tester", icon: "▣" },
-        ].map(item => (
-          <button
-            key={item.label}
-            type="button"
-            onClick={() => {
-              if (item.label === "Market Watch") setMobileTab("market")
-              if (item.label === "Navigator") {
-                setMobileTab("order")
-                setRightPanelTab("sizer")
-                showToast("info", "Navigator opened — use Position Sizer to plan risk")
-              }
-              if (item.label === "Data Window") {
-                setMobileTab("chart")
-                setActivePanel("stats")
-              }
-              if (item.label === "Strategy Tester") setActivePanel("performance")
-            }}
-            className="flex h-full items-center gap-1 border-r px-2 text-[9px] text-slate-300 transition-colors hover:bg-[#2b4056] hover:text-white"
-          >
-            <span className="text-[#75bff2]">{item.icon}</span>{item.label}
-          </button>
-        ))}
-        <span className="ml-auto px-2 text-[8px] uppercase tracking-[0.15em] text-slate-500">MT5 Workspace</span>
-      </div>
+{/* ══ PROFESSIONAL HEADER (brand, search, tools, account, metrics) ══ */}
+      <ForexHeader
+        walletBalance={walletBalance}
+        equity={equity}
+        totalPnl={totalPnl}
+        totalSwap={totalSwap}
+        totalMargin={totalMargin}
+        freeMargin={freeMargin}
+        marginLevel={marginLevel}
+        openTradesCount={openTrades.length}
+        pendingOrdersCount={pendingOrders.length}
+        leverage={Number(leverage) || 100}
+        accountType={isFundedAccount ? "Funded" : "Live"}
+        accountId={participantEmail ? participantEmail.split("@")[0].toUpperCase().slice(0, 8) : "DEMO-001"}
+        userName={participantEmail ? participantEmail.split("@")[0] : "Trader"}
+        userEmail={participantEmail || "trayer@praysmid.com"}
+        isConnected={online}
+        onNavigate={(panel) => {
+          if (panel === "sizer") { setMobileTab("order"); setRightPanelTab("sizer") }
+          else if (panel === "calendar") { setActivePanel("news") }
+          else if (panel === "news") { setActivePanel("news") }
+          else if (panel === "performance") { setActivePanel("performance") }
+          else if (panel === "history") { setActivePanel("history") }
+          else if (panel === "journal") { setActivePanel("journal") }
+          else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
+          else if (panel === "support") { showToast("info", "Live support: support@praysmid.com") }
+          else { setActivePanel(panel as typeof activePanel) }
+        }}
+        onToggleFullscreen={() => {
+          if (document.fullscreenElement) document.exitFullscreen()
+          else document.documentElement.requestFullscreen()
+        }}
+        isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
+        onToggleLock={() => showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")}
+        isLocked={isFrozen}
+        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+        soundEnabled={soundEnabled}
+        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
+        theme={isDarkTheme ? "dark" : "light"}
+        onToggleWatchlist={() => setMobileTab("market")}
+        onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
+        onOpenWithdraw={() => showToast("info", "Withdraw flow opened")}
+        onOpenTransfer={() => showToast("info", "Transfer flow opened")}
+        onOpenSettings={() => showToast("info", "Settings opened")}
+        onOpenProfile={() => showToast("info", "Profile opened")}
+        onLogout={() => showToast("info", "Sign out requested")}
+        onSearch={(q) => { if (q) { setPairSearch(q); setShowPairSearch(true) } }}
+        notifications={toasts.slice(0, 5).map(t => ({
+          id: t.id,
+          type: t.type,
+          title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
+          message: t.text,
+          time: "just now",
+          read: false,
+        }))}
+        onMarkNotificationRead={(id) => setToasts(ts => ts.filter(t => t.id !== id))}
+        onClearNotifications={() => setToasts([])}
+        activeLanguage="en"
+        onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
+        activeLayout={chartLayout === "grid" ? "pro" : "default"}
+        onChangeLayout={(layout) => { setChartLayout(layout === "pro" ? "grid" : "single"); showToast("info", `Layout: ${layout}`) }}
+        serverTime={now.toISOString().slice(11, 19) + " UTC"}
+        marketStatus={online ? "open" : "closed"}
+      />
 
       {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
       <div className="apple-terminal-summary flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
@@ -2397,7 +2430,7 @@ adjustWalletBalance(
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
-        {/* ── LEFT: Market Watch ─────────────────────────────�����───────────────── */}
+        {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden md:flex"}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
@@ -2990,7 +3023,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ════════════════════════════════════════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════════════════════════════���════════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
