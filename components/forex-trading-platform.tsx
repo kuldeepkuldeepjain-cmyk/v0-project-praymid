@@ -2452,17 +2452,21 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
-      <section className="reference-top-account" aria-label="Primary account metrics">
+      <div className="reference-metrics reference-metrics-header" aria-label="Account metrics">
         {[
-          { label: "Balance", value: `$${walletBalance.toFixed(2)}` },
-          { label: "Equity", value: `$${equity.toFixed(2)}` },
-        ].map((item) => (
-          <div key={item.label} className="reference-top-account-card">
+          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
+          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
+          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+        ].map(item => (
+          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
+            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
           </div>
         ))}
-      </section>
+      </div>
 
       <nav className="reference-fund-rail" aria-label="Account actions">
         <div className="reference-fund-rail-label">Account</div>
@@ -3579,19 +3583,6 @@ adjustWalletBalance(
         </div>
       </div>
 
-      <div className="reference-metrics shrink-0">
-  {[
-  { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
-          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-        ].map(item => (
-  <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
-  <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
-          </div>
-        ))}
-      </div>
 
       <div className="reference-statusbar shrink-0">
         <span><i />Connected</span>
