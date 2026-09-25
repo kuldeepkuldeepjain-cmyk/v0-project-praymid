@@ -2943,6 +2943,42 @@ button, a, [role="button"] {
 .reference-terminal .reference-quick-trade svg { width: 13px; height: 13px; }
 .reference-terminal .reference-quick-trade > div span { font-size: 11px; letter-spacing: .12em; }
 .reference-terminal .reference-quick-trade > span { font-size: 9px; opacity: .9; }
+.compact-terminal {
+  overflow-y: auto !important;
+  overscroll-behavior-y: contain;
+}
+.compact-terminal .apple-terminal-grid {
+  flex: none !important;
+  min-height: auto !important;
+  flex-direction: column !important;
+  overflow: visible !important;
+}
+.compact-terminal .apple-terminal-chart-column {
+  width: 100% !important;
+  min-height: 500px !important;
+  height: 500px !important;
+  flex: none !important;
+  border-bottom: 1px solid #1e2d45;
+}
+.compact-terminal .apple-terminal-order {
+  width: 100% !important;
+  min-height: 620px !important;
+  height: 620px !important;
+  flex: none !important;
+  border-left: 0 !important;
+  border-top: 1px solid #1e2d45;
+}
+.compact-terminal .apple-terminal-order > .flex-1 {
+  min-height: 0;
+}
+.compact-terminal .apple-terminal-blotter {
+  height: 360px !important;
+  flex: none !important;
+}
+.compact-terminal .apple-terminal-mobile-tabs {
+  display: none !important;
+}
+
 .reference-chart-trade-dock {
   position: relative;
   z-index: 4;
