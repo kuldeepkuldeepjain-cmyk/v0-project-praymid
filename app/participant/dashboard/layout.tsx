@@ -1,10 +1,10 @@
 "use client"
 // layout — staking section removed
 import type React from "react"
+import { Suspense, useState, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Home, User, TrendingUp, Wallet, Gift, Settings, ChevronRight, PlusCircle } from "lucide-react"
-import { useState, useEffect, useRef } from "react"
 
 export default function DashboardLayout({
   children,
@@ -192,7 +192,9 @@ export default function DashboardLayout({
         {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: "transparent" }}>
           <div className="relative z-10 page-slide-enter h-full">
-            {children}
+            <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
+              {children}
+            </Suspense>
           </div>
         </main>
       </div>
@@ -226,14 +228,22 @@ export default function DashboardLayout({
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
-          <div className="relative z-10 page-slide-enter h-full">{children}</div>
+          <div className="relative z-10 page-slide-enter h-full">
+            <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
+              {children}
+            </Suspense>
+          </div>
         </main>
       </div>
 
       {/* ── MOBILE LAYOUT (< md): Bottom nav ────────────────────────── */}
       <div className="flex md:hidden flex-col min-h-screen min-h-dvh relative z-10">
         <div className="flex-1 pb-20">
-          <div className="relative page-slide-enter">{children}</div>
+          <div className="relative page-slide-enter">
+            <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
+              {children}
+            </Suspense>
+          </div>
         </div>
 
         {/* Bottom Nav */}

@@ -1986,6 +1986,46 @@ button, a, [role="button"] {
 .reference-terminal,
 .reference-terminal * { box-sizing: border-box; }
 .reference-terminal .terminal-toolbar { min-width: 0; }
+.reference-fund-rail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 54px;
+  padding: 7px 14px;
+  border-top: 1px solid #16283a;
+  border-bottom: 1px solid #1d3348;
+  background: #07111c;
+}
+.reference-fund-rail-label {
+  margin-right: 3px;
+  color: #6f859b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.reference-fund-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  border: 1px solid #284760;
+  border-radius: 7px;
+  padding: 0 14px;
+  color: #d8edf5;
+  background: #0d1d2c;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.reference-fund-action:hover,
+.reference-fund-action:focus-visible { border-color: #60d9f5; background: #12324a; outline: none; transform: translateY(-1px); }
+.reference-fund-action-primary { border-color: #176a75; color: #7ff5d4; background: #0b292d; }
+.reference-fund-action-payout { border-color: #594a2b; color: #f5d37b; background: #251d11; }
+.reference-fund-action-prediction { border-color: #245e57; color: #8ff5c9; background: #102d2b; }
 .reference-terminal .reference-watchlist { min-width: 0; }
 .reference-terminal .reference-watch-card { max-width: 170px; }
 .reference-terminal .apple-terminal-grid { min-width: 0; }
@@ -2983,6 +3023,18 @@ button, a, [role="button"] {
 .reference-terminal .reference-quick-trade svg { width: 13px; height: 13px; }
 .reference-terminal .reference-quick-trade > div span { font-size: 11px; letter-spacing: .12em; }
 .reference-terminal .reference-quick-trade > span { font-size: 9px; opacity: .9; }
+.compact-terminal .reference-fund-rail {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  min-height: 56px;
+  justify-content: center;
+  padding: 7px 10px;
+}
+.compact-terminal .reference-fund-rail-label { display: none; }
+.compact-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; max-width: 220px; padding-left: 8px; padding-right: 8px; }
+.compact-terminal .reference-fund-action span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .compact-terminal {
   overflow-y: auto !important;
   overscroll-behavior-y: contain;
