@@ -101,6 +101,18 @@ type PriceAlertItem = {
   label: string; triggered: boolean; createdAt: number
 }
 
+type SmartAlertStatus = "clear" | "warning" | "triggered" | "monitoring"
+
+type SmartAlertItem = {
+  id: string
+  label: string
+  description: string
+  status: SmartAlertStatus
+  value: string
+  threshold: string
+  icon: any
+}
+
 type TradingSession = { name: string; open: number; close: number; tz: string; color: string }
 
 // Performance stats derived from closed trades
@@ -674,6 +686,49 @@ function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
   )
 }
 
+// ─── Smart Alerts Panel ────────────────────────────────────────────────────────
+
+function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(alerts.map(alert => [alert.id, true]))
+  )
+  const activeCount = Object.values(enabled).filter(Boolean).length
+  const statusColor = (status: SmartAlertStatus) => status === "triggered" ? "#f87171" : status === "warning" ? "#fbbf24" : status === "monitoring" ? "#22d3ee" : "#34d399"
+  const statusLabel = (status: SmartAlertStatus) => status === "triggered" ? "ACTION" : status === "warning" ? "WARNING" : status === "monitoring" ? "MONITORING" : "CLEAR"
+
+  return (
+    <div className="p-2 flex flex-col gap-2 h-full overflow-y-auto terminal-scroll">
+      <div className="rounded-xl px-3 py-2.5" style={{ background: "linear-gradient(135deg,rgba(8,31,50,.98),rgba(8,14,26,.98))", border: "1px solid rgba(34,211,238,.24)" }}>
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "rgba(34,211,238,.12)", border: "1px solid rgba(34,211,238,.28)" }}><BellRing className="h-3.5 w-3.5 text-cyan-300" /></div>
+          <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[.16em] text-white">Smart Alerts</p><p className="text-[8px] text-slate-500">Protection before a trading mistake</p></div>
+          <span className="ml-auto rounded border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-1 text-[8px] font-black text-emerald-300">{activeCount}/{alerts.length} ON</span>
+        </div>
+        <div className="mt-2.5 flex items-center justify-between border-t border-white/5 pt-2">
+          <span className="text-[9px] text-slate-400">Daily drawdown limit</span><span className="price-mono text-[10px] font-black text-amber-300">2.00%</span>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {alerts.map(alert => {
+          const color = statusColor(alert.status)
+          const isOn = enabled[alert.id] !== false
+          return (
+            <div key={alert.id} className="rounded-xl px-3 py-2.5 transition-colors" style={{ background: alert.status === "triggered" ? "rgba(127,29,29,.2)" : "#0a1120", border: `1px solid ${alert.status === "triggered" ? "rgba(248,113,113,.35)" : "#1a2640"}` }}>
+              <div className="flex items-start gap-2">
+                <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md" style={{ color, background: `${color}18`, border: `1px solid ${color}35` }}><alert.icon className="h-3 w-3" /></div>
+                <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><span className="truncate text-[10px] font-black text-slate-200">{alert.label}</span><span className="ml-auto shrink-0 text-[7px] font-black tracking-wider" style={{ color }}>{statusLabel(alert.status)}</span></div><p className="mt-0.5 text-[8px] leading-relaxed text-slate-500">{alert.description}</p></div>
+                <button type="button" role="switch" aria-checked={isOn} aria-label={`${isOn ? "Disable" : "Enable"} ${alert.label}`} onClick={() => setEnabled(prev => ({ ...prev, [alert.id]: !isOn }))} className="relative mt-1 h-3.5 w-6 shrink-0 rounded-full transition-colors" style={{ background: isOn ? "#0891b2" : "#1e293b" }}><span className="absolute top-0.5 h-2.5 w-2.5 rounded-full bg-white transition-transform" style={{ left: isOn ? 13 : 2 }} /></button>
+              </div>
+              <div className="mt-2 flex items-center justify-between border-t border-white/5 pt-1.5"><span className="price-mono text-[10px] font-black" style={{ color }}>{alert.value}</span><span className="text-[8px] text-slate-600">{alert.threshold}</span></div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Order Depth Panel ────────────────────────────────────────────────────────
 
 function OrderDepth({ pair }: { pair: ForexPair }) {
@@ -1092,7 +1147,7 @@ function PositionSizer({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
@@ -1132,6 +1187,7 @@ function PositionSizer({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
   const [soundEnabled, setSoundEnabled] = useState(true)
+  const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
 
   const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
@@ -2126,9 +2182,46 @@ adjustWalletBalance(
   const freeMargin = Math.max(0, walletBalance)
   const equity = walletBalance + totalMargin + totalPnl
   const marginLevel = totalMargin > 0 ? (equity / totalMargin * 100) : 0
+  const today = new Date().toDateString()
+  const dailyClosedPnl = closedTrades.reduce((sum, trade) => {
+    const closeDate = new Date(trade.closeTime).toDateString()
+    return closeDate === today ? sum + trade.finalPnl : sum
+  }, 0)
+  const dailyPnl = dailyClosedPnl + Math.min(0, totalPnl)
+  const dailyDrawdownPct = walletBalance > 0 ? Math.max(0, (-dailyPnl / walletBalance) * 100) : 0
+  const currentLots = parseFloat(lotSize) || 0
+  const selectedRiskPct = selectedPair && sl && walletBalance > 0
+    ? (Math.abs(selectedPair.ask - parseFloat(sl)) / pip(selectedPair.symbol) * pipValue(selectedPair.symbol, currentLots, selectedPair.ask) / walletBalance) * 100
+    : 0
+  const riskWarning = selectedRiskPct >= 1.5 || openTrades.some(trade => !trade.sl)
+  const smartAlerts: SmartAlertItem[] = [
+    { id: "drawdown", label: "Drawdown warning", description: `Warning: Your daily drawdown has reached ${dailyDrawdownPct.toFixed(2)}%.`, status: dailyDrawdownPct >= 2 ? "triggered" : dailyDrawdownPct >= 1.5 ? "warning" : "clear", value: `${dailyDrawdownPct.toFixed(2)}%`, threshold: "Warn at 1.50% · limit 2.00%", icon: AlertTriangle },
+    { id: "lot-size", label: "High lot size", description: "Large position sizes can amplify losses before you have time to react.", status: currentLots > 5 ? "triggered" : currentLots > 1 ? "warning" : "clear", value: `${currentLots.toFixed(2)} lots`, threshold: "Warning above 1.00", icon: BarChart2 },
+    { id: "risk", label: "High risk", description: riskWarning ? "Add a stop loss or reduce risk before placing this trade." : "Your current ticket has a controlled risk profile.", status: riskWarning ? "warning" : "clear", value: selectedRiskPct > 0 ? `${selectedRiskPct.toFixed(2)}% risk` : "Protected", threshold: "Review above 1.50%", icon: ShieldAlert },
+    { id: "margin", label: "Margin warning", description: "Keep enough free margin available for normal market movement.", status: marginLevel > 0 && marginLevel < 150 ? "triggered" : marginLevel > 0 && marginLevel < 300 ? "warning" : "clear", value: marginLevel > 0 ? `${marginLevel.toFixed(0)}% level` : "No margin used", threshold: "Warn below 300%", icon: Gauge },
+    { id: "news", label: "News event approaching", description: "High-impact economic events are monitored before execution.", status: "monitoring", value: "Monitoring calendar", threshold: "30-minute lookahead", icon: Newspaper },
+    { id: "day-target", label: "Trading-day target", description: "Track progress toward today’s funded-account target.", status: dailyPnl >= walletBalance * 0.01 ? "triggered" : "monitoring", value: walletBalance > 0 ? `${Math.max(0, dailyPnl / walletBalance * 100).toFixed(2)}% today` : "0.00% today", threshold: "Target +1.00%", icon: Target },
+    { id: "profit-target", label: "Profit target reached", description: "Your profit target is calculated from the funded account base.", status: isFundedAccount && fundedBaseAmount > 0 && totalPnl >= fundedBaseAmount * 0.1 ? "triggered" : "monitoring", value: fundedBaseAmount > 0 ? `${Math.max(0, totalPnl / fundedBaseAmount * 100).toFixed(2)}%` : "Not configured", threshold: "Target +10.00%", icon: Trophy },
+    { id: "payout", label: "Payout eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
+  ]
 
   useEffect(() => {
-    onStatsUpdate?.({
+    const candidates = smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered")
+    candidates.forEach(alert => {
+      if (!smartAlertNotifiedRef.current[alert.id]) {
+        showToast(alert.status === "triggered" ? "error" : "warning", `${alert.label}: ${alert.description}`)
+        smartAlertNotifiedRef.current[alert.id] = true
+      }
+    })
+    Object.keys(smartAlertNotifiedRef.current).forEach(id => {
+      if (!candidates.some(alert => alert.id === id)) delete smartAlertNotifiedRef.current[id]
+    })
+  // Alert notifications intentionally react to live trade metrics.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickCount, openTrades.length, dailyDrawdownPct, marginLevel, selectedRiskPct, currentLots])
+  
+  useEffect(() => {
+  onStatsUpdate?.({
       equity,
       openPnl: totalPnl,
       openPnlPct: walletBalance > 0 ? (totalPnl / walletBalance) * 100 : 0,
@@ -2991,6 +3084,7 @@ adjustWalletBalance(
             { id: "news",        label: "News",                               icon: Newspaper },
             { id: "performance", label: "Performance",                        icon: BarChart },
             { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
+            { id: "smart-alerts",label: `Smart (${smartAlerts.filter(a => a.status === "warning" || a.status === "triggered").length})`, icon: BellRing },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
             { id: "stats",       label: "Stats",                              icon: Activity },
@@ -3336,6 +3430,9 @@ adjustWalletBalance(
               onRemove={removePriceAlert}
             />
           )}
+
+          {/* ── Smart Risk Alerts ── */}
+          {activePanel === "smart-alerts" && <SmartAlertsPanel alerts={smartAlerts} />}
 
           {/* ── Market Sessions ── */}
           {activePanel === "sessions" && <MarketSessionsPanel />}
