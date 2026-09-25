@@ -23,6 +23,7 @@ export function SupportTicketsPanel() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null)
   const [showResponseDialog, setShowResponseDialog] = useState(false)
   const [adminResponse, setAdminResponse] = useState("")
+  const [responseStatus, setResponseStatus] = useState<SupportTicket["status"]>("resolved")
   const [isResponding, setIsResponding] = useState(false)
 
   useEffect(() => {
@@ -45,7 +46,8 @@ export function SupportTicketsPanel() {
 
   const handleRespond = (ticket: SupportTicket) => {
     setSelectedTicket(ticket)
-    setAdminResponse("")
+    setAdminResponse(ticket.admin_response || "")
+    setResponseStatus(ticket.status === "open" ? "in_progress" : ticket.status)
     setShowResponseDialog(true)
   }
 
@@ -59,7 +61,7 @@ export function SupportTicketsPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ticketId: selectedTicket.id,
-          status: "resolved",
+          status: responseStatus,
           admin_response: adminResponse,
           admin_id: "admin",
         }),
@@ -68,8 +70,8 @@ export function SupportTicketsPanel() {
       if (!response.ok) throw new Error("Failed to update ticket")
 
       toast({
-        title: "Response Sent",
-        description: "Ticket has been marked as resolved",
+        title: "Support Updated",
+        description: `Ticket has been marked ${responseStatus.replace("_", " ")}`,
       })
 
       setShowResponseDialog(false)
@@ -136,7 +138,11 @@ export function SupportTicketsPanel() {
               </CardTitle>
               <CardDescription className="text-slate-500 mt-1">Manage participant support requests</CardDescription>
             </div>
-            {openTickets > 0 && <Badge className="bg-red-100 text-red-700 border-0">{openTickets} Open</Badge>}
+            <div className="flex flex-wrap items-center gap-2">
+              {openTickets > 0 && <Badge className="bg-red-100 text-red-700 border-0">{openTickets} Open</Badge>}
+              <Badge className="bg-amber-100 text-amber-700 border-0">{tickets.filter((ticket) => ticket.status === "in_progress").length} In progress</Badge>
+              <Badge className="bg-emerald-100 text-emerald-700 border-0">{tickets.filter((ticket) => ticket.status === "resolved" || ticket.status === "closed").length} Resolved</Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -171,7 +177,7 @@ export function SupportTicketsPanel() {
                         <span>{new Date(ticket.created_at).toLocaleString()}</span>
                       </div>
                     </div>
-                    {ticket.status === "open" && (
+                    {(ticket.status === "open" || ticket.status === "in_progress") && (
                       <Button
                         size="sm"
                         onClick={() => handleRespond(ticket)}
@@ -199,6 +205,19 @@ export function SupportTicketsPanel() {
             <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
               <p className="text-sm text-slate-600 font-medium mb-1">Original Message:</p>
               <p className="text-sm text-slate-700">{selectedTicket?.message}</p>
+            </div>
+            <div className="grid gap-2">
+              <label htmlFor="support-status" className="text-sm font-medium text-slate-700">Update status</label>
+              <select
+                id="support-status"
+                value={responseStatus}
+                onChange={(event) => setResponseStatus(event.target.value as SupportTicket["status"])}
+                className="input-field-light rounded-md border px-3 py-2 text-sm"
+              >
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
             </div>
             <div>
               <Textarea

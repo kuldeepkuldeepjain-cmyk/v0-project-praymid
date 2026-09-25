@@ -35,7 +35,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
   const [loadingAddress, setLoadingAddress] = useState(false)
-  const [fundingMode, setFundingMode] = useState<"actual" | "funded">(openFundedTier || (isFundedAccount && isInitialFundedTopUp) ? "funded" : "actual")
+  const [checkingFundedTier, setCheckingFundedTier] = useState(false)
+  const [fundedTierEligibility, setFundedTierEligibility] = useState<boolean | null>(null)
+  const [fundingMode, setFundingMode] = useState<"actual" | "funded">("actual")
 
   // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
@@ -47,7 +49,24 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
-    setFundingMode(openFundedTier || (isFundedAccount && isInitialFundedTopUp) ? "funded" : "actual")
+    setFundingMode("actual")
+    setFundedTierEligibility(null)
+    const fetchFundedTierEligibility = async () => {
+      if (!isFundedAccount && !isInitialFundedTopUp) return
+      setCheckingFundedTier(true)
+      try {
+        const response = await fetch("/api/participant/topup/availability", { cache: "no-store" })
+        const data = await response.json()
+        const available = response.ok && data.success && data.fundedTierAvailable === true
+        setFundedTierEligibility(available)
+        if (available && (openFundedTier || isInitialFundedTopUp)) setFundingMode("funded")
+      } catch {
+        setFundedTierEligibility(false)
+      } finally {
+        setCheckingFundedTier(false)
+      }
+    }
+    fetchFundedTierEligibility()
     const fetchAddress = async () => {
       setLoadingAddress(true)
       try {
@@ -77,15 +96,20 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
   const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp)
-  const canUseFundedTier = fundedTierAvailable ?? Boolean(isFundedAccount || isInitialFundedTopUp)
+  const canUseFundedTier = fundedTierAvailable ?? fundedTierEligibility === true
   const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
 
   const handleSubmit = async () => {
     setErrorMessage("")
 
+    if (fundingMode === "funded" && !canUseFundedTier) {
+      setFundingMode("actual")
+      setErrorMessage("Funded-tier funding is available only for your first funding request. Please use Normal Add Fund.")
+      return
+    }
     if (!isAmountValid) {
-      setErrorMessage(isFundedAccount && isInitialFundedTopUp ? "The first funded top-up must be $50, $100, $250, $500, or $1,000" : "Please enter a valid amount (minimum $5)")
+      setErrorMessage(fundingMode === "funded" ? "The first funded top-up must be $50, $100, $250, $500, or $1,000" : "Please enter a valid amount (minimum $5)")
       return
     }
     if (!txHash.trim()) {
@@ -191,9 +215,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                           <div className="flex items-center gap-2">
                             <span className="flex size-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">1</span>
                             <span className="text-sm font-bold text-slate-900">Funded-tier Fund</span>
-                            {isInitialFundedTopUp && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">Recommended</span>}
+                            {canUseFundedTier && isInitialFundedTopUp && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">First deposit only</span>}
                           </div>
-                          <p className="mt-1 pl-7 text-[10px] leading-4 text-slate-500">Activate a funded account by choosing one of the plans below.</p>
+                            <p className="mt-1 pl-7 text-[10px] leading-4 text-slate-500">{checkingFundedTier ? "Checking first-deposit eligibility..." : canUseFundedTier ? "Activate a funded account by choosing one of the plans below." : "Already used — only Normal Add Fund is available now."}</p>
                         </div>
                         <span className={`mt-1 size-3 rounded-full border-2 ${fundingMode === "funded" && canUseFundedTier ? "border-emerald-600 bg-emerald-600 ring-2 ring-emerald-200" : "border-slate-300"}`} />
                       </div>

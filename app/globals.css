@@ -1035,6 +1035,36 @@ button, a, [role="button"] {
   display: flex;
   width: 36px;
   }
+  .terminal-time-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 22px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 1px 6px;
+  color: #7187a0;
+  background: transparent;
+  font: inherit;
+  font-size: 9px;
+  white-space: nowrap;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+  }
+  .terminal-time-switch:hover,
+  .terminal-time-switch:focus-visible,
+  .terminal-time-switch[aria-pressed="true"] {
+  border-color: #24536b;
+  color: #b5effb;
+  background: rgba(34, 211, 238, .08);
+  outline: none;
+  }
+  .terminal-time-mode {
+  color: #3aa5bd;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  }
+
   .terminal-sidebar-toggle {
   display: inline-flex;
   align-items: center;
