@@ -2487,8 +2487,9 @@ button, a, [role="button"] {
     }
     to {
       width: 100%;
-    }
   }
+}
+
 
   .animate-\[slide-right_3s_ease-out_forwards\] {
     animation: slide-right 3s ease-out forwards;
@@ -3735,4 +3736,86 @@ button, a, [role="button"] {
     min-height: 0 !important;
     overflow-y: auto !important;
   }
+}
+
+/* Power workspace composition: chart-first hierarchy with compact command rails. */
+.mt5-terminal.reference-terminal .apple-terminal-grid {
+  grid-template-columns: minmax(218px, 22%) minmax(0, 1fr) minmax(278px, 26%);
+  gap: 2px;
+  background: #1d3045 !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-topbar {
+  min-height: 50px;
+  padding-inline: 16px !important;
+}
+.mt5-terminal.reference-terminal .reference-metrics-header {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 5px;
+  padding: 6px 14px;
+  background: #07121f;
+}
+.mt5-terminal.reference-terminal .reference-metric-card {
+  min-height: 48px;
+  padding: 7px 10px;
+  border-color: #24405a;
+  background: linear-gradient(180deg, #0e1c2c 0%, #09131f 100%);
+}
+.mt5-terminal.reference-terminal .reference-metric-card span { color: #8ba2b9; font-size: 8px; }
+.mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 14px; }
+.mt5-terminal.reference-terminal .reference-fund-rail {
+  min-height: 48px;
+  padding: 6px 14px;
+  gap: 7px;
+  background: #0a1827;
+}
+.mt5-terminal.reference-terminal .reference-fund-action {
+  min-height: 34px;
+  flex: 0 1 150px;
+  border-radius: 5px;
+  font-size: 9px;
+}
+.mt5-terminal.reference-terminal .reference-watchlist {
+  min-height: 68px;
+  padding: 8px 14px !important;
+  gap: 8px !important;
+}
+.mt5-terminal.reference-terminal .reference-watch-card {
+  min-width: 150px;
+  min-height: 52px;
+  height: 52px;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market > div:first-child,
+.mt5-terminal.reference-terminal .apple-terminal-order > div:first-child,
+.mt5-terminal.reference-terminal .apple-terminal-chart-column > div:first-child {
+  min-height: 50px;
+  border-bottom: 1px solid #294661 !important;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market,
+.mt5-terminal.reference-terminal .apple-terminal-order {
+  box-shadow: inset 0 0 0 1px rgba(52, 91, 122, .22);
+}
+.mt5-terminal.reference-terminal .apple-terminal-chart-column {
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, .14), 0 0 26px rgba(0,0,0,.16);
+}
+.mt5-terminal.reference-terminal .reference-chart-trade-dock {
+  padding: 7px 10px 8px;
+  background: #0a1827;
+}
+@media (max-width: 1100px) and (min-width: 768px) {
+  .mt5-terminal.reference-terminal .apple-terminal-grid {
+    grid-template-columns: minmax(198px, 21%) minmax(0, 1fr) minmax(248px, 29%);
+  }
+  .mt5-terminal.reference-terminal .reference-fund-action { flex-basis: 126px; }
+}
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .apple-terminal-grid { display: flex !important; }
+  .mt5-terminal.reference-terminal .reference-metrics-header {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px 8px;
+  }
+  .mt5-terminal.reference-terminal .reference-metric-card { min-height: 42px; padding: 6px 7px; }
+  .mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 11px; }
+  .mt5-terminal.reference-terminal .reference-fund-rail { min-height: 50px; padding: 6px 8px; }
+  .mt5-terminal.reference-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
 }
