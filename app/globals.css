@@ -2137,6 +2137,73 @@ button, a, [role="button"] {
 .reference-fund-action-prediction { border-color: #245e57; color: #8ff5c9; background: #102d2b; }
 .reference-terminal .reference-watchlist { min-width: 0; }
 .reference-terminal .reference-watch-card { max-width: 170px; }
+.terminal-intelligence-rail {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 58px;
+  overflow-x: auto;
+  border-top: 1px solid #16283a;
+  border-bottom: 1px solid #1d3348;
+  background: linear-gradient(180deg, #0b1725 0%, #07111c 100%);
+  scrollbar-width: none;
+}
+.terminal-intelligence-rail::-webkit-scrollbar { display: none; }
+.terminal-intelligence-context {
+  display: flex;
+  min-width: 214px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 14px;
+  border-right: 1px solid #1d3348;
+}
+.terminal-intelligence-kicker,
+.terminal-intelligence-stat span,
+.terminal-intelligence-guard span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #6f859b;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.terminal-intelligence-kicker { color: #22d3ee; }
+.terminal-intelligence-title { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
+.terminal-intelligence-title strong { color: #f6fbff; font-size: 13px; letter-spacing: .04em; }
+.terminal-intelligence-title span { font-size: 9px; font-weight: 900; text-transform: uppercase; }
+.terminal-intelligence-muted { color: #7187a0; font-size: 9px !important; font-weight: 600 !important; text-transform: none !important; overflow: hidden; text-overflow: ellipsis; }
+.terminal-positive { color: #10b981; }
+.terminal-negative { color: #ef4444; }
+.terminal-intelligence-stat {
+  display: flex;
+  min-width: 104px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 12px;
+  border-right: 1px solid #1d3348;
+}
+.terminal-intelligence-stat strong { color: #e5edf7; font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; }
+.terminal-intelligence-stat small { color: #536b82; font-size: 8px; white-space: nowrap; }
+.terminal-intelligence-guard {
+  display: flex;
+  min-width: 138px;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  color: #10b981;
+  border-right: 1px solid #1d3348;
+}
+.terminal-intelligence-guard.is-warning { color: #f59e0b; }
+.terminal-intelligence-guard strong { display: block; margin-top: 3px; color: currentColor; font-size: 10px; white-space: nowrap; }
+.terminal-intelligence-sessions { display: flex; min-width: 138px; align-items: center; gap: 6px; padding: 8px 12px; color: #7c93a9; font-size: 9px; white-space: nowrap; }
+.terminal-intelligence-sessions svg { color: #a78bfa; }
+.terminal-intelligence-actions { display: flex; align-items: center; gap: 5px; margin-left: auto; padding: 8px 12px; }
+.terminal-intelligence-actions button { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; border: 1px solid #284760; border-radius: 5px; padding: 0 8px; color: #9ab2c5; background: #0d1d2c; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
+.terminal-intelligence-actions button:hover, .terminal-intelligence-actions button:focus-visible { border-color: #22d3ee; color: #b5effb; background: #12324a; outline: none; }
 .reference-terminal .apple-terminal-grid { min-width: 0; }
 .reference-terminal .apple-terminal-chart-column { flex: 1 1 0%; min-width: 0; }
 .reference-terminal .apple-terminal-market,
