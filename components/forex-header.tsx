@@ -8,7 +8,6 @@ import {
   ChevronDown,
   CircleDot,
   Clock,
-  Globe,
   Layers,
   LineChart,
   LogOut,
@@ -75,9 +74,6 @@ const menuItems = [
 ]
 
 export function ForexHeader({
-  walletBalance,
-  equity,
-  totalPnl,
   openTradesCount,
   pendingOrdersCount,
   leverage,
@@ -106,10 +102,6 @@ export function ForexHeader({
   notifications,
   onMarkNotificationRead,
   onClearNotifications,
-  activeLanguage,
-  onChangeLanguage,
-  activeLayout,
-  onChangeLayout,
   serverTime,
   marketStatus,
 }: ForexHeaderProps) {
@@ -122,9 +114,7 @@ export function ForexHeader({
   const [localTime, setLocalTime] = useState(serverTime)
   const [localZone, setLocalZone] = useState("Local")
   const unreadCount = notifications.filter((item) => !item.read).length
-  const pnlUp = totalPnl >= 0
   const marketColor = marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171"
-  const formatMoney = (value: number) => `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   const formatLocalTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   const filteredMenuItems = menuItems.filter((item) => !query.trim() || item.label.toLowerCase().includes(query.trim().toLowerCase()))
   const navigateFromMenu = (panel: string) => {
@@ -149,16 +139,12 @@ export function ForexHeader({
           <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "#1d78b5" }}>
             <LineChart className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
-          <div className="hidden leading-none sm:block">
-            <strong className="block text-[12px] tracking-tight text-white">ELITEFUND</strong>
-            <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">Trading terminal</span>
-          </div>
         </div>
 
         <div className="relative min-w-0 flex-1 lg:max-w-sm">
           <button type="button" onClick={() => { setSearchOpen((value) => !value); setMenuOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={searchOpen} className="flex h-9 w-full items-center gap-2 rounded-lg border px-3 text-left text-[11px] text-slate-400 transition hover:border-slate-600" style={{ background: "#0d1a2b", borderColor: "#21354d" }}>
             <Search className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">Search instruments</span>
+            <span className="sr-only">Search instruments</span>
             <kbd className="ml-auto hidden rounded border px-1.5 py-0.5 text-[9px] text-slate-500 md:block" style={{ borderColor: "#2a405c" }}>⌘K</kbd>
           </button>
           {searchOpen && (
@@ -179,15 +165,9 @@ export function ForexHeader({
           )}
         </div>
 
-        <div className="hidden items-center gap-1.5 xl:flex">
-          <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
-          <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
-          <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
-        </div>
-
         <div className="hidden items-center gap-1 md:flex">
-          <button type="button" onClick={onOpenDeposit} className="terminal-toolbar-action text-emerald-300"><ArrowDownRight className="h-3 w-3" />Deposit</button>
-          <button type="button" onClick={onOpenWithdraw} className="terminal-toolbar-action text-amber-300"><ArrowUpRight className="h-3 w-3" />Withdraw</button>
+          <button type="button" onClick={onOpenDeposit} className="terminal-icon-button text-emerald-300" aria-label="Deposit funds" title="Deposit funds"><ArrowDownRight className="h-3.5 w-3.5" /></button>
+          <button type="button" onClick={onOpenWithdraw} className="terminal-icon-button text-amber-300" aria-label="Withdraw funds" title="Withdraw funds"><ArrowUpRight className="h-3.5 w-3.5" /></button>
         </div>
 
         <div className="relative">
@@ -215,16 +195,17 @@ export function ForexHeader({
         <div className="relative">
           <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400/20 text-[10px] font-black text-cyan-200">{userName.slice(0, 2).toUpperCase()}</span>
-            <span className="hidden max-w-24 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountType} · 1:{leverage}</span></span>
+            <span className="sr-only">{userName}, {accountType}, 1:{leverage}</span>
             <ChevronDown className="h-3 w-3 text-slate-500" />
           </button>
           {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-500">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
         </div>
       </div>
 
-      <div className="flex h-7 items-center gap-3 overflow-x-auto border-t px-3 text-[9px] font-semibold uppercase tracking-wider terminal-scroll" style={{ borderColor: "#122238", color: "#7187a0" }}>
-        <span className="flex items-center gap-1" style={{ color: isConnected ? "#34d399" : "#f87171" }}>{isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}{isConnected ? "Connected" : "Offline"}</span>
-        <span className="flex items-center gap-1" style={{ color: marketColor }}><CircleDot className="h-3 w-3" />Market {marketStatus}</span>
+      <div className="flex h-7 items-center gap-3 overflow-x-auto border-t px-3 terminal-scroll" style={{ borderColor: "#122238", color: "#7187a0" }}>
+        <span className="sr-only">{isConnected ? "Connected" : "Offline"}. Market {marketStatus}. {openTradesCount} positions, {pendingOrdersCount} pending orders.</span>
+        <span className="flex items-center" style={{ color: isConnected ? "#34d399" : "#f87171" }} aria-hidden="true" title={isConnected ? "Connected" : "Offline"}>{isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}</span>
+        <span className="flex items-center" style={{ color: marketColor }} aria-hidden="true" title={`Market ${marketStatus}`}><CircleDot className="h-3 w-3" /></span>
         <button
           type="button"
           className="terminal-time-switch"
@@ -235,11 +216,7 @@ export function ForexHeader({
         >
           <Clock className="h-3 w-3" />
           <span>{useLocalTime ? localTime : serverTime}</span>
-          <span className="terminal-time-mode">{useLocalTime ? "LOCAL" : "UTC"}</span>
         </button>
-        <span className="hidden sm:inline">{activeLayout} layout</span>
-        <span className="hidden sm:inline">{openTradesCount} positions · {pendingOrdersCount} pending</span>
-        <span className="ml-auto hidden items-center gap-1 lg:flex"><Globe className="h-3 w-3" />{activeLanguage.toUpperCase()}</span>
       </div>
     </header>
   )
