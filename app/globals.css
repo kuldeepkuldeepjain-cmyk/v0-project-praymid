@@ -44,6 +44,13 @@
   --sidebar-accent-foreground: #171717;
   --sidebar-border: #e5e5e5;
   --sidebar-ring: #a3a3a3;
+  --home-surface: #08131f;
+  --home-panel: #0d1d2c;
+  --home-panel-soft: #11263a;
+  --home-line: #243b50;
+  --home-brand: #54d6e8;
+  --home-positive: #4bd6a0;
+  --home-warning: #f0b86b;
 }
 
 .dark {

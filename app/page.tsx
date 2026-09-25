@@ -4,7 +4,6 @@ import type React from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 import {
   ArrowRight,
@@ -22,27 +21,37 @@ import {
   Users,
   Award,
   MessageCircle,
+  Send,
   Sparkles,
-  Crown,
-  Flame,
-  Star,
 } from "lucide-react"
 import { useState } from "react"
 import { LearnMoreDialog } from "@/components/learn-more-dialog"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
+
+function FooterColumn({ title, links }: { title: string; links: [string, string][] }) {
+  return (
+    <div>
+      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-slate-300">{title}</h2>
+      <ul className="flex flex-col gap-3 text-sm text-slate-500">
+        {links.map(([label, href]) => (
+          <li key={label}>
+            <Link href={href} className="transition-colors hover:text-white">{label}</Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 
 export default function LandingPage() {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [activeTradingTab, setActiveTradingTab] = useState("forex")
 
-  // Live market data sample
   const marketPairs = [
     { symbol: "EUR/USD", bid: "1.0850", ask: "1.0852", change: "+0.45%", trend: "up" },
     { symbol: "GBP/USD", bid: "1.2780", ask: "1.2782", change: "+1.12%", trend: "up" },
     { symbol: "USD/JPY", bid: "149.45", ask: "149.47", change: "-0.23%", trend: "down" },
-    { symbol: "BTC/USD", bid: "62855", ask: "62862", change: "+2.15%", trend: "up" },
-    { symbol: "ETH/USD", bid: "2450", ask: "2452", change: "+1.85%", trend: "up" },
     { symbol: "XAU/USD", bid: "2385.50", ask: "2385.70", change: "+0.12%", trend: "up" },
   ]
 
@@ -50,64 +59,37 @@ export default function LandingPage() {
     {
       icon: CandlestickChart,
       title: "Professional Charts",
-      description: "Real-time candlestick charts with 6 timeframes (1M, 5M, 15M, 1H, 4H, 1D)"
+      description: "Review price action, positions, and risk across multiple timeframes in one focused workspace."
     },
     {
       icon: BarChart2,
       title: "Multiple Assets",
-      description: "Trade Forex, Commodities, Crypto all in one platform"
+      description: "Monitor supported forex, metals, and digital asset markets from a single account."
     },
     {
       icon: Zap,
-      title: "Instant Execution",
-      description: "Sub-second order execution with tight spreads"
+      title: "Order Controls",
+      description: "Set entry, stop-loss, take-profit, and size before sending an order."
     },
     {
       icon: Lock,
-      title: "Bank Security",
-      description: "Enterprise-grade encryption and fund protection"
+      title: "Account Security",
+      description: "Session controls, verification steps, and clear account activity records."
     },
     {
       icon: Wallet,
-      title: "Leverage Trading",
-      description: "Trade with up to 500x leverage (use responsibly)"
+      title: "Risk-Aware Sizing",
+      description: "Use leverage selectively with visible margin and liquidation information."
     },
     {
       icon: Users,
-      title: "Live Community",
-      description: "Join 15,000+ active traders 24/7"
-    },
-  ]
-
-  const testimonials = [
-    {
-      name: "Arjun Patel",
-      role: "Professional Trader",
-      text: "The terminal is professional-grade. I switched from TradingView and never looked back!",
-      avatar: "👨",
-    },
-    {
-      name: "Wei Chen",
-      role: "Day Trader",
-      text: "Fastest execution I've ever seen. The charting tools are incredible and fees are transparent.",
-      avatar: "👨",
-    },
-    {
-      name: "Neha Gupta",
-      role: "Swing Trader",
-      text: "Finally, a platform that treats retail traders with the same tools as institutions.",
-      avatar: "👩",
-    },
-    {
-      name: "Ahmed Khan",
-      role: "Forex Specialist",
-      text: "The spread on EUR/USD is amazing. This is the future of retail forex trading.",
-      avatar: "👨",
+      title: "Support When Needed",
+      description: "Access help resources and account support when you need a clear answer."
     },
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 overflow-x-hidden text-white">
+    <div className="min-h-screen overflow-x-hidden bg-slate-950 text-white">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
@@ -122,7 +104,6 @@ export default function LandingPage() {
             <a href="#platform" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Platform</a>
             <a href="#features" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Features</a>
             <a href="#security" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Security</a>
-            <a href="#funded-accounts" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Funded Accounts</a>
           </div>
 
           <div className="hidden md:flex gap-3">
@@ -159,44 +140,33 @@ export default function LandingPage() {
             <a href="#platform" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Platform</a>
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#security" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Security</a>
-            <a
-              href="#funded-accounts"
-              onClick={() => setIsMenuOpen(false)}
-              className="block w-full text-left text-slate-300 font-medium py-2"
-            >
-              Funded Accounts
-            </a>
           </div>
         )}
       </nav>
 
       {/* Hero Section */}
       <section id="platform" className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden pt-10 sm:pt-16 lg:pt-24 pb-8 sm:pb-12">
-        {/* Ambient background */}
-        <div className="absolute top-20 right-[10%] w-48 sm:w-72 h-48 sm:h-72 bg-gradient-to-br from-cyan-500/10 via-blue-500/10 to-transparent rounded-full blur-3xl animate-float-slow"></div>
-        <div className="absolute bottom-20 left-[5%] w-64 sm:w-96 h-64 sm:h-96 bg-gradient-to-tr from-blue-500/10 via-cyan-500/10 to-transparent rounded-full blur-3xl animate-float-slow" style={{ animationDelay: '-5s' }}></div>
-
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
             <div className="space-y-6 sm:space-y-8">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 text-cyan-400 font-bold text-sm">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                <span>LIVE TRADING • PROFESSIONAL PLATFORM</span>
-              </div>
+                <div className="inline-flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-[0.18em]">
+                  <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
+                  <span>Market access for disciplined traders</span>
+                </div>
 
               {/* Main Heading */}
               <div className="space-y-4 sm:space-y-6">
                 <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
-                  <span className="text-white">Trade Forex</span>
+                  <span className="text-white">A clearer way</span>
                   <br />
                   <span className="relative">
-                    <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Like a Pro</span>
+                    <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">to trade markets.</span>
                   </span>
                 </h1>
                 <p className="text-base sm:text-lg lg:text-xl text-slate-300 leading-relaxed max-w-lg">
-                  Access real-time forex, commodities, and crypto markets with professional trading tools, zero fees, and instant execution.
+                  Explore supported markets with practical tools for analysis, order management, and risk control. Built for decisions, not promises.
                 </p>
               </div>
 
@@ -208,11 +178,11 @@ export default function LandingPage() {
                 </div>
                 <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-3 rounded-lg bg-slate-800/60 border border-slate-700 hover:border-emerald-500/50 transition-colors">
                   <Zap className="w-4 h-4 text-emerald-400" />
-                  <span className="font-bold text-white text-sm">0% Fees</span>
+                  <span className="font-bold text-white text-sm">Transparent costs</span>
                 </div>
                 <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-3 rounded-lg bg-slate-800/60 border border-slate-700 hover:border-blue-500/50 transition-colors">
                   <Lock className="w-4 h-4 text-blue-400" />
-                  <span className="font-bold text-white text-sm">Bank Security</span>
+                  <span className="font-bold text-white text-sm">Protected access</span>
                 </div>
               </div>
 
@@ -230,22 +200,9 @@ export default function LandingPage() {
                 </button>
               </div>
 
-              {/* Social Proof */}
-              <div className="flex items-center gap-4">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 border-2 border-slate-800 flex items-center justify-center text-white text-xs font-bold">
-                      {i}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <p className="text-slate-100 font-semibold text-sm sm:text-base">15,243 active traders</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <span className="text-xs text-slate-400">Trading 24/7</span>
-                  </div>
-                </div>
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-slate-800 pt-5 text-xs text-slate-400">
+                <span className="inline-flex items-center gap-2"><Shield className="h-4 w-4 text-cyan-400" /> Risk information before every order</span>
+                <span className="inline-flex items-center gap-2"><Lock className="h-4 w-4 text-cyan-400" /> Secure account access</span>
               </div>
             </div>
 
@@ -253,7 +210,7 @@ export default function LandingPage() {
             <div className="relative hidden lg:flex flex-col gap-4">
               {/* Market Ticker */}
               <div className="space-y-2">
-                <h3 className="text-sm font-black tracking-[0.15em] uppercase text-slate-400">Live Market Data</h3>
+                <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-black tracking-[0.15em] uppercase text-slate-400">Indicative market view</h3><span className="text-[10px] uppercase tracking-wider text-slate-500">Illustrative</span></div>
                 <div className="grid gap-2">
                   {marketPairs.slice(0, 3).map((pair) => (
                     <div key={pair.symbol} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/60 border border-slate-700 hover:border-cyan-500/50 transition-colors">
@@ -276,11 +233,11 @@ export default function LandingPage() {
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
                   <p className="text-xs text-slate-400 uppercase tracking-wider">Avg Spread</p>
-                  <p className="text-lg font-bold text-cyan-400 mt-1">0.2 pips</p>
+                  <p className="text-lg font-bold text-cyan-400 mt-1">Variable</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
                   <p className="text-xs text-slate-400 uppercase tracking-wider">Max Leverage</p>
-                  <p className="text-lg font-bold text-cyan-400 mt-1">500:1</p>
+                  <p className="text-lg font-bold text-cyan-400 mt-1">Account-based</p>
                 </div>
               </div>
 
@@ -288,9 +245,9 @@ export default function LandingPage() {
               <div className="mt-4 p-4 rounded-lg bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-slate-700">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-                  <span className="text-xs font-bold text-emerald-400 uppercase">Platform Status</span>
+                  <span className="text-xs font-bold text-emerald-400 uppercase">Trading workspace</span>
                 </div>
-                <p className="text-xs text-slate-300">All systems operational. Ready to trade.</p>
+                <p className="text-xs text-slate-300">Review your market, size, and risk settings before placing an order.</p>
               </div>
             </div>
           </div>
@@ -324,155 +281,26 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Funded Account Section */}
-      <section id="funded-accounts" className="relative scroll-mt-24 overflow-hidden py-14 sm:py-24 bg-slate-900 border-t border-emerald-500/20 px-4">
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-1/2 top-0 h-[36rem] w-[36rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-emerald-500/10 blur-3xl" />
-          <div className="absolute right-0 bottom-0 h-80 w-80 rounded-full bg-cyan-500/10 blur-3xl" />
-        </div>
-
-        <div className="relative max-w-6xl mx-auto">
-          <div className="text-center mb-10 sm:mb-16">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-400/30 text-emerald-300 text-xs sm:text-sm font-semibold mb-4 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
-              <Sparkles className="w-4 h-4" />
-              Elite Funded Accounts
+      {/* Operating principles */}
+      <section className="border-t border-slate-800 bg-slate-900 py-16 sm:py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
+            <div>
+              <p className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">A practical operating model</p>
+              <h2 className="text-3xl font-bold leading-tight text-white sm:text-4xl">Built around the decisions that matter.</h2>
             </div>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-3 text-balance">
-              Get Funded. <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">Trade Bigger.</span>
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 max-w-2xl mx-auto">
-              Choose your account size and unlock professional trading power with Elite Fund. Start with $50 and access a $5,000 account.
-            </p>
+            <p className="max-w-2xl text-base leading-7 text-slate-400">Elite Fund keeps the trading workflow focused: understand the market, define the risk, place the order, and review the result. No performance claims. No shortcuts around risk.</p>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 sm:gap-6">
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
             {[
-              {
-                topUp: "$50",
-                funded: "$5,000",
-                icon: Sparkles,
-                tag: "Entry",
-                gradient: "from-purple-600 to-slate-500",
-                ring: "border-purple-600/50 hover:border-cyan-400/60",
-                glow: "hover:shadow-[0_0_35px_rgba(147,51,234,0.18)]",
-              },
-              {
-                topUp: "$100",
-                funded: "$10,000",
-                icon: Wallet,
-                tag: "Starter",
-                gradient: "from-slate-600 to-slate-500",
-                ring: "border-slate-600/50 hover:border-cyan-400/60",
-                glow: "hover:shadow-[0_0_35px_rgba(34,211,238,0.18)]",
-              },
-              {
-                topUp: "$250",
-                funded: "$25,000",
-                icon: TrendingUp,
-                tag: "Popular",
-                gradient: "from-cyan-500 to-blue-500",
-                ring: "border-cyan-500/40 hover:border-cyan-400/70",
-                glow: "hover:shadow-[0_0_35px_rgba(34,211,238,0.25)]",
-                popular: true,
-              },
-              {
-                topUp: "$500",
-                funded: "$50,000",
-                icon: Flame,
-                tag: "Pro",
-                gradient: "from-orange-500 to-amber-500",
-                ring: "border-orange-500/30 hover:border-orange-400/60",
-                glow: "hover:shadow-[0_0_35px_rgba(249,115,22,0.2)]",
-              },
-              {
-                topUp: "$1,000",
-                funded: "$100,000",
-                icon: Crown,
-                tag: "Best Value",
-                gradient: "from-emerald-500 to-cyan-500",
-                ring: "border-emerald-400/60",
-                glow: "shadow-[0_0_40px_rgba(16,185,129,0.28)] hover:shadow-[0_0_50px_rgba(16,185,129,0.4)]",
-                featured: true,
-              },
-            ].map((plan) => {
-              const Icon = plan.icon
-              return (
-                <div
-                  key={plan.topUp}
-                  className={`group relative rounded-[22px] p-[1.5px] bg-gradient-to-b ${plan.gradient} ${plan.featured ? "sm:-translate-y-2" : ""} transition-transform duration-300 hover:-translate-y-2`}
-                >
-                  {plan.featured && (
-                    <div className="absolute -inset-[1.5px] rounded-[22px] bg-gradient-to-b from-emerald-400 to-cyan-500 opacity-60 blur-md" />
-                  )}
-                  <Card className={`relative h-full overflow-hidden rounded-[20px] border-0 bg-slate-950 ${plan.ring} ${plan.glow} transition-all duration-300`}>
-                    {(plan.featured || plan.popular) && (
-                      <div className={`absolute top-0 right-0 flex items-center gap-1 rounded-bl-xl px-3 py-1.5 text-[11px] font-bold text-slate-950 ${plan.featured ? "bg-gradient-to-r from-emerald-400 to-cyan-400" : "bg-gradient-to-r from-cyan-400 to-blue-400"}`}>
-                        {plan.featured ? <Crown className="w-3 h-3" /> : <Star className="w-3 h-3" />}
-                        {plan.tag}
-                      </div>
-                    )}
-                    <CardHeader className="pb-3 pt-6">
-                      <div className={`flex size-12 items-center justify-center rounded-2xl bg-gradient-to-br ${plan.gradient} shadow-lg`}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      <CardTitle className="text-white text-lg mt-4">{plan.tag} Account</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs uppercase tracking-wider text-slate-500">Top up</p>
-                      <p className="text-2xl font-bold text-slate-200 mb-4">{plan.topUp}</p>
-                      <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent mb-4" />
-                      <p className="text-xs uppercase tracking-wider text-slate-500">Receive trading balance</p>
-                      <p className="text-3xl sm:text-4xl font-extrabold text-white mb-1 text-balance">
-                        <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">{plan.funded}</span>
-                      </p>
-                      <div className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-400/30 px-2.5 py-1 text-[11px] font-semibold text-emerald-300">
-                        <Zap className="w-3 h-3" />
-                        100x buying power
-                      </div>
-                      <Link href="/participant/register" className="block mt-6">
-                        <Button className={`w-full font-semibold text-white transition-all bg-gradient-to-r ${plan.gradient} hover:brightness-110`}>
-                          Get Started
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                </div>
-              )
-            })}
-          </div>
-
-          <p className="mt-8 text-center text-xs sm:text-sm text-slate-400">
-            Funds are credited instantly after top-up confirmation. No hidden fees, no lock-in periods.
-          </p>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 sm:py-24 bg-slate-900 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4">
-              Loved by <span className="bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">Traders</span>
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testimonials.map((testimonial, i) => (
-              <div key={i} className="p-6 rounded-lg bg-slate-800/40 border border-slate-700 hover:border-cyan-500/50 transition-all duration-300">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="text-3xl">{testimonial.avatar}</div>
-                  <div>
-                    <p className="font-bold text-white text-sm">{testimonial.name}</p>
-                    <p className="text-xs text-slate-400">{testimonial.role}</p>
-                  </div>
-                </div>
-                <div className="flex gap-1 mb-3">
-                  {[...Array(5)].map((_, i) => (
-                    <span key={i} className="text-amber-400">★</span>
-                  ))}
-                </div>
-                <p className="text-slate-300 text-sm leading-relaxed">"{testimonial.text}"</p>
+              ["01", "Prepare", "Review market context, available margin, and the order conditions before you commit capital."],
+              ["02", "Control", "Use position sizing, stop-loss and take-profit levels to keep the plan visible while you trade."],
+              ["03", "Review", "Track open and closed positions with clear records so every decision can be evaluated."],
+            ].map(([number, title, description]) => (
+              <div key={number} className="rounded-xl border border-slate-700 bg-slate-950/50 p-6">
+                <span className="font-mono text-xs text-cyan-400">{number}</span>
+                <h3 className="mt-8 text-xl font-bold text-white">{title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-400">{description}</p>
               </div>
             ))}
           </div>
@@ -489,12 +317,12 @@ export default function LandingPage() {
               </h2>
               <div className="space-y-4">
                 {[
-                  "Enterprise-grade SSL encryption",
-                  "Cold wallet fund storage",
-                  "Multi-signature authentication",
-                  "Real-time fraud monitoring",
-                  "Segregated client accounts",
-                  "Regular security audits",
+                  "Encrypted account sessions",
+                  "Verified participant access",
+                  "Protected profile controls",
+                  "Clear transaction records",
+                  "Risk and activity visibility",
+                  "Support for account issues",
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <Check className="w-5 h-5 text-emerald-400" />
@@ -506,11 +334,11 @@ export default function LandingPage() {
             <div className="relative">
               <div className="p-6 rounded-lg bg-slate-800/40 border border-slate-700">
                 <Shield className="w-16 h-16 text-cyan-400 mb-4 opacity-60" />
-                <h3 className="text-xl font-bold text-white mb-2">Regulatory Compliance</h3>
-                <p className="text-slate-400 mb-4">Operating under strict regulatory oversight with transparent practices and client protection protocols.</p>
-                <div className="flex gap-2">
-                  <span className="px-3 py-1 rounded bg-slate-700 text-xs text-slate-300">ISO 27001</span>
-                  <span className="px-3 py-1 rounded bg-slate-700 text-xs text-slate-300">SOC 2 Type II</span>
+                <h3 className="text-xl font-bold text-white mb-2">Clarity is part of security</h3>
+                <p className="text-slate-400 mb-4">We show the important account, order, and risk information in the workflow so you can make informed decisions.</p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded bg-slate-700 px-3 py-1 text-xs text-slate-300">Account controls</span>
+                  <span className="rounded bg-slate-700 px-3 py-1 text-xs text-slate-300">Activity records</span>
                 </div>
               </div>
             </div>
@@ -521,8 +349,8 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-16 sm:py-24 bg-gradient-to-r from-slate-950 to-slate-900 border-t border-slate-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">Ready to Start Trading?</h2>
-          <p suppressHydrationWarning className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">Join thousands of traders on Elite Fund. Get $50 bonus on your first deposit.</p>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6">Ready to review the platform?</h2>
+          <p suppressHydrationWarning className="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">Create an account to explore the terminal, available programs, and the rules that apply before you trade.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               onClick={() => router.push("/participant/register")}
@@ -541,47 +369,63 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-slate-950 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-8 w-8 rounded-md" />
-                <span className="font-bold text-white">Elite Fund</span>
+      <footer className="border-t border-slate-800 bg-slate-950" aria-label="Footer">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-12 py-14 lg:grid-cols-[1.6fr_repeat(4,1fr)] lg:gap-8 lg:py-20">
+            <div className="max-w-xs">
+              <div className="mb-5 flex items-center gap-3">
+                <FlowChainLogo variant="icon" size="xs" showTagline={false} className="h-9 w-9 rounded-md" />
+                <span className="text-lg font-bold tracking-tight text-white">ELITE FUND</span>
               </div>
-              <p className="text-slate-400 text-sm">Professional forex trading platform for everyone.</p>
+              <p className="text-base font-semibold leading-7 text-slate-200">Professional Trading Infrastructure for Modern Traders</p>
+              <p className="mt-4 text-sm leading-6 text-slate-400">Trade Smart. Manage Risk. Trade with Confidence.</p>
             </div>
-            <div>
-              <h4 className="font-bold text-white mb-3">Platform</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition">Trading Terminal</a></li>
-                <li><a href="#" className="hover:text-white transition">API Docs</a></li>
-                <li><a href="#" className="hover:text-white transition">Mobile App</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-3">Company</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition">About</a></li>
-                <li><a href="#" className="hover:text-white transition">Blog</a></li>
-                <li><a href="#" className="hover:text-white transition">Contact</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold text-white mb-3">Legal</h4>
-              <ul className="space-y-2 text-sm text-slate-400">
-                <li><a href="#" className="hover:text-white transition">Terms</a></li>
-                <li><a href="#" className="hover:text-white transition">Privacy</a></li>
-                <li><a href="#" className="hover:text-white transition">Cookies</a></li>
-              </ul>
+
+            <FooterColumn title="Platform" links={[
+              ["Trading Terminal", "/participant/dashboard"],
+              ["Trader Dashboard", "/participant/dashboard"],
+              ["API Docs", "/privacy"],
+              ["Mobile App", "/participant/dashboard"],
+            ]} />
+            <FooterColumn title="For Traders" links={[
+              ["How It Works", "#features"],
+              ["Programs", "/participant/register"],
+              ["Payouts", "/participant/dashboard/payout"],
+              ["FAQ", "/lending"],
+              ["Affiliate", "/participant/dashboard/refer"],
+            ]} />
+            <FooterColumn title="Company" links={[
+              ["About Us", "#security"],
+              ["Contact", "/participant/dashboard/settings/help"],
+              ["Help Center", "/participant/dashboard/settings/help"],
+              ["Blog", "/lending"],
+              ["Careers", "/participant/register"],
+            ]} />
+            <FooterColumn title="Legal" links={[
+              ["Terms", "/terms"],
+              ["Privacy", "/privacy"],
+              ["Risk Disclosure", "/terms"],
+              ["AML/KYC", "/privacy"],
+              ["Cookies", "/cookies"],
+            ]} />
+          </div>
+
+          <div className="border-y border-slate-800 py-6" role="note">
+            <div className="flex items-start gap-3">
+              <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" aria-hidden="true" />
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-300">Risk Disclosure</p>
+                <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">Trading involves significant risk. Past performance does not guarantee future results. No profit is guaranteed. Only trade with funds you can afford to lose.</p>
+              </div>
             </div>
           </div>
-          <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row justify-between items-center">
-            <p className="text-slate-400 text-sm">© 2024 Elite Fund. All rights reserved.</p>
-            <div className="flex gap-4 mt-4 sm:mt-0">
-              <a href="#" className="text-slate-400 hover:text-white transition">Twitter</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Discord</a>
-              <a href="#" className="text-slate-400 hover:text-white transition">Github</a>
+
+          <div className="flex flex-col gap-5 py-7 text-sm sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-slate-500">© 2026 Elite Fund. All rights reserved.</p>
+            <div className="flex items-center gap-5 text-slate-400">
+              <a href="#" aria-label="Elite Fund on X" className="font-semibold transition hover:text-white">X</a>
+              <a href="#" aria-label="Elite Fund on Discord" className="inline-flex items-center gap-2 transition hover:text-white"><MessageCircle className="h-4 w-4" aria-hidden="true" />Discord</a>
+              <a href="#" aria-label="Elite Fund on Telegram" className="inline-flex items-center gap-2 transition hover:text-white"><Send className="h-4 w-4" aria-hidden="true" />Telegram</a>
             </div>
           </div>
         </div>
