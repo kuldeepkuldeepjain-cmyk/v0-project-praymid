@@ -3886,6 +3886,32 @@ button, a, [role="button"] {
   .mt5-terminal.reference-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
 }
 
+/* Elite Fund terminal branding. */
+.mt5-terminal.reference-terminal .terminal-brand-lockup {
+  min-width: 108px;
+  height: 40px;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .terminal-brand-logo {
+  display: block;
+  width: 104px;
+  height: 36px;
+  object-fit: contain;
+  object-position: center;
+  filter: saturate(.9) contrast(1.08);
+}
+@media (max-width: 639px) {
+  .mt5-terminal.reference-terminal .terminal-brand-lockup {
+    min-width: 74px;
+    height: 34px;
+    padding-right: 8px;
+  }
+  .mt5-terminal.reference-terminal .terminal-brand-logo {
+    width: 72px;
+    height: 30px;
+  }
+}
+
 /* Pending order workspace: clear hierarchy for quick execution review. */
 .mt5-terminal.reference-terminal .order-panel {
   background: #07111d;

@@ -141,14 +141,14 @@ export function ForexHeader({
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
       <div className="flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
-        <div className="flex shrink-0 items-center gap-2 border-r pr-3" style={{ borderColor: "#1b2b40" }}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "#1d78b5" }}>
-            <LineChart className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </div>
-          <div className="hidden leading-none sm:block">
-            <strong className="block text-[12px] tracking-tight text-white">ELITEFUND</strong>
-            <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">Trading terminal</span>
-          </div>
+        <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
+          <img
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-A7KakQah7xwcxtqtqlfe43SgNoWIkP.png"
+            onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
+            alt="Elite Fund — Trade Higher"
+            className="terminal-brand-logo"
+          />
+          <span className="sr-only">Elite Fund Trading Terminal</span>
         </div>
 
         <div className="relative min-w-0 flex-1 lg:max-w-sm">
