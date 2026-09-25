@@ -544,7 +544,7 @@ export function TradingChart({
     })
   }, [macdd, indicators.macd, chartPane, times]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Volume visibility ────────────────────────────────────────────────────────
+  // ── Volume visibility ─────────────────────���──────────────────────────────────
   useEffect(() => {
     if (!volSerRef.current) return
     volSerRef.current.applyOptions({ visible: indicators.volume })
@@ -856,30 +856,6 @@ export function TradingChart({
 
       {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
   <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
-
-  {/* Compact floating trade actions keep the primary buy/sell controls visible on the chart. */}
-  {onQuickTrade && (buyPrice != null || sellPrice != null) && (
-    <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1.5 rounded-xl border border-slate-700/80 bg-slate-950/90 p-1.5 shadow-xl shadow-black/30 backdrop-blur-md">
-      <button
-        type="button"
-        onClick={() => onQuickTrade("SELL")}
-        aria-label={`Sell ${sym} at ${sellPrice?.toFixed(5) ?? "market"}`}
-        className="min-w-16 rounded-lg border border-red-400/30 bg-red-500/15 px-2.5 py-1 text-left transition-colors hover:bg-red-500/25 active:scale-95"
-      >
-        <span className="block text-[9px] font-black uppercase tracking-widest text-red-300">Sell</span>
-        <span className="price-mono block text-[11px] font-bold text-white">{sellPrice?.toFixed(5) ?? "—"}</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => onQuickTrade("BUY")}
-        aria-label={`Buy ${sym} at ${buyPrice?.toFixed(5) ?? "market"}`}
-        className="min-w-16 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1 text-left transition-colors hover:bg-emerald-500/25 active:scale-95"
-      >
-        <span className="block text-[9px] font-black uppercase tracking-widest text-emerald-300">Buy</span>
-        <span className="price-mono block text-[11px] font-bold text-white">{buyPrice?.toFixed(5) ?? "—"}</span>
-      </button>
-    </div>
-  )}
 
   {/* Sub-pane label overlay in bottom-left of chart */}
 

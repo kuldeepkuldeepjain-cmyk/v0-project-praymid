@@ -2380,40 +2380,6 @@ adjustWalletBalance(
         ))}
       </div>
 
-      {/* ══ UNIVERSAL TRADE ACTIONS ═══════════════════════════════════════════ */}
-      <div className="shrink-0 flex items-center gap-2 px-2.5 py-1.5" style={{ background: "#070b13", borderBottom: "1px solid #1e2d45" }}>
-        <div className="hidden sm:flex min-w-0 flex-1 items-center gap-2">
-          <Zap className="h-3.5 w-3.5 shrink-0 text-cyan-400" />
-          <span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Trade now</span>
-          <span className="truncate text-[10px] font-bold text-slate-300">
-            {selectedPair ? `${selectedPair.symbol} · ${lotSize} lots` : "Select an instrument to trade"}
-          </span>
-        </div>
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:flex-none">
-          <button
-            type="button"
-            onClick={() => quickTrade("SELL")}
-            disabled={isFrozen || !selectedPair || !balanceLoaded || estimatedMargin > walletBalance}
-            aria-label={selectedPair ? `Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}` : "Select an instrument before selling"}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-red-400/30 bg-red-500/10 px-3 py-1.5 text-[10px] font-black tracking-wider text-red-300 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
-          >
-            <TrendingDown className="h-3.5 w-3.5" />
-            <span>SELL</span>
-            <span className="price-mono hidden text-[9px] opacity-80 sm:inline">{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => quickTrade("BUY")}
-            disabled={isFrozen || !selectedPair || !balanceLoaded || estimatedMargin > walletBalance}
-            aria-label={selectedPair ? `Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}` : "Select an instrument before buying"}
-            className="flex min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-emerald-400/30 bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black tracking-wider text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
-          >
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>BUY</span>
-            <span className="price-mono hidden text-[9px] opacity-80 sm:inline">{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</span>
-          </button>
-        </div>
-      </div>
 
       {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
@@ -2570,7 +2536,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ──────────────────���─���───────────────────────�����─────── */}
+        {/* ── CENTER: Chart ────────────────���─���─���───────────────────────�����─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""} ${mobileTab !== "chart" ? "tablet-chart-hidden" : ""}`} style={{ display: isCompactViewport && mobileTab !== "chart" ? "none" : undefined }}>
           {/* Pair header */}
           {selectedPair ? (
@@ -2672,7 +2638,23 @@ adjustWalletBalance(
   </div>
   )}
   </div>
+  <div className="reference-chart-trade-dock shrink-0">
+    <div className="reference-chart-trade-heading">
+      <span>Quick trade</span>
+      <span>{selectedPair ? `${selectedPair.symbol} · market` : "Select an instrument"}</span>
+    </div>
+    <div className="reference-chart-trade-actions">
+      <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
+        <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
+        <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+      </button>
+      <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
+        <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
+        <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+      </button>
+    </div>
   </div>
+        </div>
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
         {rightPanelHidden ? (
@@ -2959,28 +2941,6 @@ adjustWalletBalance(
                   </span>
                 </button>
 
-                <div className="my-2" style={{ height: 1, background: "#111927" }} />
-
-                {/* Quick Market Trade (3D) */}
-                <p className="text-[7px] font-black tracking-[0.2em] uppercase mb-1.5" style={{ color: "#1e2d45" }}>Quick Market Trade</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => quickTrade("BUY")}
-                    disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance}
-                    className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex flex-col items-center py-2.5 gap-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <div className="flex items-center gap-1 relative z-10"><TrendingUp className="h-3.5 w-3.5" /><span className="font-black text-xs">BUY</span></div>
-                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-                  </button>
-                  <button
-                    onClick={() => quickTrade("SELL")}
-                    disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance}
-                    className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex flex-col items-center py-2.5 gap-0.5 disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    <div className="flex items-center gap-1 relative z-10"><TrendingDown className="h-3.5 w-3.5" /><span className="font-black text-xs">SELL</span></div>
-                    <span className="price-mono text-[9px] opacity-80 relative z-10">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-                  </button>
-                </div>
               </div>
             </div>
           ) : rightPanelTab === "order" ? (
@@ -3011,7 +2971,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═══════════════════════════════����═══��════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═════════════════════════════��═����═══��════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
