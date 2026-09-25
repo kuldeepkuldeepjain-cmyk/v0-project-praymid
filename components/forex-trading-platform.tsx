@@ -2383,13 +2383,6 @@ adjustWalletBalance(
 
 {/* ══ PROFESSIONAL HEADER (brand, search, tools, account, metrics) ══ */}
       <ForexHeader
-        walletBalance={walletBalance}
-        equity={equity}
-        totalPnl={totalPnl}
-        totalSwap={totalSwap}
-        totalMargin={totalMargin}
-        freeMargin={freeMargin}
-        marginLevel={marginLevel}
         openTradesCount={openTrades.length}
         pendingOrdersCount={pendingOrders.length}
         leverage={Number(leverage) || 100}
@@ -2471,23 +2464,6 @@ adjustWalletBalance(
           <span>Analytics</span>
         </button>
       </nav>
-
-      <section className="terminal-account-summary" aria-label="Account summary">
-        {[
-          ["Balance", walletBalance, "neutral"],
-          ["Equity", accountEquity, "neutral"],
-          ["Available margin", freeMargin, "neutral"],
-          ["Used margin", totalMargin, "neutral"],
-          ["Free margin", freeMargin, "neutral"],
-          ["Today's P&L", totalPnl, totalPnl >= 0 ? "positive" : "negative"],
-          ["Total P&L", totalPnl, totalPnl >= 0 ? "positive" : "negative"],
-        ].map(([label, value, tone]) => (
-          <div key={String(label)} className="terminal-account-metric">
-            <span>{label}</span>
-            <strong className={`terminal-account-value ${tone}`}>{tone === "positive" && "+"}{tone === "negative" && "-"}${Math.abs(Number(value)).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
-          </div>
-        ))}
-      </section>
 
       {/* ══ REFERENCE WATCHLIST ════════════════════════�������══════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
