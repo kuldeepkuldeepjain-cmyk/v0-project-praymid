@@ -211,11 +211,14 @@ function calcMargin(sym: string, lots: number, price: number, leverage: number):
 function calcLiquidationPrice(sym: string, trade: OpenTrade): number {
   // Liq price = entry ± (margin / (lots × contractSize)) depending on direction
   // This is a simplified model (ignores multi-position netting)
-  const cs     = contractSize(sym)
-  const dir    = trade.direction === "BUY" ? -1 : 1
-  const liqMove = trade.margin / (trade.lotSize * cs)
-  // For USD-base we need to convert differently, but liqMove approximation is fine
-  return parseFloat((trade.openPrice + dir * liqMove).toFixed(decimals(sym)))
+  const cs = contractSize(sym)
+  const lots = Number(trade.lotSize)
+  const margin = Number(trade.margin)
+  const openPrice = Number(trade.openPrice)
+  if (!Number.isFinite(cs) || cs <= 0 || !Number.isFinite(lots) || lots <= 0 || !Number.isFinite(margin) || !Number.isFinite(openPrice)) return 0
+  const dir = trade.direction === "BUY" ? -1 : 1
+  const liqMove = margin / (lots * cs)
+  return parseFloat((openPrice + dir * liqMove).toFixed(decimals(sym)))
 }
 
 // ATR (Average True Range) — used for position sizing suggestions
@@ -233,7 +236,9 @@ function calcATR(candles: Candle[], period = 14): number {
 
 // Duration string from timestamp to now
 function formatDuration(openTimestamp: number): string {
-  const ms = Date.now() - openTimestamp
+  const timestamp = Number(openTimestamp)
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return "—"
+  const ms = Math.max(0, Date.now() - timestamp)
   const s  = Math.floor(ms / 1000)
   if (s < 60)   return `${s}s`
   const m = Math.floor(s / 60)
@@ -730,7 +735,7 @@ function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
   )
 }
 
-// ─── Support Center Panel ────────────────���────────────────────────────────────
+// ─── Support Center Panel ───────────��────���────────────────────────────────────
 
 function SupportCenterPanel() {
   const [view, setView] = useState<"overview" | "chat" | "ticket" | "faq">("overview")
@@ -1213,6 +1218,7 @@ function PositionSizer({
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(true)
+  const [terminalLocked, setTerminalLocked] = useState(false)
   const [marketError, setMarketError] = useState<string | null>(null)
   const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
@@ -1370,6 +1376,7 @@ function PositionSizer({
 
   const lockedMargin = openTrades.reduce((sum, trade) => sum + trade.margin, 0)
   const accountEquity = walletBalance + lockedMargin + totalPnl
+  const tradingLocked = isFrozen || terminalLocked
   const fundedLossLimitReached = isFundedAccount && fundedBaseAmount > 0 && walletBalance > 0 && accountEquity <= fundedMinimumBalance
 
   const freezeFundedAccount = useCallback(async () => {
@@ -1403,20 +1410,21 @@ function PositionSizer({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: participantEmail, delta, description }),
       })
-      const json = await res.json()
-      if (!json.success) {
+      const json = await res.json().catch(() => null)
+      const newBalance = json && typeof json.newBalance === "number" && Number.isFinite(json.newBalance) ? json.newBalance : null
+      if (!res.ok || !json?.success || newBalance === null) {
         suppressExternalSync.current = false
-        showToast("error", json.error || "Balance update failed")
+        showToast("error", json?.error || "Balance update failed. Please try again.")
         return null
       }
-      setWalletBalance(json.newBalance)
+      setWalletBalance(newBalance)
       setBalanceLoaded(true)
-      onBalanceUpdated?.(json.newBalance)
+      onBalanceUpdated?.(newBalance)
       setBalanceDelta({ value: delta, id: Date.now() })
       setTimeout(() => setBalanceDelta(null), 2500)
       // Re-enable external sync after a short delay (after onBalanceUpdated propagates)
       setTimeout(() => { suppressExternalSync.current = false }, 800)
-      return json.newBalance
+      return newBalance
     } catch {
       suppressExternalSync.current = false
       showToast("error", "Network error updating balance")
@@ -1455,12 +1463,15 @@ function PositionSizer({
     if (!participantEmail) return false
     try {
       const res = await participantFetch(`/api/forex/trades?email=${encodeURIComponent(participantEmail)}`, { cache: "no-store" })
-      const json = await res.json()
-      if (!res.ok || !json.success) return false
-      setOpenTrades(json.open ?? [])
-      setClosedTrades(json.closed ?? [])
-      setPendingOrders(json.pending ?? [])
-      openTradesRef.current = json.open ?? []
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) return false
+      const open = Array.isArray(json.open) ? json.open : []
+      const closed = Array.isArray(json.closed) ? json.closed : []
+      const pending = Array.isArray(json.pending) ? json.pending : []
+      setOpenTrades(open)
+      setClosedTrades(closed)
+      setPendingOrders(pending)
+      openTradesRef.current = open
       return true
     } catch {
       return false
@@ -1476,13 +1487,14 @@ function PositionSizer({
     try {
       const res = await fetch("/api/forex/rates", { cache: "no-store" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.error) throw new Error(json.error)
-  const rateMap = json.rates as Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
+      const json = await res.json().catch(() => null)
+      if (!json || typeof json !== "object" || json.error) throw new Error(json?.error || "Invalid rates response")
+      const rateMap = json.rates && typeof json.rates === "object" ? json.rates as Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }> : null
+      if (!rateMap) throw new Error("Rates response is missing data")
   setPairs(prev => {
         const updated = prev.map(p => {
           const r = rateMap[p.symbol]
-          if (!r) return p
+          if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
           return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
         })
         pairsRef.current = updated
@@ -1510,9 +1522,11 @@ function PositionSizer({
     try {
       const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.error) throw new Error(json.error)
-      const candles: Candle[] = json.candles
+      const json = await res.json().catch(() => null)
+      if (!json || typeof json !== "object" || json.error) throw new Error(json?.error || "Invalid candles response")
+      const candles: Candle[] = Array.isArray(json.candles)
+        ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
+        : []
       setCandleCache(prev => ({ ...prev, [key]: candles }))
       setPairs(prev => {
         const updated = prev.map(p => p.symbol === sym ? { ...p, candles } : p)
@@ -1865,7 +1879,7 @@ function PositionSizer({
   }
 
   const executeTrade = () => {
-    if (isFrozen) { showToast("warning", "Account frozen — trading is disabled"); return }
+    if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
     if (!selectedPair) return
     const lot = parseFloat(lotSize); const lev = effectiveLeverage
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
@@ -1922,7 +1936,7 @@ function PositionSizer({
   }
 
   const confirmAndPlace = async () => {
-  if (isFrozen) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
+  if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
     setConfirmLoading(true)
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
@@ -1994,7 +2008,7 @@ function PositionSizer({
 
   // ��─ Quick trade — routes through confirmation modal ────────────────────────
   const quickTrade = (dir: TradeDirection) => {
-  if (isFrozen) { showToast("warning", "Account frozen — trading is disabled"); return }
+  if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
   if (!balanceLoaded) { showToast("info", "Loading account balance — try again in a moment"); return }
 
@@ -2286,10 +2300,10 @@ adjustWalletBalance(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equity, totalPnl, walletBalance])
 
-  // ── Institutional hotkeys (B/S buy/sell, X close all, Ctrl+K palette, +/- lot) ──
+  // ─��� Institutional hotkeys (B/S buy/sell, X close all, Ctrl+K palette, +/- lot) ──
   useTradingHotkeys({
-    onBuy: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("BUY") },
-    onSell: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("SELL") },
+    onBuy: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("BUY") },
+    onSell: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("SELL") },
     onCloseAll: () => { openTrades.forEach(t => closeTrade(t.id)) },
     onCancelPending: () => { setTradeConfirm(null); setModifyTarget(null) },
     onToggleCommand: () => setCommandPaletteOpen(v => !v),
@@ -2299,8 +2313,8 @@ adjustWalletBalance(
 
   // ── Command palette actions ──────────────────────────────────────────────────
   const commandActions = useMemo(() => [
-    { id: "buy", label: "Quick BUY at market", hint: "Open a long position at the current ask", icon: TrendingUp, shortcut: "B", action: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("BUY") } },
-    { id: "sell", label: "Quick SELL at market", hint: "Open a short position at the current bid", icon: TrendingDown, shortcut: "S", action: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("SELL") } },
+    { id: "buy", label: "Quick BUY at market", hint: "Open a long position at the current ask", icon: TrendingUp, shortcut: "B", action: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("BUY") } },
+    { id: "sell", label: "Quick SELL at market", hint: "Open a short position at the current bid", icon: TrendingDown, shortcut: "S", action: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("SELL") } },
     { id: "close-all", label: "Close all positions", hint: "Manually close every open trade", icon: X, shortcut: "X", action: () => { openTrades.forEach(t => closeTrade(t.id)) } },
     { id: "cancel-pending", label: "Cancel all pending orders", hint: "Remove every working limit/stop order", icon: Clock, action: () => { pendingOrders.forEach(o => cancelPending(o.id)) } },
     { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
@@ -2388,10 +2402,13 @@ adjustWalletBalance(
         }}
         isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
   onToggleLock={() => {
-    setIsFrozen((locked) => !locked)
-    showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")
+    setTerminalLocked((locked) => {
+      const nextLocked = !locked
+      showToast(nextLocked ? "warning" : "info", nextLocked ? "Trading locked — no new orders will be accepted" : "Trading unlocked")
+      return nextLocked
+    })
   }}
-  isLocked={isFrozen}
+  isLocked={isFrozen || terminalLocked}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         soundEnabled={soundEnabled}
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
@@ -2409,14 +2426,14 @@ adjustWalletBalance(
   }}
         onSearch={(q) => { if (q) { setPairSearch(q); setShowPairSearch(true) } }}
         notifications={toasts.slice(0, 5).map(t => ({
-          id: t.id,
+          id: String(t.id),
           type: t.type,
           title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
           message: t.text,
           time: "just now",
           read: false,
         }))}
-        onMarkNotificationRead={(id) => setToasts(ts => ts.filter(t => t.id !== id))}
+        onMarkNotificationRead={(id) => setToasts(ts => ts.filter(t => String(t.id) !== id))}
         onClearNotifications={() => setToasts([])}
         activeLanguage="en"
         onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
