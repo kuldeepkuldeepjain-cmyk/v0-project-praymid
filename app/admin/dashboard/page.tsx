@@ -25,6 +25,7 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-tracker"
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 import { AdminControlRoom } from "@/components/admin/admin-control-room"
+import { SupportTicketsPanel } from "@/components/support-tickets-panel"
 
 interface ApprovedWallet {
   id: string
@@ -250,6 +251,15 @@ export default function AdminDashboard() {
 
         {/* Trading operations control room */}
         <AdminControlRoom />
+
+        {/* 24/7 Support Operations */}
+        <section aria-labelledby="admin-support-heading" className="space-y-4">
+          <div>
+            <h2 id="admin-support-heading" className="text-xl font-semibold text-white">24/7 Support Operations</h2>
+            <p className="mt-1 text-sm text-cyan-200/70">Review and resolve participant live-chat and ticket requests across account, payout, technical, and MT5 support.</p>
+          </div>
+          <SupportTicketsPanel />
+        </section>
 
         {/* Stats Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
