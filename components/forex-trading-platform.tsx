@@ -2478,10 +2478,10 @@ adjustWalletBalance(
           <ArrowUpDown className="h-4 w-4" />
           <span>Payout</span>
         </button>
-        <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => setActivePanel("performance")}>
-          <BarChart className="h-4 w-4" />
-          <span>Analytics</span>
-        </button>
+  <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+  <TrendingUp className="h-4 w-4" />
+  <span>Prediction</span>
+  </button>
       </nav>
 
       {/* ══ REFERENCE WATCHLIST ════════════════════════�������══════════════════��════ */}
