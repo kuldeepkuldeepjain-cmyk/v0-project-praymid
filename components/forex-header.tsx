@@ -2,82 +2,24 @@
 
 import { useState } from "react"
 import {
-  Search,
+  ArrowDownRight,
+  ArrowUpRight,
   Bell,
   ChevronDown,
-  Settings,
-  HelpCircle,
-  Globe,
-  Activity,
-  Wallet,
-  TrendingUp,
-  TrendingDown,
-  Layers,
-  BarChart3,
-  LineChart,
-  Newspaper,
-  Calendar,
-  Calculator,
-  Briefcase,
-  PieChart,
-  GraduationCap,
-  Headphones,
-  LogOut,
-  User,
-  CreditCard,
-  Shield,
-  Zap,
-  Eye,
-  EyeOff,
-  Plus,
-  Star,
-  Crown,
   CircleDot,
+  Clock,
+  Globe,
+  Layers,
+  LineChart,
+  LogOut,
+  Menu,
+  Search,
+  Settings,
+  Shield,
+  Wallet,
   Wifi,
   WifiOff,
-  Maximize2,
-  Minimize2,
-  Lock,
-  Unlock,
-  Filter,
-  Download,
-  Upload,
-  RefreshCw,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
-  DollarSign,
-  Percent,
-  Hash,
-  Volume2,
-  VolumeX,
-  Mail,
-  MessageSquare,
-  Bookmark,
-  History,
-  Target,
-  Flame,
-  Snowflake,
-  Sun,
-  Moon,
-  Languages,
-  Palette,
-  Keyboard,
-  Bot,
-  Sparkles,
-  Trophy,
-  Award,
-  Gift,
-  Tag,
-  Pin,
-  Share2,
-  Copy,
-  ExternalLink,
-  ChevronRight,
   X,
-  Menu,
 } from "lucide-react"
 
 interface ForexHeaderProps {
@@ -124,14 +66,18 @@ interface ForexHeaderProps {
   marketStatus: "open" | "closed" | "pre-market"
 }
 
+const menuItems = [
+  { id: "positions", label: "Open positions" },
+  { id: "pending", label: "Pending orders" },
+  { id: "history", label: "Trade history" },
+  { id: "news", label: "News & calendar" },
+  { id: "sizer", label: "Position calculator" },
+]
+
 export function ForexHeader({
   walletBalance,
   equity,
   totalPnl,
-  totalSwap,
-  totalMargin,
-  freeMargin,
-  marginLevel,
   openTradesCount,
   pendingOrdersCount,
   leverage,
@@ -168,538 +114,95 @@ export function ForexHeader({
   marketStatus,
 }: ForexHeaderProps) {
   const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [accountOpen, setAccountOpen] = useState(false)
   const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [languageMenuOpen, setLanguageMenuOpen] = useState(false)
-  const [layoutMenuOpen, setLayoutMenuOpen] = useState(false)
-  const [walletMenuOpen, setWalletMenuOpen] = useState(false)
-  const [toolsMenuOpen, setToolsMenuOpen] = useState(false)
-  const [hideBalance, setHideBalance] = useState(false)
-
-  const unreadCount = notifications.filter(n => !n.read).length
-
-  const formatMoney = (n: number) =>
-    hideBalance ? "••••••" : `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-
-  const pnlColor = totalPnl >= 0 ? "#34d399" : "#f87171"
-  const pnlBg = totalPnl >= 0 ? "rgba(52,211,153,0.10)" : "rgba(248,113,113,0.10)"
-
-  const marginColor = marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171"
-
-  const languages = [
-    { code: "en", label: "English", flag: "EN" },
-    { code: "es", label: "Español", flag: "ES" },
-    { code: "fr", label: "Français", flag: "FR" },
-    { code: "de", label: "Deutsch", flag: "DE" },
-    { code: "it", label: "Italiano", flag: "IT" },
-    { code: "pt", label: "Português", flag: "PT" },
-    { code: "ar", label: "العربية", flag: "AR" },
-    { code: "zh", label: "中文", flag: "ZH" },
-    { code: "ja", label: "日本語", flag: "JA" },
-    { code: "ru", label: "Русский", flag: "RU" },
-  ]
-
-  const layouts = [
-    { id: "default", label: "Default", desc: "Standard 3-panel layout" },
-    { id: "compact", label: "Compact", desc: "Dense view for small screens" },
-    { id: "pro", label: "Pro Trader", desc: "Advanced multi-chart view" },
-    { id: "scalper", label: "Scalper", desc: "Quick-execution focused" },
-    { id: "analyst", label: "Analyst", desc: "Charts and research heavy" },
-  ]
-
-  const tools = [
-    { id: "calculator", label: "Position Calculator", icon: Calculator, panel: "sizer" },
-    { id: "calendar", label: "Economic Calendar", icon: Calendar, panel: "calendar" },
-    { id: "news", label: "News Feed", icon: Newspaper, panel: "news" },
-    { id: "performance", label: "Performance Report", icon: BarChart3, panel: "performance" },
-    { id: "history", label: "Trade History", icon: History, panel: "history" },
-    { id: "journal", label: "Trading Journal", icon: Bookmark, panel: "journal" },
-    { id: "academy", label: "Trading Academy", icon: GraduationCap, panel: "academy" },
-    { id: "support", label: "Live Support", icon: Headphones, panel: "support" },
-  ]
-
-  const quickActions = [
-    { id: "deposit", label: "Deposit", icon: ArrowDownRight, color: "#34d399", action: onOpenDeposit },
-    { id: "withdraw", label: "Withdraw", icon: ArrowUpRight, color: "#fbbf24", action: onOpenWithdraw },
-    { id: "transfer", label: "Transfer", icon: RefreshCw, color: "#38bdf8", action: onOpenTransfer },
-  ]
+  const [query, setQuery] = useState("")
+  const unreadCount = notifications.filter((item) => !item.read).length
+  const pnlUp = totalPnl >= 0
+  const marketColor = marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171"
+  const formatMoney = (value: number) => `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
-    <header
-      className="flex flex-col shrink-0 border-b"
-      style={{ background: "linear-gradient(180deg, #0a1424 0%, #060d18 100%)", borderColor: "#1a2640" }}
-    >
-      {/* ═══ ROW 1: Brand, Search, Quick Actions, Account ═══ */}
-      <div className="flex h-12 items-center gap-3 border-b px-4" style={{ borderColor: "#1a2640" }}>
-        {/* Brand */}
-        <div className="flex items-center gap-2.5 pr-3 border-r" style={{ borderColor: "#1a2640" }}>
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-md"
-            style={{ background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", boxShadow: "0 0 12px rgba(59,130,246,0.4)" }}
-          >
+    <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
+      <div className="flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
+        <div className="flex shrink-0 items-center gap-2 border-r pr-3" style={{ borderColor: "#1b2b40" }}>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "#1d78b5" }}>
             <LineChart className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
-          <div className="flex flex-col leading-none">
-            <span className="text-[13px] font-black tracking-tight text-white">PRAYSMID</span>
-            <span className="text-[8px] font-bold tracking-[0.2em] uppercase" style={{ color: "#3d5a80" }}>
-              Trading Terminal
-            </span>
+          <div className="hidden leading-none sm:block">
+            <strong className="block text-[12px] tracking-tight text-white">PRAYSMID</strong>
+            <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">Trading terminal</span>
           </div>
         </div>
 
-        {/* Workspace Switcher */}
-        <button
-          type="button"
-          onClick={() => setLayoutMenuOpen(!layoutMenuOpen)}
-          className="flex items-center gap-1.5 rounded-md px-2.5 h-8 text-[11px] font-semibold transition-colors hover:bg-[#1a2640]"
-          style={{ color: "#cbd5e1", border: "1px solid #1a2640" }}
-        >
-          <Layers className="h-3.5 w-3.5" style={{ color: "#75bff2" }} />
-          <span>{layouts.find(l => l.id === activeLayout)?.label || "Default"}</span>
-          <ChevronDown className="h-3 w-3 opacity-60" />
-        </button>
-
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
-          <button
-            type="button"
-            onClick={() => setSearchOpen(!searchOpen)}
-            className="flex w-full items-center gap-2 rounded-md px-3 h-8 text-[11px] transition-colors hover:bg-[#1a2640]"
-            style={{ background: "#0a1424", border: "1px solid #1a2640", color: "#64748b" }}
-          >
-            <Search className="h-3.5 w-3.5" />
-            <span className="flex-1 text-left">Search symbols, orders, news...</span>
-            <kbd
-              className="hidden md:inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-mono"
-              style={{ background: "#1a2640", color: "#64748b", border: "1px solid #1a2640" }}
-            >
-              <Keyboard className="h-2.5 w-2.5" />K
-            </kbd>
+        <div className="relative min-w-0 flex-1 lg:max-w-sm">
+          <button type="button" onClick={() => setSearchOpen((value) => !value)} className="flex h-9 w-full items-center gap-2 rounded-lg border px-3 text-left text-[11px] text-slate-400 transition hover:border-slate-600" style={{ background: "#0d1a2b", borderColor: "#21354d" }}>
+            <Search className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Search instruments</span>
+            <kbd className="ml-auto hidden rounded border px-1.5 py-0.5 text-[9px] text-slate-500 md:block" style={{ borderColor: "#2a405c" }}>⌘K</kbd>
           </button>
           {searchOpen && (
-            <div
-              className="absolute left-0 right-0 top-full mt-1 rounded-md shadow-2xl z-50"
-              style={{ background: "#0a1424", border: "1px solid #1a2640" }}
-            >
-              <div className="flex items-center gap-2 px-3 h-10 border-b" style={{ borderColor: "#1a2640" }}>
-                <Search className="h-4 w-4" style={{ color: "#75bff2" }} />
-                <input
-                  autoFocus
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => { setSearchQuery(e.target.value); onSearch(e.target.value) }}
-                  placeholder="Type to search pairs, orders, news..."
-                  className="flex-1 bg-transparent text-[12px] text-white outline-none placeholder:text-slate-500"
-                />
-                <button type="button" onClick={() => { setSearchOpen(false); setSearchQuery("") }} className="text-slate-500 hover:text-white">
-                  <X className="h-3.5 w-3.5" />
-                </button>
+            <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-lg border shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}>
+              <div className="flex items-center gap-2 border-b px-3 py-2" style={{ borderColor: "#1b2b40" }}>
+                <Search className="h-3.5 w-3.5 text-cyan-300" />
+                <input autoFocus value={query} onChange={(event) => { setQuery(event.target.value); onSearch(event.target.value) }} placeholder="EUR/USD, GOLD, BTC..." className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-slate-600" />
+                <button type="button" onClick={() => { setSearchOpen(false); setQuery("") }} aria-label="Close search"><X className="h-3.5 w-3.5 text-slate-500" /></button>
               </div>
-              <div className="max-h-80 overflow-y-auto p-1">
-                {[
-                  { type: "Pair", label: "EUR/USD", sub: "1.0847 +0.12%" },
-                  { type: "Pair", label: "GBP/USD", sub: "1.2634 -0.08%" },
-                  { type: "Pair", label: "USD/JPY", sub: "149.32 +0.21%" },
-                  { type: "Pair", label: "XAU/USD", sub: "2,341.80 +0.45%" },
-                  { type: "Action", label: "Open Position Calculator", sub: "Tools" },
-                  { type: "Action", label: "View Economic Calendar", sub: "Tools" },
-                  { type: "Action", label: "Read Latest News", sub: "Tools" },
-                ].map((item, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setSearchOpen(false)}
-                    className="flex w-full items-center justify-between gap-3 rounded px-2.5 py-2 text-left text-[11px] hover:bg-[#1a2640]"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider"
-                        style={{ background: "#1a2640", color: "#75bff2" }}
-                      >
-                        {item.type}
-                      </span>
-                      <span className="text-white font-semibold">{item.label}</span>
-                    </div>
-                    <span className="text-slate-500 text-[10px]">{item.sub}</span>
-                  </button>
-                ))}
+              <div className="p-1.5">
+                {menuItems.slice(0, 3).map((item) => <button key={item.id} type="button" onClick={() => { onNavigate(item.id); setSearchOpen(false) }} className="w-full rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{item.label}</button>)}
               </div>
             </div>
           )}
         </div>
 
-        {/* Quick Wallet Actions */}
-        <div className="flex items-center gap-1">
-          {quickActions.map(action => {
-            const Icon = action.icon
-            return (
-              <button
-                key={action.id}
-                type="button"
-                onClick={action.action}
-                className="flex items-center gap-1.5 rounded-md px-2.5 h-8 text-[10px] font-bold uppercase tracking-wider transition-all hover:scale-105"
-                style={{ background: `${action.color}15`, color: action.color, border: `1px solid ${action.color}40` }}
-                title={action.label}
-              >
-                <Icon className="h-3 w-3" />
-                <span className="hidden lg:inline">{action.label}</span>
-              </button>
-            )
-          })}
+        <div className="hidden items-center gap-1.5 xl:flex">
+          <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
+          <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
+          <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
         </div>
 
-        {/* Tools Menu */}
+        <div className="hidden items-center gap-1 md:flex">
+          <button type="button" onClick={onOpenDeposit} className="terminal-toolbar-action text-emerald-300"><ArrowDownRight className="h-3 w-3" />Deposit</button>
+          <button type="button" onClick={onOpenWithdraw} className="terminal-toolbar-action text-amber-300"><ArrowUpRight className="h-3 w-3" />Withdraw</button>
+        </div>
+
         <div className="relative">
-          <button
-            type="button"
-            onClick={() => setToolsMenuOpen(!toolsMenuOpen)}
-            className="flex items-center gap-1.5 rounded-md px-2.5 h-8 text-[11px] font-semibold transition-colors hover:bg-[#1a2640]"
-            style={{ color: "#cbd5e1", border: "1px solid #1a2640" }}
-          >
-            <Briefcase className="h-3.5 w-3.5" style={{ color: "#c084fc" }} />
-            <span className="hidden md:inline">Tools</span>
-            <ChevronDown className="h-3 w-3 opacity-60" />
-          </button>
-          {toolsMenuOpen && (
-            <div
-              className="absolute right-0 top-full mt-1 w-64 rounded-md shadow-2xl z-50"
-              style={{ background: "#0a1424", border: "1px solid #1a2640" }}
-            >
-              <div className="px-3 py-2 border-b" style={{ borderColor: "#1a2640" }}>
-                <span className="text-[9px] font-bold uppercase tracking-[0.15em]" style={{ color: "#3d5a80" }}>
-                  Trading Tools
-                </span>
-              </div>
-              <div className="p-1">
-                {tools.map(tool => {
-                  const Icon = tool.icon
-                  return (
-                    <button
-                      key={tool.id}
-                      type="button"
-                      onClick={() => { onNavigate(tool.panel); setToolsMenuOpen(false) }}
-                      className="flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-[11px] hover:bg-[#1a2640]"
-                    >
-                      <Icon className="h-3.5 w-3.5" style={{ color: "#75bff2" }} />
-                      <span className="text-white font-semibold">{tool.label}</span>
-                      <ChevronRight className="ml-auto h-3 w-3 opacity-40" />
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
+          <button type="button" onClick={() => setMenuOpen((value) => !value)} className="terminal-icon-button" aria-label="Open terminal menu"><Menu className="h-4 w-4" /></button>
+          {menuOpen && <div className="absolute right-0 top-full z-50 mt-2 w-52 rounded-lg border p-1.5 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}>
+            {menuItems.map((item) => <button key={item.id} type="button" onClick={() => { onNavigate(item.id); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
+            <button type="button" onClick={onToggleWatchlist} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5"><Wallet className="h-3.5 w-3.5 text-cyan-300" />Focus watchlist</button>
+            <button type="button" onClick={onToggleFullscreen} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</button>
+            <button type="button" onClick={onToggleLock} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">{isLocked ? "Unlock trading" : "Lock trading"}</button>
+            <button type="button" onClick={onToggleSound} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">Sound {soundEnabled ? "on" : "off"}</button>
+            <button type="button" onClick={onToggleTheme} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5">Switch to {theme === "dark" ? "light" : "dark"} mode</button>
+          </div>}
         </div>
 
-        {/* Language */}
         <div className="relative">
-          <button
-            type="button"
-            onClick={() => setLanguageMenuOpen(!languageMenuOpen)}
-            className="flex items-center gap-1.5 rounded-md px-2 h-8 text-[10px] font-bold uppercase transition-colors hover:bg-[#1a2640]"
-            style={{ color: "#cbd5e1", border: "1px solid #1a2640" }}
-            title="Language"
-          >
-            <Globe className="h-3.5 w-3.5" />
-            <span>{activeLanguage.toUpperCase()}</span>
-          </button>
-          {languageMenuOpen && (
-            <div
-              className="absolute right-0 top-full mt-1 w-44 rounded-md shadow-2xl z-50 max-h-72 overflow-y-auto"
-              style={{ background: "#0a1424", border: "1px solid #1a2640" }}
-            >
-              {languages.map(lang => (
-                <button
-                  key={lang.code}
-                  type="button"
-                  onClick={() => { onChangeLanguage(lang.code); setLanguageMenuOpen(false) }}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-[11px] hover:bg-[#1a2640]"
-                  style={{ color: activeLanguage === lang.code ? "#75bff2" : "#cbd5e1" }}
-                >
-                  <span className="font-semibold">{lang.label}</span>
-                  <span className="text-[9px] font-mono opacity-60">{lang.flag}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <button type="button" onClick={() => setNotificationsOpen((value) => !value)} className="terminal-icon-button" aria-label="Notifications"><Bell className="h-4 w-4" />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>}</button>
+          {notificationsOpen && <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: "#1b2b40" }}><span className="text-[11px] font-bold text-white">Notifications</span><button type="button" onClick={onClearNotifications} className="text-[9px] uppercase text-cyan-300">Clear</button></div>{notifications.length === 0 ? <p className="px-3 py-6 text-center text-[11px] text-slate-500">No notifications</p> : notifications.map((item) => <button key={item.id} type="button" onClick={() => onMarkNotificationRead(item.id)} className="block w-full border-b px-3 py-2 text-left hover:bg-white/5" style={{ borderColor: "#1b2b40" }}><span className="block text-[11px] font-semibold text-white">{item.title}</span><span className="block text-[10px] text-slate-400">{item.message}</span></button>)}</div>}
         </div>
 
-        {/* Notifications */}
         <div className="relative">
-          <button
-            type="button"
-            onClick={() => setNotificationsOpen(!notificationsOpen)}
-            className="relative flex items-center justify-center rounded-md h-8 w-8 transition-colors hover:bg-[#1a2640]"
-            style={{ color: "#cbd5e1", border: "1px solid #1a2640" }}
-            title="Notifications"
-          >
-            <Bell className="h-3.5 w-3.5" />
-            {unreadCount > 0 && (
-              <span
-                className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[8px] font-black"
-                style={{ background: "#f87171", color: "white" }}
-              >
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
+          <button type="button" onClick={() => setAccountOpen((value) => !value)} className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400/20 text-[10px] font-black text-cyan-200">{userName.slice(0, 2).toUpperCase()}</span>
+            <span className="hidden max-w-24 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountType} · 1:{leverage}</span></span>
+            <ChevronDown className="h-3 w-3 text-slate-500" />
           </button>
-          {notificationsOpen && (
-            <div
-              className="absolute right-0 top-full mt-1 w-80 rounded-md shadow-2xl z-50"
-              style={{ background: "#0a1424", border: "1px solid #1a2640" }}
-            >
-              <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: "#1a2640" }}>
-                <span className="text-[11px] font-bold text-white">Notifications</span>
-                <button
-                  type="button"
-                  onClick={onClearNotifications}
-                  className="text-[9px] font-bold uppercase tracking-wider hover:underline"
-                  style={{ color: "#75bff2" }}
-                >
-                  Clear all
-                </button>
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="px-3 py-8 text-center text-[11px] text-slate-500">No notifications</div>
-                ) : (
-                  notifications.map(n => (
-                    <button
-                      key={n.id}
-                      type="button"
-                      onClick={() => onMarkNotificationRead(n.id)}
-                      className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left border-b hover:bg-[#1a2640]"
-                      style={{ borderColor: "#1a2640", background: n.read ? "transparent" : "rgba(59,130,246,0.05)" }}
-                    >
-                      <div
-                        className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-                        style={{
-                          background: n.type === "success" ? "rgba(52,211,153,0.15)" : n.type === "warning" ? "rgba(251,191,36,0.15)" : n.type === "error" ? "rgba(248,113,113,0.15)" : "rgba(59,130,246,0.15)",
-                          color: n.type === "success" ? "#34d399" : n.type === "warning" ? "#fbbf24" : n.type === "error" ? "#f87171" : "#75bff2",
-                        }}
-                      >
-                        {n.type === "success" ? <CheckCircle2 className="h-3 w-3" /> : n.type === "warning" ? <AlertTriangle className="h-3 w-3" /> : n.type === "error" ? <AlertTriangle className="h-3 w-3" /> : <Bell className="h-3 w-3" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-[11px] font-bold text-white truncate">{n.title}</span>
-                          {!n.read && <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#3b82f6" }} />}
-                        </div>
-                        <p className="text-[10px] text-slate-400 line-clamp-2 mt-0.5">{n.message}</p>
-                        <span className="text-[9px] text-slate-500 mt-1 inline-block">{n.time}</span>
-                      </div>
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Account Menu */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setAccountMenuOpen(!accountMenuOpen)}
-            className="flex items-center gap-2 rounded-md pl-1 pr-2 h-8 transition-colors hover:bg-[#1a2640]"
-            style={{ border: "1px solid #1a2640" }}
-          >
-            <div
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black"
-              style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "white" }}
-            >
-              {userName.slice(0, 2).toUpperCase()}
-            </div>
-            <div className="hidden md:flex flex-col items-start leading-none">
-              <span className="text-[10px] font-bold text-white">{userName}</span>
-              <span className="text-[8px] font-mono" style={{ color: "#3d5a80" }}>{accountId}</span>
-            </div>
-            <ChevronDown className="h-3 w-3 opacity-60" style={{ color: "#cbd5e1" }} />
-          </button>
-          {accountMenuOpen && (
-            <div
-              className="absolute right-0 top-full mt-1 w-72 rounded-md shadow-2xl z-50"
-              style={{ background: "#0a1424", border: "1px solid #1a2640" }}
-            >
-              {/* Account info header */}
-              <div className="px-3 py-3 border-b" style={{ borderColor: "#1a2640" }}>
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="flex h-10 w-10 items-center justify-center rounded-full text-[12px] font-black"
-                    style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", color: "white" }}
-                  >
-                    {userName.slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[12px] font-bold text-white truncate">{userName}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{userEmail}</div>
-                  </div>
-                  <Crown className="h-4 w-4" style={{ color: "#fbbf24" }} />
-                </div>
-                <div className="mt-2 flex items-center gap-2">
-                  <span
-                    className="rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider"
-                    style={{ background: "rgba(59,130,246,0.15)", color: "#75bff2" }}
-                  >
-                    {accountType}
-                  </span>
-                  <span className="text-[9px] text-slate-500">1:{leverage} leverage</span>
-                </div>
-              </div>
-
-              {/* Account actions */}
-              <div className="p-1">
-                {[
-                  { id: "profile", label: "My Profile", icon: User, action: onOpenProfile },
-                  { id: "wallet", label: "Wallet & Funding", icon: Wallet, action: onOpenDeposit },
-                  { id: "verification", label: "Verification (KYC)", icon: Shield, action: onOpenProfile },
-                  { id: "settings", label: "Settings", icon: Settings, action: onOpenSettings },
-                  { id: "help", label: "Help Center", icon: HelpCircle, action: () => onNavigate("support") },
-                ].map(item => {
-                  const Icon = item.icon
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => { item.action(); setAccountMenuOpen(false) }}
-                      className="flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-[11px] hover:bg-[#1a2640]"
-                    >
-                      <Icon className="h-3.5 w-3.5" style={{ color: "#75bff2" }} />
-                      <span className="text-white font-semibold">{item.label}</span>
-                      <ChevronRight className="ml-auto h-3 w-3 opacity-40" />
-                    </button>
-                  )
-                })}
-              </div>
-
-              <div className="border-t p-1" style={{ borderColor: "#1a2640" }}>
-                <button
-                  type="button"
-                  onClick={() => { onLogout(); setAccountMenuOpen(false) }}
-                  className="flex w-full items-center gap-2.5 rounded px-2.5 py-2 text-left text-[11px] hover:bg-[#1a2640]"
-                  style={{ color: "#f87171" }}
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  <span className="font-semibold">Sign Out</span>
-                </button>
-              </div>
-            </div>
-          )}
+          {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-500">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={onOpenProfile} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={onOpenSettings} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={onLogout} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
         </div>
       </div>
 
-      {/* ═══ ROW 2: Account Metrics Bar ═══ */}
-      <div className="flex h-10 items-center gap-0 px-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d" }}>
-        {/* Connection status */}
-        <div
-          className="flex items-center gap-1.5 px-3 h-full shrink-0 border-r"
-          style={{ borderColor: "#0f1c2e" }}
-          title={isConnected ? "Connected to live market data" : "Disconnected — using cached data"}
-        >
-          {isConnected ? <Wifi className="h-3 w-3" style={{ color: "#34d399" }} /> : <WifiOff className="h-3 w-3" style={{ color: "#f87171" }} />}
-          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: isConnected ? "#34d399" : "#f87171" }}>
-            {isConnected ? "Live" : "Offline"}
-          </span>
-        </div>
-
-        {/* Market status */}
-        <div
-          className="flex items-center gap-1.5 px-3 h-full shrink-0 border-r"
-          style={{ borderColor: "#0f1c2e" }}
-          title="Market status"
-        >
-          <CircleDot className="h-3 w-3" style={{ color: marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171" }} />
-          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171" }}>
-            Market {marketStatus === "open" ? "Open" : marketStatus === "pre-market" ? "Pre" : "Closed"}
-          </span>
-        </div>
-
-        {/* Server time */}
-        <div
-          className="flex items-center gap-1.5 px-3 h-full shrink-0 border-r"
-          style={{ borderColor: "#0f1c2e" }}
-          title="Server time (UTC)"
-        >
-          <Clock className="h-3 w-3" style={{ color: "#75bff2" }} />
-          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: "#3d5a80" }}>Server</span>
-          <span className="price-mono text-[10px] font-bold text-white">{serverTime}</span>
-        </div>
-
-        {/* Account metrics */}
-        {[
-          { label: "Balance", value: formatMoney(walletBalance), color: "#34d399", bg: "rgba(52,211,153,0.06)" },
-          { label: "Equity", value: formatMoney(equity), color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
-          { label: "Open P&L", value: `${totalPnl >= 0 ? "+" : ""}${hideBalance ? "••••" : "$" + totalPnl.toFixed(2)}`, color: pnlColor, bg: pnlBg },
-          { label: "Margin", value: hideBalance ? "••••" : "$" + totalMargin.toFixed(2), color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
-          { label: "Free Margin", value: hideBalance ? "••••" : "$" + freeMargin.toFixed(2), color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
-          { label: "Margin Level", value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—", color: marginColor, bg: "transparent" },
-          { label: "Open", value: String(openTradesCount), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-          { label: "Pending", value: String(pendingOrdersCount), color: "#93c5fd", bg: "transparent" },
-        ].map((item, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 px-3 h-full shrink-0 border-r"
-            style={{ borderColor: "#0f1c2e", background: item.bg }}
-            title={item.label}
-          >
-            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-            <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
-          </div>
-        ))}
-
-        {/* Spacer */}
-        <div className="flex-1" />
-
-        {/* Right-side controls */}
-        <div className="flex items-center gap-0.5 px-2 h-full shrink-0">
-          <button
-            type="button"
-            onClick={() => setHideBalance(!hideBalance)}
-            className="flex items-center justify-center h-7 w-7 rounded transition-colors hover:bg-[#1a2640]"
-            style={{ color: "#94a3b8" }}
-            title={hideBalance ? "Show balances" : "Hide balances"}
-          >
-            {hideBalance ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={onToggleSound}
-            className="flex items-center justify-center h-7 w-7 rounded transition-colors hover:bg-[#1a2640]"
-            style={{ color: soundEnabled ? "#75bff2" : "#94a3b8" }}
-            title={soundEnabled ? "Sound on" : "Sound off"}
-          >
-            {soundEnabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="flex items-center justify-center h-7 w-7 rounded transition-colors hover:bg-[#1a2640]"
-            style={{ color: "#94a3b8" }}
-            title={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
-          >
-            {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={onToggleLock}
-            className="flex items-center justify-center h-7 w-7 rounded transition-colors hover:bg-[#1a2640]"
-            style={{ color: isLocked ? "#f87171" : "#94a3b8" }}
-            title={isLocked ? "Unlock trading" : "Lock trading (prevent new orders)"}
-          >
-            {isLocked ? <Lock className="h-3.5 w-3.5" /> : <Unlock className="h-3.5 w-3.5" />}
-          </button>
-          <button
-            type="button"
-            onClick={onToggleFullscreen}
-            className="flex items-center justify-center h-7 w-7 rounded transition-colors hover:bg-[#1a2640]"
-            style={{ color: "#94a3b8" }}
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          >
-            {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-          </button>
-        </div>
+      <div className="flex h-7 items-center gap-3 overflow-x-auto border-t px-3 text-[9px] font-semibold uppercase tracking-wider terminal-scroll" style={{ borderColor: "#122238", color: "#7187a0" }}>
+        <span className="flex items-center gap-1" style={{ color: isConnected ? "#34d399" : "#f87171" }}>{isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}{isConnected ? "Connected" : "Offline"}</span>
+        <span className="flex items-center gap-1" style={{ color: marketColor }}><CircleDot className="h-3 w-3" />Market {marketStatus}</span>
+        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{serverTime}</span>
+        <span className="hidden sm:inline">{activeLayout} layout</span>
+        <span className="hidden sm:inline">{openTradesCount} positions · {pendingOrdersCount} pending</span>
+        <span className="ml-auto hidden items-center gap-1 lg:flex"><Globe className="h-3 w-3" />{activeLanguage.toUpperCase()}</span>
       </div>
     </header>
   )
 }
+

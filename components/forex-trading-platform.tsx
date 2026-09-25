@@ -2256,28 +2256,8 @@ adjustWalletBalance(
         marketStatus={online ? "open" : "closed"}
       />
 
-      {/* ══ ACCOUNT SUMMARY STRIP ═════════════════════════════════════════════ */}
-      <div className="apple-terminal-summary flex items-center shrink-0 px-0 h-9 gap-0 overflow-x-auto terminal-scroll" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
-        {[
-          { label: "BALANCE",      value: `$${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,  hint: "Cash available", color: "#34d399", bg: "rgba(52,211,153,0.06)"  },
-          { label: "EQUITY",       value: `$${equity.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,          hint: "Balance plus open P&L", color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.04)" : "rgba(248,113,113,0.04)" },
-          { label: "OPEN P&L",     value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`,                        hint: "Profit or loss now", color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.08)" : "rgba(248,113,113,0.08)" },
-          { label: "SWAP",         value: `${totalSwap >= 0 ? "+" : ""}$${totalSwap.toFixed(2)}`,                      hint: "Overnight cost", color: totalSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
-          { label: "MARGIN USED",  value: `$${totalMargin.toFixed(2)}`,                                                 hint: "Reserved for trades", color: "#fbbf24", bg: "rgba(251,191,36,0.05)" },
-          { label: "FREE MARGIN",  value: `$${freeMargin.toFixed(2)}`,                                                  hint: "Available to trade", color: "#38bdf8", bg: "rgba(56,189,248,0.05)" },
-          { label: "MARGIN LEVEL", value: marginLevel > 0 ? `${marginLevel.toFixed(0)}%` : "—",                         hint: "Account safety", color: marginLevel > 200 ? "#34d399" : marginLevel > 100 ? "#fbbf24" : "#f87171", bg: "transparent" },
-          { label: "OPEN TRADES",  value: String(openTrades.length),                                                     hint: "Active positions", color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-          { label: "PENDING",      value: String(pendingOrders.length),                                                  hint: "Waiting orders", color: "#93c5fd", bg: "transparent" },
-        ].map((item, i) => (
-          <div key={i} title={item.hint} className="flex items-center gap-2 px-3 h-full shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-            <span className="text-[8px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-            <span className="price-mono text-[11px] font-black" style={{ color: item.color }}>{item.value}</span>
-          </div>
-        ))}
-      </div>
-
       {/* ══ REFERENCE WATCHLIST ═══════════════════════════════════════════��════ */}
-      <div className="reference-watchlist shrink-0 flex items-center gap-3 px-5 py-4 overflow-x-auto terminal-scroll">
+      <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
           if (!pair) return null
