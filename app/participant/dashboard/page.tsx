@@ -14,7 +14,8 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
-import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
+  import { clearParticipantAuth, isParticipantAuthenticated, participantFetch } from "@/lib/auth"
+
 import type { UserRank } from "@/lib/types"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -23,7 +24,8 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
 import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
-import { ForexTradingPlatform } from "@/components/forex-trading-platform"
+  import { ForexTradingPlatform } from "@/components/forex-trading-platform"
+
 import { NoticeBoard } from "@/components/notice-board"
 
 
@@ -2385,6 +2387,11 @@ export default function DashboardHome() {
                   })
                 }}
                 onStatsUpdate={setTerminalStats}
+  onLogout={async () => {
+    clearParticipantAuth()
+    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
+    router.push("/participant/login")
+  }}
               />
             </div>
           </div>
