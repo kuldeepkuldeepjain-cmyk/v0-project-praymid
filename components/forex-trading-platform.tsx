@@ -9,6 +9,7 @@ import {
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
+  Command, Grid3x3, Square, BellRing,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -18,6 +19,11 @@ import {
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
   type AssetCategory,
 } from "@/lib/forex-instruments"
+import {
+  DepthOfMarketLadder, RiskAnalyticsPanel, NewsCalendarPanel,
+  TradeJournalPanel, CommandPalette, useTradingHotkeys,
+  MiniChartGrid, ConnectionStatus,
+} from "@/components/forex-institutional"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,15 +31,15 @@ export type Candle = {
   time: string; open: number; high: number; low: number; close: number; volume: number; ts?: number
 }
 
-type ForexPair = {
+export type ForexPair = {
   symbol: string; base: string; quote: string
   bid: number; ask: number; change: number; high: number; low: number; open: number
   candles: Candle[]; spread: number
 }
 
-type TradeDirection = "BUY" | "SELL"
+export type TradeDirection = "BUY" | "SELL"
 
-type OpenTrade = {
+export type OpenTrade = {
   id: string; pair: string; direction: TradeDirection
   lotSize: number; leverage: number
   openPrice: number; currentPrice: number
@@ -45,7 +51,7 @@ type OpenTrade = {
   swap: number                      // accumulated overnight swap in USD
 }
 
-type PendingOrder = {
+export type PendingOrder = {
   id: string; pair: string; direction: TradeDirection
   orderType: "BUY_LIMIT" | "BUY_STOP" | "SELL_LIMIT" | "SELL_STOP"
   lotSize: number; leverage: number
@@ -55,7 +61,7 @@ type PendingOrder = {
   expiry: "GTC" | "TODAY"           // Good Till Cancel or expire end of day
 }
 
-type ClosedTrade = OpenTrade & {
+export type ClosedTrade = OpenTrade & {
   closePrice: number; closeTime: string; closeDuration: string
   finalPnl: number; finalPips: number; finalSwap: number
   closeReason: "manual" | "sl" | "tp" | "trailing_sl"
@@ -1085,7 +1091,7 @@ function PositionSizer({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
@@ -1121,6 +1127,8 @@ function PositionSizer({
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
+  const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
 
   const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
@@ -2114,11 +2122,52 @@ adjustWalletBalance(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equity, totalPnl, walletBalance])
 
+  // ── Institutional hotkeys (B/S buy/sell, X close all, Ctrl+K palette, +/- lot) ──
+  useTradingHotkeys({
+    onBuy: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("BUY") },
+    onSell: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("SELL") },
+    onCloseAll: () => { openTrades.forEach(t => closeTrade(t.id)) },
+    onCancelPending: () => { setTradeConfirm(null); setModifyTarget(null) },
+    onToggleCommand: () => setCommandPaletteOpen(v => !v),
+    onIncreaseLot: () => setLotSize(prev => { const n = parseFloat(prev) || 0.01; return String(Math.min(100, Math.round((n + 0.01) * 100) / 100)) }),
+    onDecreaseLot: () => setLotSize(prev => { const n = parseFloat(prev) || 0.01; return String(Math.max(0.01, Math.round((n - 0.01) * 100) / 100)) }),
+  })
+
+  // ── Command palette actions ──────────────────────────────────────────────────
+  const commandActions = useMemo(() => [
+    { id: "buy", label: "Quick BUY at market", hint: "Open a long position at the current ask", icon: TrendingUp, shortcut: "B", action: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("BUY") } },
+    { id: "sell", label: "Quick SELL at market", hint: "Open a short position at the current bid", icon: TrendingDown, shortcut: "S", action: () => { if (!isFrozen && selectedPair && balanceLoaded) quickTrade("SELL") } },
+    { id: "close-all", label: "Close all positions", hint: "Manually close every open trade", icon: X, shortcut: "X", action: () => { openTrades.forEach(t => closeTrade(t.id)) } },
+    { id: "cancel-pending", label: "Cancel all pending orders", hint: "Remove every working limit/stop order", icon: Clock, action: () => { pendingOrders.forEach(o => cancelPending(o.id)) } },
+    { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
+    { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
+    { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
+    { id: "panel-positions", label: "Show open positions", hint: "Switch the bottom blotter to positions", icon: Layers, action: () => setActivePanel("positions") },
+    { id: "panel-pending", label: "Show pending orders", hint: "Switch the bottom blotter to pending orders", icon: Clock, action: () => setActivePanel("pending") },
+    { id: "panel-history", label: "Show trade history", hint: "Switch the bottom blotter to closed trades", icon: History, action: () => setActivePanel("history") },
+    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book ladder", icon: BarChart2, action: () => setActivePanel("dom") },
+    { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics panel", icon: ShieldAlert, action: () => setActivePanel("risk") },
+    { id: "panel-journal", label: "Show trade journal", hint: "Open the performance journal", icon: BookOpen, action: () => setActivePanel("journal") },
+    { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar", icon: Newspaper, action: () => setActivePanel("news") },
+    { id: "panel-performance", label: "Show performance dashboard", hint: "Open the equity curve and KPIs", icon: BarChart, action: () => setActivePanel("performance") },
+    { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alert manager", icon: Bell, action: () => setActivePanel("alerts") },
+    { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
+    { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
+    { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
+    { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
+    { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
+    { id: "payout", label: "Request payout", hint: "Open the payout page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
+
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
+
+      {/* ── Command Palette (Ctrl+K) ── */}
+      <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} actions={commandActions} />
 
       {(marketError || candleError) && (
         <div className="absolute left-2 right-2 top-12 z-40 flex items-center justify-between gap-2 rounded border border-amber-400/30 bg-amber-950/95 px-2.5 py-1.5 text-[9px] text-amber-100 shadow-lg">
@@ -2260,15 +2309,22 @@ adjustWalletBalance(
           <span className="text-[8px] font-black tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>3S FEED</span>
         </div>
 
-        {/* Live status */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className="live-dot" style={{ background: online ? "#10b981" : "#ef4444", boxShadow: online ? "0 0 6px #10b981" : "0 0 6px #ef4444" }} />
-          <span className="text-[9px] font-bold uppercase tracking-widest" style={{ color: online ? "#10b981" : "#ef4444" }}>
-            {online ? "LIVE" : "OFFLINE"}
-          </span>
-          {lastUpdated && <span className="text-[9px] text-slate-500 price-mono hidden md:block">{lastUpdated.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>}
-          <span className="hidden xl:inline text-[8px] font-bold tracking-wider uppercase" style={{ color: "#2d4565" }}>LP QUOTES</span>
-        </div>
+        {/* Live status — institutional connection panel with latency + server time */}
+        <ConnectionStatus online={online} lastUpdated={lastUpdated} />
+
+        {/* Command palette trigger */}
+        <button
+          type="button"
+          onClick={() => setCommandPaletteOpen(true)}
+          aria-label="Open command palette"
+          title="Open command palette (Ctrl+K)"
+          className="hidden md:flex items-center gap-1.5 px-2 py-1.5 transition-colors shrink-0"
+          style={{ background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.20)", borderRadius: 4 }}
+        >
+          <Command className="h-3 w-3 text-purple-300" />
+          <span className="text-[9px] font-black tracking-wider text-purple-200">CMD</span>
+          <kbd className="text-[8px] font-black px-1 py-0.5 rounded ml-0.5" style={{ background: "rgba(168,85,247,0.15)", color: "#c084fc" }}>⌘K</kbd>
+        </button>
 
         {/* Balance chip with sparkline */}
         <div className="relative flex items-center gap-1.5 px-2.5 py-1 shrink-0" style={{ background: "rgba(16,185,129,0.07)", border: "1px solid rgba(16,185,129,0.18)", borderRadius: 4 }}>
@@ -2799,6 +2855,16 @@ adjustWalletBalance(
               </div>
               {/* TF selector */}
               <div className="ml-auto flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
+                  aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
+                  title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
+                  className="p-1 transition-colors"
+                  style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
+                >
+                  {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
+                </button>
                 {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
                   <button key={tf} onClick={() => setTimeframe(tf)}
                     className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
@@ -2818,10 +2884,10 @@ adjustWalletBalance(
             </div>
           )}
 
-  {/* Chart + BUY/SELL strip */}
+{/* Chart + BUY/SELL strip */}
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
   <div className="relative flex-1 min-h-0">
-  {selectedPair ? (
+  {selectedPair && chartLayout === "single" ? (
   <TradingChart
   key={isDarkTheme ? "dark" : "light"}
   candles={selectedPair.candles}
@@ -2835,15 +2901,27 @@ adjustWalletBalance(
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   />
+  ) : selectedPair && chartLayout === "grid" ? (
+  <MiniChartGrid
+  pairs={pairs}
+  selectedSymbol={selectedPair.symbol}
+  onSelect={(sym) => {
+    const p = pairs.find(x => x.symbol === sym)
+    if (p) {
+      setSelectedPair(p)
+      fetchCandles(sym, timeframe)
+    }
+  }}
+  tickCount={tickCount}
+  />
   ) : (
   <div className="flex flex-col items-center justify-center h-full gap-3">
   <CandlestickChart className="h-12 w-12 text-slate-800" />
   <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
   </div>
   )}
-
   </div>
-          </div>
+  </div>
         </div>
         {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
         {rightPanelHidden ? (
@@ -3190,6 +3268,10 @@ adjustWalletBalance(
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
+            { id: "dom",         label: "DOM",                                icon: BarChart2 },
+            { id: "risk",        label: "Risk",                               icon: ShieldAlert },
+            { id: "journal",     label: "Journal",                            icon: BookOpen },
+            { id: "news",        label: "News",                               icon: Newspaper },
             { id: "performance", label: "Performance",                        icon: BarChart },
             { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
@@ -3540,6 +3622,40 @@ adjustWalletBalance(
 
           {/* ── Market Sessions ── */}
           {activePanel === "sessions" && <MarketSessionsPanel />}
+
+          {/* ── Depth-of-Market (L2 ladder) ── */}
+          {activePanel === "dom" && (
+            selectedPair
+              ? <DepthOfMarketLadder pair={selectedPair} tickCount={tickCount} onPlaceOrder={(side, price) => {
+                  setDirection(side)
+                  setOrderType("limit")
+                  setPendingPrice(price.toFixed(decimals(selectedPair.symbol)))
+                  setMobileTab("order")
+                  setRightPanelTab("order")
+                  showToast("info", `${side} limit pre-filled at ${price.toFixed(decimals(selectedPair.symbol))} — review and place`)
+                }} />
+              : <div className="flex items-center justify-center h-full text-slate-700 text-[11px] tracking-wider">Select an instrument</div>
+          )}
+
+          {/* ── Portfolio Risk Analytics ── */}
+          {activePanel === "risk" && (
+            <RiskAnalyticsPanel
+              openTrades={openTrades}
+              walletBalance={walletBalance}
+              equity={equity}
+              totalMargin={totalMargin}
+              totalPnl={totalPnl}
+              pairs={pairs}
+            />
+          )}
+
+          {/* ── Trade Journal ── */}
+          {activePanel === "journal" && (
+            <TradeJournalPanel closed={closedTrades} equityHistory={equityHistory} />
+          )}
+
+          {/* ── News & Economic Calendar ── */}
+          {activePanel === "news" && <NewsCalendarPanel />}
 
         </div>
       </div>
