@@ -31,6 +31,7 @@ import {
   Trash2,
   Wallet,
   ShieldCheck,
+  UserCog,
 } from "lucide-react"
 import { isAdminAuthenticated, getAdminData, clearAdminAuth, adminFetch } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
@@ -50,6 +51,7 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
   import { AllPayoutsPanel } from "@/components/admin/all-payouts-panel"
   import { SuspiciousActivityPanel } from "@/components/admin/suspicious-activity-panel"
   import { TraderBehaviourPanel } from "@/components/admin/trader-behaviour-panel"
+  import { ParticipantManagementPanel } from "@/components/admin/participant-management-panel"
   import Loading from "./loading"
 import { ErrorBoundary } from "@/components/error-boundary"
 
@@ -125,6 +127,7 @@ export default function AdminDashboard() {
     { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
     { id: "suspicious-activity", label: "Suspicious Activity / Fraud", icon: Shield, section: "MANAGEMENT" },
     { id: "trader-behaviour", label: "Trader Behaviour Analytics", icon: Activity, section: "MANAGEMENT" },
+    { id: "participant-management", label: "Participant Management", icon: UserCog, section: "MANAGEMENT" },
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
     { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
@@ -171,6 +174,8 @@ export default function AdminDashboard() {
         return <SuspiciousActivityPanel />
       case "trader-behaviour":
         return <TraderBehaviourPanel />
+      case "participant-management":
+        return <ParticipantManagementPanel />
       default:
         return <OverviewAnalytics />
     }
