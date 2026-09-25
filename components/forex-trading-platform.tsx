@@ -2252,7 +2252,7 @@ adjustWalletBalance(
         onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
         activeLayout={chartLayout === "grid" ? "pro" : "default"}
         onChangeLayout={(layout) => { setChartLayout(layout === "pro" ? "grid" : "single"); showToast("info", `Layout: ${layout}`) }}
-        serverTime={now.toISOString().slice(11, 19) + " UTC"}
+        serverTime={new Date().toISOString().slice(11, 19) + " UTC"}
         marketStatus={online ? "open" : "closed"}
       />
 
