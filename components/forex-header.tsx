@@ -13,6 +13,7 @@ import {
   LineChart,
   LogOut,
   Menu,
+  PanelRightOpen,
   Search,
   Settings,
   Shield,
@@ -48,6 +49,8 @@ interface ForexHeaderProps {
   onToggleTheme: () => void
   theme: "dark" | "light"
   onToggleWatchlist: () => void
+  onToggleSidebar: () => void
+  sidebarOpen: boolean
   onOpenDeposit: () => void
   onOpenWithdraw: () => void
   onOpenTransfer: () => void
@@ -96,6 +99,8 @@ export function ForexHeader({
   onToggleTheme,
   theme,
   onToggleWatchlist,
+  onToggleSidebar,
+  sidebarOpen,
   onOpenDeposit,
   onOpenWithdraw,
   onOpenTransfer,
@@ -131,7 +136,7 @@ export function ForexHeader({
             <LineChart className="h-4 w-4 text-white" strokeWidth={2.5} />
           </div>
           <div className="hidden leading-none sm:block">
-            <strong className="block text-[12px] tracking-tight text-white">PRAYSMID</strong>
+            <strong className="block text-[12px] tracking-tight text-white">ELITEFUND</strong>
             <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-slate-500">Trading terminal</span>
           </div>
         </div>
@@ -166,6 +171,17 @@ export function ForexHeader({
           <button type="button" onClick={onOpenDeposit} className="terminal-toolbar-action text-emerald-300"><ArrowDownRight className="h-3 w-3" />Deposit</button>
           <button type="button" onClick={onOpenWithdraw} className="terminal-toolbar-action text-amber-300"><ArrowUpRight className="h-3 w-3" />Withdraw</button>
         </div>
+
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="terminal-sidebar-toggle"
+          aria-label={sidebarOpen ? "Collapse trading sidebar" : "Extend trading sidebar"}
+          title={sidebarOpen ? "Collapse trading sidebar" : "Extend trading sidebar"}
+        >
+          <PanelRightOpen className="h-4 w-4" />
+          <span className="hidden sm:inline">{sidebarOpen ? "Sidebar" : "Extend"}</span>
+        </button>
 
         <div className="relative">
           <button type="button" onClick={() => setMenuOpen((value) => !value)} className="terminal-icon-button" aria-label="Open terminal menu"><Menu className="h-4 w-4" /></button>
