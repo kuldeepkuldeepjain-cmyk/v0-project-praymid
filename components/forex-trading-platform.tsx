@@ -9,7 +9,8 @@ import {
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
-  Command, Grid3x3, Square, BellRing,
+  Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket,
+  HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { participantFetch } from "@/lib/auth"
@@ -729,6 +730,63 @@ function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
   )
 }
 
+// ─── Support Center Panel ─────────────────────────────────────────────────────
+
+function SupportCenterPanel() {
+  const [view, setView] = useState<"overview" | "chat" | "ticket" | "faq">("overview")
+  const [ticketType, setTicketType] = useState("Account-specific support")
+  const [ticketMessage, setTicketMessage] = useState("")
+  const [ticketSent, setTicketSent] = useState(false)
+  const [expandedFaq, setExpandedFaq] = useState<string | null>(null)
+
+  const supportTopics = [
+    { label: "Account-specific support", description: "Balance, rules, verification, and account access", icon: UserRound },
+    { label: "Payout support", description: "Eligibility, requests, and payout status", icon: CreditCard },
+    { label: "Technical support", description: "Platform errors, charts, and connection issues", icon: Wrench },
+    { label: "MT5 troubleshooting", description: "Login, server, symbols, and Expert Advisors", icon: Headphones },
+  ]
+  const faqs = [
+    { question: "How do I request a payout?", answer: "Open a payout ticket after your account meets the target, minimum balance, and drawdown rules. Our team will review the request and update its status in your ticket history." },
+    { question: "Why is my MT5 account not connecting?", answer: "Confirm the exact server name, login number, and trading password. If the issue continues, create an MT5 troubleshooting ticket and include a screenshot of the error." },
+    { question: "Where can I see my account rules?", answer: "Your active challenge or funded-account rules are available from Account Overview. Support can also confirm any account-specific limits before you trade." },
+  ]
+
+  const submitTicket = () => {
+    if (!ticketMessage.trim()) return
+    setTicketSent(true)
+    setTicketMessage("")
+  }
+
+  return (
+    <div className="flex h-full flex-col overflow-y-auto terminal-scroll p-3" style={{ background: "#070d18" }}>
+      <div className="flex items-start justify-between gap-3 rounded-xl p-3" style={{ background: "linear-gradient(135deg,#0b2940,#0a1322)", border: "1px solid rgba(34,211,238,.25)" }}>
+        <div className="flex items-start gap-2.5"><div className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,.13)", border: "1px solid rgba(34,211,238,.3)" }}><LifeBuoy className="size-4 text-cyan-300" /></div><div><p className="text-[12px] font-black uppercase tracking-[.14em] text-white">24/7 Support Center</p><p className="mt-1 text-[9px] leading-relaxed text-slate-400">Get help with your account, payouts, platform, or MT5.</p></div></div>
+        <span className="flex shrink-0 items-center gap-1 rounded border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-wider text-emerald-300"><span className="size-1.5 rounded-full bg-emerald-400" />Online</span>
+      </div>
+
+      <div className="mt-2 flex gap-1 overflow-x-auto terminal-scroll">
+        {[{ id: "overview", label: "Center", icon: LifeBuoy }, { id: "chat", label: "Live chat", icon: MessageCircle }, { id: "ticket", label: "New ticket", icon: Ticket }, { id: "faq", label: "FAQ", icon: HelpCircle }].map(({ id, label, icon: Icon }) => (
+          <button key={id} type="button" onClick={() => setView(id as typeof view)} className="flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors" style={view === id ? { color: "#22d3ee", background: "rgba(34,211,238,.1)", border: "1px solid rgba(34,211,238,.25)" } : { color: "#64748b", background: "#0b1423", border: "1px solid #1a2941" }}><Icon className="size-3" />{label}</button>
+        ))}
+      </div>
+
+      {view === "overview" && <>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <button type="button" onClick={() => setView("chat")} className="rounded-xl p-3 text-left transition-colors hover:border-cyan-400/40" style={{ background: "#0c1727", border: "1px solid #1d304a" }}><MessageCircle className="size-4 text-cyan-300" /><p className="mt-2 text-[10px] font-black text-slate-200">Live chat</p><p className="mt-1 text-[8px] text-slate-500">Typical reply under 2 min</p></button>
+          <button type="button" onClick={() => setView("ticket")} className="rounded-xl p-3 text-left transition-colors hover:border-cyan-400/40" style={{ background: "#0c1727", border: "1px solid #1d304a" }}><Ticket className="size-4 text-amber-300" /><p className="mt-2 text-[10px] font-black text-slate-200">Ticket system</p><p className="mt-1 text-[8px] text-slate-500">Track every request in one place</p></button>
+        </div>
+        <div className="mt-3 flex flex-col gap-1.5"><p className="px-1 text-[9px] font-black uppercase tracking-[.15em] text-slate-500">Support topics</p>{supportTopics.map(({ label, description, icon: Icon }) => <button key={label} type="button" onClick={() => { setTicketType(label); setView("ticket") }} className="flex items-center gap-2 rounded-lg p-2.5 text-left transition-colors hover:bg-cyan-400/5" style={{ background: "#0a1321", border: "1px solid #16263d" }}><Icon className="size-3.5 shrink-0 text-slate-400" /><span className="min-w-0 flex-1"><span className="block text-[9px] font-bold text-slate-200">{label}</span><span className="mt-0.5 block text-[8px] text-slate-500">{description}</span></span><ChevronRight className="size-3 text-slate-600" /></button>)}</div>
+      </>}
+
+      {view === "chat" && <div className="mt-3 rounded-xl p-3" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><div className="flex items-center gap-2"><div className="flex size-8 items-center justify-center rounded-full bg-cyan-400/10"><Headphones className="size-4 text-cyan-300" /></div><div><p className="text-[10px] font-black text-slate-200">Support specialist online</p><p className="text-[8px] text-emerald-300">Available 24/7 · replies in under 2 minutes</p></div></div><div className="mt-3 rounded-lg p-2.5 text-[9px] leading-relaxed text-slate-400" style={{ background: "#111d2e" }}>Hello. Tell us what you need help with and we&apos;ll connect you with the right specialist.</div><button type="button" onClick={() => setView("ticket")} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[9px] font-black uppercase tracking-wider text-cyan-200" style={{ background: "rgba(34,211,238,.1)", border: "1px solid rgba(34,211,238,.25)" }}><Send className="size-3" />Start conversation</button></div>}
+
+      {view === "ticket" && <div className="mt-3 rounded-xl p-3" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-200">Create support ticket</p><p className="mt-1 text-[8px] text-slate-500">Your account context will be attached securely.</p></div><Ticket className="size-4 text-amber-300" /></div>{ticketSent ? <div className="mt-4 rounded-lg border border-emerald-400/25 bg-emerald-400/10 p-3 text-[9px] leading-relaxed text-emerald-200">Ticket submitted successfully. A support specialist will respond in the ticket system and live chat.</div> : <><label className="mt-4 block text-[8px] font-black uppercase tracking-wider text-slate-500">Category<select value={ticketType} onChange={e => setTicketType(e.target.value)} className="mt-1 w-full rounded-lg px-2 py-2 text-[10px] text-slate-200 outline-none" style={{ background: "#111d2e", border: "1px solid #243751" }}><option>Account-specific support</option><option>Payout support</option><option>Technical support</option><option>MT5 troubleshooting</option></select></label><label className="mt-3 block text-[8px] font-black uppercase tracking-wider text-slate-500">What can we help with?<textarea value={ticketMessage} onChange={e => setTicketMessage(e.target.value)} placeholder="Describe the issue or question..." rows={3} className="mt-1 w-full resize-none rounded-lg px-2 py-2 text-[10px] text-slate-200 outline-none placeholder:text-slate-600" style={{ background: "#111d2e", border: "1px solid #243751" }} /></label><button type="button" onClick={submitTicket} disabled={!ticketMessage.trim()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[9px] font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40" style={{ background: "#0891b2", color: "#ecfeff" }}><Send className="size-3" />Submit ticket</button></>}</div>}
+
+      {view === "faq" && <div className="mt-3 flex flex-col gap-1.5">{faqs.map(faq => <div key={faq.question} className="rounded-xl" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><button type="button" onClick={() => setExpandedFaq(expandedFaq === faq.question ? null : faq.question)} className="flex w-full items-center justify-between gap-2 p-3 text-left"><span className="text-[9px] font-bold text-slate-200">{faq.question}</span><ChevronDown className={`size-3 shrink-0 text-slate-500 transition-transform ${expandedFaq === faq.question ? "rotate-180" : ""}`} /></button>{expandedFaq === faq.question && <p className="border-t border-white/5 px-3 pb-3 pt-2 text-[9px] leading-relaxed text-slate-400">{faq.answer}</p>}</div>)}</div>}
+    </div>
+  )
+}
+
 // ─── Order Depth Panel ────────────────────────────────────────────────────────
 
 function OrderDepth({ pair }: { pair: ForexPair }) {
@@ -1147,7 +1205,7 @@ function PositionSizer({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
@@ -2258,6 +2316,7 @@ adjustWalletBalance(
     { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar", icon: Newspaper, action: () => setActivePanel("news") },
     { id: "panel-performance", label: "Show performance dashboard", hint: "Open the equity curve and KPIs", icon: BarChart, action: () => setActivePanel("performance") },
     { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alert manager", icon: Bell, action: () => setActivePanel("alerts") },
+  { id: "panel-support", label: "Open support center", hint: "Live chat, tickets, FAQ, and account support", icon: LifeBuoy, action: () => setActivePanel("support") },
     { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
     { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
@@ -2321,8 +2380,8 @@ adjustWalletBalance(
           else if (panel === "history") { setActivePanel("history") }
           else if (panel === "journal") { setActivePanel("journal") }
           else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
-          else if (panel === "support") { showToast("info", "Live support: support@praysmid.com") }
-          else { setActivePanel(panel as typeof activePanel) }
+  else if (panel === "support") { setActivePanel("support") }
+  else { setActivePanel(panel as typeof activePanel) }
         }}
         onToggleFullscreen={() => {
           if (document.fullscreenElement) document.exitFullscreen()
@@ -3085,6 +3144,7 @@ adjustWalletBalance(
             { id: "performance", label: "Performance",                        icon: BarChart },
             { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
             { id: "smart-alerts",label: `Smart (${smartAlerts.filter(a => a.status === "warning" || a.status === "triggered").length})`, icon: BellRing },
+            { id: "support",     label: "Support",                            icon: LifeBuoy },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
             { id: "stats",       label: "Stats",                              icon: Activity },
@@ -3433,6 +3493,9 @@ adjustWalletBalance(
 
           {/* ── Smart Risk Alerts ── */}
           {activePanel === "smart-alerts" && <SmartAlertsPanel alerts={smartAlerts} />}
+
+          {/* ── 24/7 Support Center ── */}
+          {activePanel === "support" && <SupportCenterPanel />}
 
           {/* ── Market Sessions ── */}
           {activePanel === "sessions" && <MarketSessionsPanel />}
