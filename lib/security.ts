@@ -128,6 +128,14 @@ export async function updateParticipantSecurityProfile(
   ) : { rows: [{ count: 0 }] }
   const duplicateAccountCount = Number(sameDevice.rows[0]?.count || 0) + Number(sameIp.rows[0]?.count || 0)
   await db.query(
+    `INSERT INTO participant_devices
+      (participant_email, device_hash, ip_address, user_agent, first_seen_at, last_seen_at)
+     VALUES ($1,$2,$3,$4,NOW(),NOW())
+     ON CONFLICT (participant_email, device_hash) DO UPDATE SET
+       ip_address = EXCLUDED.ip_address, user_agent = EXCLUDED.user_agent, last_seen_at = NOW()`,
+    [email, context.deviceHash, context.ipAddress, context.userAgent],
+  )
+  await db.query(
     `INSERT INTO participant_security_profiles
       (participant_email, first_seen_ip, first_seen_device_hash, last_seen_ip, last_seen_device_hash, risk_score, duplicate_account_count, last_seen_at, updated_at)
      VALUES ($1,$2,$3,$2,$3,$4,$5,NOW(),NOW())
@@ -159,6 +167,21 @@ export async function inspectTradeRisk(input: {
   const sameDirection = input.trade.direction && recent.rows.filter((row: { direction?: string }) => row.direction === input.trade.direction).length >= 8
   if (sameDirection) flags.push("direction_concentration")
   return { riskScore: Math.min(100, flags.length * 25), flags }
+}
+
+export async function getActiveRestriction(email: string, type: "login" | "trading" | "withdrawal" | "api" | "full_account"): Promise<{ reasonCode: string; restrictionType: string } | null> {
+  const db = getPool()
+  if (!db) return null
+  const result = await db.query(
+    `SELECT reason_code, restriction_type FROM account_restrictions
+     WHERE LOWER(participant_email) = LOWER($1)
+       AND status = 'active'
+       AND (restriction_type = $2 OR restriction_type = 'full_account')
+       AND (effective_until IS NULL OR effective_until > NOW())
+     ORDER BY created_at DESC LIMIT 1`,
+    [email, type],
+  )
+  return result.rows[0] || null
 }
 
 export async function recordTradeRiskFlags(email: string, tradeId: string, risk: { riskScore: number; flags: string[] }): Promise<void> {

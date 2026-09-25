@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-import { enforceRateLimit, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
+import { enforceRateLimit, getActiveRestriction, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
 
 /**
  * GET /api/forex/trades?email=...
@@ -25,8 +25,13 @@ export async function GET(req: NextRequest) {
   if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
 
   try {
-    const { rows } = await db.query(
-      `SELECT * FROM forex_trades
+      const { rows } = await db.query(
+      `SELECT id, participant_id, participant_email, pair, direction, lot_size, leverage,
+              open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
+              order_type, target_price, expiry, close_price, close_reason, final_pnl,
+              final_pips, final_swap, status, open_time, open_timestamp, close_time,
+              close_duration, created_at, updated_at
+       FROM forex_trades
        WHERE LOWER(participant_email) = LOWER($1)
        ORDER BY COALESCE(updated_at, created_at) DESC, created_at DESC`,
       [email]
@@ -55,6 +60,11 @@ export async function POST(req: NextRequest) {
   if (!rate.allowed) {
     await recordSecurityEvent({ eventType: "trade_rate_limited", actorType: "participant", actorEmail: auth.email, request: req, riskScore: 70 })
     return NextResponse.json({ success: false, error: "Trading request limit reached. Try again shortly." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+  }
+  const restriction = await getActiveRestriction(auth.email, "trading")
+  if (restriction) {
+    await recordSecurityEvent({ eventType: "trade_blocked_restriction", actorType: "participant", actorEmail: auth.email, request: req, riskScore: 100, metadata: { restrictionType: restriction.restrictionType } })
+    return NextResponse.json({ success: false, error: "Trading is temporarily restricted while your account is under security review." }, { status: 403 })
   }
 
   try {
@@ -132,22 +142,50 @@ export async function POST(req: NextRequest) {
         ]
       )
     } else if (action === "partial_close") {
-      await db.query(
-        `INSERT INTO forex_trades
-           (id, participant_id, participant_email, pair, direction, lot_size, leverage,
-            open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
-            close_price, close_reason, final_pnl, final_pips, final_swap,
-            status, open_time, open_timestamp, close_time, close_duration)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'closed',$20,$21,$22,$23)
-         ON CONFLICT (id) DO NOTHING`,
-        [
-          trade.id, participantId, participant_email, trade.pair, trade.direction,
-          trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
-          trade.trailingStopPips, trade.trailingPeak, trade.margin, trade.finalSwap,
-          trade.closePrice, trade.closeReason, trade.finalPnl, trade.finalPips, trade.finalSwap,
-          trade.openTime, trade.openTimestamp, trade.closeTime, trade.closeDuration,
-        ]
-      )
+      const sourceTradeId = typeof trade.sourceTradeId === "string" ? trade.sourceTradeId : ""
+      const remainingLotSize = Number(trade.remainingLotSize)
+      const remainingMargin = Number(trade.remainingMargin)
+      if (!sourceTradeId || !Number.isFinite(remainingLotSize) || remainingLotSize <= 0 || !Number.isFinite(remainingMargin) || remainingMargin < 0) {
+        return NextResponse.json({ success: false, error: "Invalid partial close values" }, { status: 400 })
+      }
+
+      const client = await db.connect()
+      try {
+        await client.query("BEGIN")
+        const parentUpdate = await client.query(
+          `UPDATE forex_trades
+           SET lot_size = $1, margin = $2, updated_at = NOW()
+           WHERE id = $3 AND participant_email = $4 AND status = 'open'`,
+          [remainingLotSize, remainingMargin, sourceTradeId, participant_email],
+        )
+        if (parentUpdate.rowCount !== 1) {
+          await client.query("ROLLBACK")
+          return NextResponse.json({ success: false, error: "Open trade was not found or is already closed" }, { status: 409 })
+        }
+
+        await client.query(
+          `INSERT INTO forex_trades
+             (id, participant_id, participant_email, pair, direction, lot_size, leverage,
+              open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
+              close_price, close_reason, final_pnl, final_pips, final_swap,
+              status, open_time, open_timestamp, close_time, close_duration)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'closed',$20,$21,$22,$23)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            trade.id, participantId, participant_email, trade.pair, trade.direction,
+            trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
+            trade.trailingStopPips, trade.trailingPeak, trade.margin, trade.finalSwap,
+            trade.closePrice, trade.closeReason, trade.finalPnl, trade.finalPips, trade.finalSwap,
+            trade.openTime, trade.openTimestamp, trade.closeTime, trade.closeDuration,
+          ]
+        )
+        await client.query("COMMIT")
+      } catch (error) {
+        await client.query("ROLLBACK")
+        throw error
+      } finally {
+        client.release()
+      }
     } else {
       return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 })
     }
@@ -213,6 +251,13 @@ export async function PATCH(req: NextRequest) {
         [closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize ?? null, margin ?? null, id, participant_email]
       )
       if (result.rowCount !== 1) {
+        const existing = await db.query(
+          "SELECT status FROM forex_trades WHERE id = $1 AND LOWER(participant_email) = LOWER($2)",
+          [id, participant_email],
+        )
+        if (existing.rows[0]?.status === "closed") {
+          return NextResponse.json({ success: true, alreadyClosed: true })
+        }
         return NextResponse.json({ success: false, error: "Trade was not found or is already closed" }, { status: 404 })
       }
     } else if (action === "modify") {

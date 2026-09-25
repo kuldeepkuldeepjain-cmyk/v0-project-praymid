@@ -1093,6 +1093,8 @@ function PositionSizer({
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(true)
+  const [marketError, setMarketError] = useState<string | null>(null)
+  const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [toasts, setToasts]           = useState<ToastItem[]>([])
   const [totalPnl, setTotalPnl]       = useState(0)
@@ -1115,6 +1117,7 @@ function PositionSizer({
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
   const pairSearchRef = useRef<HTMLInputElement>(null)
+  const headerPairSearchRef = useRef<HTMLInputElement>(null)
   const [equityHistory, setEquityHistory] = useState<number[]>([])
   const [isDarkTheme, setIsDarkTheme] = useState(true)
   const [themeReady, setThemeReady] = useState(false)
@@ -1309,8 +1312,24 @@ function PositionSizer({
 
   const persistOpenTrade = useCallback((trade: OpenTrade) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "open", trade }) }, "Opening trade"), [participantEmail, persistTradeRequest])
   const persistPendingOrder = useCallback((order: PendingOrder) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "pending", trade: order }) }, "Saving pending order"), [participantEmail, persistTradeRequest])
-  const persistPartialClose = useCallback((closed: ClosedTrade) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "partial_close", trade: closed }) }, "Saving partial close"), [participantEmail, persistTradeRequest])
+  const persistPartialClose = useCallback((closed: ClosedTrade, sourceTradeId: string, remainingLotSize: number, remainingMargin: number) => persistTradeRequest("/api/forex/trades", { method: "POST", body: JSON.stringify({ participant_email: participantEmail, action: "partial_close", trade: { ...closed, sourceTradeId, remainingLotSize, remainingMargin } }) }, "Saving partial close"), [participantEmail, persistTradeRequest])
   const persistClose = useCallback((closed: ClosedTrade) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id: closed.id, action: "close", closePrice: closed.closePrice, closeTime: closed.closeTime, closeDuration: closed.closeDuration, finalPnl: closed.finalPnl, finalPips: closed.finalPips, finalSwap: closed.finalSwap, closeReason: closed.closeReason, lotSize: closed.lotSize, margin: closed.margin }) }, "Saving closed trade"), [participantEmail, persistTradeRequest])
+
+  const loadTrades = useCallback(async () => {
+    if (!participantEmail) return false
+    try {
+      const res = await participantFetch(`/api/forex/trades?email=${encodeURIComponent(participantEmail)}`, { cache: "no-store" })
+      const json = await res.json()
+      if (!res.ok || !json.success) return false
+      setOpenTrades(json.open ?? [])
+      setClosedTrades(json.closed ?? [])
+      setPendingOrders(json.pending ?? [])
+      openTradesRef.current = json.open ?? []
+      return true
+    } catch {
+      return false
+    }
+  }, [participantEmail])
   const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }) }, "Saving trade changes"), [participantEmail, persistTradeRequest])
   const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }) }, "Saving partial reduction"), [participantEmail, persistTradeRequest])
   const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }) }, "Saving filled order"), [participantEmail, persistTradeRequest])
@@ -1339,14 +1358,17 @@ function PositionSizer({
         return pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev
       })
       setOnline(true)
+      setMarketError(null)
       setLastUpdated(new Date())
       setTickCount(n => n + 1)
-    } catch {
+    } catch (error) {
+      console.error("[v0] Live rate refresh failed:", error)
       setOnline(false)
+      setMarketError(lastUpdated ? "Live prices are temporarily unavailable. Existing quotes remain visible." : "Live prices are unavailable. Trading will resume when the feed reconnects.")
     }
   }, [])
 
-  // ── Fetch candles ──────────────────────────────────────────────────────────
+  // ── Fetch candles ───────────────────────────────────────���──────────────────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
     const key = `${sym}|${tf}`
     setCandleLoading(true)
@@ -1366,8 +1388,10 @@ function PositionSizer({
         if (!prev || prev.symbol !== sym) return prev
         return pairsRef.current.find(p => p.symbol === sym) ?? prev
       })
-    } catch {
-      // keep existing
+      setCandleError(null)
+    } catch (error) {
+      console.error("[v0] Candle refresh failed:", error)
+      setCandleError("Chart history could not be refreshed. Existing chart data remains available.")
     } finally {
       setCandleLoading(false)
     }
@@ -1664,24 +1688,13 @@ function PositionSizer({
   const tradesLoaded = useRef(false)
 
   useEffect(() => {
-    if (!participantEmail) return
     let cancelled = false
     tradesLoaded.current = false
-    ;(async () => {
-      try {
-        const res = await participantFetch(`/api/forex/trades?email=${encodeURIComponent(participantEmail)}`)
-        const json = await res.json()
-        if (!cancelled && json.success) {
-          setOpenTrades(json.open ?? [])
-          setClosedTrades(json.closed ?? [])
-          setPendingOrders(json.pending ?? [])
-          openTradesRef.current = json.open ?? []
-        }
-      } catch {}
-      tradesLoaded.current = true
-    })()
+    loadTrades().finally(() => {
+      if (!cancelled) tradesLoaded.current = true
+    })
     return () => { cancelled = true }
-  }, [participantEmail])
+  }, [loadTrades])
 
   // ── Execute market trade ───────────────────────────────────���───────────────
   // Opens the confirmation modal ����� called by both executeTrade and quickTrade
@@ -1922,7 +1935,7 @@ adjustWalletBalance(
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
 
-  // ── Partial close trade ────────────────────────────────────────────────────
+  // ── Partial close trade ───────────────────────────────────────────���────────
   const partialCloseTrade = useCallback((id: string, closeLots: number) => {
     const trade = openTradesRef.current.find(t => t.id === id)
     if (!trade) return
@@ -1963,21 +1976,25 @@ adjustWalletBalance(
     setOpenTrades(prev => prev.map(t =>
       t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
     ))
-    persistPartialReduce(id, remainingLots, remainingMargin)
+  void (async () => {
+    const saved = await persistPartialClose(closed, id, remainingLots, remainingMargin)
+    if (!saved) {
+      openTradesRef.current = [trade, ...openTradesRef.current.filter(t => t.id !== id)]
+      setOpenTrades(prev => prev.map(item => item.id === id ? trade : item))
+      return
+    }
 
-    setClosedTrades(prev => [closed, ...prev.slice(0, 99)])
-    persistPartialClose(closed)
-
+    setClosedTrades(prev => [closed, ...prev.filter(item => item.id !== closed.id)].slice(0, 100))
     const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
-adjustWalletBalance(returnAmt,
-  `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    await adjustWalletBalance(returnAmt,
+      `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
 
     showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} ����� ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
-
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
+  })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjustWalletBalance, showToast, persistPartialReduce, persistPartialClose])
+  }, [adjustWalletBalance, showToast, persistPartialClose])
 
   // ── Modify trade ───────────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
@@ -2017,14 +2034,14 @@ adjustWalletBalance(returnAmt,
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ────────────────���──────────────────────────────────
+  // ── Cancel pending order ─��──────────────���──────────────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
     deletePendingOrder(id)
     showToast("info", "Pending order cancelled")
   }
 
-  // ── Derived values ───────────────────────────────────────────────────���─────
+  // ── Derived values ───────────────────────────────────────────────────�����─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
@@ -2103,6 +2120,13 @@ adjustWalletBalance(returnAmt,
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
+      {(marketError || candleError) && (
+        <div className="absolute left-2 right-2 top-12 z-40 flex items-center justify-between gap-2 rounded border border-amber-400/30 bg-amber-950/95 px-2.5 py-1.5 text-[9px] text-amber-100 shadow-lg">
+          <span>{marketError || candleError}</span>
+          <button type="button" onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="shrink-0 font-bold uppercase tracking-wider underline underline-offset-2">Retry</button>
+        </div>
+      )}
+
       {/* ── Modify Modal ── */}
       {modifyTarget && (
         <ModifyTradeModal
@@ -2129,8 +2153,88 @@ adjustWalletBalance(returnAmt,
         </div>
         <div className="w-px h-5 shrink-0" style={{ background: "#1e2d45" }} />
 
+        {/* Header instrument finder */}
+        <div className="relative z-30 w-[170px] shrink-0 sm:w-[220px]">
+          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-cyan-400/70" />
+          <input
+            ref={headerPairSearchRef}
+            type="search"
+            value={pairSearch}
+            onFocus={() => setShowPairSearch(true)}
+            onChange={e => { setShowPairSearch(true); setPairSearch(e.target.value) }}
+            onKeyDown={e => {
+              if (e.key === "Escape") {
+                setPairSearch("")
+                setShowPairSearch(false)
+                e.currentTarget.blur()
+              }
+              if (e.key === "Enter" && filteredPairs[0]) {
+                const pair = filteredPairs[0]
+                setSelectedPair(pair)
+                fetchCandles(pair.symbol, timeframe)
+                setPairSearch(pair.symbol)
+                setShowPairSearch(false)
+                setMobileTab("chart")
+              }
+            }}
+            placeholder="Search instrument..."
+            aria-label="Search instrument in terminal header"
+            className="h-7 w-full rounded border pl-7 pr-7 price-mono text-[10px] text-white placeholder:text-slate-500 focus:outline-none"
+            style={{ background: "#0d1826", borderColor: showPairSearch || pairSearch ? "#22d3ee" : "#344b62" }}
+          />
+          {pairSearch && (
+            <button
+              type="button"
+              onClick={() => { setPairSearch(""); headerPairSearchRef.current?.focus() }}
+              aria-label="Clear header instrument search"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+          {showPairSearch && (
+            <div className="absolute left-0 top-8 w-[280px] overflow-hidden rounded-md border shadow-2xl" style={{ background: "#0b111d", borderColor: "#1e2d45" }}>
+              <div className="flex items-center justify-between border-b px-2.5 py-1.5" style={{ borderColor: "#1a2640" }}>
+                <span className="text-[8px] font-black uppercase tracking-[0.16em] text-slate-500">Instrument search</span>
+                <span className="price-mono text-[8px] text-cyan-400">{filteredPairs.length} found</span>
+              </div>
+              <div className="max-h-64 overflow-y-auto terminal-scroll">
+                {filteredPairs.slice(0, 8).map(pair => {
+                  const cfg = PAIRS_CONFIG.find(item => item.symbol === pair.symbol)
+                  const category = cfg?.category ?? "Forex"
+                  return (
+                    <button
+                      key={pair.symbol}
+                      type="button"
+                      onMouseDown={event => event.preventDefault()}
+                      onClick={() => {
+                        setSelectedPair(pair)
+                        fetchCandles(pair.symbol, timeframe)
+                        setPairSearch(pair.symbol)
+                        setShowPairSearch(false)
+                        setMobileTab("chart")
+                      }}
+                      className="flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors hover:bg-white/5"
+                    >
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-[8px] font-black" style={{ background: CATEGORY_COLOR[category].bg, color: CATEGORY_COLOR[category].text }}>
+                        {ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="price-mono text-[10px] font-black text-white">{pair.symbol}</span>
+                        <span className="truncate text-[8px] text-slate-500">{FULL_NAMES[pair.symbol] ?? pair.symbol}</span>
+                      </span>
+                      <span className="price-mono text-[9px] font-bold" style={{ color: pair.change >= 0 ? "#10b981" : "#ef4444" }}>{pair.change >= 0 ? "+" : ""}{pair.change.toFixed(2)}%</span>
+                    </button>
+                  )
+                })}
+                {filteredPairs.length === 0 && <div className="px-3 py-5 text-center text-[9px] text-slate-500">No matching instruments</div>}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Ticker tape */}
-        <div className="flex-1 overflow-hidden relative" style={{ mask: "linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)" }}>
+        <div className="hidden min-w-0 flex-1 overflow-hidden relative sm:block" style={{ mask: "linear-gradient(90deg,transparent 0%,black 4%,black 96%,transparent 100%)" }}>
           <div className="ticker-scroll flex gap-6 items-center">
             {[...pairs, ...pairs].map((p, i) => {
               const up = p.change >= 0
@@ -2406,7 +2510,7 @@ adjustWalletBalance(returnAmt,
         </button>
       </div>
 
-      {/* ══ MOBILE TAB SWITCHER ═══════════════════════════════════════════════ */}
+      {/* ══ MOBILE TAB SWITCHER ══════════════════════════════════════════════��� */}
       <div className="apple-terminal-mobile-tabs flex shrink-0 md:hidden" style={{ background: "#060a12", borderBottom: "1px solid #1a2640" }}>
         {[{ id: "market", label: "Markets" }, { id: "chart", label: "Chart" }, { id: "order", label: "Order" }].map(tab => (
           <button key={tab.id} onClick={() => setMobileTab(tab.id as typeof mobileTab)}
@@ -3339,6 +3443,9 @@ adjustWalletBalance(returnAmt,
                       <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
                     </div>
                   ))}
+                  <button type="button" onClick={() => void loadTrades()} aria-label="Refresh trade history" title="Refresh trade history" className="ml-auto mr-2 rounded p-1 text-slate-500 transition-colors hover:bg-cyan-400/10 hover:text-cyan-300">
+                    <RefreshCw className="h-3 w-3" />
+                  </button>
                 </div>
                 {/* Table */}
                 <div className="flex-1 overflow-y-auto terminal-scroll">

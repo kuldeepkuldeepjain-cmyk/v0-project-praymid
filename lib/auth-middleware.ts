@@ -11,14 +11,8 @@ const ADMIN_EMAILS = [process.env.ADMIN_EMAIL, process.env.SUPER_ADMIN_EMAIL, "m
 export async function requireParticipantSession(
   req?: NextRequest,
 ): Promise<{ ok: true; participantId: string; email: string } | { ok: false; response: NextResponse }> {
-  // Try token header first (sent by frontend via X-Participant-Token)
-  if (req) {
-    const token = req.headers.get("X-Participant-Token") || req.headers.get("Authorization")?.replace("Bearer ", "")
-    if (token) {
-      // Token is the participant email stored in sessionStorage
-      return { ok: true, participantId: token, email: token }
-    }
-  }
+  // Client headers are treated as context only. Authorization comes from the
+  // signed, httpOnly iron-session cookie so an email cannot be used as a token.
   try {
     const session = await getParticipantSession()
     if (!session.isLoggedIn || !session.participantId || !session.email) {

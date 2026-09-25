@@ -102,6 +102,8 @@ function PredictPageContent() {
   const [priceFlash, setPriceFlash] = useState<Record<string, string>>({})
   const previousPrices = useRef<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(true)
+  const [priceError, setPriceError] = useState<string | null>(null)
+  const [participantError, setParticipantError] = useState<string | null>(null)
 
   // Bet dialog states
   const [showBetDialog, setShowBetDialog] = useState(false)
@@ -179,16 +181,19 @@ function PredictPageContent() {
     if (!email) return
     try {
       const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
-      if (!res.ok) return
+      if (!res.ok) throw new Error(`Participant data unavailable (${res.status})`)
       const json = await res.json()
-      if (json.success && json.participant) {
-        setParticipantData((prev: any) => {
-          const fresh = { ...prev, ...json.participant }
-          localStorage.setItem("participantData", JSON.stringify(fresh))
-          return fresh
-        })
-      }
-    } catch {}
+      if (!json.success || !json.participant) throw new Error("Participant data returned an invalid response")
+      setParticipantData((prev: any) => {
+        const fresh = { ...prev, ...json.participant }
+        localStorage.setItem("participantData", JSON.stringify(fresh))
+        return fresh
+      })
+      setParticipantError(null)
+    } catch (error) {
+      console.error("[v0] Participant data refresh failed:", error)
+      setParticipantError("Account data could not be refreshed. Your current balance and trades remain visible.")
+    }
   }, [])
 
   const loadActiveTrades = useCallback(async () => {
@@ -203,6 +208,7 @@ function PredictPageContent() {
       data.forEach((trade: any) => {
         if (trade.status === "pending") tradesMap[trade.crypto_pair] = trade
       })
+      if (!res.ok) throw new Error(`Active trades unavailable (${res.status})`)
       setActiveTrades(prev => {
         const next: Record<string, any> = { ...tradesMap }
         // Keep locally-placed trades not yet confirmed by DB
@@ -211,7 +217,10 @@ function PredictPageContent() {
         })
         return next
       })
-    } catch {}
+    } catch (error) {
+      console.error("[v0] Active trade refresh failed:", error)
+      // Never clear active trades on a transient read failure.
+    }
   }, [])
 
   // Initial data load — runs once when email is known
@@ -259,16 +268,19 @@ function PredictPageContent() {
           previousPrices.current[symbol] = price
         }
 
-        setCryptoPrices(pricesMap)
-        setIsLoading(false)
+      setCryptoPrices(pricesMap)
+      setPriceError(null)
+      setIsLoading(false)
 
-        setTimeout(() => {
-          setPriceFlash({})
-        }, 500)
-      } catch (error) {
-        console.error("Failed to fetch prices:", error)
-        setIsLoading(false)
-      }
+      setTimeout(() => {
+        setPriceFlash({})
+      }, 500)
+    } catch (error) {
+      console.error("[v0] Prediction price refresh failed:", error)
+      setPriceError(Object.keys(previousPrices.current).length > 0 ? "Live prices are temporarily unavailable. Existing prices remain visible." : "Live prices are unavailable. Please retry when the feed reconnects.")
+      setIsLoading(false)
+    }
+
     }
 
     fetchPrices()
@@ -418,6 +430,14 @@ function PredictPageContent() {
 
   return (
     <div className="min-h-screen min-h-dvh bg-[#07111f] relative overflow-hidden text-slate-100">
+      {(priceError || participantError) && (
+        <div className="sticky top-0 z-[60] border-b border-amber-400/30 bg-amber-950/90 px-3 py-2 text-amber-100 backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 text-xs">
+            <span>{priceError || participantError}</span>
+            <button type="button" onClick={() => { fetchParticipantData(); setPriceError(null) }} className="shrink-0 font-semibold underline underline-offset-2 hover:text-white">Retry</button>
+          </div>
+        </div>
+      )}
       {/* Header - Mobile Optimized */}
       <div className="border-b bg-[#0b1728]/95 backdrop-blur-md sticky top-0 z-50 shadow-lg border-slate-700/80 relative">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 md:py-4">
