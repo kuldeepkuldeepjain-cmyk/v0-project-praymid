@@ -2382,8 +2382,11 @@ adjustWalletBalance(
 
 
 {/* ══ PROFESSIONAL HEADER (brand, search, tools, account, metrics) ══ */}
-      <ForexHeader
-        openTradesCount={openTrades.length}
+<ForexHeader
+  walletBalance={walletBalance}
+  equity={equity}
+  totalPnl={totalPnl}
+  openTradesCount={openTrades.length}
         pendingOrdersCount={pendingOrders.length}
         leverage={Number(leverage) || 100}
         accountType={isFundedAccount ? "Funded" : "Live"}
@@ -3347,7 +3350,7 @@ adjustWalletBalance(
             )
           )}
 
-          {/* ── Pending Orders ── */}
+          {/* ─��� Pending Orders ── */}
           {activePanel === "pending" && (
             pendingOrders.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">

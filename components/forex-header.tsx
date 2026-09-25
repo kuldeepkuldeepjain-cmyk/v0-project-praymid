@@ -23,6 +23,9 @@ import {
 } from "lucide-react"
 
 interface ForexHeaderProps {
+  walletBalance: number
+  equity: number
+  totalPnl: number
   openTradesCount: number
   pendingOrdersCount: number
   leverage: number
@@ -68,6 +71,9 @@ const menuItems = [
 ]
 
 export function ForexHeader({
+  walletBalance,
+  equity,
+  totalPnl,
   openTradesCount,
   pendingOrdersCount,
   leverage,
@@ -112,7 +118,9 @@ export function ForexHeader({
   const [localTime, setLocalTime] = useState(serverTime)
   const [localZone, setLocalZone] = useState("Local")
   const unreadCount = notifications.filter((item) => !item.read).length
+  const pnlUp = totalPnl >= 0
   const marketColor = marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171"
+  const formatMoney = (value: number) => `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   const formatLocalTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   const filteredMenuItems = menuItems.filter((item) => !query.trim() || item.label.toLowerCase().includes(query.trim().toLowerCase()))
   const navigateFromMenu = (panel: string) => {
@@ -169,6 +177,9 @@ export function ForexHeader({
 
 
         <div className="hidden items-center gap-1 md:flex">
+          <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
+          <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
+          <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
           <button type="button" onClick={onOpenDeposit} className="terminal-toolbar-action text-emerald-300"><ArrowDownRight className="h-3 w-3" />Deposit</button>
           <button type="button" onClick={onOpenWithdraw} className="terminal-toolbar-action text-amber-300"><ArrowUpRight className="h-3 w-3" />Withdraw</button>
         </div>
