@@ -3374,11 +3374,19 @@ adjustWalletBalance(
                 <span className="text-[11px] tracking-wider font-bold uppercase">No pending orders</span>
               </div>
             ) : (
-              <div className="p-2 flex flex-col gap-2">
+              <div className="order-panel flex flex-col h-full">
+                <div className="order-panel-header flex items-center justify-between shrink-0">
+                  <div>
+                    <p className="order-panel-kicker">Order Management</p>
+                    <h3 className="order-panel-title">Pending Orders</h3>
+                  </div>
+                  <span className="order-panel-count">{pendingOrders.length} active</span>
+                </div>
+                <div className="order-panel-list p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll">
                 {pendingOrders.map(o => {
                   const isBuy = o.direction === "BUY"
                   return (
-                    <div key={o.id} className="rounded-xl price-mono text-[11px]"
+                    <div key={o.id} className="order-card rounded-xl price-mono text-[11px]"
                       style={{ background: "#0d1625", border: "1px solid #1a2a42" }}>
                       <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div className="flex items-center gap-2">
@@ -3401,17 +3409,15 @@ adjustWalletBalance(
                           <p className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-3 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
+                      <div className="order-card-details grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div><p className="text-[8px] text-slate-500 mb-0.5">SL</p><p className="font-bold text-red-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</p></div>
                         <div><p className="text-[8px] text-slate-500 mb-0.5">TP</p><p className="font-bold text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</p></div>
-                        <div className="text-right">
-                          <p className="text-[8px] text-slate-500 mb-0.5">Margin</p>
-                          <p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p>
-                        </div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p></div>
+                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Status</p><p className="font-bold text-cyan-400">Queued</p></div>
                       </div>
                       <div className="px-3 py-2">
                         <button onClick={() => cancelPending(o.id)}
-                          className="w-full py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
+                          className="w-full py-2 rounded-lg font-black text-[10px] tracking-wide uppercase transition-all active:scale-95 flex items-center justify-center gap-1"
                           style={{ background: "rgba(239,68,68,0.08)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
                           <X className="h-3 w-3" /> Cancel Order
                         </button>
@@ -3419,6 +3425,7 @@ adjustWalletBalance(
                     </div>
                   )
                 })}
+                </div>
               </div>
             )
           )}

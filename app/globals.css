@@ -3886,6 +3886,66 @@ button, a, [role="button"] {
   .mt5-terminal.reference-terminal .reference-fund-action { flex: 1 1 0; min-width: 0; padding-inline: 6px; }
 }
 
+/* Pending order workspace: clear hierarchy for quick execution review. */
+.mt5-terminal.reference-terminal .order-panel {
+  background: #07111d;
+}
+.mt5-terminal.reference-terminal .order-panel-header {
+  min-height: 52px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e3951;
+  background: linear-gradient(180deg, #0d2031, #091725);
+}
+.mt5-terminal.reference-terminal .order-panel-kicker {
+  margin: 0 0 3px;
+  color: #63829a;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.mt5-terminal.reference-terminal .order-panel-title {
+  margin: 0;
+  color: #e9f3f8;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+.mt5-terminal.reference-terminal .order-panel-count {
+  padding: 4px 7px;
+  border: 1px solid #31556e;
+  border-radius: 4px;
+  color: #8fb7cd;
+  background: #0c1c2b;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.mt5-terminal.reference-terminal .order-panel-list {
+  min-height: 0;
+}
+.mt5-terminal.reference-terminal .order-card {
+  border-color: #23445d !important;
+  border-radius: 7px;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+.mt5-terminal.reference-terminal .order-card > div:first-child {
+  padding-block: 9px;
+  background: rgba(18, 42, 61, .32);
+}
+.mt5-terminal.reference-terminal .order-card-details {
+  background: rgba(7, 18, 29, .5);
+}
+.mt5-terminal.reference-terminal .order-card button {
+  border-radius: 4px;
+}
+.mt5-terminal.reference-terminal .order-card button:hover {
+  background: rgba(239, 68, 68, .16) !important;
+  border-color: rgba(239, 68, 68, .42) !important;
+}
+
 /* Compact premium account metrics: small footprint, strong scanning hierarchy. */
 .mt5-terminal.reference-terminal .reference-metrics-header {
   gap: 5px;
