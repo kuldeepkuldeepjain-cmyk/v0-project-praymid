@@ -2189,48 +2189,7 @@ adjustWalletBalance(
         />
       )}
 
-      {/* ══ PROFESSIONAL HEADER ═══════════════════════════════════════════════ */}
-      <ForexHeader
-        accountType={isFundedAccount ? "funded" : "live"}
-        accountId="LF-100247"
-        accountName="Trading Account"
-        walletBalance={walletBalance}
-        equity={equity}
-        totalPnl={totalPnl}
-        totalMargin={totalMargin}
-        freeMargin={freeMargin}
-        marginLevel={marginLevel}
-        openTradesCount={openTrades.length}
-        pendingOrdersCount={pendingOrders.length}
-        online={online}
-        lastUpdated={lastUpdated}
-        tickCount={tickCount}
-        isDarkTheme={isDarkTheme}
-        onToggleTheme={() => setIsDarkTheme(t => !t)}
-        onRefresh={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }}
-        candleLoading={candleLoading}
-        onAddFunds={onAddFunds}
-        onPayout={() => { window.location.href = "/participant/dashboard/payout" }}
-        onBalance={() => { window.location.href = "/participant/dashboard" }}
-        onFundedFunds={onAddFundedFunds}
-        isFundedAccount={isFundedAccount}
-        onOpenCommandPalette={() => setCommandPaletteOpen(true)}
-        notifications={[
-          { id: "n1", type: "order", title: "Order Filled", message: "BUY 0.10 EUR/USD at 1.0847 executed", time: "2 min ago", read: false },
-          { id: "n2", type: "price", title: "Price Alert", message: "GBP/USD crossed above 1.2650", time: "15 min ago", read: false },
-          { id: "n3", type: "news", title: "ECB Statement", message: "European Central Bank held rates steady", time: "1 hr ago", read: true },
-          { id: "n4", type: "system", title: "System Update", message: "New charting tools available", time: "3 hrs ago", read: true },
-        ]}
-        onMarkAllRead={() => {}}
-        priceAlerts={priceAlerts.map(a => ({ id: a.id, symbol: a.pair, condition: a.condition, price: a.price, active: !a.triggered }))}
-        onToggleAlert={(id) => {}}
-        chartLayout={chartLayout}
-        onToggleChartLayout={() => setChartLayout(v => v === "single" ? "grid" : "single")}
-        chartExpanded={chartExpanded}
-        onToggleChartExpand={() => setChartExpanded(e => !e)}
-        soundEnabled={soundEnabled}
-        onToggleSound={() => setSoundEnabled(s => !s)}
-      />
+
 
       {/* MT5-style workspace toolbar */}
       <div className="flex h-7 shrink-0 items-center gap-0 border-b px-1" style={{ background: "#202f40", borderColor: "#344b62" }} aria-label="MT5 workspace toolbar">
