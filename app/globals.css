@@ -138,14 +138,50 @@
 }
 
 .lending-page {
-  --lending-ink: #f8fafc;
-  --lending-muted: #94a3b8;
-  --lending-panel: #111c2c;
-  --lending-line: #243449;
-  --lending-accent: #22d3ee;
-  --lending-positive: #34d399;
+  --lending-ink: #f4f8fb;
+  --lending-muted: #8da1b5;
+  --lending-panel: #101d2c;
+  --lending-panel-strong: #0b1725;
+  --lending-line: #24384d;
+  --lending-accent: #55d6e8;
+  --lending-positive: #4bd6a0;
+  --lending-warning: #f0b86b;
+  background: #08131f;
+  color: var(--lending-ink);
+  font-family: var(--font-inter), sans-serif;
 }
+.lending-page .lending-shell { width: min(1180px, calc(100% - 2rem)); margin-inline: auto; }
+.lending-page .lending-nav { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--lending-line); background: color-mix(in srgb, #08131f 90%, transparent); backdrop-filter: blur(18px); }
+.lending-page .lending-brand { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.2em; color: var(--lending-ink); }
+.lending-page .lending-eyebrow, .lending-page .lending-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lending-muted); }
+.lending-page .lending-eyebrow { display: inline-flex; align-items: center; gap: 0.55rem; color: var(--lending-accent); }
+.lending-page .lending-live-dot { display: inline-block; width: 0.42rem; height: 0.42rem; border-radius: 999px; background: var(--lending-positive); box-shadow: 0 0 0 4px color-mix(in srgb, var(--lending-positive) 13%, transparent); }
+.lending-page .lending-display { font-size: clamp(2.7rem, 7vw, 5.7rem); font-weight: 650; letter-spacing: -0.065em; line-height: 0.98; }
+.lending-page .lending-display span { color: var(--lending-accent); }
+.lending-page .lending-heading { font-size: clamp(1.8rem, 4vw, 3rem); font-weight: 600; letter-spacing: -0.045em; line-height: 1.05; }
+.lending-page .lending-button { display: inline-flex; align-items: center; gap: 0.55rem; border: 1px solid var(--lending-accent); border-radius: 0.6rem; background: var(--lending-accent); color: #07131e; padding: 0.82rem 1.1rem; font-size: 0.85rem; font-weight: 800; transition: transform 160ms ease, background 160ms ease; }
+.lending-page .lending-button:hover { background: #7ce4ef; transform: translateY(-1px); }
+.lending-page .lending-button-small { padding: 0.6rem 0.8rem; font-size: 0.75rem; }
+.lending-page .lending-button-quiet { border-color: var(--lending-line); background: transparent; color: var(--lending-ink); }
+.lending-page .lending-button-quiet:hover { background: var(--lending-panel); }
+.lending-page .lending-snapshot, .lending-page .lending-calculator { border: 1px solid var(--lending-line); border-radius: 1rem; background: linear-gradient(145deg, var(--lending-panel), var(--lending-panel-strong)); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2); }
+.lending-page .lending-snapshot { padding: 1.25rem; }
+.lending-page .lending-status { display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid color-mix(in srgb, var(--lending-positive) 30%, transparent); border-radius: 999px; padding: 0.35rem 0.55rem; color: var(--lending-positive); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+.lending-page .lending-chart { display: flex; height: 10rem; align-items: end; gap: 0.35rem; border-bottom: 1px solid var(--lending-line); background: repeating-linear-gradient(to top, transparent 0, transparent 31px, color-mix(in srgb, var(--lending-line) 55%, transparent) 32px); padding: 0 0.4rem; }
+.lending-page .lending-bar { flex: 1; min-width: 0.35rem; border-radius: 0.25rem 0.25rem 0 0; background: #31536a; }
+.lending-page .lending-bar-current { background: var(--lending-accent); }
+.lending-page .lending-step { min-height: 13rem; border: 1px solid var(--lending-line); border-radius: 0.85rem; background: color-mix(in srgb, var(--lending-panel) 72%, transparent); padding: 1.25rem; }
+.lending-page .lending-step-number { color: var(--lending-accent); font-family: var(--font-mono); font-size: 0.72rem; }
+.lending-page .lending-result { border: 1px solid color-mix(in srgb, var(--lending-accent) 38%, var(--lending-line)); border-radius: 0.8rem; background: color-mix(in srgb, var(--lending-accent) 5%, var(--lending-panel-strong)); padding: 1.25rem; }
+.lending-page .lending-range { width: 100%; accent-color: var(--lending-accent); }
+.lending-page .lending-term { display: flex; flex-direction: column; gap: 0.35rem; border: 1px solid var(--lending-line); border-radius: 0.55rem; padding: 0.7rem 0.5rem; color: var(--lending-muted); font-size: 0.78rem; transition: border-color 160ms ease, color 160ms ease, background 160ms ease; }
+.lending-page .lending-term span { font-size: 0.65rem; }
+.lending-page .lending-term:hover, .lending-page .lending-term-active { border-color: var(--lending-accent); background: color-mix(in srgb, var(--lending-accent) 10%, transparent); color: var(--lending-ink); }
+.lending-page .lending-safety-item { display: flex; gap: 0.9rem; border-top: 1px solid var(--lending-line); padding: 1rem 0; }
+.lending-page .lending-callout { border: 1px solid color-mix(in srgb, var(--lending-accent) 38%, var(--lending-line)); border-radius: 0.9rem; background: color-mix(in srgb, var(--lending-accent) 7%, var(--lending-panel)); }
+.lending-page .lending-footer { border-top: 1px solid var(--lending-line); }
 .lending-page .lending-footer a { text-underline-offset: 4px; }
+@media (max-width: 640px) { .lending-page .lending-shell { width: min(100% - 1.25rem, 1180px); } .lending-page .lending-display { font-size: clamp(2.8rem, 14vw, 4.4rem); } }
 
 @layer base {
   * {
