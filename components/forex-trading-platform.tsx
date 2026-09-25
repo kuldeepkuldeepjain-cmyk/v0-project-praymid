@@ -13,7 +13,7 @@ import {
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
-import { participantFetch } from "@/lib/auth"
+import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
   PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
@@ -730,7 +730,7 @@ function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
   )
 }
 
-// ─── Support Center Panel ─────────────────────────────────────────────────────
+// ─── Support Center Panel ────────────────���────────────────────────────────────
 
 function SupportCenterPanel() {
   const [view, setView] = useState<"overview" | "chat" | "ticket" | "faq">("overview")
@@ -1216,6 +1216,7 @@ function PositionSizer({
   const [marketError, setMarketError] = useState<string | null>(null)
   const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [rateFeed, setRateFeed] = useState<{ source: string; provider: string; refreshIntervalSeconds: number } | null>(null)
   const [toasts, setToasts]           = useState<ToastItem[]>([])
   const [totalPnl, setTotalPnl]       = useState(0)
   const [tickCount, setTickCount]     = useState(0)
@@ -1478,9 +1479,10 @@ function PositionSizer({
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.error) throw new Error(json.error)
-      const rateMap = json.rates as Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
-
-      setPairs(prev => {
+  const rateMap = json.rates as Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
+  setRateFeed({ source: json.source ?? "live", provider: json.provider ?? "Live market feed", refreshIntervalSeconds: Number(json.refreshIntervalSeconds) || 3 })
+  
+  setPairs(prev => {
         const updated = prev.map(p => {
           const r = rateMap[p.symbol]
           if (!r) return p
@@ -2170,7 +2172,7 @@ adjustWalletBalance(
     setPriceAlerts(prev => prev.filter(a => a.id !== id))
   }, [])
 
-  // ── Cancel pending order ─��──────────────���──────────────────────────────────
+  // ── Cancel pending order ─��──────────────���────────���─────────────────────────
   const cancelPending = (id: string) => {
     setPendingOrders(prev => prev.filter(o => o.id !== id))
     deletePendingOrder(id)
@@ -2186,6 +2188,9 @@ adjustWalletBalance(
     ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
     : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
+  const quoteRefreshSeconds = rateFeed?.refreshIntervalSeconds ?? 3
+  const isSelectedGold = selectedPair?.symbol === "XAU/USD"
+  const quoteSourceLabel = isSelectedGold ? "XAU spot" : "Live market feed"
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
   const entryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
   const slVal = sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null
@@ -2341,6 +2346,10 @@ adjustWalletBalance(
           <button type="button" onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="shrink-0 font-bold uppercase tracking-wider underline underline-offset-2">Retry</button>
         </div>
       )}
+      <div className="flex items-center justify-between gap-2 border-b border-slate-800/70 bg-slate-950/70 px-3 py-1 text-[9px] text-slate-400">
+        <span className="flex items-center gap-1.5"><span className={`size-1.5 rounded-full ${online ? "bg-emerald-400" : "bg-amber-400"}`} />{quoteSourceLabel} live rate</span>
+        <span className="truncate text-right">{rateFeed?.provider ?? "Live market feed"} · refresh {quoteRefreshSeconds}s{lastUpdated ? ` · ${lastUpdated.toLocaleTimeString()}` : ""}</span>
+      </div>
 
       {/* ── Modify Modal ── */}
       {modifyTarget && (
@@ -2388,8 +2397,11 @@ adjustWalletBalance(
           else document.documentElement.requestFullscreen()
         }}
         isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
-        onToggleLock={() => showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")}
-        isLocked={isFrozen}
+  onToggleLock={() => {
+    setIsFrozen((locked) => !locked)
+    showToast(isFrozen ? "info" : "warning", isFrozen ? "Trading unlocked" : "Trading locked — no new orders will be accepted")
+  }}
+  isLocked={isFrozen}
         onToggleSound={() => setSoundEnabled(!soundEnabled)}
         soundEnabled={soundEnabled}
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
@@ -2400,9 +2412,13 @@ adjustWalletBalance(
         onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
         onOpenWithdraw={() => showToast("info", "Withdraw flow opened")}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
-        onOpenSettings={() => showToast("info", "Settings opened")}
-        onOpenProfile={() => showToast("info", "Profile opened")}
-        onLogout={() => showToast("info", "Sign out requested")}
+  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
+  onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
+  onLogout={async () => {
+    clearParticipantAuth()
+    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
+    window.location.assign("/participant/login")
+  }}
         onSearch={(q) => { if (q) { setPairSearch(q); setShowPairSearch(true) } }}
         notifications={toasts.slice(0, 5).map(t => ({
           id: t.id,
@@ -2694,7 +2710,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────���───────────���─���─���───────────────────────�����─────── */}
+        {/* ── CENTER: Chart ────���───────────���─���─���───────────────────────������─────── */}
         <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
           {/* Pair header */}
           {selectedPair ? (
@@ -3129,7 +3145,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═════════════════════════════��═����═══��════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════���═════════════════════��═����═══��════════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>

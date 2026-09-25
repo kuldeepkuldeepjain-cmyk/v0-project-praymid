@@ -6,13 +6,14 @@ let cache: {
   data: Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
   ts: number
 } | null = null
-const CACHE_TTL_MS = 3000 // refresh every 3s max
+const LIVE_REFRESH_INTERVAL_MS = 3000
+const CACHE_TTL_MS = LIVE_REFRESH_INTERVAL_MS // refresh every 3s max
 
 export async function GET() {
   try {
     const now = Date.now()
     if (cache && now - cache.ts < CACHE_TTL_MS) {
-      return NextResponse.json({ rates: cache.data, source: "cache", ts: cache.ts })
+      return NextResponse.json({ rates: cache.data, source: "cache", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: cache.ts })
     }
 
     // Fetch all pairs in parallel from Yahoo Finance quote endpoint
@@ -100,7 +101,9 @@ export async function GET() {
     }
 
     cache = { data, ts: now }
-    return NextResponse.json({ rates: data, source: "live", ts: now })
+    return NextResponse.json({ rates: data, source: "live", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: now }, {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    })
   } catch (err) {
     // Return cached data if available even if stale
     if (cache) {
