@@ -2348,7 +2348,7 @@ adjustWalletBalance(
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
-    { id: "payout", label: "Request payout", hint: "Open the payout page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+    { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
@@ -2476,7 +2476,7 @@ adjustWalletBalance(
         </button>
         <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
           <ArrowUpDown className="h-4 w-4" />
-          <span>Payout</span>
+          <span>Withdraw</span>
         </button>
   <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
   <TrendingUp className="h-4 w-4" />
