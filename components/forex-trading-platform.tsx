@@ -1592,7 +1592,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPair?.symbol, timeframe])
 
-  // ── Live-tick last candle ────────────────────────────��─────────────────────
+  // ── Live-tick last candle ────────────────────────────���─────────────────────
   useEffect(() => {
     if (!selectedPair || selectedPair.candles.length === 0) return
     const mid = (selectedPair.bid + selectedPair.ask) / 2
@@ -1903,12 +1903,16 @@ function PositionSizer({
     const slNum  = sl ? parseFloat(sl) : null
     const tpNum  = tp ? parseFloat(tp) : null
     const trailN = trailingPips ? parseFloat(trailingPips) : null
+    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (!Number.isFinite(trailN) || trailN < 0))) {
+      showToast("error", "Use valid numbers for Stop Loss, Take Profit, and Trailing Stop")
+      return
+    }
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
 
-    if (slNum && direction === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
-    if (slNum && direction === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
-    if (tpNum && direction === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
-    if (tpNum && direction === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
+    if (slNum !== null && direction === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
+    if (slNum !== null && direction === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
+    if (tpNum !== null && direction === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
+    if (tpNum !== null && direction === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
     if (orderType === "market" && walletBalance < margin) {
       showToast("error", `Insufficient balance — need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return
     }
@@ -2043,6 +2047,17 @@ function PositionSizer({
     return
   }
   requestConfirm(dir, lot, lev, price, null, null, null, false)
+  }
+
+  const setOrderDirection = (nextDirection: TradeDirection) => {
+    setDirection(nextDirection)
+    if (orderType === "market" || !selectedPair) return
+    const quote = nextDirection === "BUY" ? selectedPair.ask : selectedPair.bid
+    const offset = pip(selectedPair.symbol) * 10
+    const suggested = orderType === "limit"
+      ? (nextDirection === "BUY" ? quote - offset : quote + offset)
+      : (nextDirection === "BUY" ? quote + offset : quote - offset)
+    setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
   }
 
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
@@ -2939,7 +2954,7 @@ adjustWalletBalance(
   </div>
         </div>
         </div>
-        {/* ── RIGHT: Order Ticket ────────────────────────────────────────────── */}
+        {/* ── RIGHT: Order Ticket ────────────────────��───────────────────────── */}
         {rightPanelHidden ? (
           <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
@@ -3002,14 +3017,28 @@ adjustWalletBalance(
                 </div>
 
                 {/* Order type tabs */}
-                <div className="apple-order-type-tabs flex mb-2 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
+                <div className="apple-order-type-tabs mb-2 grid grid-cols-3 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
                   {(["market","limit","stop"] as typeof orderType[]).map(ot => (
-                    <button key={ot} onClick={() => setOrderType(ot)}
-                      className="flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-all"
+                    <button key={ot} type="button" onClick={() => {
+                      setOrderType(ot)
+                      if (ot === "market") {
+                        setPendingPrice("")
+                      } else if (selectedPair) {
+                        const quote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                        const offset = pip(selectedPair.symbol) * 10
+                        const suggested = ot === "limit"
+                          ? (direction === "BUY" ? quote - offset : quote + offset)
+                          : (direction === "BUY" ? quote + offset : quote - offset)
+                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
+                      }
+                    }}
+                      aria-pressed={orderType === ot}
+                      className="flex flex-col items-center gap-0.5 py-2 text-[9px] font-black uppercase tracking-wider transition-all"
                       style={orderType === ot
                         ? { background: "rgba(34,211,238,0.1)", color: "#22d3ee", borderBottom: "2px solid #22d3ee" }
                         : { color: "#374151" }}>
-                      {ot}
+                      <span>{ot}</span>
+                      <span className="text-[7px] font-medium normal-case tracking-normal opacity-70">{ot === "market" ? "Now" : ot === "limit" ? "Better price" : "Breakout"}</span>
                     </button>
                   ))}
                 </div>
@@ -3017,7 +3046,7 @@ adjustWalletBalance(
                 {/* BUY/SELL toggle — keep the direction choice explicit for beginners */}
                 <div className="mb-2 grid grid-cols-2 gap-1.5">
                   {(["BUY","SELL"] as TradeDirection[]).map(d => (
-                    <button key={d} onClick={() => setDirection(d)}
+                    <button key={d} type="button" onClick={() => setOrderDirection(d)}
                       aria-label={d === "BUY" ? "Buy because you expect the price to rise" : "Sell because you expect the price to fall"}
                       className={`flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
                       style={direction !== d ? {
@@ -3046,11 +3075,11 @@ adjustWalletBalance(
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
                   </div>
                   <div className="grid grid-cols-2 gap-px" style={{ background: "#1a2640" }}>
-                    <button type="button" onClick={() => setDirection("SELL")} className="px-2.5 py-2 text-left transition-colors hover:bg-red-500/10" style={{ background: "#090d15" }}>
+                    <button type="button" onClick={() => setOrderDirection("SELL")} className="px-2.5 py-2 text-left transition-colors hover:bg-red-500/10" style={{ background: "#090d15" }}>
                       <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-red-400">Bid · Sell</span>
                       <span className="price-mono text-sm font-black text-red-300">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
                     </button>
-                    <button type="button" onClick={() => setDirection("BUY")} className="px-2.5 py-2 text-right transition-colors hover:bg-emerald-500/10" style={{ background: "#090d15" }}>
+                    <button type="button" onClick={() => setOrderDirection("BUY")} className="px-2.5 py-2 text-right transition-colors hover:bg-emerald-500/10" style={{ background: "#090d15" }}>
                       <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-400">Ask · Buy</span>
                       <span className="price-mono text-sm font-black text-emerald-300">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                     </button>
@@ -3064,6 +3093,7 @@ adjustWalletBalance(
                 {/* Pending price (only for limit/stop) */}
                 {orderType !== "market" && (
                   <div className="mb-1.5">
+                    <p className="mb-1 text-[8px] leading-relaxed text-slate-500">{orderType === "limit" ? (direction === "BUY" ? "Buy below the current ask" : "Sell above the current bid") : (direction === "BUY" ? "Buy above the current ask" : "Sell below the current bid")}. The order activates automatically when price reaches your level.</p>
                     <label className="text-[9px] font-bold tracking-widest uppercase block mb-1" style={{ color: "#22d3ee" }}>
                       {orderType === "limit" ? "Limit Price" : "Stop Price"}
                     </label>
@@ -3833,9 +3863,9 @@ adjustWalletBalance(
                 <span className="text-[20px] font-black price-mono" style={{ color: "#f59e0b" }}>
                   ${tradeConfirm.margin.toFixed(2)}
                 </span>
-                <span className="text-[9px]" style={{ color: "rgba(148,163,184,0.45)" }}>
-                  Locked from balance until trade closes
-                </span>
+                  <span className="text-[9px]" style={{ color: "rgba(148,163,184,0.45)" }}>
+                    {tradeConfirm.isPending ? "Estimated at fill; balance is unchanged until activation" : "Locked from balance until trade closes"}
+                  </span>
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 <div className="text-right">
@@ -3849,7 +3879,7 @@ adjustWalletBalance(
                     className="text-[12px] font-black price-mono"
                     style={{ color: (walletBalance - tradeConfirm.margin) >= 0 ? "#10b981" : "#ef4444" }}
                   >
-                    ${Math.max(0, walletBalance - tradeConfirm.margin).toFixed(2)}
+                    ${Math.max(0, walletBalance - (tradeConfirm.isPending ? 0 : tradeConfirm.margin)).toFixed(2)}
                   </div>
                 </div>
               </div>
