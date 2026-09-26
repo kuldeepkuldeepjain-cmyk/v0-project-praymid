@@ -4,7 +4,7 @@ import type React from "react"
 import { Suspense, useState, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { Home, User, TrendingUp, Wallet, Gift, Settings, ChevronRight, PlusCircle } from "lucide-react"
+import { Home, User, TrendingUp, Wallet, Gift, Settings, PlusCircle } from "lucide-react"
 
 export default function DashboardLayout({
   children,
@@ -71,42 +71,9 @@ export default function DashboardLayout({
   )
 
   // ── SHARED NAV ITEM RENDERER ───────────────────────────────────────────
-  const NavItem = ({ item, index, vertical = false }: { item: typeof navItems[0]; index: number; vertical?: boolean }) => {
+  const NavItem = ({ item, index }: { item: typeof navItems[0]; index: number }) => {
     const active = isActive(item.href)
     const isBouncing = bouncingIndex === index
-    if (vertical) {
-      return (
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={() => handleNavClick(index)}
-          aria-current={active ? "page" : undefined}
-          className="group relative mx-2 flex min-h-12 items-center gap-3 rounded-xl px-4 py-3 transition-all duration-200"
-          style={active ? {
-            background: `linear-gradient(135deg, ${item.color}22 0%, ${item.color}10 100%)`,
-            border: `1px solid ${item.color}35`,
-            boxShadow: `0 2px 12px ${item.color}30`,
-          } : {
-            background: "transparent",
-            border: "1px solid transparent",
-          }}
-        >
-          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}` }} />}
-          <div className="relative p-2 rounded-xl flex-shrink-0" style={active ? {
-            background: `linear-gradient(135deg, ${item.color}30 0%, ${item.color}18 100%)`,
-            border: `1px solid ${item.color}40`,
-            boxShadow: `0 2px 12px ${item.color}40`,
-          } : {
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.06)",
-          }}>
-            <item.icon className="h-4 w-4" style={{ color: active ? item.color : "rgba(148,163,184,0.6)" }} strokeWidth={active ? 2.5 : 1.8} />
-          </div>
-          <span className="text-sm font-semibold" style={{ color: active ? item.color : "rgba(148,163,184,0.7)" }}>{item.label}</span>
-          {active && <ChevronRight className="ml-auto h-4 w-4 opacity-50" style={{ color: item.color }} />}
-        </Link>
-      )
-    }
     return (
       <Link
         key={item.href}
@@ -138,76 +105,8 @@ export default function DashboardLayout({
     <div className="min-h-screen min-h-dvh" style={{ background: "#07111f" }}>
       <BgLayers />
 
-      {/* ── DESKTOP LAYOUT (lg+): Sidebar + Content ─────────────────── */}
-      <div className="hidden lg:flex h-screen h-dvh overflow-hidden relative z-10">
-        {/* Left Sidebar */}
-        <aside className="flex-shrink-0 flex flex-col" style={{ width: 220, background: "rgba(7,17,31,0.72)", borderRight: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(28px)" }}>
-          {/* Logo area */}
-          <div className="px-5 py-5 flex items-center gap-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center flex-shrink-0" style={{ boxShadow: "0 0 16px rgba(59,130,246,0.5)" }}>
-              <span className="text-white text-sm font-black">FC</span>
-            </div>
-            <div>
-              <p className="text-white text-sm font-black tracking-wide">Elite Fund</p>
-              <p className="text-slate-500 text-[10px] font-medium tracking-widest uppercase">Trading</p>
-            </div>
-          </div>
-
-          {/* Nav Items */}
-          <nav className="flex-1 flex flex-col gap-1 overflow-y-auto py-4">
-            {navItems.map((item, index) => (
-              <NavItem key={item.href} item={item} index={index} vertical />
-            ))}
-          </nav>
-
-          {/* Bottom info */}
-          <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.9)" }} />
-              <span className="text-slate-500 text-[11px] font-medium">Markets Live</span>
-            </div>
-          </div>
-        </aside>
-
-        {/* Main Content Area */}
-        <main aria-label="Participant dashboard" className="flex-1 overflow-y-auto overflow-x-hidden" style={{ background: "transparent" }}>
-          <div className="relative z-10 page-slide-enter h-full">
-            <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
-              {children}
-            </Suspense>
-          </div>
-        </main>
-      </div>
-
-      {/* ── TABLET LAYOUT (md): Compact sidebar ─────────────────────── */}
-      <div className="hidden md:flex lg:hidden h-screen h-dvh overflow-hidden relative z-10">
-        {/* Icon-only sidebar */}
-        <aside className="flex-shrink-0 flex flex-col items-center py-4 gap-2" style={{ width: 68, background: "rgba(7,17,31,0.74)", borderRight: "1px solid rgba(255,255,255,0.09)", backdropFilter: "blur(28px)" }}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center mb-3" style={{ boxShadow: "0 0 12px rgba(59,130,246,0.4)" }}>
-            <span className="text-white text-sm font-black">FC</span>
-          </div>
-          {navItems.map((item, index) => {
-            const active = isActive(item.href)
-            return (
-              <Link key={item.href} href={item.href} onClick={() => handleNavClick(index)}
-                aria-current={active ? "page" : undefined}
-                className="relative flex size-12 items-center justify-center rounded-xl transition-all duration-200"
-                style={active ? {
-                  background: `linear-gradient(135deg, ${item.color}25 0%, ${item.color}12 100%)`,
-                  border: `1px solid ${item.color}40`,
-                  boxShadow: `0 2px 12px ${item.color}30`,
-                } : {
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                }}>
-                {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 rounded-r-full" style={{ background: item.color }} />}
-                <item.icon className="h-5 w-5" style={{ color: active ? item.color : "rgba(148,163,184,0.5)" }} strokeWidth={active ? 2.5 : 1.8} />
-              </Link>
-            )
-          })}
-        </aside>
-
-        {/* Content */}
+      {/* ── TABLET & DESKTOP LAYOUT (md+): Full-width content + bottom nav ── */}
+      <div className="hidden md:flex flex-col h-screen h-dvh overflow-hidden relative z-10">
         <main aria-label="Participant dashboard" className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="relative z-10 page-slide-enter h-full">
             <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
@@ -215,6 +114,23 @@ export default function DashboardLayout({
             </Suspense>
           </div>
         </main>
+
+        <nav
+          aria-label="Dashboard navigation"
+          className="flex-shrink-0"
+          style={{
+            background: "rgba(7,17,31,0.85)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <div className="mx-auto flex h-16 max-w-3xl items-center justify-around px-2">
+            {navItems.map((item, index) => (
+              <NavItem key={item.href} item={item} index={index} />
+            ))}
+          </div>
+        </nav>
       </div>
 
       {/* ── MOBILE LAYOUT (< md): Bottom nav ────────────────────────── */}
@@ -255,7 +171,7 @@ export default function DashboardLayout({
           />
           <div className="flex items-center justify-around h-[62px] px-1">
             {navItems.map((item, index) => (
-              <NavItem key={item.href} item={item} index={index} vertical={false} />
+              <NavItem key={item.href} item={item} index={index} />
             ))}
           </div>
         </nav>
