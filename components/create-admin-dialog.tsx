@@ -18,11 +18,16 @@ import { UserPlus, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-export function CreateAdminDialog() {
+type CreateAdminDialogProps = {
+  triggerLabel?: string
+  defaultRole?: "participant" | "admin" | "super_admin" | "customer_care"
+}
+
+export function CreateAdminDialog({ triggerLabel = "Create User", defaultRole = "participant" }: CreateAdminDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
-  const [role, setRole] = useState<"participant" | "admin" | "super_admin" | "customer_care">("participant")
+  const [role, setRole] = useState<"participant" | "admin" | "super_admin" | "customer_care">(defaultRole)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
@@ -51,7 +56,7 @@ export function CreateAdminDialog() {
         setOpen(false)
         setEmail("")
         setName("")
-        setRole("participant")
+        setRole(defaultRole)
         setSuccess(false)
       }, 2000)
     } catch (err) {
@@ -66,7 +71,7 @@ export function CreateAdminDialog() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <UserPlus className="h-4 w-4 mr-2" />
-          Create User
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">

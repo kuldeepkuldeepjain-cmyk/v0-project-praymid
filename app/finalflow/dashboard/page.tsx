@@ -54,7 +54,8 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
   import { ParticipantManagementPanel } from "@/components/admin/participant-management-panel"
   import { SecurityOperationsPanel } from "@/components/admin/security-operations-panel"
   import Loading from "./loading"
-import { ErrorBoundary } from "@/components/error-boundary"
+  import { ErrorBoundary } from "@/components/error-boundary"
+  import { CreateAdminDialog } from "@/components/create-admin-dialog"
 
 interface NavItem {
   id: string
@@ -269,6 +270,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+            <CreateAdminDialog triggerLabel="Create Customer Care" defaultRole="customer_care" />
             <span className="text-xs sm:text-sm text-slate-400 hidden sm:block truncate max-w-[120px]">{adminEmail}</span>
             <Button
               onClick={handleLogout}
