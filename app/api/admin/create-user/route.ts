@@ -4,7 +4,7 @@ import { requireAdminSession } from "@/lib/auth-middleware"
 const allUsers: Array<{
   email: string
   name: string
-  role: "participant" | "admin" | "super_admin"
+  role: "participant" | "admin" | "super_admin" | "customer_care"
   password: string
   walletAddress?: string
   createdAt: string
@@ -19,6 +19,11 @@ export async function POST(request: NextRequest) {
 
     if (!email || !name || !role) {
       return NextResponse.json({ error: "Email, name, and role are required" }, { status: 400 })
+    }
+
+    const allowedRoles = ["participant", "admin", "super_admin", "customer_care"] as const
+    if (!allowedRoles.includes(role)) {
+      return NextResponse.json({ error: "Invalid user role" }, { status: 400 })
     }
 
     // Validate email format

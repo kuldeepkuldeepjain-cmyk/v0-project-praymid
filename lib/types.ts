@@ -61,13 +61,13 @@ export type HelpTransaction = {
   created_at: string
 }
 
-export type UserRole = "admin" | "participant" | "super_admin"
+export type UserRole = "admin" | "participant" | "super_admin" | "customer_care"
 
 export type AdminUser = {
   id: string
   email: string
   name: string
-  role: "admin" | "super_admin"
+  role: "admin" | "super_admin" | "customer_care"
   created_at: string
   last_login?: string
   permissions?: {

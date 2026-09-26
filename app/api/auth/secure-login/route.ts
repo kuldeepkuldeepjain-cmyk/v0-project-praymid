@@ -7,10 +7,11 @@ const DEFAULT_ADMIN_PASSWORD = "final@1593"
 
 function getCredentials(loginType: string) {
   const isSuperAdminLogin = loginType === "superadmin"
-  const configuredEmail = (isSuperAdminLogin ? process.env.SUPER_ADMIN_EMAIL : process.env.ADMIN_EMAIL)?.trim().toLowerCase()
-  const configuredPassword = isSuperAdminLogin ? process.env.SUPER_ADMIN_PASSWORD : process.env.ADMIN_PASSWORD
-  const requestedRole = isSuperAdminLogin ? "super_admin" as const : "admin" as const
-  const requestedName = isSuperAdminLogin ? "Super Admin" : "Admin"
+  const isCustomerCareLogin = loginType === "customer-care"
+  const configuredEmail = (isSuperAdminLogin ? process.env.SUPER_ADMIN_EMAIL : isCustomerCareLogin ? process.env.CUSTOMER_CARE_EMAIL : process.env.ADMIN_EMAIL)?.trim().toLowerCase()
+  const configuredPassword = isSuperAdminLogin ? process.env.SUPER_ADMIN_PASSWORD : isCustomerCareLogin ? process.env.CUSTOMER_CARE_PASSWORD : process.env.ADMIN_PASSWORD
+  const requestedRole = isSuperAdminLogin ? "super_admin" as const : isCustomerCareLogin ? "customer_care" as const : "admin" as const
+  const requestedName = isSuperAdminLogin ? "Super Admin" : isCustomerCareLogin ? "Customer Care" : "Admin"
   const basePermissions = { canViewParticipants: true, canViewPayments: true, canManageAccounts: true }
 
   return [

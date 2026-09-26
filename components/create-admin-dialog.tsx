@@ -22,7 +22,7 @@ export function CreateAdminDialog() {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
-  const [role, setRole] = useState<"participant" | "admin" | "super_admin">("participant")
+  const [role, setRole] = useState<"participant" | "admin" | "super_admin" | "customer_care">("participant")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
@@ -92,7 +92,7 @@ export function CreateAdminDialog() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Role</Label>
-            <Select value={role} onValueChange={(value) => setRole(value as "participant" | "admin" | "super_admin")}>
+            <Select value={role} onValueChange={(value) => setRole(value as "participant" | "admin" | "super_admin" | "customer_care")}>
               <SelectTrigger id="role">
                 <SelectValue />
               </SelectTrigger>
@@ -100,6 +100,7 @@ export function CreateAdminDialog() {
                 <SelectItem value="participant">Participant</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="customer_care">Customer Care</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
@@ -107,7 +108,9 @@ export function CreateAdminDialog() {
                 ? "Participants can access Give Help and Get Help features"
                 : role === "super_admin"
                   ? "Super Admins have full access including user management"
-                  : "Admins can view and manage participants"}
+                  : role === "customer_care"
+                    ? "Customer Care can manage participant support tickets and answer queries"
+                    : "Admins can view and manage participants"}
             </p>
           </div>
           {error && (
