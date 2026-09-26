@@ -108,7 +108,13 @@ export default function LandingPage() {
             <a href="#security" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Security</a>
           </div>
 
-          <div className="hidden md:flex gap-3">
+          <div className="hidden md:flex items-center gap-3">
+            <button
+              onClick={() => router.push("/finalflow/login")}
+              className="px-4 py-2 rounded-lg border border-amber-400/50 bg-amber-400/5 text-amber-200 font-semibold text-sm hover:bg-amber-400/10 hover:border-amber-300 hover:text-white transition-all duration-200 active:scale-95"
+            >
+              Customer Care Login
+            </button>
             <button
               onClick={() => router.push("/participant/login")}
               className="px-5 py-2 rounded-lg border border-cyan-500/60 bg-slate-900/80 text-cyan-300 font-semibold text-sm hover:bg-cyan-500/10 hover:border-cyan-400 hover:text-white transition-all duration-200 active:scale-95"
@@ -143,6 +149,7 @@ export default function LandingPage() {
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#programs" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Programs</a>
             <a href="#security" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Security</a>
+            <button type="button" onClick={() => { setIsMenuOpen(false); router.push("/finalflow/login") }} className="w-full rounded-lg border border-amber-400/40 bg-amber-400/5 px-3 py-2 text-left font-semibold text-amber-200">Customer Care Login</button>
           </div>
         )}
       </nav>
