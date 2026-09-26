@@ -1211,6 +1211,7 @@ function PositionSizer({
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
   const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
+  const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
@@ -2387,6 +2388,23 @@ adjustWalletBalance(
       {/* ── Command Palette (Ctrl+K) ── */}
       <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} actions={commandActions} />
 
+      {profilePanel && (
+        <div className="absolute inset-0 z-[70] flex items-start justify-center bg-slate-950/75 p-3 pt-16 backdrop-blur-sm sm:p-6 sm:pt-20" role="dialog" aria-modal="true" aria-label={profilePanel === "support" ? "Support Center" : "Smart Alerts"}>
+          <div className="flex max-h-[calc(100vh-5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-cyan-400/20 bg-[#070d18] shadow-2xl shadow-black/50">
+            <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2.5">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[.16em] text-cyan-300">Profile Center</p>
+                <p className="mt-0.5 text-[9px] text-slate-500">Account tools available from your terminal profile</p>
+              </div>
+              <button type="button" onClick={() => setProfilePanel(null)} className="terminal-icon-button" aria-label="Close profile panel"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-hidden">
+              {profilePanel === "support" ? <SupportCenterPanel /> : <SmartAlertsPanel alerts={smartAlerts} />}
+            </div>
+          </div>
+        </div>
+      )}
+
       {(marketError || candleError) && (
         <div className="absolute left-2 right-2 top-12 z-40 flex items-center justify-between gap-2 rounded border border-amber-400/30 bg-amber-950/95 px-2.5 py-1.5 text-[9px] text-amber-100 shadow-lg">
           <span>{marketError || candleError}</span>
@@ -2427,6 +2445,7 @@ adjustWalletBalance(
           else if (panel === "performance") { setActivePanel("performance") }
           else if (panel === "history") { setActivePanel("history") }
           else if (panel === "journal") { setActivePanel("journal") }
+          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
           else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
   else { setActivePanel(panel as typeof activePanel) }
         }}
