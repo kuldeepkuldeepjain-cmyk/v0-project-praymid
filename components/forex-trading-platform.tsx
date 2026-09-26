@@ -1592,7 +1592,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPair?.symbol, timeframe])
 
-  // ── Live-tick last candle ──────────────────────────────────────────────────
+  // ── Live-tick last candle ────────────────────────────��─────────────────────
   useEffect(() => {
     if (!selectedPair || selectedPair.candles.length === 0) return
     const mid = (selectedPair.bid + selectedPair.ask) / 2
@@ -2477,7 +2477,25 @@ adjustWalletBalance(
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
     window.location.assign("/participant/login")
   }}
-        onSearch={(q) => { if (q) { setPairSearch(q); setShowPairSearch(true) } }}
+        onSearch={(q) => { setPairSearch(q); setShowPairSearch(Boolean(q)) }}
+        onSelectInstrument={(symbol) => {
+          const match = pairs.find(pair => pair.symbol === symbol)
+          if (match) {
+            setSelectedPair(match)
+            setPairSearch("")
+            setShowPairSearch(false)
+            setMobileTab("chart")
+            fetchCandles(match.symbol, timeframe)
+          }
+        }}
+        instruments={pairs.map(pair => ({
+          symbol: pair.symbol,
+          name: FULL_NAMES[pair.symbol] ?? pair.symbol,
+          category: PAIRS_CONFIG.find(config => config.symbol === pair.symbol)?.category ?? "Forex",
+          bid: pair.bid,
+          ask: pair.ask,
+          change: pair.change,
+        }))}
         notifications={toasts.slice(0, 5).map(t => ({
           id: String(t.id),
           type: t.type,
@@ -2528,7 +2546,7 @@ adjustWalletBalance(
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ════════════════════════�������══════════════════��════ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════════��════ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
