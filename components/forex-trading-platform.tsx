@@ -2611,12 +2611,25 @@ adjustWalletBalance(
         </button>
       </div>
 
-      {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
+      <nav className="reference-mobile-nav" aria-label="Terminal workspace panels">
+        {([
+          { id: "market", label: "Watchlist", icon: Activity },
+          { id: "chart", label: "Chart", icon: CandlestickChart },
+          { id: "order", label: "Order", icon: Zap },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button key={id} type="button" onClick={() => setMobileTab(id)} aria-current={mobileTab === id ? "page" : undefined} className={mobileTab === id ? "is-active" : ""}>
+            <Icon className="h-3.5 w-3.5" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport ? "none" : undefined }}>
+          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -2767,7 +2780,7 @@ adjustWalletBalance(
         </div>
 
         {/* ── CENTER: Chart ────���───────────���─���─���───────────────────────������─────── */}
-        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
+        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="chart-header shrink-0 flex flex-col px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2904,8 +2917,8 @@ adjustWalletBalance(
             </button>
           </div>
         ) : (
-        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13", display: "flex" }}>
+        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>

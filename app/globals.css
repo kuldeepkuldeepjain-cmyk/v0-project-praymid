@@ -1877,6 +1877,140 @@ button, a, [role="button"] {
   color: #dbeafe !important;
   border-color: #42718f !important;
 }
+
+/* Responsive institutional workspace: one coherent terminal at every viewport. */
+.reference-terminal {
+  min-width: 0;
+  max-width: 100vw;
+  min-height: 0;
+  overflow: hidden;
+}
+.reference-mobile-nav {
+  display: none;
+  align-items: stretch;
+  gap: 2px;
+  min-height: 44px;
+  padding: 4px;
+  background: #0d1927;
+  border-top: 1px solid #2b4054;
+  border-bottom: 1px solid #2b4054;
+}
+.reference-mobile-nav button {
+  min-width: 0;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #8094a8;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.reference-mobile-nav button.is-active {
+  color: #dff6ff;
+  background: #163049;
+  border-color: #3b7b9e;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 12px rgba(56,189,248,.08);
+}
+
+@media (max-width: 1199px) and (min-width: 1024px) {
+  .mt5-terminal .apple-terminal-market { width: 232px !important; }
+  .mt5-terminal .apple-terminal-order { width: 268px !important; }
+  .mt5-terminal .reference-metrics-header { overflow-x: auto; }
+}
+
+@media (max-width: 1023px) {
+  .reference-mobile-nav { display: flex; }
+  .reference-terminal {
+    height: min(100dvh, 900px) !important;
+    min-height: 520px;
+  }
+  .mt5-terminal .apple-terminal-grid {
+    min-height: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+  .mt5-terminal .apple-terminal-market,
+  .mt5-terminal .apple-terminal-chart-column,
+  .mt5-terminal .apple-terminal-order {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+  }
+  .mt5-terminal .apple-terminal-chart-column,
+  .mt5-terminal .apple-terminal-order,
+  .mt5-terminal .apple-terminal-market { flex: 1 1 auto; }
+  .mt5-terminal .apple-terminal-chart-column > div,
+  .mt5-terminal .apple-terminal-order > div,
+  .mt5-terminal .apple-terminal-market > div { min-width: 0; }
+  .mt5-terminal .chart-header { padding-inline: 10px; }
+  .mt5-terminal .chart-header-market { flex-wrap: wrap; row-gap: 5px; }
+  .mt5-terminal .reference-chart-trade-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mt5-terminal .apple-terminal-blotter { height: 190px !important; }
+}
+
+@media (max-width: 767px) {
+  .reference-terminal {
+    height: 100dvh !important;
+    min-height: 0;
+    border-top-width: 2px !important;
+  }
+  .mt5-terminal .reference-metrics-header {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-block: 4px;
+  }
+  .mt5-terminal .reference-metrics-header::-webkit-scrollbar { display: none; }
+  .mt5-terminal .reference-metric-card {
+    min-width: 112px;
+    padding: 6px 8px;
+  }
+  .mt5-terminal .reference-fund-rail {
+    min-height: 38px;
+    padding: 4px 8px;
+    gap: 4px;
+  }
+  .mt5-terminal .reference-fund-rail-label { display: none; }
+  .mt5-terminal .reference-fund-action {
+    min-height: 30px;
+    padding-inline: 8px;
+    font-size: 9px;
+  }
+  .mt5-terminal .reference-watchlist {
+    padding: 5px 8px;
+    gap: 5px;
+  }
+  .mt5-terminal .reference-watch-card {
+    min-width: 122px;
+    padding: 5px 7px;
+  }
+  .mt5-terminal .apple-terminal-chart-column .apple-trading-chart { min-height: 0; }
+  .mt5-terminal .chart-header { padding: 7px 8px; }
+  .mt5-terminal .chart-header-market { gap: 6px; }
+  .mt5-terminal .chart-timeframe-toolbar { overflow-x: auto; }
+  .mt5-terminal .chart-timeframes { flex-shrink: 0; }
+  .mt5-terminal .reference-chart-trade-dock { padding: 7px 8px; }
+  .mt5-terminal .reference-chart-trade-heading { font-size: 9px; }
+  .mt5-terminal .reference-quick-trade { min-height: 42px; padding: 6px 8px; }
+  .mt5-terminal .reference-quick-trade strong { font-size: 11px; }
+  .mt5-terminal .apple-terminal-order > div { padding-inline: 8px; }
+  .mt5-terminal .apple-terminal-blotter { height: 170px !important; }
+}
+
+@media (max-width: 380px) {
+  .reference-mobile-nav { min-height: 40px; }
+  .reference-mobile-nav button { font-size: 9px; letter-spacing: .08em; }
+  .mt5-terminal .reference-fund-action span { display: none; }
+  .mt5-terminal .reference-fund-action { min-width: 34px; justify-content: center; }
+}
 .mt5-terminal .apple-market-table-head,
 .mt5-terminal .apple-market-category-row,
 .mt5-terminal .apple-market-footer {
@@ -3762,6 +3896,17 @@ button, a, [role="button"] {
 }
 .payout-page .payout-queue span { color: #b9cedd; }
 .payout-page .payout-queue > div:last-child { background: #0b1c2c; border: 1px solid #3b718e; }
+/* Final terminal panel precedence: mobile tabs control the visible workspace panel. */
+@media (max-width: 1023px) {
+  .mt5-terminal.reference-terminal .reference-mobile-nav { display: flex !important; }
+  .mt5-terminal.reference-terminal .apple-terminal-market.hidden,
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column.hidden,
+  .mt5-terminal.reference-terminal .apple-terminal-order.hidden { display: none !important; }
+  .mt5-terminal.reference-terminal .apple-terminal-market:not(.hidden),
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column:not(.hidden),
+  .mt5-terminal.reference-terminal .apple-terminal-order:not(.hidden) { display: flex !important; }
+}
+
 .payout-page .payout-request-card,
 .payout-page .payout-history-card {
   border-color: #233e56;
