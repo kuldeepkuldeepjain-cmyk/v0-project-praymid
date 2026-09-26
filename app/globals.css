@@ -4016,9 +4016,57 @@ button, a, [role="button"] {
   .mt5-terminal.reference-terminal .apple-terminal-grid {
     grid-template-columns: minmax(198px, 21%) minmax(0, 1fr) minmax(248px, 29%);
   }
-  .mt5-terminal.reference-terminal .reference-fund-action { flex-basis: 126px; }
+  .mt5-terminal.reference-terminal .reference-fund-rail {
+    min-width: 0;
+    overflow: hidden;
+    gap: 5px;
+  }
+  .mt5-terminal.reference-terminal .reference-fund-action {
+    min-width: 0;
+    flex: 1 1 0 !important;
+    max-width: none;
+    padding-inline: 7px;
+  }
+  .mt5-terminal.reference-terminal .reference-fund-action span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 @media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .reference-fund-rail {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+    min-height: 50px;
+    padding: 6px 8px;
+    gap: 6px;
+    overflow: hidden;
+    position: relative;
+    z-index: 9;
+  }
+  .mt5-terminal.reference-terminal .reference-fund-rail-label { display: none !important; }
+  .mt5-terminal.reference-terminal .reference-fund-action {
+    display: flex !important;
+    width: 100%;
+    min-width: 0 !important;
+    max-width: none !important;
+    flex: none !important;
+    min-height: 34px;
+    padding: 0 5px !important;
+    gap: 4px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .mt5-terminal.reference-terminal .reference-fund-action svg { flex: 0 0 auto; }
+  .mt5-terminal.reference-terminal .reference-fund-action span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .mt5-terminal.reference-terminal .apple-terminal-grid { display: flex !important; }
   .mt5-terminal.reference-terminal .reference-metrics-header {
     grid-template-columns: repeat(3, minmax(0, 1fr));
