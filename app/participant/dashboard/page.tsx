@@ -2427,21 +2427,6 @@ export default function DashboardHome() {
         </nav>
       </footer>
 
-      {/* Floating WhatsApp Support Button */}
-      <a
-        href="https://wa.me/995574450590"
-        target="_blank"
-        rel="noopener noreferrer"
-        title="WhatsApp Support: +995 574 450 590"
-        className="fixed bottom-40 right-6 z-50 h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-2xl hover:shadow-green-500/40 flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 group"
-      >
-        <MessageCircle className="h-6 w-6 text-white" />
-        {/* Tooltip */}
-        <span className="absolute right-16 bg-slate-900 text-white text-xs font-medium px-3 py-2 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-lg">
-          <span className="block">WhatsApp Support</span>
-          <span className="block text-green-400">+995 574 450 590</span>
-        </span>
-      </a>
 
       {/* Floating AI Chat Button */}
       <Button

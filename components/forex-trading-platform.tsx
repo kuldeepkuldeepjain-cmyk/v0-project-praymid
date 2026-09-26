@@ -2454,6 +2454,7 @@ adjustWalletBalance(
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
   onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
   onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
+  onOpenSupport={() => { window.open("https://wa.me/995574450590", "_blank", "noopener,noreferrer") }}
   onLogout={async () => {
     clearParticipantAuth()
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
@@ -3218,7 +3219,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═══════���═════════════════════��═����═══��════════════════ */}
+      {/* ══ BOTTOM BLOTTER ═══════���═════════════════════��═����═══�����═══════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>

@@ -10,6 +10,7 @@ import {
   Clock,
   Globe,
   Layers,
+  LifeBuoy,
   LineChart,
   LogOut,
   Menu,
@@ -49,6 +50,7 @@ interface ForexHeaderProps {
   onOpenTransfer: () => void
   onOpenSettings: () => void
   onOpenProfile: () => void
+  onOpenSupport: () => void
   onLogout: () => void
   onSearch: (query: string) => void
   notifications: Array<{ id: string; type: string; title: string; message: string; time: string; read: boolean }>
@@ -97,6 +99,7 @@ export function ForexHeader({
   onOpenTransfer,
   onOpenSettings,
   onOpenProfile,
+  onOpenSupport,
   onLogout,
   onSearch,
   notifications,
@@ -212,7 +215,7 @@ export function ForexHeader({
             <span className="hidden max-w-24 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountType} · 1:{leverage}</span></span>
             <ChevronDown className="h-3 w-3 text-slate-500" />
           </button>
-          {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-500">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
+          {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-500">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSupport() }} className="terminal-menu-item"><LifeBuoy className="h-3.5 w-3.5 text-emerald-300" />WhatsApp Support</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
         </div>
       </div>
 
