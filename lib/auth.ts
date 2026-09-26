@@ -15,7 +15,7 @@ export function getAdminToken(): string | null {
 export function setAdminAuth(
   token: string,
   email: string,
-  role: "admin" | "super_admin" = "super_admin",
+  role: "admin" | "super_admin" | "customer_care" = "super_admin",
   permissions?: {
     canApproveWallets: boolean
     canViewAllActivity: boolean
@@ -201,7 +201,9 @@ export function getUserRole(): UserRole | null {
 
   if (isAdminAuthenticated()) {
     const role = localStorage.getItem("admin_role")
-    return role === "super_admin" ? "super_admin" : "admin"
+    if (role === "super_admin") return "super_admin"
+    if (role === "customer_care") return "customer_care"
+    return "admin"
   }
 
   if (isParticipantAuthenticated()) {

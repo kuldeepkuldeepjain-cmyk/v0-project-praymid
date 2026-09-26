@@ -10,11 +10,15 @@ function getAdminCredentials() {
   const configuredSuperAdmin = process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD
     ? [{ email: process.env.SUPER_ADMIN_EMAIL.trim().toLowerCase(), password: process.env.SUPER_ADMIN_PASSWORD, role: "super_admin" }]
     : []
+  const configuredCustomerCare = process.env.CUSTOMER_CARE_EMAIL && process.env.CUSTOMER_CARE_PASSWORD
+    ? [{ email: process.env.CUSTOMER_CARE_EMAIL.trim().toLowerCase(), password: process.env.CUSTOMER_CARE_PASSWORD, role: "customer_care" }]
+    : []
 
   return [
     { email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD, role: "admin" },
     ...configuredAdmin,
     ...configuredSuperAdmin,
+    ...configuredCustomerCare,
   ]
 }
 

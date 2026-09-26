@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
           body: JSON.stringify({
             email,
             password,
-            loginType: data.role === "super_admin" ? "superadmin" : "admin",
+            loginType: data.role === "super_admin" ? "superadmin" : data.role === "customer_care" ? "customer-care" : "admin",
           }),
         })
 
@@ -50,7 +50,7 @@ export default function AdminLoginPage() {
 
         if (loginData.success) {
           setAdminAuth(email, email, loginData.role, loginData.permissions)
-          router.push("/finalflow/dashboard")
+          router.push(loginData.role === "customer_care" ? "/customer-care/dashboard" : "/finalflow/dashboard")
         } else {
           setError(loginData.error || "Login failed. Please try again.")
         }

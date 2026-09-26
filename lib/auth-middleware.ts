@@ -34,7 +34,7 @@ export async function requireParticipantSession(
 export async function requireAdminSession(
   req?: NextRequest,
   requireSuperAdmin = false,
-): Promise<{ ok: true; email: string; role: "admin" } | { ok: false; response: NextResponse }> {
+): Promise<{ ok: true; email: string; role: "admin" | "super_admin" | "customer_care" } | { ok: false; response: NextResponse }> {
   // Try X-Admin-Token header first (localStorage token sent by admin frontend)
   if (req) {
     const token = req.headers.get("X-Admin-Token")
@@ -52,8 +52,11 @@ export async function requireAdminSession(
         response: NextResponse.json({ error: "Unauthorized — admin login required" }, { status: 401 }),
       }
     }
+    if (requireSuperAdmin && session.role !== "super_admin") {
+      return { ok: false, response: NextResponse.json({ error: "Super admin access required" }, { status: 403 }) }
+    }
     void recordSecurityEvent({ eventType: "admin_request", actorType: "admin", actorEmail: session.email, request: req, resourceType: "api_route", resourceId: req?.nextUrl.pathname || "unknown" })
-    return { ok: true, email: session.email, role: "admin" }
+    return { ok: true, email: session.email, role: session.role || "admin" }
   } catch {
     return {
       ok: false,

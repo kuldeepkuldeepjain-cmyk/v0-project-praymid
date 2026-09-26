@@ -14,7 +14,7 @@ export interface ParticipantSessionData {
 
 export interface AdminSessionData {
   email: string
-  role: "admin" | "super_admin"
+  role: "admin" | "super_admin" | "customer_care"
 }
 
 export type SessionData = (ParticipantSessionData | AdminSessionData) & {

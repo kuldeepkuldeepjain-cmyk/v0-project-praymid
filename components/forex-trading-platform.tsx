@@ -742,6 +742,7 @@ function SupportCenterPanel() {
   const [ticketType, setTicketType] = useState("Account-specific support")
   const [ticketMessage, setTicketMessage] = useState("")
   const [ticketSent, setTicketSent] = useState(false)
+  const [ticketSubmitting, setTicketSubmitting] = useState(false)
   const [expandedFaq, setExpandedFaq] = useState<string | null>(null)
 
   const supportTopics = [
@@ -756,10 +757,27 @@ function SupportCenterPanel() {
     { question: "Where can I see my account rules?", answer: "Your active challenge or funded-account rules are available from Account Overview. Support can also confirm any account-specific limits before you trade." },
   ]
 
-  const submitTicket = () => {
-    if (!ticketMessage.trim()) return
-    setTicketSent(true)
-    setTicketMessage("")
+  const submitTicket = async () => {
+    if (!ticketMessage.trim() || ticketSubmitting) return
+    setTicketSubmitting(true)
+    try {
+      const response = await participantFetch("/api/support/tickets", {
+        method: "POST",
+        body: JSON.stringify({
+          participantName: localStorage.getItem("participant_name") || undefined,
+          subject: ticketType,
+          category: ticketType,
+          message: ticketMessage,
+        }),
+      })
+      if (!response.ok) throw new Error("Ticket submission failed")
+      setTicketSent(true)
+      setTicketMessage("")
+    } catch (error) {
+      console.error("[v0] Support ticket submission failed:", error)
+    } finally {
+      setTicketSubmitting(false)
+    }
   }
 
   return (
@@ -785,7 +803,7 @@ function SupportCenterPanel() {
 
       {view === "chat" && <div className="mt-3 rounded-xl p-3" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><div className="flex items-center gap-2"><div className="flex size-8 items-center justify-center rounded-full bg-cyan-400/10"><Headphones className="size-4 text-cyan-300" /></div><div><p className="text-[10px] font-black text-slate-200">Support specialist online</p><p className="text-[8px] text-emerald-300">Available 24/7 · replies in under 2 minutes</p></div></div><div className="mt-3 rounded-lg p-2.5 text-[9px] leading-relaxed text-slate-400" style={{ background: "#111d2e" }}>Hello. Tell us what you need help with and we&apos;ll connect you with the right specialist.</div><button type="button" onClick={() => setView("ticket")} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[9px] font-black uppercase tracking-wider text-cyan-200" style={{ background: "rgba(34,211,238,.1)", border: "1px solid rgba(34,211,238,.25)" }}><Send className="size-3" />Start conversation</button></div>}
 
-      {view === "ticket" && <div className="mt-3 rounded-xl p-3" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-200">Create support ticket</p><p className="mt-1 text-[8px] text-slate-500">Your account context will be attached securely.</p></div><Ticket className="size-4 text-amber-300" /></div>{ticketSent ? <div className="mt-4 rounded-lg border border-emerald-400/25 bg-emerald-400/10 p-3 text-[9px] leading-relaxed text-emerald-200">Ticket submitted successfully. A support specialist will respond in the ticket system and live chat.</div> : <><label className="mt-4 block text-[8px] font-black uppercase tracking-wider text-slate-500">Category<select value={ticketType} onChange={e => setTicketType(e.target.value)} className="mt-1 w-full rounded-lg px-2 py-2 text-[10px] text-slate-200 outline-none" style={{ background: "#111d2e", border: "1px solid #243751" }}><option>Account-specific support</option><option>Payout support</option><option>Technical support</option><option>MT5 troubleshooting</option></select></label><label className="mt-3 block text-[8px] font-black uppercase tracking-wider text-slate-500">What can we help with?<textarea value={ticketMessage} onChange={e => setTicketMessage(e.target.value)} placeholder="Describe the issue or question..." rows={3} className="mt-1 w-full resize-none rounded-lg px-2 py-2 text-[10px] text-slate-200 outline-none placeholder:text-slate-600" style={{ background: "#111d2e", border: "1px solid #243751" }} /></label><button type="button" onClick={submitTicket} disabled={!ticketMessage.trim()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[9px] font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40" style={{ background: "#0891b2", color: "#ecfeff" }}><Send className="size-3" />Submit ticket</button></>}</div>}
+      {view === "ticket" && <div className="mt-3 rounded-xl p-3" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><div className="flex items-center justify-between"><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-200">Create support ticket</p><p className="mt-1 text-[8px] text-slate-500">Your account context will be attached securely.</p></div><Ticket className="size-4 text-amber-300" /></div>{ticketSent ? <div className="mt-4 rounded-lg border border-emerald-400/25 bg-emerald-400/10 p-3 text-[9px] leading-relaxed text-emerald-200">Ticket submitted successfully. A support specialist will respond in the ticket system and live chat.</div> : <><label className="mt-4 block text-[8px] font-black uppercase tracking-wider text-slate-500">Category<select value={ticketType} onChange={e => setTicketType(e.target.value)} className="mt-1 w-full rounded-lg px-2 py-2 text-[10px] text-slate-200 outline-none" style={{ background: "#111d2e", border: "1px solid #243751" }}><option>Account-specific support</option><option>Payout support</option><option>Technical support</option><option>MT5 troubleshooting</option></select></label><label className="mt-3 block text-[8px] font-black uppercase tracking-wider text-slate-500">What can we help with?<textarea value={ticketMessage} onChange={e => setTicketMessage(e.target.value)} placeholder="Describe the issue or question..." rows={3} className="mt-1 w-full resize-none rounded-lg px-2 py-2 text-[10px] text-slate-200 outline-none placeholder:text-slate-600" style={{ background: "#111d2e", border: "1px solid #243751" }} /></label><button type="button" onClick={submitTicket} disabled={!ticketMessage.trim()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-[9px] font-black uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-40" style={{ background: "#0891b2", color: "#ecfeff" }}><Send className="size-3" />{ticketSubmitting ? "Submitting..." : "Submit ticket"}</button></>}</div>}
 
       {view === "faq" && <div className="mt-3 flex flex-col gap-1.5">{faqs.map(faq => <div key={faq.question} className="rounded-xl" style={{ background: "#0a1321", border: "1px solid #1a2b44" }}><button type="button" onClick={() => setExpandedFaq(expandedFaq === faq.question ? null : faq.question)} className="flex w-full items-center justify-between gap-2 p-3 text-left"><span className="text-[9px] font-bold text-slate-200">{faq.question}</span><ChevronDown className={`size-3 shrink-0 text-slate-500 transition-transform ${expandedFaq === faq.question ? "rotate-180" : ""}`} /></button>{expandedFaq === faq.question && <p className="border-t border-white/5 px-3 pb-3 pt-2 text-[9px] leading-relaxed text-slate-400">{faq.answer}</p>}</div>)}</div>}
     </div>
@@ -1592,7 +1610,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPair?.symbol, timeframe])
 
-  // ── Live-tick last candle ────────────────────────────���─────────────────────
+  // ── Live-tick last candle ────────────────────────────����─────────────────────
   useEffect(() => {
     if (!selectedPair || selectedPair.candles.length === 0) return
     const mid = (selectedPair.bid + selectedPair.ask) / 2

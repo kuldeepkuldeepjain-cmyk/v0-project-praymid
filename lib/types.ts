@@ -61,7 +61,7 @@ export type HelpTransaction = {
   created_at: string
 }
 
-export type UserRole = "admin" | "participant" | "super_admin"
+export type UserRole = "admin" | "participant" | "super_admin" | "customer_care"
 
 export type AdminUser = {
   id: string
