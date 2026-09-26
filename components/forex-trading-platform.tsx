@@ -862,7 +862,7 @@ function ModifyTradeModal({
   trades: OpenTrade[]
   pairs: ForexPair[]
   onClose: () => void
-  onSave: (tradeId: string, sl: number | null, tp: number | null, trailingPips: number | null) => void
+  onSave: (tradeId: string, sl: number | null, tp: number | null, trailingPips: number | null) => boolean
 }) {
   const trade = trades.find(t => t.id === target.tradeId)
   const pair = pairs.find(p => p.symbol === trade?.pair)
@@ -968,13 +968,13 @@ function ModifyTradeModal({
           </button>
           <button
             onClick={() => {
-              onSave(
+              const saved = onSave(
                 target.tradeId,
                 sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null,
                 tp && !isNaN(parseFloat(tp)) ? parseFloat(tp) : null,
                 trailingPips && parseFloat(trailingPips) > 0 ? parseFloat(trailingPips) : null,
               )
-              onClose()
+              if (saved) onClose()
             }}
             className="flex-1 py-2.5 rounded-xl font-black text-xs transition-all active:scale-95 flex items-center justify-center gap-1.5"
             style={{ background: "linear-gradient(135deg,#1e40af,#2563eb)", color: "#fff", boxShadow: "0 4px 16px rgba(37,99,235,0.3)" }}>
@@ -2160,11 +2160,37 @@ adjustWalletBalance(
 
   // ── Modify trade ───────────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
-    setOpenTrades(prev => prev.map(t =>
-      t.id === tradeId ? { ...t, sl: newSl, tp: newTp, trailingStopPips: newTrail } : t
-    ))
+    const trade = openTradesRef.current.find(item => item.id === tradeId)
+    const pair = trade ? pairsRef.current.find(item => item.symbol === trade.pair) : null
+    if (!trade || !pair) {
+      showToast("error", "Position is no longer available")
+      return false
+    }
+
+    const referencePrice = trade.openPrice
+    if (newSl !== null && (!Number.isFinite(newSl) || newSl <= 0)) {
+      showToast("error", "Enter a valid Stop Loss price")
+      return false
+    }
+    if (newTp !== null && (!Number.isFinite(newTp) || newTp <= 0)) {
+      showToast("error", "Enter a valid Take Profit price")
+      return false
+    }
+    if (newSl !== null && (trade.direction === "BUY" ? newSl >= referencePrice : newSl <= referencePrice)) {
+      showToast("error", `SL must be ${trade.direction === "BUY" ? "below" : "above"} entry price`)
+      return false
+    }
+    if (newTp !== null && (trade.direction === "BUY" ? newTp <= referencePrice : newTp >= referencePrice)) {
+      showToast("error", `TP must be ${trade.direction === "BUY" ? "above" : "below"} entry price`)
+      return false
+    }
+
+    const updatedTrade = { ...trade, sl: newSl, tp: newTp, trailingStopPips: newTrail }
+    openTradesRef.current = openTradesRef.current.map(item => item.id === tradeId ? updatedTrade : item)
+    setOpenTrades(prev => prev.map(item => item.id === tradeId ? updatedTrade : item))
     persistModify(tradeId, newSl, newTp, newTrail)
-    showToast("info", "Position updated")
+    showToast("success", `${trade.pair} position updated with ${newSl !== null ? "SL" : "no SL"} and ${newTp !== null ? "TP" : "no TP"}`)
+    return true
   }, [showToast, persistModify])
 
   // ── Price Alert checker (runs each tick) ��────────────────────────────────
@@ -2585,12 +2611,25 @@ adjustWalletBalance(
         </button>
       </div>
 
-      {/* ══ MAIN 3-COLUMN GRID ��═══════════════════════════════════════════════ */}
+      <nav className="reference-mobile-nav" aria-label="Terminal workspace panels">
+        {([
+          { id: "market", label: "Watchlist", icon: Activity },
+          { id: "chart", label: "Chart", icon: CandlestickChart },
+          { id: "order", label: "Order", icon: Zap },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button key={id} type="button" onClick={() => setMobileTab(id)} aria-current={mobileTab === id ? "page" : undefined} className={mobileTab === id ? "is-active" : ""}>
+            <Icon className="h-3.5 w-3.5" />
+            <span>{label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13", display: isCompactViewport ? "none" : undefined }}>
+          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -2741,7 +2780,7 @@ adjustWalletBalance(
         </div>
 
         {/* ── CENTER: Chart ────���───────────���─���─���───────────────────────������─────── */}
-        <div className={`apple-terminal-chart-column flex flex-col min-w-0 flex-1 transition-all duration-200 ${chartExpanded ? "is-chart-expanded" : ""}`} style={{ display: "flex" }}>
+        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="chart-header shrink-0 flex flex-col px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
@@ -2878,8 +2917,8 @@ adjustWalletBalance(
             </button>
           </div>
         ) : (
-        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13", display: "flex" }}>
+        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3349,7 +3388,7 @@ adjustWalletBalance(
                           onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
                           className="flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
                           style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
-                          <Edit3 className="h-3 w-3" /> Modify
+                          <Edit3 className="h-3 w-3" /> Edit TP / SL
                         </button>
                         <button
                           onClick={() => closeTrade(trade.id)}
