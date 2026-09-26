@@ -2428,7 +2428,6 @@ adjustWalletBalance(
           else if (panel === "history") { setActivePanel("history") }
           else if (panel === "journal") { setActivePanel("journal") }
           else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
-  else if (panel === "support") { setActivePanel("support") }
   else { setActivePanel(panel as typeof activePanel) }
         }}
         onToggleFullscreen={() => {
@@ -2453,8 +2452,7 @@ adjustWalletBalance(
         onOpenWithdraw={() => { window.location.assign("/participant/dashboard/payout") }}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
   onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
-  onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
-  onOpenSupport={() => { window.open("https://wa.me/995574450590", "_blank", "noopener,noreferrer") }}
+        onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
   onLogout={async () => {
     clearParticipantAuth()
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
@@ -3219,7 +3217,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ═══════���═════════════════════��═����═══�����═══════════════ */}
+      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����═══════════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
