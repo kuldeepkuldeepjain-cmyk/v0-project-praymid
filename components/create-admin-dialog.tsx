@@ -31,6 +31,7 @@ export function CreateAdminDialog({ triggerLabel = "Create User", defaultRole = 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [createdPassword, setCreatedPassword] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -51,6 +52,7 @@ export function CreateAdminDialog({ triggerLabel = "Create User", defaultRole = 
         throw new Error(data.error || "Failed to create user")
       }
 
+      setCreatedPassword(data.user?.password ?? null)
       setSuccess(true)
       setTimeout(() => {
         setOpen(false)
@@ -58,6 +60,7 @@ export function CreateAdminDialog({ triggerLabel = "Create User", defaultRole = 
         setName("")
         setRole(defaultRole)
         setSuccess(false)
+        setCreatedPassword(null)
       }, 2000)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create user")
@@ -127,7 +130,10 @@ export function CreateAdminDialog({ triggerLabel = "Create User", defaultRole = 
           {success && (
             <Alert className="bg-green-50 dark:bg-green-950 text-green-900 dark:text-green-100 border-green-200 dark:border-green-800">
               <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>User created successfully!</AlertDescription>
+              <AlertDescription>
+                User created successfully!
+                {createdPassword && <span className="mt-1 block font-mono text-xs">Default password: {createdPassword}</span>}
+              </AlertDescription>
             </Alert>
           )}
           <div className="flex gap-2 justify-end">

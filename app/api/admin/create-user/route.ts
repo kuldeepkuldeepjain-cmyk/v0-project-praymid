@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
+const CUSTOMER_CARE_DEFAULT_PASSWORD = "officebpl"
+
 const allUsers: Array<{
   email: string
   name: string
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
       email,
       name,
       role,
-      password: "12345",
+      password: role === "customer_care" ? CUSTOMER_CARE_DEFAULT_PASSWORD : "12345",
       walletAddress,
       createdAt: new Date().toISOString(),
     }
@@ -62,7 +64,7 @@ export async function POST(request: NextRequest) {
         email,
         name,
         role,
-        password: "12345", // For demo purposes
+        password: newUser.password,
         walletAddress,
         createdAt: newUser.createdAt,
       },
