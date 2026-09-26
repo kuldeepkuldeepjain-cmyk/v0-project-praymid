@@ -108,7 +108,7 @@ export default function LandingPage() {
             <a href="#security" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Security</a>
           </div>
 
-          <div className="hidden md:flex gap-3">
+          <div className="hidden md:flex items-center gap-3">
             <button
               onClick={() => router.push("/participant/login")}
               className="px-5 py-2 rounded-lg border border-cyan-500/60 bg-slate-900/80 text-cyan-300 font-semibold text-sm hover:bg-cyan-500/10 hover:border-cyan-400 hover:text-white transition-all duration-200 active:scale-95"

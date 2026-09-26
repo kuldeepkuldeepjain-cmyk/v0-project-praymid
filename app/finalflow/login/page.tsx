@@ -157,7 +157,10 @@ export default function AdminLoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-white/60">Authorized Administrators only</p>
+        <div className="space-y-2 text-center">
+          <p className="text-xs text-white/60">Authorized administrators and Customer Care staff only</p>
+          <p className="text-xs text-white/70">Customer Care staff can use this same secure login.</p>
+        </div>
       </div>
     </div>
   )
