@@ -67,7 +67,7 @@ export type AdminUser = {
   id: string
   email: string
   name: string
-  role: "admin" | "super_admin"
+  role: "admin" | "super_admin" | "customer_care"
   created_at: string
   last_login?: string
   permissions?: {
