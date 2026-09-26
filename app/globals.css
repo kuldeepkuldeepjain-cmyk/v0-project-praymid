@@ -2623,8 +2623,6 @@ button, a, [role="button"] {
       width: 100%;
   }
 }
-
-
   .animate-\[slide-right_3s_ease-out_forwards\] {
     animation: slide-right 3s ease-out forwards;
   }
@@ -3248,8 +3246,6 @@ button, a, [role="button"] {
   .reference-terminal .reference-statusbar { height: 36px; padding-inline: 8px; gap: 8px; font-size: 9px; }
   .reference-terminal .reference-statusbar strong { padding: 4px 6px; font-size: 9px; }
 }
-
-
 /* Professional terminal workspace: a deliberate hierarchy of market context, execution, charting, and activity. */
 .reference-terminal .reference-terminal-brand-mark {
   border-radius: 5px;
@@ -4333,5 +4329,161 @@ button, a, [role="button"] {
     padding: 5px 6px 5px 8px;
   }
   .mt5-terminal.reference-terminal .reference-metric-card span { font-size: 6px; letter-spacing: .1em; }
-  .mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 10px; }
+.mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 10px; }
+}
+
+/* Final terminal layout contract: every row owns its space and clips only its own content. */
+.mt5-terminal.reference-terminal,
+.mt5-terminal.reference-terminal *,
+.mt5-terminal.reference-terminal *::before,
+.mt5-terminal.reference-terminal *::after {
+  box-sizing: border-box;
+}
+.mt5-terminal.reference-terminal {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal > .apple-terminal-topbar,
+.mt5-terminal.reference-terminal > .reference-metrics,
+.mt5-terminal.reference-terminal > .reference-fund-rail,
+.mt5-terminal.reference-terminal > .reference-watchlist,
+.mt5-terminal.reference-terminal > .reference-mobile-nav,
+.mt5-terminal.reference-terminal > .apple-terminal-blotter,
+.mt5-terminal.reference-terminal > .apple-terminal-blotter-tabs {
+  flex: 0 0 auto;
+  min-width: 0;
+  max-width: 100%;
+}
+.mt5-terminal.reference-terminal > .reference-metrics {
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal > .reference-fund-rail {
+  display: grid !important;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  min-width: 0;
+  width: 100%;
+  min-height: 50px;
+  padding: 6px 12px;
+  gap: 7px;
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+}
+.mt5-terminal.reference-terminal .reference-fund-rail-label {
+  display: flex;
+  align-items: center;
+  min-width: 54px;
+  white-space: nowrap;
+}
+.mt5-terminal.reference-terminal .reference-fund-action {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 36px;
+  padding: 0 8px !important;
+  gap: 5px;
+  overflow: hidden;
+  flex: none !important;
+  white-space: nowrap;
+}
+.mt5-terminal.reference-terminal .reference-fund-action svg {
+  flex: 0 0 auto;
+}
+.mt5-terminal.reference-terminal .reference-fund-action span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mt5-terminal.reference-terminal > .reference-watchlist {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.mt5-terminal.reference-terminal > .reference-watchlist > * {
+  flex: 0 0 auto;
+}
+.mt5-terminal.reference-terminal > .apple-terminal-grid {
+  display: flex !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market,
+.mt5-terminal.reference-terminal .apple-terminal-chart-column,
+.mt5-terminal.reference-terminal .apple-terminal-order {
+  min-width: 0 !important;
+  min-height: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .apple-terminal-market > *,
+.mt5-terminal.reference-terminal .apple-terminal-chart-column > *,
+.mt5-terminal.reference-terminal .apple-terminal-order > * {
+  min-width: 0;
+  max-width: 100%;
+}
+.mt5-terminal.reference-terminal .reference-metrics-header {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .reference-metric-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.mt5-terminal.reference-terminal .reference-metric-card strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1100px) and (min-width: 768px) {
+  .mt5-terminal.reference-terminal > .reference-fund-rail {
+    grid-template-columns: 54px repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding-inline: 8px;
+  }
+  .mt5-terminal.reference-terminal .reference-fund-action { padding-inline: 5px !important; }
+}
+
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal > .reference-fund-rail {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-height: 50px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .mt5-terminal.reference-terminal .reference-fund-rail-label { display: none !important; }
+  .mt5-terminal.reference-terminal > .reference-metrics { overflow-x: auto; }
+  .mt5-terminal.reference-terminal .reference-metrics-header {
+    width: max-content;
+    min-width: 100%;
+    grid-template-columns: repeat(5, minmax(98px, 1fr));
+  }
+  .mt5-terminal.reference-terminal > .apple-terminal-grid {
+    position: relative;
+    overflow: hidden;
+  }
+  .mt5-terminal.reference-terminal .apple-terminal-market,
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column,
+  .mt5-terminal.reference-terminal .apple-terminal-order {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+  }
 }
