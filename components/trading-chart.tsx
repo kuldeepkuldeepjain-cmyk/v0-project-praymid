@@ -711,8 +711,8 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-1 px-2 shrink-0 overflow-x-auto"
-        style={{ height: 36, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "#070c18", flexShrink: 0 }}
+        className="flex flex-wrap items-center gap-1 px-2 py-1 shrink-0"
+        style={{ minHeight: 36, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "#070c18", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
         {([
