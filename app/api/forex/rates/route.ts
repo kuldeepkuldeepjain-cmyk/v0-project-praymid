@@ -113,33 +113,48 @@ type YahooQuote = {
   regularMarketDayLow?: number
 }
 
+// Yahoo's v7/finance/quote batch endpoint now requires an authenticated
+// session (crumb + cookie) and returns 401 Unauthorized without one — which
+// was silently failing every request and made the whole feed fall back to
+// fake seeded/jittered prices instead of real market data. The v8 chart
+// endpoint (already used for candles) still works unauthenticated and
+// exposes the same live fields via its `meta` object, so fetch quotes from
+// there instead, per symbol, with bounded concurrency.
+const QUOTE_CONCURRENCY = 12
+
 async function fetchBatchedQuotes(ySymbols: string[]): Promise<Map<string, YahooQuote>> {
   const out = new Map<string, YahooQuote>()
-  // Yahoo's batch quote endpoint caps out reliably around ~50 symbols per
-  // request, so chunk the (currently ~70) instrument list just in case.
-  const chunks: string[][] = []
-  for (let i = 0; i < ySymbols.length; i += 50) chunks.push(ySymbols.slice(i, i + 50))
 
-  await Promise.all(
-    chunks.map(async (chunk) => {
-      try {
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${chunk.map(encodeURIComponent).join(",")}`
-        const res = await fetch(url, {
-          headers: { "User-Agent": "Mozilla/5.0 (compatible; ForexApp/1.0)" },
-          next: { revalidate: 0 },
-          signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await res.json()
-        const results: YahooQuote[] & { symbol?: string }[] = json?.quoteResponse?.result ?? []
-        for (const r of results as (YahooQuote & { symbol?: string })[]) {
-          if (r?.symbol) out.set(r.symbol, r)
-        }
-      } catch {
-        // Missing symbols fall back to the seed price in the caller
-      }
-    }),
-  )
+  async function fetchOne(ySym: string) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySym)}?interval=1m&range=1d`
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; ForexApp/1.0)" },
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      })
+      if (!res.ok) return
+      const json = await res.json()
+      const meta = json?.chart?.result?.[0]?.meta
+      if (!meta?.regularMarketPrice) return
+      out.set(ySym, {
+        regularMarketPrice: meta.regularMarketPrice,
+        regularMarketOpen: meta.chartPreviousClose ?? meta.previousClose,
+        regularMarketPreviousClose: meta.previousClose,
+        regularMarketDayHigh: meta.regularMarketDayHigh,
+        regularMarketDayLow: meta.regularMarketDayLow,
+      })
+    } catch {
+      // Missing symbols fall back to the seed price in the caller
+    }
+  }
+
+  // Bounded-concurrency pool: process the symbol list a slice at a time so
+  // we don't fire ~70 simultaneous requests at Yahoo (risking throttling)
+  // while still being far faster than doing them one at a time.
+  for (let i = 0; i < ySymbols.length; i += QUOTE_CONCURRENCY) {
+    await Promise.all(ySymbols.slice(i, i + QUOTE_CONCURRENCY).map(fetchOne))
+  }
   return out
 }
 
