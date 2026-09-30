@@ -1598,7 +1598,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�����������────
+  // ── Re-fetch candles when pair/TF changes ──────────────────���──────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2911,28 +2911,60 @@ adjustWalletBalance(
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
                 <span className="chart-timeframe-label">Chart interval</span>
-                <div className="chart-timeframes flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-0.5 p-0.5"
+                    style={{
+                      borderRadius: 8,
+                      background: "linear-gradient(180deg, #0a0f1a 0%, #060a12 100%)",
+                      border: "1px solid #1e2d45",
+                      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => {
+                      const active = timeframe === tf
+                      return (
+                        <button
+                          key={tf}
+                          type="button"
+                          onClick={() => setTimeframe(tf)}
+                          aria-pressed={active}
+                          className="relative px-2.5 py-1 text-[10px] font-black tracking-wider transition-all duration-150"
+                          style={{
+                            borderRadius: 6,
+                            background: active
+                              ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)"
+                              : "transparent",
+                            color: active ? "#031015" : "#8296ab",
+                            boxShadow: active
+                              ? "0 2px 6px rgba(34,211,238,0.4), inset 0 1px 0 rgba(255,255,255,0.3)"
+                              : "none",
+                          }}
+                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#e2f4fa" }}
+                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#8296ab" }}
+                        >
+                          {tf}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="w-px h-5" style={{ background: "#1e2d45" }} />
                   <button
                     type="button"
                     onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
                     aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
                     title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
-                    className="chart-layout-toggle p-1 transition-colors"
-                    style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
+                    className="p-1.5 transition-all duration-150"
+                    style={{
+                      borderRadius: 6,
+                      background: chartLayout === "grid" ? "linear-gradient(180deg, rgba(168,85,247,0.25), rgba(168,85,247,0.1))" : "transparent",
+                      border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.4)" : "1px solid transparent",
+                      boxShadow: chartLayout === "grid" ? "0 0 8px rgba(168,85,247,0.25)" : "none",
+                    }}
                   >
                     {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
                   </button>
-                  {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
-                  <button key={tf} onClick={() => setTimeframe(tf)}
-                    className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
-                    style={{ borderRadius: 3,
-                      background: timeframe === tf ? "rgba(34,211,238,0.12)" : "transparent",
-                      color: timeframe === tf ? "#22d3ee" : "#9ab0c0",
-                      border: timeframe === tf ? "1px solid rgba(34,211,238,0.25)" : "1px solid transparent" }}>
-                    {tf}
-                  </button>
-                ))}
-                {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-1" />}
+                  {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                 </div>
               </div>
             </div>
