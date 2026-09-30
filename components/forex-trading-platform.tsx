@@ -11,6 +11,7 @@ import {
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket,
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
+  ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -1597,7 +1598,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────────────────────���������────
+  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2848,13 +2849,21 @@ adjustWalletBalance(
             )}
           </div>
 
-          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid rgba(29,42,58,0.08)", background: "rgba(255,255,255,0.58)" }}>
-            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}instruments</span>
-            <div className="flex items-center gap-1">
+          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2 gap-2" style={{ borderTop: "1px solid rgba(29,42,58,0.1)", background: "linear-gradient(180deg, rgba(248,250,252,0.7), rgba(241,245,249,0.9))" }}>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#10b981", animation: "ping 2s cubic-bezier(0,0,0.2,1) infinite" }} />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: "#10b981" }} />
+              </span>
+              <span className="text-[9px] font-black tracking-wider truncate" style={{ color: "#1e3a5f" }}>
+                {visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}live instruments
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {(["Forex", "Commodities", "Crypto"] as AssetCategory[]).map(cat => {
                 const count = pairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat).length
                 return (
-                  <span key={cat} className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                  <span key={cat} className="text-[8px] font-black px-1.5 py-0.5 rounded-md"
                     style={{ background: CATEGORY_COLOR[cat].bg, color: CATEGORY_COLOR[cat].text, border: `1px solid ${CATEGORY_COLOR[cat].border}` }}>
                     {cat === "Commodities" ? "Au/Ag" : cat === "Forex" ? "FX" : "C"} {count}
                   </span>
@@ -3362,26 +3371,26 @@ adjustWalletBalance(
             ) : (
               <div className="flex flex-col h-full">
               {/* Positions live summary bar */}
-              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto" style={{ background: "linear-gradient(180deg,#060a13,#04070d)", borderBottom: "1px solid #1a2640" }}>
                 {[
-                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.09)" : "rgba(248,113,113,0.09)" },
                   { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
                   { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
                   { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
                   { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
                   { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-                    <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-8 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#4d6a95" }}>{item.label}</span>
+                    <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
                   </div>
                 ))}
                 {/* Close all button */}
                 <button
                   onClick={() => { openTrades.forEach(t => closeTrade(t.id)) }}
-                  className="ml-auto mr-2 px-2.5 py-1 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95"
-                  style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}>
-                  Close All
+                  className="ml-auto mr-2 my-1 px-2.5 py-1 rounded-md font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                  style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  <X className="h-2.5 w-2.5" /> Close All
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
@@ -3397,34 +3406,43 @@ adjustWalletBalance(
                   const isGd     = isGold(trade.pair)
 
                   return (
-                    <div key={trade.id} className="rounded-xl price-mono text-[11px]"
-                      style={{ background: "#0d1625", border: "1px solid #1a2a42" }}>
+                    <div key={trade.id} className="rounded-xl price-mono text-[11px] overflow-hidden"
+                      style={{ background: "#0d1625", border: `1px solid ${pnlPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, boxShadow: `0 0 0 1px rgba(0,0,0,0.2), 0 4px 16px -4px ${pnlPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
+                      {/* Direction accent strip */}
+                      <div className="h-[3px] w-full" style={{ background: isBuy ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
                       {/* Card header */}
-                      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center justify-center w-7 h-7 rounded-full font-black text-[10px]"
-                            style={{ background: isGd ? "#b45309" : isCr ? "#1d4ed8" : "#0f4c81", color: "#fff" }}>
+                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42", background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="relative flex items-center justify-center w-9 h-9 rounded-full font-black text-[11px] shrink-0"
+                            style={{ background: isGd ? "linear-gradient(135deg,#d97706,#b45309)" : isCr ? "linear-gradient(135deg,#3b82f6,#1d4ed8)" : "linear-gradient(135deg,#1976c9,#0f4c81)", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                             {ASSET_ICON[trade.pair] ?? base.slice(0, 2)}
+                            {isBuy ? (
+                              <ArrowUpRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#10b981", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
+                            ) : (
+                              <ArrowDownRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#ef4444", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
+                            )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-black text-white text-[13px]">{trade.pair}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase"
-                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444" }}>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
+                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444", border: `1px solid ${isBuy ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }}>
                                 {trade.direction}
                               </span>
-                              <span className="text-[9px] font-bold text-amber-500">×{trade.leverage}</span>
+                              <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)" }}>×{trade.leverage}</span>
                             </div>
-                            <span className="text-[9px] text-slate-500">{trade.lotSize} Lot · {duration}</span>
+                            <span className="text-[9px] text-slate-500 flex items-center gap-1">
+                              <span className="font-bold text-slate-400">{trade.lotSize} Lot</span> · <Clock className="h-2.5 w-2.5" /> {duration}
+                            </span>
                           </div>
                         </div>
                         {/* PnL big display */}
-                        <div className="text-right">
-                          <p className="text-[20px] font-black leading-none" style={{ color: pnlClr }}>
+                        <div className="text-right shrink-0 pl-2">
+                          <p className="text-[22px] font-black leading-none tracking-tight" style={{ color: pnlClr, textShadow: `0 0 16px ${pnlClr}33` }}>
                             {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
                           </p>
-                          <p className="text-[9px]" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
-                          <p className="text-[9px] text-slate-500">ROE: <span style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
+                          <p className="text-[9px] font-bold mt-0.5" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
+                          <p className="text-[9px] text-slate-500">ROE <span className="font-bold" style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
                         </div>
                       </div>
 
@@ -3745,7 +3763,7 @@ adjustWalletBalance(
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���─────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���───────────────���─────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
