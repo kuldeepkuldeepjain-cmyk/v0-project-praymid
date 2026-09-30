@@ -3947,9 +3947,8 @@ button, a, [role="button"] {
 .payout-page .payout-request-card .text-emerald-600 { color: #8de3c7; }
 .payout-page .payout-history-card .border-slate-200 { border-color: #29465d; }
 .payout-page .payout-history-card .bg-slate-50 { background: #0b1a28; }
-.payout-page .payout-history-card .bg-purple-50 { background: #1a1732; border-color: #403a78; }
-.payout-page .payout-history-card .text-purple-700,
-.payout-page .payout-history-card .text-purple-600 { color: #c6baff; }
+.payout-page .payout-history-card .bg-emerald-100 { background: #0d2d2b; border-color: #23665e; }
+.payout-page .payout-history-card .bg-slate-50 { background: #0b1a28; border-color: #29465d; }
 .payout-page > .fixed { display: none; }
 @media (max-width: 640px) {
   .payout-page .payout-main { padding-inline: 12px; }
