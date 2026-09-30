@@ -19,6 +19,13 @@ import {
   Shield,
   RefreshCw,
   Save,
+  LayoutDashboard,
+  Activity,
+  Users,
+  MessageSquare,
+  SlidersHorizontal,
+  ChevronRight,
+  ArrowUpRight,
 } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
@@ -52,6 +59,27 @@ export default function AdminDashboard() {
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", usdt_inr_rate: "102" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "terminal" | "participants" | "wallets" | "support" | "settings"
+  >("overview")
+  const [openTicketCount, setOpenTicketCount] = useState(0)
+
+  useEffect(() => {
+    const fetchOpenTicketCount = async () => {
+      try {
+        const response = await adminFetch("/api/support/tickets")
+        const data = await response.json()
+        if (data.success) {
+          setOpenTicketCount(data.tickets.filter((t: { status: string }) => t.status === "open").length)
+        }
+      } catch {
+        // non-critical badge count, ignore failures
+      }
+    }
+    fetchOpenTicketCount()
+    const interval = setInterval(fetchOpenTicketCount, 8000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     setMounted(true)
@@ -245,24 +273,86 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-8">
-        {/* Platform Revenue Tracker */}
-        <PlatformRevenueTracker />
+      <div className="mx-auto flex max-w-[1600px] items-start gap-6 px-6 py-8">
+        {/* Sidebar navigation */}
+        <nav aria-label="Admin sections" className="sticky top-8 hidden w-60 shrink-0 flex-col gap-1 rounded-2xl border border-cyan-500/20 bg-white/5 p-3 backdrop-blur-sm lg:flex">
+          {(
+            [
+              { id: "overview", label: "Overview", icon: LayoutDashboard },
+              { id: "terminal", label: "Trading Terminal", icon: Activity },
+              { id: "participants", label: "Participants", icon: Users },
+              { id: "wallets", label: "Approved Wallets", icon: Wallet },
+              { id: "support", label: "Support Tickets", icon: MessageSquare, badge: openTicketCount },
+              { id: "settings", label: "Settings & Security", icon: SlidersHorizontal },
+            ] as const
+          ).map((item) => {
+            const Icon = item.icon
+            const isActive = activeTab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                  isActive
+                    ? "bg-gradient-to-r from-cyan-500/25 to-blue-500/15 text-white shadow-inner shadow-cyan-500/10 ring-1 ring-cyan-400/30"
+                    : "text-cyan-200/70 hover:bg-white/5 hover:text-cyan-100"
+                }`}
+              >
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-cyan-300" : "text-cyan-400/60 group-hover:text-cyan-300"}`} />
+                <span className="flex-1 text-left">{item.label}</span>
+                {"badge" in item && item.badge > 0 ? (
+                  <Badge className="h-5 min-w-5 justify-center border-0 bg-rose-500 px-1.5 text-[10px] text-white shadow shadow-rose-500/40">
+                    {item.badge}
+                  </Badge>
+                ) : null}
+                {isActive && <ChevronRight className="h-3.5 w-3.5 text-cyan-300" />}
+              </button>
+            )
+          })}
+        </nav>
 
-        {/* Trading operations control room */}
-        <AdminControlRoom />
+        {/* Mobile tab bar */}
+        <div className="fixed inset-x-0 bottom-0 z-30 flex gap-1 overflow-x-auto border-t border-cyan-500/20 bg-slate-950/95 p-2 backdrop-blur-sm lg:hidden">
+          {(
+            [
+              { id: "overview", label: "Overview", icon: LayoutDashboard },
+              { id: "terminal", label: "Terminal", icon: Activity },
+              { id: "participants", label: "Users", icon: Users },
+              { id: "wallets", label: "Wallets", icon: Wallet },
+              { id: "support", label: "Support", icon: MessageSquare, badge: openTicketCount },
+              { id: "settings", label: "Settings", icon: SlidersHorizontal },
+            ] as const
+          ).map((item) => {
+            const Icon = item.icon
+            const isActive = activeTab === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setActiveTab(item.id)}
+                className={`relative flex min-w-[76px] flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors ${
+                  isActive ? "bg-cyan-500/20 text-cyan-200" : "text-cyan-400/60"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+                {"badge" in item && item.badge > 0 ? (
+                  <span className="absolute right-2 top-1 h-2 w-2 rounded-full bg-rose-500" />
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
 
-        {/* 24/7 Support Operations */}
-        <section aria-labelledby="admin-support-heading" className="space-y-4">
-          <div>
-            <h2 id="admin-support-heading" className="text-xl font-semibold text-white">24/7 Support Operations</h2>
-            <p className="mt-1 text-sm text-cyan-200/70">Review and resolve participant live-chat and ticket requests across account, payout, technical, and MT5 support.</p>
-          </div>
-          <SupportTicketsPanel />
-        </section>
+        <main className="min-w-0 flex-1 space-y-8 pb-20 lg:pb-8">
+        {activeTab === "overview" && (
+          <>
+            {/* Platform Revenue Tracker */}
+            <PlatformRevenueTracker />
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {/* Stats Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
@@ -319,8 +409,20 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         </div>
+          </>
+        )}
 
-        {/* Wallets Table */}
+        {activeTab === "terminal" && (
+          <section aria-labelledby="admin-terminal-heading" className="space-y-4">
+            <div>
+              <h2 id="admin-terminal-heading" className="text-xl font-semibold text-white">Trading Terminal Control</h2>
+              <p className="mt-1 text-sm text-cyan-200/70">Manage challenge plans, trading accounts, risk &amp; breach monitoring, live positions, payouts, KYC, and broker connectivity.</p>
+            </div>
+            <AdminControlRoom />
+          </section>
+        )}
+
+        {activeTab === "wallets" && (
         <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -429,7 +531,10 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+        )}
 
+        {activeTab === "settings" && (
+          <div className="space-y-8">
         {/* Payment Wallet Settings */}
         <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
@@ -495,7 +600,12 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
-        {/* Participants Management Panel */}
+        {/* Two-Factor Authentication Setup */}
+        <AdminTwoFactorSetup />
+          </div>
+        )}
+
+        {activeTab === "participants" && (
         <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-white">Participants Management</CardTitle>
@@ -505,10 +615,30 @@ export default function AdminDashboard() {
             <ParticipantsAdminPanel />
           </CardContent>
         </Card>
+        )}
 
-        {/* Two-Factor Authentication Setup */}
-        <AdminTwoFactorSetup />
-      </main>
+        {activeTab === "support" && (
+          <section aria-labelledby="admin-support-heading" className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 id="admin-support-heading" className="text-xl font-semibold text-white">24/7 Support Operations</h2>
+                <p className="mt-1 text-sm text-cyan-200/70">Review and resolve participant live-chat and ticket requests across account, payout, technical, and MT5 support.</p>
+              </div>
+              <a
+                href="/customer-care/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-200 transition-colors hover:bg-cyan-500/20"
+              >
+                <ArrowUpRight className="h-4 w-4" />
+                Open full Customer Care workspace
+              </a>
+            </div>
+            <SupportTicketsPanel />
+          </section>
+        )}
+        </main>
+      </div>
     </div>
   )
 }

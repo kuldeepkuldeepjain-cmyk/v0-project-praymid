@@ -6,6 +6,8 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { ToastProvider } from "@/components/ui/toast-provider"
+import { GlobalErrorListener } from "@/components/global-error-listener"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
@@ -78,8 +80,9 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="elite-fund-theme">
           <ToastProvider>
-            {children}
+            <ErrorBoundary>{children}</ErrorBoundary>
             <Toaster />
+            <GlobalErrorListener />
           </ToastProvider>
         </ThemeProvider>
         <Analytics />

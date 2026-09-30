@@ -390,9 +390,9 @@ export default function PayoutPage() {
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                       isActive
-                        ? "bg-gradient-to-br from-[#7c3aed] to-[#22d3ee] shadow-lg"
+                        ? "bg-gradient-to-br from-[#0f4c3a] to-[#10b981] shadow-lg"
                         : isCompleted
-                          ? "bg-[#7c3aed]"
+                          ? "bg-[#0f4c3a]"
                           : "bg-slate-200"
                     }`}
                   >
@@ -404,7 +404,7 @@ export default function PayoutPage() {
                   </div>
                   <span
                     className={`text-[10px] font-semibold mt-1.5 text-center whitespace-nowrap ${
-                      isActive ? "text-[#7c3aed]" : isCompleted ? "text-[#7c3aed]" : "text-slate-400"
+                      isActive ? "text-[#0f4c3a]" : isCompleted ? "text-[#0f4c3a]" : "text-slate-400"
                     }`}
                   >
                     {stage.label}
@@ -415,7 +415,7 @@ export default function PayoutPage() {
                 {index < stages.length - 1 && (
                   <div className="flex-1 h-1 mx-2 rounded-full bg-slate-200 relative overflow-hidden">
                     {isCompleted && (
-                      <div className="absolute inset-0 bg-[#7c3aed]" />
+                      <div className="absolute inset-0 bg-[#0f4c3a]" />
                     )}
                   </div>
                 )}
@@ -426,9 +426,9 @@ export default function PayoutPage() {
         
         {/* Transaction Hash Display */}
         {status === "completed" && transactionHash && (
-          <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-            <p className="text-xs text-purple-700 font-semibold mb-1">Transaction Hash</p>
-            <code className="text-xs text-purple-600 break-all font-mono">{transactionHash}</code>
+          <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+            <p className="text-xs text-emerald-800 font-semibold mb-1">Transaction Hash</p>
+            <code className="text-xs text-emerald-700 break-all font-mono">{transactionHash}</code>
           </div>
         )}
       </div>
@@ -450,10 +450,8 @@ export default function PayoutPage() {
           className="absolute inset-0"
           style={{
             background: `
-              radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.03), transparent 50%),
-              radial-gradient(at 100% 0%, rgba(34, 211, 238, 0.03), transparent 50%),
-              radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.03), transparent 50%),
-              radial-gradient(at 0% 100%, rgba(232, 93, 59, 0.03), transparent 50%)
+              radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.04), transparent 50%),
+              radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.03), transparent 50%)
             `,
           }}
         />
@@ -484,19 +482,19 @@ export default function PayoutPage() {
         <div 
           className="payout-queue rounded-xl p-3 backdrop-blur-md flex items-center justify-between"
           style={{
-            background: "linear-gradient(135deg, rgba(124, 58, 237, 0.08) 0%, rgba(34, 211, 238, 0.08) 100%)",
-            border: "1px solid rgba(124, 58, 237, 0.15)",
+            background: "linear-gradient(135deg, rgba(15, 76, 58, 0.08) 0%, rgba(16, 185, 129, 0.06) 100%)",
+            border: "1px solid rgba(16, 185, 129, 0.18)",
           }}
         >
           <div className="flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-cyan-300" />
+            <ShieldAlert className="h-4 w-4 text-emerald-600" />
             <span className="text-sm font-medium text-slate-700">Withdrawal reference</span>
           </div>
           <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/60 backdrop-blur-sm">
             <span 
               className="text-base font-bold"
               style={{
-                background: "linear-gradient(135deg, #7c3aed, #22d3ee)",
+                background: "linear-gradient(135deg, #0f4c3a, #10b981)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -684,7 +682,7 @@ export default function PayoutPage() {
         <Card className="payout-history-card border shadow-lg rounded-2xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Clock className="h-4 w-4 text-cyan-300" />
+              <Clock className="h-4 w-4 text-emerald-600" />
               <h3 className="font-semibold text-slate-900">Withdrawal History</h3>
             </div>
 
@@ -695,7 +693,7 @@ export default function PayoutPage() {
                 {payoutHistory.map((payout) => (
                   <div
                     key={payout.id}
-                    className="p-4 bg-white rounded-xl border border-slate-100 transition-all hover:border-[#7c3aed] hover:shadow-md"
+                    className="p-4 bg-white rounded-xl border border-slate-100 transition-all hover:border-emerald-400 hover:shadow-md"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -733,7 +731,7 @@ export default function PayoutPage() {
                     {/* Confirm / Dispute — only for completed payouts not yet actioned */}
                     {payout.status === "completed" && !payout.participant_confirmed && !payout.dispute_status && (
                       <div className="mt-3 space-y-2">
-                        <div className="p-3 rounded-xl bg-gradient-to-r from-purple-50 to-cyan-50 border border-purple-100">
+                        <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
                           <p className="text-xs font-semibold text-slate-700 mb-2">Did you receive this payout?</p>
                           <div className="flex gap-2">
                             <Button
@@ -879,105 +877,99 @@ export default function PayoutPage() {
 
       {/* Wallet Address Confirmation Dialog */}
       <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900">Confirm Withdrawal Details</DialogTitle>
-            <DialogDescription className="text-slate-600">
+        <DialogContent className="w-[92vw] max-w-[380px] max-h-[88vh] overflow-y-auto rounded-2xl p-4 sm:p-5 gap-0">
+          <DialogHeader className="space-y-1 text-left">
+            <DialogTitle className="text-base sm:text-lg font-bold text-slate-900">Confirm Withdrawal</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-slate-600">
               Enter your {selectedNetworkConfig.id} wallet address to receive this withdrawal
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-  {/* Network summary (read-only, chosen on the main screen) */}
-  <div className={`flex items-center justify-between rounded-xl border-2 ${selectedNetworkConfig.border} ${selectedNetworkConfig.bg} px-4 py-3`}>
-    <div className="flex items-center gap-3">
-      <span className={`h-8 w-8 rounded-lg bg-gradient-to-br ${selectedNetworkConfig.accent} flex items-center justify-center text-xs font-bold text-white shadow-sm`}>
-        {selectedNetworkConfig.id.slice(0, 1)}
-      </span>
-      <div>
-        <p className="text-sm font-bold text-slate-900">{selectedNetworkConfig.ticker}</p>
-        <p className="text-xs text-slate-500">{selectedNetworkConfig.label}</p>
-      </div>
-    </div>
-    <button
-      type="button"
-      onClick={() => setShowPayoutDialog(false)}
-      disabled={isWithdrawing}
-      className="text-xs font-semibold text-slate-600 underline underline-offset-2 hover:text-slate-900"
-    >
-      Change
-    </button>
-  </div>
 
-  {/* Wallet Address Input */}
-  <div className="space-y-2">
-  <Label htmlFor="bep20Address" className="text-sm font-semibold text-slate-700">
-  {selectedNetworkConfig.id} Wallet Address
-  </Label>
+          <div className="space-y-3 py-3">
+            {/* Network summary (read-only, chosen on the main screen) */}
+            <div className={`flex items-center justify-between rounded-lg border-2 ${selectedNetworkConfig.border} ${selectedNetworkConfig.bg} px-3 py-2`}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br ${selectedNetworkConfig.accent} flex items-center justify-center text-xs font-bold text-white shadow-sm`}>
+                  {selectedNetworkConfig.id.slice(0, 1)}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 truncate">{selectedNetworkConfig.ticker}</p>
+                  <p className="text-[11px] text-slate-500 truncate">{selectedNetworkConfig.label}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPayoutDialog(false)}
+                disabled={isWithdrawing}
+                className="shrink-0 text-[11px] font-semibold text-slate-600 underline underline-offset-2 hover:text-slate-900"
+              >
+                Change
+              </button>
+            </div>
+
+            {/* Wallet Address Input */}
+            <div className="space-y-1.5">
+              <Label htmlFor="bep20Address" className="text-xs sm:text-sm font-semibold text-slate-700">
+                {selectedNetworkConfig.id} Wallet Address
+              </Label>
               <Input
                 id="bep20Address"
                 type="text"
-                placeholder={`Enter your ${selectedNetworkConfig.id} wallet address here`}
+                placeholder={`Enter your ${selectedNetworkConfig.id} address`}
                 value={bep20Address}
                 onChange={(e) => setBep20Address(e.target.value)}
-                className="h-12 text-sm font-mono"
+                className="h-10 sm:h-11 text-xs sm:text-sm font-mono"
                 disabled={isWithdrawing}
               />
-              <p className="text-xs text-slate-500">
-                {selectedNetworkConfig.addressHint}. Make sure your address is correct — funds sent to the wrong address cannot be recovered.
+              <p className="text-[11px] text-slate-500 leading-snug">
+                {selectedNetworkConfig.addressHint}. Double-check — funds sent to the wrong address cannot be recovered.
               </p>
             </div>
 
             {/* Notification Alert */}
-            <div 
-              className="rounded-xl p-4"
-              style={{
-                background: "linear-gradient(135deg, rgba(34, 211, 238, 0.08) 0%, rgba(124, 58, 237, 0.08) 100%)",
-                border: "1px solid rgba(124, 58, 237, 0.15)",
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                  <Bell className="h-4 w-4 text-[#7c3aed]" />
+            <div className="rounded-lg p-3 bg-emerald-50 border border-emerald-200">
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 shrink-0 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <Bell className="h-3.5 w-3.5 text-emerald-700" />
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-slate-900 mb-1">Notification</h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    After the withdrawal is successfully sent to your address, you&apos;ll be notified via email and the status will be updated to "Completed" in your withdrawal history.
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-xs sm:text-sm font-semibold text-slate-900 mb-0.5">Notification</h4>
+                  <p className="text-[11px] text-slate-600 leading-snug">
+                    You&apos;ll be notified by email once the withdrawal is sent and marked "Completed" in your history.
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Payout Summary */}
-            <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-              <div className="flex items-center justify-between text-sm">
+            <div className="bg-slate-50 rounded-lg p-3 space-y-1.5">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="text-slate-600">Withdrawal amount</span>
                 <span className="font-semibold text-slate-900">${withdrawalAmount.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
                 <span className="text-slate-600">Network fee</span>
                 <span className="font-semibold text-slate-900">-${networkFee.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <span className="text-sm text-slate-600">You will receive</span>
-                <span className="text-lg font-bold text-[#10b981]">${amountAfterFee.toFixed(2)}</span>
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-200">
+                <span className="text-xs sm:text-sm text-slate-600">You will receive</span>
+                <span className="text-base sm:text-lg font-bold text-[#10b981]">${amountAfterFee.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <span className="text-sm text-slate-600">Estimated arrival</span>
-                <span className="text-sm font-medium text-slate-900">{selectedNetworkConfig.eta}</span>
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-200">
+                <span className="text-xs sm:text-sm text-slate-600">Estimated arrival</span>
+                <span className="text-xs sm:text-sm font-medium text-slate-900">{selectedNetworkConfig.eta}</span>
               </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => setShowPayoutDialog(false)}
               disabled={isWithdrawing}
-              className="flex-1 h-12 rounded-xl font-semibold"
+              className="flex-1 h-10 sm:h-11 rounded-xl text-sm font-semibold"
             >
               Cancel
             </Button>
@@ -985,7 +977,7 @@ export default function PayoutPage() {
               type="button"
               onClick={handleWithdrawal}
               disabled={isWithdrawing || !bep20Address}
-              className="flex-1 h-12 rounded-xl font-semibold text-white"
+              className="flex-1 h-10 sm:h-11 rounded-xl text-sm font-semibold text-white"
               style={{
                 background: "linear-gradient(135deg, #10b981, #34d399)",
                 boxShadow: "0 4px 0 #047857",
@@ -1002,7 +994,7 @@ export default function PayoutPage() {
             </Button>
           </div>
         </DialogContent>
-  </Dialog>
+      </Dialog>
 
   <TopUpModal
     isOpen={showTopUpModal}

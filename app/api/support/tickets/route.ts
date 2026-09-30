@@ -96,11 +96,23 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const staff = await requireSupportStaff(request)
-    if (!staff.ok) return staff.response
     await ensureSupportTicketsTable()
+
+    // Staff can view every ticket; participants can only view their own.
+    const staff = await requireSupportStaff(request)
+    if (staff.ok) {
+      const rows = await query<Record<string, unknown>>(
+        `SELECT * FROM support_tickets ORDER BY CASE WHEN status = 'open' THEN 0 WHEN status = 'in_progress' THEN 1 ELSE 2 END, created_at DESC LIMIT 500`,
+      )
+      return NextResponse.json({ success: true, tickets: rows.map(toTicket) })
+    }
+
+    const participant = await requireParticipantSession(request)
+    if (!participant.ok) return participant.response
+
     const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM support_tickets ORDER BY CASE WHEN status = 'open' THEN 0 WHEN status = 'in_progress' THEN 1 ELSE 2 END, created_at DESC LIMIT 500`,
+      `SELECT * FROM support_tickets WHERE participant_id = $1 OR LOWER(participant_email) = $2 ORDER BY created_at DESC LIMIT 100`,
+      [participant.participantId, participant.email.toLowerCase()],
     )
     return NextResponse.json({ success: true, tickets: rows.map(toTicket) })
   } catch (error) {

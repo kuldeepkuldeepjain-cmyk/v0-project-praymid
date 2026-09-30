@@ -56,6 +56,9 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
   import Loading from "./loading"
   import { ErrorBoundary } from "@/components/error-boundary"
   import { CreateAdminDialog } from "@/components/create-admin-dialog"
+  import { AdminControlRoom } from "@/components/admin/admin-control-room"
+  import { SupportTicketsPanel } from "@/components/support-tickets-panel"
+  import { Headset } from "lucide-react"
 
 interface NavItem {
   id: string
@@ -73,6 +76,7 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [pendingOtpCount, setPendingOtpCount] = useState(0)
+  const [openTicketCount, setOpenTicketCount] = useState(0)
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024)
@@ -119,13 +123,31 @@ export default function AdminDashboard() {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    const fetchOpenTicketCount = async () => {
+      try {
+        const res = await adminFetch("/api/support/tickets")
+        if (!res.ok) return
+        const data = await res.json()
+        if (data.success) {
+          setOpenTicketCount(data.tickets.filter((t: { status: string }) => t.status === "open").length)
+        }
+      } catch {}
+    }
+    fetchOpenTicketCount()
+    const interval = setInterval(fetchOpenTicketCount, 8000)
+    return () => clearInterval(interval)
+  }, [])
+
   const navItems: NavItem[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard, section: "MAIN MENU" },
+    { id: "trading-terminal", label: "Trading Terminal Control", icon: Activity, section: "MAIN MENU" },
     { id: "participants", label: "Participants", icon: Users, section: "MAIN MENU" },
     { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
     { id: "all-payouts", label: "All Payout Records", icon: Wallet, section: "MAIN MENU" },
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
     { id: "user-ledger", label: "Single User Ledger", icon: Database, section: "MAIN MENU" },
+    { id: "support-tickets", label: "Support Tickets", icon: Headset, section: "MANAGEMENT" },
     { id: "otp-approvals", label: "OTP Approvals", icon: ShieldCheck, section: "MANAGEMENT" },
     { id: "suspicious-activity", label: "Suspicious Activity / Fraud", icon: Shield, section: "MANAGEMENT" },
     { id: "security-operations", label: "Security Operations", icon: ShieldCheck, section: "MANAGEMENT" },
@@ -151,6 +173,10 @@ export default function AdminDashboard() {
     switch (activeView) {
       case "overview":
         return <OverviewAnalytics />
+      case "trading-terminal":
+        return <AdminControlRoom />
+      case "support-tickets":
+        return <SupportTicketsPanel />
       case "participants":
         return <ParticipantDatabaseView />
       case "database":
@@ -214,39 +240,60 @@ export default function AdminDashboard() {
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:sticky lg:top-0 inset-y-0 left-0 w-72 lg:w-64 bg-slate-900 border-r border-slate-700 overflow-y-auto transition-transform duration-300 z-50 flex-shrink-0`}
+        } lg:translate-x-0 fixed lg:sticky lg:top-0 inset-y-0 left-0 w-72 lg:w-64 bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-800 overflow-y-auto transition-transform duration-300 z-50 flex-shrink-0`}
       >
         <div className="p-6">
-          <h1 className="text-2xl font-bold text-cyan-500 mb-8">Admin Panel</h1>
+          <div className="flex items-center gap-3 mb-8 pb-5 border-b border-slate-800">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.35)]">
+              <ShieldCheck className="h-5 w-5 text-slate-950" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white leading-tight">Control Center</h1>
+              <p className="text-[11px] text-cyan-400/80 font-medium tracking-wide uppercase">Admin Panel</p>
+            </div>
+          </div>
 
           {groupedNavItems.map(group => (
-            <div key={group.section} className="mb-8">
-              <p className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">
+            <div key={group.section} className="mb-7">
+              <p className="text-[10px] font-semibold text-slate-500 mb-3 uppercase tracking-widest pl-1">
                 {group.section}
               </p>
               <nav className="space-y-1">
-                {group.items.map(item => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveView(item.id)
-                      if (isMobile) setSidebarOpen(false)
-                    }}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                      activeView === item.id
-                        ? "bg-cyan-600 text-white"
-                        : "text-slate-300 hover:bg-slate-800"
-                    }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span className="text-sm font-medium flex-1">{item.label}</span>
-                    {item.id === "otp-approvals" && pendingOtpCount > 0 && (
-                      <span className="ml-auto flex-shrink-0 min-w-[20px] h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center px-1.5">
-                        {pendingOtpCount}
-                      </span>
-                    )}
-                  </button>
-                ))}
+                {group.items.map(item => {
+                  const isActive = activeView === item.id
+                  const badgeCount =
+                    item.id === "otp-approvals"
+                      ? pendingOtpCount
+                      : item.id === "support-tickets"
+                        ? openTicketCount
+                        : 0
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveView(item.id)
+                        if (isMobile) setSidebarOpen(false)
+                      }}
+                      className={`group w-full text-left px-3.5 py-2.5 rounded-xl flex items-center gap-3 transition-all duration-150 ${
+                        isActive
+                          ? "bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 shadow-[0_2px_12px_rgba(34,211,238,0.3)]"
+                          : "text-slate-400 hover:bg-slate-800/70 hover:text-slate-100"
+                      }`}
+                    >
+                      <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-slate-950" : "text-slate-500 group-hover:text-cyan-400"}`} />
+                      <span className={`text-sm flex-1 truncate ${isActive ? "font-semibold" : "font-medium"}`}>{item.label}</span>
+                      {badgeCount > 0 && (
+                        <span
+                          className={`ml-auto flex-shrink-0 min-w-[20px] h-5 rounded-full text-[10px] font-bold flex items-center justify-center px-1.5 ${
+                            isActive ? "bg-slate-950/20 text-slate-950" : "bg-amber-500 text-white"
+                          }`}
+                        >
+                          {badgeCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </nav>
             </div>
           ))}
@@ -256,7 +303,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
-        <header className="border-b border-slate-700 bg-slate-900 px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
+        <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -264,19 +311,37 @@ export default function AdminDashboard() {
             >
               <MessageSquare className="h-5 w-5" />
             </button>
-            <h2 className="text-base sm:text-xl font-bold text-white truncate">
-              {navItems.find(item => item.id === activeView)?.label || "Dashboard"}
-            </h2>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-xl font-bold text-white truncate">
+                {navItems.find(item => item.id === activeView)?.label || "Dashboard"}
+              </h2>
+              <div className="hidden sm:flex items-center gap-1.5 mt-0.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">Live system data</span>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {openTicketCount > 0 && (
+              <button
+                onClick={() => setActiveView("support-tickets")}
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold hover:bg-amber-500/20 transition-colors"
+              >
+                <Headset className="h-3.5 w-3.5" />
+                {openTicketCount} open ticket{openTicketCount !== 1 ? "s" : ""}
+              </button>
+            )}
             <CreateAdminDialog triggerLabel="Create Customer Care" defaultRole="customer_care" />
-            <span className="text-xs sm:text-sm text-slate-400 hidden sm:block truncate max-w-[120px]">{adminEmail}</span>
+            <span className="text-xs sm:text-sm text-slate-400 hidden sm:block truncate max-w-[120px] pl-1 border-l border-slate-800">{adminEmail}</span>
             <Button
               onClick={handleLogout}
               variant="ghost"
               size="sm"
-              className="text-slate-300 hover:text-red-400 px-2 sm:px-3"
+              className="text-slate-300 hover:text-red-400 hover:bg-red-500/10 px-2 sm:px-3"
             >
               <LogOut className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Logout</span>

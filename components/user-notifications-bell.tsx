@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { createClient } from "@/lib/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 
 interface Notification {
@@ -28,9 +27,9 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
   useEffect(() => {
     if (userEmail) {
       fetchNotifications()
-      
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000)
+
+      // Poll for new notifications every 15 seconds
+      const interval = setInterval(fetchNotifications, 15000)
       return () => clearInterval(interval)
     }
   }, [userEmail])
@@ -38,24 +37,19 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true)
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from("notifications")
-        .select("*")
-        .eq("user_email", userEmail)
-        .order("created_at", { ascending: false })
-        .limit(50)
+      const response = await fetch(`/api/participant/notifications?email=${encodeURIComponent(userEmail)}`)
+      const data = await response.json()
 
-      if (error) {
-        console.error("Error fetching notifications:", error)
+      if (!data.success) {
         setNotifications([])
         return
       }
 
-      setNotifications(data || [])
-      setUnreadCount(data?.filter((n) => !n.read_status).length || 0)
+      const list: Notification[] = data.notifications || []
+      setNotifications(list)
+      setUnreadCount(list.filter((n) => !n.read_status).length)
     } catch (error) {
-      console.error("Error fetching notifications:", error)
+      console.error("[v0] Error fetching notifications:", error)
       setNotifications([])
     } finally {
       setIsLoading(false)
@@ -64,48 +58,42 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read_status: true })
-        .eq("id", notificationId)
-
-      if (error) {
-        console.error("Error marking notification as read:", error)
-        return
-      }
+      const response = await fetch("/api/participant/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: notificationId, read_status: true }),
+      })
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error || "Failed to update")
 
       setNotifications((prev) =>
         prev.map((n) => (n.id === notificationId ? { ...n, read_status: true } : n))
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
     } catch (error) {
-      console.error("Error marking notification as read:", error)
+      console.error("[v0] Error marking notification as read:", error)
     }
   }
 
   const markAllAsRead = async () => {
     try {
-      const supabase = createClient()
       const unreadIds = notifications.filter((n) => !n.read_status).map((n) => n.id)
-      
+
       if (unreadIds.length === 0) return
 
-      const { error } = await supabase
-        .from("notifications")
-        .update({ read_status: true })
-        .in("id", unreadIds)
-
-      if (error) {
-        console.error("Error marking all as read:", error)
-        return
-      }
+      const response = await fetch("/api/participant/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: unreadIds }),
+      })
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error || "Failed to update")
 
       setNotifications((prev) =>
         prev.map((n) => ({ ...n, read_status: true }))
       )
       setUnreadCount(0)
-      
+
       toast({
         title: "Success",
         description: "All notifications marked as read",
@@ -122,13 +110,11 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
 
   const deleteNotification = async (notificationId: string) => {
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("notifications")
-        .delete()
-        .eq("id", notificationId)
-
-      if (error) throw error
+      const response = await fetch(`/api/participant/notifications?id=${encodeURIComponent(notificationId)}`, {
+        method: "DELETE",
+      })
+      const data = await response.json()
+      if (!data.success) throw new Error(data.error || "Failed to delete")
 
       const wasUnread = notifications.find((n) => n.id === notificationId)?.read_status === false
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId))
