@@ -1597,7 +1597,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ──────────────────────────────────
+  // ── Re-fetch candles when pair/TF changes ─────────────────────────────���────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -1847,8 +1847,10 @@ function PositionSizer({
     // Sync ref immediately so subsequent ticks read the latest list
     openTradesRef.current = updated.filter(t => !toClose.some(c => c.id === t.id))
 
-    const newTotalPnl = updated.reduce((s, t) => s + t.pnl, 0)
-    setTotalPnl(newTotalPnl)
+  // Open P/L includes both mark-to-market P/L and accrued swap so equity,
+  // free margin, margin level, and drawdown use the same account-wide figure.
+  const newTotalPnl = updated.reduce((s, t) => s + t.pnl + t.swap, 0)
+  setTotalPnl(parseFloat(newTotalPnl.toFixed(2)))
 
     // Equity includes margin locked in open positions plus floating P/L.
     const lockedMargin = updated
@@ -2323,8 +2325,10 @@ adjustWalletBalance(
 
   const totalSwap = openTrades.reduce((s, t) => s + t.swap, 0)
   const totalMargin = openTrades.reduce((s, t) => s + t.margin, 0)
-  const freeMargin = Math.max(0, walletBalance)
+  // Free margin is equity less margin currently committed. Floating P/L and
+  // swap remain available (or reduce availability) while a position is open.
   const equity = walletBalance + totalMargin + totalPnl
+  const freeMargin = equity - totalMargin
   const marginLevel = totalMargin > 0 ? (equity / totalMargin * 100) : 0
   const today = new Date().toDateString()
   const dailyClosedPnl = closedTrades.reduce((sum, trade) => {
