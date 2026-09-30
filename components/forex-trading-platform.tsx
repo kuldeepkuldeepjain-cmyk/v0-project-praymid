@@ -1243,6 +1243,7 @@ function PositionSizer({
   const [candleError, setCandleError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [toasts, setToasts]           = useState<ToastItem[]>([])
+  const [adminNotifications, setAdminNotifications] = useState<Array<{ id: string; type: string; title: string; message: string; time: string; read: boolean }>>([])
   const [totalPnl, setTotalPnl]       = useState(0)
   const [tickCount, setTickCount]     = useState(0)
   const [walletBalance, setWalletBalance] = useState(externalBalance)
@@ -1394,6 +1395,53 @@ function PositionSizer({
   const dismissToast = useCallback((id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
+
+  const loadAdminNotifications = useCallback(async () => {
+    if (!participantEmail) return
+    try {
+      const response = await participantFetch(`/api/participant/notifications?email=${encodeURIComponent(participantEmail)}`, { cache: "no-store" })
+      const data = await response.json()
+      if (data?.success && Array.isArray(data.notifications)) {
+        setAdminNotifications(
+          data.notifications.map((n: { id: string; title: string; message: string; type: string; read_status: boolean; created_at: string }) => ({
+            id: n.id,
+            type: n.type ?? "info",
+            title: n.title,
+            message: n.message,
+            time: new Date(n.created_at).toLocaleString(),
+            read: !!n.read_status,
+          }))
+        )
+      }
+    } catch {
+      // Silently ignore — notifications are non-critical to trading.
+    }
+  }, [participantEmail])
+
+  useEffect(() => {
+    loadAdminNotifications()
+    const interval = setInterval(loadAdminNotifications, 30000)
+    return () => clearInterval(interval)
+  }, [loadAdminNotifications])
+
+  const markAdminNotificationRead = useCallback((id: string) => {
+    setAdminNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)))
+    participantFetch("/api/participant/notifications", {
+      method: "PATCH",
+      body: JSON.stringify({ id, read_status: true }),
+    }).catch(() => {})
+  }, [])
+
+  const clearAdminNotifications = useCallback(() => {
+    const unreadIds = adminNotifications.filter(n => !n.read).map(n => n.id)
+    setAdminNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    if (unreadIds.length > 0) {
+      participantFetch("/api/participant/notifications", {
+        method: "PATCH",
+        body: JSON.stringify({ ids: unreadIds }),
+      }).catch(() => {})
+    }
+  }, [adminNotifications])
 
   const lockedMargin = openTrades.reduce((sum, trade) => sum + trade.margin, 0)
   const accountEquity = walletBalance + lockedMargin + totalPnl
@@ -2592,16 +2640,25 @@ adjustWalletBalance(
           ask: pair.ask,
           change: pair.change,
         }))}
-        notifications={toasts.slice(0, 5).map(t => ({
-          id: String(t.id),
-          type: t.type,
-          title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
-          message: t.text,
-          time: "just now",
-          read: false,
-        }))}
-        onMarkNotificationRead={(id) => setToasts(ts => ts.filter(t => String(t.id) !== id))}
-        onClearNotifications={() => setToasts([])}
+        notifications={[
+          ...adminNotifications,
+          ...toasts.slice(0, 5).map(t => ({
+            id: `toast-${t.id}`,
+            type: t.type,
+            title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
+            message: t.text,
+            time: "just now",
+            read: false,
+          })),
+        ]}
+        onMarkNotificationRead={(id) => {
+          if (id.startsWith("toast-")) {
+            setToasts(ts => ts.filter(t => `toast-${t.id}` !== id))
+          } else {
+            markAdminNotificationRead(id)
+          }
+        }}
+        onClearNotifications={() => { setToasts([]); clearAdminNotifications() }}
         activeLanguage="en"
         onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
         activeLayout={chartLayout === "grid" ? "pro" : "default"}
