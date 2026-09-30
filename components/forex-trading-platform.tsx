@@ -3173,7 +3173,7 @@ adjustWalletBalance(
                   ) : (
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
                       className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
+                      {["50","100","200","500","1000"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
                     </select>
                   )}
                 </div>
@@ -3733,7 +3733,7 @@ adjustWalletBalance(
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──��─────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���─────────────────────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
