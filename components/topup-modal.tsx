@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight } from "lucide-react"
+import QRCode from "qrcode"
+import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight, QrCode as QrCodeIcon } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,6 +39,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [checkingFundedTier, setCheckingFundedTier] = useState(false)
   const [fundedTierEligibility, setFundedTierEligibility] = useState<boolean | null>(null)
   const [fundingMode, setFundingMode] = useState<"actual" | "funded">("actual")
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrLoading, setQrLoading] = useState(false)
 
   // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
@@ -91,6 +94,34 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }
 
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
+
+  // Generate a real, scannable QR code for the selected deposit address.
+  useEffect(() => {
+    if (!selectedWalletAddress) {
+      setQrDataUrl(null)
+      return
+    }
+    let cancelled = false
+    setQrLoading(true)
+    QRCode.toDataURL(selectedWalletAddress, {
+      width: 168,
+      margin: 1,
+      color: { dark: "#0f2438", light: "#ffffff" },
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url)
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null)
+      })
+      .finally(() => {
+        if (!cancelled) setQrLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedWalletAddress])
+
   const parsedAmount = parseFloat(amount)
   const fundedTiers = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   // Keep the two funded-account choices visible even if the parent updates
@@ -306,10 +337,26 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </div>
                 ) : selectedWalletAddress ? (
                   <div className="rounded-xl border border-blue-200 bg-white overflow-hidden shadow-sm">
-                    {/* QR-like header strip */}
+                    {/* Header strip */}
                     <div className="px-3 py-2 bg-[#163e5c] flex items-center justify-between">
                       <span className="text-[10px] font-bold text-white tracking-widest uppercase">{network === "ALL" ? "All Networks" : `${network} Network`}</span>
                       <span className="text-[10px] text-white/80">USDT Only</span>
+                    </div>
+                    {/* Scannable QR code */}
+                    <div className="flex items-center justify-center gap-4 px-3 py-3 border-b border-slate-100">
+                      <div className="flex size-[104px] shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5">
+                        {qrLoading ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
+                        ) : qrDataUrl ? (
+                          <img src={qrDataUrl} alt={`QR code for ${network} deposit address`} className="size-full" />
+                        ) : (
+                          <QrCodeIcon className="h-8 w-8 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-[10px] font-semibold text-slate-600">Scan with your wallet app</p>
+                        <p className="text-[10px] leading-4 text-slate-500">Open your USDT wallet, scan this code, and confirm the network before sending.</p>
+                      </div>
                     </div>
                     {/* Address row */}
                     <div className="flex items-center gap-2 px-3 py-2.5">
