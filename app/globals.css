@@ -4260,76 +4260,108 @@ button, a, [role="button"] {
   border-color: rgba(239, 68, 68, .42) !important;
 }
 
-/* Compact premium account metrics: small footprint, strong scanning hierarchy. */
+/* Premium account metrics strip: high-contrast, glass-panel cards with strong scanning hierarchy. */
 .mt5-terminal.reference-terminal .reference-metrics-header {
-  gap: 5px;
-  padding: 5px 12px;
-  border-bottom: 1px solid #294761;
-  background: #08131f;
+  gap: 7px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2a4864;
+  background: linear-gradient(180deg, #0c1a29 0%, #070f19 100%);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .03);
 }
 .mt5-terminal.reference-terminal .reference-metric-card {
   position: relative;
-  min-height: 42px;
-  gap: 2px;
-  padding: 5px 9px 6px;
+  min-height: 48px;
+  gap: 3px;
+  padding: 7px 10px 7px 13px;
   overflow: hidden;
-  border: 1px solid #20384e;
-  border-radius: 5px;
-  background: #0c1825;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255, 255, 255, .035);
+  border: 1px solid #234158;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #11202f 0%, #0a1420 100%);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .05);
   transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
 }
 .mt5-terminal.reference-terminal .reference-metric-card::before {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
-  width: 2px;
-  background: #47657e;
+  width: 3px;
+  background: linear-gradient(180deg, #5b9dc9, #2f6a93);
+  box-shadow: 0 0 8px rgba(91, 157, 201, .55);
+}
+.mt5-terminal.reference-terminal .reference-metric-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, .05), transparent 55%);
+  pointer-events: none;
 }
 .mt5-terminal.reference-terminal .reference-metric-card:hover {
-  border-color: #3d6685;
-  transform: translateY(-1px);
-  box-shadow: 0 5px 14px rgba(0, 0, 0, .22), inset 0 1px 0 rgba(255, 255, 255, .05);
+  border-color: #457baa;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .07);
 }
 .mt5-terminal.reference-terminal .reference-metric-card span {
-  color: #849bb0;
-  font-size: 7px;
+  position: relative;
+  z-index: 1;
+  color: #93abc2;
+  font-size: 8px;
   font-weight: 800;
-  letter-spacing: .13em;
+  letter-spacing: .14em;
   line-height: 1;
 }
 .mt5-terminal.reference-terminal .reference-metric-card strong {
-  color: #f2f7fb;
-  font-size: 12px;
+  position: relative;
+  z-index: 1;
+  color: #f6fafd;
+  font-size: 14px;
+  font-weight: 900;
   line-height: 1.15;
   white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, .3);
 }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-gold::before { background: #e4b957; }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-gold strong { color: #f0c86e; }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-green::before { background: #18c995; }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-green strong { color: #39dca8; }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-red::before { background: #f26467; }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-red strong { color: #ff777a; }
-.mt5-terminal.reference-terminal .reference-metric-card.tone-neutral::before { background: #4c89b5; }
+.mt5-terminal.reference-terminal .reference-metric-card.reference-metric-primary {
+  border-color: #2f6a93;
+  background: linear-gradient(160deg, #142940 0%, #0a1420 100%);
+}
+.mt5-terminal.reference-terminal .reference-metric-card.reference-metric-primary::before {
+  background: linear-gradient(180deg, #7dd3fc, #2f80c9);
+  box-shadow: 0 0 10px rgba(125, 211, 252, .6);
+}
+.mt5-terminal.reference-terminal .reference-metric-card.reference-metric-primary strong { font-size: 15px; color: #e6f5ff; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-gold::before { background: linear-gradient(180deg, #ffd782, #e4b957); box-shadow: 0 0 10px rgba(228, 185, 87, .6); }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-gold strong { color: #ffd782; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-green::before { background: linear-gradient(180deg, #5eead4, #18c995); box-shadow: 0 0 10px rgba(24, 201, 149, .6); }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-green strong { color: #4ff0b8; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-red::before { background: linear-gradient(180deg, #fca5a5, #f26467); box-shadow: 0 0 10px rgba(242, 100, 103, .6); }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-red strong { color: #ff8b8e; }
+.mt5-terminal.reference-terminal .reference-metric-card.tone-neutral::before { background: linear-gradient(180deg, #7fb3d9, #4c89b5); }
 .mt5-terminal.reference-terminal .reference-margin-bar {
-  height: 3px;
-  margin-top: 1px;
+  position: relative;
+  z-index: 1;
+  height: 4px;
+  margin-top: 2px;
+  overflow: hidden;
   border-radius: 999px;
-  background: #172a3b;
+  background: #16273a;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .4);
 }
-.mt5-terminal.reference-terminal .reference-margin-bar span { background: #e4b957; }
+.mt5-terminal.reference-terminal .reference-margin-bar span {
+  background: linear-gradient(90deg, #f0c86e, #e4b957);
+  box-shadow: 0 0 6px rgba(228, 185, 87, .7);
+}
 @media (max-width: 767px) {
   .mt5-terminal.reference-terminal .reference-metrics-header {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 3px;
-    padding: 4px 7px;
+    gap: 4px;
+    padding: 6px 7px;
   }
   .mt5-terminal.reference-terminal .reference-metric-card {
-    min-height: 39px;
-    padding: 5px 6px 5px 8px;
+    min-height: 44px;
+    padding: 6px 7px 6px 10px;
   }
-  .mt5-terminal.reference-terminal .reference-metric-card span { font-size: 6px; letter-spacing: .1em; }
-.mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 10px; }
+  .mt5-terminal.reference-terminal .reference-metric-card span { font-size: 7px; letter-spacing: .1em; }
+.mt5-terminal.reference-terminal .reference-metric-card strong { font-size: 11px; }
 }
 
 /* Final terminal layout contract: every row owns its space and clips only its own content. */
