@@ -1220,7 +1220,7 @@ function PositionSizer({
   const [timeframe, setTimeframe]     = useState<TimeFrame>("5M")
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("100")
+  const [leverage, setLeverage]       = useState("200")
   const effectiveLeverage = isFundedAccount ? 1 : parseFloat(leverage) || 1
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
@@ -1597,7 +1597,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ──────────────────────────────────
+  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�����────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -1847,8 +1847,10 @@ function PositionSizer({
     // Sync ref immediately so subsequent ticks read the latest list
     openTradesRef.current = updated.filter(t => !toClose.some(c => c.id === t.id))
 
-    const newTotalPnl = updated.reduce((s, t) => s + t.pnl, 0)
-    setTotalPnl(newTotalPnl)
+  // Open P/L includes both mark-to-market P/L and accrued swap so equity,
+  // free margin, margin level, and drawdown use the same account-wide figure.
+  const newTotalPnl = updated.reduce((s, t) => s + t.pnl + t.swap, 0)
+  setTotalPnl(parseFloat(newTotalPnl.toFixed(2)))
 
     // Equity includes margin locked in open positions plus floating P/L.
     const lockedMargin = updated
@@ -2323,8 +2325,10 @@ adjustWalletBalance(
 
   const totalSwap = openTrades.reduce((s, t) => s + t.swap, 0)
   const totalMargin = openTrades.reduce((s, t) => s + t.margin, 0)
-  const freeMargin = Math.max(0, walletBalance)
+  // Free margin is equity less margin currently committed. Floating P/L and
+  // swap remain available (or reduce availability) while a position is open.
   const equity = walletBalance + totalMargin + totalPnl
+  const freeMargin = equity - totalMargin
   const marginLevel = totalMargin > 0 ? (equity / totalMargin * 100) : 0
   const today = new Date().toDateString()
   const dailyClosedPnl = closedTrades.reduce((sum, trade) => {
@@ -3169,7 +3173,7 @@ adjustWalletBalance(
                   ) : (
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
                       className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["10","25","50","100","200","500"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
+                      {["50","100","200","500","1000"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
                     </select>
                   )}
                 </div>
@@ -3729,7 +3733,7 @@ adjustWalletBalance(
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ────────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���─────────────────────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
