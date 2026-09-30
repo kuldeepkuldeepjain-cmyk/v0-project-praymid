@@ -1220,7 +1220,7 @@ function PositionSizer({
   const [timeframe, setTimeframe]     = useState<TimeFrame>("5M")
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("100")
+  const [leverage, setLeverage]       = useState("1000")
   const effectiveLeverage = isFundedAccount ? 1 : parseFloat(leverage) || 1
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
@@ -1597,7 +1597,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────────────────────���────
+  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�����────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -3733,7 +3733,7 @@ adjustWalletBalance(
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ────────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──��─────────────────────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
