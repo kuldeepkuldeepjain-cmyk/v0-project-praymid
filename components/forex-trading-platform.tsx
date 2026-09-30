@@ -1597,7 +1597,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�������────
+  // ── Re-fetch candles when pair/TF changes ─────────────────────────────���������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -1978,12 +1978,18 @@ function PositionSizer({
   const confirmAndPlace = async () => {
   if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
-    setConfirmLoading(true)
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
+    const pairSymbol = selectedPair.symbol
+
+    // Close the modal and reflect the trade right away — persistence and margin
+    // deduction continue in the background so the button doesn't sit on a spinner
+    // waiting on two sequential network round trips. Any failure rolls back below.
+    setTradeConfirm(null)
+    setConfirmLoading(false)
 
     if (isPending && tradeConfirm.pendingOrderType && tradeConfirm.pendingPrice) {
       const order: PendingOrder = {
-        id: genId(), pair: selectedPair.symbol, direction: dir,
+        id: genId(), pair: pairSymbol, direction: dir,
         orderType: tradeConfirm.pendingOrderType, lotSize: lot, leverage: lev,
         targetPrice: tradeConfirm.pendingPrice, sl: slNum, tp: tpNum,
         createdTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -1991,25 +1997,17 @@ function PositionSizer({
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
       setPendingOrders(prev => [order, ...prev])
+      showToast("info", `${order.orderType.replace("_"," ")} placed: ${pairSymbol} @ ${fmt(order.targetPrice, pairSymbol)}`)
+      setActivePanel("pending")
+
       const pendingSaved = await persistPendingOrder(order)
       if (!pendingSaved) {
         setPendingOrders(prev => prev.filter(item => item.id !== order.id))
-        setConfirmLoading(false)
-        return
       }
-      showToast("info", `${order.orderType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(order.targetPrice, selectedPair.symbol)}`)
-      setActivePanel("pending")
     } else {
-      // Deduct margin from balance immediately
-      const newBal = await adjustWalletBalance(
-        -margin,
-        `Margin locked — ${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
-      )
-      if (newBal === null) { setConfirmLoading(false); return }  // API error — abort
-
       const tradeId = genId()
       const trade: OpenTrade = {
-        id: tradeId, pair: selectedPair.symbol, direction: dir,
+        id: tradeId, pair: pairSymbol, direction: dir,
         lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
         sl: slNum, tp: tpNum, trailingStopPips: trailN && trailN > 0 ? trailN : null,
         trailingPeak: price,
@@ -2017,33 +2015,45 @@ function PositionSizer({
         openTimestamp: Date.now(),
         pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
       }
-      // Update ref immediately so the tick engine sees the new trade before next render
+      // Reflect the trade and the margin deduction immediately (ref first, so the
+      // tick engine sees it before the next render; balance update is optimistic
+      // and gets overwritten by the authoritative server value once it responds).
       openTradesRef.current = [trade, ...openTradesRef.current]
       setOpenTrades(prev => {
         // Guard: never add the same trade ID twice (prevents double placement on re-render)
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
+      setWalletBalance(prev => prev - margin)
+      showToast("success",
+        `${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)} | Margin: $${margin.toFixed(2)}`
+      )
+      setSl(""); setTp(""); setTrailingPips("")
+      setActivePanel("positions")
+
+      // Deduct margin on the server, then persist the trade. Roll back the
+      // optimistic state above if either step fails.
+      const newBal = await adjustWalletBalance(
+        -margin,
+        `Margin locked — ${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)}`
+      )
+      if (newBal === null) {
+        openTradesRef.current = openTradesRef.current.filter(item => item.id !== tradeId)
+        setOpenTrades(prev => prev.filter(item => item.id !== tradeId))
+        setWalletBalance(prev => prev + margin)
+        return
+      }
+
       const tradeSaved = await persistOpenTrade(trade)
       if (!tradeSaved) {
         openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
         setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
         await adjustWalletBalance(
           margin,
-          `Trade save rollback — ${dir} ${lot}L ${selectedPair.symbol}`
+          `Trade save rollback — ${dir} ${lot}L ${pairSymbol}`
         )
-        setConfirmLoading(false)
-        return
       }
-      showToast("success",
-        `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
-      )
-      setSl(""); setTp(""); setTrailingPips("")
-      setActivePanel("positions")
     }
-
-    setTradeConfirm(null)
-    setConfirmLoading(false)
   }
 
   // ��─ Quick trade — routes through confirmation modal ────────────────────────
