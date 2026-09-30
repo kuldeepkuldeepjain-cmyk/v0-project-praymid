@@ -67,7 +67,7 @@ export type PendingOrder = {
 export type ClosedTrade = OpenTrade & {
   closePrice: number; closeTime: string; closeDuration: string
   finalPnl: number; finalPips: number; finalSwap: number
-  closeReason: "manual" | "sl" | "tp" | "trailing_sl"
+  closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out"
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "1H" | "4H" | "1D"
@@ -1598,7 +1598,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ──────────────────���──────────�����������────
+  // ── Re-fetch candles when pair/TF changes ──────────────────�����──────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2097,7 +2097,7 @@ function PositionSizer({
   const closingTradeIds = useRef<Set<string>>(new Set())
 
   // ── Close trade ────────────────────────────────────────────────────────────
-  const closeTrade = (id: string) => {
+  const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
     // Prevent double-close if tick engine and manual close race
     if (closingTradeIds.current.has(id)) return
 
@@ -2117,7 +2117,7 @@ function PositionSizer({
       closeTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
       closeDuration: formatDuration(trade.openTimestamp),
       finalPnl, finalPips: pipCount, finalSwap: parseFloat(trade.swap.toFixed(2)),
-      closeReason: "manual",
+      closeReason: reason,
     }
 
     // --- Apply all state mutations once, separately, never nested ---
@@ -2134,13 +2134,16 @@ function PositionSizer({
 
     // 3. Return margin + P&L to balance (called only once)
     const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
+const reasonLabel = reason === "stop_out" ? "Stop-out (margin call)" : "Manual close"
 adjustWalletBalance(
   returnAmt,
-  `Manual close — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+  `${reasonLabel} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
     )
 
-    showToast(finalPnl >= 0 ? "success" : "error",
-      `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
+    showToast(reason === "stop_out" ? "error" : (finalPnl >= 0 ? "success" : "error"),
+      reason === "stop_out"
+        ? `Stop-out: force-closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — margin level hit 100% (${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)})`
+        : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
     )
 
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
@@ -2365,6 +2368,24 @@ adjustWalletBalance(
     { id: "profit-target", label: "Profit target reached", description: "Your profit target is calculated from the funded account base.", status: isFundedAccount && fundedBaseAmount > 0 && totalPnl >= fundedBaseAmount * 0.1 ? "triggered" : "monitoring", value: fundedBaseAmount > 0 ? `${Math.max(0, totalPnl / fundedBaseAmount * 100).toFixed(2)}%` : "Not configured", threshold: "Target +10.00%", icon: Trophy },
     { id: "payout", label: "Withdrawal eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
   ]
+
+  // ── Margin call / stop-out ───────────────────────────────────────────────────
+  // Industry-standard safety net: when margin level drops to or below 100%,
+  // force-close the single most unprofitable open position (largest floating
+  // loss) to free up margin and protect the account from going further
+  // negative. Repeats on the next tick if the level is still at/below 100%
+  // after closing one position.
+  useEffect(() => {
+    if (totalMargin <= 0 || marginLevel <= 0 || marginLevel > 100) return
+    if (openTradesRef.current.length === 0) return
+
+    const worst = [...openTradesRef.current].sort((a, b) => a.pnl - b.pnl)[0]
+    if (!worst || closingTradeIds.current.has(worst.id)) return
+
+    closeTrade(worst.id, "stop_out")
+  // Re-evaluate every tick / whenever open trades or margin level change.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tickCount, marginLevel, totalMargin, openTrades.length])
 
   useEffect(() => {
     const candidates = smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered")
@@ -3671,7 +3692,7 @@ adjustWalletBalance(
                     <tbody>
                       {closedTrades.slice(0, 100).map(trade => {
                         const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
-                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa" }
+                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa", stop_out: "#f97316" }
                         return (
                           <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
                             <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
