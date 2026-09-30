@@ -67,7 +67,7 @@ export type PendingOrder = {
 export type ClosedTrade = OpenTrade & {
   closePrice: number; closeTime: string; closeDuration: string
   finalPnl: number; finalPips: number; finalSwap: number
-  closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out"
+  closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out" | "account_breach"
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "1H" | "4H" | "1D"
@@ -1281,6 +1281,7 @@ function PositionSizer({
     : 0
   const fundedMinimumBalance = getFundedMinimumBalance(fundedBaseAmount)
   const freezeRequestStarted = useRef(false)
+  const [breachInfo, setBreachInfo] = useState<{ realizedLoss: number; closedCount: number } | null>(null)
   const [showAddInstrument, setShowAddInstrument] = useState(false)
   const [addInstrumentQuery, setAddInstrumentQuery] = useState("")
   const [addInstrumentPos, setAddInstrumentPos] = useState<{ top: number; left: number } | null>(null)
@@ -1415,10 +1416,6 @@ function PositionSizer({
       showToast("error", "Could not freeze the account automatically. Please refresh and try again.")
     }
   }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
-
-  useEffect(() => {
-    if (fundedLossLimitReached) freezeFundedAccount()
-  }, [freezeFundedAccount, fundedLossLimitReached])
 
   // ── Balance API ────────────────────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
@@ -1598,7 +1595,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ──────────────────�����──────────�����������────
+  // ── Re-fetch candles when pair/TF changes ─────────────���────�����──────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2148,6 +2145,34 @@ adjustWalletBalance(
 
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
+
+  // ── Funded account breach ──────────────────────────────────────────────────
+  // When the drawdown limit is breached, every open position is force-closed
+  // (booking whatever loss/gain it currently holds), the account is frozen,
+  // and the trader is shown a clear breach notice.
+  const breachHandledRef = useRef(false)
+  const handleFundedBreach = useCallback(() => {
+    if (breachHandledRef.current) return
+    breachHandledRef.current = true
+
+    const trades = [...openTradesRef.current]
+    let realizedPnl = 0
+    trades.forEach(trade => {
+      const pairNow    = pairsRef.current.find(p => p.symbol === trade.pair)
+      const closePrice = pairNow ? (trade.direction === "BUY" ? pairNow.bid : pairNow.ask) : trade.currentPrice
+      const { pnl: pnlRaw } = calcPnl(trade, closePrice, trade.pair)
+      realizedPnl += pnlRaw + trade.swap
+    })
+    trades.forEach(trade => closeTrade(trade.id, "account_breach"))
+
+    freezeFundedAccount()
+    setBreachInfo({ realizedLoss: parseFloat(realizedPnl.toFixed(2)), closedCount: trades.length })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [freezeFundedAccount])
+
+  useEffect(() => {
+    if (fundedLossLimitReached) handleFundedBreach()
+  }, [fundedLossLimitReached, handleFundedBreach])
 
   // ── Partial close trade ───────────────────────────────────────────���────────
   const partialCloseTrade = useCallback((id: string, closeLots: number) => {
@@ -3817,6 +3842,84 @@ adjustWalletBalance(
       </div>
 
       {/* ── Trade Confirmation Modal ──���───────────────���─────────────────────────── */}
+      {breachInfo && (
+        <div
+          className="absolute inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ background: "rgba(2,4,10,0.92)", backdropFilter: "blur(8px)" }}
+        >
+          <div
+            className="relative flex flex-col rounded-2xl overflow-hidden"
+            style={{
+              width: "min(440px, 94vw)",
+              background: "linear-gradient(160deg, #1a0808 0%, #0a0303 100%)",
+              border: "1px solid rgba(239,68,68,0.35)",
+              boxShadow: "0 0 80px rgba(239,68,68,0.25), 0 20px 60px rgba(0,0,0,0.6)",
+            }}
+          >
+            <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #ef4444, #f97316, #ef4444)" }} />
+
+            <div className="flex flex-col items-center text-center px-7 pt-7 pb-6">
+              <div
+                className="flex items-center justify-center w-16 h-16 rounded-full mb-4"
+                style={{
+                  background: "radial-gradient(circle, rgba(239,68,68,0.22) 0%, rgba(239,68,68,0.05) 70%)",
+                  border: "1px solid rgba(239,68,68,0.4)",
+                  boxShadow: "0 0 30px rgba(239,68,68,0.3)",
+                }}
+              >
+                <AlertTriangle className="h-8 w-8 text-red-400" />
+              </div>
+
+              <span
+                className="text-[10px] font-black tracking-[0.25em] uppercase mb-2 px-3 py-1 rounded-full"
+                style={{ color: "#fca5a5", background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.3)" }}
+              >
+                Account Breach
+              </span>
+
+              <h2 className="text-xl font-black text-white tracking-tight mb-2 text-balance">
+                Funded Account Breached
+              </h2>
+              <p className="text-[13px] leading-relaxed text-slate-400 mb-6 text-pretty">
+                {"Your drawdown exceeded the funded account's risk limit. All open positions have been force-closed and the account is now frozen pending review."}
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 w-full mb-6">
+                <div
+                  className="flex flex-col items-start gap-1 rounded-xl px-4 py-3"
+                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)" }}
+                >
+                  <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-slate-500">Positions Closed</span>
+                  <span className="text-lg font-black text-white tabular-nums">{breachInfo.closedCount}</span>
+                </div>
+                <div
+                  className="flex flex-col items-start gap-1 rounded-xl px-4 py-3"
+                  style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)" }}
+                >
+                  <span className="text-[9px] font-bold tracking-[0.12em] uppercase text-slate-500">Realized P&amp;L</span>
+                  <span className="text-lg font-black tabular-nums" style={{ color: breachInfo.realizedLoss >= 0 ? "#34d399" : "#f87171" }}>
+                    {breachInfo.realizedLoss >= 0 ? "+" : ""}${breachInfo.realizedLoss.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setBreachInfo(null)}
+                className="w-full py-3 rounded-xl font-bold text-[13px] tracking-wide uppercase transition-transform active:scale-[0.98]"
+                style={{
+                  background: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+                  color: "white",
+                  boxShadow: "0 4px 20px rgba(239,68,68,0.35)",
+                }}
+              >
+                I Understand
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"
