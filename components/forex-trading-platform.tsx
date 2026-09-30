@@ -11,6 +11,7 @@ import {
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket,
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
+  ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -1597,7 +1598,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�������────
+  // ── Re-fetch candles when pair/TF changes ──────────────────���──────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -1978,12 +1979,18 @@ function PositionSizer({
   const confirmAndPlace = async () => {
   if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
-    setConfirmLoading(true)
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
+    const pairSymbol = selectedPair.symbol
+
+    // Close the modal and reflect the trade right away — persistence and margin
+    // deduction continue in the background so the button doesn't sit on a spinner
+    // waiting on two sequential network round trips. Any failure rolls back below.
+    setTradeConfirm(null)
+    setConfirmLoading(false)
 
     if (isPending && tradeConfirm.pendingOrderType && tradeConfirm.pendingPrice) {
       const order: PendingOrder = {
-        id: genId(), pair: selectedPair.symbol, direction: dir,
+        id: genId(), pair: pairSymbol, direction: dir,
         orderType: tradeConfirm.pendingOrderType, lotSize: lot, leverage: lev,
         targetPrice: tradeConfirm.pendingPrice, sl: slNum, tp: tpNum,
         createdTime: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
@@ -1991,25 +1998,17 @@ function PositionSizer({
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
       setPendingOrders(prev => [order, ...prev])
+      showToast("info", `${order.orderType.replace("_"," ")} placed: ${pairSymbol} @ ${fmt(order.targetPrice, pairSymbol)}`)
+      setActivePanel("pending")
+
       const pendingSaved = await persistPendingOrder(order)
       if (!pendingSaved) {
         setPendingOrders(prev => prev.filter(item => item.id !== order.id))
-        setConfirmLoading(false)
-        return
       }
-      showToast("info", `${order.orderType.replace("_"," ")} placed: ${selectedPair.symbol} @ ${fmt(order.targetPrice, selectedPair.symbol)}`)
-      setActivePanel("pending")
     } else {
-      // Deduct margin from balance immediately
-      const newBal = await adjustWalletBalance(
-        -margin,
-        `Margin locked — ${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)}`
-      )
-      if (newBal === null) { setConfirmLoading(false); return }  // API error — abort
-
       const tradeId = genId()
       const trade: OpenTrade = {
-        id: tradeId, pair: selectedPair.symbol, direction: dir,
+        id: tradeId, pair: pairSymbol, direction: dir,
         lotSize: lot, leverage: lev, openPrice: price, currentPrice: price,
         sl: slNum, tp: tpNum, trailingStopPips: trailN && trailN > 0 ? trailN : null,
         trailingPeak: price,
@@ -2017,33 +2016,45 @@ function PositionSizer({
         openTimestamp: Date.now(),
         pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
       }
-      // Update ref immediately so the tick engine sees the new trade before next render
+      // Reflect the trade and the margin deduction immediately (ref first, so the
+      // tick engine sees it before the next render; balance update is optimistic
+      // and gets overwritten by the authoritative server value once it responds).
       openTradesRef.current = [trade, ...openTradesRef.current]
       setOpenTrades(prev => {
         // Guard: never add the same trade ID twice (prevents double placement on re-render)
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
+      setWalletBalance(prev => prev - margin)
+      showToast("success",
+        `${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)} | Margin: $${margin.toFixed(2)}`
+      )
+      setSl(""); setTp(""); setTrailingPips("")
+      setActivePanel("positions")
+
+      // Deduct margin on the server, then persist the trade. Roll back the
+      // optimistic state above if either step fails.
+      const newBal = await adjustWalletBalance(
+        -margin,
+        `Margin locked — ${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)}`
+      )
+      if (newBal === null) {
+        openTradesRef.current = openTradesRef.current.filter(item => item.id !== tradeId)
+        setOpenTrades(prev => prev.filter(item => item.id !== tradeId))
+        setWalletBalance(prev => prev + margin)
+        return
+      }
+
       const tradeSaved = await persistOpenTrade(trade)
       if (!tradeSaved) {
         openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
         setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
         await adjustWalletBalance(
           margin,
-          `Trade save rollback — ${dir} ${lot}L ${selectedPair.symbol}`
+          `Trade save rollback — ${dir} ${lot}L ${pairSymbol}`
         )
-        setConfirmLoading(false)
-        return
       }
-      showToast("success",
-        `${dir} ${lot}L ${selectedPair.symbol} @ ${fmt(price, selectedPair.symbol)} | Margin: $${margin.toFixed(2)} | Bal: $${newBal.toFixed(2)}`
-      )
-      setSl(""); setTp(""); setTrailingPips("")
-      setActivePanel("positions")
     }
-
-    setTradeConfirm(null)
-    setConfirmLoading(false)
   }
 
   // ��─ Quick trade — routes through confirmation modal ────────────────────────
@@ -2838,13 +2849,21 @@ adjustWalletBalance(
             )}
           </div>
 
-          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2" style={{ borderTop: "1px solid rgba(29,42,58,0.08)", background: "rgba(255,255,255,0.58)" }}>
-            <span className="text-[9px] font-bold tracking-wider" style={{ color: "#2d4565" }}>{visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}instruments</span>
-            <div className="flex items-center gap-1">
+          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2 gap-2" style={{ borderTop: "1px solid rgba(29,42,58,0.1)", background: "linear-gradient(180deg, rgba(248,250,252,0.7), rgba(241,245,249,0.9))" }}>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="relative flex h-1.5 w-1.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#10b981", animation: "ping 2s cubic-bezier(0,0,0.2,1) infinite" }} />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: "#10b981" }} />
+              </span>
+              <span className="text-[9px] font-black tracking-wider truncate" style={{ color: "#1e3a5f" }}>
+                {visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}live instruments
+              </span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
               {(["Forex", "Commodities", "Crypto"] as AssetCategory[]).map(cat => {
                 const count = pairs.filter(p => PAIRS_CONFIG.find(c => c.symbol === p.symbol)?.category === cat).length
                 return (
-                  <span key={cat} className="text-[8px] font-black px-1.5 py-0.5 rounded"
+                  <span key={cat} className="text-[8px] font-black px-1.5 py-0.5 rounded-md"
                     style={{ background: CATEGORY_COLOR[cat].bg, color: CATEGORY_COLOR[cat].text, border: `1px solid ${CATEGORY_COLOR[cat].border}` }}>
                     {cat === "Commodities" ? "Au/Ag" : cat === "Forex" ? "FX" : "C"} {count}
                   </span>
@@ -2892,28 +2911,60 @@ adjustWalletBalance(
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
                 <span className="chart-timeframe-label">Chart interval</span>
-                <div className="chart-timeframes flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex items-center gap-0.5 p-0.5"
+                    style={{
+                      borderRadius: 8,
+                      background: "linear-gradient(180deg, #0a0f1a 0%, #060a12 100%)",
+                      border: "1px solid #1e2d45",
+                      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
+                    }}
+                  >
+                    {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => {
+                      const active = timeframe === tf
+                      return (
+                        <button
+                          key={tf}
+                          type="button"
+                          onClick={() => setTimeframe(tf)}
+                          aria-pressed={active}
+                          className="relative px-2.5 py-1 text-[10px] font-black tracking-wider transition-all duration-150"
+                          style={{
+                            borderRadius: 6,
+                            background: active
+                              ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)"
+                              : "transparent",
+                            color: active ? "#031015" : "#8296ab",
+                            boxShadow: active
+                              ? "0 2px 6px rgba(34,211,238,0.4), inset 0 1px 0 rgba(255,255,255,0.3)"
+                              : "none",
+                          }}
+                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#e2f4fa" }}
+                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#8296ab" }}
+                        >
+                          {tf}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="w-px h-5" style={{ background: "#1e2d45" }} />
                   <button
                     type="button"
                     onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
                     aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
                     title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
-                    className="chart-layout-toggle p-1 transition-colors"
-                    style={{ background: chartLayout === "grid" ? "rgba(168,85,247,0.15)" : "transparent", border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.3)" : "1px solid transparent", borderRadius: 3 }}
+                    className="p-1.5 transition-all duration-150"
+                    style={{
+                      borderRadius: 6,
+                      background: chartLayout === "grid" ? "linear-gradient(180deg, rgba(168,85,247,0.25), rgba(168,85,247,0.1))" : "transparent",
+                      border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.4)" : "1px solid transparent",
+                      boxShadow: chartLayout === "grid" ? "0 0 8px rgba(168,85,247,0.25)" : "none",
+                    }}
                   >
                     {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
                   </button>
-                  {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => (
-                  <button key={tf} onClick={() => setTimeframe(tf)}
-                    className="px-2 py-0.5 text-[9px] font-black tracking-wider transition-all"
-                    style={{ borderRadius: 3,
-                      background: timeframe === tf ? "rgba(34,211,238,0.12)" : "transparent",
-                      color: timeframe === tf ? "#22d3ee" : "#9ab0c0",
-                      border: timeframe === tf ? "1px solid rgba(34,211,238,0.25)" : "1px solid transparent" }}>
-                    {tf}
-                  </button>
-                ))}
-                {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse ml-1" />}
+                  {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                 </div>
               </div>
             </div>
@@ -3352,26 +3403,26 @@ adjustWalletBalance(
             ) : (
               <div className="flex flex-col h-full">
               {/* Positions live summary bar */}
-              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
+              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto" style={{ background: "linear-gradient(180deg,#060a13,#04070d)", borderBottom: "1px solid #1a2640" }}>
                 {[
-                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.09)" : "rgba(248,113,113,0.09)" },
                   { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
                   { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
                   { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
                   { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
                   { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-                    <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-8 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#4d6a95" }}>{item.label}</span>
+                    <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
                   </div>
                 ))}
                 {/* Close all button */}
                 <button
                   onClick={() => { openTrades.forEach(t => closeTrade(t.id)) }}
-                  className="ml-auto mr-2 px-2.5 py-1 rounded font-black text-[9px] uppercase tracking-wider transition-all active:scale-95"
-                  style={{ background: "rgba(239,68,68,0.1)", color: "#f87171", border: "1px solid rgba(239,68,68,0.2)" }}>
-                  Close All
+                  className="ml-auto mr-2 my-1 px-2.5 py-1 rounded-md font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 shrink-0 flex items-center gap-1"
+                  style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+                  <X className="h-2.5 w-2.5" /> Close All
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
@@ -3387,34 +3438,43 @@ adjustWalletBalance(
                   const isGd     = isGold(trade.pair)
 
                   return (
-                    <div key={trade.id} className="rounded-xl price-mono text-[11px]"
-                      style={{ background: "#0d1625", border: "1px solid #1a2a42" }}>
+                    <div key={trade.id} className="rounded-xl price-mono text-[11px] overflow-hidden"
+                      style={{ background: "#0d1625", border: `1px solid ${pnlPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, boxShadow: `0 0 0 1px rgba(0,0,0,0.2), 0 4px 16px -4px ${pnlPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
+                      {/* Direction accent strip */}
+                      <div className="h-[3px] w-full" style={{ background: isBuy ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
                       {/* Card header */}
-                      <div className="flex items-center justify-between px-3 py-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center justify-center w-7 h-7 rounded-full font-black text-[10px]"
-                            style={{ background: isGd ? "#b45309" : isCr ? "#1d4ed8" : "#0f4c81", color: "#fff" }}>
+                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42", background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="relative flex items-center justify-center w-9 h-9 rounded-full font-black text-[11px] shrink-0"
+                            style={{ background: isGd ? "linear-gradient(135deg,#d97706,#b45309)" : isCr ? "linear-gradient(135deg,#3b82f6,#1d4ed8)" : "linear-gradient(135deg,#1976c9,#0f4c81)", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
                             {ASSET_ICON[trade.pair] ?? base.slice(0, 2)}
+                            {isBuy ? (
+                              <ArrowUpRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#10b981", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
+                            ) : (
+                              <ArrowDownRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#ef4444", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
+                            )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-1.5">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-black text-white text-[13px]">{trade.pair}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase"
-                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444" }}>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
+                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444", border: `1px solid ${isBuy ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }}>
                                 {trade.direction}
                               </span>
-                              <span className="text-[9px] font-bold text-amber-500">×{trade.leverage}</span>
+                              <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)" }}>×{trade.leverage}</span>
                             </div>
-                            <span className="text-[9px] text-slate-500">{trade.lotSize} Lot · {duration}</span>
+                            <span className="text-[9px] text-slate-500 flex items-center gap-1">
+                              <span className="font-bold text-slate-400">{trade.lotSize} Lot</span> · <Clock className="h-2.5 w-2.5" /> {duration}
+                            </span>
                           </div>
                         </div>
                         {/* PnL big display */}
-                        <div className="text-right">
-                          <p className="text-[20px] font-black leading-none" style={{ color: pnlClr }}>
+                        <div className="text-right shrink-0 pl-2">
+                          <p className="text-[22px] font-black leading-none tracking-tight" style={{ color: pnlClr, textShadow: `0 0 16px ${pnlClr}33` }}>
                             {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
                           </p>
-                          <p className="text-[9px]" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
-                          <p className="text-[9px] text-slate-500">ROE: <span style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
+                          <p className="text-[9px] font-bold mt-0.5" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
+                          <p className="text-[9px] text-slate-500">ROE <span className="font-bold" style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
                         </div>
                       </div>
 
@@ -3735,7 +3795,7 @@ adjustWalletBalance(
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���─────────────────────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���───────────────���─────────────────────────── */}
       {tradeConfirm && (
         <div
           className="absolute inset-0 z-50 flex items-center justify-center"

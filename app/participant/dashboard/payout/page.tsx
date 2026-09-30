@@ -24,24 +24,50 @@ import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account
 import { TopUpModal } from "@/components/topup-modal"
 
 
-const PAYOUT_PLANS = [
+const MIN_WITHDRAWAL = 50
+
+const NETWORKS = [
   {
-    id: "platinum",
-    label: "Crypto Withdrawal",
-    amount: 50,
-    minAmount: 50,
-    method: "BEP20",
-    accent: "from-violet-500 to-purple-600",
-    border: "border-violet-300",
-    bg: "bg-violet-50",
-    badge: "bg-violet-200 text-violet-800",
-    ring: "ring-violet-500",
-    icon: "USDT",
-    description: "Secure wallet settlement via BEP20 network",
+    id: "BEP20",
+    label: "BNB Smart Chain",
+    ticker: "USDT (BEP20)",
+    fee: 1,
+    eta: "1 - 5 minutes",
+    accent: "from-amber-400 to-yellow-500",
+    border: "border-amber-300",
+    bg: "bg-amber-50",
+    ring: "ring-amber-500",
+    addressHint: "Starts with 0x, 42 characters",
+  },
+  {
+    id: "TRC20",
+    label: "Tron Network",
+    ticker: "USDT (TRC20)",
+    fee: 1,
+    eta: "1 - 5 minutes",
+    accent: "from-red-500 to-rose-600",
+    border: "border-red-300",
+    bg: "bg-red-50",
+    ring: "ring-red-500",
+    addressHint: "Starts with T, 34 characters",
+  },
+  {
+    id: "ERC20",
+    label: "Ethereum",
+    ticker: "USDT (ERC20)",
+    fee: 5,
+    eta: "5 - 30 minutes",
+    accent: "from-indigo-500 to-blue-600",
+    border: "border-indigo-300",
+    bg: "bg-indigo-50",
+    ring: "ring-indigo-500",
+    addressHint: "Starts with 0x, 42 characters",
   },
 ] as const
 
-type PayoutPlanId = (typeof PAYOUT_PLANS)[number]["id"]
+type NetworkId = (typeof NETWORKS)[number]["id"]
+
+const QUICK_PERCENTAGES = [25, 50, 75, 100] as const
 
 export default function PayoutPage() {
   const router = useRouter()
@@ -52,10 +78,10 @@ export default function PayoutPage() {
   const [payoutHistory, setPayoutHistory] = useState<any[]>([])
   const [queuePosition, setQueuePosition] = useState(15)
   const [payoutNumber] = useState(() => Math.floor(Math.random() * (34000 - 5000 + 1)) + 5000)
-  const [selectedPayoutPlanId, setSelectedPayoutPlanId] = useState<PayoutPlanId>("platinum")
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
   const [bep20Address, setBep20Address] = useState("")
-  const [selectedNetwork, setSelectedNetwork] = useState<"BEP20" | "TRC20" | "ERC20">("BEP20")
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkId>("BEP20")
+  const [withdrawAmount, setWithdrawAmount] = useState("")
   const [showDisputeDialog, setShowDisputeDialog] = useState(false)
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
   const [disputeReason, setDisputeReason] = useState("")
@@ -114,6 +140,8 @@ export default function PayoutPage() {
 
   const isFrozenFundedAccount = participantData?.account_type === "funded" && participantData?.funded_breach_status === "breached"
 
+  const selectedNetworkConfig = NETWORKS.find((n) => n.id === selectedNetwork) ?? NETWORKS[0]
+
   const handleRequestWithdrawal = () => {
     if (isFrozenFundedAccount) {
       setShowTopUpModal(true)
@@ -121,10 +149,9 @@ export default function PayoutPage() {
     }
 
     const walletBalance = participantData?.account_balance || 0
-    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
     const requestedAmount = isFundedAccount
       ? getFundedPayoutAmount(walletBalance, participantData?.funded_amount)
-      : plan.amount
+      : Number(withdrawAmount) || 0
 
     if (hasActivePayout) {
       toast({
@@ -144,10 +171,19 @@ export default function PayoutPage() {
       return
     }
 
-    if (!isFundedAccount && walletBalance < plan.amount) {
+    if (!isFundedAccount && requestedAmount < MIN_WITHDRAWAL) {
+      toast({
+        title: "Amount Too Low",
+        description: `Minimum withdrawal amount is $${MIN_WITHDRAWAL}`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!isFundedAccount && walletBalance < requestedAmount) {
       toast({
         title: "Insufficient Balance",
-        description: `You need $${plan.amount} to request a ${plan.label} withdrawal`,
+        description: `You need $${requestedAmount.toFixed(2)} to request this withdrawal`,
         variant: "destructive",
       })
       return
@@ -162,7 +198,9 @@ export default function PayoutPage() {
       return
     }
 
-    const plan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
+    const requestedAmount = isFundedAccount
+      ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
+      : Number(withdrawAmount) || 0
 
   if (!bep20Address.trim()) {
   toast({
@@ -193,9 +231,7 @@ export default function PayoutPage() {
         method: "POST",
         body: JSON.stringify({
           email: participantData?.email,
-          amount: isFundedAccount
-            ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
-            : plan.amount,
+          amount: requestedAmount,
           bep20_address: bep20Address,
           payout_method: selectedNetwork,
         }),
@@ -305,11 +341,14 @@ export default function PayoutPage() {
   const maximumFundedPayout = isFundedAccount
     ? getFundedPayoutAmount(walletBalance, participantData?.funded_amount)
     : 0
-  const selectedPayoutPlan = PAYOUT_PLANS.find((p) => p.id === selectedPayoutPlanId) ?? PAYOUT_PLANS[0]
+  const enteredAmount = Number(withdrawAmount) || 0
+  const withdrawalAmount = isFundedAccount ? maximumFundedPayout : enteredAmount
+  const networkFee = selectedNetworkConfig.fee
+  const amountAfterFee = Math.max(0, withdrawalAmount - networkFee)
 
   const canWithdraw = isFundedAccount
     ? maximumFundedPayout > 0 && !hasActivePayout
-    : walletBalance >= selectedPayoutPlan.amount && !hasActivePayout
+    : enteredAmount >= MIN_WITHDRAWAL && walletBalance >= enteredAmount && !hasActivePayout
   
   // Helper function to render horizontal status tracker
   const renderStatusTracker = (status: string, transactionHash?: string) => {
@@ -489,9 +528,48 @@ export default function PayoutPage() {
               ${walletBalance.toFixed(2)}
             </p>
 
-  {/* Withdrawal method selector */}
+  {/* Network selector */}
   <div className="space-y-2 mb-5">
-  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Withdrawal" : "Select Withdrawal Amount"}</p>
+    <p className="text-sm font-semibold text-slate-700">Withdrawal Network</p>
+    <div className="grid grid-cols-3 gap-2">
+      {NETWORKS.map((network) => {
+        const isSelected = selectedNetwork === network.id
+        const isDisabled = isFrozenFundedAccount || hasActivePayout
+        return (
+          <button
+            key={network.id}
+            type="button"
+            onClick={() => !isDisabled && setSelectedNetwork(network.id)}
+            disabled={isDisabled}
+            className={`rounded-xl border-2 px-2.5 py-3 text-left transition-all duration-200 ${
+              isDisabled
+                ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
+                : isSelected
+                ? `${network.border} ${network.bg} ring-2 ${network.ring} ring-offset-1 shadow-sm`
+                : "border-slate-200 bg-white hover:border-slate-300"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className={`h-6 w-6 rounded-md bg-gradient-to-br ${network.accent} flex items-center justify-center text-[9px] font-bold text-white shadow-sm`}>
+                {network.id.slice(0, 1)}
+              </span>
+              {isSelected && !isDisabled && (
+                <CheckCircle2 className="h-4 w-4 text-slate-700" />
+              )}
+            </div>
+            <p className="text-xs font-bold text-slate-900 mt-1.5">{network.id}</p>
+            <p className="text-[10px] text-slate-500 leading-tight">{network.label}</p>
+            <p className="text-[10px] font-semibold text-slate-600 mt-1">Fee ${network.fee.toFixed(2)}</p>
+          </button>
+        )
+      })}
+    </div>
+    <p className="text-xs text-slate-400">Est. arrival: {selectedNetworkConfig.eta} on {selectedNetworkConfig.label}</p>
+  </div>
+
+  {/* Withdrawal amount */}
+  <div className="space-y-2 mb-5">
+  <p className="text-sm font-semibold text-slate-700">{isFundedAccount ? "Funded Account Withdrawal" : "Withdrawal Amount"}</p>
   {isFundedAccount ? (
   <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
   {maximumFundedPayout > 0 ? (
@@ -506,56 +584,72 @@ export default function PayoutPage() {
   <p>Withdrawals unlock after your balance exceeds the ${fundedBaseAmount.toFixed(2)} funded amount.</p>
   )}
   </div>
-  ) : PAYOUT_PLANS.map((plan) => {
-                const isSelected = selectedPayoutPlanId === plan.id
-                const canAfford = walletBalance >= plan.amount
-                const isDisabled = isFrozenFundedAccount || hasActivePayout
-                return (
-                  <button
-                    key={plan.id}
-                    onClick={() => !isDisabled && setSelectedPayoutPlanId(plan.id)}
-                    disabled={isDisabled}
-                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-all duration-200 relative overflow-hidden ${
-                      isDisabled
-                        ? "border-slate-200 bg-slate-50 cursor-not-allowed opacity-70"
-                        : isSelected
-                        ? `${plan.border} ${plan.bg} ring-2 ${plan.ring} ring-offset-1 shadow-sm`
-                        : "border-slate-200 bg-white hover:border-slate-300"
-                    } ${hasActivePayout ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-9 w-9 rounded-lg bg-gradient-to-br ${plan.accent} flex items-center justify-center text-base shadow-sm`}>
-                          {plan.icon}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-900">{plan.label}</span>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {plan.description}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        {!canAfford ? (
-                          <span className="text-xs text-red-500 font-medium">Need ${plan.amount - walletBalance > 0 ? (plan.amount - walletBalance).toFixed(2) : 0} more</span>
-                        ) : null}
-                        <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center ${
-                          isDisabled
-                            ? "border-slate-200 bg-slate-100"
-                            : isSelected
-                            ? `${plan.border} bg-gradient-to-br ${plan.accent}`
-                            : "border-slate-300 bg-white"
-                        }`}>
-                          {isSelected && !isDisabled && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
+  ) : (
+  <>
+    <div className="relative">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">$</span>
+      <Input
+        type="number"
+        inputMode="decimal"
+        placeholder={`Min. $${MIN_WITHDRAWAL}`}
+        value={withdrawAmount}
+        onChange={(e) => setWithdrawAmount(e.target.value)}
+        disabled={isFrozenFundedAccount || hasActivePayout}
+        className="h-14 pl-8 pr-20 text-lg font-bold rounded-xl"
+      />
+      <button
+        type="button"
+        onClick={() => setWithdrawAmount(String(walletBalance))}
+        disabled={isFrozenFundedAccount || hasActivePayout}
+        className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold hover:bg-emerald-200 disabled:opacity-50"
+      >
+        MAX
+      </button>
+    </div>
+    <div className="flex items-center gap-2">
+      {QUICK_PERCENTAGES.map((pct) => (
+        <button
+          key={pct}
+          type="button"
+          onClick={() => setWithdrawAmount(((walletBalance * pct) / 100).toFixed(2))}
+          disabled={isFrozenFundedAccount || hasActivePayout}
+          className="flex-1 h-8 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:bg-slate-100 disabled:opacity-50"
+        >
+          {pct}%
+        </button>
+      ))}
+    </div>
+    {enteredAmount > 0 && enteredAmount < MIN_WITHDRAWAL && (
+      <p className="text-xs text-red-500 font-medium">Minimum withdrawal is ${MIN_WITHDRAWAL}</p>
+    )}
+    {enteredAmount > walletBalance && (
+      <p className="text-xs text-red-500 font-medium">Amount exceeds available balance</p>
+    )}
+  </>
+  )}
+  </div>
+
+  {/* Fee breakdown */}
+  {withdrawalAmount > 0 && (
+    <div className="bg-slate-50 rounded-xl p-4 space-y-2 mb-5 border border-slate-100">
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-slate-500">Withdrawal amount</span>
+        <span className="font-semibold text-slate-800">${withdrawalAmount.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-slate-500">Network fee ({selectedNetworkConfig.id})</span>
+        <span className="font-semibold text-slate-800">-${networkFee.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-200">
+        <span className="text-slate-600 font-medium">You will receive</span>
+        <span className="font-bold text-emerald-600">${amountAfterFee.toFixed(2)}</span>
+      </div>
+      <div className="flex items-center justify-between text-xs pt-1">
+        <span className="text-slate-400">Estimated arrival</span>
+        <span className="text-slate-500 font-medium">{selectedNetworkConfig.eta}</span>
+      </div>
+    </div>
+  )}
 
             <button
               onClick={handleRequestWithdrawal}
@@ -571,7 +665,7 @@ export default function PayoutPage() {
               <Wallet className="h-5 w-5" />
               {isFundedAccount
                 ? `Withdraw $${maximumFundedPayout.toFixed(2)} Funded Profit`
-                : `Withdraw $${selectedPayoutPlan.amount} via ${selectedPayoutPlan.label}`}
+                : `Withdraw via ${selectedNetworkConfig.id}`}
             </button>
 
             {!canWithdraw && (
@@ -580,7 +674,7 @@ export default function PayoutPage() {
                   ? "Complete your current withdrawal before placing a new one"
                   : isFundedAccount
                   ? `Your balance must exceed $${fundedBaseAmount.toFixed(2)} to unlock an 80% excess-profit withdrawal`
-                  : `Need $${selectedPayoutPlan.amount} minimum balance for ${selectedPayoutPlan.label} withdrawal`}
+                  : `Enter an amount of at least $${MIN_WITHDRAWAL} to continue`}
               </p>
             )}
           </CardContent>
@@ -783,49 +877,54 @@ export default function PayoutPage() {
         </DialogContent>
       </Dialog>
 
-      {/* BEP20 Address Confirmation Dialog */}
+      {/* Wallet Address Confirmation Dialog */}
       <Dialog open={showPayoutDialog} onOpenChange={setShowPayoutDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900">Confirm Withdrawal Details</DialogTitle>
             <DialogDescription className="text-slate-600">
-              Enter your {selectedNetwork} wallet address to receive {isFundedAccount ? `$${maximumFundedPayout.toFixed(2)} funded profit` : `$${selectedPayoutPlan.amount} ${selectedPayoutPlan.label}`} withdrawal
+              Enter your {selectedNetworkConfig.id} wallet address to receive this withdrawal
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
-  <div className="space-y-2">
-  <Label htmlFor="payoutNetwork" className="text-sm font-semibold text-slate-700">Withdrawal Network</Label>
-  <select
-  id="payoutNetwork"
-  value={selectedNetwork}
-  onChange={(event) => setSelectedNetwork(event.target.value as "BEP20" | "TRC20" | "ERC20")}
-  className="h-12 w-full rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700"
-  disabled={isWithdrawing}
-  >
-  <option value="BEP20">BEP20 (BNB Smart Chain)</option>
-  <option value="TRC20">TRC20 (Tron)</option>
-  <option value="ERC20">ERC20 (Ethereum)</option>
-  </select>
-  <p className="text-xs text-slate-500">Choose the network that matches your receiving wallet.</p>
+  {/* Network summary (read-only, chosen on the main screen) */}
+  <div className={`flex items-center justify-between rounded-xl border-2 ${selectedNetworkConfig.border} ${selectedNetworkConfig.bg} px-4 py-3`}>
+    <div className="flex items-center gap-3">
+      <span className={`h-8 w-8 rounded-lg bg-gradient-to-br ${selectedNetworkConfig.accent} flex items-center justify-center text-xs font-bold text-white shadow-sm`}>
+        {selectedNetworkConfig.id.slice(0, 1)}
+      </span>
+      <div>
+        <p className="text-sm font-bold text-slate-900">{selectedNetworkConfig.ticker}</p>
+        <p className="text-xs text-slate-500">{selectedNetworkConfig.label}</p>
+      </div>
+    </div>
+    <button
+      type="button"
+      onClick={() => setShowPayoutDialog(false)}
+      disabled={isWithdrawing}
+      className="text-xs font-semibold text-slate-600 underline underline-offset-2 hover:text-slate-900"
+    >
+      Change
+    </button>
   </div>
 
   {/* Wallet Address Input */}
   <div className="space-y-2">
   <Label htmlFor="bep20Address" className="text-sm font-semibold text-slate-700">
-  {selectedNetwork} Wallet Address
+  {selectedNetworkConfig.id} Wallet Address
   </Label>
               <Input
                 id="bep20Address"
                 type="text"
-                placeholder={`Enter your ${selectedNetwork} wallet address here`}
+                placeholder={`Enter your ${selectedNetworkConfig.id} wallet address here`}
                 value={bep20Address}
                 onChange={(e) => setBep20Address(e.target.value)}
                 className="h-12 text-sm font-mono"
                 disabled={isWithdrawing}
               />
               <p className="text-xs text-slate-500">
-                Make sure your address is correct. Funds sent to wrong address cannot be recovered.
+                {selectedNetworkConfig.addressHint}. Make sure your address is correct — funds sent to the wrong address cannot be recovered.
               </p>
             </div>
 
@@ -852,13 +951,21 @@ export default function PayoutPage() {
 
             {/* Payout Summary */}
             <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Withdrawal Amount</span>
-                <span className="text-lg font-bold text-[#10b981]">${selectedPayoutPlan.amount} ({selectedPayoutPlan.label})</span>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600">Withdrawal amount</span>
+                <span className="font-semibold text-slate-900">${withdrawalAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-slate-600">Network fee</span>
+                <span className="font-semibold text-slate-900">-${networkFee.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between pt-2 border-t border-slate-200">
-                <span className="text-sm text-slate-600">Processing Time</span>
-                <span className="text-sm font-medium text-slate-900">1-24 hours</span>
+                <span className="text-sm text-slate-600">You will receive</span>
+                <span className="text-lg font-bold text-[#10b981]">${amountAfterFee.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-200">
+                <span className="text-sm text-slate-600">Estimated arrival</span>
+                <span className="text-sm font-medium text-slate-900">{selectedNetworkConfig.eta}</span>
               </div>
             </div>
           </div>
