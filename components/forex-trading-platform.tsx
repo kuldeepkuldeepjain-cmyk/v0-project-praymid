@@ -1597,7 +1597,7 @@ function PositionSizer({
     return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
   }, [fetchRates])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�����────
+  // ── Re-fetch candles when pair/TF changes ─────────────────────────────�������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -1849,7 +1849,9 @@ function PositionSizer({
 
   // Open P/L includes both mark-to-market P/L and accrued swap so equity,
   // free margin, margin level, and drawdown use the same account-wide figure.
-  const newTotalPnl = updated.reduce((s, t) => s + t.pnl + t.swap, 0)
+  // t.pnl already has t.swap folded in (see the tick update above), so do not
+  // add t.swap again here — that would double-count it in the account total.
+  const newTotalPnl = updated.reduce((s, t) => s + t.pnl, 0)
   setTotalPnl(parseFloat(newTotalPnl.toFixed(2)))
 
     // Equity includes margin locked in open positions plus floating P/L.
