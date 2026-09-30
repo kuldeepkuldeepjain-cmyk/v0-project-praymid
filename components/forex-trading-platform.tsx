@@ -1220,7 +1220,7 @@ function PositionSizer({
   const [timeframe, setTimeframe]     = useState<TimeFrame>("5M")
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("1000")
+  const [leverage, setLeverage]       = useState("200")
   const effectiveLeverage = isFundedAccount ? 1 : parseFloat(leverage) || 1
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
