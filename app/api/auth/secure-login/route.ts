@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { setAdminSession } from "@/lib/session"
 import { enforceRateLimit, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 
-const DEFAULT_ADMIN_EMAIL = "montyflowchain890@gmail.com"
-const DEFAULT_ADMIN_PASSWORD = "final@1593"
-
 function getCredentials(loginType: string) {
   const isSuperAdminLogin = loginType === "superadmin"
   const isCustomerCareLogin = loginType === "customer-care"
@@ -14,12 +11,9 @@ function getCredentials(loginType: string) {
   const requestedName = isSuperAdminLogin ? "Super Admin" : isCustomerCareLogin ? "Customer Care" : "Admin"
   const basePermissions = { canViewParticipants: true, canViewPayments: true, canManageAccounts: true }
 
-  return [
-    { email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD, role: "admin" as const, name: "Admin", permissions: basePermissions },
-    ...(configuredEmail && configuredPassword
-      ? [{ email: configuredEmail, password: configuredPassword, role: requestedRole, name: requestedName, permissions: basePermissions }]
-      : []),
-  ]
+  return configuredEmail && configuredPassword
+    ? [{ email: configuredEmail, password: configuredPassword, role: requestedRole, name: requestedName, permissions: basePermissions }]
+    : []
 }
 
 export async function POST(request: NextRequest) {
@@ -53,12 +47,7 @@ export async function POST(request: NextRequest) {
     // The handleSetupQR and handleVerifyCode functions in login page verify the code
     // and only call this endpoint if verification succeeds
 
-    // Save session using the shared session lib so encryption key is consistent
-    try {
-      await setAdminSession({ email: match.email, role: match.role })
-    } catch (_) {
-      // Session save is best-effort — client uses localStorage auth
-    }
+    await setAdminSession({ email: match.email, role: match.role })
 
     void updateParticipantSecurityProfile(match.email, request, 0).catch((error) => {
       console.error("[v0] admin security profile update failed", error)

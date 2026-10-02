@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { getParticipantSession, getAdminSession } from "@/lib/session"
 import { recordSecurityEvent } from "@/lib/security"
 
-// Valid admin emails — used for token-based auth fallback
-const ADMIN_EMAILS = [process.env.ADMIN_EMAIL, process.env.SUPER_ADMIN_EMAIL, "montyflowchain890@gmail.com"]
-  .filter((email): email is string => Boolean(email))
-  .map((email) => email.toLowerCase())
-
 // ── Participant route guard ────────────────────────────────────────────────
 export async function requireParticipantSession(
   req?: NextRequest,
@@ -35,15 +30,6 @@ export async function requireAdminSession(
   req?: NextRequest,
   requireSuperAdmin = false,
 ): Promise<{ ok: true; email: string; role: "admin" | "super_admin" | "customer_care" } | { ok: false; response: NextResponse }> {
-  // Try X-Admin-Token header first (localStorage token sent by admin frontend)
-  if (req) {
-    const token = req.headers.get("X-Admin-Token")
-    if (token && ADMIN_EMAILS.includes(token.toLowerCase())) {
-      void recordSecurityEvent({ eventType: "admin_request", actorType: "admin", actorEmail: token, request: req, resourceType: "api_route", resourceId: req.nextUrl.pathname })
-      return { ok: true, email: token, role: "admin" }
-    }
-  }
-  // Fall back to iron-session cookie
   try {
     const session = await getAdminSession()
     if (!session.isLoggedIn || !session.email) {

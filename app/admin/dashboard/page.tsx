@@ -86,7 +86,7 @@ export default function AdminDashboard() {
     const data = getAdminData()
 
     if (!isAdminAuthenticated()) {
-      router.push("/admin/login")
+      router.push("/finalflow/login")
       return
     }
 
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     clearAdminAuth()
-    router.push("/admin/login")
+    router.push("/finalflow/login")
   }
 
   const filteredWallets = wallets.filter(
