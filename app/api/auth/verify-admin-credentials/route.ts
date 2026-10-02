@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const DEFAULT_ADMIN_EMAIL = "montyflowchain890@gmail.com"
-const DEFAULT_ADMIN_PASSWORD = "final@1593"
-
 function getAdminCredentials() {
   const configuredAdmin = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD
     ? [{ email: process.env.ADMIN_EMAIL.trim().toLowerCase(), password: process.env.ADMIN_PASSWORD, role: "admin" }]
@@ -14,12 +11,7 @@ function getAdminCredentials() {
     ? [{ email: process.env.CUSTOMER_CARE_EMAIL.trim().toLowerCase(), password: process.env.CUSTOMER_CARE_PASSWORD, role: "customer_care" }]
     : []
 
-  return [
-    { email: DEFAULT_ADMIN_EMAIL, password: DEFAULT_ADMIN_PASSWORD, role: "admin" },
-    ...configuredAdmin,
-    ...configuredSuperAdmin,
-    ...configuredCustomerCare,
-  ]
+  return [...configuredAdmin, ...configuredSuperAdmin, ...configuredCustomerCare]
 }
 
 export async function POST(request: NextRequest) {

@@ -42,13 +42,9 @@ export function SendNotificationPanel() {
     setIsSending(true)
 
     try {
-      const adminToken = typeof window !== "undefined" ? localStorage.getItem("admin_token") : null
       const response = await fetch("/api/admin/send-notification", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(adminToken ? { "X-Admin-Token": adminToken } : {}),
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           recipientType,
           recipientEmail: recipientEmail.trim().toLowerCase(),

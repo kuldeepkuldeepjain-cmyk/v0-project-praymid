@@ -1,36 +1,24 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   Activity,
   AlertTriangle,
-  ArrowDownRight,
   ArrowUpRight,
-  BadgeCheck,
   Banknote,
   BookOpen,
-  Bot,
   Cable,
   Check,
-  ChevronRight,
-  CircleDollarSign,
+  Database,
   FileClock,
-  FilePenLine,
   Landmark,
-  LockKeyhole,
-  MoreHorizontal,
-  PauseCircle,
-  Pencil,
-  Plus,
+  Loader2,
   RefreshCw,
   Search,
-  Server,
   ShieldCheck,
-  SlidersHorizontal,
-  UserCheck,
   Users,
   WalletCards,
-  X,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -38,101 +26,207 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
+import { adminFetch } from "@/lib/auth"
 
-const plansSeed = [
-  { id: "CH-10K", name: "Starter Challenge", size: 10000, fee: 89, drawdown: 8, daily: 4, target: 10, leverage: "1:50", split: 80, active: true },
-  { id: "CH-50K", name: "Professional Challenge", size: 50000, fee: 299, drawdown: 10, daily: 5, target: 10, leverage: "1:50", split: 80, active: true },
-  { id: "CH-100K", name: "Pro Desk", size: 100000, fee: 499, drawdown: 10, daily: 5, target: 12, leverage: "1:100", split: 85, active: true },
-]
-
-const accountsSeed = [
-  { id: "MT5-10482", trader: "Aarav Mehta", email: "aarav@example.com", plan: "CH-50K", balance: 50000, equity: 52640, pnl: 2640, status: "Active", risk: "Low" },
-  { id: "MT5-10477", trader: "Sara Khan", email: "sara@example.com", plan: "CH-10K", balance: 10000, equity: 9560, pnl: -440, status: "Review", risk: "High" },
-  { id: "MT5-10461", trader: "Noah Wilson", email: "noah@example.com", plan: "CH-100K", balance: 100000, equity: 103820, pnl: 3820, status: "Active", risk: "Low" },
-  { id: "MT5-10440", trader: "Mia Chen", email: "mia@example.com", plan: "CH-50K", balance: 50000, equity: 50000, pnl: 0, status: "Suspended", risk: "Blocked" },
-]
-
-const positionsSeed = [
-  { id: "#10245", trader: "Chirag", symbol: "XAUUSD", side: "BUY", volume: 2, open: "2,650", current: "2,657", pnl: 1400, sl: "2,640", tp: "2,670", margin: 5300 },
-  { id: "#10881", trader: "Chirag", symbol: "EURUSD", side: "SELL", volume: 1, open: "1.1710", current: "1.1730", pnl: -200, sl: "1.1750", tp: "1.1650", margin: 1171 },
-]
-
-const breachSeed = [
-  { account: "MT5-10477", trader: "Sara Khan", type: "Daily drawdown", limit: "5%", actual: "5.4%", time: "12 min ago", severity: "Critical" },
-  { account: "MT5-10398", trader: "Rohan Patel", type: "Max drawdown", limit: "10%", actual: "9.8%", time: "44 min ago", severity: "Warning" },
-]
-
-const navItems = [
-  ["overview", "Overview", Activity], ["plans", "Plans", SlidersHorizontal], ["accounts", "Trading Accounts", Landmark],
-  ["risk", "Risk & Breaches", ShieldCheck], ["positions", "Live Positions", ArrowUpRight], ["performance", "Performance", BookOpen],
-  ["payouts", "Payouts", Banknote], ["payments", "Payments", WalletCards], ["kyc", "KYC Review", UserCheck],
-  ["users", "Users", Users], ["audit", "Audit Logs", FileClock], ["broker", "Broker Integration", Cable],
-] as const
-
-type TabKey = (typeof navItems)[number][0]
-
-type Plan = typeof plansSeed[number]
-
-function Metric({ label, value, detail, tone = "default" }: { label: string; value: string; detail: string; tone?: "default" | "positive" | "warning" | "danger" }) {
-  const toneClass = tone === "positive" ? "text-emerald-400" : tone === "warning" ? "text-amber-300" : tone === "danger" ? "text-red-300" : "text-foreground"
-  return <Card className="border-border/70 bg-card/80"><CardContent className="p-4"><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold ${toneClass}`}>{value}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></CardContent></Card>
+type TabKey = "overview" | "plans" | "accounts" | "risk" | "positions" | "performance" | "payouts" | "payments" | "kyc" | "users" | "audit" | "broker"
+type Row = Record<string, unknown>
+type RoomData = {
+  generatedAt: string
+  summary: Row
+  accounts: Row[]
+  positions: Row[]
+  performance: Row
+  riskFlags: Row[]
+  payouts: Row[]
+  payments: Row[]
+  kyc: Row[]
+  users: Row[]
+  auditLogs: Row[]
+  accountTypes: Row[]
+  history: Row[]
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const tone = status === "Active" || status === "Approved" || status === "Connected" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : status === "Critical" || status === "Suspended" || status === "Rejected" ? "border-red-500/30 bg-red-500/10 text-red-300" : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-  return <Badge variant="outline" className={tone}>{status}</Badge>
+const navItems: Array<{ id: TabKey; label: string; icon: typeof Activity }> = [
+  { id: "overview", label: "Overview", icon: Activity },
+  { id: "plans", label: "Account types", icon: Landmark },
+  { id: "accounts", label: "Trading accounts", icon: Users },
+  { id: "risk", label: "Risk & breaches", icon: ShieldCheck },
+  { id: "positions", label: "Live positions", icon: ArrowUpRight },
+  { id: "performance", label: "Performance", icon: BookOpen },
+  { id: "payouts", label: "Payouts", icon: Banknote },
+  { id: "payments", label: "Payments", icon: WalletCards },
+  { id: "kyc", label: "KYC review", icon: Check },
+  { id: "users", label: "Users", icon: Users },
+  { id: "audit", label: "Audit logs", icon: FileClock },
+  { id: "broker", label: "Data feed", icon: Cable },
+]
+
+const currency = (value: unknown) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 }).format(Number(value ?? 0))
+const number = (value: unknown, digits = 0) => new Intl.NumberFormat("en-US", { maximumFractionDigits: digits }).format(Number(value ?? 0))
+const optionalNumber = (value: unknown, digits = 5) => value == null || value === "" ? "—" : number(value, digits)
+const dateTime = (value: unknown) => value ? new Date(String(value)).toLocaleString() : "—"
+const text = (value: unknown, fallback = "—") => value == null || value === "" ? fallback : String(value)
+
+function StatusBadge({ status }: { status: unknown }) {
+  const value = text(status, "unknown")
+  const normalized = value.toLowerCase()
+  const tone = ["approved", "active", "clear", "reviewed", "completed"].includes(normalized)
+    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+    : ["breached", "critical", "high", "rejected", "frozen"].includes(normalized)
+      ? "border-red-500/30 bg-red-500/10 text-red-300"
+      : ["pending", "under_review", "medium", "warning", "processing", "matched"].includes(normalized)
+        ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
+        : "border-border bg-muted/50 text-muted-foreground"
+  return <Badge variant="outline" className={tone}>{value.replaceAll("_", " ")}</Badge>
+}
+
+function Metric({ label, value, detail, tone = "default" }: { label: string; value: string; detail: string; tone?: "default" | "positive" | "warning" | "danger" }) {
+  const valueTone = tone === "positive" ? "text-emerald-300" : tone === "warning" ? "text-amber-300" : tone === "danger" ? "text-red-300" : "text-foreground"
+  return <Card className="border-border/70 bg-card/80"><CardContent className="p-4"><p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">{label}</p><p className={`mt-2 text-2xl font-semibold tabular-nums ${valueTone}`}>{value}</p><p className="mt-1 text-xs leading-relaxed text-muted-foreground">{detail}</p></CardContent></Card>
 }
 
 function SectionHeader({ title, description, action }: { title: string; description: string; action?: React.ReactNode }) {
-  return <div className="flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-semibold text-foreground">{title}</h2><p className="mt-1 text-sm text-muted-foreground">{description}</p></div>{action}</div>
+  return <div className="flex flex-col gap-3 border-b border-border/70 pb-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-semibold text-foreground">{title}</h2><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p></div>{action}</div>
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return <div className="px-6 py-12 text-center text-sm text-muted-foreground">{children}</div>
+}
+
+function TableFrame({ children, minWidth = "min-w-[720px]" }: { children: React.ReactNode; minWidth?: string }) {
+  return <div className="overflow-x-auto rounded-lg border border-border/70"><table className={`w-full ${minWidth} text-left text-sm`}>{children}</table></div>
+}
+
+async function requestJSON(path: string, init?: RequestInit) {
+  const response = await adminFetch(path, init)
+  const result = await response.json().catch(() => ({}))
+  if (!response.ok || !result.success) throw new Error(result.error || "The request could not be completed.")
+  return result
+}
+
+async function loadControlRoom(): Promise<RoomData> {
+  const result = await requestJSON("/api/admin/trading-control-room")
+  return result as RoomData
+}
+
+function ControlRoomContent() {
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
+  const [activeTab, setActiveTab] = useState<TabKey>("overview")
+  const [search, setSearch] = useState("")
+  const room = useQuery({
+    queryKey: ["admin-trading-control-room"],
+    queryFn: loadControlRoom,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
+    retry: 1,
+  })
+  const refresh = () => room.refetch()
+  const reloadAfterAction = () => queryClient.invalidateQueries({ queryKey: ["admin-trading-control-room"] })
+
+  const closeTrades = useMutation({
+    mutationFn: async (email: string) => requestJSON("/api/admin/trading-control-room", { method: "POST", body: JSON.stringify({ action: "close-trades", email }) }),
+    onSuccess: (result, email) => {
+      toast({ title: "Ledger trades closed", description: `${result.closedCount ?? 0} open trade(s) closed for ${email}.` })
+      reloadAfterAction()
+    },
+    onError: (error) => toast({ title: "Trade close failed", description: error.message, variant: "destructive" }),
+  })
+  const reviewFlag = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "reviewed" | "dismissed" }) => requestJSON("/api/admin/trading-control-room", { method: "POST", body: JSON.stringify({ action: "review-risk-flag", flagId: id, status }) }),
+    onSuccess: () => { toast({ title: "Risk flag updated" }); reloadAfterAction() },
+    onError: (error) => toast({ title: "Risk review failed", description: error.message, variant: "destructive" }),
+  })
+  const payoutAction = useMutation({
+    mutationFn: async ({ id }: { id: string }) => requestJSON("/api/admin/trading-control-room", { method: "POST", body: JSON.stringify({ action: "mark-payout-processing", payoutId: id }) }),
+    onSuccess: () => { toast({ title: "Payout queue updated" }); reloadAfterAction() },
+    onError: (error) => toast({ title: "Payout update failed", description: error.message, variant: "destructive" }),
+  })
+  const kycAction = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: "under_review" | "approved" }) => requestJSON("/api/admin/trading-control-room", { method: "POST", body: JSON.stringify({ action: "review-kyc", verificationId: id, status }) }),
+    onSuccess: () => { toast({ title: "KYC record updated" }); reloadAfterAction() },
+    onError: (error) => toast({ title: "KYC update failed", description: error.message, variant: "destructive" }),
+  })
+
+  const data = room.data
+  const filteredAccounts = useMemo(() => (data?.accounts ?? []).filter((account) => `${account.id} ${account.trader} ${account.email}`.toLowerCase().includes(search.toLowerCase())), [data?.accounts, search])
+  const closeForTrader = (email: string) => {
+    const confirmed = window.confirm(`Close every open ledger trade for ${email}? The existing admin action records closure at the stored entry price with zero realized P&L. This does not reach an external broker.`)
+    if (confirmed) closeTrades.mutate(email)
+  }
+
+  if (room.isLoading && !data) {
+    return <Card className="border-border/70 bg-card/50"><CardContent className="flex min-h-64 items-center justify-center gap-3 text-sm text-muted-foreground"><Loader2 className="size-4 animate-spin" />Loading live trading records…</CardContent></Card>
+  }
+
+  if (room.isError && !data) {
+    return <Card className="border-red-500/30 bg-card/80"><CardContent className="flex flex-col items-start gap-4 p-6"><div><p className="font-semibold text-foreground">Live trading data could not be loaded</p><p className="mt-1 text-sm text-muted-foreground">{room.error instanceof Error ? room.error.message : "Check your admin session and database connection, then retry."}</p></div><Button variant="outline" onClick={() => refresh()} disabled={room.isFetching}><RefreshCw data-icon="inline-start" className={room.isFetching ? "animate-spin" : ""} />Retry</Button></CardContent></Card>
+  }
+
+  const summary = data?.summary ?? {}
+  const performance = data?.performance ?? {}
+  const pendingPayouts = data?.payouts.filter((row) => ["pending", "matched", "approved"].includes(String(row.status))).length ?? 0
+  const pendingKyc = data?.kyc.filter((row) => ["pending", "under_review"].includes(String(row.status))).length ?? 0
+  const latestSync = data?.generatedAt ? dateTime(data.generatedAt) : "Not yet synced"
+  const actionBusy = closeTrades.isPending || reviewFlag.isPending || payoutAction.isPending || kycAction.isPending
+
+  const renderOverview = () => <div className="flex flex-col gap-5">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"><Metric label="Participant accounts" value={number(summary.participant_count)} detail="Current non-deleted records" /><Metric label="Funded accounts" value={number(summary.funded_accounts)} detail={currency(summary.funded_capital) + " initial funded capital"} tone="positive" /><Metric label="Open positions" value={number(summary.open_positions)} detail={`${number(summary.pending_orders)} pending orders in the trade ledger`} /><Metric label="Reserved margin" value={currency(summary.used_margin)} detail="Sum of margin stored on open positions" /><Metric label="Risk alerts" value={number(Number(summary.open_risk_flags ?? 0) + Number(summary.breached_accounts ?? 0))} detail={`${number(summary.open_risk_flags)} open risk flags · ${number(summary.breached_accounts)} funded breaches`} tone={Number(summary.open_risk_flags ?? 0) + Number(summary.breached_accounts ?? 0) ? "warning" : "default"} /><Metric label="Frozen accounts" value={number(summary.frozen_accounts)} detail={`${number(summary.pending_payouts)} payout reviews · ${number(summary.pending_kyc)} KYC reviews`} /></div>
+    <Card className="border-border/70 bg-card/80"><CardHeader><SectionHeader title="Operations snapshot" description="Priorities are calculated from the current database records." action={<Button size="sm" variant="outline" onClick={() => setActiveTab("risk")}>Open risk desk <ArrowUpRight data-icon="inline-end" /></Button>} /></CardHeader><CardContent className="grid gap-3 md:grid-cols-3"><div className="rounded-lg border border-red-500/25 bg-red-500/5 p-4"><div className="flex items-center gap-2 text-red-300"><AlertTriangle data-icon="inline-start" /> Funded breaches</div><p className="mt-3 text-2xl font-semibold">{number(summary.breached_accounts)}</p><p className="mt-1 text-xs text-muted-foreground">Stored breach state or balance at/below the 2% funded drawdown floor.</p></div><div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-4"><div className="flex items-center gap-2 text-amber-300"><Banknote data-icon="inline-start" /> Payout reviews</div><p className="mt-3 text-2xl font-semibold">{number(pendingPayouts)}</p><p className="mt-1 text-xs text-muted-foreground">Pending, matched, or approved requests from payout records.</p></div><div className="rounded-lg border border-cyan-500/25 bg-cyan-500/5 p-4"><div className="flex items-center gap-2 text-cyan-300"><Database data-icon="inline-start" /> Database feed</div><p className="mt-3 text-base font-semibold">Connected</p><p className="mt-1 text-xs text-muted-foreground">Last refreshed {latestSync}. Auto-refreshes every 30 seconds.</p></div></CardContent></Card>
+    <Card className="border-border/70 bg-card/80"><CardHeader><SectionHeader title="Open trades" description="Latest persisted open and pending positions; market quotes are not stored in this feed." action={<Button size="sm" variant="outline" onClick={() => setActiveTab("positions")}>View all positions <ArrowUpRight data-icon="inline-end" /></Button>} /></CardHeader><CardContent className="p-0">{data?.positions.length ? <PositionTable rows={data.positions.slice(0, 8)} onClose={closeForTrader} busy={actionBusy} /> : <EmptyState>No open positions or pending orders are recorded.</EmptyState>}</CardContent></Card>
+  </div>
+
+  const renderAccountTypes = () => <div className="flex flex-col gap-5"><SectionHeader title="Account types and funded capital" description="There is no challenge-plan catalog table in this project. These totals are grouped from real participant account types and stored funded balances." /><TableFrame minWidth="min-w-[560px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Account type</th><th className="p-3">Accounts</th><th className="p-3">Recorded balance</th><th className="p-3">Funded initial capital</th></tr></thead><tbody>{data?.accountTypes.map((row, index) => <tr key={`${row.account_type}-${index}`} className="border-t border-border/60"><td className="p-3 font-medium capitalize">{text(row.account_type).replaceAll("_", " ")}</td><td className="p-3">{number(row.accounts)}</td><td className="p-3">{currency(row.account_balance)}</td><td className="p-3">{currency(row.funded_capital)}</td></tr>)}{!data?.accountTypes.length && <tr><td colSpan={4}><EmptyState>No participant account types are recorded.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderAccounts = () => <div className="flex flex-col gap-5"><SectionHeader title="Trading accounts" description="Participant accounts with funded access or persisted forex trade history. Account controls act on the internal trade ledger." /><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search aria-hidden="true" className="absolute left-3 top-2.5 text-muted-foreground" /><Input aria-label="Search trading accounts" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, email, or account ID" className="bg-card pl-9" /></div><Button variant="outline" onClick={() => refresh()} disabled={room.isFetching}><RefreshCw data-icon="inline-start" className={room.isFetching ? "animate-spin" : ""} />Refresh</Button></div><TableFrame minWidth="min-w-[880px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Trader</th><th className="p-3">Account type</th><th className="p-3">Balance</th><th className="p-3">Funded base</th><th className="p-3">Open</th><th className="p-3">Risk state</th><th className="p-3">Action</th></tr></thead><tbody>{filteredAccounts.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3"><p className="font-medium">{text(row.trader)}</p><p className="text-xs text-muted-foreground">{text(row.email)}{row.serial_number ? ` · #${row.serial_number}` : ""}</p></td><td className="p-3 capitalize">{text(row.account_type).replaceAll("_", " ")}</td><td className="p-3 tabular-nums">{currency(row.account_balance)}</td><td className="p-3 tabular-nums">{Number(row.funded_initial_balance) > 0 ? currency(row.funded_initial_balance) : "—"}</td><td className="p-3">{number(row.open_positions)} positions · {number(row.pending_orders)} pending</td><td className="p-3"><StatusBadge status={row.funded_breach_status === "breached" ? "breached" : row.frozen ? "frozen" : row.is_active ? "active" : "inactive"} /></td><td className="p-3">{Number(row.open_positions) > 0 ? <Button size="sm" variant="destructive" disabled={actionBusy} onClick={() => closeForTrader(String(row.email))}>Close ledger trades</Button> : <span className="text-xs text-muted-foreground">No open trades</span>}</td></tr>)}{filteredAccounts.length === 0 && <tr><td colSpan={7}><EmptyState>No matching funded or trading accounts.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderRisk = () => <div className="flex flex-col gap-5"><SectionHeader title="Risk and breaches" description="Live open risk flags and funded drawdown states. Reviewing a risk flag records the admin and timestamp." /><div className="grid gap-3 sm:grid-cols-3"><Metric label="Open risk flags" value={number(summary.open_risk_flags)} detail="Unreviewed records in trade_risk_flags" tone={Number(summary.open_risk_flags) ? "warning" : "default"} /><Metric label="Funded breaches" value={number(summary.breached_accounts)} detail="Stored breach status or at/below the 2% floor" tone={Number(summary.breached_accounts) ? "danger" : "default"} /><Metric label="Frozen accounts" value={number(summary.frozen_accounts)} detail="Account or trading freeze state" /></div><TableFrame minWidth="min-w-[820px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Trader</th><th className="p-3">Flag</th><th className="p-3">Severity</th><th className="p-3">Trade</th><th className="p-3">Detected</th><th className="p-3">Action</th></tr></thead><tbody>{data?.riskFlags.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3">{text(row.participant_email)}</td><td className="p-3">{text(row.flag_type)}</td><td className="p-3"><StatusBadge status={row.severity} /></td><td className="p-3 font-mono text-xs">{text(row.trade_id)}</td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.created_at)}</td><td className="p-3"><div className="flex gap-2"><Button size="sm" disabled={actionBusy} onClick={() => reviewFlag.mutate({ id: String(row.id), status: "reviewed" })}>Review</Button><Button size="sm" variant="outline" disabled={actionBusy} onClick={() => reviewFlag.mutate({ id: String(row.id), status: "dismissed" })}>Dismiss</Button></div></td></tr>)}{!data?.riskFlags.length && <tr><td colSpan={6}><EmptyState>No open trade risk flags.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderPositions = () => <div className="flex flex-col gap-5"><SectionHeader title="Live positions and pending orders" description="Current stored trade records. Entry, stop, target, margin, and timestamps come from the database; live market price and floating P&L are not available in this feed." action={<Button variant="outline" onClick={() => refresh()} disabled={room.isFetching}><RefreshCw data-icon="inline-start" className={room.isFetching ? "animate-spin" : ""} />Refresh</Button>} /><Card className="border-border/70 bg-card/80"><CardContent className="p-0">{data?.positions.length ? <PositionTable rows={data.positions} onClose={closeForTrader} busy={actionBusy} /> : <EmptyState>No open positions or pending orders are recorded.</EmptyState>}</CardContent></Card></div>
+
+  const renderPerformance = () => <div className="flex flex-col gap-5"><SectionHeader title="Trading performance" description="Calculated from closed trade records updated in the last 30 days. Open-position P&L is excluded because market quotes are not stored by the admin feed." /><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Closed trades" value={number(performance.trades)} detail={`${number(performance.wins)} wins · ${number(performance.losses)} losses`} /><Metric label="Win rate" value={`${number(performance.win_rate, 1)}%`} detail="Wins divided by closed trades" tone="positive" /><Metric label="Profit factor" value={performance.profit_factor == null ? "—" : number(performance.profit_factor, 2)} detail="Gross winning P&L / gross losing P&L" /><Metric label="Net realized P&L" value={currency(performance.net_pnl)} detail="Recorded closed-trade P&L · 30 days" tone={Number(performance.net_pnl) >= 0 ? "positive" : "danger"} /><Metric label="Average win" value={currency(performance.average_win)} detail={`Average loss ${currency(performance.average_loss)}`} /></div><Card className="border-border/70 bg-card/80"><CardHeader><SectionHeader title="Recent closed trades" description="Most recently updated closed forex trade records." /></CardHeader><CardContent className="p-0"><ClosedTradesTable rows={data?.history ?? []} /></CardContent></Card></div>
+
+  const renderPayouts = () => <div className="flex flex-col gap-5"><SectionHeader title="Payout requests" description="Requests are read from the payout queue. Marking a request as processing changes its real status; it does not send funds." /><TableFrame minWidth="min-w-[840px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Request</th><th className="p-3">Trader</th><th className="p-3">Amount</th><th className="p-3">Method</th><th className="p-3">Status</th><th className="p-3">Created</th><th className="p-3">Action</th></tr></thead><tbody>{data?.payouts.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3 font-mono text-xs">{text(row.id).slice(0, 12)}</td><td className="p-3">{text(row.trader)}<p className="text-xs text-muted-foreground">{text(row.participant_email)}</p></td><td className="p-3 font-semibold">{currency(row.amount)}</td><td className="p-3">{text(row.payout_method)}</td><td className="p-3"><StatusBadge status={row.status} /></td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.created_at)}</td><td className="p-3">{["pending", "matched", "approved"].includes(String(row.status)) ? <Button size="sm" disabled={actionBusy} onClick={() => payoutAction.mutate({ id: String(row.id) })}>Mark processing</Button> : <span className="text-xs text-muted-foreground">No action</span>}</td></tr>)}{!data?.payouts.length && <tr><td colSpan={7}><EmptyState>No payout requests are recorded.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderPayments = () => <div className="flex flex-col gap-5"><SectionHeader title="Payment submissions" description="Recent submitted payment records from the live payment queue. No seeded rows or simulated verification actions are shown." /><TableFrame minWidth="min-w-[780px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Submission</th><th className="p-3">Participant</th><th className="p-3">Amount</th><th className="p-3">Method</th><th className="p-3">Reference</th><th className="p-3">Status</th><th className="p-3">Submitted</th></tr></thead><tbody>{data?.payments.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3 font-mono text-xs">{text(row.id).slice(0, 12)}</td><td className="p-3">{text(row.participant_email)}</td><td className="p-3">{currency(row.amount)}</td><td className="p-3">{text(row.payment_method)}</td><td className="p-3 font-mono text-xs">{text(row.transaction_id)}</td><td className="p-3"><StatusBadge status={row.status} /></td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.created_at)}</td></tr>)}{!data?.payments.length && <tr><td colSpan={7}><EmptyState>No payment submissions are recorded.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderKyc = () => <div className="flex flex-col gap-5"><SectionHeader title="KYC review" description="Live verification records. Start review or approve a pending record; each change is persisted and added to the admin activity log." /><TableFrame minWidth="min-w-[900px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Applicant</th><th className="p-3">Country</th><th className="p-3">Document</th><th className="p-3">Status</th><th className="p-3">Submitted</th><th className="p-3">Reviewer</th><th className="p-3">Action</th></tr></thead><tbody>{data?.kyc.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3">{text(row.legal_name)}<p className="text-xs text-muted-foreground">{text(row.participant_email)}</p></td><td className="p-3">{text(row.country)}</td><td className="p-3">{text(row.document_type)}</td><td className="p-3"><StatusBadge status={row.status} /></td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.submitted_at)}</td><td className="p-3">{text(row.reviewed_by)}</td><td className="p-3">{["pending", "under_review"].includes(String(row.status)) ? <div className="flex gap-2">{row.status === "pending" && <Button size="sm" variant="outline" disabled={actionBusy} onClick={() => kycAction.mutate({ id: String(row.id), status: "under_review" })}>Start review</Button>}<Button size="sm" disabled={actionBusy} onClick={() => kycAction.mutate({ id: String(row.id), status: "approved" })}>Approve</Button></div> : <span className="text-xs text-muted-foreground">Finalized</span>}</td></tr>)}{!data?.kyc.length && <tr><td colSpan={7}><EmptyState>No KYC records are recorded.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderUsers = () => <div className="flex flex-col gap-5"><SectionHeader title="Participants" description="Participant identities and account status from the live application database." /><TableFrame minWidth="min-w-[760px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Participant</th><th className="p-3">Account type</th><th className="p-3">Balance</th><th className="p-3">Status</th><th className="p-3">Last seen</th><th className="p-3">Created</th></tr></thead><tbody>{data?.users.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3">{text(row.trader)}<p className="text-xs text-muted-foreground">{text(row.email)}</p></td><td className="p-3 capitalize">{text(row.account_type).replaceAll("_", " ")}</td><td className="p-3">{currency(row.account_balance)}</td><td className="p-3"><StatusBadge status={row.is_frozen || row.account_frozen ? "frozen" : row.is_active ? "active" : "inactive"} /></td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.last_seen)}</td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.created_at)}</td></tr>)}{!data?.users.length && <tr><td colSpan={6}><EmptyState>No participant records are available.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderAudit = () => <div className="flex flex-col gap-5"><SectionHeader title="Admin activity log" description="Latest persisted privileged actions, including actor, target, and recorded details." /><TableFrame minWidth="min-w-[800px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">When</th><th className="p-3">Action</th><th className="p-3">Actor</th><th className="p-3">Target</th><th className="p-3">Details</th></tr></thead><tbody>{data?.auditLogs.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3 text-xs text-muted-foreground">{dateTime(row.created_at)}</td><td className="p-3 font-medium">{text(row.action)}</td><td className="p-3">{text(row.actor_email)}</td><td className="p-3">{text(row.target_type)}{row.target_id ? ` · ${row.target_id}` : ""}</td><td className="max-w-[32rem] p-3 text-xs text-muted-foreground">{text(row.details)}</td></tr>)}{!data?.auditLogs.length && <tr><td colSpan={5}><EmptyState>No admin activity has been recorded.</EmptyState></td></tr>}</tbody></TableFrame></div>
+
+  const renderFeed = () => <div className="flex flex-col gap-5"><SectionHeader title="Data and broker connectivity" description="Connectivity is reported honestly from available services; the app database is not an MT5 execution bridge." /><div className="grid gap-4 md:grid-cols-2"><Card className="border-border/70 bg-card/80"><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Database className="size-4 text-cyan-300" />Trading database</CardTitle><CardDescription>Project Neon database read by the admin API.</CardDescription></CardHeader><CardContent className="flex flex-col gap-3"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Status</span><StatusBadge status={room.isError ? "unavailable" : "Connected"} /></div><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Last successful read</span><span className="text-right text-xs">{latestSync}</span></div><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Refresh cadence</span><span className="text-xs">30 seconds</span></div><Button variant="outline" onClick={() => refresh()} disabled={room.isFetching}><RefreshCw data-icon="inline-start" className={room.isFetching ? "animate-spin" : ""} />Refresh feed</Button></CardContent></Card><Card className="border-amber-500/30 bg-amber-500/5"><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Cable className="size-4 text-amber-300" />External broker bridge</CardTitle><CardDescription>MT5 Manager or another broker execution adapter.</CardDescription></CardHeader><CardContent className="flex flex-col gap-3"><div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Connection</span><StatusBadge status="Not configured" /></div><p className="text-sm leading-relaxed text-muted-foreground">No broker bridge credentials or endpoint are configured in this project. Trade rows and admin closures affect the internal ledger only; this screen cannot send orders to an external broker or retrieve live market quotes.</p></CardContent></Card></div></div>
+
+  const content: Record<TabKey, () => React.ReactNode> = {
+    overview: renderOverview,
+    plans: renderAccountTypes,
+    accounts: renderAccounts,
+    risk: renderRisk,
+    positions: renderPositions,
+    performance: renderPerformance,
+    payouts: renderPayouts,
+    payments: renderPayments,
+    kyc: renderKyc,
+    users: renderUsers,
+    audit: renderAudit,
+    broker: renderFeed,
+  }
+
+  return <Card className="border-border/70 bg-card/50"><CardHeader className="gap-4"><div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between"><div><CardTitle className="text-xl">Trading operations control room</CardTitle><CardDescription>Database-backed account, risk, position, performance, payout, and review records.</CardDescription></div><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className="w-fit border-cyan-500/30 bg-cyan-500/10 text-cyan-300"><ShieldCheck data-icon="inline-start" />Protected admin workspace</Badge><Badge variant="outline" className="w-fit border-emerald-500/30 bg-emerald-500/10 text-emerald-300">{room.isError ? "Feed stale" : "Live database feed"}</Badge><Button size="sm" variant="outline" onClick={() => refresh()} disabled={room.isFetching}><RefreshCw data-icon="inline-start" className={room.isFetching ? "animate-spin" : ""} />Refresh</Button></div></div>{room.isError && data && <p role="status" className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-200">Refresh failed; showing the last successful data from {latestSync}.</p>}<Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)}><TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/40 p-1"><div className="flex min-w-max gap-1">{navItems.map(({ id, label, icon: Icon }) => <TabsTrigger key={id} value={id} className="gap-2 text-xs"><Icon data-icon="inline-start" />{label}{id === "risk" && Number(summary.open_risk_flags) > 0 ? <span className="rounded-full bg-red-500/20 px-1.5 py-0.5 text-[10px] text-red-200">{number(summary.open_risk_flags)}</span> : id === "payouts" && pendingPayouts > 0 ? <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-200">{pendingPayouts}</span> : id === "kyc" && pendingKyc > 0 ? <span className="rounded-full bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-200">{pendingKyc}</span> : null}</TabsTrigger>)}</div></TabsList>{navItems.map(({ id }) => <TabsContent key={id} value={id} className="mt-5">{content[id]()}</TabsContent>)}</Tabs></CardHeader></Card>
+}
+
+function PositionTable({ rows, onClose, busy }: { rows: Row[]; onClose: (email: string) => void; busy: boolean }) {
+  return <TableFrame minWidth="min-w-[1050px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Trader</th><th className="p-3">Instrument</th><th className="p-3">Side / status</th><th className="p-3">Lots</th><th className="p-3">Entry</th><th className="p-3">Stop / target</th><th className="p-3">Margin</th><th className="p-3">Updated</th><th className="p-3">Action</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3">{text(row.trader)}<p className="text-xs text-muted-foreground">{text(row.participant_email)}</p></td><td className="p-3 font-semibold">{text(row.pair)}</td><td className="p-3"><span className={row.direction === "BUY" ? "font-semibold text-emerald-300" : "font-semibold text-red-300"}>{text(row.direction)}</span><div className="mt-1"><StatusBadge status={row.status} /></div></td><td className="p-3 font-mono">{number(row.lot_size, 2)}</td><td className="p-3 font-mono text-xs">{number(row.status === "pending" ? row.target_price : row.open_price, 5)}</td><td className="p-3 font-mono text-xs">{optionalNumber(row.sl)} / {optionalNumber(row.tp)}</td><td className="p-3">{currency(row.margin)}</td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.updated_at ?? row.created_at)}</td><td className="p-3">{row.status === "open" ? <Button size="sm" variant="destructive" disabled={busy} onClick={() => onClose(String(row.participant_email))}>Close account trades</Button> : <span className="text-xs text-muted-foreground">Pending order</span>}</td></tr>)}</tbody></TableFrame>
+}
+
+function ClosedTradesTable({ rows }: { rows: Row[] }) {
+  return <TableFrame minWidth="min-w-[860px]"><thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Trade</th><th className="p-3">Trader</th><th className="p-3">Instrument</th><th className="p-3">Side</th><th className="p-3">Lots</th><th className="p-3">Entry / close</th><th className="p-3">Realized P&amp;L</th><th className="p-3">Closed</th></tr></thead><tbody>{rows.map((row) => <tr key={String(row.id)} className="border-t border-border/60"><td className="p-3 font-mono text-xs">{text(row.id).slice(0, 14)}</td><td className="p-3">{text(row.participant_email)}</td><td className="p-3 font-semibold">{text(row.pair)}</td><td className="p-3">{text(row.direction)}</td><td className="p-3">{number(row.lot_size, 2)}</td><td className="p-3 font-mono text-xs">{number(row.open_price, 5)} / {number(row.close_price, 5)}</td><td className={`p-3 font-semibold ${Number(row.final_pnl) >= 0 ? "text-emerald-300" : "text-red-300"}`}>{currency(row.final_pnl)}</td><td className="p-3 text-xs text-muted-foreground">{dateTime(row.close_time ?? row.recorded_at)}</td></tr>)}{rows.length === 0 && <tr><td colSpan={8}><EmptyState>No closed trade records are available.</EmptyState></td></tr>}</tbody></TableFrame>
 }
 
 export function AdminControlRoom() {
-  const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState<TabKey>("overview")
-  const [plans, setPlans] = useState(plansSeed)
-  const [editingPlan, setEditingPlan] = useState<Plan | null>(null)
-  const [search, setSearch] = useState("")
-  const [accounts, setAccounts] = useState(accountsSeed)
-  const [broker, setBroker] = useState({ host: "mt5-manager.internal", port: "443", server: "FlowChain-Live", environment: "Production", sync: "30" })
-  const [brokerStatus, setBrokerStatus] = useState("Disconnected")
-
-  const filteredAccounts = useMemo(() => accounts.filter((account) => `${account.id} ${account.trader} ${account.email}`.toLowerCase().includes(search.toLowerCase())), [accounts, search])
-  const notify = (description: string) => toast({ title: "Admin action saved", description })
-
-  const savePlan = () => {
-    if (!editingPlan) return
-    setPlans((current) => current.some((plan) => plan.id === editingPlan.id) ? current.map((plan) => plan.id === editingPlan.id ? editingPlan : plan) : [...current, editingPlan])
-    setEditingPlan(null)
-    notify(`${editingPlan.name} is ready for new challenge enrollments.`)
-  }
-
-  const updateAccount = (id: string, status: string) => {
-    setAccounts((current) => current.map((account) => account.id === id ? { ...account, status } : account))
-    notify(`${id} marked ${status.toLowerCase()}.`)
-  }
-
-  const renderOverview = () => <div className="flex flex-col gap-5"><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Metric label="Live equity" value="$4.82M" detail="Across 842 trading accounts" tone="positive" /><Metric label="Open exposure" value="$1.16M" detail="218 positions across 31 symbols" /><Metric label="At-risk accounts" value="12" detail="3 require immediate review" tone="warning" /><Metric label="Pending payouts" value="$86.4K" detail="18 requests awaiting decision" tone="warning" /></div><Card className="border-border/70 bg-card/80"><CardHeader><SectionHeader title="Operations snapshot" description="The highest-priority actions across your trading program." action={<Button size="sm" variant="outline" onClick={() => setActiveTab("risk")}>Open risk desk <ChevronRight data-icon="inline-end" /></Button>} /></CardHeader><CardContent className="grid gap-3 md:grid-cols-3"><div className="rounded-lg border border-red-500/25 bg-red-500/5 p-4"><div className="flex items-center gap-2 text-red-300"><AlertTriangle data-icon="inline-start" /> Critical breaches</div><p className="mt-3 text-2xl font-semibold">3</p><p className="mt-1 text-xs text-muted-foreground">Daily loss or max drawdown limits crossed.</p></div><div className="rounded-lg border border-amber-500/25 bg-amber-500/5 p-4"><div className="flex items-center gap-2 text-amber-300"><Banknote data-icon="inline-start" /> Payout decisions</div><p className="mt-3 text-2xl font-semibold">18</p><p className="mt-1 text-xs text-muted-foreground">Review KYC, performance, and payment rails.</p></div><div className="rounded-lg border border-cyan-500/25 bg-cyan-500/5 p-4"><div className="flex items-center gap-2 text-cyan-300"><Server data-icon="inline-start" /> Broker sync</div><p className="mt-3 text-2xl font-semibold">30 sec</p><p className="mt-1 text-xs text-muted-foreground">Last account and position sync completed.</p></div></CardContent></Card><Card className="border-border/70 bg-card/80"><CardHeader><SectionHeader title="Recent admin activity" description="Immutable operational events from the last 24 hours." action={<Button size="sm" variant="ghost" onClick={() => setActiveTab("audit")}>View audit log <ChevronRight data-icon="inline-end" /></Button>} /></CardHeader><CardContent className="flex flex-col gap-3">{[["09:42", "Payout approved", "admin@flowchain.io approved $2,480 for MT5-10482", "positive"], ["09:38", "Risk threshold updated", "CH-50K max drawdown changed from 9% to 10%", "neutral"], ["09:21", "Account suspended", "MT5-10440 suspended after KYC review", "danger"]].map(([time, title, detail, tone]) => <div key={time} className="flex items-start gap-3 rounded-lg border border-border/60 bg-background/40 p-3"><span className="w-12 pt-0.5 font-mono text-xs text-muted-foreground">{time}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{title}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div><span className={`mt-1 size-2 rounded-full ${tone === "positive" ? "bg-emerald-400" : tone === "danger" ? "bg-red-400" : "bg-cyan-400"}`} /></div>)}</CardContent></Card></div>
-
-  const renderPlans = () => <div className="flex flex-col gap-5"><SectionHeader title="Challenge plans" description="Create and edit account sizes, fees, risk limits, leverage, and profit splits." action={<Button onClick={() => setEditingPlan({ id: `CH-${Date.now().toString().slice(-4)}`, name: "New Challenge", size: 25000, fee: 149, drawdown: 10, daily: 5, target: 10, leverage: "1:50", split: 80, active: true })}><Plus data-icon="inline-start" /> Create plan</Button>} />{editingPlan && <Card className="border-cyan-500/30 bg-cyan-500/5"><CardHeader><CardTitle className="text-base">{plans.some((plan) => plan.id === editingPlan.id) ? "Edit plan" : "Create plan"}</CardTitle><CardDescription>Changes apply to new enrollments after saving.</CardDescription></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{([['name','Plan name'],['size','Account size'],['fee','Challenge fee'],['drawdown','Max drawdown %'],['daily','Daily drawdown %'],['target','Profit target %'],['leverage','Leverage'],['split','Profit split %']] as const).map(([key, label]) => <label key={key} className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">{label}<Input value={String(editingPlan[key])} onChange={(event) => setEditingPlan({ ...editingPlan, [key]: key === 'name' || key === 'leverage' ? event.target.value : Number(event.target.value) })} className="bg-background" /></label>)}<div className="flex gap-2 sm:col-span-2 lg:col-span-4"><Button onClick={savePlan}><Check data-icon="inline-start" /> Save plan</Button><Button variant="ghost" onClick={() => setEditingPlan(null)}>Cancel</Button></div></CardContent></Card>}<div className="grid gap-4 lg:grid-cols-3">{plans.map((plan) => <Card key={plan.id} className="border-border/70 bg-card/80"><CardHeader><div className="flex items-start justify-between gap-3"><div><CardTitle className="text-base">{plan.name}</CardTitle><CardDescription className="mt-1 font-mono">{plan.id}</CardDescription></div><StatusBadge status={plan.active ? "Active" : "Suspended"} /></div></CardHeader><CardContent className="flex flex-col gap-4"><div className="flex items-end justify-between"><div><p className="text-xs text-muted-foreground">Account size</p><p className="text-2xl font-semibold">${plan.size.toLocaleString()}</p></div><div className="text-right"><p className="text-xs text-muted-foreground">Fee</p><p className="text-lg font-semibold text-cyan-300">${plan.fee}</p></div></div><div className="grid grid-cols-2 gap-2 text-xs"><span className="rounded border border-border/60 bg-background/40 p-2">Daily DD <b className="float-right">{plan.daily}%</b></span><span className="rounded border border-border/60 bg-background/40 p-2">Max DD <b className="float-right">{plan.drawdown}%</b></span><span className="rounded border border-border/60 bg-background/40 p-2">Target <b className="float-right">{plan.target}%</b></span><span className="rounded border border-border/60 bg-background/40 p-2">Split <b className="float-right">{plan.split}%</b></span></div><div className="flex items-center justify-between border-t border-border/60 pt-3 text-xs text-muted-foreground"><span>Leverage {plan.leverage}</span><Button size="sm" variant="outline" onClick={() => setEditingPlan(plan)}><Pencil data-icon="inline-start" /> Edit</Button></div></CardContent></Card>)}</div></div>
-
-  const renderAccounts = () => <div className="flex flex-col gap-5"><SectionHeader title="Trading accounts" description="Create, suspend, reset, and reassign MT5 accounts with permission-aware actions." action={<Button onClick={() => notify("Account creation workflow opened for broker provisioning.")}><Plus data-icon="inline-start" /> Create account</Button>} /><div className="flex flex-col gap-3 sm:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-2.5 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search trader, email, or MT5 account" className="pl-9 bg-card" /></div><Button variant="outline" onClick={() => notify("Account list refreshed from the broker adapter.")}><RefreshCw data-icon="inline-start" /> Refresh</Button></div><div className="overflow-x-auto rounded-lg border border-border/70"><table className="w-full min-w-[780px] text-sm"><thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Account</th><th className="p-3">Trader</th><th className="p-3">Plan</th><th className="p-3">Equity</th><th className="p-3">P/L</th><th className="p-3">Risk</th><th className="p-3">Status</th><th className="p-3" /></tr></thead><tbody>{filteredAccounts.map((account) => <tr key={account.id} className="border-t border-border/60"><td className="p-3 font-mono text-xs">{account.id}</td><td className="p-3"><p className="font-medium">{account.trader}</p><p className="text-xs text-muted-foreground">{account.email}</p></td><td className="p-3 font-mono text-xs">{account.plan}</td><td className="p-3">${account.equity.toLocaleString()}</td><td className={account.pnl >= 0 ? "p-3 text-emerald-400" : "p-3 text-red-300"}>{account.pnl >= 0 ? "+" : ""}${account.pnl.toLocaleString()}</td><td className="p-3"><StatusBadge status={account.risk} /></td><td className="p-3"><StatusBadge status={account.status} /></td><td className="p-3"><div className="flex gap-1"><Button size="icon" variant="ghost" title="Reset or reassign" onClick={() => notify(`${account.id} reset/reassign workflow opened.`)}><RefreshCw /></Button>{account.status === "Suspended" ? <Button size="icon" variant="ghost" title="Reactivate" onClick={() => updateAccount(account.id, "Active")}><Check /></Button> : <Button size="icon" variant="ghost" title="Suspend" onClick={() => updateAccount(account.id, "Suspended")}><PauseCircle /></Button>}</div></td></tr>)}</tbody></table></div></div>
-
-  const renderRisk = () => <div className="flex flex-col gap-5"><SectionHeader title="Risk & breaches" description="Monitor funded-account rules before they become a payout or reactivation issue." action={<Button variant="outline" onClick={() => notify("Risk snapshot refreshed from live account equity.")}><RefreshCw data-icon="inline-start" /> Refresh risk</Button>} /><div className="grid gap-3 sm:grid-cols-3"><Metric label="Accounts monitored" value="842" detail="30-second sync interval" /><Metric label="Near daily limit" value="9" detail="Above 80% of configured limit" tone="warning" /><Metric label="Breached today" value="3" detail="Awaiting admin decision" tone="danger" /></div><Card className="border-border/70 bg-card/80"><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-sm"><thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Account</th><th className="p-3">Rule</th><th className="p-3">Limit</th><th className="p-3">Actual</th><th className="p-3">Detected</th><th className="p-3">Action</th></tr></thead><tbody>{breachSeed.map((breach) => <tr key={breach.account} className="border-t border-border/60"><td className="p-3"><p className="font-mono text-xs">{breach.account}</p><p className="text-xs text-muted-foreground">{breach.trader}</p></td><td className="p-3">{breach.type}</td><td className="p-3">{breach.limit}</td><td className="p-3 font-semibold text-red-300">{breach.actual}</td><td className="p-3 text-xs text-muted-foreground">{breach.time}</td><td className="p-3"><div className="flex gap-2"><StatusBadge status={breach.severity} /><Button size="sm" variant="outline" onClick={() => notify(`${breach.account} breach marked for review.`)}>Review</Button></div></td></tr>)}</tbody></table></div></CardContent></Card></div>
-
-  const renderPositions = () => <div className="flex flex-col gap-5"><SectionHeader title="Live positions" description="Open trades with entry, current price, risk controls, margin, and floating P/L." action={<Button variant="outline" onClick={() => notify("Live positions refreshed.")}><RefreshCw data-icon="inline-start" /> Refresh</Button>} /><Card className="border-border/70 bg-card/80"><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full min-w-[1060px] text-sm"><thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Trader</th><th className="p-3">Symbol</th><th className="p-3">Side</th><th className="p-3">Lot</th><th className="p-3">Entry</th><th className="p-3">Current</th><th className="p-3">Floating P&amp;L</th><th className="p-3">SL</th><th className="p-3">TP</th><th className="p-3">Margin</th></tr></thead><tbody>{positionsSeed.map((position) => <tr key={position.id} className="border-t border-border/60"><td className="p-3"><p className="font-mono text-xs">{position.id}</p><p className="text-xs text-muted-foreground">{position.trader}</p></td><td className="p-3 font-semibold">{position.symbol}</td><td className={`p-3 font-semibold ${position.side === "BUY" ? "text-emerald-400" : "text-red-300"}`}>{position.side}</td><td className="p-3 font-mono">{position.volume.toFixed(2)}</td><td className="p-3 font-mono text-xs">{position.open}</td><td className="p-3 font-mono text-xs">{position.current}</td><td className={`p-3 font-semibold ${position.pnl >= 0 ? "text-emerald-400" : "text-red-300"}`}>{position.pnl >= 0 ? "+" : "−"}${Math.abs(position.pnl).toLocaleString()}</td><td className="p-3 font-mono text-xs text-muted-foreground">{position.sl}</td><td className="p-3 font-mono text-xs text-muted-foreground">{position.tp}</td><td className="p-3 font-semibold">${position.margin.toLocaleString()}</td></tr>)}</tbody></table></div></CardContent></Card></div>
-
-  const renderPerformance = () => <div className="flex flex-col gap-5"><SectionHeader title="Trader performance" description="Review funded account results, consistency, and rule adherence." action={<Button variant="outline" onClick={() => notify("Performance report exported.")}><FilePenLine data-icon="inline-start" /> Export report</Button>} /><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Metric label="Win rate" value="61.8%" detail="30-day funded cohort" tone="positive" /><Metric label="Profit factor" value="1.74" detail="Across 1,248 closed trades" tone="positive" /><Metric label="Avg. payout" value="$2,840" detail="+12.4% month over month" /><Metric label="Rule adherence" value="96.2%" detail="Accounts with no warnings" tone="positive" /></div><Card className="border-border/70 bg-card/80"><CardHeader><CardTitle className="text-base">Top performers</CardTitle><CardDescription>Ranked by risk-adjusted return, not raw profit.</CardDescription></CardHeader><CardContent className="flex flex-col gap-3">{accounts.filter((account) => account.pnl > 0).map((account, index) => <div key={account.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-background/40 p-3"><span className="flex size-7 items-center justify-center rounded-full bg-cyan-500/10 text-xs font-semibold text-cyan-300">{index + 1}</span><div className="min-w-0 flex-1"><p className="text-sm font-medium">{account.trader}</p><p className="text-xs text-muted-foreground">{account.id} · {account.plan}</p></div><div className="text-right"><p className="font-semibold text-emerald-400">+${account.pnl.toLocaleString()}</p><p className="text-xs text-muted-foreground">Risk-adjusted</p></div></div>)}</CardContent></Card></div>
-
-  const renderPayouts = () => <div className="flex flex-col gap-5"><SectionHeader title="Payout approvals" description="Approve or reject requests after reviewing KYC, account history, and breach status." action={<Button variant="outline" onClick={() => notify("Payout queue refreshed.")}><RefreshCw data-icon="inline-start" /> Refresh queue</Button>} /><Card className="border-border/70 bg-card/80"><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-sm"><thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Request</th><th className="p-3">Trader</th><th className="p-3">Amount</th><th className="p-3">KYC</th><th className="p-3">Account</th><th className="p-3">Decision</th></tr></thead><tbody>{[{ id: "PO-8821", trader: "Aarav Mehta", amount: 2480, kyc: "Verified", account: "MT5-10482" }, { id: "PO-8819", trader: "Noah Wilson", amount: 1920, kyc: "Verified", account: "MT5-10461" }, { id: "PO-8814", trader: "Sara Khan", amount: 860, kyc: "Review", account: "MT5-10477" }].map((payout) => <tr key={payout.id} className="border-t border-border/60"><td className="p-3 font-mono text-xs">{payout.id}</td><td className="p-3">{payout.trader}</td><td className="p-3 font-semibold">${payout.amount.toLocaleString()}</td><td className="p-3"><StatusBadge status={payout.kyc} /></td><td className="p-3 font-mono text-xs">{payout.account}</td><td className="p-3"><div className="flex gap-2"><Button size="sm" disabled={payout.kyc !== "Verified"} onClick={() => notify(`${payout.id} approved for processing.`)}><Check data-icon="inline-start" /> Approve</Button><Button size="sm" variant="outline" onClick={() => notify(`${payout.id} rejected with audit note required.`)}><X data-icon="inline-start" /> Reject</Button></div></td></tr>)}</tbody></table></div></CardContent></Card></div>
-
-  const renderSimpleQueue = (title: string, description: string, type: "payments" | "kyc" | "users" | "audit") => { const configs = { payments: { icon: WalletCards, rows: [["PAY-22091", "Aarav Mehta", "$2,480", "USDT · TRC20", "Pending"], ["PAY-22088", "Neha Singh", "₹84,000", "INR · UPI", "Verified"], ["PAY-22077", "Noah Wilson", "$1,920", "USDT · ERC20", "Pending"]] }, kyc: { icon: UserCheck, rows: [["KYC-8842", "Sara Khan", "Identity + address", "Submitted 8m ago", "Review"], ["KYC-8836", "Noah Wilson", "Identity", "Verified today", "Approved"], ["KYC-8820", "Mia Chen", "Source of funds", "Needs document", "Review"]] }, users: { icon: Users, rows: [["USR-10482", "Aarav Mehta", "Trader · 2 accounts", "Last active 2m ago", "Active"], ["USR-10477", "Sara Khan", "Trader · 1 account", "Last active 12m ago", "Review"], ["USR-10440", "Mia Chen", "Trader · 1 account", "Suspended 1h ago", "Suspended"]] }, audit: { icon: FileClock, rows: [["AUD-9921", "Payout approved", "admin@flowchain.io", "MT5-10482", "2m ago"], ["AUD-9920", "Account suspended", "risk@flowchain.io", "MT5-10440", "18m ago"], ["AUD-9919", "Plan updated", "admin@flowchain.io", "CH-50K", "24m ago"]] } }[type]; const Icon = configs.icon; return <div className="flex flex-col gap-5"><SectionHeader title={title} description={description} action={<Button variant="outline" onClick={() => notify(`${title} refreshed.`)}><RefreshCw data-icon="inline-start" /> Refresh</Button>} /><Card className="border-border/70 bg-card/80"><CardContent className="p-0"><div className="overflow-x-auto"><table className="w-full min-w-[680px] text-sm"><thead className="bg-muted/40 text-left text-xs uppercase tracking-wide text-muted-foreground"><tr><th className="p-3">Reference</th><th className="p-3">Subject</th><th className="p-3">Details</th><th className="p-3">Context</th><th className="p-3">Status</th><th className="p-3" /></tr></thead><tbody>{configs.rows.map((row) => <tr key={row[0]} className="border-t border-border/60"><td className="p-3 font-mono text-xs">{row[0]}</td><td className="p-3 font-medium">{row[1]}</td><td className="p-3 text-muted-foreground">{row[2]}</td><td className="p-3 text-xs text-muted-foreground">{row[3]}</td><td className="p-3"><StatusBadge status={row[4]} /></td><td className="p-3"><Button size="sm" variant="ghost" onClick={() => notify(`${row[0]} details opened.`)}><MoreHorizontal /></Button></td></tr>)}</tbody></table></div></CardContent></Card><Card className="border-border/70 bg-card/80"><CardContent className="flex items-center gap-3 p-4"><Icon className="text-cyan-300" /><div><p className="text-sm font-medium">Permission-aware workflow</p><p className="text-xs text-muted-foreground">Actions are recorded in the audit log and require the current admin session.</p></div></CardContent></Card></div> }
-
-  const renderBroker = () => <div className="flex flex-col gap-5"><SectionHeader title="Broker / server integration" description="Configure the self-hosted MT5 Manager bridge without exposing broker credentials to the browser." action={<StatusBadge status={brokerStatus} />} /><Card className="border-border/70 bg-card/80"><CardHeader><CardTitle className="text-base">MT5 Manager bridge</CardTitle><CardDescription>Use a private API adapter hosted beside the MT5 Manager SDK. Keep the bridge URL and token in server environment variables.</CardDescription></CardHeader><CardContent className="grid gap-4 sm:grid-cols-2"><label className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">Bridge host<Input value={broker.host} onChange={(event) => setBroker({ ...broker, host: event.target.value })} className="bg-background" /></label><label className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">Port<Input value={broker.port} onChange={(event) => setBroker({ ...broker, port: event.target.value })} className="bg-background" /></label><label className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">MT5 server name<Input value={broker.server} onChange={(event) => setBroker({ ...broker, server: event.target.value })} className="bg-background" /></label><label className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">Environment<Input value={broker.environment} onChange={(event) => setBroker({ ...broker, environment: event.target.value })} className="bg-background" /></label><label className="flex flex-col gap-2 text-xs font-medium text-muted-foreground">Risk sync interval (seconds)<Input type="number" min="5" value={broker.sync} onChange={(event) => setBroker({ ...broker, sync: event.target.value })} className="bg-background" /></label><div className="flex items-end gap-2"><Button onClick={() => { setBrokerStatus("Connected"); notify(`Connected to ${broker.server} through the Manager bridge.`) }}><Cable data-icon="inline-start" /> Test connection</Button><Button variant="outline" onClick={() => notify("Broker settings saved to the pending integration configuration.")}><Check data-icon="inline-start" /> Save settings</Button></div></CardContent></Card><div className="grid gap-3 md:grid-cols-3"><Card className="border-border/70 bg-card/80"><CardContent className="p-4"><Bot className="text-cyan-300" /><p className="mt-3 text-sm font-semibold">Risk gateway</p><p className="mt-1 text-xs text-muted-foreground">Fail closed when equity or breach state is stale.</p></CardContent></Card><Card className="border-border/70 bg-card/80"><CardContent className="p-4"><LockKeyhole className="text-emerald-300" /><p className="mt-3 text-sm font-semibold">Credential isolation</p><p className="mt-1 text-xs text-muted-foreground">Manager tokens stay server-side and are never sent to participants.</p></CardContent></Card><Card className="border-border/70 bg-card/80"><CardContent className="p-4"><Server className="text-amber-300" /><p className="mt-3 text-sm font-semibold">Health checks</p><p className="mt-1 text-xs text-muted-foreground">Monitor quote, account, position, and trade command latency.</p></CardContent></Card></div></div>
-
-  const content: Record<TabKey, React.ReactNode> = { overview: renderOverview(), plans: renderPlans(), accounts: renderAccounts(), risk: renderRisk(), positions: renderPositions(), performance: renderPerformance(), payouts: renderPayouts(), payments: renderSimpleQueue("Payments", "Review deposits, top-ups, and payment verification status.", "payments"), kyc: renderSimpleQueue("KYC review", "Manage identity, address, and source-of-funds checks.", "kyc"), users: renderSimpleQueue("Users", "Manage trader access, account relationships, and restrictions.", "users"), audit: renderSimpleQueue("Audit logs", "Searchable record of privileged admin and risk actions.", "audit"), broker: renderBroker() }
-
-  return <Card className="border-border/70 bg-card/50"><CardHeader className="gap-4"><div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between"><div><CardTitle className="text-xl">Trading operations control room</CardTitle><CardDescription>Plans, accounts, risk, payouts, compliance, and broker connectivity in one workspace.</CardDescription></div><Badge variant="outline" className="w-fit border-cyan-500/30 bg-cyan-500/10 text-cyan-300"><ShieldCheck data-icon="inline-start" /> Protected admin workspace</Badge></div><Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as TabKey)}><TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto bg-muted/40 p-1"><div className="flex min-w-max gap-1">{navItems.map(([id, label, Icon]) => <TabsTrigger key={id} value={id} className="gap-2 text-xs"><Icon data-icon="inline-start" />{label}</TabsTrigger>)}</div></TabsList>{navItems.map(([id]) => <TabsContent key={id} value={id} className="mt-5">{content[id]}</TabsContent>)}</Tabs></CardHeader></Card>
+  const [queryClient] = useState(() => new QueryClient({ defaultOptions: { queries: { refetchOnWindowFocus: true } } }))
+  return <QueryClientProvider client={queryClient}><ControlRoomContent /></QueryClientProvider>
 }
 
 export default AdminControlRoom
