@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
        VALUES ($1, $2, $3, $1, $4, $5, $6)`,
       [sessionId, participant.id, participant.email, context.deviceHash, context.ipAddress, context.userAgent],
     ).catch(() => {})
-    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId })
+    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId, lastActivityAt: Date.now() })
 
     // Audit, last-login, security profiling, and breach recovery are independent
     // maintenance tasks. They should not hold the login response open.

@@ -27,8 +27,11 @@ export async function requireParticipantSession(
          AND last_activity > NOW() - INTERVAL '30 minutes'
        LIMIT 1`,
       [session.sessionId || "", session.participantId],
-    )
-    if (rows.length === 0) {
+    ).catch(() => [])
+
+    const cookieLastActivity = Number(session.lastActivityAt || 0)
+    const cookieIsActive = cookieLastActivity > 0 && Date.now() - cookieLastActivity < 30 * 60 * 1000
+    if (rows.length === 0 && !cookieIsActive) {
       session.isLoggedIn = false
       await session.destroy()
       return {
@@ -40,7 +43,11 @@ export async function requireParticipantSession(
       }
     }
 
-    await execute("UPDATE participant_sessions SET last_activity = NOW() WHERE id = $1", [rows[0].id])
+    session.lastActivityAt = Date.now()
+    await session.save()
+    if (rows.length > 0) {
+      await execute("UPDATE participant_sessions SET last_activity = NOW() WHERE id = $1", [rows[0].id]).catch(() => {})
+    }
     return { ok: true, participantId: session.participantId, email: session.email }
   } catch {
     return {
