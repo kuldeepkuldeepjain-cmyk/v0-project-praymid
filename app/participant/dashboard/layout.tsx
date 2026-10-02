@@ -13,6 +13,9 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastActivitySyncRef = useRef(0)
+  const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000
   const navRef = useRef<HTMLDivElement>(null)
 
   const navItems = [
@@ -46,6 +49,44 @@ export default function DashboardLayout({
   }, [pathname])
 
   const [bouncingIndex, setBouncingIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    let disposed = false
+
+    const logoutForInactivity = async () => {
+      if (disposed) return
+      await fetch("/api/auth/participant-logout", { method: "POST", credentials: "same-origin" }).catch(() => {})
+      window.location.assign("/participant/login?reason=inactivity")
+    }
+
+    const scheduleLogout = () => {
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
+      inactivityTimerRef.current = setTimeout(logoutForInactivity, INACTIVITY_TIMEOUT_MS)
+    }
+
+    const recordActivity = () => {
+      scheduleLogout()
+      const now = Date.now()
+      if (now - lastActivitySyncRef.current < 5 * 60 * 1000) return
+      lastActivitySyncRef.current = now
+      void fetch("/api/participant/update-last-seen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({}),
+      }).catch(() => {})
+    }
+
+    const activityEvents = ["pointerdown", "keydown", "scroll", "touchstart"]
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, recordActivity, { passive: true }))
+    scheduleLogout()
+
+    return () => {
+      disposed = true
+      if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, recordActivity))
+    }
+  }, [])
 
   const handleNavClick = (index: number) => {
     setBouncingIndex(index)
