@@ -7,18 +7,19 @@ export async function POST(request: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const { email } = await request.json()
-    if (!email) {
-      return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 })
-    }
-
-    // Update last_seen timestamp
+    // The signed participant session is the source of truth; do not trust a
+    // client-supplied email for activity ownership.
+    await execute("UPDATE participants SET last_seen = NOW() WHERE LOWER(email) = LOWER($1)", [auth.email])
     await execute(
-      "UPDATE participants SET last_seen = NOW() WHERE email = $1",
-      [email]
+      `UPDATE participant_sessions
+       SET last_activity = NOW()
+       WHERE LOWER(participant_email) = LOWER($1)
+         AND participant_id = $2
+         AND is_active = TRUE`,
+      [auth.email, auth.participantId],
     )
 
-    return NextResponse.json({ success: true, message: "Last seen updated" })
+    return NextResponse.json({ success: true, message: "Activity updated" })
   } catch (error: any) {
     console.error("[v0] Update last seen error:", error.message || error)
     return NextResponse.json({ success: false, error: error.message || "Internal server error" }, { status: 500 })
