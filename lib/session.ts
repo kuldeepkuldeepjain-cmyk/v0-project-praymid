@@ -10,6 +10,7 @@ export interface ParticipantSessionData {
   email: string
   role: "participant"
   sessionId?: string
+  lastActivityAt?: number
 }
 
 export interface AdminSessionData {
@@ -64,6 +65,7 @@ export async function setParticipantSession(data: ParticipantSessionData): Promi
   session.email = data.email
   session.role = "participant"
   if (data.sessionId) session.sessionId = data.sessionId
+  if (data.lastActivityAt) session.lastActivityAt = data.lastActivityAt
   session.isLoggedIn = true
   await session.save()
 }
