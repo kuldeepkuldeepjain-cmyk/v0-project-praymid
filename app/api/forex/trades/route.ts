@@ -28,8 +28,11 @@ export async function GET(req: NextRequest) {
       const { rows } = await db.query(
       `SELECT id, participant_id, participant_email, pair, direction, lot_size, leverage,
               open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
-              order_type, target_price, expiry, close_price, close_reason, final_pnl,
-              final_pips, final_swap, status, open_time, open_timestamp, close_time,
+              order_type, target_price, expiry, close_price, close_reason,
+              COALESCE(final_pnl, 0) AS final_pnl,
+              COALESCE(final_pips, 0) AS final_pips,
+              COALESCE(final_swap, 0) AS final_swap,
+              status, open_time, open_timestamp, close_time,
               close_duration, created_at, updated_at
        FROM forex_trades
        WHERE LOWER(participant_email) = LOWER($1)
@@ -242,6 +245,10 @@ export async function PATCH(req: NextRequest) {
 
     if (action === "close") {
       const { closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize, margin } = body
+      const closeValues = [closePrice, finalPnl, finalPips, finalSwap].map(Number)
+      if (closeValues.some((value) => !Number.isFinite(value))) {
+        return NextResponse.json({ success: false, error: "Invalid close calculation" }, { status: 400 })
+      }
       const result = await db.query(
         `UPDATE forex_trades
            SET status = 'closed', close_price = $1, close_time = $2, close_duration = $3,
@@ -333,7 +340,7 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const result = await db.query(
-      `UPDATE forex_trades SET status = 'cancelled', close_reason = 'cancelled_by_participant', close_time = NOW()
+      `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', close_time = NOW()
        WHERE id = $1 AND participant_email = $2 AND status = 'pending'`,
       [id, email],
     )
@@ -371,8 +378,12 @@ function toPendingOrder(r: any) {
 function toClosedTrade(r: any) {
   return {
     ...toOpenTrade(r),
-    closePrice: Number(r.close_price), closeTime: r.close_time, closeDuration: r.close_duration,
-    finalPnl: Number(r.final_pnl), finalPips: Number(r.final_pips), finalSwap: Number(r.final_swap),
+    closePrice: r.close_price !== null ? Number(r.close_price) : Number(r.open_price),
+    closeTime: r.close_time ?? r.updated_at ?? r.created_at,
+    closeDuration: r.close_duration ?? "—",
+    finalPnl: Number.isFinite(Number(r.final_pnl)) ? Number(r.final_pnl) : 0,
+    finalPips: Number.isFinite(Number(r.final_pips)) ? Number(r.final_pips) : 0,
+    finalSwap: Number.isFinite(Number(r.final_swap)) ? Number(r.final_swap) : 0,
     closeReason: r.close_reason,
   }
 }

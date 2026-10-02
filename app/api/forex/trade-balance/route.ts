@@ -109,7 +109,7 @@ export async function POST(req: NextRequest) {
         // No recovery after breach: cancel every not-yet-triggered pending
         // limit/stop order so no further exposure can be taken on.
         await client.query(
-          `UPDATE forex_trades SET status = 'cancelled', close_reason = 'funded_drawdown_breach', updated_at = NOW()
+          `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
            WHERE participant_email = $1 AND status = 'pending'`,
           [email]
         )
