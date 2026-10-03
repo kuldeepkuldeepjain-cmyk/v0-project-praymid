@@ -211,7 +211,7 @@ export function TradingChart({
   const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
   const [crosshairActive, setCrosshairActive] = useState(false)
 
-  // Price alerts ────────────────────────��────────────────────────────────────
+  // Price alerts ─────��──────────────────��────────────────────────────────────
   const [alerts, setAlerts]             = useState<PriceAlert[]>([])
   const [alertMode, setAlertMode]       = useState(false)      // true = click-to-set mode
   const [showAlertPanel, setShowAlertPanel] = useState(false)
@@ -231,22 +231,23 @@ export function TradingChart({
     const tfSecs = TF_SECONDS[tf] ?? 300
     const normalizedCandles = candles
       .map((c, i) => ({ candle: c, time: toTimestamp(c, i, tfSecs) }))
-      .filter(({ time }) => Number.isFinite(time) && time > 0)
+      .filter(({ candle: c, time }) => {
+        const open = Number(c.open)
+        const high = Number(c.high)
+        const low = Number(c.low)
+        const close = Number(c.close)
+        const volume = Number(c.volume)
+        return Number.isFinite(time) && time > 0 && [open, high, low, close, volume].every(Number.isFinite)
+          && high >= low && open > 0 && close > 0
+      })
       .sort((a, b) => a.time - b.time)
       .filter((entry, index, entries) => index === 0 || entry.time !== entries[index - 1].time)
-    normalizedCandles.forEach(({ candle: c, time: rawTime }, i) => {
+    normalizedCandles.forEach(({ candle: c, time: rawTime }) => {
   const open = Number(c.open)
   const high = Number(c.high)
   const low = Number(c.low)
   const close = Number(c.close)
   const volume = Number(c.volume)
-
-  // Market feeds can briefly return null OHLCV values while a symbol is loading.
-  // lightweight-charts rejects those values with "Value is null", so skip the
-  // incomplete candle instead of taking down the entire participant dashboard.
-  if (![open, high, low, close, volume].every(Number.isFinite) || high < low || open <= 0 || close <= 0) return
-
-  if (!Number.isFinite(rawTime) || rawTime <= 0) return
   const t = rawTime as Time
   const normalizedHigh = Math.max(high, open, close)
   const normalizedLow = Math.min(low, open, close)
@@ -261,7 +262,7 @@ export function TradingChart({
   times.push(t)
   })
     return { candleData, volData, closes, times }
-  }, [candles])
+  }, [candles, tf])
 
   const ema9d  = useMemo(() => calcEMA(closes, 9),  [closes])
   const ema21d = useMemo(() => calcEMA(closes, 21), [closes])
