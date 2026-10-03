@@ -1049,7 +1049,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ────────────────────────────────────────────���───────────
+// ─── Market Stats Panel ────────────────────────────────────────────����───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1447,7 +1447,9 @@ function PositionSizer({
   const lockedMargin = openTrades.reduce((sum, trade) => sum + trade.margin, 0)
   const accountEquity = walletBalance + lockedMargin + totalPnl
   const tradingLocked = isFrozen || terminalLocked
+  // The popup is triggered only when live equity crosses into the breach zone.
   const fundedLossLimitReached = isFundedAccount && fundedBaseAmount > 0 && accountEquity < fundedMinimumBalance
+  const breachConditionWasActiveRef = useRef(fundedLossLimitReached)
 
   const freezeFundedAccount = useCallback(async () => {
     if (!participantEmail || freezeRequestStarted.current || isFrozen) return
@@ -2224,7 +2226,9 @@ adjustWalletBalance(
   }, [freezeFundedAccount])
 
   useEffect(() => {
-    if (fundedLossLimitReached) handleFundedBreach()
+    const enteredBreachCondition = !breachConditionWasActiveRef.current && fundedLossLimitReached
+    breachConditionWasActiveRef.current = fundedLossLimitReached
+    if (enteredBreachCondition) handleFundedBreach()
   }, [fundedLossLimitReached, handleFundedBreach])
 
   // ── Partial close trade ───────────────────────────────────────────���────────
@@ -2981,7 +2985,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────���───────────���─���─���────���─��────────────────������─────── */}
+        {/* ── CENTER: Chart ────���─��─────────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (

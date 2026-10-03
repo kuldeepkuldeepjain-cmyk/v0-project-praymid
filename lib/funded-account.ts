@@ -48,12 +48,13 @@ export function getFundedPredictionMaxAmount(
 }
 
 export function getFundedLossLimit(baseAmount: number): number {
-  // Funded accounts are frozen after a 2% loss of total funds.
+  // Preserve the loss allowance used by risk displays: 2% of funded amount.
   return Math.max(0, baseAmount * 0.02)
 }
 
 export function getFundedMinimumBalance(baseAmount: number): number {
-  return Math.max(0, baseAmount - getFundedLossLimit(baseAmount))
+  // Despite the legacy function name, this is the equity floor for breach checks.
+  return Math.max(0, baseAmount * 0.02)
 }
 
 export function getFundedEquity(initialBalance: unknown, availableBalance: unknown, committedFunds: unknown = 0): number {
@@ -67,8 +68,8 @@ export function isFundedDrawdownBreached(accountType: unknown, initialBalance: u
   if (accountType !== "funded") return false
   const initial = toPositiveNumber(initialBalance)
   const equity = getFundedEquity(initial, availableBalance, committedFunds)
-  // The only breach condition is total equity strictly below 98% of the
-  // initial funded balance. Exactly 2% drawdown is still allowed.
+  // The only breach condition is total equity strictly below 2% of the
+  // initial funded amount. Exactly 2% equity is still allowed.
   const breachEquityLevel = getFundedMinimumBalance(initial)
   return initial > 0 && equity < breachEquityLevel
 }
