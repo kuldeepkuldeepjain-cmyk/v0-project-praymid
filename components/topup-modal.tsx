@@ -58,9 +58,13 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       if (!isFundedAccount && !isInitialFundedTopUp) return
       setCheckingFundedTier(true)
       try {
-        const response = await fetch("/api/participant/topup/availability", { cache: "no-store" })
+        const response = await participantFetch("/api/participant/topup/availability", { cache: "no-store" })
         const data = await response.json()
         const available = response.ok && data.success && data.fundedTierAvailable === true
+        if (response.status === 401) {
+          setErrorMessage(data.error || "Your login session has expired. Please log in again before adding funds.")
+          return
+        }
         setFundedTierEligibility(available)
         if (available && (openFundedTier || isInitialFundedTopUp)) setFundingMode("funded")
       } catch {
