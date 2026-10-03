@@ -27,6 +27,7 @@ import {
   MiniChartGrid, ConnectionStatus,
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
+import { useMarketDataStream } from "@/hooks/use-market-data-stream"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1368,7 +1369,6 @@ function PositionSizer({
 
   const pairsRef        = useRef<ForexPair[]>([])
   const openTradesRef   = useRef<OpenTrade[]>([])
-  const ratesIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastIdRef       = useRef(0)
@@ -1560,38 +1560,44 @@ function PositionSizer({
   const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }) }, "Saving filled order"), [participantEmail, persistTradeRequest])
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
-  // ── Fetch live rates ───────────────────────────────────────────────────────
+  // ── Apply validated live rates without replacing unrelated terminal state ───
+  const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; change: number; high: number; low: number; open: number }>) => {
+    setPairs(prev => {
+      let changed = false
+      const updated = prev.map(p => {
+        const r = rateMap[p.symbol]
+        if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
+        if (p.bid === r.bid && p.ask === r.ask && p.change === r.change && p.high === r.high && p.low === r.low && p.open === r.open) return p
+        changed = true
+        return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
+      })
+      if (!changed) return prev
+      pairsRef.current = updated
+      return updated
+    })
+    setSelectedPair(prev => prev ? pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev : prev)
+    setOnline(true)
+    setMarketError(null)
+    setLastUpdated(new Date())
+    setTickCount(n => n + 1)
+  }, [])
+
+  // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
   const fetchRates = useCallback(async () => {
     try {
-      const res = await fetch("/api/forex/rates", { cache: "no-store" })
+      const res = await fetch("/api/forex/rates", { cache: "no-store", signal: AbortSignal.timeout(2500) })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json().catch(() => null)
-      if (!json || typeof json !== "object" || json.error) throw new Error(json?.error || "Invalid rates response")
-      const rateMap = json.rates && typeof json.rates === "object" ? json.rates as Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }> : null
-      if (!rateMap) throw new Error("Rates response is missing data")
-  setPairs(prev => {
-        const updated = prev.map(p => {
-          const r = rateMap[p.symbol]
-          if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
-          return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
-        })
-        pairsRef.current = updated
-        return updated
-      })
-      setSelectedPair(prev => {
-        if (!prev) return prev
-        return pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev
-      })
-      setOnline(true)
-      setMarketError(null)
-      setLastUpdated(new Date())
-      setTickCount(n => n + 1)
+      if (!json || typeof json !== "object" || json.error || !json.rates) throw new Error(json?.error || "Invalid rates response")
+      applyRateMap(json.rates)
     } catch (error) {
       console.error("[v0] Live rate refresh failed:", error)
       setOnline(false)
       setMarketError(lastUpdated ? "Live prices are temporarily unavailable. Existing quotes remain visible." : "Live prices are unavailable. Trading will resume when the feed reconnects.")
     }
-  }, [])
+  }, [applyRateMap])
+
+  useMarketDataStream(applyRateMap, fetchRates)
 
   // ── Fetch candles ───────────────────────────────────────���──────────────────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
@@ -1636,12 +1642,6 @@ function PositionSizer({
     fetchRates(); fetchCandles(init[0].symbol, "5M")
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  // ── Poll rates every 3s ───────────────────────────��─────────����──────────────
-  useEffect(() => {
-    ratesIntervalRef.current = setInterval(fetchRates, 3000)
-    return () => { if (ratesIntervalRef.current) clearInterval(ratesIntervalRef.current) }
-  }, [fetchRates])
 
   // ── Re-fetch candles when pair/TF changes ─────────────���────�����──────────�����������────
   useEffect(() => {

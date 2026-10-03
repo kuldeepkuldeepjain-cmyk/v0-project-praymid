@@ -187,6 +187,7 @@ export function TradingChart({
   // Series refs
   const candleSerRef  = useRef<ISeriesApi<"Candlestick"> | null>(null)
   const volSerRef     = useRef<ISeriesApi<"Histogram"> | null>(null)
+  const candleCountRef = useRef(0)
   const ema9Ref       = useRef<ISeriesApi<"Line"> | null>(null)
   const ema21Ref      = useRef<ISeriesApi<"Line"> | null>(null)
   const ema50Ref      = useRef<ISeriesApi<"Line"> | null>(null)
@@ -458,6 +459,7 @@ export function TradingChart({
       if (frameId !== null) cancelAnimationFrame(frameId)
       chart.remove()
       chartRef.current     = null
+      candleCountRef.current = 0
       candleSerRef.current = null
       volSerRef.current    = null
       ema9Ref.current      = null
@@ -478,9 +480,16 @@ export function TradingChart({
   // ── Update candle + volume data ──────────────────────────────────────────────
   useEffect(() => {
     if (!candleSerRef.current || !volSerRef.current || candleData.length === 0) return
-    candleSerRef.current.setData(candleData)
-    volSerRef.current.setData(volData)
-    if (chartRef.current) {
+    const previousCount = candleCountRef.current
+    if (previousCount === candleData.length && previousCount > 0) {
+      candleSerRef.current.update(candleData[candleData.length - 1])
+      volSerRef.current.update(volData[volData.length - 1])
+    } else {
+      candleSerRef.current.setData(candleData)
+      volSerRef.current.setData(volData)
+      candleCountRef.current = candleData.length
+    }
+    if (chartRef.current && previousCount !== candleData.length) {
       const from = Math.max(0, candleData.length - 90)
       chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
     }
