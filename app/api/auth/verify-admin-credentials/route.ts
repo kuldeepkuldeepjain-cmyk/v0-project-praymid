@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const credentials = getAdminCredentials()
     const admin = credentials.find(
-      (credential) => credential.email === email.trim().toLowerCase() && credential.password === password
+      (credential) => credential.email === email.trim().toLowerCase() && credential.password.trim() === String(password).trim()
     )
 
     if (!admin) {
