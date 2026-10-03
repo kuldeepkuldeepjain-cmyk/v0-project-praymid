@@ -1049,7 +1049,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ────────────────────────────────────────────��───────────
+// ─── Market Stats Panel ────────────────────────────────────────────���───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1231,6 +1231,7 @@ function PositionSizer({
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
   const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
+  const [positionsPopupOpen, setPositionsPopupOpen] = useState(false)
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
@@ -2980,7 +2981,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────���───────────���─���─���──────��────────────────������─────── */}
+        {/* ── CENTER: Chart ────���───────────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
@@ -3486,7 +3487,7 @@ adjustWalletBalance(
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
             { id: "stats",       label: "Stats",                              icon: Activity },
           ] as { id: typeof activePanel; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => setActivePanel(id)}
+            <button key={id} onClick={() => { setActivePanel(id); if (id === "positions") setPositionsPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : label}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
               style={activePanel === id
                 ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
@@ -3981,9 +3982,19 @@ adjustWalletBalance(
         </div>
       )}
 
+      {positionsPopupOpen && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="positions-manager-title">
+          <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#060a12] shadow-2xl shadow-black/60">
+            <div className="flex items-center justify-between border-b border-[#1a2640] bg-[#0d1625] px-4 py-3"><div><p id="positions-manager-title" className="text-sm font-black uppercase tracking-wider text-white">Open Positions Manager</p><p className="mt-1 text-[10px] text-slate-400">Live prices, P&amp;L, and trade controls</p></div><button type="button" onClick={() => setPositionsPopupOpen(false)} aria-label="Close open positions manager" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button></div>
+            <div className="flex items-center gap-3 overflow-x-auto border-b border-[#1a2640] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400"><span className="rounded-md bg-cyan-500/10 px-2 py-1 text-cyan-300">{openTrades.length} Open</span><span className={totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}>Live P&amp;L {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}</span><span>{online ? "Live feed" : "Reconnecting..."}</span></div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">{openTrades.length === 0 ? <div className="flex min-h-40 items-center justify-center text-xs text-slate-500">No open positions</div> : <div className="flex flex-col gap-2">{openTrades.map(trade => { const isBuy = trade.direction === "BUY"; const pnlClr = trade.pnl >= 0 ? "#10b981" : "#ef4444"; return <div key={trade.id} className="rounded-xl border border-[#1a2a42] bg-[#0d1625] p-3"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><span className="text-base font-black text-white">{trade.pair}</span><span className={`rounded px-2 py-1 text-[10px] font-black ${isBuy ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{trade.direction}</span></div><p className="mt-1 text-[10px] text-slate-400">{trade.lotSize} lots</p></div><div className="text-right"><p className="text-lg font-black" style={{ color: pnlClr }}>{trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}</p><p className="text-[10px] text-slate-400">Live P&amp;L</p></div></div><div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-5">{[["Entry", fmt(trade.openPrice, trade.pair)], ["Current", fmt(trade.currentPrice, trade.pair)], ["Lot Size", String(trade.lotSize)], ["SL", trade.sl ? fmt(trade.sl, trade.pair) : "Not set"], ["TP", trade.tp ? fmt(trade.tp, trade.pair) : "Not set"]].map(([label, value]) => <div key={label}><p className="text-[9px] uppercase text-slate-500">{label}</p><p className="font-bold text-slate-200">{value}</p></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => closeTrade(trade.id)} className="min-h-11 rounded-lg bg-red-500/15 px-3 text-xs font-black uppercase tracking-wider text-red-300 hover:bg-red-500/25">Close Position</button><button type="button" onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })} className="min-h-11 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 text-xs font-black uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20">Modify SL/TP</button></div></div> })}</div>}</div>
+          </div>
+        </div>
+      )}
+
       {tradeConfirm && (
-        <div
-          className="absolute inset-0 z-50 flex items-center justify-center"
+  <div
+  className="absolute inset-0 z-50 flex items-center justify-center"
           style={{ background: "rgba(2,6,15,0.82)", backdropFilter: "blur(6px)" }}
           onClick={(e) => { if (e.target === e.currentTarget && !confirmLoading) setTradeConfirm(null) }}
         >
