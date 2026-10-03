@@ -23,7 +23,7 @@ interface Participant {
   last_login?: string | null
 }
 
-type Action = "deduct" | "close" | "status" | "bulk"
+type Action = "credit" | "deduct" | "close" | "status" | "bulk"
 
 export function ParticipantManagementPanel() {
   const { toast } = useToast()
@@ -98,18 +98,20 @@ export function ParticipantManagementPanel() {
     finally { setBusy(null) }
   }
 
-  const deductBalance = async () => {
-    const deduction = Number(amount)
-    if (!selected || !Number.isFinite(deduction) || deduction <= 0 || !reason.trim()) { toast({ title: "Complete all fields", description: "Select an account, enter a valid amount, and provide a reason.", variant: "destructive" }); return }
-    if (!window.confirm(`Deduct $${deduction.toFixed(2)} from ${selected.email}? This cannot be undone.`)) return
-    setBusy("deduct")
+  const adjustBalance = async (direction: "credit" | "deduct") => {
+    const value = Number(amount)
+    if (!selected || !Number.isFinite(value) || value <= 0 || !reason.trim()) { toast({ title: "Complete all fields", description: "Select an account, enter a valid amount, and provide a reason.", variant: "destructive" }); return }
+    const verb = direction === "credit" ? "Add" : "Deduct"
+    if (!window.confirm(`${verb} $${value.toFixed(2)} ${direction === "credit" ? "to" : "from"} ${selected.email}? This action will be audited.`)) return
+    setBusy(direction)
     try {
-      const response = await adminFetch("/api/admin/deduct-balance", { method: "POST", body: JSON.stringify({ email: selected.email, amount: deduction, reason }) })
+      const response = await adminFetch(`/api/admin/${direction}-balance`, { method: "POST", body: JSON.stringify({ email: selected.email, amount: value, reason }) })
       const data = await response.json()
-      if (!response.ok || !data.success) throw new Error(data.error || "Deduction failed")
+      if (!response.ok || !data.success) throw new Error(data.error || `Balance ${direction} failed`)
       setParticipants(current => current.map(item => item.email === selected.email ? { ...item, account_balance: data.balanceAfter } : item))
-      setAmount(""); setReason(""); toast({ title: "Balance deducted", description: `${selected.email} now has $${Number(data.balanceAfter).toFixed(2)}.` })
-    } catch (error) { toast({ title: "Deduction failed", description: error instanceof Error ? error.message : "Unable to deduct balance.", variant: "destructive" }) }
+      setAmount(""); setReason("")
+      toast({ title: direction === "credit" ? "Balance added" : "Balance deducted", description: `${selected.email} now has $${Number(data.balanceAfter).toFixed(2)}.` })
+    } catch (error) { toast({ title: `${verb} balance failed`, description: error instanceof Error ? error.message : `Unable to ${direction} balance.`, variant: "destructive" }) }
     finally { setBusy(null) }
   }
 
@@ -160,7 +162,7 @@ export function ParticipantManagementPanel() {
           <div className="grid grid-cols-2 gap-2"><div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><p className="text-xs uppercase tracking-wider text-slate-500">Balance</p><p className="mt-1 text-xl font-semibold text-emerald-300">${Number(selected?.account_balance || 0).toFixed(2)}</p></div><div className="rounded-lg border border-slate-800 bg-slate-950/70 p-3"><p className="text-xs uppercase tracking-wider text-slate-500">Status</p><p className="mt-1 text-sm font-semibold text-slate-100">{selected?.status || "—"}</p></div></div>
           <div className="grid grid-cols-3 gap-2"><Button size="sm" onClick={() => quickStatus("activate")} disabled={!selected || busy !== null} className="gap-1 bg-emerald-600 text-white hover:bg-emerald-700"><Play className="size-3" />Activate</Button><Button size="sm" onClick={() => quickStatus("suspend")} disabled={!selected || busy !== null} variant="outline" className="gap-1 border-amber-500/40 text-amber-300 hover:bg-amber-500/10"><LockKeyhole className="size-3" />Suspend</Button><Button size="sm" onClick={() => quickStatus("deactivate")} disabled={!selected || busy !== null} variant="outline" className="gap-1 border-slate-700 text-slate-300"><XCircle className="size-3" />Pending</Button></div>
           <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-cyan-200">Bulk actions · {selectedParticipants.length} selected</p><div className="grid grid-cols-3 gap-2"><Button size="sm" variant="outline" onClick={() => bulkStatus("activate")} disabled={!selectedParticipants.length || busy !== null} className="border-slate-700 text-slate-300">Activate</Button><Button size="sm" variant="outline" onClick={() => bulkStatus("suspend")} disabled={!selectedParticipants.length || busy !== null} className="border-slate-700 text-slate-300">Suspend</Button><Button size="sm" variant="outline" onClick={() => bulkStatus("deactivate")} disabled={!selectedParticipants.length || busy !== null} className="border-slate-700 text-slate-300">Pending</Button></div></div>
-          <div className="flex flex-col gap-3"><label className="text-xs font-medium text-slate-300" htmlFor="deduction-amount">Balance deduction</label><Input id="deduction-amount" type="number" min="0.01" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} disabled={!selected || busy !== null} placeholder="Amount" className="border-slate-700 bg-slate-950 text-white" /><textarea id="deduction-reason" value={reason} onChange={event => setReason(event.target.value)} disabled={!selected || busy !== null} placeholder="Required audit reason" className="min-h-16 w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500" /><Button type="button" onClick={deductBalance} disabled={!selected || busy !== null} className="w-full gap-2 bg-amber-600 text-white hover:bg-amber-700"><CircleDollarSign className="size-4" />{busy === "deduct" ? "Deducting..." : "Deduct balance"}</Button></div>
+          <div className="flex flex-col gap-3"><label className="text-xs font-medium text-slate-300" htmlFor="balance-amount">Balance adjustment</label><Input id="balance-amount" type="number" min="0.01" max="1000000" step="0.01" value={amount} onChange={event => setAmount(event.target.value)} disabled={!selected || busy !== null} placeholder="Amount" className="border-slate-700 bg-slate-950 text-white" /><textarea id="balance-reason" value={reason} onChange={event => setReason(event.target.value)} disabled={!selected || busy !== null} placeholder="Required audit reason" className="min-h-16 w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white placeholder:text-slate-500 outline-none focus:border-cyan-500" /><div className="grid grid-cols-2 gap-2"><Button type="button" onClick={() => adjustBalance("credit")} disabled={!selected || busy !== null} className="w-full gap-2 bg-emerald-600 text-white hover:bg-emerald-700"><CircleDollarSign className="size-4" />{busy === "credit" ? "Adding..." : "Add balance"}</Button><Button type="button" onClick={() => adjustBalance("deduct")} disabled={!selected || busy !== null} className="w-full gap-2 bg-amber-600 text-white hover:bg-amber-700"><CircleDollarSign className="size-4" />{busy === "deduct" ? "Deducting..." : "Deduct balance"}</Button></div></div>
           <div className="border-t border-slate-800 pt-4"><p className="mb-3 text-xs leading-5 text-slate-500">Force-close open trades at stored open price with zero realized P&L. Every action is audited.</p><Button type="button" onClick={closeTrades} disabled={!selected || busy !== null} variant="outline" className="w-full gap-2 border-red-500/40 text-red-300 hover:bg-red-500/10"><XCircle className="size-4" />{busy === "close" ? "Closing trades..." : "Close running trades"}</Button></div>
         </CardContent></Card>
       </div>
