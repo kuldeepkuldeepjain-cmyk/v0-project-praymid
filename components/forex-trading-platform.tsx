@@ -1446,7 +1446,7 @@ function PositionSizer({
   const lockedMargin = openTrades.reduce((sum, trade) => sum + trade.margin, 0)
   const accountEquity = walletBalance + lockedMargin + totalPnl
   const tradingLocked = isFrozen || terminalLocked
-  const fundedLossLimitReached = isFundedAccount && fundedBaseAmount > 0 && walletBalance > 0 && accountEquity <= fundedMinimumBalance
+  const fundedLossLimitReached = isFundedAccount && fundedBaseAmount > 0 && accountEquity < fundedMinimumBalance
 
   const freezeFundedAccount = useCallback(async () => {
     if (!participantEmail || freezeRequestStarted.current || isFrozen) return
@@ -2976,7 +2976,7 @@ adjustWalletBalance(
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────���───────────���─���─���───────────────────────������─────── */}
+        {/* ── CENTER: Chart ────���───────────���─���─���──────��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
