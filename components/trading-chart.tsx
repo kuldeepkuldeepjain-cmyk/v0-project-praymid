@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
+import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import {
   createChart,
   CandlestickSeries,
@@ -20,13 +21,13 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type Candle = {
-  time: string
+  time: unknown
   open: number
   high: number
   low: number
   close: number
   volume: number
-  ts?: number
+  ts?: unknown
 }
 
 export type OpenTrade = {
@@ -143,10 +144,11 @@ const TF_SECONDS: Record<string, number> = {
   "1M": 60, "5M": 300, "15M": 900, "1H": 3600, "4H": 14400, "1D": 86400,
 }
 
-function toTimestamp(c: Candle, idx: number, tfSeconds = 300): Time {
-  if (c.ts && c.ts > 1_000_000) return c.ts as Time
-  // Fallback: generate sequential timestamps anchored to Jan 1 2024 with proper interval
-  return (1704067200 + idx * tfSeconds) as Time
+function toTimestamp(c: Candle, idx: number, tfSeconds = 300): number {
+  const timestamp = normalizeTimestamp(c.ts ?? c.time)
+  if (Number.isFinite(timestamp) && timestamp > 0) return Math.floor(timestamp / 1000)
+  // Keep malformed records out of the chart instead of comparing object values.
+  return 1704067200 + idx * tfSeconds
 }
 
 // ─── OHLCV Info Bar state ─────────────────────────────────────────────────────
@@ -226,8 +228,12 @@ export function TradingChart({
     const closes: number[]              = []
     const times: Time[]                 = []
     const tfSecs = TF_SECONDS[tf] ?? 300
-    let previousTime = 0
-    candles.forEach((c, i) => {
+    const normalizedCandles = candles
+      .map((c, i) => ({ candle: c, time: toTimestamp(c, i, tfSecs) }))
+      .filter(({ time }) => Number.isFinite(time) && time > 0)
+      .sort((a, b) => a.time - b.time)
+      .filter((entry, index, entries) => index === 0 || entry.time !== entries[index - 1].time)
+    normalizedCandles.forEach(({ candle: c, time: rawTime }, i) => {
   const open = Number(c.open)
   const high = Number(c.high)
   const low = Number(c.low)
@@ -239,10 +245,8 @@ export function TradingChart({
   // incomplete candle instead of taking down the entire participant dashboard.
   if (![open, high, low, close, volume].every(Number.isFinite) || high < low || open <= 0 || close <= 0) return
 
-  const rawTime = Number(toTimestamp(c, i, tfSecs))
   if (!Number.isFinite(rawTime) || rawTime <= 0) return
-  const t = Math.max(rawTime, previousTime + tfSecs) as Time
-  previousTime = Number(t)
+  const t = rawTime as Time
   const normalizedHigh = Math.max(high, open, close)
   const normalizedLow = Math.min(low, open, close)
   const isUp = close >= open
@@ -866,7 +870,7 @@ export function TradingChart({
         )}
       </div>
 
-      {/* ── Chart canvas ────────────────────────────────────────────────────────── */}
+      {/* ── Chart canvas ───────────────────────────���────────────────────────────── */}
   <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}
