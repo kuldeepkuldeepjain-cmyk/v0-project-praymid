@@ -16,6 +16,52 @@ const TF_SECONDS: Record<string, number> = {
   "1M": 60, "5M": 300, "15M": 900, "1H": 3600, "4H": 14400, "1D": 86400,
 }
 
+const KUCOIN_INTERVALS: Record<string, string> = {
+  "1M": "1min", "5M": "5min", "15M": "15min", "1H": "1hour", "4H": "4hour", "1D": "1day",
+}
+
+function cryptoKucoinSymbol(pair: string): string | null {
+  const [base, quote] = pair.split("/")
+  if (!base || quote !== "USD") return null
+  return `${base}-USDT`
+}
+
+async function fetchKucoinCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
+  const symbol = cryptoKucoinSymbol(pair)
+  const type = KUCOIN_INTERVALS[tf]
+  if (!symbol || !type) throw new Error("Unsupported crypto candle pair")
+
+  const endAt = Math.floor(Date.now() / 1000)
+  const startAt = endAt - (TF_SECONDS[tf] ?? 300) * 180
+  const url = `https://api.kucoin.com/api/v1/market/candles?symbol=${encodeURIComponent(symbol)}&type=${type}&startAt=${startAt}&endAt=${endAt}`
+  const response = await fetch(url, { headers: { Accept: "application/json" }, next: { revalidate: 0 }, signal: AbortSignal.timeout(5000) })
+  if (!response.ok) throw new Error(`KuCoin candles HTTP ${response.status}`)
+  const json = await response.json()
+  if (json?.code !== "200000" || !Array.isArray(json.data)) throw new Error("KuCoin returned no candles")
+
+  const decimals = dec(pair)
+  return json.data
+    .map((row: unknown[]) => {
+      const ts = Number(row[0])
+      const open = Number(row[1])
+      const close = Number(row[2])
+      const high = Number(row[3])
+      const low = Number(row[4])
+      const volume = Number(row[5])
+      return { time: fmtTime(ts, tf), open, high, low, close, volume, ts }
+    })
+    .filter((c: { ts: number; open: number; high: number; low: number; close: number }) =>
+      Number.isFinite(c.ts) && c.ts > 0 && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
+    .sort((a: { ts: number }, b: { ts: number }) => a.ts - b.ts)
+    .filter((c: { ts: number }, index: number, rows: { ts: number }[]) => index === 0 || c.ts !== rows[index - 1].ts)
+    .slice(-150)
+    .map((c: { time: string; open: number; high: number; low: number; close: number; volume: number; ts: number }) => ({
+      ...c,
+      open: Number(c.open.toFixed(decimals)), high: Number(c.high.toFixed(decimals)),
+      low: Number(c.low.toFixed(decimals)), close: Number(c.close.toFixed(decimals)), volume: Math.round(c.volume),
+    }))
+}
+
 function generateSyntheticCandles(pair: string, tf: string): unknown[] {
   const seed = SEED_PRICES[pair] ?? 1.0
   const n = 100
@@ -63,8 +109,9 @@ export async function GET(req: NextRequest) {
   const pair = searchParams.get("pair") ?? "EUR/USD"
   const tf = searchParams.get("tf") ?? "5M"
 
+  const cryptoSymbol = cryptoKucoinSymbol(pair)
   const ySym = YAHOO_SYMBOLS[pair]
-  if (!ySym) return NextResponse.json({ error: "Unknown pair" }, { status: 400 })
+  if (!cryptoSymbol && !ySym) return NextResponse.json({ error: "Unknown pair" }, { status: 400 })
 
   const tfCfg = TF_MAP[tf]
   if (!tfCfg) return NextResponse.json({ error: "Unknown timeframe" }, { status: 400 })
@@ -79,6 +126,13 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    if (cryptoSymbol) {
+      const candles = await fetchKucoinCryptoCandles(pair, tf)
+      if (candles.length === 0) throw new Error("No usable crypto candles")
+      candleCache.set(cacheKey, { candles, ts: now })
+      return NextResponse.json({ candles, source: "live-kucoin", ts: now })
+    }
+
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySym)}?interval=${tfCfg.interval}&range=${tfCfg.range}`
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; ForexApp/1.0)" },
