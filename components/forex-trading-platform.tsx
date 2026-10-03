@@ -1049,7 +1049,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ────────────────────────────────────────────────────────
+// ─── Market Stats Panel ────────────────────────────────────────────��───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -2143,8 +2143,12 @@ function PositionSizer({
 
   // ── Close trade ────────────────────────────────────────────────────────────
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
-    // Prevent double-close if tick engine and manual close race
-    if (closingTradeIds.current.has(id)) return
+  // Prevent double-close if tick engine and manual close race
+  if (closingTradeIds.current.has(id)) return
+
+  const requestedTrade = openTradesRef.current.find(t => t.id === id)
+  if (!requestedTrade) return
+  if (reason === "manual" && !window.confirm(`Close ${requestedTrade.direction} ${requestedTrade.pair} (${requestedTrade.lotSize} lots)?`)) return
 
     // Read trade from the live ref — never from stale closure
     const trade = openTradesRef.current.find(t => t.id === id)
@@ -2354,7 +2358,7 @@ adjustWalletBalance(
     showToast("info", "Pending order cancelled")
   }
 
-  // ── Derived values ───────────────────────────────────────────────────�����─────
+  // ── Derived values ───────────────────────────────────────────────��───�����─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
@@ -3522,7 +3526,7 @@ adjustWalletBalance(
                 ))}
                 {/* Close all button */}
                 <button
-                  onClick={() => { openTrades.forEach(t => closeTrade(t.id)) }}
+                  onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
                   className="ml-auto mr-2 my-1 px-2.5 py-1 rounded-md font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 shrink-0 flex items-center gap-1"
                   style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
                   <X className="h-2.5 w-2.5" /> Close All
@@ -3541,7 +3545,7 @@ adjustWalletBalance(
                   const isGd     = isGold(trade.pair)
 
                   return (
-                    <div key={trade.id} className="rounded-xl price-mono text-[11px] overflow-hidden"
+                    <div key={trade.id} className={`rounded-xl price-mono text-[11px] overflow-hidden transition-shadow duration-300 ${Date.now() - trade.openTimestamp < 4000 ? "animate-pulse" : ""}`}
                       style={{ background: "#0d1625", border: `1px solid ${pnlPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, boxShadow: `0 0 0 1px rgba(0,0,0,0.2), 0 4px 16px -4px ${pnlPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
                       {/* Direction accent strip */}
                       <div className="h-[3px] w-full" style={{ background: isBuy ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
@@ -3582,15 +3586,15 @@ adjustWalletBalance(
                       </div>
 
                       {/* Price levels row */}
-                      <div className="grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div><p className="text-[8px] text-slate-500 mb-0.5">Entry</p><p className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Mark</p><p className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p></div>
+                        <div><p className="text-[8px] text-slate-500 mb-0.5">Current Price</p><p className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p></div>
                         <div><p className="text-[8px] text-slate-500 mb-0.5">Liq.</p><p className="font-bold text-orange-400">{fmt(liqPrice, trade.pair)}</p></div>
                         <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${trade.margin.toFixed(2)}</p></div>
                       </div>
 
                       {/* SL/TP/Trailing/Swap row */}
-                      <div className="grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div>
                           <p className="text-[8px] text-slate-500 mb-0.5">SL</p>
                           <p className="font-bold text-red-400 text-[11px]">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
@@ -3627,7 +3631,7 @@ adjustWalletBalance(
                         <button
                           onClick={() => {
                             const l = parseFloat(partialCloseMap[trade.id] ?? "")
-                            if (!isNaN(l) && l > 0) partialCloseTrade(trade.id, l)
+                            if (!isNaN(l) && l > 0 && window.confirm(`Close ${l.toFixed(2)} lots of ${trade.pair}?`)) partialCloseTrade(trade.id, l)
                           }}
                           className="px-2 py-1 rounded-lg font-black text-[10px] transition-all active:scale-95 shrink-0"
                           style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
@@ -3641,7 +3645,7 @@ adjustWalletBalance(
                           onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
                           className="flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
                           style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
-                          <Edit3 className="h-3 w-3" /> Edit TP / SL
+                          <Edit3 className="h-3 w-3" /> Modify SL/TP
                         </button>
                         <button
                           onClick={() => closeTrade(trade.id)}
@@ -3651,7 +3655,7 @@ adjustWalletBalance(
                             color: "#fff",
                             border: `1px solid ${trade.pnl >= 0 ? "#059669" : "#dc2626"}`,
                           }}>
-                          <X className="h-3 w-3" /> Close All {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
+                          <X className="h-3 w-3" /> CLOSE {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                         </button>
                       </div>
                     </div>
