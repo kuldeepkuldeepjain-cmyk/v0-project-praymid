@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
+import { randomUUID } from "node:crypto"
 import { query, execute } from "@/lib/db"
+import { setParticipantSession } from "@/lib/session"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -69,6 +71,22 @@ export async function POST(request: Request) {
 
       const newParticipant = inserted[0]
       console.log("[v0] Registration successful for:", email, "ID:", newParticipant.id)
+
+      // Establish the signed participant session immediately so the new account
+      // can open Add Funds without needing a second login.
+      const sessionId = randomUUID()
+      await execute(
+        `INSERT INTO participant_sessions (id, participant_id, participant_email, token, user_agent)
+         VALUES ($1, $2, $3, $1, $4)`,
+        [sessionId, newParticipant.id, emailKey, request.headers.get("user-agent") || "registration"],
+      ).catch(() => {})
+      await setParticipantSession({
+        participantId: String(newParticipant.id),
+        email: emailKey,
+        role: "participant",
+        sessionId,
+        lastActivityAt: Date.now(),
+      })
 
       // Increment referrer's referral count if a valid referral code was used
       if (referralCode) {
