@@ -190,6 +190,7 @@ export function TradingChart({
   const candleSerRef  = useRef<ISeriesApi<"Candlestick"> | null>(null)
   const volSerRef     = useRef<ISeriesApi<"Histogram"> | null>(null)
   const candleCountRef = useRef(0)
+  const lastCandleTimeRef = useRef<number | null>(null)
   const ema9Ref       = useRef<ISeriesApi<"Line"> | null>(null)
   const ema21Ref      = useRef<ISeriesApi<"Line"> | null>(null)
   const ema50Ref      = useRef<ISeriesApi<"Line"> | null>(null)
@@ -210,7 +211,7 @@ export function TradingChart({
   const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
   const [crosshairActive, setCrosshairActive] = useState(false)
 
-  // Price alerts ─────────────────────────────────────────────────────────────
+  // Price alerts ────────────────────────��────────────────────────────────────
   const [alerts, setAlerts]             = useState<PriceAlert[]>([])
   const [alertMode, setAlertMode]       = useState(false)      // true = click-to-set mode
   const [showAlertPanel, setShowAlertPanel] = useState(false)
@@ -463,8 +464,9 @@ export function TradingChart({
       if (frameId !== null) cancelAnimationFrame(frameId)
       chart.remove()
       chartRef.current     = null
-      candleCountRef.current = 0
-      candleSerRef.current = null
+  candleCountRef.current = 0
+  lastCandleTimeRef.current = null
+  candleSerRef.current = null
       volSerRef.current    = null
       ema9Ref.current      = null
       ema21Ref.current     = null
@@ -484,15 +486,22 @@ export function TradingChart({
   // ── Update candle + volume data ──────────────────────────────────────────────
   useEffect(() => {
     if (!candleSerRef.current || !volSerRef.current || candleData.length === 0) return
-    const previousCount = candleCountRef.current
-    if (previousCount === candleData.length && previousCount > 0) {
-      candleSerRef.current.update(candleData[candleData.length - 1])
-      volSerRef.current.update(volData[volData.length - 1])
-    } else {
-      candleSerRef.current.setData(candleData)
-      volSerRef.current.setData(volData)
-      candleCountRef.current = candleData.length
-    }
+  const previousCount = candleCountRef.current
+  const latestTime = Number(candleData[candleData.length - 1]?.time)
+  const canIncrementallyUpdate = previousCount === candleData.length
+    && previousCount > 0
+    && Number.isFinite(latestTime)
+    && (lastCandleTimeRef.current === null || latestTime >= lastCandleTimeRef.current)
+
+  if (canIncrementallyUpdate) {
+    candleSerRef.current.update(candleData[candleData.length - 1])
+    volSerRef.current.update(volData[volData.length - 1])
+  } else {
+    candleSerRef.current.setData(candleData)
+    volSerRef.current.setData(volData)
+    candleCountRef.current = candleData.length
+  }
+  if (Number.isFinite(latestTime)) lastCandleTimeRef.current = latestTime
     if (chartRef.current && previousCount !== candleData.length) {
       const from = Math.max(0, candleData.length - 90)
       chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
@@ -545,7 +554,7 @@ export function TradingChart({
     })
   }, [rsid, indicators.rsi, chartPane, times]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Update MACD ──────────────────────────────────────────────────────────────
+  // ── Update MACD ─────────────────────────────────────────────────────────���────
   useEffect(() => {
     if (!macdSerRef.current || !macdSigRef.current || !macdHistRef.current || times.length === 0) return
     const show = indicators.macd && chartPane === "macd"
