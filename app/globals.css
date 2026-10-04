@@ -173,6 +173,9 @@
 .lending-page .lending-button-quiet:hover { background: var(--lending-panel); }
 .lending-page .lending-snapshot, .lending-page .lending-calculator { border: 1px solid var(--lending-line); border-radius: 1rem; background: linear-gradient(145deg, var(--lending-panel), var(--lending-panel-strong)); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2); }
 .lending-page .lending-snapshot { padding: 1.25rem; }
+.lending-page .lending-funded-panel { border: 1px solid color-mix(in srgb, var(--lending-accent) 38%, var(--lending-line)); border-radius: 1rem; background: radial-gradient(circle at 88% 12%, color-mix(in srgb, var(--lending-accent) 13%, transparent), transparent 31%), linear-gradient(145deg, #10283a, var(--lending-panel-strong)); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22); }
+.lending-page .lending-rule-stat { border: 1px solid color-mix(in srgb, var(--lending-line) 80%, var(--lending-accent)); border-radius: 0.7rem; background: color-mix(in srgb, var(--lending-panel) 78%, transparent); padding: 0.85rem; }
+.lending-page .lending-rule-card { border: 1px solid var(--lending-line); border-radius: 0.75rem; background: color-mix(in srgb, var(--lending-panel-strong) 82%, transparent); padding: 1rem; }
 .lending-page .lending-status { display: inline-flex; align-items: center; gap: 0.5rem; border: 1px solid color-mix(in srgb, var(--lending-positive) 30%, transparent); border-radius: 999px; padding: 0.35rem 0.55rem; color: var(--lending-positive); font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
 .lending-page .lending-chart { display: flex; height: 10rem; align-items: end; gap: 0.35rem; border-bottom: 1px solid var(--lending-line); background: repeating-linear-gradient(to top, transparent 0, transparent 31px, color-mix(in srgb, var(--lending-line) 55%, transparent) 32px); padding: 0 0.4rem; }
 .lending-page .lending-bar { flex: 1; min-width: 0.35rem; border-radius: 0.25rem 0.25rem 0 0; background: #31536a; }
@@ -1239,6 +1242,25 @@ button, a, [role="button"] {
   background: linear-gradient(180deg, transparent, #24405f, transparent);
 }
 
+@keyframes terminal-scanline {
+  from { transform: translateY(-100%); opacity: 0; }
+  15% { opacity: 0.12; }
+  85% { opacity: 0.04; }
+  to { transform: translateY(100%); opacity: 0; }
+}
+
+.terminal-live-surface { position: relative; overflow: hidden; }
+.terminal-live-surface::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.45), transparent);
+  animation: terminal-scanline 5s ease-in-out infinite;
+}
+
 /* Thin scrollbar for terminal panels */
 .terminal-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
 .terminal-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -1888,7 +1910,7 @@ button, a, [role="button"] {
   }
 }
 
-/* ── Sleek institutional market sidebar ───────────────────────────────────── */
+/* ── Sleek institutional market sidebar ───────────────��───────────────────── */
 .mt5-terminal .apple-terminal-market {
   width: 276px !important;
   background: #0b1421 !important;

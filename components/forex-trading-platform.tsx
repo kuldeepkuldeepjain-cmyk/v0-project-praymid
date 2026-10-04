@@ -202,12 +202,69 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
 }
 
 function calcMargin(sym: string, lots: number, price: number, leverage: number): number {
-  const cs   = contractSize(sym)
-  const base = sym.split("/")[0]
+  const cs     = contractSize(sym)
+  const base   = sym.split("/")[0]
   const notional = base === "USD"
-    ? lots * cs           // USD-base: contract size is already in USD units
-    : lots * cs * price   // USD-quote: multiply by price to get USD
-  return parseFloat((notional / leverage).toFixed(2))
+    ? lots * cs
+    : lots * cs * price
+  return notional / leverage
+}
+
+function playTerminalSound(type: "buy" | "sell" | "close" | "breakeven" | "alert" | "click") {
+  if (typeof window === "undefined") return
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    const now = ctx.currentTime
+    if (type === "buy") {
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(587.33, now)
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12)
+      gain.gain.setValueAtTime(0.08, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
+      osc.start(now)
+      osc.stop(now + 0.15)
+    } else if (type === "sell") {
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(783.99, now)
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.12)
+      gain.gain.setValueAtTime(0.08, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
+      osc.start(now)
+      osc.stop(now + 0.15)
+    } else if (type === "close") {
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(659.25, now)
+      osc.frequency.setValueAtTime(523.25, now + 0.08)
+      gain.gain.setValueAtTime(0.07, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18)
+      osc.start(now)
+      osc.stop(now + 0.18)
+    } else if (type === "breakeven") {
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(523.25, now)
+      osc.frequency.setValueAtTime(659.25, now + 0.06)
+      osc.frequency.setValueAtTime(783.99, now + 0.12)
+      gain.gain.setValueAtTime(0.06, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22)
+      osc.start(now)
+      osc.stop(now + 0.22)
+    } else if (type === "alert") {
+      osc.type = "square"
+      osc.frequency.setValueAtTime(880, now)
+      gain.gain.setValueAtTime(0.05, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
+      osc.start(now)
+      osc.stop(now + 0.2)
+    }
+  } catch {
+    // Audio synthesis fallback
+  }
 }
 
 function calcLiquidationPrice(sym: string, trade: OpenTrade): number {
@@ -1006,7 +1063,7 @@ function ModifyTradeModal({
   )
 }
 
-// ─── Toast Stack ─────────────────────────────────────────────────────────────
+// ─── Toast Stack ────��────────────────────────────────────────────────────────
 
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
@@ -1651,7 +1708,10 @@ function PositionSizer({
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
     const refreshMs: Record<TimeFrame, number> = {
-      "1M": 30_000, "5M": 60_000, "15M": 120_000, "1H": 300_000, "4H": 600_000, "1D": 3600_000,
+      // Refresh the 1-minute history frequently enough to pick up the next
+      // server candle while live ticks keep the active candle moving between
+      // snapshots. Wider frames stay on lighter polling intervals.
+      "1M": 5_000, "5M": 30_000, "15M": 90_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000,
     }
     const ms = refreshMs[timeframe] ?? 60_000
     candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
@@ -1670,12 +1730,24 @@ function PositionSizer({
         const liveMid = (p.bid + p.ask) / 2
         if (liveMid === 0) return p
         const d = decimals(p.symbol)
+        const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
+        const nowSeconds = Math.floor(Date.now() / 1000)
+        const currentBucket = Math.floor(nowSeconds / intervalSeconds) * intervalSeconds
         const nc = [...p.candles]
         const last = { ...nc[nc.length - 1] }
-        last.close = parseFloat(liveMid.toFixed(d))
-        last.high  = Math.max(last.high, last.close)
-        last.low   = Math.min(last.low, last.close)
-        nc[nc.length - 1] = last
+        const lastTimestamp = Number(last.ts ?? 0)
+        const price = parseFloat(liveMid.toFixed(d))
+        if (lastTimestamp > 0 && currentBucket >= lastTimestamp + intervalSeconds) {
+          const open = last.close
+          nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0, ts: currentBucket })
+          if (nc.length > 150) nc.shift()
+        } else {
+          last.close = price
+          last.high  = Math.max(last.high, price)
+          last.low   = Math.min(last.low, price)
+          last.ts = lastTimestamp || currentBucket
+          nc[nc.length - 1] = last
+        }
         return { ...p, candles: nc }
       })
       pairsRef.current = updated
@@ -2198,8 +2270,37 @@ adjustWalletBalance(
         : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
     )
 
+    if (soundEnabled) playTerminalSound("close")
+
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
+
+  const closeWinningPositions = useCallback(() => {
+    const winners = openTradesRef.current.filter(t => t.pnl > 0)
+    if (winners.length === 0) {
+      showToast("info", "No positions are currently in profit")
+      return
+    }
+    if (!window.confirm(`Close ${winners.length} profitable position(s)?`)) return
+    winners.forEach(t => closeTrade(t.id, "manual"))
+    if (soundEnabled) playTerminalSound("close")
+  }, [closeTrade, soundEnabled])
+
+  const applyBreakEvenSL = useCallback(() => {
+    const winners = openTradesRef.current.filter(t => t.pnl > 0)
+    if (winners.length === 0) {
+      showToast("info", "No profitable positions available to set Break-Even SL")
+      return
+    }
+    let updatedCount = 0
+    winners.forEach(t => {
+      persistModify(t.id, t.openPrice, t.tp, t.trailingStopPips)
+      setOpenTrades(prev => prev.map(item => item.id === t.id ? { ...item, sl: t.openPrice } : item))
+      updatedCount++
+    })
+    showToast("success", `Set Break-Even SL on ${updatedCount} position(s)`)
+    if (soundEnabled) playTerminalSound("breakeven")
+  }, [persistModify, soundEnabled])
 
   // ── Funded account breach ──────────────────────────────────────────────────
   // When the drawdown limit is breached, every open position is force-closed
@@ -2533,7 +2634,7 @@ adjustWalletBalance(
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3277,6 +3378,21 @@ adjustWalletBalance(
   </div>
                 </div>
 
+                {/* Live Market Sentiment Bar */}
+                {selectedPair && (
+                  <div className="mb-2 p-2 rounded-lg" style={{ background: "#060b13", border: "1px solid #142032" }}>
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider mb-1">
+                      <span className="text-emerald-400">Buyers {Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
+                      <span className="text-slate-400 font-bold">Order Flow</span>
+                      <span className="text-rose-400">Sellers {Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full overflow-hidden flex" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
+                      <div className="h-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
+                    </div>
+                  </div>
+                )}
+
                 {/* Pending price (only for limit/stop) */}
                 {orderType !== "market" && (
                   <div className="mb-1.5">
@@ -3405,6 +3521,19 @@ adjustWalletBalance(
                   ))}
                 </div>
 
+                {/* Live execution summary */}
+                <div className="mb-2 overflow-hidden rounded-lg border border-cyan-400/20 bg-[#07101b] shadow-[0_0_24px_rgba(34,211,238,0.06)]">
+                  <div className="flex items-center justify-between border-b border-cyan-400/10 px-2.5 py-1.5">
+                    <div className="flex items-center gap-1.5"><Activity className="h-3 w-3 text-cyan-300" /><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Execution preview</span></div>
+                    <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />Live calc</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-px bg-cyan-400/10">
+                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Equity</p><p className="price-mono mt-1 text-[11px] font-black text-white">${accountEquity.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p></div>
+                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Risk / margin</p><p className={`price-mono mt-1 text-[11px] font-black ${estimatedMargin > walletBalance ? "text-red-300" : "text-amber-300"}`}>{walletBalance > 0 ? ((estimatedMargin / walletBalance) * 100).toFixed(2) : "0.00"}%</p></div>
+                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Spread cost</p><p className="price-mono mt-1 text-[11px] font-black text-cyan-300">${(pipVal * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)).toFixed(2)}</p></div>
+                  </div>
+                </div>
+
                 {/* R:R display */}
                 {rrRatio !== null && (
                   <div className="mb-2 px-2 py-1.5 text-[10px]" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 3 }}>
@@ -3529,13 +3658,32 @@ adjustWalletBalance(
                     <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
                   </div>
                 ))}
-                {/* Close all button */}
-                <button
-                  onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
-                  className="ml-auto mr-2 my-1 px-2.5 py-1 rounded-md font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                  style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
-                  <X className="h-2.5 w-2.5" /> Close All
-                </button>
+                {/* 1-Click Mass Position Actions */}
+                <div className="ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={applyBreakEvenSL}
+                    title="Set Stop Loss to entry price for all winning trades"
+                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    style={{ background: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.25)" }}>
+                    <ShieldAlert className="h-2.5 w-2.5" /> Break-Even SL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeWinningPositions}
+                    title="Close all positions currently in profit"
+                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    style={{ background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+                    <CheckCircle2 className="h-2.5 w-2.5" /> Close Winners
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
+                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+                    <X className="h-2.5 w-2.5" /> Close All
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
                 {openTrades.map(trade => {

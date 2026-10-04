@@ -126,7 +126,9 @@ export function getFundedDrawdownSnapshot(
 export function getFundedPayoutAmount(accountBalance: unknown, configuredAmount?: unknown): number {
   const balance = toPositiveNumber(accountBalance)
   const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)
-  return balance > baseAmount ? Math.round((balance - baseAmount) * 0.8 * 100) / 100 : 0
+  // Funded accounts receive 90% of eligible profit; all existing payout
+  // eligibility, breach, and minimum-balance rules remain unchanged.
+  return balance > baseAmount ? Math.round((balance - baseAmount) * 0.9 * 100) / 100 : 0
 }
 
 export function isFundedBalanceBelowMinimum(
