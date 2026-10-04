@@ -32,6 +32,21 @@ export async function POST(request: Request) {
       })
     }
 
+    // Atomically claim the pending prediction before calculating and crediting
+    // the result. Concurrent cron/client requests can therefore settle once.
+    const claim = await db.query(
+      "UPDATE predictions SET status='settling' WHERE id=$1 AND status='pending' RETURNING *",
+      [predictionId],
+    )
+    if (!claim.rows.length) {
+      const settled = await db.query("SELECT * FROM predictions WHERE id=$1", [predictionId])
+      const current = settled.rows[0]
+      const settledResult = String(current?.result || current?.status || "").toLowerCase()
+      const isRefund = settledResult === "refunded"
+      const isWin = settledResult === "won"
+      return NextResponse.json({ success: true, message: "Already settled", result: settledResult, isWin, isRefund, profitLoss: Number(current?.profit_loss || 0), payout: isWin ? Number(current?.amount || 0) + Number(current?.profit_loss || 0) : isRefund ? Number(current?.amount || 0) : 0, accountFrozen: false })
+    }
+
     const pair: string = prediction.crypto_pair || ""
     const isJpyPair = pair.includes("JPY")
     const isForex = /^(EUR|GBP|USD|AUD|NZD|CAD|CHF)(USD|EUR|GBP|JPY|CHF|CAD|AUD|NZD)/.test(pair)
@@ -44,7 +59,7 @@ export async function POST(request: Request) {
 
     if (Math.abs(priceDiff) < minMovement) {
       await db.query(
-        "UPDATE predictions SET target_price=$1, status='refunded', result='refunded', profit_loss=0, closed_at=NOW() WHERE id=$2",
+        "UPDATE predictions SET target_price=$1, status='settled', result='refunded', profit_loss=0, closed_at=NOW() WHERE id=$2 AND status='settling'",
         [finalPrice, predictionId]
       )
       const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
@@ -65,7 +80,7 @@ export async function POST(request: Request) {
     const result = isWin ? "won" : "lost"
 
     await db.query(
-      "UPDATE predictions SET status='settled', result=$1, profit_loss=$2, target_price=$3, closed_at=NOW() WHERE id=$4",
+      "UPDATE predictions SET status='settled', result=$1, profit_loss=$2, target_price=$3, closed_at=NOW() WHERE id=$4 AND status='settling'",
       [result, profitLoss, finalPrice, predictionId]
     )
 

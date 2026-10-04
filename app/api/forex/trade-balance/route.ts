@@ -58,6 +58,28 @@ export async function POST(req: NextRequest) {
 
       const participantId: string = rows[0].id
       const currentBalance: number = parseFloat(rows[0].account_balance) || 0
+
+      // Settlement requests can be retried by the client and by the market
+      // monitor at the same time. Treat an identical ledger event received
+      // within the retry window as already applied so a close cannot credit
+      // margin and P&L twice.
+      if (typeof description === "string" && description.trim()) {
+        const duplicate = await client.query(
+          `SELECT balance_after FROM transactions
+           WHERE participant_id = $1
+             AND type = $2
+             AND amount = $3
+             AND description = $4
+             AND created_at > NOW() - INTERVAL '60 seconds'
+           ORDER BY created_at DESC LIMIT 1`,
+          [participantId, delta < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(delta), description.trim()],
+        )
+        if (duplicate.rows.length) {
+          await client.query("ROLLBACK")
+          return NextResponse.json({ success: true, newBalance: Number(duplicate.rows[0].balance_after), alreadyApplied: true })
+        }
+      }
+
       const isMarginLock = typeof description === "string" && description.startsWith("Margin locked")
       const alreadyBreached = rows[0].funded_breach_status === "breached"
       if (rows[0].account_type !== "funded" && (rows[0].account_frozen || rows[0].is_frozen) && delta < 0 && isMarginLock) {

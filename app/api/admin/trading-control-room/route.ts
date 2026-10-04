@@ -81,8 +81,8 @@ export async function GET() {
         ORDER BY pr.created_at DESC LIMIT 100
       `),
       query(`
-        SELECT id::text AS id, participant_email, amount, payment_method, transaction_id, status, created_at
-        FROM payment_submissions ORDER BY created_at DESC LIMIT 100
+  SELECT id::text AS id, participant_email, amount, payment_method, transaction_id, status, rejection_reason, created_at
+  FROM payment_submissions ORDER BY created_at DESC LIMIT 100
       `),
       query(`
         SELECT id::text AS id, participant_email, legal_name, country, document_type, status, submitted_at, reviewed_at, reviewed_by
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdminSession()
   if (!auth.ok) return auth.response
 
-  let body: { action?: unknown; verificationId?: unknown; flagId?: unknown; payoutId?: unknown; email?: unknown; status?: unknown }
+  let body: { action?: unknown; verificationId?: unknown; flagId?: unknown; payoutId?: unknown; paymentId?: unknown; email?: unknown; status?: unknown; reason?: unknown }
   try {
     body = await request.json()
   } catch {
@@ -164,7 +164,9 @@ export async function POST(request: NextRequest) {
       ? isUuid(body.flagId) && ["reviewed", "dismissed"].includes(String(body.status))
       : action === "mark-payout-processing"
         ? isUuid(body.payoutId)
-        : action === "review-kyc"
+        : action === "reject-payment"
+          ? isUuid(body.paymentId) && typeof body.reason === "string" && body.reason.trim().length >= 5 && body.reason.trim().length <= 500
+          : action === "review-kyc"
           ? isUuid(body.verificationId) && ["under_review", "approved"].includes(String(body.status))
           : false
   if (!validAction) return NextResponse.json({ success: false, error: "Invalid control-room action." }, { status: 400 })
@@ -211,6 +213,27 @@ export async function POST(request: NextRequest) {
       targetId = flagId
       actionName = "risk_flag_reviewed"
       details = `Risk flag marked ${String(body.status)} by ${auth.email}`
+    } else if (action === "reject-payment") {
+      const paymentId = body.paymentId as string
+      const reason = (body.reason as string).trim()
+      const payment = await client.query("SELECT id, participant_email, status FROM payment_submissions WHERE id = $1 FOR UPDATE", [paymentId])
+      if (!payment.rows[0]) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "Payment submission not found." }, { status: 404 })
+      }
+      if (!["pending", "under_review"].includes(String(payment.rows[0].status))) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "This payment has already been finalized." }, { status: 409 })
+      }
+      await client.query(
+        `UPDATE payment_submissions SET status = 'rejected', rejection_reason = $1, reviewed_at = NOW(), updated_at = NOW()
+         WHERE id = $2`,
+        [reason, paymentId],
+      )
+      targetType = "payment_submission"
+      targetId = paymentId
+      actionName = "payment_rejected"
+      details = `Payment rejected for ${payment.rows[0].participant_email}: ${reason}`
     } else if (action === "mark-payout-processing") {
       const payoutId = body.payoutId as string
       const result = await client.query("SELECT id, status FROM payout_requests WHERE id = $1 FOR UPDATE", [payoutId])
