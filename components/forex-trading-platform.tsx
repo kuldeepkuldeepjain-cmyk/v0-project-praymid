@@ -202,12 +202,69 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
 }
 
 function calcMargin(sym: string, lots: number, price: number, leverage: number): number {
-  const cs   = contractSize(sym)
-  const base = sym.split("/")[0]
+  const cs     = contractSize(sym)
+  const base   = sym.split("/")[0]
   const notional = base === "USD"
-    ? lots * cs           // USD-base: contract size is already in USD units
-    : lots * cs * price   // USD-quote: multiply by price to get USD
-  return parseFloat((notional / leverage).toFixed(2))
+    ? lots * cs
+    : lots * cs * price
+  return notional / leverage
+}
+
+function playTerminalSound(type: "buy" | "sell" | "close" | "breakeven" | "alert" | "click") {
+  if (typeof window === "undefined") return
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+    if (!AudioCtx) return
+    const ctx = new AudioCtx()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    const now = ctx.currentTime
+    if (type === "buy") {
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(587.33, now)
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.12)
+      gain.gain.setValueAtTime(0.08, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
+      osc.start(now)
+      osc.stop(now + 0.15)
+    } else if (type === "sell") {
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(783.99, now)
+      osc.frequency.exponentialRampToValueAtTime(440, now + 0.12)
+      gain.gain.setValueAtTime(0.08, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
+      osc.start(now)
+      osc.stop(now + 0.15)
+    } else if (type === "close") {
+      osc.type = "triangle"
+      osc.frequency.setValueAtTime(659.25, now)
+      osc.frequency.setValueAtTime(523.25, now + 0.08)
+      gain.gain.setValueAtTime(0.07, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18)
+      osc.start(now)
+      osc.stop(now + 0.18)
+    } else if (type === "breakeven") {
+      osc.type = "sine"
+      osc.frequency.setValueAtTime(523.25, now)
+      osc.frequency.setValueAtTime(659.25, now + 0.06)
+      osc.frequency.setValueAtTime(783.99, now + 0.12)
+      gain.gain.setValueAtTime(0.06, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22)
+      osc.start(now)
+      osc.stop(now + 0.22)
+    } else if (type === "alert") {
+      osc.type = "square"
+      osc.frequency.setValueAtTime(880, now)
+      gain.gain.setValueAtTime(0.05, now)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2)
+      osc.start(now)
+      osc.stop(now + 0.2)
+    }
+  } catch {
+    // Audio synthesis fallback
+  }
 }
 
 function calcLiquidationPrice(sym: string, trade: OpenTrade): number {
@@ -2198,8 +2255,37 @@ adjustWalletBalance(
         : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
     )
 
+    if (soundEnabled) playTerminalSound("close")
+
     setTimeout(() => closingTradeIds.current.delete(id), 1000)
   }
+
+  const closeWinningPositions = useCallback(() => {
+    const winners = openTradesRef.current.filter(t => t.pnl > 0)
+    if (winners.length === 0) {
+      showToast("info", "No positions are currently in profit")
+      return
+    }
+    if (!window.confirm(`Close ${winners.length} profitable position(s)?`)) return
+    winners.forEach(t => closeTrade(t.id, "manual"))
+    if (soundEnabled) playTerminalSound("close")
+  }, [closeTrade, soundEnabled])
+
+  const applyBreakEvenSL = useCallback(() => {
+    const winners = openTradesRef.current.filter(t => t.pnl > 0)
+    if (winners.length === 0) {
+      showToast("info", "No profitable positions available to set Break-Even SL")
+      return
+    }
+    let updatedCount = 0
+    winners.forEach(t => {
+      persistModify(t.id, t.openPrice, t.tp, t.trailingStopPips)
+      setOpenTrades(prev => prev.map(item => item.id === t.id ? { ...item, sl: t.openPrice } : item))
+      updatedCount++
+    })
+    showToast("success", `Set Break-Even SL on ${updatedCount} position(s)`)
+    if (soundEnabled) playTerminalSound("breakeven")
+  }, [persistModify, soundEnabled])
 
   // ── Funded account breach ──────────────────────────────────────────────────
   // When the drawdown limit is breached, every open position is force-closed
@@ -3277,6 +3363,21 @@ adjustWalletBalance(
   </div>
                 </div>
 
+                {/* Live Market Sentiment Bar */}
+                {selectedPair && (
+                  <div className="mb-2 p-2 rounded-lg" style={{ background: "#060b13", border: "1px solid #142032" }}>
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider mb-1">
+                      <span className="text-emerald-400">Buyers {Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
+                      <span className="text-slate-400 font-bold">Order Flow</span>
+                      <span className="text-rose-400">Sellers {Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full overflow-hidden flex" style={{ background: "rgba(255,255,255,0.06)" }}>
+                      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
+                      <div className="h-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
+                    </div>
+                  </div>
+                )}
+
                 {/* Pending price (only for limit/stop) */}
                 {orderType !== "market" && (
                   <div className="mb-1.5">
@@ -3542,13 +3643,32 @@ adjustWalletBalance(
                     <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
                   </div>
                 ))}
-                {/* Close all button */}
-                <button
-                  onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
-                  className="ml-auto mr-2 my-1 px-2.5 py-1 rounded-md font-black text-[9px] uppercase tracking-wider transition-all active:scale-95 shrink-0 flex items-center gap-1"
-                  style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
-                  <X className="h-2.5 w-2.5" /> Close All
-                </button>
+                {/* 1-Click Mass Position Actions */}
+                <div className="ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={applyBreakEvenSL}
+                    title="Set Stop Loss to entry price for all winning trades"
+                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    style={{ background: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.25)" }}>
+                    <ShieldAlert className="h-2.5 w-2.5" /> Break-Even SL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeWinningPositions}
+                    title="Close all positions currently in profit"
+                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    style={{ background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+                    <CheckCircle2 className="h-2.5 w-2.5" /> Close Winners
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
+                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
+                    <X className="h-2.5 w-2.5" /> Close All
+                  </button>
+                </div>
               </div>
               <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
                 {openTrades.map(trade => {
