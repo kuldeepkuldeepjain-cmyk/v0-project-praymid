@@ -1242,6 +1242,25 @@ button, a, [role="button"] {
   background: linear-gradient(180deg, transparent, #24405f, transparent);
 }
 
+@keyframes terminal-scanline {
+  from { transform: translateY(-100%); opacity: 0; }
+  15% { opacity: 0.12; }
+  85% { opacity: 0.04; }
+  to { transform: translateY(100%); opacity: 0; }
+}
+
+.terminal-live-surface { position: relative; overflow: hidden; }
+.terminal-live-surface::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.45), transparent);
+  animation: terminal-scanline 5s ease-in-out infinite;
+}
+
 /* Thin scrollbar for terminal panels */
 .terminal-scroll::-webkit-scrollbar { width: 4px; height: 4px; }
 .terminal-scroll::-webkit-scrollbar-track { background: transparent; }

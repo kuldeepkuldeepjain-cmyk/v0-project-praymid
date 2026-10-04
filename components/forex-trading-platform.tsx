@@ -2533,7 +2533,7 @@ adjustWalletBalance(
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3403,6 +3403,19 @@ adjustWalletBalance(
                       <p className="price-mono text-[10px] font-black" style={{ color: item.color }}>{item.value}</p>
                     </div>
                   ))}
+                </div>
+
+                {/* Live execution summary */}
+                <div className="mb-2 overflow-hidden rounded-lg border border-cyan-400/20 bg-[#07101b] shadow-[0_0_24px_rgba(34,211,238,0.06)]">
+                  <div className="flex items-center justify-between border-b border-cyan-400/10 px-2.5 py-1.5">
+                    <div className="flex items-center gap-1.5"><Activity className="h-3 w-3 text-cyan-300" /><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Execution preview</span></div>
+                    <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />Live calc</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-px bg-cyan-400/10">
+                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Equity</p><p className="price-mono mt-1 text-[11px] font-black text-white">${accountEquity.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p></div>
+                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Risk / margin</p><p className={`price-mono mt-1 text-[11px] font-black ${estimatedMargin > walletBalance ? "text-red-300" : "text-amber-300"}`}>{walletBalance > 0 ? ((estimatedMargin / walletBalance) * 100).toFixed(2) : "0.00"}%</p></div>
+                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Spread cost</p><p className="price-mono mt-1 text-[11px] font-black text-cyan-300">${(pipVal * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)).toFixed(2)}</p></div>
+                  </div>
                 </div>
 
                 {/* R:R display */}
