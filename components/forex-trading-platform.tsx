@@ -856,8 +856,8 @@ function OrderDepth({ pair }: { pair: ForexPair }) {
       <div className="flex items-center justify-between px-3 py-1.5" style={{ background: "rgba(34,211,238,0.05)", borderTop: "1px solid #1e2d45", borderBottom: "1px solid #1e2d45" }}>
         <span className="price-mono text-xs font-black text-cyan-400">{fmt((pair.bid + pair.ask) / 2, pair.symbol)}</span>
         <span className="text-[9px] font-bold text-slate-500">
-          SPREAD {((pair.spread / pip(pair.symbol)) || 0).toFixed(1)}p
-          &nbsp;·&nbsp;{(pair.spread).toFixed(decimals(pair.symbol))}
+          Spread {((pair.spread / pip(pair.symbol)) || 0).toFixed(1)} pips
+          &nbsp;·&nbsp;{(pair.spread).toFixed(decimals(pair.symbol))} price units
         </span>
       </div>
       {/* Bids (buy side) */}
@@ -1049,7 +1049,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ────────────────────────────────────────────�����───────────
+// ─── Market Stats Panel ────────────────────────────────────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
