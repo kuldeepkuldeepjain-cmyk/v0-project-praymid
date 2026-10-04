@@ -105,15 +105,16 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
       })
       const res = await resp.json()
       if (res.success) {
-        if (res.isRefund) {
+        const settledResult = String(res.result || "").toLowerCase()
+        if (res.isRefund || settledResult === "refunded") {
           setResultType("refunded")
           setResultPL(0)
           setResultWin(false)
-        } else if (res.isWin) {
+        } else if (res.isWin === true || settledResult === "won") {
           setResultType("won")
-          setResultPL(res.payout - normalizedTrade.amount)
+          setResultPL(Number(res.profitLoss ?? (Number(res.payout) - normalizedTrade.amount)))
           setResultWin(true)
-        } else {
+        } else if (settledResult === "lost") {
           setResultType("lost")
           setResultPL(-normalizedTrade.amount)
           setResultWin(false)
