@@ -3261,19 +3261,19 @@ adjustWalletBalance(
                     <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
                   </div>
-  <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-px" style={{ background: "#1a2640" }}>
-  <button type="button" onClick={() => setOrderDirection("SELL")} className="px-2.5 py-2 text-left transition-colors hover:bg-red-500/10" style={{ background: "#090d15" }}>
-  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-red-400">Bid · Sell</span>
-  <span className="price-mono text-sm font-black text-red-300">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+  <div className="relative grid grid-cols-2 gap-2 p-2" style={{ background: "#07101b" }}>
+  <button type="button" onClick={() => setOrderDirection("SELL")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-left transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.28), rgba(190,24,93,0.38))", border: "1px solid rgba(251,113,133,0.45)" }}>
+  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-rose-100">Sell · Bid</span>
+  <span className="price-mono text-base font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
   </button>
-  <div className="flex min-w-[54px] flex-col items-center justify-center gap-0.5 px-1.5" style={{ background: "#07101b" }} aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
+  <button type="button" onClick={() => setOrderDirection("BUY")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-right transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.30), rgba(20,184,166,0.34))", border: "1px solid rgba(52,211,153,0.45)" }}>
+  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-100">Buy · Ask</span>
+  <span className="price-mono text-base font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+  </button>
+  <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-lg border border-slate-200/90 bg-slate-100 px-2.5 py-1 shadow-lg shadow-black/25" aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
   <span className="text-[7px] font-black uppercase tracking-wider text-slate-500">Spread</span>
-  <span className="price-mono whitespace-nowrap text-[9px] font-black text-cyan-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
+  <span className="price-mono whitespace-nowrap text-[11px] font-black text-slate-800">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
   </div>
-  <button type="button" onClick={() => setOrderDirection("BUY")} className="px-2.5 py-2 text-right transition-colors hover:bg-emerald-500/10" style={{ background: "#090d15" }}>
-  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-400">Ask · Buy</span>
-  <span className="price-mono text-sm font-black text-emerald-300">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-  </button>
   </div>
                 </div>
 
