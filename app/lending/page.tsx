@@ -17,6 +17,10 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   WalletCards,
+  Gauge,
+  Percent,
+  ShieldAlert,
+  TrendingUp,
 } from "lucide-react"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 
@@ -52,6 +56,7 @@ export default function LendingPage() {
           <div className="hidden items-center gap-7 text-sm text-[var(--lending-muted)] md:flex">
             <a href="#how-it-works" className="hover:text-[var(--lending-ink)]">How it works</a>
             <a href="#calculator" className="hover:text-[var(--lending-ink)]">Calculator</a>
+            <a href="#funded-rules" className="hover:text-[var(--lending-ink)]">Funded rules</a>
             <a href="#safety" className="hover:text-[var(--lending-ink)]">Safety</a>
           </div>
           <div className="flex items-center gap-2">
@@ -64,8 +69,8 @@ export default function LendingPage() {
       <section className="lending-shell lending-hero grid gap-12 pb-16 pt-20 lg:grid-cols-[1.05fr_.95fr] lg:items-center lg:pb-24 lg:pt-28">
         <div>
           <div className="lending-eyebrow"><span className="lending-live-dot" /> Regulated-style lending workflow</div>
-          <h1 className="lending-display mt-5 max-w-3xl">Put your cash to work. <span>With terms you can see.</span></h1>
-          <p className="mt-6 max-w-xl text-base leading-7 text-[var(--lending-muted)] sm:text-lg">A transparent marketplace for fixed-term lending. Compare opportunities, understand the downside, and choose how much capital you want exposed.</p>
+          <h1 className="lending-display mt-5 max-w-3xl">Capital with a plan. <span>Trading access with clear rules.</span></h1>
+          <p className="mt-6 max-w-xl text-base leading-7 text-[var(--lending-muted)] sm:text-lg">Explore structured lending and funded-account opportunities built around visible risk. See the capital model, the 2% drawdown boundary, and the payout potential before you commit.</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a href="#calculator" className="lending-button justify-center">Calculate a loan <ArrowRight className="h-4 w-4" /></a>
             <Link href="/participant/register" className="lending-button lending-button-quiet justify-center">Start lending</Link>
@@ -89,6 +94,25 @@ export default function LendingPage() {
             {portfolioBars.map((height, index) => <span key={index} style={{ height: `${height}%` }} className={index === portfolioBars.length - 1 ? "lending-bar lending-bar-current" : "lending-bar"} />)}
           </div>
           <div className="mt-4 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[var(--lending-muted)]"><span>Jan</span><span>Jun</span><span>Dec</span></div>
+        </div>
+      </section>
+
+      <section id="funded-rules" className="lending-shell pb-16 lg:pb-20">
+        <div className="lending-funded-panel overflow-hidden p-5 sm:p-8 lg:p-10">
+          <div className="grid gap-8 lg:grid-cols-[1.05fr_.95fr] lg:items-end">
+            <div>
+              <div className="lending-eyebrow"><TrendingUp className="h-3.5 w-3.5" /> Funded account program</div>
+              <h2 className="lending-heading mt-3">Trade with a clear risk limit. Keep more of what you earn.</h2>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-[var(--lending-muted)]">Start with a small activation payment and access a larger simulated funded account. The rules are intentionally simple: protect the account, trade within the drawdown, and qualify for a payout.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+              {[{ label: "Payout share", value: "Up to 90%" }, { label: "Drawdown limit", value: "2%" }, { label: "Funding scale", value: "Up to 100×" }, { label: "Extra rules", value: "None" }].map((item) => <div key={item.label} className="lending-rule-stat"><p className="lending-label">{item.label}</p><p className="mt-2 text-xl font-semibold tracking-tight text-[var(--lending-ink)]">{item.value}</p></div>)}
+            </div>
+          </div>
+          <div className="mt-8 grid gap-3 md:grid-cols-3">
+            {[{ icon: ShieldAlert, title: "2% maximum drawdown", text: "Your funded account remains active while total equity stays above the 2% loss threshold." }, { icon: Percent, title: "Up to 90% payout", text: "Eligible profits can be requested with a payout share of up to 90%, subject to the same payout checks." }, { icon: Gauge, title: "No hidden rules", text: "No daily target, no minimum trading days, and no extra consistency rule beyond the stated drawdown and payout conditions." }].map((item) => { const Icon = item.icon; return <article key={item.title} className="lending-rule-card"><div className="flex size-9 items-center justify-center rounded-lg bg-[color-mix(in_srgb,var(--lending-accent)_12%,transparent)] text-[var(--lending-accent)]"><Icon className="h-4 w-4" /></div><h3 className="mt-4 text-base font-semibold">{item.title}</h3><p className="mt-2 text-sm leading-6 text-[var(--lending-muted)]">{item.text}</p></article> })}
+          </div>
+          <p className="mt-6 text-[11px] leading-5 text-[var(--lending-muted)]">Illustrative funded-account terms. Payout eligibility remains subject to account verification, available balance, and the applicable payout review.</p>
         </div>
       </section>
 
