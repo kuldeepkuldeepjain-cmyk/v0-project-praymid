@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, error: `Funded payouts are available only on profits above the $${fundedBaseAmount.toFixed(2)} funded amount.` }, { status: 400 })
       }
       if (amount > maximumPayout) {
-        return NextResponse.json({ success: false, error: `The maximum funded-account payout is 80% of excess profit: $${maximumPayout.toFixed(2)}.` }, { status: 400 })
+        return NextResponse.json({ success: false, error: `The maximum funded-account payout is 90% of excess profit: $${maximumPayout.toFixed(2)}.` }, { status: 400 })
       }
     }
     if (currentBalance < amount) {
