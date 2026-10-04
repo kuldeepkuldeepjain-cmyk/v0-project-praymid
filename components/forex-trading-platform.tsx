@@ -1049,7 +1049,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ────────────────────────────────────────────����───────────
+// ─── Market Stats Panel ────────────────────────────────────────────�����───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -3261,20 +3261,20 @@ adjustWalletBalance(
                     <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-px" style={{ background: "#1a2640" }}>
-                    <button type="button" onClick={() => setOrderDirection("SELL")} className="px-2.5 py-2 text-left transition-colors hover:bg-red-500/10" style={{ background: "#090d15" }}>
-                      <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-red-400">Bid · Sell</span>
-                      <span className="price-mono text-sm font-black text-red-300">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-                    </button>
-                    <button type="button" onClick={() => setOrderDirection("BUY")} className="px-2.5 py-2 text-right transition-colors hover:bg-emerald-500/10" style={{ background: "#090d15" }}>
-                      <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-400">Ask · Buy</span>
-                      <span className="price-mono text-sm font-black text-emerald-300">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between px-2 py-1" style={{ borderTop: "1px solid #1a2640" }}>
-                    <span className="text-[8px] font-bold tracking-wider uppercase text-slate-600">Spread</span>
-                    <span className="price-mono text-[9px] font-black text-cyan-400">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
-                  </div>
+  <div className="grid grid-cols-[1fr_auto_1fr] items-stretch gap-px" style={{ background: "#1a2640" }}>
+  <button type="button" onClick={() => setOrderDirection("SELL")} className="px-2.5 py-2 text-left transition-colors hover:bg-red-500/10" style={{ background: "#090d15" }}>
+  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-red-400">Bid · Sell</span>
+  <span className="price-mono text-sm font-black text-red-300">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+  </button>
+  <div className="flex min-w-[54px] flex-col items-center justify-center gap-0.5 px-1.5" style={{ background: "#07101b" }} aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
+  <span className="text-[7px] font-black uppercase tracking-wider text-slate-500">Spread</span>
+  <span className="price-mono whitespace-nowrap text-[9px] font-black text-cyan-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
+  </div>
+  <button type="button" onClick={() => setOrderDirection("BUY")} className="px-2.5 py-2 text-right transition-colors hover:bg-emerald-500/10" style={{ background: "#090d15" }}>
+  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-400">Ask · Buy</span>
+  <span className="price-mono text-sm font-black text-emerald-300">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+  </button>
+  </div>
                 </div>
 
                 {/* Pending price (only for limit/stop) */}

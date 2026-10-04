@@ -33,10 +33,13 @@ const FOREX_YAHOO: Record<string, string> = {
   "XAU/USD": "GC=F", "XAG/USD": "SI=F", "XPT/USD": "PL=F", "XPD/USD": "PA=F", "XCU/USD": "HG=F",
 }
 
+// Base FX spread is 0.20 pip for every major currency pair.
+// Values are stored in quote-price units because bid/ask calculations use price units.
 const FOREX_SPREADS: Record<string, number> = {
-  "EUR/USD": 0.00015, "GBP/USD": 0.00020, "USD/JPY": 0.013, "USD/CHF": 0.00020,
-  "AUD/USD": 0.00018, "USD/CAD": 0.00020, "NZD/USD": 0.00025, "EUR/GBP": 0.00018,
-  "XAU/USD": 0.50, "XAG/USD": 0.03, "XPT/USD": 0.80, "XPD/USD": 1.50, "XCU/USD": 0.012,
+  "EUR/USD": 0.00002, "GBP/USD": 0.00002, "USD/JPY": 0.002, "USD/CHF": 0.00002,
+  "AUD/USD": 0.00002, "USD/CAD": 0.00002, "NZD/USD": 0.00002, "EUR/GBP": 0.00002,
+  // Commodities use quote-price units; apply the requested 0.20 spread charge.
+  "XAU/USD": 0.20, "XAG/USD": 0.20, "XPT/USD": 0.20, "XPD/USD": 0.20, "XCU/USD": 0.20,
 }
 
 const FOREX_SWAPS: Record<string, [number, number]> = {
@@ -166,17 +169,8 @@ export const YAHOO_SYMBOLS: Record<string, string> = {
 
 export const TYPICAL_SPREADS: Record<string, number> = {
   ...FOREX_SPREADS,
-  ...Object.fromEntries(CRYPTO_DEFS.map(c => {
-    if (c.ticker === "BTC") return [`${c.ticker}/USD`, 5.0]
-    if (c.ticker === "ETH") return [`${c.ticker}/USD`, 1.5]
-    if (c.ticker === "BNB") return [`${c.ticker}/USD`, 0.30]
-    if (c.ticker === "SOL") return [`${c.ticker}/USD`, 0.10]
-    if (c.ticker === "XRP") return [`${c.ticker}/USD`, 0.001]
-    if (c.ticker === "ADA") return [`${c.ticker}/USD`, 0.0005]
-    // Proportional to price (~0.06% of mid) so micro-priced coins (e.g. PEPE)
-    // don't get a spread floor that dwarfs the price itself.
-    return [`${c.ticker}/USD`, parseFloat(clamp(c.seed * 0.0006, c.seed * 0.00002, 5).toPrecision(3))]
-  })),
+  // Crypto quotes also use quote-price units; apply the requested 0.20 spread charge.
+  ...Object.fromEntries(CRYPTO_DEFS.map(c => [`${c.ticker}/USD`, 0.20])),
 }
 
 export const SWAP_RATES: Record<string, [number, number]> = {
