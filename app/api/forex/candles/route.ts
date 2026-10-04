@@ -96,9 +96,9 @@ function fmtTime(ts: number, tf: string): string {
 // Candle cache: key = "pair|tf"
 const candleCache = new Map<string, { candles: unknown[]; ts: number }>()
 const CACHE_TTL: Record<string, number> = {
-  "1M":  30_000,   // 30s
-  "5M":  60_000,   // 1 min
-  "15M": 120_000,  // 2 min
+  "1M":  5_000,    // 5s: keep the active one-minute candle responsive
+  "5M":  30_000,   // 30s
+  "15M": 90_000,   // 90s
   "1H":  300_000,  // 5 min
   "4H":  600_000,  // 10 min
   "1D":  3600_000, // 1 hour
@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
   const ttl = CACHE_TTL[tf] ?? 60_000
 
   if (cached && now - cached.ts < ttl) {
-    return NextResponse.json({ candles: cached.candles, source: "cache", ts: cached.ts })
+    return NextResponse.json({ candles: cached.candles, source: "cache", ts: cached.ts }, { headers: { "Cache-Control": "no-store, max-age=0" } })
   }
 
   try {

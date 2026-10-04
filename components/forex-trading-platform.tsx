@@ -1063,7 +1063,7 @@ function ModifyTradeModal({
   )
 }
 
-// ─── Toast Stack ─────────────────────────────────────────────────────────────
+// ─── Toast Stack ────��────────────────────────────────────────────────────────
 
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
@@ -1708,7 +1708,10 @@ function PositionSizer({
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
     const refreshMs: Record<TimeFrame, number> = {
-      "1M": 30_000, "5M": 60_000, "15M": 120_000, "1H": 300_000, "4H": 600_000, "1D": 3600_000,
+      // Refresh the 1-minute history frequently enough to pick up the next
+      // server candle while live ticks keep the active candle moving between
+      // snapshots. Wider frames stay on lighter polling intervals.
+      "1M": 5_000, "5M": 30_000, "15M": 90_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000,
     }
     const ms = refreshMs[timeframe] ?? 60_000
     candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
@@ -1727,12 +1730,24 @@ function PositionSizer({
         const liveMid = (p.bid + p.ask) / 2
         if (liveMid === 0) return p
         const d = decimals(p.symbol)
+        const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
+        const nowSeconds = Math.floor(Date.now() / 1000)
+        const currentBucket = Math.floor(nowSeconds / intervalSeconds) * intervalSeconds
         const nc = [...p.candles]
         const last = { ...nc[nc.length - 1] }
-        last.close = parseFloat(liveMid.toFixed(d))
-        last.high  = Math.max(last.high, last.close)
-        last.low   = Math.min(last.low, last.close)
-        nc[nc.length - 1] = last
+        const lastTimestamp = Number(last.ts ?? 0)
+        const price = parseFloat(liveMid.toFixed(d))
+        if (lastTimestamp > 0 && currentBucket >= lastTimestamp + intervalSeconds) {
+          const open = last.close
+          nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0, ts: currentBucket })
+          if (nc.length > 150) nc.shift()
+        } else {
+          last.close = price
+          last.high  = Math.max(last.high, price)
+          last.low   = Math.min(last.low, price)
+          last.ts = lastTimestamp || currentBucket
+          nc[nc.length - 1] = last
+        }
         return { ...p, candles: nc }
       })
       pairsRef.current = updated
