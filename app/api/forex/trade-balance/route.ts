@@ -66,11 +66,13 @@ export async function POST(req: NextRequest) {
       if (typeof description === "string" && description.trim()) {
         const duplicate = await client.query(
           `SELECT balance_after FROM transactions
-           WHERE participant_id = $1 AND type = 'forex_pnl_profit'
-             AND amount = $2 AND description = $3
+           WHERE participant_id = $1
+             AND type = $2
+             AND amount = $3
+             AND description = $4
              AND created_at > NOW() - INTERVAL '60 seconds'
            ORDER BY created_at DESC LIMIT 1`,
-          [participantId, Math.abs(delta), description.trim()],
+          [participantId, delta < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(delta), description.trim()],
         )
         if (duplicate.rows.length) {
           await client.query("ROLLBACK")
