@@ -17,7 +17,19 @@ export async function POST(request: Request) {
     }
 
     if (prediction.status !== "pending") {
-      return NextResponse.json({ success: true, message: "Already settled" })
+      const settledResult = String(prediction.result || prediction.status || "").toLowerCase()
+      const isRefund = settledResult === "refunded"
+      const isWin = settledResult === "won"
+      return NextResponse.json({
+        success: true,
+        message: "Already settled",
+        result: settledResult,
+        isWin,
+        isRefund,
+        profitLoss: Number(prediction.profit_loss || 0),
+        payout: isWin ? Number(prediction.amount || 0) + Number(prediction.profit_loss || 0) : isRefund ? Number(prediction.amount || 0) : 0,
+        accountFrozen: false,
+      })
     }
 
     const pair: string = prediction.crypto_pair || ""
@@ -45,7 +57,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true, accountFrozen: false })
     }
 
-    const isWin = prediction.prediction_type === "up" ? priceDiff > 0 : priceDiff < 0
+    const predictionType = String(prediction.prediction_type || "").trim().toLowerCase()
+    const isWin = predictionType === "up" ? priceDiff > 0 : priceDiff < 0
     const profitRate = 0.50
     const payout = isWin ? prediction.amount * (1 + profitRate) : 0
     const profitLoss = isWin ? prediction.amount * profitRate : -prediction.amount
