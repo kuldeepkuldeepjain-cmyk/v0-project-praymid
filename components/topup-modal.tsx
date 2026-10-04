@@ -41,6 +41,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [fundingMode, setFundingMode] = useState<"actual" | "funded">("actual")
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [qrLoading, setQrLoading] = useState(false)
+  const [pendingRequests, setPendingRequests] = useState<Array<{ id: string; amount: number; transaction_id: string; payment_method: string; status: string; created_at: string }>>([])
+  const [loadingRequests, setLoadingRequests] = useState(false)
 
   // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
@@ -54,6 +56,22 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setNetwork("ALL")
     setFundingMode("actual")
     setFundedTierEligibility(null)
+    setPendingRequests([])
+    const fetchPendingRequests = async () => {
+      setLoadingRequests(true)
+      try {
+        const response = await participantFetch("/api/participant/topup/submit", { cache: "no-store" })
+        if (response.ok) {
+          const data = await response.json()
+          setPendingRequests(Array.isArray(data.requests) ? data.requests : [])
+        }
+      } catch {
+        setPendingRequests([])
+      } finally {
+        setLoadingRequests(false)
+      }
+    }
+    fetchPendingRequests()
     const fetchFundedTierEligibility = async () => {
       if (!isFundedAccount && !isInitialFundedTopUp) return
       setCheckingFundedTier(true)
@@ -290,6 +308,22 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </div>
                 </div>
               )}
+
+              {pendingRequests.length > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm" aria-live="polite">
+                  <div className="flex items-start justify-between gap-3">
+                    <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-amber-700">Funding activity</p><h3 className="mt-1 text-sm font-bold text-amber-950">Pending Add Fund Requests</h3><p className="mt-1 text-[10px] leading-4 text-amber-800">Your payment is being reviewed. You do not need to submit it again.</p></div>
+                    <Clock3 className="mt-1 size-5 shrink-0 text-amber-600" />
+                  </div>
+                  <div className="mt-3 space-y-2">{pendingRequests.map((request) => (
+                    <div key={request.id} className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2.5">
+                      <div><p className="text-xs font-bold text-slate-900">${Number(request.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p><p className="mt-0.5 text-[9px] text-slate-500">{new Date(request.created_at).toLocaleString()} · {request.payment_method.replace(/_/g, " ")}</p><p className="mt-0.5 font-mono text-[9px] text-slate-400">TX: {request.transaction_id.slice(0, 10)}…</p></div>
+                      <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-800">{request.status}</span>
+                    </div>
+                  ))}</div>
+                </div>
+              )}
+              {loadingRequests && <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] text-slate-500">Loading your funding requests…</div>}
 
               <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex items-start justify-between gap-4">

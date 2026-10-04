@@ -3,6 +3,25 @@ import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { uploadBase64ToR2 } from "@/lib/cloudflare-r2"
 
+export async function GET(request: NextRequest) {
+  const auth = await requireParticipantSession(request)
+  if (!auth.ok) return auth.response
+  try {
+    const requests = await query(
+      `SELECT id, amount, transaction_id, payment_method, status, created_at
+       FROM topup_requests
+       WHERE LOWER(participant_email) = LOWER($1)
+         AND LOWER(status) = 'pending'
+       ORDER BY created_at DESC LIMIT 10`,
+      [auth.email.toLowerCase().trim()],
+    )
+    return NextResponse.json({ success: true, requests })
+  } catch (error) {
+    console.error("Top-up requests fetch error:", error)
+    return NextResponse.json({ success: false, message: "Unable to load funding requests" }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
