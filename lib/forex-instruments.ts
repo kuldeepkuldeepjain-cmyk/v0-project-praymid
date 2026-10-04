@@ -33,9 +33,11 @@ const FOREX_YAHOO: Record<string, string> = {
   "XAU/USD": "GC=F", "XAG/USD": "SI=F", "XPT/USD": "PL=F", "XPD/USD": "PA=F", "XCU/USD": "HG=F",
 }
 
+// Base FX spread is 0.20 pip for every major currency pair.
+// Values are stored in quote-price units because bid/ask calculations use price units.
 const FOREX_SPREADS: Record<string, number> = {
-  "EUR/USD": 0.00015, "GBP/USD": 0.00020, "USD/JPY": 0.013, "USD/CHF": 0.00020,
-  "AUD/USD": 0.00018, "USD/CAD": 0.00020, "NZD/USD": 0.00025, "EUR/GBP": 0.00018,
+  "EUR/USD": 0.00002, "GBP/USD": 0.00002, "USD/JPY": 0.002, "USD/CHF": 0.00002,
+  "AUD/USD": 0.00002, "USD/CAD": 0.00002, "NZD/USD": 0.00002, "EUR/GBP": 0.00002,
   "XAU/USD": 0.50, "XAG/USD": 0.03, "XPT/USD": 0.80, "XPD/USD": 1.50, "XCU/USD": 0.012,
 }
 
