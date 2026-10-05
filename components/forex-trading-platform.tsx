@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) ���─────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) �����─────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ─────────────────────────���─────���────────────������───────────
+// ─── Market Stats Panel ───────────────────────���─���─────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1712,7 +1712,15 @@ function PositionSizer({
       setCandleError(null)
     } catch (error) {
       console.error("[v0] Candle refresh failed:", error)
-      setCandleError("Chart history could not be refreshed. Existing chart data remains available.")
+      const existing = pairsRef.current.find((pair) => pair.symbol === sym)?.candles
+      const cached = candleCache[key]
+      // A provider timeout must not turn into a noisy error when the terminal
+      // already has usable history. Keep the chart and retry silently.
+      if ((!existing || existing.length === 0) && (!cached || cached.length === 0)) {
+        setCandleError("Chart history is temporarily unavailable. We will retry automatically.")
+      } else {
+        setCandleError(null)
+      }
     } finally {
       setCandleLoading(false)
     }
