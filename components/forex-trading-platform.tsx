@@ -14,6 +14,7 @@ import {
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
+import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
@@ -165,50 +166,48 @@ function fmt(price: number | null | undefined, sym: string): string {
 // P&L = (currentPrice - openPrice) × direction × lots × contractSize / currentPrice  (for USD-base)
 
 function pipValue(sym: string, lots: number, currentPrice: number): number {
+  if (!Number.isFinite(currentPrice) || currentPrice <= 0 || !Number.isFinite(lots) || lots <= 0) return 0
   const cs   = contractSize(sym)
   const ps   = pip(sym)
-  const base = sym.split("/")[0]
+  const base = (sym || "").split("/")[0]
 
-  // USD-base pairs: pip value in USD = (lot × cs × ps) / currentPrice
   if (base === "USD") {
     return (lots * cs * ps) / currentPrice
   }
-  // All others (USD as quote, or commodity/crypto priced in USD)
   return lots * cs * ps
 }
 
 function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize: number; leverage: number }, currentPrice: number, sym: string): {
   pnl: number; pipCount: number; returnOnMargin: number; margin: number
 } {
-  const dir     = trade.direction === "BUY" ? 1 : -1
-  const priceDiff = (currentPrice - trade.openPrice) * dir
-  const ps      = pip(sym)
-  const pipCount = priceDiff / ps
+  if (!trade || !Number.isFinite(currentPrice) || currentPrice <= 0) {
+    return { pnl: 0, pipCount: 0, returnOnMargin: 0, margin: 0 }
+  }
+  const dir       = trade.direction === "BUY" ? 1 : -1
+  const openPrice = Number.isFinite(trade.openPrice) && trade.openPrice > 0 ? trade.openPrice : currentPrice
+  const priceDiff = (currentPrice - openPrice) * dir
+  const ps        = pip(sym)
+  const pipCount  = ps > 0 ? priceDiff / ps : 0
 
-  // Use currentPrice for pip value so it stays accurate as price moves
   const pv     = pipValue(sym, trade.lotSize, currentPrice)
-  const pnl    = parseFloat((pipCount * pv).toFixed(2))
+  const pnlVal = pipCount * pv
+  const pnl    = Number.isFinite(pnlVal) ? parseFloat(pnlVal.toFixed(2)) : 0
 
-  // Margin recalculated using real formula (needed for returnOnMargin)
-  const cs     = contractSize(sym)
-  const base   = sym.split("/")[0]
-  // For USD-base pairs the notional is in the base (USD), not quote
-  const notional = base === "USD"
-    ? trade.lotSize * cs                      // already in USD
-    : trade.lotSize * cs * trade.openPrice    // convert to USD
-  const margin = notional / trade.leverage                 // stored leverage
+  const marginVal = calcMargin(sym, trade.lotSize, openPrice, trade.leverage)
+  const margin    = Number.isFinite(marginVal) ? marginVal : 0
 
   const returnOnMargin = margin > 0 ? parseFloat(((pnl / margin) * 100).toFixed(2)) : 0
-  return { pnl, pipCount: parseFloat(pipCount.toFixed(1)), returnOnMargin, margin }
+  return { pnl, pipCount: Number.isFinite(pipCount) ? parseFloat(pipCount.toFixed(1)) : 0, returnOnMargin: Number.isFinite(returnOnMargin) ? returnOnMargin : 0, margin }
 }
 
 function calcMargin(sym: string, lots: number, price: number, leverage: number): number {
-  const cs     = contractSize(sym)
-  const base   = sym.split("/")[0]
-  const notional = base === "USD"
-    ? lots * cs
-    : lots * cs * price
-  return notional / leverage
+  const safeLev   = Number.isFinite(leverage) && leverage > 0 ? leverage : 100
+  const safeLots  = Number.isFinite(lots) && lots > 0 ? lots : 0.01
+  const safePrice = Number.isFinite(price) && price > 0 ? price : 1
+  const cs        = contractSize(sym)
+  const base      = (sym || "").split("/")[0]
+  const notional  = base === "USD" ? safeLots * cs : safeLots * cs * safePrice
+  return notional / safeLev
 }
 
 function playTerminalSound(type: "buy" | "sell" | "close" | "breakeven" | "alert" | "click") {
@@ -283,15 +282,19 @@ function calcLiquidationPrice(sym: string, trade: OpenTrade): number {
 
 // ATR (Average True Range) — used for position sizing suggestions
 function calcATR(candles: Candle[], period = 14): number {
-  if (candles.length < period + 1) return 0
+  if (!Array.isArray(candles) || candles.length < period + 1) return 0
   const trs: number[] = []
   for (let i = 1; i < candles.length; i++) {
     const c = candles[i], p = candles[i - 1]
-    trs.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)))
+    if (!c || !p) continue
+    const cHigh = Number(c.high), cLow = Number(c.low), pClose = Number(p.close)
+    if (![cHigh, cLow, pClose].every(Number.isFinite)) continue
+    trs.push(Math.max(cHigh - cLow, Math.abs(cHigh - pClose), Math.abs(cLow - pClose)))
   }
-  // Simple average of last `period` TRs
+  if (trs.length === 0) return 0
   const recent = trs.slice(-period)
-  return recent.reduce((a, b) => a + b, 0) / recent.length
+  const avg = recent.reduce((a, b) => a + b, 0) / recent.length
+  return Number.isFinite(avg) ? avg : 0
 }
 
 // Duration string from timestamp to now
@@ -363,7 +366,7 @@ function isSessionOpen(s: TradingSession, utcH: number): boolean {
   return utcH >= s.open || utcH < s.close // crosses midnight
 }
 
-// ─── Performance Dashboard ───────────────────────────────────────────────────
+// ─── Performance Dashboard ──────────────────────────────────────────────────��
 
 function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   closed: ClosedTrade[]; equityHistory: number[]; walletBalance: number
@@ -1634,17 +1637,18 @@ function PositionSizer({
   const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
   const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
   const currentBucket = Math.floor(Date.now() / 1000 / intervalSeconds) * intervalSeconds
-  const currentCandle = p.candles[p.candles.length - 1]
+  const safeCandles = Array.isArray(p.candles) ? p.candles : []
+  const currentCandle = safeCandles[safeCandles.length - 1]
   const lastCandleSeconds = currentCandle ? normalizeTimestamp(currentCandle.ts ?? currentCandle.time) / 1000 : 0
   const liveCandles = currentCandle ? currentBucket > lastCandleSeconds && lastCandleSeconds > 0
-    ? [...p.candles, { time: new Date(currentBucket * 1000).toISOString(), ts: currentBucket * 1000, open: currentPrice, high: currentPrice, low: currentPrice, close: currentPrice, volume: 0 }].slice(-180)
-    : [...p.candles.slice(0, -1), {
+    ? [...safeCandles, { time: new Date(currentBucket * 1000).toISOString(), ts: currentBucket * 1000, open: currentPrice, high: currentPrice, low: currentPrice, close: currentPrice, volume: 0 }].slice(-180)
+    : [...safeCandles.slice(0, -1), {
       ...currentCandle,
       close: currentPrice,
-      high: Math.max(currentCandle.high, currentPrice),
-      low: Math.min(currentCandle.low, currentPrice),
+      high: Math.max(currentCandle.high ?? currentPrice, currentPrice),
+      low: Math.min(currentCandle.low ?? currentPrice, currentPrice),
     }]
-    : p.candles
+    : safeCandles
   if (p.bid !== r.bid || p.ask !== r.ask || p.change !== r.change || p.high !== r.high || p.low !== r.low || p.open !== r.open || currentCandle?.close !== currentPrice) changed = true
   return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, candles: liveCandles, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
   })
@@ -1742,14 +1746,14 @@ function PositionSizer({
 
   // ── Live-tick last candle ────────────────────────────����─────────────────────
   useEffect(() => {
-    if (!selectedPair || selectedPair.candles.length === 0) return
+    if (!selectedPair || !Array.isArray(selectedPair.candles) || selectedPair.candles.length === 0) return
     const mid = (selectedPair.bid + selectedPair.ask) / 2
-    if (mid === 0) return
+    if (!Number.isFinite(mid) || mid === 0) return
     setPairs(prev => {
       const updated = prev.map(p => {
-        if (p.symbol !== selectedPair.symbol || p.candles.length === 0) return p
+        if (p.symbol !== selectedPair.symbol || !Array.isArray(p.candles) || p.candles.length === 0) return p
         const liveMid = (p.bid + p.ask) / 2
-        if (liveMid === 0) return p
+        if (!Number.isFinite(liveMid) || liveMid === 0) return p
         const d = decimals(p.symbol)
         const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
         const nowSeconds = Math.floor(Date.now() / 1000)
@@ -1759,13 +1763,13 @@ function PositionSizer({
         const lastTimestamp = Number(last.ts ?? 0)
         const price = parseFloat(liveMid.toFixed(d))
         if (lastTimestamp > 0 && currentBucket >= lastTimestamp + intervalSeconds) {
-          const open = last.close
+          const open = last.close ?? price
           nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0, ts: currentBucket })
           if (nc.length > 150) nc.shift()
         } else {
           last.close = price
-          last.high  = Math.max(last.high, price)
-          last.low   = Math.min(last.low, price)
+          last.high  = Math.max(last.high ?? price, price)
+          last.low   = Math.min(last.low ?? price, price)
           last.ts = lastTimestamp || currentBucket
           nc[nc.length - 1] = last
         }
@@ -3212,19 +3216,26 @@ adjustWalletBalance(
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
   <div className="relative flex-1 min-h-0 mobile-terminal-chart-wrap">
   {selectedPair && chartLayout === "single" ? (
-  <TradingChart
-  key={isDarkTheme ? "dark" : "light"}
-  candles={selectedPair.candles}
-  sym={selectedPair.symbol}
-  tf={timeframe}
-  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-  onExpand={() => setChartExpanded(e => !e)}
-  isExpanded={chartExpanded}
-  onQuickTrade={quickTrade}
-  buyPrice={selectedPair.ask}
-  sellPrice={selectedPair.bid}
-  darkTheme={isDarkTheme}
-  />
+  <ErrorBoundary fallback={
+    <div className="flex flex-col items-center justify-center h-full gap-2 p-4 text-center text-slate-400 text-xs">
+      <p>Chart feed encountered a temporary issue.</p>
+      <button type="button" onClick={() => { if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded font-bold uppercase text-[10px] hover:bg-cyan-500/30">Reload Chart</button>
+    </div>
+  }>
+    <TradingChart
+      key={isDarkTheme ? "dark" : "light"}
+      candles={selectedPair.candles}
+      sym={selectedPair.symbol}
+      tf={timeframe}
+      openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+      onExpand={() => setChartExpanded(e => !e)}
+      isExpanded={chartExpanded}
+      onQuickTrade={quickTrade}
+      buyPrice={selectedPair.ask}
+      sellPrice={selectedPair.bid}
+      darkTheme={isDarkTheme}
+    />
+  </ErrorBoundary>
   ) : selectedPair && chartLayout === "grid" ? (
   <MiniChartGrid
   pairs={pairs}
