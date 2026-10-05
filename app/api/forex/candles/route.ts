@@ -101,9 +101,11 @@ const CACHE_TTL: Record<string, number> = {
   "1M":  5_000,    // 5s: keep the active one-minute candle responsive
   "5M":  30_000,   // 30s
   "15M": 90_000,   // 90s
+  "30M": 180_000,  // 3 min
   "1H":  300_000,  // 5 min
   "4H":  600_000,  // 10 min
   "1D":  3600_000, // 1 hour
+  "1W": 86400_000, // 1 day
 }
 
 export async function GET(req: NextRequest) {
@@ -135,7 +137,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles, source: "live-kucoin", ts: now })
     }
 
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySym)}?interval=${tfCfg.interval}&range=${tfCfg.range}`
+    // Yahoo does not support every terminal interval directly. Use the closest
+    // supported feed interval so refresh remains useful instead of returning a
+    // false disconnected state for 30M and 4H charts.
+    const providerInterval = tf === "30M" ? "15m" : tf === "4H" ? "1h" : tfCfg.interval
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySym)}?interval=${providerInterval}&range=${tfCfg.range}`
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; ForexApp/1.0)" },
       next: { revalidate: 0 },

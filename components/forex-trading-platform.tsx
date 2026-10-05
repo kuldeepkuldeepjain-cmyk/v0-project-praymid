@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) ──────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) ���─────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ───────────────────────────────���────────────������───────────
+// ─── Market Stats Panel ─────────────────────────���─────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1691,9 +1691,12 @@ function PositionSizer({
     try {
       const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json().catch(() => null)
-      if (!json || typeof json !== "object" || json.error) throw new Error(json?.error || "Invalid candles response")
-      const candles: Candle[] = Array.isArray(json.candles)
+  const json = await res.json().catch(() => null)
+  if (!json || typeof json !== "object") throw new Error("Invalid candles response")
+  // A stale server snapshot is still valid chart history. Keep it visible and
+  // avoid showing a refresh error when the upstream provider briefly fails.
+  if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
+  const candles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
       setCandleCache(prev => ({ ...prev, [key]: candles }))
