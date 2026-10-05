@@ -229,7 +229,8 @@ export function TradingChart({
     const closes: number[]              = []
     const times: Time[]                 = []
     const tfSecs = TF_SECONDS[tf] ?? 300
-    const normalizedCandles = candles
+    const normalizedCandles = (Array.isArray(candles) ? candles : [])
+      .filter((c): c is NonNullable<typeof c> => c != null && typeof c === "object")
       .map((c, i) => ({ candle: c, time: toTimestamp(c, i, tfSecs) }))
       .filter(({ candle: c, time }) => {
         const open = Number(c.open)
@@ -589,7 +590,7 @@ export function TradingChart({
     })
   }, [indicators.volume])
 
-  // ── Open trade price lines ────────────────────────────────────────────────────
+  // ── Open trade price lines ─────────────────────────────────────────────��──────
   useEffect(() => {
     if (!candleSerRef.current) return
     openTrades.forEach((t) => {
