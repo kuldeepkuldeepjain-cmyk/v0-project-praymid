@@ -14,6 +14,7 @@ import {
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
+import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
@@ -1063,7 +1064,7 @@ function ModifyTradeModal({
   )
 }
 
-// ─── Toast Stack ────����────────────────────────────────────────────────────────
+// ─── Toast Stack ────�����────────────────────────────────────────────────────────
 
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
@@ -1624,32 +1625,37 @@ function PositionSizer({
 
   // ── Apply validated live rates without replacing unrelated terminal state ───
   const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; mid?: number; change: number; high: number; low: number; open: number }>) => {
-  let nextSelected: ForexPair | null = null
   setPairs(prev => {
   let changed = false
   const updated = prev.map(p => {
   const r = rateMap[p.symbol]
   if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
   const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
+  const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
+  const currentBucket = Math.floor(Date.now() / 1000 / intervalSeconds) * intervalSeconds
   const currentCandle = p.candles[p.candles.length - 1]
-  const liveCandles = currentCandle ? [...p.candles.slice(0, -1), {
-    ...currentCandle,
-    close: currentPrice,
-    high: Math.max(currentCandle.high, currentPrice),
-    low: Math.min(currentCandle.low, currentPrice),
-  }] : p.candles
+  const lastCandleSeconds = currentCandle ? normalizeTimestamp(currentCandle.ts ?? currentCandle.time) / 1000 : 0
+  const liveCandles = currentCandle ? currentBucket > lastCandleSeconds && lastCandleSeconds > 0
+    ? [...p.candles, { time: new Date(currentBucket * 1000).toISOString(), ts: currentBucket * 1000, open: currentPrice, high: currentPrice, low: currentPrice, close: currentPrice, volume: 0 }].slice(-180)
+    : [...p.candles.slice(0, -1), {
+      ...currentCandle,
+      close: currentPrice,
+      high: Math.max(currentCandle.high, currentPrice),
+      low: Math.min(currentCandle.low, currentPrice),
+    }]
+    : p.candles
   if (p.bid !== r.bid || p.ask !== r.ask || p.change !== r.change || p.high !== r.high || p.low !== r.low || p.open !== r.open || currentCandle?.close !== currentPrice) changed = true
   return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, candles: liveCandles, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
   })
-  nextSelected = updated.find(p => p.symbol === selectedPairRef.current?.symbol) ?? null
   if (!changed) return prev
   pairsRef.current = updated
+  const liveSelected = updated.find(p => p.symbol === selectedPairRef.current?.symbol)
+  if (liveSelected) {
+    selectedPairRef.current = liveSelected
+    setSelectedPair(liveSelected)
+  }
   return updated
   })
-  // Use the same quote that drove the pair list and chart candle. The old
-  // implementation read pairsRef before React committed setPairs, leaving
-  // the selected quote one refresh behind.
-  if (nextSelected) setSelectedPair(nextSelected)
   setOnline(true)
   setMarketError(null)
   setLastUpdated(new Date())
