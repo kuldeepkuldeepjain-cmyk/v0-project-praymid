@@ -295,38 +295,46 @@ export function TradingChart({
         attributionLogo: false,
       },
       grid: {
-        vertLines: { color: palette.borderMuted, style: LineStyle.Solid },
-        horzLines: { color: palette.borderMuted, style: LineStyle.Solid },
+        vertLines: { color: "rgba(148,163,184,0.07)", style: LineStyle.Solid },
+        horzLines: { color: "rgba(148,163,184,0.09)", style: LineStyle.Solid },
       },
       crosshair: {
-        mode: CrosshairMode.Normal,
+        mode: CrosshairMode.Magnet,
         vertLine: {
-          color: "#758696",
-          labelBackgroundColor: "#758696",
+          color: "rgba(148,163,184,0.72)",
+          labelBackgroundColor: "#334155",
           style: LineStyle.Dashed,
           width: 1,
+          labelVisible: true,
         },
         horzLine: {
-          color: "#758696",
-          labelBackgroundColor: "#758696",
+          color: "rgba(148,163,184,0.72)",
+          labelBackgroundColor: "#334155",
           style: LineStyle.Dashed,
           width: 1,
+          labelVisible: true,
         },
       },
       rightPriceScale: {
         borderColor: palette.border,
         textColor:   palette.textDim,
-        scaleMargins: { top: 0.06, bottom: 0.16 },
-        entireTextOnly: true,
+        scaleMargins: { top: 0.08, bottom: 0.18 },
+        entireTextOnly: false,
+        autoScale: true,
+        ticksVisible: true,
+        borderVisible: true,
       },
       timeScale: {
-        borderColor:    palette.border,
+        borderColor:    "rgba(148,163,184,0.22)",
         timeVisible:    true,
         secondsVisible: false,
         fixLeftEdge:    false,
         fixRightEdge:   false,
-        barSpacing:     10,
-        minBarSpacing:  4,
+        rightOffset:    6,
+        barSpacing:     8,
+        minBarSpacing:  3,
+        lockVisibleTimeRangeOnResize: true,
+        rightBarStaysOnScroll: true,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
@@ -338,13 +346,14 @@ export function TradingChart({
 
     // ── Candles: TradingView-standard teal/red, borderless bodies ──
     const cSer = chart.addSeries(CandlestickSeries, {
-      upColor:          palette.greenBright,
-      downColor:        palette.redBright,
-      borderUpColor:    palette.greenBright,
-      borderDownColor:  palette.redBright,
-      wickUpColor:      palette.greenBright,
-      wickDownColor:    palette.redBright,
-      borderVisible:    false,
+      upColor:          "#26a69a",
+      downColor:        "#ef5350",
+      borderUpColor:    "#26a69a",
+      borderDownColor:  "#ef5350",
+      wickUpColor:      "#26a69a",
+      wickDownColor:    "#ef5350",
+      borderVisible:    true,
+      wickVisible:      true,
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
       priceLineVisible: true,
       priceLineWidth:   1,
@@ -504,8 +513,9 @@ export function TradingChart({
   }
   if (Number.isFinite(latestTime)) lastCandleTimeRef.current = latestTime
     if (chartRef.current && previousCount !== candleData.length) {
-      const from = Math.max(0, candleData.length - 90)
-      chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
+      const visibleBars = candleData.length > 120 ? 90 : Math.min(90, candleData.length)
+      const from = Math.max(0, candleData.length - visibleBars)
+      chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 6 })
     }
     // Seed OHLCV from last candle
     const last = candleData[candleData.length - 1]
