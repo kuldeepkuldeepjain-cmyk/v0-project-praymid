@@ -1063,7 +1063,7 @@ function ModifyTradeModal({
   )
 }
 
-// ─── Toast Stack ────��────────────────────────────────────────────────────────
+// ─── Toast Stack ────���────────────────────────────────────────────────────────
 
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
@@ -1426,6 +1426,7 @@ function PositionSizer({
   }, [addInstrumentQuery])
 
   const pairsRef        = useRef<ForexPair[]>([])
+  const selectedPairRef = useRef<ForexPair | null>(null)
   const openTradesRef   = useRef<OpenTrade[]>([])
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -1434,6 +1435,7 @@ function PositionSizer({
   // Keep openTradesRef in sync — assigned at render time (not in useEffect)
   // so the tick engine always reads the latest committed state
   openTradesRef.current = openTrades
+  selectedPairRef.current = selectedPair
 
   // Sync external balance — skipped while an internal adjustWalletBalance call is in-flight
   // to prevent the prop update triggered by onBalanceUpdated from overwriting the fresh DB value
@@ -1621,25 +1623,37 @@ function PositionSizer({
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
   // ── Apply validated live rates without replacing unrelated terminal state ───
-  const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; change: number; high: number; low: number; open: number }>) => {
-    setPairs(prev => {
-      let changed = false
-      const updated = prev.map(p => {
-        const r = rateMap[p.symbol]
-        if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
-        if (p.bid === r.bid && p.ask === r.ask && p.change === r.change && p.high === r.high && p.low === r.low && p.open === r.open) return p
-        changed = true
-        return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
-      })
-      if (!changed) return prev
-      pairsRef.current = updated
-      return updated
-    })
-    setSelectedPair(prev => prev ? pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev : prev)
-    setOnline(true)
-    setMarketError(null)
-    setLastUpdated(new Date())
-    setTickCount(n => n + 1)
+  const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; mid?: number; change: number; high: number; low: number; open: number }>) => {
+  let nextSelected: ForexPair | null = null
+  setPairs(prev => {
+  let changed = false
+  const updated = prev.map(p => {
+  const r = rateMap[p.symbol]
+  if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
+  const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
+  const currentCandle = p.candles[p.candles.length - 1]
+  const liveCandles = currentCandle ? [...p.candles.slice(0, -1), {
+    ...currentCandle,
+    close: currentPrice,
+    high: Math.max(currentCandle.high, currentPrice),
+    low: Math.min(currentCandle.low, currentPrice),
+  }] : p.candles
+  if (p.bid !== r.bid || p.ask !== r.ask || p.change !== r.change || p.high !== r.high || p.low !== r.low || p.open !== r.open || currentCandle?.close !== currentPrice) changed = true
+  return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, candles: liveCandles, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
+  })
+  nextSelected = updated.find(p => p.symbol === selectedPairRef.current?.symbol) ?? null
+  if (!changed) return prev
+  pairsRef.current = updated
+  return updated
+  })
+  // Use the same quote that drove the pair list and chart candle. The old
+  // implementation read pairsRef before React committed setPairs, leaving
+  // the selected quote one refresh behind.
+  if (nextSelected) setSelectedPair(nextSelected)
+  setOnline(true)
+  setMarketError(null)
+  setLastUpdated(new Date())
+  setTickCount(n => n + 1)
   }, [])
 
   // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
