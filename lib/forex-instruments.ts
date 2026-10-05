@@ -227,11 +227,12 @@ export function isCopper(sym: string): boolean { return sym.startsWith("XCU") }
 export function isMetal(sym: string): boolean { return isGold(sym) || isSilver(sym) || isPlatinum(sym) || isPalladium(sym) || isCopper(sym) }
 export function isCommodity(sym: string): boolean { return isMetal(sym) }
 
-export function decimals(sym: string): number {
-  if (FOREX_DECIMALS[sym] != null) return FOREX_DECIMALS[sym]
-  const ticker = sym.split("/")[0]
+export function decimals(sym: string | null | undefined): number {
+  const normalized = typeof sym === "string" ? sym : ""
+  if (FOREX_DECIMALS[normalized] != null) return FOREX_DECIMALS[normalized]
+  const ticker = normalized.split("/")[0]
   if (CRYPTO_PRECISION[ticker]) return CRYPTO_PRECISION[ticker].decimals
-  return isJpy(sym) ? 3 : 5
+  return isJpy(normalized) ? 3 : 5
 }
 
 export function pip(sym: string): number {

@@ -172,8 +172,8 @@ export function TradingChart({
   sellPrice,
   darkTheme = false,
   }: {
-  candles: Candle[]
-  sym: string
+  candles: Candle[] | null | undefined
+  sym: string | null | undefined
   tf?: string
   openTrades?: OpenTrade[]
   onExpand?: () => void
@@ -183,6 +183,8 @@ export function TradingChart({
   sellPrice?: number
   darkTheme?: boolean
   }) {
+  const safeSymbol = typeof sym === "string" && sym.trim() ? sym : "EUR/USD"
+  const safeCandles = Array.isArray(candles) ? candles : []
   const palette = darkTheme ? DARK_T : T
   const containerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
@@ -220,7 +222,7 @@ export function TradingChart({
   const alertNextId                     = useRef(1)
   alertsRef.current = alerts
 
-  const dec = instrumentDecimals(sym)
+  const dec = instrumentDecimals(safeSymbol)
 
   // ── Data processing ──────────────────────────────────────────────────────────
   const { candleData, volData, closes, times } = useMemo(() => {
@@ -229,7 +231,7 @@ export function TradingChart({
     const closes: number[]              = []
     const times: Time[]                 = []
     const tfSecs = TF_SECONDS[tf] ?? 300
-    const normalizedCandles = (Array.isArray(candles) ? candles : [])
+    const normalizedCandles = safeCandles
       .filter((c): c is NonNullable<typeof c> => c != null && typeof c === "object")
       .map((c, i) => ({ candle: c, time: toTimestamp(c, i, tfSecs) }))
       .filter(({ candle: c, time }) => {
@@ -1010,7 +1012,7 @@ export function TradingChart({
               type="button"
               onClick={() => onQuickTrade("SELL")}
               className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
-              aria-label={`Sell ${sym} at ${sellPrice !== undefined ? fmtP(sellPrice) : "market price"}`}
+              aria-label={`Sell ${safeSymbol} at ${sellPrice !== undefined ? fmtP(sellPrice) : "market price"}`}
             >
               <span className="relative z-10 flex items-center gap-1.5 text-xs font-black">SELL</span>
               {sellPrice !== undefined && <span className="relative z-10 price-mono text-[9px] opacity-80">{fmtP(sellPrice)}</span>}
@@ -1019,7 +1021,7 @@ export function TradingChart({
               type="button"
               onClick={() => onQuickTrade("BUY")}
               className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
-              aria-label={`Buy ${sym} at ${buyPrice !== undefined ? fmtP(buyPrice) : "market price"}`}
+              aria-label={`Buy ${safeSymbol} at ${buyPrice !== undefined ? fmtP(buyPrice) : "market price"}`}
             >
               <span className="relative z-10 flex items-center gap-1.5 text-xs font-black">BUY</span>
               {buyPrice !== undefined && <span className="relative z-10 price-mono text-[9px] opacity-80">{fmtP(buyPrice)}</span>}
