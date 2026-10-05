@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
+import { decimals as instrumentDecimals } from "@/lib/forex-instruments"
 import {
   createChart,
   CandlestickSeries,
@@ -211,7 +212,7 @@ export function TradingChart({
   const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
   const [crosshairActive, setCrosshairActive] = useState(false)
 
-  // Price alerts ─────��──────────────────��────────────────────────────────────
+  // Price alerts ─────���──────────────────��────────────────────────────────────
   const [alerts, setAlerts]             = useState<PriceAlert[]>([])
   const [alertMode, setAlertMode]       = useState(false)      // true = click-to-set mode
   const [showAlertPanel, setShowAlertPanel] = useState(false)
@@ -219,8 +220,7 @@ export function TradingChart({
   const alertNextId                     = useRef(1)
   alertsRef.current = alerts
 
-  const isJpy = sym.includes("JPY")
-  const dec   = isJpy ? 3 : sym.startsWith("XAU") ? 2 : sym.startsWith("BTC") ? 1 : sym.startsWith("ETH") ? 2 : 5
+  const dec = instrumentDecimals(sym)
 
   // ── Data processing ──────────────────────────────────────────────────────────
   const { candleData, volData, closes, times } = useMemo(() => {
@@ -229,7 +229,8 @@ export function TradingChart({
     const closes: number[]              = []
     const times: Time[]                 = []
     const tfSecs = TF_SECONDS[tf] ?? 300
-    const normalizedCandles = candles
+    const normalizedCandles = (Array.isArray(candles) ? candles : [])
+      .filter((c): c is NonNullable<typeof c> => c != null && typeof c === "object")
       .map((c, i) => ({ candle: c, time: toTimestamp(c, i, tfSecs) }))
       .filter(({ candle: c, time }) => {
         const open = Number(c.open)
@@ -589,7 +590,7 @@ export function TradingChart({
     })
   }, [indicators.volume])
 
-  // ── Open trade price lines ────────────────────────────────────────────────────
+  // ── Open trade price lines ─────────────────────────────────────────────��──────
   useEffect(() => {
     if (!candleSerRef.current) return
     openTrades.forEach((t) => {

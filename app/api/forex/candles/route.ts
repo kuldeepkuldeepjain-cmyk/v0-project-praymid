@@ -154,16 +154,29 @@ export async function GET(req: NextRequest) {
     const d = dec(pair)
 
     let candles = timestamps
-      .map((ts, i) => ({
-        time:   fmtTime(ts, tf),
-        open:   parseFloat((opens[i]   ?? closes[i-1] ?? 0).toFixed(d)),
-        high:   parseFloat((highs[i]   ?? 0).toFixed(d)),
-        low:    parseFloat((lows[i]    ?? 0).toFixed(d)),
-        close:  parseFloat((closes[i]  ?? 0).toFixed(d)),
-        volume: Math.round(volumes[i]  ?? 0),
-        ts,
-      }))
-      .filter((c) => c.open > 0 && c.high > 0 && c.low > 0 && c.close > 0)
+      .map((ts, i) => {
+        const close = Number(closes[i])
+        const previousClose = Number(closes[i - 1])
+        const open = Number(opens[i])
+        const high = Number(highs[i])
+        const low = Number(lows[i])
+        const safeClose = Number.isFinite(close) && close > 0 ? close : previousClose
+        if (!Number.isFinite(safeClose) || safeClose <= 0) return null
+        const safeOpen = Number.isFinite(open) && open > 0 ? open : safeClose
+        const safeHigh = Number.isFinite(high) && high > 0 ? high : Math.max(safeOpen, safeClose)
+        const safeLow = Number.isFinite(low) && low > 0 ? low : Math.min(safeOpen, safeClose)
+        return {
+          time: fmtTime(ts, tf),
+          open: Number(safeOpen.toFixed(d)),
+          high: Number(Math.max(safeHigh, safeOpen, safeClose).toFixed(d)),
+          low: Number(Math.min(safeLow, safeOpen, safeClose).toFixed(d)),
+          close: Number(safeClose.toFixed(d)),
+          volume: Math.max(0, Math.round(Number(volumes[i]) || 0)),
+          ts,
+        }
+      })
+      .filter((c): c is NonNullable<typeof c> => c != null)
+      .filter((c) => [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high > 0 && c.low > 0 && c.close > 0)
       // Clamp to last 150 candles
       .slice(-150)
 
