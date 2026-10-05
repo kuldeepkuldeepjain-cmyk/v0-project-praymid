@@ -1290,6 +1290,7 @@ function PositionSizer({
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
   const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
   const [positionsPopupOpen, setPositionsPopupOpen] = useState(false)
+  const [historyPopupOpen, setHistoryPopupOpen] = useState(false)
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
@@ -1679,7 +1680,7 @@ function PositionSizer({
 
   useMarketDataStream(applyRateMap, fetchRates)
 
-  // ── Fetch candles ───────────────────────────────────────���──────────────────
+  // ── Fetch candles ─���─────────────────────────────────────���──────────────────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
     const key = `${sym}|${tf}`
     setCandleLoading(true)
@@ -2322,7 +2323,7 @@ adjustWalletBalance(
     if (soundEnabled) playTerminalSound("breakeven")
   }, [persistModify, soundEnabled])
 
-  // ── Funded account breach ──────────────────────────────────────────────────
+  // ── Funded account breach ───────��──────────────────────────────────────────
   // When the drawdown limit is breached, every open position is force-closed
   // (booking whatever loss/gain it currently holds), the account is frozen,
   // and the trader is shown a clear breach notice.
@@ -3640,7 +3641,7 @@ adjustWalletBalance(
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
             { id: "stats",       label: "Stats",                              icon: Activity },
           ] as { id: typeof activePanel; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => { setActivePanel(id); if (id === "positions") setPositionsPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : label}
+            <button key={id} onClick={() => { setActivePanel(id); if (id === "positions") setPositionsPopupOpen(true); if (id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
               style={activePanel === id
                 ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
@@ -4164,7 +4165,25 @@ adjustWalletBalance(
         </div>
       )}
 
-      {tradeConfirm && (
+      {historyPopupOpen && (
+  <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="trading-history-title">
+    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#060a12] shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-between border-b border-[#1a2640] bg-[#0d1625] px-4 py-3">
+        <div><p id="trading-history-title" className="flex items-center gap-2 text-sm font-black uppercase tracking-wider text-white"><History className="h-4 w-4 text-cyan-300" /> Trading History</p><p className="mt-1 text-[10px] text-slate-400">All completed trades for this account</p></div>
+        <button type="button" onClick={() => setHistoryPopupOpen(false)} aria-label="Close trading history" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button>
+      </div>
+      <div className="grid grid-cols-2 gap-px border-b border-[#1a2640] bg-[#1a2640] sm:grid-cols-4">
+        {[{label:"Trades",value:String(closedTrades.length),color:"#c084fc"},{label:"Wins",value:String(closedTrades.filter(t=>t.finalPnl>0).length),color:"#34d399"},{label:"Losses",value:String(closedTrades.filter(t=>t.finalPnl<=0).length),color:"#f87171"},{label:"Net P&L",value:`${closedTrades.reduce((s,t)=>s+t.finalPnl,0)>=0?"+":""}$${closedTrades.reduce((s,t)=>s+t.finalPnl,0).toFixed(2)}`,color:closedTrades.reduce((s,t)=>s+t.finalPnl,0)>=0?"#34d399":"#f87171"}].map(item => <div key={item.label} className="bg-[#08101c] px-3 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">{item.label}</p><p className="price-mono mt-1 text-sm font-black" style={{color:item.color}}>{item.value}</p></div>)}
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
+        {closedTrades.length === 0 ? <div className="flex min-h-48 items-center justify-center text-xs text-slate-500">No completed trades yet</div> : <div className="min-w-[760px] overflow-hidden rounded-xl border border-[#1a2a42]"><div className="grid grid-cols-[1.2fr_.7fr_.8fr_1fr_1fr_.8fr_.8fr] gap-2 bg-[#0d1625] px-3 py-2 text-[8px] font-black uppercase tracking-wider text-slate-500"><span>Instrument</span><span>Side</span><span>Lots</span><span>Open</span><span>Close</span><span>Result</span><span>Reason</span></div>{closedTrades.map(trade => <div key={trade.id} className="grid grid-cols-[1.2fr_.7fr_.8fr_1fr_1fr_.8fr_.8fr] items-center gap-2 border-t border-[#142238] px-3 py-3 text-[10px] text-slate-300"><span className="font-black text-white">{trade.pair}<small className="ml-1 block text-[8px] font-normal text-slate-500">{trade.closeTime}</small></span><span className={trade.direction === "BUY" ? "font-black text-emerald-400" : "font-black text-red-400"}>{trade.direction}</span><span className="price-mono">{trade.lotSize.toFixed(2)}</span><span className="price-mono">{fmt(trade.openPrice, trade.pair)}</span><span className="price-mono">{fmt(trade.closePrice, trade.pair)}</span><span className={trade.finalPnl >= 0 ? "price-mono font-black text-emerald-400" : "price-mono font-black text-red-400"}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}<small className="block text-[8px] font-normal">{trade.finalPips.toFixed(1)} pips</small></span><span className="text-[9px] capitalize text-slate-400">{trade.closeReason.replaceAll("_", " ")}</span></div>)}</div>}
+      </div>
+      <div className="flex items-center justify-between border-t border-[#1a2640] px-4 py-2 text-[9px] text-slate-500"><span>{online ? "Live account" : "Offline"} · {closedTrades.length} completed trades</span><button type="button" onClick={() => void loadTrades()} className="flex items-center gap-1 rounded-md px-2 py-1 font-bold uppercase tracking-wider text-cyan-300 hover:bg-cyan-400/10"><RefreshCw className="h-3 w-3" /> Refresh</button></div>
+    </div>
+  </div>
+  )}
+
+  {tradeConfirm && (
   <div
   className="absolute inset-0 z-50 flex items-center justify-center"
           style={{ background: "rgba(2,6,15,0.82)", backdropFilter: "blur(6px)" }}
