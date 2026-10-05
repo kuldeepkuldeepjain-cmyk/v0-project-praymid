@@ -169,22 +169,32 @@ export async function GET(req: NextRequest) {
 
     if (candles.length === 0) throw new Error("No usable candles")
 
+    // Keep every instrument's historical series on the same price scale as
+    // its live quote. Futures-backed symbols (gold, silver, oil, indices, and
+    // some FX crosses) can otherwise produce a false vertical spike when the
+    // terminal displays a spot/translated quote beside futures history.
+    let currentAnchor = Number(result.meta?.regularMarketPrice)
     if (pair === "XAU/USD") {
-      const futuresMid = result.meta?.regularMarketPrice
       const spotResponse = await fetch("https://api.gold-api.com/price/XAU", { next: { revalidate: 0 } })
-      if (spotResponse.ok && Number.isFinite(futuresMid) && futuresMid > 0) {
+      if (spotResponse.ok) {
         const spot = await spotResponse.json()
-        const spotMid = Number(spot?.price)
-        if (Number.isFinite(spotMid) && spotMid > 0) {
-          const basis = spotMid - futuresMid
-          candles = candles.map(candle => ({
-            ...candle,
-            open: parseFloat((candle.open + basis).toFixed(d)),
-            high: parseFloat((candle.high + basis).toFixed(d)),
-            low: parseFloat((candle.low + basis).toFixed(d)),
-            close: parseFloat((candle.close + basis).toFixed(d)),
-          }))
-        }
+        if (Number.isFinite(Number(spot?.price)) && Number(spot.price) > 0) currentAnchor = Number(spot.price)
+      }
+    }
+    const historyClose = candles.at(-1)?.close ?? 0
+    if (Number.isFinite(currentAnchor) && currentAnchor > 0 && historyClose > 0) {
+      const scaleGap = Math.abs(currentAnchor - historyClose) / historyClose
+      // A >1% discontinuity is treated as a feed basis mismatch, not a real
+      // market gap. Smaller moves remain visible as genuine gap-up/down data.
+      if (scaleGap > 0.01) {
+        const basis = currentAnchor - historyClose
+        candles = candles.map(candle => ({
+          ...candle,
+          open: parseFloat((candle.open + basis).toFixed(d)),
+          high: parseFloat((candle.high + basis).toFixed(d)),
+          low: parseFloat((candle.low + basis).toFixed(d)),
+          close: parseFloat((candle.close + basis).toFixed(d)),
+        }))
       }
     }
 
@@ -196,7 +206,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles: cached.candles, source: "stale", ts: cached.ts })
     }
     // Last resort: return synthetic candles so chart never shows empty
-    const synthetic = generateSyntheticCandles(pair, tf)
-    return NextResponse.json({ candles: synthetic, source: "synthetic", ts: now })
+    let synthetic = generateSyntheticCandles(pair, tf) as Array<{ open: number; high: number; low: number; close: number; [key: string]: unknown }>
+    if (pair === "XAU/USD") {
+      try {
+        const spotResponse = await fetch("https://api.gold-api.com/price/XAU", { cache: "no-store" })
+        const spot = spotResponse.ok ? await spotResponse.json() : null
+        const spotMid = Number(spot?.price)
+        const historyClose = Number(synthetic.at(-1)?.close)
+        if (Number.isFinite(spotMid) && spotMid > 0 && Number.isFinite(historyClose) && historyClose > 0) {
+          const basis = spotMid - historyClose
+          synthetic = synthetic.map(candle => ({
+            ...candle,
+            open: Number((candle.open + basis).toFixed(dec(pair))),
+            high: Number((candle.high + basis).toFixed(dec(pair))),
+            low: Number((candle.low + basis).toFixed(dec(pair))),
+            close: Number((candle.close + basis).toFixed(dec(pair))),
+          }))
+        }
+      } catch {
+        // Keep the deterministic fallback when the spot provider is unavailable.
+      }
+    }
+    return NextResponse.json({ candles: synthetic, source: "synthetic-aligned", ts: now }, { headers: { "Cache-Control": "no-store, max-age=0" } })
   }
 }
