@@ -73,7 +73,7 @@ export type ClosedTrade = OpenTrade & {
   closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out" | "account_breach"
 }
 
-type TimeFrame = "1M" | "5M" | "15M" | "1H" | "4H" | "1D"
+type TimeFrame = "1M" | "5M" | "15M" | "30M" | "1H" | "4H" | "1D" | "1W"
 
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) ────────────────────────────────────────────
+// ─── Trading Sessions (UTC hours) ──────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ────────────────────────────────────────────������───────────
+// ─── Market Stats Panel ───────────────────────────────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1635,7 +1635,7 @@ function PositionSizer({
   const r = rateMap[p.symbol]
   if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
   const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
-  const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
+  const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
   const currentBucket = Math.floor(Date.now() / 1000 / intervalSeconds) * intervalSeconds
   const safeCandles = Array.isArray(p.candles) ? p.candles : []
   const currentCandle = safeCandles[safeCandles.length - 1]
@@ -1736,7 +1736,7 @@ function PositionSizer({
       // Refresh the 1-minute history frequently enough to pick up the next
       // server candle while live ticks keep the active candle moving between
       // snapshots. Wider frames stay on lighter polling intervals.
-      "1M": 5_000, "5M": 30_000, "15M": 90_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000,
+      "1M": 5_000, "5M": 30_000, "15M": 90_000, "30M": 180_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000, "1W": 86400_000,
     }
     const ms = refreshMs[timeframe] ?? 60_000
     candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
@@ -1755,7 +1755,7 @@ function PositionSizer({
         const liveMid = (p.bid + p.ask) / 2
         if (!Number.isFinite(liveMid) || liveMid === 0) return p
         const d = decimals(p.symbol)
-        const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : 86400
+        const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
         const nowSeconds = Math.floor(Date.now() / 1000)
         const currentBucket = Math.floor(nowSeconds / intervalSeconds) * intervalSeconds
         const nc = [...p.candles]
@@ -3159,7 +3159,7 @@ adjustWalletBalance(
                       boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
                     }}
                   >
-                    {(["1M","5M","15M","1H","4H","1D"] as TimeFrame[]).map(tf => {
+                    {(["1M","5M","15M","30M","1H","4H","1D","1W"] as TimeFrame[]).map(tf => {
                       const active = timeframe === tf
                       return (
                         <button
