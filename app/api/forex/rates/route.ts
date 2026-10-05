@@ -14,7 +14,10 @@ type RateRow = { bid: number; ask: number; mid: number; change: number; high: nu
 
 function seedRow(pair: string): RateRow {
   const seed = SEED_PRICES[pair] ?? 1.0
-  const jitter = seed * (0.9998 + Math.random() * 0.0004)
+  // Deterministic fallback: unavailable upstream symbols must not jump to a
+  // new random price on every 3-second poll.
+  const stableOffset = (pair.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 17 - 8) / 100000
+  const jitter = seed * (1 + stableOffset)
   const spread = TYPICAL_SPREADS[pair] ?? 0.0002
   const d = dec(pair)
   return {
@@ -52,13 +55,15 @@ export async function GET() {
       const ySym = YAHOO_SYMBOLS[pair]
       const q = quoteResults.get(ySym)
       if (!q) {
-        data[pair] = seedRow(pair)
+        // Keep the last known live quote during an upstream partial failure;
+        // only use the deterministic seed on the first request.
+        data[pair] = cache?.data[pair] ?? seedRow(pair)
         continue
       }
 
       const futuresMid = q.regularMarketPrice
       if (!futuresMid || futuresMid <= 0) {
-        data[pair] = seedRow(pair)
+        data[pair] = cache?.data[pair] ?? seedRow(pair)
         continue
       }
 
