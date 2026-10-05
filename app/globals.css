@@ -1242,6 +1242,31 @@ button, a, [role="button"] {
   background: linear-gradient(180deg, transparent, #24405f, transparent);
 }
 
+.mobile-terminal-chart-wrap {
+  min-height: 420px;
+}
+
+@media (max-width: 640px) {
+  .mobile-terminal-chart-wrap {
+    min-height: 430px;
+    flex: 0 0 430px;
+  }
+
+  .mobile-terminal-chart-wrap .apple-trading-chart {
+    min-height: 430px;
+  }
+
+  .mobile-terminal-chart-wrap .apple-trading-chart-canvas {
+    min-height: 290px;
+  }
+}
+
+@media (min-width: 641px) {
+  .mobile-terminal-chart-wrap {
+    min-height: 500px;
+  }
+}
+
 @keyframes terminal-scanline {
   from { transform: translateY(-100%); opacity: 0; }
   15% { opacity: 0.12; }

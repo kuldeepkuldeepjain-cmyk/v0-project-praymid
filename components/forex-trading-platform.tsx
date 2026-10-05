@@ -1063,7 +1063,7 @@ function ModifyTradeModal({
   )
 }
 
-// ─── Toast Stack ────���────────────────────────────────────────────────────────
+// ─── Toast Stack ────����────────────────────────────────────────────────────────
 
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
@@ -3203,7 +3203,7 @@ adjustWalletBalance(
 
 {/* Chart + BUY/SELL strip */}
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-  <div className="relative flex-1 min-h-0">
+  <div className="relative flex-1 min-h-0 mobile-terminal-chart-wrap">
   {selectedPair && chartLayout === "single" ? (
   <TradingChart
   key={isDarkTheme ? "dark" : "light"}
