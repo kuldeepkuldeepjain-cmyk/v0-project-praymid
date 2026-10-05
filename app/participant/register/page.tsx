@@ -99,21 +99,22 @@ export default function ParticipantRegisterPage() {
   // Post-registration state
   const [referralApplied, setReferralApplied] = useState(false)
 
+  const defaultCountry = COUNTRIES_DATA[0]
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     username: "",
     email: "",
-    countryCode: "",
+    countryCode: defaultCountry.code,
     mobileNumber: "",
     password: "",
     confirmPassword: "",
-    country: "",
+    country: defaultCountry.name,
     state: "",
     referralCode: "",
     accountType: "normal" as "normal" | "funded",
   })
-  const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(null)
+  const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(defaultCountry)
 
   useEffect(() => {
     generateCaptcha()
@@ -381,6 +382,8 @@ export default function ParticipantRegisterPage() {
                   <div className="relative group">
                     <Input
                       id="firstName"
+                      name="firstName"
+                      autoComplete="given-name"
                       placeholder="John"
                       value={formData.firstName}
                       onChange={(e) => handleChange("firstName", e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
@@ -401,6 +404,8 @@ export default function ParticipantRegisterPage() {
                   <div className="relative group">
                     <Input
                       id="lastName"
+                      name="lastName"
+                      autoComplete="family-name"
                       placeholder="Doe"
                       value={formData.lastName}
                       onChange={(e) => handleChange("lastName", e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
@@ -443,6 +448,8 @@ export default function ParticipantRegisterPage() {
                 <div className="relative group">
                   <Input
                     id="username"
+                    name="username"
+                    autoComplete="username"
                     placeholder="your_username"
                     value={formData.username}
                     onChange={(e) => handleChange("username", e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
@@ -464,9 +471,12 @@ export default function ParticipantRegisterPage() {
                 </Label>
                 <div className="relative group">
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter Gmail"
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      placeholder="Enter Gmail"
                     value={formData.email}
                     onChange={(e) => handleChange("email", e.target.value)}
                     className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-[#fbbf24] focus:ring-[#fbbf24]/20 transition-all hover:border-[#fbbf24]/50 focus:shadow-lg focus:shadow-[#fbbf24]/10"
@@ -530,7 +540,10 @@ export default function ParticipantRegisterPage() {
                   <div className="relative flex-1 group">
                     <Input
                       id="mobileNumber"
+                      name="tel"
                       type="tel"
+                      autoComplete="tel-national"
+                      inputMode="tel"
                       placeholder="9876543210"
                       value={formData.mobileNumber}
                       onChange={(e) => handleChange("mobileNumber", e.target.value.replace(/\D/g, ""))}
@@ -549,7 +562,7 @@ export default function ParticipantRegisterPage() {
                     <div className="w-5 h-5 rounded-md bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
                       <MapPin className="h-3 w-3 text-white" />
                     </div>
-                    State *
+                    State (Optional)
                   </Label>
                   <div className="relative group">
                     <Input
@@ -557,8 +570,8 @@ export default function ParticipantRegisterPage() {
                       placeholder="State"
                       value={formData.state}
                       onChange={(e) => handleChange("state", e.target.value)}
+                      autoComplete="address-level1"
                       className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-pink-500 focus:ring-pink-500/20 transition-all hover:border-pink-500/50 focus:shadow-lg focus:shadow-pink-500/10"
-                      required
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/5 to-pink-500/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />
                   </div>
@@ -596,7 +609,9 @@ export default function ParticipantRegisterPage() {
                 <div className="relative group">
                   <Input
                     id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
                     placeholder="Enter Password"
                     value={formData.password}
                     onChange={(e) => handleChange("password", e.target.value)}
@@ -625,7 +640,9 @@ export default function ParticipantRegisterPage() {
                 <div className="relative group">
                   <Input
                     id="confirmPassword"
+                    name="confirmPassword"
                     type="password"
+                    autoComplete="new-password"
                     placeholder="Confirm your password"
                     value={formData.confirmPassword}
                     onChange={(e) => handleChange("confirmPassword", e.target.value)}
