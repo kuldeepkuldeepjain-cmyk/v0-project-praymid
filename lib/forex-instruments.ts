@@ -217,15 +217,15 @@ const CRYPTO_PRECISION: Record<string, { decimals: number; pip: number; contract
 
 // ── Instrument helpers ───────────────────────────────────────────────────────
 
-export function isJpy(sym: string): boolean { return sym.includes("JPY") }
-export function isCrypto(sym: string): boolean { return CRYPTO_TICKERS.has(sym.split("/")[0]) }
-export function isGold(sym: string): boolean { return sym.startsWith("XAU") }
-export function isSilver(sym: string): boolean { return sym.startsWith("XAG") }
-export function isPlatinum(sym: string): boolean { return sym.startsWith("XPT") }
-export function isPalladium(sym: string): boolean { return sym.startsWith("XPD") }
-export function isCopper(sym: string): boolean { return sym.startsWith("XCU") }
-export function isMetal(sym: string): boolean { return isGold(sym) || isSilver(sym) || isPlatinum(sym) || isPalladium(sym) || isCopper(sym) }
-export function isCommodity(sym: string): boolean { return isMetal(sym) }
+export function isJpy(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return s.includes("JPY") }
+export function isCrypto(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return CRYPTO_TICKERS.has(s.split("/")[0]) }
+export function isGold(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return s.startsWith("XAU") }
+export function isSilver(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return s.startsWith("XAG") }
+export function isPlatinum(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return s.startsWith("XPT") }
+export function isPalladium(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return s.startsWith("XPD") }
+export function isCopper(sym: string | null | undefined): boolean { const s = typeof sym === "string" ? sym : ""; return s.startsWith("XCU") }
+export function isMetal(sym: string | null | undefined): boolean { return isGold(sym) || isSilver(sym) || isPlatinum(sym) || isPalladium(sym) || isCopper(sym) }
+export function isCommodity(sym: string | null | undefined): boolean { return isMetal(sym) }
 
 export function decimals(sym: string | null | undefined): number {
   const normalized = typeof sym === "string" ? sym : ""
@@ -235,21 +235,23 @@ export function decimals(sym: string | null | undefined): number {
   return isJpy(normalized) ? 3 : 5
 }
 
-export function pip(sym: string): number {
-  if (isGold(sym) || isPlatinum(sym) || isPalladium(sym)) return 0.01
-  if (isSilver(sym)) return 0.001
-  if (isCopper(sym)) return 0.0001
-  const ticker = sym.split("/")[0]
+export function pip(sym: string | null | undefined): number {
+  const s = typeof sym === "string" ? sym : ""
+  if (isGold(s) || isPlatinum(s) || isPalladium(s)) return 0.01
+  if (isSilver(s)) return 0.001
+  if (isCopper(s)) return 0.0001
+  const ticker = s.split("/")[0]
   if (CRYPTO_PRECISION[ticker]) return CRYPTO_PRECISION[ticker].pip
-  return isJpy(sym) ? 0.01 : 0.0001
+  return isJpy(s) ? 0.01 : 0.0001
 }
 
-export function contractSize(sym: string): number {
-  if (isGold(sym)) return 100        // 100 troy oz
-  if (isSilver(sym)) return 5000     // 5000 troy oz
-  if (isPlatinum(sym) || isPalladium(sym)) return 50 // 50 troy oz
-  if (isCopper(sym)) return 25000 // 25,000 pounds
-  const ticker = sym.split("/")[0]
+export function contractSize(sym: string | null | undefined): number {
+  const s = typeof sym === "string" ? sym : ""
+  if (isGold(s)) return 100        // 100 troy oz
+  if (isSilver(s)) return 5000     // 5000 troy oz
+  if (isPlatinum(s) || isPalladium(s)) return 50 // 50 troy oz
+  if (isCopper(s)) return 25000 // 25,000 pounds
+  const ticker = s.split("/")[0]
   if (CRYPTO_PRECISION[ticker]) return CRYPTO_PRECISION[ticker].contractSize
   return 100000                       // standard forex lot
 }

@@ -86,31 +86,36 @@ const DARK_T = {
 // ─── Math helpers ─────────────────────────────────────────────────────────────
 
 function calcEMA(closes: number[], period: number): (number | null)[] {
+  if (!Array.isArray(closes) || closes.length === 0 || period <= 0) return []
   const k = 2 / (period + 1)
   const result: (number | null)[] = new Array(closes.length).fill(null)
   let ema: number | null = null
   for (let i = 0; i < closes.length; i++) {
     if (i < period - 1) continue
-    if (ema === null) ema = closes.slice(0, period).reduce((a, b) => a + b, 0) / period
+    if (ema === null) ema = closes.slice(0, period).reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / period
     else ema = closes[i] * k + ema * (1 - k)
-    result[i] = ema
+    result[i] = Number.isFinite(ema) ? ema : null
   }
   return result
 }
 
 function calcBB(closes: number[], period = 20, mult = 2) {
   const upper: (number | null)[] = [], mid: (number | null)[] = [], lower: (number | null)[] = []
+  if (!Array.isArray(closes) || closes.length === 0) return { upper, mid, lower }
   for (let i = 0; i < closes.length; i++) {
     if (i < period - 1) { upper.push(null); mid.push(null); lower.push(null); continue }
     const sl = closes.slice(i - period + 1, i + 1)
-    const sma = sl.reduce((a, b) => a + b, 0) / period
-    const sd = Math.sqrt(sl.reduce((s, v) => s + (v - sma) ** 2, 0) / period)
-    upper.push(sma + mult * sd); mid.push(sma); lower.push(sma - mult * sd)
+    const sma = sl.reduce((a, b) => a + (Number.isFinite(b) ? b : 0), 0) / period
+    const sd = Math.sqrt(sl.reduce((s, v) => s + ((v - sma) ** 2), 0) / period)
+    upper.push(Number.isFinite(sma + mult * sd) ? sma + mult * sd : null)
+    mid.push(Number.isFinite(sma) ? sma : null)
+    lower.push(Number.isFinite(sma - mult * sd) ? sma - mult * sd : null)
   }
   return { upper, mid, lower }
 }
 
 function calcRSI(closes: number[], period = 14): (number | null)[] {
+  if (!Array.isArray(closes) || closes.length === 0) return []
   const result: (number | null)[] = new Array(closes.length).fill(null)
   if (closes.length < period + 1) return result
   let ag = 0, al = 0
@@ -130,6 +135,7 @@ function calcRSI(closes: number[], period = 14): (number | null)[] {
 }
 
 function calcMACD(closes: number[]) {
+  if (!Array.isArray(closes) || closes.length === 0) return { macd: [], signal: [], hist: [] }
   const ema12 = calcEMA(closes, 12)
   const ema26 = calcEMA(closes, 26)
   const macd: (number | null)[] = closes.map((_, i) =>
@@ -145,10 +151,10 @@ const TF_SECONDS: Record<string, number> = {
   "1M": 60, "5M": 300, "15M": 900, "1H": 3600, "4H": 14400, "1D": 86400,
 }
 
-function toTimestamp(c: Candle, idx: number, tfSeconds = 300): number {
+function toTimestamp(c: Candle | null | undefined, idx: number, tfSeconds = 300): number {
+  if (!c || typeof c !== "object") return 1704067200 + idx * tfSeconds
   const timestamp = normalizeTimestamp(c.ts ?? c.time)
   if (Number.isFinite(timestamp) && timestamp > 0) return Math.floor(timestamp / 1000)
-  // Keep malformed records out of the chart instead of comparing object values.
   return 1704067200 + idx * tfSeconds
 }
 
