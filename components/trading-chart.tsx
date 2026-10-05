@@ -197,6 +197,8 @@ export function TradingChart({
 
   // Series refs
   const candleSerRef  = useRef<ISeriesApi<"Candlestick"> | null>(null)
+  const bidLineRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> | null>(null)
+  const askLineRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> | null>(null)
   const volSerRef     = useRef<ISeriesApi<"Histogram"> | null>(null)
   const candleCountRef = useRef(0)
   const lastCandleTimeRef = useRef<number | null>(null)
@@ -272,6 +274,24 @@ export function TradingChart({
   })
     return { candleData, volData, closes, times }
   }, [candles, tf])
+
+  const priceEnvelope = useMemo(() => {
+    if (candleData.length === 0) return null
+    const recent = candleData.slice(-Math.min(80, candleData.length))
+    const high = Math.max(...recent.map((c) => c.high))
+    const low = Math.min(...recent.map((c) => c.low))
+    const ranges = recent.map((c) => Math.max(0, c.high - c.low)).filter(Number.isFinite)
+    const atr = ranges.length ? ranges.reduce((sum, range) => sum + range, 0) / ranges.length : 0
+    const last = candleData[candleData.length - 1]
+    const current = [last.close, buyPrice, sellPrice].filter((value): value is number => typeof value === "number" && Number.isFinite(value) && value > 0)
+    const currentHigh = current.length ? Math.max(...current) : last.high
+    const currentLow = current.length ? Math.min(...current) : last.low
+    const rawRange = Math.max(high, currentHigh) - Math.min(low, currentLow)
+    const floorRange = Math.max(atr * 8, Math.abs(last.close) * Math.pow(10, -dec) * 40)
+    const range = Math.max(rawRange, floorRange)
+    const center = (Math.max(high, currentHigh) + Math.min(low, currentLow)) / 2
+    return { min: center - range * 0.56, max: center + range * 0.56, atr, range }
+  }, [candleData, buyPrice, sellPrice, dec])
 
   const ema9d  = useMemo(() => calcEMA(closes, 9),  [closes])
   const ema21d = useMemo(() => calcEMA(closes, 21), [closes])
@@ -598,7 +618,46 @@ export function TradingChart({
     })
   }, [indicators.volume])
 
-  // ── Open trade price lines ─────────────────────────────────────────────��──────
+  // ── Adaptive market scale and live bid/ask overlays ─────────────────────────
+  useEffect(() => {
+    const chart = chartRef.current
+    const series = candleSerRef.current
+    if (!chart || !series || !priceEnvelope) return
+    const width = containerRef.current?.clientWidth ?? 900
+    const visibleBars = Math.max(36, Math.min(96, candleData.length || 36))
+    const spacing = Math.max(4, Math.min(14, width / visibleBars * 0.72))
+    chart.timeScale().applyOptions({ barSpacing: spacing, minBarSpacing: 3, rightOffset: Math.max(4, Math.round(visibleBars * 0.06)) })
+    series.applyOptions({
+      autoscaleInfoProvider: () => ({ priceRange: { minValue: priceEnvelope.min, maxValue: priceEnvelope.max } }),
+    })
+    chart.priceScale("right").applyOptions({ autoScale: true, scaleMargins: { top: 0.06, bottom: indicators.volume ? 0.20 : 0.08 } })
+    if (candleData.length > 0 && candleCountRef.current === candleData.length) {
+      chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, candleData.length - visibleBars), to: candleData.length + Math.max(4, Math.round(visibleBars * 0.06)) })
+    }
+  }, [priceEnvelope, candleData.length, indicators.volume])
+
+  useEffect(() => {
+    const series = candleSerRef.current
+    if (!series) return
+    if (bidLineRef.current) series.removePriceLine(bidLineRef.current)
+    if (askLineRef.current) series.removePriceLine(askLineRef.current)
+    bidLineRef.current = null
+    askLineRef.current = null
+    if (typeof sellPrice === "number" && Number.isFinite(sellPrice) && sellPrice > 0) {
+      bidLineRef.current = series.createPriceLine({ price: sellPrice, color: palette.redBright, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "BID" })
+    }
+    if (typeof buyPrice === "number" && Number.isFinite(buyPrice) && buyPrice > 0) {
+      askLineRef.current = series.createPriceLine({ price: buyPrice, color: palette.greenBright, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "ASK" })
+    }
+    return () => {
+      if (bidLineRef.current) series.removePriceLine(bidLineRef.current)
+      if (askLineRef.current) series.removePriceLine(askLineRef.current)
+      bidLineRef.current = null
+      askLineRef.current = null
+    }
+  }, [buyPrice, sellPrice, palette.greenBright, palette.redBright])
+
+  // ── Open trade price lines ────────────────────────────────────────────────
   useEffect(() => {
     if (!candleSerRef.current) return
     openTrades.forEach((t) => {
