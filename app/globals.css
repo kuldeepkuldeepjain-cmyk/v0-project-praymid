@@ -1242,25 +1242,23 @@ button, a, [role="button"] {
   background: linear-gradient(180deg, transparent, #24405f, transparent);
 }
 
-.mobile-terminal-chart-wrap {
-  height: 100%;
-  min-height: 0;
-  max-height: none;
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
+  .mobile-terminal-chart-wrap {
+  height: clamp(360px, 54dvh, 560px);
+  min-height: 360px;
+  max-height: 560px;
+  flex: 1 1 auto;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart {
   height: 100%;
-  min-height: 0;
+  min-height: 360px;
   min-width: 0;
   min-inline-size: 0;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart-canvas {
   height: 0;
-  min-height: 0;
+  min-height: 280px;
   flex: 1 1 0;
   min-width: 0;
   min-inline-size: 0;
@@ -1283,24 +1281,24 @@ button, a, [role="button"] {
 
   @media (max-width: 640px) {
   .mobile-terminal-chart-wrap {
-  height: 100%;
-  min-height: 0;
-  max-height: none;
-  flex: 1 1 0;
+  height: clamp(360px, 54dvh, 560px);
+  min-height: 360px;
+  max-height: 560px;
+  flex: 1 1 auto;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart {
   height: 100%;
-  min-height: 0;
+  min-height: 360px;
   }
   }
 
   @media (min-width: 641px) {
   .mobile-terminal-chart-wrap {
-  height: 100%;
-  min-height: 0;
-  max-height: none;
-  flex: 1 1 0;
+  height: clamp(420px, 62dvh, 760px);
+  min-height: 420px;
+  max-height: 760px;
+  flex: 1 1 auto;
   }
   }
 
