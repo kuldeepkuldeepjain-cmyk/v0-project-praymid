@@ -279,16 +279,19 @@ export function TradingChart({
 
   const priceEnvelope = useMemo(() => {
     if (candleData.length === 0) return null
-    const recent = candleData.slice(-Math.min(80, candleData.length))
+    const recent = candleData.slice(-Math.min(48, candleData.length))
     const high = Math.max(...recent.map((c) => c.high))
     const low = Math.min(...recent.map((c) => c.low))
     const ranges = recent.map((c) => Math.max(0, c.high - c.low)).filter(Number.isFinite)
     const atr = ranges.length ? ranges.reduce((sum, range) => sum + range, 0) / ranges.length : 0
     const last = candleData[candleData.length - 1]
-    const rawRange = high - low
-    const floorRange = Math.max(atr * 8, Math.abs(last.close) * Math.pow(10, -dec) * 40)
-    const range = Math.max(rawRange, floorRange)
-    const padding = 0.06
+    const rawRange = Math.max(0, high - low)
+    // Keep the primary scale focused on the active market window. A large
+    // ATR multiplier makes high-priced crypto look flat on small screens.
+    const tickFloor = Math.abs(last.close) * Math.pow(10, -dec) * 12
+    const rangeFloor = Math.max(atr * 2.25, tickFloor, Math.abs(last.close) * 0.0015)
+    const range = Math.max(rawRange, rangeFloor)
+    const padding = Math.min(0.04, Math.max(0.015, (atr / Math.max(range, 1)) * 0.5))
     return { min: low - range * padding, max: high + range * padding, atr, range }
   }, [candleData, dec])
 
