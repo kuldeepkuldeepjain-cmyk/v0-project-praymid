@@ -1257,6 +1257,21 @@ button, a, [role="button"] {
   flex: 1 1 auto;
   }
 
+  .terminal-chart-toolbar {
+  scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  }
+  .terminal-chart-toolbar::-webkit-scrollbar { display: none; }
+  .terminal-chart-toolbar > button,
+  .terminal-chart-toolbar > label {
+  min-height: 30px;
+  }
+  @media (max-width: 640px) {
+  .terminal-chart-toolbar { padding-inline: 8px; }
+  .terminal-chart-toolbar > button,
+  .terminal-chart-toolbar > label { min-height: 32px; }
+  }
+
   @media (max-width: 640px) {
   .mobile-terminal-chart-wrap {
   min-height: clamp(390px, 60dvh, 620px);

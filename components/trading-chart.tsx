@@ -321,10 +321,10 @@ export function TradingChart({
         fontSize:   12,
         attributionLogo: false,
       },
-      grid: {
-        vertLines: { color: "rgba(148,163,184,0.07)", style: LineStyle.Solid },
-        horzLines: { color: "rgba(148,163,184,0.09)", style: LineStyle.Solid },
-      },
+  grid: {
+  vertLines: { color: "rgba(148,163,184,0.055)", style: LineStyle.Solid },
+  horzLines: { color: "rgba(148,163,184,0.075)", style: LineStyle.Solid },
+  },
       crosshair: {
         mode: CrosshairMode.Magnet,
         vertLine: {
@@ -791,8 +791,8 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex flex-wrap items-center gap-1 px-2 py-1 shrink-0"
-        style={{ minHeight: 36, borderBottom: "1px solid rgba(255,255,255,0.05)", background: "#070c18", flexShrink: 0 }}
+        className="flex items-center gap-1 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar"
+        style={{ minHeight: 40, borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#080f1b", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
         {([
@@ -805,7 +805,7 @@ export function TradingChart({
           <button
             key={key}
             onClick={() => toggle(key)}
-            className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
             style={indicators[key]
               ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
               : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
@@ -835,7 +835,7 @@ export function TradingChart({
                   setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
                 }
               }}
-              className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
               style={isActive
                 ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
                 : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
@@ -880,7 +880,7 @@ export function TradingChart({
         {/* Price Alert toggle */}
         <button
           onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
-          className="flex items-center gap-1 px-2 py-1 rounded-md shrink-0 transition-all active:scale-95"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
           style={alertMode
             ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
             : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
@@ -914,7 +914,7 @@ export function TradingChart({
           }}
           className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 transition-all hover:opacity-90 active:scale-95"
           style={{ background: "#0a1524", border: "1px solid rgba(255,255,255,0.07)", color: "#4a6580" }}
-          title="Reset zoom to 90 candles"
+          title="Reset zoom and fit selected instrument"
         >
           <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
             <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
