@@ -1243,29 +1243,36 @@ button, a, [role="button"] {
 }
 
 .mobile-terminal-chart-wrap {
-  min-height: 420px;
-}
-
-@media (max-width: 640px) {
-  .mobile-terminal-chart-wrap {
-    min-height: 430px;
-    flex: 0 0 430px;
+  min-height: clamp(390px, 62dvh, 760px);
+  flex: 1 1 auto;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart {
-    min-height: 430px;
+  min-height: 100%;
+  height: 100%;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart-canvas {
-    min-height: 290px;
+  min-height: 0;
+  flex: 1 1 auto;
   }
-}
 
-@media (min-width: 641px) {
+  @media (max-width: 640px) {
   .mobile-terminal-chart-wrap {
-    min-height: 500px;
+  min-height: clamp(390px, 60dvh, 620px);
+  flex: 1 1 auto;
   }
-}
+
+  .mobile-terminal-chart-wrap .apple-trading-chart {
+  min-height: clamp(390px, 60dvh, 620px);
+  }
+  }
+
+  @media (min-width: 641px) {
+  .mobile-terminal-chart-wrap {
+  min-height: clamp(500px, 68dvh, 900px);
+  }
+  }
 
 @keyframes terminal-scanline {
   from { transform: translateY(-100%); opacity: 0; }
