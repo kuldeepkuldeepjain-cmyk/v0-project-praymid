@@ -216,7 +216,7 @@ export function TradingChart({
   const macdHistRef   = useRef<ISeriesApi<"Histogram"> | null>(null)
 
   const [indicators, setIndicators] = useState<Record<IndicatorKey, boolean>>({
-    ema9: true, ema21: true, ema50: false, bb: false, rsi: true, macd: false, volume: true,
+    ema9: true, ema21: true, ema50: false, bb: false, rsi: false, macd: false, volume: true,
   })
   const [chartPane, setChartPane] = useState<"rsi" | "macd" | "none">("rsi")
   const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
@@ -384,6 +384,8 @@ export function TradingChart({
       wickDownColor:    "#ef5350",
       borderVisible:    true,
       wickVisible:      true,
+      // Keep bodies and wicks legible on narrow screens while preserving the
+      // selected instrument's native precision and tick size.
       priceFormat: { type: "price", precision: dec, minMove: Math.pow(10, -dec) },
       priceLineVisible: true,
       priceLineWidth:   1,
@@ -396,6 +398,8 @@ export function TradingChart({
     const vSer = chart.addSeries(HistogramSeries, {
       priceFormat:  { type: "volume" },
       priceScaleId: "vol",
+      lastValueVisible: false,
+      priceLineVisible: false,
     })
     chart.priceScale("vol").applyOptions({
       scaleMargins: { top: 0.82, bottom: 0 },
@@ -422,7 +426,7 @@ export function TradingChart({
     const rsiSer = chart.addSeries(LineSeries, {
       color: palette.emerald, lineWidth: 1,
       priceScaleId: "rsi",
-      priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false,
+      priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
       priceFormat: { type: "price", precision: 2, minMove: 0.01 },
     })
     chart.priceScale("rsi").applyOptions({ scaleMargins: { top: 0.99, bottom: 0 }, visible: false })
@@ -432,7 +436,7 @@ export function TradingChart({
     rsiOs30Ref.current = chart.addSeries(LineSeries, { color: "rgba(38,166,154,0.25)",  lineWidth: 1, priceScaleId: "rsi", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
 
     // ── MACD sub-pane ──
-    macdSerRef.current  = chart.addSeries(LineSeries, { color: palette.orange, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: true, crosshairMarkerVisible: false })
+    macdSerRef.current  = chart.addSeries(LineSeries, { color: palette.orange, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
     macdSigRef.current  = chart.addSeries(LineSeries, { color: palette.purple, lineWidth: 1, priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
     macdHistRef.current = chart.addSeries(HistogramSeries, { priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false })
     chart.priceScale("macd").applyOptions({ scaleMargins: { top: 0.99, bottom: 0 }, visible: false })
@@ -636,7 +640,7 @@ export function TradingChart({
     })
     chart.priceScale("right").applyOptions({
       autoScale: !userAdjustedViewRef.current,
-      scaleMargins: { top: 0.06, bottom: indicators.volume ? 0.20 : 0.08 },
+      scaleMargins: { top: 0.08, bottom: indicators.volume ? 0.16 : 0.06 },
       mode: 0,
     })
     if (candleData.length > 0 && candleCountRef.current === candleData.length && !userAdjustedViewRef.current) {
