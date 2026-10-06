@@ -1633,7 +1633,7 @@ function PositionSizer({
   let changed = false
   const updated = prev.map(p => {
   const r = rateMap[p.symbol]
-  if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
+  if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value)) || r.bid <= 0 || r.ask <= 0 || r.ask < r.bid) return p
   const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
   const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
   const currentBucket = Math.floor(Date.now() / 1000 / intervalSeconds) * intervalSeconds
