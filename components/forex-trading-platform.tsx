@@ -1706,11 +1706,17 @@ function PositionSizer({
       const liveMid = livePair && Number.isFinite(livePair.bid) && Number.isFinite(livePair.ask)
         ? (livePair.bid + livePair.ask) / 2
         : 0
-      const candles = historicalCandles.length > 0 && liveMid > 0
+      const historyClose = historicalCandles.at(-1)?.close ?? 0
+  const scaleGap = liveMid > 0 && historyClose > 0 ? Math.abs(liveMid - historyClose) / historyClose : 0
+  const priceScale = scaleGap > 0.01 && historyClose > 0 ? liveMid / historyClose : 1
+  const candles = historicalCandles.length > 0 && liveMid > 0
         ? historicalCandles.map((candle, index) => {
-            if (index !== historicalCandles.length - 1) return candle
+            const scaled = priceScale !== 1
+              ? { ...candle, open: candle.open * priceScale, high: candle.high * priceScale, low: candle.low * priceScale, close: candle.close * priceScale }
+              : candle
+            if (index !== historicalCandles.length - 1) return scaled
             const close = Number(liveMid.toFixed(decimals(sym)))
-            return { ...candle, close, high: Math.max(candle.high, close), low: Math.min(candle.low, close) }
+            return { ...scaled, close, high: Math.max(scaled.high, close), low: Math.min(scaled.low, close) }
           })
         : historicalCandles
       setCandleCache(prev => ({ ...prev, [key]: candles }))
