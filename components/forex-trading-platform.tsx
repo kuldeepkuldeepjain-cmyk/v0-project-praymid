@@ -1301,7 +1301,7 @@ function PositionSizer({
   // Map of tradeId → partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
-  const [online, setOnline]           = useState(true)
+  const [online, setOnline]           = useState(false)
   const [terminalLocked, setTerminalLocked] = useState(false)
   const [marketError, setMarketError] = useState<string | null>(null)
   const [candleError, setCandleError] = useState<string | null>(null)
@@ -1671,11 +1671,15 @@ function PositionSizer({
   // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
   const fetchRates = useCallback(async () => {
     try {
-      const res = await fetch("/api/forex/rates", { cache: "no-store", signal: AbortSignal.timeout(2500) })
+      const res = await fetch("/api/forex/rates", { cache: "no-store", signal: AbortSignal.timeout(15000) })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json().catch(() => null)
       if (!json || typeof json !== "object" || json.error || !json.rates) throw new Error(json?.error || "Invalid rates response")
       applyRateMap(json.rates)
+      const selectedSource = json.sources?.[selectedPairRef.current?.symbol ?? ""]
+      const stale = json.source === "stale_cache" || selectedSource === "stale-cache"
+      setOnline(!stale)
+      setMarketError(stale ? "Showing last-known prices — reconnecting to live market feed." : null)
     } catch (error) {
       console.error("[v0] Live rate refresh failed:", error)
       setOnline(false)
@@ -1710,17 +1714,8 @@ function PositionSizer({
       const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
-      // Keep the chart's latest candle on the same live mid-price as the
-      // instrument quote. This prevents a provider/history basis mismatch from
-      // making the chart disagree with the terminal's current BID/ASK.
-      const livePair = pairsRef.current.find((pair) => pair.symbol === sym)
-      const liveMid = livePair && Number.isFinite(livePair.bid) && Number.isFinite(livePair.ask)
-        ? (livePair.bid + livePair.ask) / 2
-        : 0
       // Keep historical OHLC values exactly as returned by the selected
-      // provider. Never rescale old candles to a quote from another market
-      // basis; that creates synthetic history and makes patterns unreliable.
-      // The live-tick effect below updates only the active candle.
+      // provider. The live-tick effect below updates only the active candle.
       const candles = historicalCandles
       setCandleCache(prev => ({ ...prev, [key]: candles }))
       setPairs(prev => {
@@ -1732,13 +1727,13 @@ function PositionSizer({
         if (!prev || prev.symbol !== sym) return prev
         return pairsRef.current.find(p => p.symbol === sym) ?? prev
       })
-      setCandleError(null)
+      setCandleError(json.source === "stale" ? "Showing cached candles — reconnecting to live history." : null)
     } catch (error) {
       if (requestId !== candleRequestRef.current) return
       console.error("[v0] Candle refresh failed:", error)
-      // Keep the terminal usable while the provider reconnects. The next
-      // scheduled request retries automatically without a blocking warning.
-      setCandleError(null)
+      // Never imply a synthetic/recovery series is live. Keep retrying and
+      // expose the upstream state until genuine historical candles return.
+      setCandleError("Live candle history unavailable — reconnecting")
     } finally {
       if (requestId === candleRequestRef.current) setCandleLoading(false)
     }
@@ -3668,7 +3663,7 @@ adjustWalletBalance(
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����═══════════════ */}
+      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��══════════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>

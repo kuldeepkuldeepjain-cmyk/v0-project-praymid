@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { YAHOO_SYMBOLS, SEED_PRICES, decimals as dec } from "@/lib/forex-instruments"
+import { YAHOO_SYMBOLS, decimals as dec } from "@/lib/forex-instruments"
 
 // Yahoo Finance interval + range that gives the best candle history per timeframe
 const TF_MAP: Record<string, { interval: string; range: string }> = {
@@ -62,28 +62,6 @@ async function fetchKucoinCryptoCandles(pair: string, tf: string): Promise<unkno
       open: Number(c.open.toFixed(decimals)), high: Number(c.high.toFixed(decimals)),
       low: Number(c.low.toFixed(decimals)), close: Number(c.close.toFixed(decimals)), volume: Math.round(c.volume),
     }))
-}
-
-function generateSyntheticCandles(pair: string, tf: string): unknown[] {
-  const seed = SEED_PRICES[pair] ?? 1.0
-  const n = 100
-  const interval = TF_SECONDS[tf] ?? 300
-  const now = Math.floor(Date.now() / 1000)
-  const d = dec(pair)
-  const volatility = seed * 0.0008  // 0.08% per candle typical
-  const candles = []
-  let price = seed
-  for (let i = 0; i < n; i++) {
-    const ts = now - (n - i) * interval
-    const open = price
-    const change = (Math.random() - 0.49) * volatility * 2
-    const close = Math.max(open * 0.98, parseFloat((open + change).toFixed(d)))
-    const high = parseFloat((Math.max(open, close) * (1 + Math.random() * 0.0003)).toFixed(d))
-    const low  = parseFloat((Math.min(open, close) * (1 - Math.random() * 0.0003)).toFixed(d))
-    candles.push({ time: fmtTime(ts, tf), open: parseFloat(open.toFixed(d)), high, low, close, volume: Math.floor(Math.random() * 5000 + 100), ts })
-    price = close
-  }
-  return candles
 }
 
 // Format timestamp to human-readable label based on timeframe
@@ -197,13 +175,9 @@ export async function GET(req: NextRequest) {
     if (cached) {
       return NextResponse.json({ candles: cached.candles, source: "stale", ts: cached.ts })
     }
-    // Keep the terminal renderable while the upstream history provider is
-    // unavailable. This is clearly marked as a recovery snapshot and is
-    // replaced automatically on the next successful live refresh.
-    const recoveryCandles = generateSyntheticCandles(pair, tf)
     return NextResponse.json(
-      { candles: recoveryCandles, source: "recovery", ts: now, error: "Live candle feed unavailable" },
-      { headers: { "Cache-Control": "no-store, max-age=0", "Retry-After": "5" } },
+      { candles: [], source: "offline", provider: cryptoSymbol ? "KuCoin" : "Yahoo Finance", ts: now, error: "Live candle history is temporarily unavailable" },
+      { status: 503, headers: { "Cache-Control": "no-store, max-age=0", "Retry-After": "5" } },
     )
   }
 }

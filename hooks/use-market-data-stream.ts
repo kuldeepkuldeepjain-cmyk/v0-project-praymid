@@ -45,9 +45,16 @@ export function useMarketDataStream(
 
     if (!streamUrl || typeof window === "undefined" || typeof WebSocket === "undefined") {
       setStatus("fallback")
-      void fallbackFetch()
-      const fallbackTimer = window.setInterval(() => void fallbackFetch(), 3000)
-      return () => window.clearInterval(fallbackTimer)
+      let fallbackTimer: number | undefined
+      const poll = async () => {
+        await fallbackFetch()
+        if (!disposed) fallbackTimer = window.setTimeout(() => void poll(), 3000)
+      }
+      void poll()
+      return () => {
+        disposed = true
+        if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer)
+      }
     }
 
     const clearTimers = () => {
