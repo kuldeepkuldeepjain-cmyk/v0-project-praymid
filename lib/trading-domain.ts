@@ -1,4 +1,4 @@
-export type VenueKind = "MT5" | "FXCM_PRO" | "FIX" | "INTERNAL"
+export type VenueKind = "MT5" | "CTRADER" | "FXCM_PRO" | "FIX" | "INTERNAL"
 export type OrderSide = "BUY" | "SELL"
 export type OrderType = "MARKET" | "LIMIT" | "STOP" | "STOP_LIMIT"
 export type OrderStatus = "PENDING" | "WORKING" | "PARTIALLY_FILLED" | "FILLED" | "CANCELED" | "REJECTED"
