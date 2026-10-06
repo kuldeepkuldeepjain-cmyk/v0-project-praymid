@@ -1243,10 +1243,10 @@ button, a, [role="button"] {
 }
 
 .mobile-terminal-chart-wrap {
-  height: clamp(440px, 68dvh, 820px);
-  min-height: 440px;
-  max-height: 820px;
-  flex: 0 1 auto;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   }
@@ -1255,6 +1255,7 @@ button, a, [role="button"] {
   height: 100%;
   min-height: 0;
   min-width: 0;
+  min-inline-size: 0;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart-canvas {
@@ -1262,6 +1263,7 @@ button, a, [role="button"] {
   min-height: 0;
   flex: 1 1 0;
   min-width: 0;
+  min-inline-size: 0;
   }
 
   .terminal-chart-toolbar {
@@ -1281,10 +1283,10 @@ button, a, [role="button"] {
 
   @media (max-width: 640px) {
   .mobile-terminal-chart-wrap {
-  height: clamp(400px, 61dvh, 640px);
-  min-height: 400px;
-  max-height: 640px;
-  flex: 0 1 auto;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart {
@@ -1295,9 +1297,10 @@ button, a, [role="button"] {
 
   @media (min-width: 641px) {
   .mobile-terminal-chart-wrap {
-  height: clamp(520px, 70dvh, 900px);
-  min-height: 520px;
-  max-height: 900px;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 0;
   }
   }
 
