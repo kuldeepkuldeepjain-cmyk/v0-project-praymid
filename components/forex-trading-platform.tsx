@@ -19,7 +19,7 @@ import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
-  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
+  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, SEED_PRICES,
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
   type AssetCategory,
 } from "@/lib/forex-instruments"
@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) ���������─────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) �����������─────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ───────────────────���─���─���─���─────���────────────������───────────
+// ─── Market Stats Panel ─────────────────���─���─���─���─���─────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1736,11 +1736,18 @@ function PositionSizer({
 
   // ── Init ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const init: ForexPair[] = PAIRS_CONFIG.map(p => ({
-      symbol: p.symbol, base: p.base, quote: p.quote,
-      bid: 0, ask: 0, change: 0, high: 0, low: 0, open: 0,
-      spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002, candles: [],
-    }))
+  const init: ForexPair[] = PAIRS_CONFIG.map(p => {
+  const seed = SEED_PRICES[p.symbol] ?? 0
+  const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
+  const precision = decimals(p.symbol)
+  const bid = seed > 0 ? Number((seed - spread / 2).toFixed(precision)) : 0
+  const ask = seed > 0 ? Number((seed + spread / 2).toFixed(precision)) : 0
+  return {
+  symbol: p.symbol, base: p.base, quote: p.quote,
+  bid, ask, change: 0, high: seed > 0 ? Number((seed * 1.002).toFixed(precision)) : 0, low: seed > 0 ? Number((seed * 0.998).toFixed(precision)) : 0, open: seed,
+  spread, candles: [],
+  }
+  })
     setPairs(init); pairsRef.current = init
     setSelectedPair(init[0]); setLoading(false)
     fetchRates(); fetchCandles(init[0].symbol, "5M")
