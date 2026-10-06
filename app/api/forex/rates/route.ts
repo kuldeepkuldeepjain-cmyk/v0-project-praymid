@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { YAHOO_SYMBOLS, TYPICAL_SPREADS, SEED_PRICES, decimals as dec } from "@/lib/forex-instruments"
+import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec } from "@/lib/forex-instruments"
 
 // Cache to avoid hammering Yahoo Finance (server-side, resets on cold start)
 let cache: {
@@ -8,31 +8,9 @@ let cache: {
 } | null = null
 const LIVE_REFRESH_INTERVAL_MS = 3000
 const CACHE_TTL_MS = LIVE_REFRESH_INTERVAL_MS // refresh every 3s max
-const UPSTREAM_TIMEOUT_MS = 6000 // never let a slow upstream stall the whole feed
+const UPSTREAM_TIMEOUT_MS = 4000 // bound each provider request so live quote refreshes recover quickly
 
 type RateRow = { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }
-
-function seedRow(pair: string): RateRow {
-  const seed = SEED_PRICES[pair] ?? 1.0
-  // Deterministic fallback: unavailable upstream symbols must not jump to a
-  // new random price on every 3-second poll.
-  const stableOffset = (pair.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 17 - 8) / 100000
-  const jitter = seed * (1 + stableOffset)
-  const d = dec(pair)
-  const mid = parseFloat(jitter.toFixed(d))
-  const configuredSpread = TYPICAL_SPREADS[pair] ?? 0.0002
-  const minTick = 10 ** -d
-  const spread = Math.min(configuredSpread, Math.max(minTick, mid * 0.002))
-  return {
-  mid,
-  bid:    Math.max(minTick, parseFloat((mid - spread / 2).toFixed(d))),
-  ask:    parseFloat((mid + spread / 2).toFixed(d)),
-    change: 0,
-    high:   parseFloat((jitter * 1.001).toFixed(d)),
-    low:    parseFloat((jitter * 0.999).toFixed(d)),
-    open:   parseFloat(jitter.toFixed(d)),
-  }
-}
 
 export async function GET() {
   try {
@@ -54,21 +32,20 @@ export async function GET() {
     ])
 
     const data: Record<string, RateRow> = {}
+    const sources: Record<string, "yahoo" | "gold-api" | "stale-cache"> = {}
     for (const pair of pairs) {
       const ySym = YAHOO_SYMBOLS[pair]
       const q = quoteResults.get(ySym)
-      if (!q) {
-        // Keep the last known live quote during an upstream partial failure;
-        // only use the deterministic seed on the first request.
-        data[pair] = cache?.data[pair] ?? seedRow(pair)
+      if (!q || !q.regularMarketPrice || q.regularMarketPrice <= 0) {
+        const lastKnown = cache?.data[pair]
+        if (lastKnown) {
+          data[pair] = lastKnown
+          sources[pair] = "stale-cache"
+        }
         continue
       }
 
       const futuresMid = q.regularMarketPrice
-      if (!futuresMid || futuresMid <= 0) {
-        data[pair] = cache?.data[pair] ?? seedRow(pair)
-        continue
-      }
 
       // XAU/USD is a spot quote. GC=F is useful for history, but its futures
       // price can diverge from spot, which made the terminal disagree with
@@ -88,15 +65,16 @@ export async function GET() {
   const minTick = 10 ** -d
   const spread = Math.min(configuredSpread, Math.max(minTick, roundedMid * 0.002))
 
-  data[pair] = {
-  mid: roundedMid,
-  bid: Math.max(minTick, parseFloat((roundedMid - spread / 2).toFixed(d))),
-  ask: parseFloat((roundedMid + spread / 2).toFixed(d)),
+      data[pair] = {
+        mid: roundedMid,
+        bid: Math.max(minTick, parseFloat((roundedMid - spread / 2).toFixed(d))),
+        ask: parseFloat((roundedMid + spread / 2).toFixed(d)),
         change,
         high: parseFloat(high.toFixed(d)),
         low: parseFloat(low.toFixed(d)),
         open: parseFloat(openP.toFixed(d)),
       }
+      sources[pair] = pair === "XAU/USD" && spotResult != null ? "gold-api" : "yahoo"
     }
 
     if (Object.keys(data).length === 0) {
@@ -104,9 +82,17 @@ export async function GET() {
     }
 
     cache = { data, ts: now }
-    return NextResponse.json({ rates: data, source: "live", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: now }, {
-      headers: { "Cache-Control": "no-store, max-age=0" },
-    })
+    const hasFreshQuotes = Object.values(sources).some((source) => source === "yahoo" || source === "gold-api")
+    const hasStaleQuotes = Object.values(sources).some((source) => source === "stale-cache")
+    const hasMissingQuotes = Object.keys(data).length < pairs.length
+    return NextResponse.json({
+      rates: data,
+      sources,
+      source: hasFreshQuotes ? (hasStaleQuotes || hasMissingQuotes ? "partial-live" : "live") : "stale-cache",
+      provider: "Yahoo Finance quotes + Gold API XAU spot",
+      refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000,
+      ts: now,
+    }, { headers: { "Cache-Control": "no-store, max-age=0" } })
   } catch (err) {
     // Return cached data if available even if stale
     if (cache) {
@@ -131,7 +117,7 @@ type YahooQuote = {
 // endpoint (already used for candles) still works unauthenticated and
 // exposes the same live fields via its `meta` object, so fetch quotes from
 // there instead, per symbol, with bounded concurrency.
-const QUOTE_CONCURRENCY = 12
+const QUOTE_CONCURRENCY = 24
 
 async function fetchBatchedQuotes(ySymbols: string[]): Promise<Map<string, YahooQuote>> {
   const out = new Map<string, YahooQuote>()
