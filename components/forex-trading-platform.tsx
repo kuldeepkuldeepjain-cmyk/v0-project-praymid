@@ -1628,44 +1628,34 @@ function PositionSizer({
   const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }) }, "Saving filled order"), [participantEmail, persistTradeRequest])
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
-  // ── Apply validated live rates without replacing unrelated terminal state ───
+  // ── Apply validated live quotes; the selected chart builds bars separately ──
   const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; mid?: number; change: number; high: number; low: number; open: number }>) => {
-  setPairs(prev => {
-  let changed = false
-  const updated = prev.map(p => {
-  const r = rateMap[p.symbol]
-  if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value)) || r.bid <= 0 || r.ask <= 0 || r.ask < r.bid) return p
-  const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
-  const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
-  const currentBucket = Math.floor(Date.now() / 1000 / intervalSeconds) * intervalSeconds
-  const safeCandles = Array.isArray(p.candles) ? p.candles : []
-  const currentCandle = safeCandles[safeCandles.length - 1]
-  const lastCandleSeconds = currentCandle ? normalizeTimestamp(currentCandle.ts ?? currentCandle.time) / 1000 : 0
-  const liveCandles = currentCandle ? currentBucket > lastCandleSeconds && lastCandleSeconds > 0
-    ? [...safeCandles, { time: new Date(currentBucket * 1000).toISOString(), ts: currentBucket * 1000, open: currentPrice, high: currentPrice, low: currentPrice, close: currentPrice, volume: 0 }].slice(-180)
-    : [...safeCandles.slice(0, -1), {
-      ...currentCandle,
-      close: currentPrice,
-      high: Math.max(currentCandle.high ?? currentPrice, currentPrice),
-      low: Math.min(currentCandle.low ?? currentPrice, currentPrice),
-    }]
-    : safeCandles
-  if (p.bid !== r.bid || p.ask !== r.ask || p.change !== r.change || p.high !== r.high || p.low !== r.low || p.open !== r.open || currentCandle?.close !== currentPrice) changed = true
-  return { ...p, bid: r.bid, ask: r.ask, change: r.change, high: r.high, low: r.low, open: r.open, candles: liveCandles, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002 }
-  })
-  if (!changed) return prev
-  pairsRef.current = updated
-  const liveSelected = updated.find(p => p.symbol === selectedPairRef.current?.symbol)
-  if (liveSelected) {
-    selectedPairRef.current = liveSelected
-    setSelectedPair(liveSelected)
-  }
-  return updated
-  })
-  setOnline(true)
-  setMarketError(null)
-  setLastUpdated(new Date())
-  setTickCount(n => n + 1)
+    setPairs(prev => {
+      let changed = false
+      const updated = prev.map(pair => {
+        const rate = rateMap[pair.symbol]
+        if (!rate || ![rate.bid, rate.ask, rate.change, rate.high, rate.low, rate.open].every(Number.isFinite) || rate.bid <= 0 || rate.ask <= 0 || rate.ask < rate.bid) return pair
+        const nextSpread = TYPICAL_SPREADS[pair.symbol] ?? 0.0002
+        if (pair.bid !== rate.bid || pair.ask !== rate.ask || pair.change !== rate.change || pair.high !== rate.high || pair.low !== rate.low || pair.open !== rate.open || pair.spread !== nextSpread) changed = true
+        return { ...pair, bid: rate.bid, ask: rate.ask, change: rate.change, high: rate.high, low: rate.low, open: rate.open, spread: nextSpread }
+      })
+      if (!changed) return prev
+      pairsRef.current = updated
+      const liveSelected = updated.find(pair => pair.symbol === selectedPairRef.current?.symbol)
+      if (liveSelected) {
+        selectedPairRef.current = liveSelected
+        setSelectedPair(liveSelected)
+      }
+      return updated
+    })
+    const selectedRate = rateMap[selectedPairRef.current?.symbol ?? ""]
+    const selectedRateIsValid = !!selectedRate
+      && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
+      && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
+    setOnline(selectedRateIsValid)
+    setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
+    setLastUpdated(new Date())
+    setTickCount(count => count + 1)
   }, [])
 
   // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
@@ -1676,10 +1666,17 @@ function PositionSizer({
       const json = await res.json().catch(() => null)
       if (!json || typeof json !== "object" || json.error || !json.rates) throw new Error(json?.error || "Invalid rates response")
       applyRateMap(json.rates)
-      const selectedSource = json.sources?.[selectedPairRef.current?.symbol ?? ""]
+      const selectedSymbol = selectedPairRef.current?.symbol ?? ""
+      const selectedSource = json.sources?.[selectedSymbol]
+      const selectedRate = json.rates[selectedSymbol]
       const stale = json.source === "stale_cache" || selectedSource === "stale-cache"
-      setOnline(!stale)
-      setMarketError(stale ? "Showing last-known prices — reconnecting to live market feed." : null)
+      const selectedRateAvailable = !!selectedRate
+        && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
+        && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
+      setOnline(selectedRateAvailable && !stale)
+      setMarketError(stale
+        ? "Showing last-known prices — reconnecting to live market feed."
+        : selectedRateAvailable ? null : "Live quote unavailable for this instrument — reconnecting.")
     } catch (error) {
       console.error("[v0] Live rate refresh failed:", error)
       setOnline(false)
@@ -1788,20 +1785,23 @@ function PositionSizer({
         const d = decimals(p.symbol)
         const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
         const nowSeconds = Math.floor(Date.now() / 1000)
-        const currentBucket = Math.floor(nowSeconds / intervalSeconds) * intervalSeconds
+        const bucketOffset = timeframe === "1W" ? 4 * 86400 : 0
+        const currentBucket = Math.floor((nowSeconds - bucketOffset) / intervalSeconds) * intervalSeconds + bucketOffset
         const nc = [...p.candles]
         const last = { ...nc[nc.length - 1] }
-        const lastTimestamp = Number(last.ts ?? 0)
+        const lastTimestamp = normalizeTimestamp(last.ts ?? last.time) / 1000
+        const lastBucket = Number.isFinite(lastTimestamp) && lastTimestamp > 0
+          ? Math.floor((lastTimestamp - bucketOffset) / intervalSeconds) * intervalSeconds + bucketOffset
+          : 0
         const price = parseFloat(liveMid.toFixed(d))
-        if (lastTimestamp > 0 && currentBucket >= lastTimestamp + intervalSeconds) {
-          const open = last.close ?? price
-          nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open, high: Math.max(open, price), low: Math.min(open, price), close: price, volume: 0, ts: currentBucket })
+        if (lastBucket > 0 && currentBucket > lastBucket) {
+          nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open: price, high: price, low: price, close: price, volume: 0, ts: currentBucket })
           if (nc.length > 150) nc.shift()
         } else {
           last.close = price
           last.high  = Math.max(last.high ?? price, price)
           last.low   = Math.min(last.low ?? price, price)
-          last.ts = lastTimestamp || currentBucket
+          if (!Number.isFinite(lastTimestamp) || lastTimestamp <= 0) last.ts = currentBucket
           nc[nc.length - 1] = last
         }
         return { ...p, candles: nc }
@@ -1813,8 +1813,7 @@ function PositionSizer({
       if (!prev) return prev
       return pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev
     })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickCount])
+  }, [selectedPair?.symbol, selectedPair?.bid, selectedPair?.ask, timeframe])
 
   // ─��� Overnight swap accrual (every 60s, proportional) ──────────────────────
   useEffect(() => {
@@ -2233,7 +2232,7 @@ function PositionSizer({
     }
   }
 
-  // ��─ Quick trade — routes through confirmation modal ───────────────────────��
+  // ��─ Quick trade — routes through confirmation modal ───────────���───────────��
   const quickTrade = (dir: TradeDirection) => {
   if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
@@ -3263,9 +3262,10 @@ adjustWalletBalance(
       isExpanded={chartExpanded}
       onQuickTrade={quickTrade}
       buyPrice={selectedPair.ask}
-      sellPrice={selectedPair.bid}
-      darkTheme={isDarkTheme}
-    />
+  sellPrice={selectedPair.bid}
+  darkTheme={isDarkTheme}
+  marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+  />
   </ErrorBoundary>
   ) : selectedPair && chartLayout === "grid" ? (
   <MiniChartGrid
