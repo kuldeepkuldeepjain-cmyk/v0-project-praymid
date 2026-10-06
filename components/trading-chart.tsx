@@ -177,10 +177,12 @@ export function TradingChart({
   buyPrice,
   sellPrice,
   darkTheme = false,
+  marketStatus = "connecting",
   }: {
   candles: Candle[] | null | undefined
   sym: string | null | undefined
   tf?: string
+  marketStatus?: "live" | "reconnecting" | "connecting"
   openTrades?: OpenTrade[]
   onExpand?: () => void
   isExpanded?: boolean
@@ -321,8 +323,8 @@ export function TradingChart({
         attributionLogo: false,
       },
   grid: {
-  vertLines: { color: "rgba(148,163,184,0.055)", style: LineStyle.Solid },
-  horzLines: { color: "rgba(148,163,184,0.075)", style: LineStyle.Solid },
+  vertLines: { color: "rgba(148,163,184,0.09)", style: LineStyle.Solid },
+  horzLines: { color: "rgba(148,163,184,0.13)", style: LineStyle.Solid },
   },
       crosshair: {
         mode: CrosshairMode.Magnet,
@@ -534,7 +536,7 @@ export function TradingChart({
   const canIncrementallyUpdate = previousCount === candleData.length
     && previousCount > 0
     && Number.isFinite(latestTime)
-    && (lastCandleTimeRef.current === null || latestTime >= lastCandleTimeRef.current)
+    && lastCandleTimeRef.current === latestTime
 
   if (canIncrementallyUpdate) {
     candleSerRef.current.update(candleData[candleData.length - 1])
@@ -744,7 +746,7 @@ export function TradingChart({
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-3 px-3 shrink-0 overflow-x-auto"
-        style={{ height: 32, borderBottom: "1px solid rgba(255,255,255,0.06)", background: "#04080f", minWidth: 0 }}
+        style={{ height: 36, borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#04080f", minWidth: 0 }}
       >
         {displayOhlcv ? (
           <>
@@ -784,8 +786,24 @@ export function TradingChart({
             )}
           </>
         ) : (
-          <span className="text-[9px]" style={{ color: "#3d5573" }}>Waiting for data...</span>
+          <span className="text-[10px]" style={{ color: "#7890ad" }}>Waiting for market data…</span>
         )}
+        <div
+          className="ml-auto flex items-center gap-1.5 shrink-0 pl-2"
+          role="status"
+          aria-live="polite"
+          aria-label={`Market feed ${marketStatus}`}
+          title={marketStatus === "live" ? "Live market quotes are updating the active candle" : "Waiting for live market quotes to reconnect"}
+        >
+          <span
+            aria-hidden="true"
+            className={marketStatus === "live" ? "size-2 rounded-full animate-pulse" : "size-2 rounded-full"}
+            style={{ background: marketStatus === "live" ? "#26a69a" : "#fbbf24", boxShadow: marketStatus === "live" ? "0 0 8px rgba(38,166,154,0.7)" : "none" }}
+          />
+          <span className="text-[9px] font-bold tracking-widest" style={{ color: marketStatus === "live" ? "#26a69a" : "#fbbf24" }}>
+            {marketStatus === "live" ? "LIVE" : marketStatus === "reconnecting" ? "RECONNECTING" : "CONNECTING"}
+          </span>
+        </div>
       </div>
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}

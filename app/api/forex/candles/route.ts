@@ -73,6 +73,42 @@ function fmtTime(ts: number, tf: string): string {
   return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
 }
 
+type OhlcCandle = { time: string; open: number; high: number; low: number; close: number; volume: number; ts: number }
+
+function aggregateCandles(candles: OhlcCandle[], timeframe: string): OhlcCandle[] {
+  const interval = TF_SECONDS[timeframe]
+  if (!interval) return candles
+
+  const buckets = new Map<number, OhlcCandle>()
+  for (const candle of candles) {
+    const bucket = Math.floor(candle.ts / interval) * interval
+    const current = buckets.get(bucket)
+    if (!current) {
+      buckets.set(bucket, { ...candle, time: fmtTime(bucket, timeframe), ts: bucket })
+      continue
+    }
+    current.high = Math.max(current.high, candle.high)
+    current.low = Math.min(current.low, candle.low)
+    current.close = candle.close
+    current.volume += candle.volume
+  }
+  return [...buckets.values()]
+}
+
+async function fetchGoldSpotPrice(): Promise<number | null> {
+  try {
+    const response = await fetch("https://api.gold-api.com/price/XAU", {
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(4_000),
+    })
+    if (!response.ok) return null
+    const payload = await response.json()
+    return Number.isFinite(payload?.price) && payload.price > 0 ? Number(payload.price) : null
+  } catch {
+    return null
+  }
+}
+
 // Candle cache: key = "pair|tf"
 const candleCache = new Map<string, { candles: unknown[]; ts: number }>()
 const CACHE_TTL: Record<string, number> = {
@@ -115,9 +151,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles, source: "live-kucoin", ts: now })
     }
 
-    // Yahoo does not support every terminal interval directly. Use the closest
-    // supported feed interval so refresh remains useful instead of returning a
-    // false disconnected state for 30M and 4H charts.
+    // Pull the next finer Yahoo interval for unsupported views, then aggregate
+    // it below so each chart bar still represents the timeframe the user chose.
     const providerInterval = tf === "30M" ? "15m" : tf === "4H" ? "1h" : tfCfg.interval
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ySym)}?interval=${providerInterval}&range=${tfCfg.range}`
     const res = await fetch(url, {
@@ -130,6 +165,16 @@ export async function GET(req: NextRequest) {
 
     const result = json?.chart?.result?.[0]
     if (!result) throw new Error(json?.chart?.error?.description ?? "No result")
+
+    // XAU history comes from GC futures while the live quote is spot gold.
+    // Translate the full OHLC series onto the spot basis so live ticks do not
+    // create a false discontinuity in the active candle.
+    let xauBasis = 0
+    if (pair === "XAU/USD") {
+      const spotPrice = await fetchGoldSpotPrice()
+      const futuresPrice = Number(result.meta?.regularMarketPrice)
+      if (spotPrice && Number.isFinite(futuresPrice) && futuresPrice > 0) xauBasis = spotPrice - futuresPrice
+    }
 
     const timestamps: number[] = result.timestamp ?? []
     const quote = result.indicators?.quote?.[0] ?? {}
@@ -154,18 +199,20 @@ export async function GET(req: NextRequest) {
         const safeLow = Number.isFinite(low) && low > 0 ? low : Math.min(safeOpen, safeClose)
         return {
           time: fmtTime(ts, tf),
-          open: Number(safeOpen.toFixed(d)),
-          high: Number(Math.max(safeHigh, safeOpen, safeClose).toFixed(d)),
-          low: Number(Math.min(safeLow, safeOpen, safeClose).toFixed(d)),
-          close: Number(safeClose.toFixed(d)),
+          open: Number((safeOpen + xauBasis).toFixed(d)),
+          high: Number((Math.max(safeHigh, safeOpen, safeClose) + xauBasis).toFixed(d)),
+          low: Number((Math.min(safeLow, safeOpen, safeClose) + xauBasis).toFixed(d)),
+          close: Number((safeClose + xauBasis).toFixed(d)),
           volume: Math.max(0, Math.round(Number(volumes[i]) || 0)),
           ts,
         }
       })
       .filter((c): c is NonNullable<typeof c> => c != null)
       .filter((c) => [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high > 0 && c.low > 0 && c.close > 0)
-      // Clamp to last 150 candles
-      .slice(-150)
+      .sort((a, b) => a.ts - b.ts)
+
+    if (tf === "30M" || tf === "4H") candles = aggregateCandles(candles, tf)
+    candles = candles.slice(-150)
 
     if (candles.length === 0) throw new Error("No usable candles")
 
