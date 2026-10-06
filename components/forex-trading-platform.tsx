@@ -2886,7 +2886,7 @@ adjustWalletBalance(
           const isSelected = selectedPair?.symbol === pair.symbol
           const up = pair.change >= 0
           return (
-            <button key={pair.symbol} type="button" onClick={() => { setSelectedPair(pair); fetchCandles(pair.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 group relative ${isSelected ? "is-selected" : ""}`}>
+            <button key={pair.symbol} type="button" onClick={() => { const next = pairsRef.current.find(item => item.symbol === pair.symbol) ?? pair; setSelectedPair({ ...next, candles: candleCache[`${next.symbol}|${timeframe}`] ?? [] }); fetchCandles(next.symbol, timeframe); setMobileTab("chart") }} className={`reference-watch-card shrink-0 group relative ${isSelected ? "is-selected" : ""}`}>
               <span
                 role="button"
                 aria-label={`Remove ${pair.symbol} from watchlist`}
@@ -3267,7 +3267,7 @@ adjustWalletBalance(
     </div>
   }>
     <TradingChart
-      key={isDarkTheme ? "dark" : "light"}
+      key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
       candles={selectedPair.candles}
       sym={selectedPair.symbol}
       tf={timeframe}
