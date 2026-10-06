@@ -18,12 +18,15 @@ function seedRow(pair: string): RateRow {
   // new random price on every 3-second poll.
   const stableOffset = (pair.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 17 - 8) / 100000
   const jitter = seed * (1 + stableOffset)
-  const spread = TYPICAL_SPREADS[pair] ?? 0.0002
   const d = dec(pair)
+  const mid = parseFloat(jitter.toFixed(d))
+  const configuredSpread = TYPICAL_SPREADS[pair] ?? 0.0002
+  const minTick = 10 ** -d
+  const spread = Math.min(configuredSpread, Math.max(minTick, mid * 0.002))
   return {
-    mid:    parseFloat(jitter.toFixed(d)),
-    bid:    parseFloat((jitter - spread / 2).toFixed(d)),
-    ask:    parseFloat((jitter + spread / 2).toFixed(d)),
+  mid,
+  bid:    Math.max(minTick, parseFloat((mid - spread / 2).toFixed(d))),
+  ask:    parseFloat((mid + spread / 2).toFixed(d)),
     change: 0,
     high:   parseFloat((jitter * 1.001).toFixed(d)),
     low:    parseFloat((jitter * 0.999).toFixed(d)),
@@ -79,13 +82,16 @@ export async function GET() {
       const high = (q.regularMarketDayHigh ?? futuresMid * 1.002) + basis
       const low = (q.regularMarketDayLow ?? futuresMid * 0.998) + basis
       const change = openP > 0 ? parseFloat((((mid - openP) / openP) * 100).toFixed(3)) : 0
-      const spread = TYPICAL_SPREADS[pair] ?? 0.0002
-      const d = dec(pair)
+  const d = dec(pair)
+  const roundedMid = parseFloat(mid.toFixed(d))
+  const configuredSpread = TYPICAL_SPREADS[pair] ?? 0.0002
+  const minTick = 10 ** -d
+  const spread = Math.min(configuredSpread, Math.max(minTick, roundedMid * 0.002))
 
-      data[pair] = {
-        mid: parseFloat(mid.toFixed(d)),
-        bid: parseFloat((mid - spread / 2).toFixed(d)),
-        ask: parseFloat((mid + spread / 2).toFixed(d)),
+  data[pair] = {
+  mid: roundedMid,
+  bid: Math.max(minTick, parseFloat((roundedMid - spread / 2).toFixed(d))),
+  ask: parseFloat((roundedMid + spread / 2).toFixed(d)),
         change,
         high: parseFloat(high.toFixed(d)),
         low: parseFloat(low.toFixed(d)),

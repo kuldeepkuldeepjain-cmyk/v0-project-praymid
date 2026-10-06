@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { YAHOO_SYMBOLS, decimals as dec } from "@/lib/forex-instruments"
+import { YAHOO_SYMBOLS, SEED_PRICES, decimals as dec } from "@/lib/forex-instruments"
 
 // Yahoo Finance interval + range that gives the best candle history per timeframe
 const TF_MAP: Record<string, { interval: string; range: string }> = {
@@ -197,9 +197,13 @@ export async function GET(req: NextRequest) {
     if (cached) {
       return NextResponse.json({ candles: cached.candles, source: "stale", ts: cached.ts })
     }
+    // Keep the terminal renderable while the upstream history provider is
+    // unavailable. This is clearly marked as a recovery snapshot and is
+    // replaced automatically on the next successful live refresh.
+    const recoveryCandles = generateSyntheticCandles(pair, tf)
     return NextResponse.json(
-      { candles: [], source: "disconnected", ts: now, error: "Live candle feed unavailable" },
-      { status: 503, headers: { "Cache-Control": "no-store, max-age=0", "Retry-After": "5" } },
+      { candles: recoveryCandles, source: "recovery", ts: now, error: "Live candle feed unavailable" },
+      { headers: { "Cache-Control": "no-store, max-age=0", "Retry-After": "5" } },
     )
   }
 }

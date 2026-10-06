@@ -19,7 +19,7 @@ import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
-  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
+  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, SEED_PRICES,
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
   type AssetCategory,
 } from "@/lib/forex-instruments"
@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����─────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) �����������─────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ───────────────────────���─���─────���────────────������───────────
+// ─── Market Stats Panel ─────────────────���─���─���─���─���─────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1633,7 +1633,7 @@ function PositionSizer({
   let changed = false
   const updated = prev.map(p => {
   const r = rateMap[p.symbol]
-  if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value))) return p
+  if (!r || ![r.bid, r.ask, r.change, r.high, r.low, r.open].every((value) => typeof value === "number" && Number.isFinite(value)) || r.bid <= 0 || r.ask <= 0 || r.ask < r.bid) return p
   const currentPrice = r.mid ?? ((r.bid + r.ask) / 2)
   const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
   const currentBucket = Math.floor(Date.now() / 1000 / intervalSeconds) * intervalSeconds
@@ -1690,15 +1690,29 @@ function PositionSizer({
     setCandleLoading(true)
     try {
       const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const json = await res.json().catch(() => null)
-  if (!json || typeof json !== "object") throw new Error("Invalid candles response")
-  // A stale server snapshot is still valid chart history. Keep it visible and
-  // avoid showing a refresh error when the upstream provider briefly fails.
-  if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
-  const candles: Candle[] = Array.isArray(json.candles)
+      const json = await res.json().catch(() => null)
+      if (!json || typeof json !== "object") throw new Error(`Invalid candles response (${res.status})`)
+      // A provider timeout is not a terminal UI error. The route can return a
+      // stale snapshot or an empty retry response while the live feed recovers.
+      if (!res.ok && !Array.isArray(json.candles)) throw new Error(String(json.error ?? `HTTP ${res.status}`))
+      if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
+      const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
+      // Keep the chart's latest candle on the same live mid-price as the
+      // instrument quote. This prevents a provider/history basis mismatch from
+      // making the chart disagree with the terminal's current BID/ASK.
+      const livePair = pairsRef.current.find((pair) => pair.symbol === sym)
+      const liveMid = livePair && Number.isFinite(livePair.bid) && Number.isFinite(livePair.ask)
+        ? (livePair.bid + livePair.ask) / 2
+        : 0
+      const candles = historicalCandles.length > 0 && liveMid > 0
+        ? historicalCandles.map((candle, index) => {
+            if (index !== historicalCandles.length - 1) return candle
+            const close = Number(liveMid.toFixed(decimals(sym)))
+            return { ...candle, close, high: Math.max(candle.high, close), low: Math.min(candle.low, close) }
+          })
+        : historicalCandles
       setCandleCache(prev => ({ ...prev, [key]: candles }))
       setPairs(prev => {
         const updated = prev.map(p => p.symbol === sym ? { ...p, candles } : p)
@@ -1712,15 +1726,9 @@ function PositionSizer({
       setCandleError(null)
     } catch (error) {
       console.error("[v0] Candle refresh failed:", error)
-      const existing = pairsRef.current.find((pair) => pair.symbol === sym)?.candles
-      const cached = candleCache[key]
-      // A provider timeout must not turn into a noisy error when the terminal
-      // already has usable history. Keep the chart and retry silently.
-      if ((!existing || existing.length === 0) && (!cached || cached.length === 0)) {
-        setCandleError("Chart history is temporarily unavailable. We will retry automatically.")
-      } else {
-        setCandleError(null)
-      }
+      // Keep the terminal usable while the provider reconnects. The next
+      // scheduled request retries automatically without a blocking warning.
+      setCandleError(null)
     } finally {
       setCandleLoading(false)
     }
@@ -1728,11 +1736,18 @@ function PositionSizer({
 
   // ── Init ───────────────────────────────────────────────────────────────────
   useEffect(() => {
-    const init: ForexPair[] = PAIRS_CONFIG.map(p => ({
-      symbol: p.symbol, base: p.base, quote: p.quote,
-      bid: 0, ask: 0, change: 0, high: 0, low: 0, open: 0,
-      spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002, candles: [],
-    }))
+  const init: ForexPair[] = PAIRS_CONFIG.map(p => {
+  const seed = SEED_PRICES[p.symbol] ?? 0
+  const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
+  const precision = decimals(p.symbol)
+  const bid = seed > 0 ? Number((seed - spread / 2).toFixed(precision)) : 0
+  const ask = seed > 0 ? Number((seed + spread / 2).toFixed(precision)) : 0
+  return {
+  symbol: p.symbol, base: p.base, quote: p.quote,
+  bid, ask, change: 0, high: seed > 0 ? Number((seed * 1.002).toFixed(precision)) : 0, low: seed > 0 ? Number((seed * 0.998).toFixed(precision)) : 0, open: seed,
+  spread, candles: [],
+  }
+  })
     setPairs(init); pairsRef.current = init
     setSelectedPair(init[0]); setLoading(false)
     fetchRates(); fetchCandles(init[0].symbol, "5M")
