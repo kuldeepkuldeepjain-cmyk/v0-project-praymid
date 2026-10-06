@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �������─────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) ���������─────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ─────────────────────���─���─���─────���────────────������───────────
+// ─── Market Stats Panel ───────────────────���─���─���─���─────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1696,9 +1696,23 @@ function PositionSizer({
       // stale snapshot or an empty retry response while the live feed recovers.
       if (!res.ok && !Array.isArray(json.candles)) throw new Error(String(json.error ?? `HTTP ${res.status}`))
       if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
-  const candles: Candle[] = Array.isArray(json.candles)
+      const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
+      // Keep the chart's latest candle on the same live mid-price as the
+      // instrument quote. This prevents a provider/history basis mismatch from
+      // making the chart disagree with the terminal's current BID/ASK.
+      const livePair = pairsRef.current.find((pair) => pair.symbol === sym)
+      const liveMid = livePair && Number.isFinite(livePair.bid) && Number.isFinite(livePair.ask)
+        ? (livePair.bid + livePair.ask) / 2
+        : 0
+      const candles = historicalCandles.length > 0 && liveMid > 0
+        ? historicalCandles.map((candle, index) => {
+            if (index !== historicalCandles.length - 1) return candle
+            const close = Number(liveMid.toFixed(decimals(sym)))
+            return { ...candle, close, high: Math.max(candle.high, close), low: Math.min(candle.low, close) }
+          })
+        : historicalCandles
       setCandleCache(prev => ({ ...prev, [key]: candles }))
       setPairs(prev => {
         const updated = prev.map(p => p.symbol === sym ? { ...p, candles } : p)
