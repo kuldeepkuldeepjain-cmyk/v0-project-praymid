@@ -221,7 +221,6 @@ export function TradingChart({
   const [chartPane, setChartPane] = useState<"rsi" | "macd" | "none">("rsi")
   const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
   const [crosshairActive, setCrosshairActive] = useState(false)
-  const [scalePadding, setScalePadding] = useState(6)
 
   // Price alerts ─────���──────────────────��────────────────────────────────────
   const [alerts, setAlerts]             = useState<PriceAlert[]>([])
@@ -287,9 +286,9 @@ export function TradingChart({
     const rawRange = high - low
     const floorRange = Math.max(atr * 8, Math.abs(last.close) * Math.pow(10, -dec) * 40)
     const range = Math.max(rawRange, floorRange)
-    const padding = Math.max(0.01, Math.min(0.35, scalePadding / 100))
+    const padding = 0.06
     return { min: low - range * padding, max: high + range * padding, atr, range }
-  }, [candleData, dec, scalePadding])
+  }, [candleData, dec])
 
   const ema9d  = useMemo(() => calcEMA(closes, 9),  [closes])
   const ema21d = useMemo(() => calcEMA(closes, 21), [closes])
@@ -861,21 +860,6 @@ export function TradingChart({
         )}
 
         <div className="flex-1" />
-
-        {/* Price scale padding */}
-        <label className="flex items-center gap-1 px-1.5 shrink-0" title="Adjust vertical price padding">
-          <span className="text-[8px] font-black tracking-wide" style={{ color: "#58708b" }}>SCALE</span>
-          <input
-            aria-label="Chart price scale padding"
-            type="range"
-            min="1"
-            max="35"
-            value={scalePadding}
-            onChange={(event) => setScalePadding(Number(event.target.value))}
-            className="w-14 accent-cyan-400"
-          />
-          <span className="text-[8px] tabular-nums" style={{ color: "#58708b" }}>{scalePadding}%</span>
-        </label>
 
         {/* Price Alert toggle */}
         <button
