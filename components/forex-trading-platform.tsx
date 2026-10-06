@@ -1317,6 +1317,7 @@ function PositionSizer({
   const [balanceDelta, setBalanceDelta] = useState<{ value: number; id: number } | null>(null)
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
+  const candleRequestRef = useRef(0)
   const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
@@ -1687,6 +1688,15 @@ function PositionSizer({
   // ── Fetch candles ─���─────────────────────────────────────���──────────────────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
     const key = `${sym}|${tf}`
+    const requestId = ++candleRequestRef.current
+    const cached = candleCache[key]
+    if (cached?.length) {
+      setPairs(prev => {
+        const updated = prev.map(pair => pair.symbol === sym ? { ...pair, candles: cached } : pair)
+        pairsRef.current = updated
+        return updated
+      })
+    }
     setCandleLoading(true)
     try {
       const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
@@ -1696,6 +1706,7 @@ function PositionSizer({
       // stale snapshot or an empty retry response while the live feed recovers.
       if (!res.ok && !Array.isArray(json.candles)) throw new Error(String(json.error ?? `HTTP ${res.status}`))
       if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
+      if (requestId !== candleRequestRef.current) return
       const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
@@ -1731,14 +1742,15 @@ function PositionSizer({
       })
       setCandleError(null)
     } catch (error) {
+      if (requestId !== candleRequestRef.current) return
       console.error("[v0] Candle refresh failed:", error)
       // Keep the terminal usable while the provider reconnects. The next
       // scheduled request retries automatically without a blocking warning.
       setCandleError(null)
     } finally {
-      setCandleLoading(false)
+      if (requestId === candleRequestRef.current) setCandleLoading(false)
     }
-  }, [])
+  }, [candleCache])
 
   // ── Init ───────────────────────────────────────────────────────────────────
   useEffect(() => {
