@@ -197,8 +197,6 @@ export function TradingChart({
 
   // Series refs
   const candleSerRef  = useRef<ISeriesApi<"Candlestick"> | null>(null)
-  const bidLineRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> | null>(null)
-  const askLineRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]> | null>(null)
   const volSerRef     = useRef<ISeriesApi<"Histogram"> | null>(null)
   const candleCountRef = useRef(0)
   const lastCandleTimeRef = useRef<number | null>(null)
@@ -643,42 +641,8 @@ export function TradingChart({
     }
   }, [priceEnvelope, candleData.length, indicators.volume])
 
-  useEffect(() => {
-    const series = candleSerRef.current
-    if (!series) return
-    if (bidLineRef.current) series.removePriceLine(bidLineRef.current)
-    if (askLineRef.current) series.removePriceLine(askLineRef.current)
-    bidLineRef.current = null
-    askLineRef.current = null
-    if (typeof sellPrice === "number" && Number.isFinite(sellPrice) && sellPrice > 0) {
-      bidLineRef.current = series.createPriceLine({ price: sellPrice, color: palette.redBright, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "BID" })
-    }
-    if (typeof buyPrice === "number" && Number.isFinite(buyPrice) && buyPrice > 0) {
-      askLineRef.current = series.createPriceLine({ price: buyPrice, color: palette.greenBright, lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true, title: "ASK" })
-    }
-    return () => {
-      if (bidLineRef.current) series.removePriceLine(bidLineRef.current)
-      if (askLineRef.current) series.removePriceLine(askLineRef.current)
-      bidLineRef.current = null
-      askLineRef.current = null
-    }
-  }, [buyPrice, sellPrice, palette.greenBright, palette.redBright])
-
-  // ── Open trade price lines ────────────────────────────────────────────────
-  useEffect(() => {
-    if (!candleSerRef.current) return
-    openTrades.forEach((t) => {
-      if (!candleSerRef.current || !Number.isFinite(t.openPrice) || t.openPrice <= 0) return
-      candleSerRef.current.createPriceLine({
-        price: t.openPrice,
-        color: t.direction === "BUY" ? palette.green : palette.red,
-        lineWidth: 1, lineStyle: LineStyle.Dashed, axisLabelVisible: true,
-        title: `${t.direction}`,
-      })
-      if (Number.isFinite(t.sl) && t.sl > 0) candleSerRef.current.createPriceLine({ price: t.sl, color: palette.red, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "SL" })
-      if (Number.isFinite(t.tp) && t.tp > 0) candleSerRef.current.createPriceLine({ price: t.tp, color: palette.emerald, lineWidth: 1, lineStyle: LineStyle.Dotted, axisLabelVisible: true, title: "TP" })
-    })
-  }, [openTrades])
+  // Live BID/ASK remains visible in the terminal header and order panel.
+  // The price pane stays clean: no quote or open-trade labels are drawn over candles.
 
   const toggle = useCallback((key: IndicatorKey) => setIndicators((p) => ({ ...p, [key]: !p[key] })), [])
   const isLoading = candles.length === 0
