@@ -1769,11 +1769,11 @@ function PositionSizer({
       // snapshots. Wider frames stay on lighter polling intervals.
       "1M": 5_000, "5M": 30_000, "15M": 90_000, "30M": 180_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000, "1W": 86400_000,
     }
-    const ms = refreshMs[timeframe] ?? 60_000
+    const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
     candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
     return () => { if (candleIntervalRef.current) clearInterval(candleIntervalRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPair?.symbol, timeframe])
+  }, [selectedPair?.symbol, timeframe, candleError])
 
   // ── Live-tick last candle ────────────────────────────����─────────────────────
   useEffect(() => {
@@ -2233,7 +2233,7 @@ function PositionSizer({
     }
   }
 
-  // ��─ Quick trade — routes through confirmation modal ────────────────────────
+  // ��─ Quick trade — routes through confirmation modal ───────────────────────��
   const quickTrade = (dir: TradeDirection) => {
   if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
@@ -2979,7 +2979,7 @@ adjustWalletBalance(
         ))}
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ════════════════════════════════════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��══════════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}

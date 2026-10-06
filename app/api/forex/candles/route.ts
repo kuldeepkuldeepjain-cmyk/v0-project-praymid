@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { YAHOO_SYMBOLS, decimals as dec } from "@/lib/forex-instruments"
+import { YAHOO_SYMBOLS, decimals as dec, isCrypto } from "@/lib/forex-instruments"
 
 // Yahoo Finance interval + range that gives the best candle history per timeframe
 const TF_MAP: Record<string, { interval: string; range: string }> = {
@@ -24,7 +24,7 @@ const KUCOIN_INTERVALS: Record<string, string> = {
 
 function cryptoKucoinSymbol(pair: string): string | null {
   const [base, quote] = pair.split("/")
-  if (!base || quote !== "USD") return null
+  if (!isCrypto(pair) || !base || quote !== "USD") return null
   return `${base}-USDT`
 }
 
@@ -123,6 +123,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url, {
       headers: { "User-Agent": "Mozilla/5.0 (compatible; ForexApp/1.0)" },
       next: { revalidate: 0 },
+      signal: AbortSignal.timeout(8_000),
     })
     if (!res.ok) throw new Error(`HTTP ${res.status}`)
     const json = await res.json()
