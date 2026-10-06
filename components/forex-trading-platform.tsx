@@ -353,7 +353,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����─────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) �������─────��─────────────────────────────────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1110,7 +1110,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
   )
 }
 
-// ─── Market Stats Panel ───────────────────────���─���─────���────────────������───────────
+// ─── Market Stats Panel ─────────────────────���─���─���─────���────────────������───────────
 
 function MarketStats({ pair }: { pair: ForexPair }) {
   const atr   = useMemo(() => calcATR(pair.candles, 14), [pair.candles])
@@ -1690,12 +1690,12 @@ function PositionSizer({
     setCandleLoading(true)
     try {
       const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  const json = await res.json().catch(() => null)
-  if (!json || typeof json !== "object") throw new Error("Invalid candles response")
-  // A stale server snapshot is still valid chart history. Keep it visible and
-  // avoid showing a refresh error when the upstream provider briefly fails.
-  if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
+      const json = await res.json().catch(() => null)
+      if (!json || typeof json !== "object") throw new Error(`Invalid candles response (${res.status})`)
+      // A provider timeout is not a terminal UI error. The route can return a
+      // stale snapshot or an empty retry response while the live feed recovers.
+      if (!res.ok && !Array.isArray(json.candles)) throw new Error(String(json.error ?? `HTTP ${res.status}`))
+      if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
   const candles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
@@ -1712,15 +1712,9 @@ function PositionSizer({
       setCandleError(null)
     } catch (error) {
       console.error("[v0] Candle refresh failed:", error)
-      const existing = pairsRef.current.find((pair) => pair.symbol === sym)?.candles
-      const cached = candleCache[key]
-      // A provider timeout must not turn into a noisy error when the terminal
-      // already has usable history. Keep the chart and retry silently.
-      if ((!existing || existing.length === 0) && (!cached || cached.length === 0)) {
-        setCandleError("Chart history is temporarily unavailable. We will retry automatically.")
-      } else {
-        setCandleError(null)
-      }
+      // Keep the terminal usable while the provider reconnects. The next
+      // scheduled request retries automatically without a blocking warning.
+      setCandleError(null)
     } finally {
       setCandleLoading(false)
     }
