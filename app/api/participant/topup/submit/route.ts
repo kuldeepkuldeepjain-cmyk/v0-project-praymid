@@ -91,11 +91,25 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    await execute(
-      `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
-       VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
-      [participant.id, participant.email, parsedAmount, normalizedTransactionHash, requestedFundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto", screenshotUrl]
-    )
+    const paymentMethod = requestedFundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto"
+    const insertValues = [participant.id, participant.email, parsedAmount, normalizedTransactionHash, paymentMethod, screenshotUrl]
+
+    try {
+      await execute(
+        `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
+         VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+        insertValues,
+      )
+    } catch (insertError: any) {
+      // Older deployments may not have the optional screenshot_url column yet.
+      // The funding request itself must still be recorded safely.
+      if (insertError?.code !== "42703" && insertError?.code !== "42701") throw insertError
+      await execute(
+        `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status)
+         VALUES ($1, $2, $3, $4, $5, 'pending')`,
+        insertValues.slice(0, 5),
+      )
+    }
 
     // Log activity (best-effort — table may not exist)
     await execute(
