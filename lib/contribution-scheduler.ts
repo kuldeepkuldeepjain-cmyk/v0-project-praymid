@@ -18,7 +18,7 @@ export async function scheduleContributionAutoMatch(
     
     console.log(`[v0] Scheduling auto-match for contribution ${contributionId} in ${delaySeconds}s`)
 
-    const response = await qstash.publish({
+    const response = await qstash.publishJSON({
       url: `${baseUrl}/api/admin/auto-match-single-contribution`,
       body: {
         contributionId,
@@ -30,7 +30,7 @@ export async function scheduleContributionAutoMatch(
     })
 
     console.log("[v0] Contribution auto-match scheduled:", response)
-    return { success: true, messageId: response.messageId }
+    return { success: true, messageId: "messageId" in response ? response.messageId : undefined }
   } catch (error) {
     console.error("[v0] Error scheduling auto-match:", error)
     // Don't throw - allow contribution to proceed even if scheduling fails

@@ -62,8 +62,8 @@ export function EnhancedPredictionMarket({ participantEmail }: { participantEmai
   const [showHistory, setShowHistory] = useState(false)
   
   const chartCanvasRef = useRef<HTMLCanvasElement>(null)
-  const priceIntervalRef = useRef<NodeJS.Timeout>()
-  const countdownIntervalRef = useRef<NodeJS.Timeout>()
+  const priceIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const countdownIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Initialize price based on asset
   useEffect(() => {

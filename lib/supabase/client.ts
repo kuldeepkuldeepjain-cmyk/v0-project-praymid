@@ -22,7 +22,7 @@ class BrowserStubBuilder {
   upsert(_data: any, _opts?: any) { return this }
   delete() { return this }
 
-  then(resolve: (v: { data: null; error: null }) => void) {
+  then(resolve: (v: { data: any; error: null }) => void) {
     resolve({ data: null, error: null })
   }
 }
@@ -30,6 +30,18 @@ class BrowserStubBuilder {
 class BrowserStubClient {
   from(_table: string) {
     return new BrowserStubBuilder()
+  }
+
+  channel(_name: string) {
+    const channel = {
+      on: (_event: string, _filter: Record<string, unknown>, _callback: () => void) => channel,
+      subscribe: () => channel,
+    }
+    return channel
+  }
+
+  removeChannel(_channel: ReturnType<BrowserStubClient["channel"]>) {
+    return Promise.resolve()
   }
 }
 

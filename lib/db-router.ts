@@ -64,10 +64,6 @@ export function getActiveDBVersion(): "v1" {
  * Get the appropriate pool based on active database version
  */
 export function getActivePool(): Pool | null {
-  const version = getActiveDBVersion()
-  if (version === "v2") {
-    return getPoolV2()
-  }
   return getPoolV1()
 }
 

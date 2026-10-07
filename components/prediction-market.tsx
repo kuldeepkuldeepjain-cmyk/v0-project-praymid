@@ -28,7 +28,7 @@ export function PredictionMarket() {
   const [activePrediction, setActivePrediction] = useState<PredictionData | null>(null)
   const [timeRemaining, setTimeRemaining] = useState(300)
   const [priceHistory, setPriceHistory] = useState<number[]>([94523.45])
-  const intervalRef = useRef<NodeJS.Timeout>()
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   // Simulate price updates
   useEffect(() => {

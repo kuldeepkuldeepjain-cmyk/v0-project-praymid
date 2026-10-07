@@ -8,11 +8,19 @@ interface UserRankBadgeProps {
   rank: UserRank
   participationCount?: number
   showCount?: boolean
+  showLabel?: boolean
   size?: "sm" | "md" | "lg"
 }
 
-export function UserRankBadge({ rank, participationCount = 0, showCount = false, size = "md" }: UserRankBadgeProps) {
-  const rankConfig = {
+export function UserRankBadge({ rank, participationCount = 0, showCount = false, showLabel = true, size = "md" }: UserRankBadgeProps) {
+  const rankConfig: Record<UserRank, {
+    label: string
+    icon: typeof Medal
+    bg: string
+    text: string
+    glow?: string
+    minParticipations: number
+  }> = {
     bronze: {
       label: "Bronze",
       icon: Medal,
@@ -64,7 +72,7 @@ export function UserRankBadge({ rank, participationCount = 0, showCount = false,
       className={`${config.bg} ${config.text} ${config.glow || ""} ${sizeClasses[size]} font-medium gap-1.5 border-0`}
     >
       <Icon className={iconSizes[size]} />
-      {config.label}
+      {showLabel && config.label}
       {showCount && <span className="opacity-75">({participationCount})</span>}
     </Badge>
   )

@@ -4,6 +4,7 @@ import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec } from "@/lib/forex-ins
 // Cache to avoid hammering Yahoo Finance (server-side, resets on cold start)
 let cache: {
   data: Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
+  sources: Record<string, "yahoo" | "gold-api" | "stale-cache">
   ts: number
 } | null = null
 const LIVE_REFRESH_INTERVAL_MS = 3000
@@ -16,7 +17,7 @@ export async function GET() {
   try {
     const now = Date.now()
     if (cache && now - cache.ts < CACHE_TTL_MS) {
-      return NextResponse.json({ rates: cache.data, source: "cache", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: cache.ts })
+      return NextResponse.json({ rates: cache.data, sources: cache.sources, source: "cache", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: cache.ts })
     }
 
     const pairs = Object.keys(YAHOO_SYMBOLS)
@@ -81,7 +82,7 @@ export async function GET() {
       throw new Error("All fetches failed")
     }
 
-    cache = { data, ts: now }
+    cache = { data, sources, ts: now }
     const hasFreshQuotes = Object.values(sources).some((source) => source === "yahoo" || source === "gold-api")
     const hasStaleQuotes = Object.values(sources).some((source) => source === "stale-cache")
     const hasMissingQuotes = Object.keys(data).length < pairs.length
@@ -96,7 +97,7 @@ export async function GET() {
   } catch (err) {
     // Return cached data if available even if stale
     if (cache) {
-      return NextResponse.json({ rates: cache.data, source: "stale_cache", ts: cache.ts })
+      return NextResponse.json({ rates: cache.data, sources: cache.sources, source: "stale_cache", ts: cache.ts })
     }
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }

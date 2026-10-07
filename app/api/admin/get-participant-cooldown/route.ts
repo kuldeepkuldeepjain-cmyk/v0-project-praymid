@@ -38,7 +38,13 @@ export async function GET(request: NextRequest) {
     const now = new Date()
     const nextContributionDate = participant.next_contribution_date ? new Date(participant.next_contribution_date) : null
 
-    let cooldownInfo = {
+    let cooldownInfo: {
+      isOnCooldown: boolean
+      daysRemaining: number
+      hoursRemaining: number
+      nextAvailableDate: string | null
+      formattedDate: string | null
+    } = {
       isOnCooldown: false,
       daysRemaining: 0,
       hoursRemaining: 0,

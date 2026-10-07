@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
-                account_type, funded_amount, funded_initial_balance, funded_breach_status,
+                account_type,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants WHERE email = $1 LIMIT 1`,
         [emailKey]
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
-                account_type, funded_amount, funded_initial_balance, funded_breach_status,
+                account_type,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants
          WHERE mobile_number = $1

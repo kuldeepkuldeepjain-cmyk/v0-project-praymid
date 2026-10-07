@@ -66,7 +66,7 @@ export function addBreadcrumb(message: string, data?: Record<string, any>) {
  * Start performance transaction
  */
 export function startTransaction(name: string, operation: string) {
-  return Sentry.startTransaction({
+  return Sentry.startInactiveSpan({
     name,
     op: operation,
   })
@@ -83,13 +83,13 @@ export async function measurePerformance<T>(
   
   try {
     const result = await fn()
-    transaction.setStatus("ok")
+    transaction.setStatus({ code: 1 })
     return result
   } catch (error) {
-    transaction.setStatus("internal_error")
+    transaction.setStatus({ code: 2, message: "internal_error" })
     logError(error, { function: name })
     throw error
   } finally {
-    transaction.finish()
+    transaction.end()
   }
 }
