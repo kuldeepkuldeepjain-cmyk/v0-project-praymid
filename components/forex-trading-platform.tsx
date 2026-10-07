@@ -1435,6 +1435,11 @@ function PositionSizer({
   const selectedPairRef = useRef<ForexPair | null>(null)
   const openTradesRef   = useRef<OpenTrade[]>([])
   const freshRateSymbolsRef = useRef<Set<string>>(new Set())
+  const freshRateUpdatedAtRef = useRef<Record<string, number>>({})
+  const hasFreshRate = useCallback(
+    (symbol: string) => freshRateSymbolsRef.current.has(symbol) && Date.now() - (freshRateUpdatedAtRef.current[symbol] ?? 0) <= 10_000,
+    [],
+  )
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastIdRef       = useRef(0)
@@ -1600,18 +1605,18 @@ function PositionSizer({
       const json = await res.json().catch(() => null)
       if (!res.ok || !json?.success) return false
       const isFinitePositive = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value > 0
-      const open = (Array.isArray(json.open) ? json.open : []).filter((trade) =>
+      const open = (Array.isArray(json.open) ? json.open : []).filter((trade: OpenTrade) =>
         trade && typeof trade.id === "string" && typeof trade.pair === "string" &&
         (trade.direction === "BUY" || trade.direction === "SELL") &&
         isFinitePositive(trade.openPrice) && isFinitePositive(trade.currentPrice) &&
         isFinitePositive(trade.lotSize) && isFinitePositive(trade.leverage) &&
         Number.isFinite(trade.margin) && Number.isFinite(trade.pnl),
       )
-      const closed = (Array.isArray(json.closed) ? json.closed : []).filter((trade) =>
+      const closed = (Array.isArray(json.closed) ? json.closed : []).filter((trade: ClosedTrade) =>
         trade && typeof trade.id === "string" && typeof trade.pair === "string" &&
         isFinitePositive(trade.openPrice) && Number.isFinite(trade.finalPnl),
       )
-      const pending = (Array.isArray(json.pending) ? json.pending : []).filter((order) =>
+      const pending = (Array.isArray(json.pending) ? json.pending : []).filter((order: PendingOrder) =>
         order && typeof order.id === "string" && typeof order.pair === "string" &&
         isFinitePositive(order.targetPrice) && isFinitePositive(order.lotSize) && isFinitePositive(order.leverage),
       )
@@ -1638,6 +1643,8 @@ function PositionSizer({
         return !!rate && [rate.bid, rate.ask, rate.change, rate.high, rate.low, rate.open].every(Number.isFinite) && rate.bid > 0 && rate.ask >= rate.bid
       }),
     )
+    const receivedAt = Date.now()
+    for (const symbol of freshRateSymbolsRef.current) freshRateUpdatedAtRef.current[symbol] = receivedAt
     setPairs(prev => {
       let changed = false
       const updated = prev.map(pair => {
@@ -1658,7 +1665,7 @@ function PositionSizer({
     })
     const selectedSymbol = selectedPairRef.current?.symbol ?? ""
     const selectedRate = rateMap[selectedSymbol]
-    const selectedRateIsValid = freshRateSymbolsRef.current.has(selectedSymbol)
+    const selectedRateIsValid = hasFreshRate(selectedSymbol)
       && !!selectedRate
       && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
       && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
@@ -1666,7 +1673,7 @@ function PositionSizer({
     setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
     setLastUpdated(new Date())
     if (freshRateSymbolsRef.current.size > 0) setTickCount(count => count + 1)
-  }, [])
+  }, [hasFreshRate])
 
   // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
   const fetchRates = useCallback(async () => {
@@ -1679,9 +1686,9 @@ function PositionSizer({
       const responseHasRecentCache = json.source === "cache"
         && Number.isFinite(json.ts)
         && Date.now() - json.ts <= 5_000
-      const freshSymbols = responseHasLiveQuotes
+      const freshSymbols = responseHasLiveQuotes || responseHasRecentCache
         ? Object.keys(json.rates).filter(symbol => json.sources?.[symbol] === "yahoo" || json.sources?.[symbol] === "gold-api")
-        : responseHasRecentCache ? Object.keys(json.rates) : []
+        : []
       applyRateMap(json.rates, freshSymbols)
       const selectedSymbol = selectedPairRef.current?.symbol ?? ""
       const selectedRate = json.rates[selectedSymbol]
@@ -1695,6 +1702,7 @@ function PositionSizer({
         : selectedRateAvailable ? null : "Live quote unavailable for this instrument — reconnecting.")
     } catch (error) {
       console.error("[v0] Live rate refresh failed:", error)
+      freshRateSymbolsRef.current = new Set()
       setOnline(false)
       setMarketError(lastUpdated ? "Live prices are temporarily unavailable. Existing quotes remain visible." : "Live prices are unavailable. Trading will resume when the feed reconnects.")
     }
@@ -1868,7 +1876,7 @@ function PositionSizer({
         }
       }
       const pairNow = pairsRef.current.find(p => p.symbol === o.pair)
-      if (!pairNow) return
+      if (!pairNow || !hasFreshRate(o.pair)) return
       const currentPrice = o.direction === "BUY" ? pairNow.ask : pairNow.bid
       let filled = false
       if (o.orderType === "BUY_LIMIT"  && currentPrice <= o.targetPrice) filled = true
@@ -1892,7 +1900,7 @@ function PositionSizer({
           const order = prev.find(o => o.id === id)
           if (!order) return prev
           const pairNow = pairsRef.current.find(p => p.symbol === order.pair)
-          if (!pairNow) return prev
+          if (!pairNow || !hasFreshRate(order.pair)) return prev
           const fillPrice = order.direction === "BUY" ? pairNow.ask : pairNow.bid
           const margin = calcMargin(order.pair, order.lotSize, fillPrice, order.leverage)
           if (walletBalance < margin) {
@@ -1925,7 +1933,7 @@ function PositionSizer({
     // Update open trades P&L + check SL/TP/Trailing — use liveTrades (ref) not stale closure
     const updated = liveTrades.map(t => {
       const pairNow = pairsRef.current.find(p => p.symbol === t.pair)
-      if (!pairNow || !freshRateSymbolsRef.current.has(t.pair)) return t
+      if (!pairNow || !hasFreshRate(t.pair)) return t
       const currentPrice = t.direction === "BUY" ? pairNow.bid : pairNow.ask
 
       // Update trailing peak and compute trailing SL
@@ -2109,6 +2117,7 @@ function PositionSizer({
   const executeTrade = () => {
     if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
     if (!selectedPair) return
+    if (!hasFreshRate(selectedPair.symbol)) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
     const lot = parseFloat(lotSize); const lev = effectiveLeverage
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
@@ -2117,7 +2126,7 @@ function PositionSizer({
     const slNum  = sl ? parseFloat(sl) : null
     const tpNum  = tp ? parseFloat(tp) : null
     const trailN = trailingPips ? parseFloat(trailingPips) : null
-    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (!Number.isFinite(trailN) || trailN < 0))) {
+    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (trailN === null || !Number.isFinite(trailN) || trailN < 0))) {
       showToast("error", "Use valid numbers for Stop Loss, Take Profit, and Trailing Stop")
       return
     }
@@ -2168,8 +2177,14 @@ function PositionSizer({
   }
 
   const confirmAndPlace = async () => {
-  if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
+    if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
+    if (!hasFreshRate(tradeConfirm.pair)) {
+      setTradeConfirm(null)
+      setConfirmLoading(false)
+      showToast("warning", "Live quote expired before confirmation. Please review a fresh quote.")
+      return
+    }
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
     const pairSymbol = selectedPair.symbol
 
@@ -2252,6 +2267,7 @@ function PositionSizer({
   const quickTrade = (dir: TradeDirection) => {
   if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
+  if (!hasFreshRate(selectedPair.symbol)) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
   if (!balanceLoaded) { showToast("info", "Loading account balance — try again in a moment"); return }
 
   // Keep the ticket and confirmation state in sync with the quote the user clicked.
@@ -2335,10 +2351,17 @@ function PositionSizer({
         })
 
         const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-        const reasonLabel = reason === "stop_out" ? "Stop-out (margin call)" : "Manual close"
+        const reasonLabel: Record<ClosedTrade["closeReason"], string> = {
+          manual: "Manual close",
+          sl: "Stop loss",
+          tp: "Take profit",
+          trailing_sl: "Trailing stop",
+          stop_out: "Stop-out (margin call)",
+          account_breach: "Account breach",
+        }
         const newBalance = await adjustWalletBalance(
           returnAmt,
-          `${reasonLabel} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+          `${reasonLabel[reason]} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
         )
         if (newBalance === null) return
 
