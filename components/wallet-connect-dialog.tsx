@@ -6,6 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Wallet, CheckCircle2, AlertCircle, Loader2, ExternalLink } from "lucide-react"
 
+type InjectedEthereumProvider = {
+  request: (args: { method: string; params?: unknown[] }) => Promise<any>
+}
+
+declare global {
+  interface Window {
+    ethereum?: InjectedEthereumProvider
+  }
+}
+
 interface WalletConnectDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void

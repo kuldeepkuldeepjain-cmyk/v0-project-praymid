@@ -13,7 +13,6 @@ const s3Client = new S3Client({
     accessKeyId: S3_ACCESS_KEY_ID || "",
     secretAccessKey: S3_SECRET_ACCESS_KEY || "",
   },
-  requestTimeout: 10000,
 })
 
 /**

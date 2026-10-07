@@ -657,7 +657,7 @@ export function TradingChart({
   // The price pane stays clean: no quote or open-trade labels are drawn over candles.
 
   const toggle = useCallback((key: IndicatorKey) => setIndicators((p) => ({ ...p, [key]: !p[key] })), [])
-  const isLoading = candles.length === 0
+  const isLoading = safeCandles.length === 0
 
   // Sync alertMode to DOM so the subscribeClick handler can read it without stale closure
   useEffect(() => {
@@ -705,7 +705,7 @@ export function TradingChart({
   // Check if current candle close crosses any alert
   useEffect(() => {
     if (alerts.length === 0) return
-    const last = candles[candles.length - 1]
+    const last = safeCandles[safeCandles.length - 1]
     if (!last) return
     setAlerts(prev => prev.map(a => {
       if (a.hit) return a
@@ -717,7 +717,7 @@ export function TradingChart({
   }, [candles]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Last candle stats for header ───────────────────────��─────────────────────
-  const lastCandle = candles[candles.length - 1]
+  const lastCandle = safeCandles[safeCandles.length - 1]
   const displayOhlcv = ohlcv ?? (lastCandle ? {
     open: lastCandle.open, high: lastCandle.high,
     low: lastCandle.low,   close: lastCandle.close,
@@ -729,10 +729,10 @@ export function TradingChart({
 
   // ATR(14) derived from current candles for display in OHLCV bar
   const atr14 = useMemo(() => {
-    if (candles.length < 15) return null
+    if (safeCandles.length < 15) return null
     const trs: number[] = []
-    for (let i = 1; i < candles.length; i++) {
-      const c = candles[i], p = candles[i - 1]
+    for (let i = 1; i < safeCandles.length; i++) {
+      const c = safeCandles[i], p = safeCandles[i - 1]
       trs.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)))
     }
     const recent = trs.slice(-14)

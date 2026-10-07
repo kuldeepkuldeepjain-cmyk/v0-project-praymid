@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { requireAdminSession } from "@/lib/auth-middleware"
 import { getPool } from "@/lib/db"
 
 interface FixResult {
@@ -8,6 +9,9 @@ interface FixResult {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminSession(request)
+  if (!auth.ok) return auth.response
+
   try {
     const db = getPool()!
     const fixes: FixResult[] = []
@@ -22,7 +26,7 @@ export async function POST(request: NextRequest) {
     )
     fixes.push({
       issue: "Missing closed_at for settled predictions",
-      fixed: closedAtRes.rowCount
+      fixed: closedAtRes.rowCount ?? 0
     })
 
     // 2. Fix: Set null results to 'refunded' for refunded predictions
@@ -35,7 +39,7 @@ export async function POST(request: NextRequest) {
     )
     fixes.push({
       issue: "Missing result for refunded predictions",
-      fixed: resultRes.rowCount
+      fixed: resultRes.rowCount ?? 0
     })
 
     // 3. Fix: Set null profit_loss to 0 for refunded predictions
@@ -48,7 +52,7 @@ export async function POST(request: NextRequest) {
     )
     fixes.push({
       issue: "Missing profit_loss for refunded predictions",
-      fixed: profitRes.rowCount
+      fixed: profitRes.rowCount ?? 0
     })
 
     // 4. Fix: Update target_price for settled predictions that don't have it
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
     )
     fixes.push({
       issue: "Missing target_price for settled predictions",
-      fixed: targetRes.rowCount
+      fixed: targetRes.rowCount ?? 0
     })
 
     // 5. Fix: Refund expired pending bets
@@ -87,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     fixes.push({
       issue: "Expired pending predictions refunded",
-      fixed: expiredRes.rowCount
+      fixed: expiredRes.rowCount ?? 0
     })
 
     // 6. Fix: Update any NULL amounts with default
@@ -100,7 +104,7 @@ export async function POST(request: NextRequest) {
     )
     fixes.push({
       issue: "NULL amount set to default (10)",
-      fixed: amountRes.rowCount
+      fixed: amountRes.rowCount ?? 0
     })
 
     // 7. Fix: Ensure all predictions have valid participant_email

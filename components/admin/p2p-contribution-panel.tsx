@@ -374,7 +374,9 @@ export function P2PContributionPanel() {
                               variant="ghost"
                               className="h-5 w-5 p-0"
                               onClick={() => {
-                                navigator.clipboard.writeText(c.matched_payout_id)
+                                const payoutId = c.matched_payout_id
+                                if (!payoutId) return
+                                navigator.clipboard.writeText(payoutId)
                                 toast({ title: "Copied", description: "Payout ID copied" })
                               }}
                             >

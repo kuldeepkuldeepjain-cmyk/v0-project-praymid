@@ -45,10 +45,6 @@ export function ComprehensiveDatabaseView() {
   const [users, setUsers] = useState<UserDatabaseRecord[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedUser, setSelectedUser] = useState<UserDatabaseRecord | null>(null)
-
-  const [isSaving, setIsSaving] = useState(false)
-
   useEffect(() => {
     let isMounted = true
 
@@ -109,40 +105,6 @@ export function ComprehensiveDatabaseView() {
       })
     } finally {
       setIsLoading(false)
-    }
-  }
-
-
-
-  const handleSaveContributionAddress = async () => {
-    if (!selectedUser) return
-
-    try {
-      setIsSaving(true)
-      const saveRes = await fetch("/api/participant/wallet-pool", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: selectedUser.email, walletAddress: editingContributionAddress }),
-      })
-      if (!saveRes.ok) throw new Error("Failed to save wallet pool address")
-
-
-      toast({
-        title: "Success",
-        description: `Contribution address updated for ${selectedUser?.username}`,
-      })
-
-      setShowEditDialog(false)
-      fetchUserData() // Refresh data
-    } catch (error) {
-      console.error("Error saving contribution address:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update contribution address",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSaving(false)
     }
   }
 

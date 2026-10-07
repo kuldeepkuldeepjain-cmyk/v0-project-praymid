@@ -6,6 +6,7 @@ import { getPool } from "@/lib/db"
 export async function POST(request: NextRequest) {
   try {
     const session = await requireParticipantSession()
+    if (!session.ok) return session.response
     const email = session.email
 
     const { image, type } = await request.json()

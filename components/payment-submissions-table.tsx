@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Search, Eye, CheckCircle2, XCircle, Clock, ImageIcon, Wallet, Mail, Calendar, CreditCard } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import type { PaymentSubmission } from "@/app/api/participant/submit-payment/route"
+import type { PaymentSubmission } from "@/lib/types"
 
 type Props = {
   submissions: PaymentSubmission[]
@@ -311,7 +311,7 @@ export function PaymentSubmissionsTable({ submissions, onStatusUpdate }: Props) 
                   <Label className="text-sm font-semibold text-gray-700">Payment Screenshot</Label>
                   <div 
                     className="rounded-xl overflow-hidden border-2 border-gray-200 cursor-pointer hover:border-[#E85D3B] transition-all duration-300 group"
-                    onClick={() => setLightboxImage(selectedSubmission.screenshot_url || selectedSubmission.screenshotData)}
+                    onClick={() => setLightboxImage(selectedSubmission.screenshot_url || selectedSubmission.screenshotData || null)}
                   >
                     <img
                       src={selectedSubmission.screenshot_url || selectedSubmission.screenshotData || "/placeholder.svg"}

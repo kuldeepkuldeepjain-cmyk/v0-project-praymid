@@ -2126,7 +2126,7 @@ function PositionSizer({
     const slNum  = sl ? parseFloat(sl) : null
     const tpNum  = tp ? parseFloat(tp) : null
     const trailN = trailingPips ? parseFloat(trailingPips) : null
-    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (trailN === null || !Number.isFinite(trailN) || trailN < 0))) {
+    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (trailN === null || trailN < 0 || !Number.isFinite(trailN)))) {
       showToast("error", "Use valid numbers for Stop Loss, Take Profit, and Trailing Stop")
       return
     }

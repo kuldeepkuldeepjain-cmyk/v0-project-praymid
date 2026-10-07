@@ -16,17 +16,24 @@ function finiteNumber(value: unknown): number | null {
 }
 
 /** Returns Unix milliseconds for all timestamp shapes accepted from APIs and databases. */
-export function normalizeTimestamp(value: TimestampLike): number {
+export function normalizeTimestamp(value: unknown): number {
   if (value instanceof Date) return value.getTime()
 
   if (value && typeof value === "object") {
-    if (typeof value.toMillis === "function") {
-      const millis = finiteNumber(value.toMillis())
+    const timestamp = value as {
+      toMillis?: () => unknown
+      seconds?: unknown
+      nanoseconds?: unknown
+      _seconds?: unknown
+      _nanoseconds?: unknown
+    }
+    if (typeof timestamp.toMillis === "function") {
+      const millis = finiteNumber(timestamp.toMillis())
       if (millis !== null) return millis
     }
 
-    const seconds = finiteNumber(value.seconds ?? value._seconds)
-    const nanoseconds = finiteNumber(value.nanoseconds ?? value._nanoseconds) ?? 0
+    const seconds = finiteNumber(timestamp.seconds ?? timestamp._seconds)
+    const nanoseconds = finiteNumber(timestamp.nanoseconds ?? timestamp._nanoseconds) ?? 0
     if (seconds !== null) return seconds * 1000 + nanoseconds / 1_000_000
   }
 
@@ -43,7 +50,7 @@ export function normalizeTimestamp(value: TimestampLike): number {
   return Number.NaN
 }
 
-export function timestampDebugValue(value: TimestampLike) {
+export function timestampDebugValue(value: unknown) {
   return {
     normalizedMs: normalizeTimestamp(value),
     originalType: value === null ? "null" : typeof value,

@@ -174,6 +174,33 @@ export type ParticipantUser = {
   totalPoints?: number
   loginStreak?: number
   last_login_claim?: string
+  serial_number?: string | number
+  full_name?: string
+  mobile_number?: string
+  full_address?: string
+  bep20_wallet_address?: string
+  details_completed?: boolean
+  location?: string
+  otp_verified?: boolean
+  last_seen?: string | null
+  updated_at?: string
+  current_rank?: UserRank
+  is_active?: boolean
+  account_balance?: number
+}
+
+export type PaymentSubmission = {
+  id: string
+  participantEmail: string
+  participantWallet: string
+  participantName?: string
+  participant_name?: string
+  amount: number
+  status: "pending" | "confirmed" | "rejected"
+  created_at: string
+  transactionHash?: string | null
+  screenshot_url?: string | null
+  screenshotData?: string | null
 }
 
 export type SupportTicket = {

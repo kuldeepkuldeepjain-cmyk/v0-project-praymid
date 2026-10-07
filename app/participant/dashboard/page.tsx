@@ -2387,11 +2387,6 @@ export default function DashboardHome() {
                   })
                 }}
                 onStatsUpdate={setTerminalStats}
-  onLogout={async () => {
-    clearParticipantAuth()
-    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
-    router.push("/participant/login")
-  }}
               />
             </div>
           </div>

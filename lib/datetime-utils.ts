@@ -1,5 +1,5 @@
 import { formatDistanceToNow, format, differenceInSeconds, isPast, parseISO, isAfter } from "date-fns"
-import { utcToZonedTime, zonedTimeToUtc } from "date-fns-tz"
+import { fromZonedTime, toZonedTime } from "date-fns-tz"
 
 // Timezone detection and management
 export const getClientTimezone = (): string => {
@@ -37,7 +37,7 @@ export const formatDateInTimezone = (
 ): string => {
   try {
     const dateObj = typeof date === "string" ? parseISO(date) : date
-    const zonedDate = utcToZonedTime(dateObj, timezone)
+    const zonedDate = toZonedTime(dateObj, timezone)
     return format(zonedDate, formatStr)
   } catch (error) {
     console.error("[v0] Error formatting date:", error)
@@ -49,7 +49,7 @@ export const formatDateInTimezone = (
 export const utcToUserTimezone = (utcDate: Date | string, timezone: string = getClientTimezone()): Date => {
   try {
     const dateObj = typeof utcDate === "string" ? parseISO(utcDate) : utcDate
-    return utcToZonedTime(dateObj, timezone)
+    return toZonedTime(dateObj, timezone)
   } catch (error) {
     console.error("[v0] Error converting UTC to timezone:", error)
     return new Date()
@@ -59,7 +59,7 @@ export const utcToUserTimezone = (utcDate: Date | string, timezone: string = get
 // Convert user timezone to UTC
 export const userTimezoneToUtc = (localDate: Date, timezone: string = getClientTimezone()): string => {
   try {
-    const utcDate = zonedTimeToUtc(localDate, timezone)
+    const utcDate = fromZonedTime(localDate, timezone)
     return utcDate.toISOString()
   } catch (error) {
     console.error("[v0] Error converting timezone to UTC:", error)
@@ -76,7 +76,7 @@ export const getCurrentUTC = (): string => {
 export const getCurrentTimeInTimezone = (timezone: string = getClientTimezone()): string => {
   try {
     const now = new Date()
-    const zonedTime = utcToZonedTime(now, timezone)
+    const zonedTime = toZonedTime(now, timezone)
     return zonedTime.toISOString()
   } catch (error) {
     console.error("[v0] Error getting current time in timezone:", error)
@@ -296,7 +296,7 @@ export const getStartOfDay = (
 ): Date => {
   try {
     const dateObj = typeof date === "string" ? parseISO(date) : date
-    const zonedDate = utcToZonedTime(dateObj, timezone)
+    const zonedDate = toZonedTime(dateObj, timezone)
     zonedDate.setHours(0, 0, 0, 0)
     return zonedDate
   } catch (error) {
@@ -312,7 +312,7 @@ export const getEndOfDay = (
 ): Date => {
   try {
     const dateObj = typeof date === "string" ? parseISO(date) : date
-    const zonedDate = utcToZonedTime(dateObj, timezone)
+    const zonedDate = toZonedTime(dateObj, timezone)
     zonedDate.setHours(23, 59, 59, 999)
     return zonedDate
   } catch (error) {

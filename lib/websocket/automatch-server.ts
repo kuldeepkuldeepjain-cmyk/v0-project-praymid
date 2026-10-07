@@ -144,7 +144,7 @@ export async function processAutomatch() {
 
       // Find first available payout with amount >= contribution amount
       const payout = payouts.find(
-        (p) => 
+        (p: { id: string; matched_contribution_id?: string | null; amount: number }) =>
           !usedPayoutIds.has(p.id) && 
           !p.matched_contribution_id && 
           p.amount >= contribution.amount
