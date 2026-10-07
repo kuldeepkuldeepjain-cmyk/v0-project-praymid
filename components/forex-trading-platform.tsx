@@ -1434,6 +1434,7 @@ function PositionSizer({
   const pairsRef        = useRef<ForexPair[]>([])
   const selectedPairRef = useRef<ForexPair | null>(null)
   const openTradesRef   = useRef<OpenTrade[]>([])
+  const freshRateSymbolsRef = useRef<Set<string>>(new Set())
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastIdRef       = useRef(0)
@@ -1629,7 +1630,14 @@ function PositionSizer({
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
   // ── Apply validated live quotes; the selected chart builds bars separately ──
-  const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; mid?: number; change: number; high: number; low: number; open: number }>) => {
+  const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; mid?: number; change: number; high: number; low: number; open: number }>, freshSymbols?: string[]) => {
+    const freshCandidates = new Set(freshSymbols ?? Object.keys(rateMap))
+    freshRateSymbolsRef.current = new Set(
+      [...freshCandidates].filter(symbol => {
+        const rate = rateMap[symbol]
+        return !!rate && [rate.bid, rate.ask, rate.change, rate.high, rate.low, rate.open].every(Number.isFinite) && rate.bid > 0 && rate.ask >= rate.bid
+      }),
+    )
     setPairs(prev => {
       let changed = false
       const updated = prev.map(pair => {
@@ -1648,14 +1656,16 @@ function PositionSizer({
       }
       return updated
     })
-    const selectedRate = rateMap[selectedPairRef.current?.symbol ?? ""]
-    const selectedRateIsValid = !!selectedRate
+    const selectedSymbol = selectedPairRef.current?.symbol ?? ""
+    const selectedRate = rateMap[selectedSymbol]
+    const selectedRateIsValid = freshRateSymbolsRef.current.has(selectedSymbol)
+      && !!selectedRate
       && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
       && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
     setOnline(selectedRateIsValid)
     setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
     setLastUpdated(new Date())
-    setTickCount(count => count + 1)
+    if (freshRateSymbolsRef.current.size > 0) setTickCount(count => count + 1)
   }, [])
 
   // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
@@ -1665,11 +1675,17 @@ function PositionSizer({
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json().catch(() => null)
       if (!json || typeof json !== "object" || json.error || !json.rates) throw new Error(json?.error || "Invalid rates response")
-      applyRateMap(json.rates)
+      const responseHasLiveQuotes = json.source === "live" || json.source === "partial-live"
+      const responseHasRecentCache = json.source === "cache"
+        && Number.isFinite(json.ts)
+        && Date.now() - json.ts <= 5_000
+      const freshSymbols = responseHasLiveQuotes
+        ? Object.keys(json.rates).filter(symbol => json.sources?.[symbol] === "yahoo" || json.sources?.[symbol] === "gold-api")
+        : responseHasRecentCache ? Object.keys(json.rates) : []
+      applyRateMap(json.rates, freshSymbols)
       const selectedSymbol = selectedPairRef.current?.symbol ?? ""
-      const selectedSource = json.sources?.[selectedSymbol]
       const selectedRate = json.rates[selectedSymbol]
-      const stale = json.source === "stale_cache" || selectedSource === "stale-cache"
+      const stale = !freshSymbols.includes(selectedSymbol)
       const selectedRateAvailable = !!selectedRate
         && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
         && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
@@ -1909,7 +1925,7 @@ function PositionSizer({
     // Update open trades P&L + check SL/TP/Trailing — use liveTrades (ref) not stale closure
     const updated = liveTrades.map(t => {
       const pairNow = pairsRef.current.find(p => p.symbol === t.pair)
-      if (!pairNow) return t
+      if (!pairNow || !freshRateSymbolsRef.current.has(t.pair)) return t
       const currentPrice = t.direction === "BUY" ? pairNow.bid : pairNow.ask
 
       // Update trailing peak and compute trailing SL
