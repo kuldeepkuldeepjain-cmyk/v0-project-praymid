@@ -2304,30 +2304,38 @@ function PositionSizer({
     openTradesRef.current = openTradesRef.current.filter(t => t.id !== id)
     setOpenTrades(prev => prev.filter(t => t.id !== id))
 
-    // 2. Add to history once — guard with ID check to be safe
-    setClosedTrades(prev => {
-      if (prev.some(t => t.id === closed.id)) return prev
-      return [closed, ...prev.slice(0, 99)]
-    })
-    persistClose(closed)
+    void (async () => {
+      try {
+        const saved = await persistClose(closed)
+        if (!saved) {
+          openTradesRef.current = [trade, ...openTradesRef.current]
+          setOpenTrades(prev => prev.some(item => item.id === trade.id) ? prev : [trade, ...prev])
+          return
+        }
 
-    // 3. Return margin + P&L to balance (called only once)
-    const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-const reasonLabel = reason === "stop_out" ? "Stop-out (margin call)" : "Manual close"
-adjustWalletBalance(
-  returnAmt,
-  `${reasonLabel} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
-    )
+        setClosedTrades(prev => {
+          if (prev.some(item => item.id === closed.id)) return prev
+          return [closed, ...prev.slice(0, 99)]
+        })
 
-    showToast(reason === "stop_out" ? "error" : (finalPnl >= 0 ? "success" : "error"),
-      reason === "stop_out"
-        ? `Stop-out: force-closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — margin level hit 100% (${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)})`
-        : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
-    )
+        const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
+        const reasonLabel = reason === "stop_out" ? "Stop-out (margin call)" : "Manual close"
+        const newBalance = await adjustWalletBalance(
+          returnAmt,
+          `${reasonLabel} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
+        )
+        if (newBalance === null) return
 
-    if (soundEnabled) playTerminalSound("close")
-
-    setTimeout(() => closingTradeIds.current.delete(id), 1000)
+        showToast(reason === "stop_out" ? "error" : (finalPnl >= 0 ? "success" : "error"),
+          reason === "stop_out"
+            ? `Stop-out: force-closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — margin level hit 100% (${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)})`
+            : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
+        )
+        if (soundEnabled) playTerminalSound("close")
+      } finally {
+        closingTradeIds.current.delete(id)
+      }
+    })()
   }
 
   const closeWinningPositions = useCallback(() => {

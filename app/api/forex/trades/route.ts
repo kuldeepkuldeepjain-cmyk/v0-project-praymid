@@ -115,13 +115,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "open") {
-      await db.query(
+      const inserted = await db.query(
         `INSERT INTO forex_trades
            (id, participant_id, participant_email, pair, direction, lot_size, leverage,
             open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
             status, open_time, open_timestamp)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'open',$14,$15)
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (id) DO NOTHING
+         RETURNING id`,
         [
           trade.id, participantId, participant_email, trade.pair, trade.direction,
           trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
@@ -129,14 +130,24 @@ export async function POST(req: NextRequest) {
           trade.openTime, trade.openTimestamp,
         ]
       )
+      if (inserted.rowCount !== 1) {
+        const existing = await db.query(
+          "SELECT participant_email, status FROM forex_trades WHERE id = $1",
+          [trade.id],
+        )
+        if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "open") {
+          return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        }
+      }
     } else if (action === "pending") {
-      await db.query(
+      const inserted = await db.query(
         `INSERT INTO forex_trades
            (id, participant_id, participant_email, pair, direction, lot_size, leverage,
             open_price, sl, tp, order_type, target_price, expiry, margin, swap,
             status, open_time, open_timestamp)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,0,'pending',$14,$15)
-         ON CONFLICT (id) DO NOTHING`,
+         ON CONFLICT (id) DO NOTHING
+         RETURNING id`,
         [
           trade.id, participantId, participant_email, trade.pair, trade.direction,
           trade.lotSize, trade.leverage, trade.targetPrice, trade.sl, trade.tp,
@@ -144,6 +155,15 @@ export async function POST(req: NextRequest) {
           trade.createdTime, Date.now(),
         ]
       )
+      if (inserted.rowCount !== 1) {
+        const existing = await db.query(
+          "SELECT participant_email, status FROM forex_trades WHERE id = $1",
+          [trade.id],
+        )
+        if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "pending") {
+          return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        }
+      }
     } else if (action === "partial_close") {
       const sourceTradeId = typeof trade.sourceTradeId === "string" ? trade.sourceTradeId : ""
       const remainingLotSize = Number(trade.remainingLotSize)
@@ -155,10 +175,23 @@ export async function POST(req: NextRequest) {
       const client = await db.connect()
       try {
         await client.query("BEGIN")
+        const existingClose = await client.query(
+          "SELECT participant_email, status FROM forex_trades WHERE id = $1 FOR UPDATE",
+          [trade.id],
+        )
+        if (existingClose.rows.length > 0) {
+          await client.query("ROLLBACK")
+          const existingRow = existingClose.rows[0]
+          if (existingRow.participant_email?.toLowerCase() === participant_email.toLowerCase() && existingRow.status === "closed") {
+            return NextResponse.json({ success: true, alreadySaved: true })
+          }
+          return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        }
+
         const parentUpdate = await client.query(
           `UPDATE forex_trades
            SET lot_size = $1, margin = $2, updated_at = NOW()
-           WHERE id = $3 AND participant_email = $4 AND status = 'open'`,
+           WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open'`,
           [remainingLotSize, remainingMargin, sourceTradeId, participant_email],
         )
         if (parentUpdate.rowCount !== 1) {
@@ -166,14 +199,15 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: false, error: "Open trade was not found or is already closed" }, { status: 409 })
         }
 
-        await client.query(
+        const insertedClose = await client.query(
           `INSERT INTO forex_trades
              (id, participant_id, participant_email, pair, direction, lot_size, leverage,
               open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
               close_price, close_reason, final_pnl, final_pips, final_swap,
               status, open_time, open_timestamp, close_time, close_duration)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,'closed',$20,$21,$22,$23)
-           ON CONFLICT (id) DO NOTHING`,
+           ON CONFLICT (id) DO NOTHING
+           RETURNING id`,
           [
             trade.id, participantId, participant_email, trade.pair, trade.direction,
             trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
@@ -182,6 +216,17 @@ export async function POST(req: NextRequest) {
             trade.openTime, trade.openTimestamp, trade.closeTime, trade.closeDuration,
           ]
         )
+        if (insertedClose.rowCount !== 1) {
+          await client.query("ROLLBACK")
+          const existing = await db.query(
+            "SELECT participant_email, status FROM forex_trades WHERE id = $1",
+            [trade.id],
+          )
+          if (existing.rows[0]?.participant_email?.toLowerCase() === participant_email.toLowerCase() && existing.rows[0]?.status === "closed") {
+            return NextResponse.json({ success: true, alreadySaved: true })
+          }
+          return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        }
         await client.query("COMMIT")
       } catch (error) {
         await client.query("ROLLBACK")
@@ -269,33 +314,37 @@ export async function PATCH(req: NextRequest) {
       }
     } else if (action === "modify") {
       const { sl, tp, trailingStopPips } = body
-      await db.query(
+      const result = await db.query(
         `UPDATE forex_trades SET sl = $1, tp = $2, trailing_stop_pips = $3, updated_at = NOW()
-         WHERE id = $4 AND participant_email = $5`,
+         WHERE id = $4 AND LOWER(participant_email) = LOWER($5) AND status = 'open'`,
         [sl, tp, trailingStopPips, id, participant_email]
       )
+      if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
     } else if (action === "partial_reduce") {
       const { lotSize, margin } = body
-      await db.query(
+      const result = await db.query(
         `UPDATE forex_trades SET lot_size = $1, margin = $2, updated_at = NOW()
-         WHERE id = $3 AND participant_email = $4`,
+         WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open'`,
         [lotSize, margin, id, participant_email]
       )
+      if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
     } else if (action === "fill") {
       const { openPrice, openTime, openTimestamp } = body
-      await db.query(
+      const result = await db.query(
         `UPDATE forex_trades
            SET status = 'open', open_price = $1, trailing_peak = $1, open_time = $2, open_timestamp = $3, updated_at = NOW()
-         WHERE id = $4 AND participant_email = $5`,
+         WHERE id = $4 AND LOWER(participant_email) = LOWER($5) AND status = 'pending'`,
         [openPrice, openTime, openTimestamp, id, participant_email]
       )
+      if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Pending order not found" }, { status: 404 })
     } else if (action === "sync") {
       // Lightweight periodic sync of live pnl/price fields — non-critical, best-effort.
       const { currentPrice, pnl, pips, swap } = body
-      await db.query(
-        `UPDATE forex_trades SET swap = $1, updated_at = NOW() WHERE id = $2 AND participant_email = $3 AND status = 'open'`,
+      const result = await db.query(
+        `UPDATE forex_trades SET swap = $1, updated_at = NOW() WHERE id = $2 AND LOWER(participant_email) = LOWER($3) AND status = 'open'`,
         [swap ?? 0, id, participant_email]
       )
+      if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
     } else {
       return NextResponse.json({ success: false, error: "Unknown action" }, { status: 400 })
     }
@@ -340,10 +389,19 @@ export async function DELETE(req: NextRequest) {
 
   try {
     const result = await db.query(
-      `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', close_time = NOW()
-       WHERE id = $1 AND participant_email = $2 AND status = 'pending'`,
+      `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', close_time = NOW(), updated_at = NOW()
+       WHERE id = $1 AND LOWER(participant_email) = LOWER($2) AND status = 'pending'`,
       [id, email],
     )
+    if (result.rowCount !== 1) {
+      const existing = await db.query(
+        "SELECT status FROM forex_trades WHERE id = $1 AND LOWER(participant_email) = LOWER($2)",
+        [id, email],
+      )
+      if (existing.rows[0]?.status !== "cancelled") {
+        return NextResponse.json({ success: false, error: "Pending order not found" }, { status: 404 })
+      }
+    }
     await recordSecurityEvent({ eventType: "trade_cancelled", actorType: "participant", actorEmail: email, request: req, resourceType: "forex_trade", resourceId: id, metadata: { updated: result.rowCount === 1 } })
     return NextResponse.json({ success: true })
   } catch (e: any) {
