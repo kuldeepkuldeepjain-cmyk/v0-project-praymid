@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, CheckCircle2, Loader2, ImageIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { isParticipantAuthenticated } from "@/lib/auth"
+import { clearParticipantAuth, isParticipantAuthenticated } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/client"
 
 export default function SubmitContributionPage() {
@@ -150,6 +150,12 @@ export default function SubmitContributionPage() {
       console.log("[v0] API response status:", response.status)
       const data = await response.json()
       console.log("[v0] API response data:", data)
+
+      if (response.status === 401) {
+        clearParticipantAuth()
+        window.location.assign("/participant/login?reason=session-expired")
+        return
+      }
 
       if (!response.ok) {
         console.error("[v0] API error:", data)

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
-import { participantFetch } from "@/lib/auth"
+import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 
 interface TopUpModalProps {
   isOpen: boolean
@@ -61,6 +61,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       setLoadingRequests(true)
       try {
         const response = await participantFetch("/api/participant/topup/submit", { cache: "no-store" })
+        if (response.status === 401) {
+          clearParticipantAuth()
+          window.location.assign("/participant/login?reason=session-expired")
+          return
+        }
         if (response.ok) {
           const data = await response.json()
           setPendingRequests(Array.isArray(data.requests) ? data.requests : [])
@@ -80,7 +85,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         const data = await response.json()
         const available = response.ok && data.success && data.fundedTierAvailable === true
         if (response.status === 401) {
-          setErrorMessage(data.error || "Your login session has expired. Please log in again before adding funds.")
+          clearParticipantAuth()
+          window.location.assign("/participant/login?reason=session-expired")
           return
         }
         setFundedTierEligibility(available)
@@ -186,6 +192,12 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       })
 
       const data = await response.json().catch(() => ({ message: "The server returned an invalid response." }))
+
+      if (response.status === 401) {
+        clearParticipantAuth()
+        window.location.assign("/participant/login?reason=session-expired")
+        return
+      }
 
       if (!response.ok || !data.success) {
         setErrorMessage(data.message || data.error || "Submission failed. Please try again.")
