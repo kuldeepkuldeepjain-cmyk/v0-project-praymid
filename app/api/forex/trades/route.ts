@@ -294,23 +294,68 @@ export async function PATCH(req: NextRequest) {
       if (closeValues.some((value) => !Number.isFinite(value))) {
         return NextResponse.json({ success: false, error: "Invalid close calculation" }, { status: 400 })
       }
-      const result = await db.query(
-        `UPDATE forex_trades
-           SET status = 'closed', close_price = $1, close_time = $2, close_duration = $3,
-               final_pnl = $4, final_pips = $5, final_swap = $6, close_reason = $7,
-               lot_size = COALESCE($8, lot_size), margin = COALESCE($9, margin), updated_at = NOW()
-         WHERE id = $10 AND LOWER(participant_email) = LOWER($11) AND status = 'open'`,
-        [closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize ?? null, margin ?? null, id, participant_email]
-      )
-      if (result.rowCount !== 1) {
-        const existing = await db.query(
-          "SELECT status FROM forex_trades WHERE id = $1 AND LOWER(participant_email) = LOWER($2)",
+
+      const client = await db.connect()
+      try {
+        await client.query("BEGIN")
+        const existingTrade = await client.query(
+          `SELECT participant_id, participant_email, margin, status
+           FROM forex_trades
+           WHERE id = $1 AND LOWER(participant_email) = LOWER($2)
+           FOR UPDATE`,
           [id, participant_email],
         )
-        if (existing.rows[0]?.status === "closed") {
+        const currentTrade = existingTrade.rows[0]
+        if (!currentTrade) {
+          await client.query("ROLLBACK")
+          return NextResponse.json({ success: false, error: "Trade was not found" }, { status: 404 })
+        }
+        if (currentTrade.status === "closed") {
+          await client.query("ROLLBACK")
           return NextResponse.json({ success: true, alreadyClosed: true })
         }
-        return NextResponse.json({ success: false, error: "Trade was not found or is already closed" }, { status: 404 })
+        if (currentTrade.status !== "open") {
+          await client.query("ROLLBACK")
+          return NextResponse.json({ success: false, error: "Trade is not open" }, { status: 409 })
+        }
+
+        const result = await client.query(
+          `UPDATE forex_trades
+             SET status = 'closed', close_price = $1, close_time = $2, close_duration = $3,
+                 final_pnl = $4, final_pips = $5, final_swap = $6, close_reason = $7,
+                 lot_size = COALESCE($8, lot_size), margin = COALESCE($9, margin), updated_at = NOW()
+           WHERE id = $10 AND status = 'open'`,
+          [closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize ?? null, margin ?? null, id]
+        )
+        if (result.rowCount !== 1) throw new Error("Trade close could not be saved")
+
+        const settlement = Number((Number(currentTrade.margin) + Number(finalPnl)).toFixed(2))
+        const participant = await client.query(
+          `SELECT id, account_balance FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
+          [participant_email],
+        )
+        if (!participant.rows[0]) throw new Error("Participant account was not found")
+        const balanceBefore = Number(participant.rows[0].account_balance) || 0
+        const balanceAfter = Number((balanceBefore + settlement).toFixed(2))
+        if (balanceAfter < 0) throw new Error("Insufficient balance for trade settlement")
+
+        await client.query(
+          `UPDATE participants SET account_balance = $1 WHERE id = $2`,
+          [balanceAfter, participant.rows[0].id],
+        )
+        await client.query(
+          `INSERT INTO transactions
+             (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')`,
+          [participant.rows[0].id, participant_email, settlement < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(settlement), `Trade close settlement — ${id}`, balanceBefore, balanceAfter],
+        )
+        await client.query("COMMIT")
+        return NextResponse.json({ success: true, newBalance: balanceAfter, settlement })
+      } catch (error) {
+        await client.query("ROLLBACK")
+        throw error
+      } finally {
+        client.release()
       }
     } else if (action === "modify") {
       const { sl, tp, trailingStopPips } = body

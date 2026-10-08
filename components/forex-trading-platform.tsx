@@ -1574,13 +1574,13 @@ function PositionSizer({
 
   // ── Trade persistence API. The UI remains optimistic, but failed writes are
   //    retried once and surfaced instead of being silently discarded. ─────────
-  const persistTradeRequest = useCallback(async (input: string, init: RequestInit, label: string) => {
+  const persistTradeRequest = useCallback(async (input: string, init: RequestInit, label: string): Promise<Record<string, unknown> | false> => {
     let lastError = ""
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
         const response = await participantFetch(input, init)
         const payload = await response.json().catch(() => ({}))
-        if (response.ok && payload.success !== false) return true
+        if (response.ok && payload.success !== false) return payload
         lastError = payload.error || `Request failed (${response.status})`
         if (response.status === 400 || response.status === 401 || response.status === 403) break
       } catch (error) {
@@ -2020,12 +2020,15 @@ function PositionSizer({
             return [closed, ...prev]
           })
 
-          // 3. Return margin + P&L only after the close is durable.
-          const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-          await adjustWalletBalance(
-            returnAmt,
-            `${reason.toUpperCase().replace("_"," ")} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
-          )
+          // The close endpoint settles margin + P&L atomically with the trade.
+          const settledBalance = saved && typeof saved.newBalance === "number" ? saved.newBalance : null
+          if (settledBalance !== null) {
+            suppressExternalSync.current = true
+            setWalletBalance(settledBalance)
+            setBalanceLoaded(true)
+            onBalanceUpdated?.(settledBalance)
+            setTimeout(() => { suppressExternalSync.current = false }, 800)
+          }
 
           showToast(
             reason === "tp" ? "success" : "error",
@@ -2350,20 +2353,13 @@ function PositionSizer({
           return [closed, ...prev.slice(0, 99)]
         })
 
-        const returnAmt = parseFloat((trade.margin + finalPnl).toFixed(2))
-        const reasonLabel: Record<ClosedTrade["closeReason"], string> = {
-          manual: "Manual close",
-          sl: "Stop loss",
-          tp: "Take profit",
-          trailing_sl: "Trailing stop",
-          stop_out: "Stop-out (margin call)",
-          account_breach: "Account breach",
-        }
-        const newBalance = await adjustWalletBalance(
-          returnAmt,
-          `${reasonLabel[reason]} — ${trade.pair} ${trade.direction} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} | Margin: $${trade.margin.toFixed(2)}`
-        )
+        const newBalance = saved && typeof saved.newBalance === "number" ? saved.newBalance : null
         if (newBalance === null) return
+        suppressExternalSync.current = true
+        setWalletBalance(newBalance)
+        setBalanceLoaded(true)
+        onBalanceUpdated?.(newBalance)
+        setTimeout(() => { suppressExternalSync.current = false }, 800)
 
         showToast(reason === "stop_out" ? "error" : (finalPnl >= 0 ? "success" : "error"),
           reason === "stop_out"
