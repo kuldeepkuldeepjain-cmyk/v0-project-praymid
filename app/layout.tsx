@@ -22,29 +22,42 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: "Elite Fund",
-  description: "Professional Forex, Crypto & Commodities trading platform. Trade smarter with real-time market data.",
-  generator: "v0.app",
+  metadataBase: new URL("https://www.elitefund.sbs"),
+  title: {
+    default: "EliteFund | Funded Trading Accounts & Prop Trading",
+    template: "%s | EliteFund",
+  },
+  description: "Explore EliteFund funded trading accounts, evaluation programs, trading rules, and risk-aware tools for disciplined forex and multi-asset traders.",
+  alternates: {
+    canonical: "https://www.elitefund.sbs/",
+  },
+  applicationName: "EliteFund",
+  creator: "EliteFund",
+  publisher: "EliteFund",
+  category: "finance",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Elite Fund",
-    startupImage: "/icons/icon-512x512.png",
+    startupImage: "/elite-fund-logo.jpg",
   },
   formatDetection: {
     telephone: false,
   },
   openGraph: {
     type: "website",
-    siteName: "Elite Fund",
-    title: "Elite Fund",
-    description: "Professional Forex, Crypto & Commodities trading platform.",
+    url: "https://www.elitefund.sbs/",
+    siteName: "EliteFund",
+    title: "EliteFund | Funded Trading Accounts & Prop Trading",
+    description: "Explore funded trading programs, clear rules, and risk-aware tools for disciplined traders.",
+    images: [{ url: "/elite-fund-logo.jpg", width: 1200, height: 630, alt: "EliteFund logo" }],
   },
   twitter: {
-    card: "summary",
-    title: "Elite Fund",
-    description: "Professional Forex, Crypto & Commodities trading platform.",
+    card: "summary_large_image",
+    title: "EliteFund | Funded Trading Accounts & Prop Trading",
+    description: "Explore funded trading programs, clear rules, and risk-aware tools for disciplined traders.",
+    images: ["/elite-fund-logo.jpg"],
   },
   icons: {
     icon: [{ url: "/elite-fund-logo.jpg", type: "image/jpeg" }],
@@ -72,6 +85,30 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/elite-fund-logo.jpg" />
       </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "EliteFund",
+              url: "https://www.elitefund.sbs/",
+              logo: "https://www.elitefund.sbs/elite-fund-logo.jpg",
+              description: "Funded trading programs and risk-aware tools for disciplined traders.",
+            }),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "EliteFund",
+              url: "https://www.elitefund.sbs/",
+            }),
+          }}
+        />
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="elite-fund-theme">
           <ToastProvider>
             <ErrorBoundary>{children}</ErrorBoundary>
