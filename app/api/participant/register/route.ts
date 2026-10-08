@@ -130,16 +130,20 @@ export async function POST(request: Request) {
       }, { status: 200 })
     } catch (dbError: any) {
       console.error("[v0] Database error during registration:", dbError)
-      return NextResponse.json({ 
-        success: false, 
-        message: dbError.message || "Database error during registration" 
-      }, { status: 500 })
+      const code = String(dbError?.code || "")
+      const isTransient = ["ETIMEDOUT", "ECONNRESET", "ECONNREFUSED", "57P01", "08001", "08006"].includes(code)
+      return NextResponse.json({
+        success: false,
+        message: isTransient
+          ? "We’re having trouble connecting right now. Your account was not created. Please try again."
+          : "We couldn’t complete registration right now. Please check your details and try again.",
+      }, { status: isTransient ? 503 : 500 })
     }
   } catch (error: any) {
     console.error("[v0] Registration error:", error)
-    return NextResponse.json({ 
-      success: false, 
-      message: error.message || "Registration failed. Please try again." 
+    return NextResponse.json({
+      success: false,
+      message: "We couldn’t complete registration right now. Please try again.",
     }, { status: 500 })
   }
 }
