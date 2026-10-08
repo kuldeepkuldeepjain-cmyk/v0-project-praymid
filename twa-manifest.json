@@ -1,0 +1,29 @@
+{
+  "packageId": "com.elitefund.app",
+  "host": "elitefund.sbs",
+  "name": "Elite Fund",
+  "launcherName": "Elite Fund",
+  "display": "standalone",
+  "startUrl": "/",
+  "themeColor": "#080c14",
+  "navigationColor": "#080c14",
+  "navigationColorDark": "#080c14",
+  "backgroundColor": "#080c14",
+  "enableNotifications": false,
+  "iconUrl": "https://elitefund.sbs/icons/icon-512x512.png",
+  "maskableIconUrl": "https://elitefund.sbs/icons/icon-512x512.png",
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "shortName": "Dashboard",
+      "url": "/participant/dashboard",
+      "icon": "https://elitefund.sbs/icons/icon-192x192.png"
+    },
+    {
+      "name": "Login",
+      "shortName": "Login",
+      "url": "/participant/login",
+      "icon": "https://elitefund.sbs/icons/icon-192x192.png"
+    }
+  ]
+}
