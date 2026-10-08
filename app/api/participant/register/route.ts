@@ -80,13 +80,19 @@ export async function POST(request: Request) {
          VALUES ($1, $2, $3, $1, $4)`,
         [sessionId, newParticipant.id, emailKey, request.headers.get("user-agent") || "registration"],
       ).catch(() => {})
-      await setParticipantSession({
-        participantId: String(newParticipant.id),
-        email: emailKey,
-        role: "participant",
-        sessionId,
-        lastActivityAt: Date.now(),
-      })
+      try {
+        await setParticipantSession({
+          participantId: String(newParticipant.id),
+          email: emailKey,
+          role: "participant",
+          sessionId,
+          lastActivityAt: Date.now(),
+        })
+      } catch (sessionError) {
+        // Account creation already succeeded. A cookie/session write failure must
+        // not turn a successful registration into a misleading 500 response.
+        console.error("[v0] Participant session setup failed after registration:", sessionError)
+      }
 
       // Increment referrer's referral count if a valid referral code was used
       if (referralCode) {
