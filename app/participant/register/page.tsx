@@ -221,7 +221,10 @@ export default function ParticipantRegisterPage() {
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({
+        success: false,
+        message: "We couldn’t complete registration right now. Please try again.",
+      }))
 
       if (data.success) {
         // Set sessionStorage auth so isParticipantAuthenticated() returns true

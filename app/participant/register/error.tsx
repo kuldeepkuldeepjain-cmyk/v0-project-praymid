@@ -18,14 +18,11 @@ export default function Error({
     <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-slate-100">
       <div className="w-full max-w-md space-y-4 bg-white rounded-lg p-8 shadow-lg">
         <h1 className="text-2xl font-bold text-red-600">Something Went Wrong</h1>
-        <div className="bg-red-50 border border-red-200 rounded p-4 max-h-64 overflow-y-auto">
-          <p className="text-sm text-red-800 font-mono">{error.message}</p>
-          {error.stack && (
-            <pre className="text-xs text-red-700 mt-2 whitespace-pre-wrap break-words">
-              {error.stack}
-            </pre>
-          )}
-        </div>
+  <div className="bg-red-50 border border-red-200 rounded p-4">
+    <p className="text-sm text-red-800">
+      We couldn&apos;t open the registration page correctly. Please refresh and try again.
+    </p>
+  </div>
         <div className="flex gap-3">
           <button
             onClick={reset}
