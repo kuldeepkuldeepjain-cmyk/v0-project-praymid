@@ -47,14 +47,8 @@ export const metadata: Metadata = {
     description: "Professional Forex, Crypto & Commodities trading platform.",
   },
   icons: {
-    icon: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
-    apple: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
-    ],
+    icon: [{ url: "/elite-fund-logo.jpg", type: "image/jpeg" }],
+    apple: [{ url: "/elite-fund-logo.jpg", type: "image/jpeg" }],
   },
 }
 
@@ -74,8 +68,8 @@ export default function RootLayout({
         <meta name="application-name" content="Elite Fund" />
         <meta name="msapplication-TileColor" content="#080c14" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512x512.png" />
+        <link rel="icon" href="/elite-fund-logo.jpg" type="image/jpeg" />
+        <link rel="apple-touch-icon" href="/elite-fund-logo.jpg" />
       </head>
       <body className={`${inter.className} antialiased overflow-x-hidden`}>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="elite-fund-theme">
