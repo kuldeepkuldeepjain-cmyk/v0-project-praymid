@@ -69,7 +69,7 @@ export function DeleteParticipantsPanel() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Failed to clear participation")
-      toast({ title: "Participation cleared", description: `${data.clearedTrades || 0} trading records removed. The account can now be deleted.` })
+      toast({ title: "Participation cleared", description: `${data.clearedRecords || 0} related records removed. The account can now be deleted.` })
     } catch (error) {
       toast({ title: "Unable to clear participation", description: error instanceof Error ? error.message : "Please try again", variant: "destructive" })
     } finally {
