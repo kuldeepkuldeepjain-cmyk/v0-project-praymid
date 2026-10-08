@@ -44,13 +44,33 @@ export async function DELETE(request: NextRequest) {
       )
 
       let clearedRecords = 0
-      for (const row of foreignKeys.rows) {
-        const identifier = (value: string) => `"${String(value).replaceAll('"', '""')}"`
-        const result = await client.query(
-          `DELETE FROM ${identifier(row.schema_name)}.${identifier(row.table_name)} WHERE ${identifier(row.column_name)} = $1`,
-          [participantId],
-        )
-        clearedRecords += result.rowCount ?? 0
+      let pendingForeignKeys = [...foreignKeys.rows]
+      while (pendingForeignKeys.length > 0) {
+        const nextPending: typeof pendingForeignKeys = []
+        let deletedThisPass = 0
+        for (const row of pendingForeignKeys) {
+          const identifier = (value: string) => `"${String(value).replaceAll('"', '""')}"`
+          try {
+            const result = await client.query(
+              `DELETE FROM ${identifier(row.schema_name)}.${identifier(row.table_name)} WHERE ${identifier(row.column_name)} = $1`,
+              [participantId],
+            )
+            const deleted = result.rowCount ?? 0
+            clearedRecords += deleted
+            deletedThisPass += deleted
+          } catch (dependencyError: any) {
+            if (dependencyError?.code === "23503") {
+              nextPending.push(row)
+            } else {
+              throw dependencyError
+            }
+          }
+        }
+        if (nextPending.length === 0) break
+        if (deletedThisPass === 0) {
+          throw new Error("Participant dependencies could not be cleared")
+        }
+        pendingForeignKeys = nextPending
       }
 
       // Also remove legacy email-only participation rows that have no FK.
