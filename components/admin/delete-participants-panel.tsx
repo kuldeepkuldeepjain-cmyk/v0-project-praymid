@@ -42,6 +42,7 @@ export function DeleteParticipantsPanel() {
   const [confirmDelete, setConfirmDelete] = useState<Participant | null>(null)
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false)
   const [isDeletingAll, setIsDeletingAll] = useState(false)
+  const [clearingId, setClearingId] = useState<string | null>(null)
 
   const fetchParticipants = useCallback(async () => {
     setLoading(true)
@@ -57,6 +58,24 @@ export function DeleteParticipantsPanel() {
   }, [])
 
   useEffect(() => { fetchParticipants() }, [fetchParticipants])
+
+  const handleClearParticipation = async (participant: Participant) => {
+    setClearingId(participant.id)
+    try {
+      const res = await adminFetch("/api/admin/delete-participant", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: participant.id, clearParticipation: true }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to clear participation")
+      toast({ title: "Participation cleared", description: `${data.clearedTrades || 0} trading records removed. The account can now be deleted.` })
+    } catch (error) {
+      toast({ title: "Unable to clear participation", description: error instanceof Error ? error.message : "Please try again", variant: "destructive" })
+    } finally {
+      setClearingId(null)
+    }
+  }
 
   const handleDelete = async (participant: Participant) => {
     setDeletingId(participant.id)
@@ -205,18 +224,29 @@ export function DeleteParticipantsPanel() {
                         {new Date(p.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                       </TableCell>
                       <TableCell className="py-2.5 pr-5 text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
-                          onClick={() => setConfirmDelete(p)}
-                          disabled={deletingId === p.id}
-                        >
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2.5 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20"
+                            onClick={() => handleClearParticipation(p)}
+                            disabled={clearingId === p.id || deletingId === p.id}
+                          >
+                            {clearingId === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Clear participation"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/20"
+                            onClick={() => setConfirmDelete(p)}
+                            disabled={deletingId === p.id || clearingId === p.id}
+                          >
                           {deletingId === p.id
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             : <><Trash2 className="h-3.5 w-3.5 mr-1" />Delete</>
                           }
-                        </Button>
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
