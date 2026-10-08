@@ -86,12 +86,35 @@ export function getParticipantHeaders(): Record<string, string> {
   return { "X-Participant-Token": email }
 }
 
-// Admin API routes authenticate through the signed, httpOnly session cookie.
-export async function adminFetch(input: string, init?: RequestInit): Promise<Response> {
+  // Admin API routes authenticate through the signed, httpOnly session cookie.
+  // Read requests are retried briefly because serverless database connections can
+  // occasionally fail during a cold start or transient network interruption.
+  export async function adminFetch(input: string, init?: RequestInit): Promise<Response> {
   const headers = new Headers(init?.headers)
   if (init?.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json")
-  return fetch(input, { ...init, headers, credentials: init?.credentials ?? "same-origin" })
-}
+  const requestInit: RequestInit = {
+  ...init,
+  headers,
+  credentials: init?.credentials ?? "same-origin",
+  cache: init?.cache ?? "no-store",
+  }
+  const isReadRequest = !requestInit.method || requestInit.method.toUpperCase() === "GET"
+  const maxAttempts = isReadRequest ? 3 : 1
+  let lastResponse: Response | undefined
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+  try {
+  const response = await fetch(input, requestInit)
+  lastResponse = response
+  if (!isReadRequest || ![500, 502, 503, 504].includes(response.status) || attempt === maxAttempts - 1) return response
+  } catch (error) {
+  if (!isReadRequest || attempt === maxAttempts - 1) throw error
+  }
+  await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)))
+  }
+
+  return lastResponse as Response
+  }
 
 // Authenticated fetch for participant API calls — automatically injects X-Participant-Token header
 export async function participantFetch(input: string, init?: RequestInit): Promise<Response> {

@@ -53,31 +53,41 @@ export async function GET(request: Request) {
     if (!email) return NextResponse.json({ error: "Email is required" }, { status: 400 })
 
     const db = getPool()!
-    const result = await db.query(
-      "SELECT * FROM participants WHERE email = $1",
-      [email.toLowerCase().trim()]
-    )
+    const normalizedEmail = email.toLowerCase().trim()
+    let result
+    let topUpCount = 0
+    let fundedTierTopUpCount = 0
+
+    try {
+      result = await db.query(
+        `SELECT
+          p.*,
+          COALESCE(topups.count, 0)::int AS top_up_count,
+          COALESCE(topups.funded_tier_count, 0)::int AS funded_tier_top_up_count
+         FROM participants p
+         LEFT JOIN LATERAL (
+           SELECT
+             COUNT(*) AS count,
+             COUNT(*) FILTER (WHERE payment_method = 'funded_tier') AS funded_tier_count
+           FROM topup_requests
+           WHERE participant_id = p.id
+         ) topups ON TRUE
+         WHERE p.email = $1`,
+        [normalizedEmail]
+      )
+      topUpCount = Number(result.rows[0]?.top_up_count) || 0
+      fundedTierTopUpCount = Number(result.rows[0]?.funded_tier_top_up_count) || 0
+    } catch (error: any) {
+      // Keep profile reads available on deployments without the optional top-up schema.
+      if (error?.code !== "42P01" && error?.code !== "42703") throw error
+      result = await db.query(
+        "SELECT * FROM participants WHERE email = $1",
+        [normalizedEmail]
+      )
+    }
 
     const p = result.rows[0]
     if (!p) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
-
-    let topUpCount = 0
-    let fundedTierTopUpCount = 0
-    try {
-      const topUpResult = await db.query(
-        `SELECT
-          COUNT(*)::int AS count,
-          COUNT(*) FILTER (WHERE payment_method = 'funded_tier')::int AS funded_tier_count
-         FROM topup_requests
-         WHERE participant_id = $1`,
-        [p.id]
-      )
-      topUpCount = Number(topUpResult.rows[0]?.count) || 0
-      fundedTierTopUpCount = Number(topUpResult.rows[0]?.funded_tier_count) || 0
-    } catch {
-      topUpCount = 0
-      fundedTierTopUpCount = 0
-    }
 
     return NextResponse.json({
       success: true,
