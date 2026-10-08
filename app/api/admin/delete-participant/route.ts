@@ -21,50 +21,59 @@ export async function DELETE(request: NextRequest) {
     }
     const { email } = res.rows[0]
 
-    if (clearParticipation) {
-      try {
-        const result = await db.query(
-          "DELETE FROM forex_trades WHERE participant_id = $1 OR LOWER(participant_email) = LOWER($2)",
-          [participantId, email],
-        )
-        return NextResponse.json({ success: true, clearedTrades: result.rowCount ?? 0, participantId, email })
-      } catch (error: any) {
-        if (error?.code === "42P01") return NextResponse.json({ success: true, clearedTrades: 0, participantId, email })
-        throw error
-      }
-    }
-
     const client = await db.connect()
     try {
       await client.query("BEGIN")
 
-      // Remove every dependent participation record before the participant row.
-      // Keep this in one transaction so a partial cleanup can never be committed.
-      const relatedTables = [
-        { table: "forex_trades", col: "participant_id" },
-        { table: "forex_trades", col: "participant_email", isEmail: true },
-        { table: "transactions", col: "participant_id" },
-        { table: "transactions", col: "participant_email", isEmail: true },
-        { table: "payment_submissions", col: "participant_id" },
-        { table: "payout_requests", col: "participant_id" },
-        { table: "predictions", col: "participant_id" },
-        { table: "topup_requests", col: "participant_id" },
-        { table: "contribution_ledger", col: "participant_id" },
-        { table: "gas_approvals", col: "participant_id" },
-        { table: "invite_logs", col: "participant_id" },
-        { table: "spin_coupons", col: "participant_id" },
-        { table: "support_tickets", col: "participant_id" },
-        { table: "wallet_pool", col: "assigned_to" },
-      ]
+      // Discover every real foreign-key dependency instead of maintaining a
+      // fragile table list that can miss newly added participation tables.
+      const foreignKeys = await client.query(
+        `SELECT child_ns.nspname AS schema_name, child.relname AS table_name, child_col.attname AS column_name
+         FROM pg_constraint constraint_row
+         JOIN pg_class parent ON parent.oid = constraint_row.confrelid
+         JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
+         JOIN pg_class child ON child.oid = constraint_row.conrelid
+         JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
+         JOIN pg_attribute child_col ON child_col.attrelid = child.oid
+           AND child_col.attnum = constraint_row.conkey[1]
+         WHERE constraint_row.contype = 'f'
+           AND parent_ns.nspname = 'public'
+           AND parent.relname = 'participants'
+           AND array_length(constraint_row.conkey, 1) = 1
+           AND child_ns.nspname = 'public'`,
+      )
 
-      for (const { table, col, isEmail } of relatedTables) {
-        const val = isEmail ? email : participantId
+      let clearedRecords = 0
+      for (const row of foreignKeys.rows) {
+        const identifier = (value: string) => `"${String(value).replaceAll('"', '""')}"`
+        const result = await client.query(
+          `DELETE FROM ${identifier(row.schema_name)}.${identifier(row.table_name)} WHERE ${identifier(row.column_name)} = $1`,
+          [participantId],
+        )
+        clearedRecords += result.rowCount ?? 0
+      }
+
+      // Also remove legacy email-only participation rows that have no FK.
+      const emailTables = [
+        "forex_trades", "transactions", "payment_submissions", "payout_requests",
+        "predictions", "topup_requests", "contribution_ledger", "gas_approvals",
+        "invite_logs", "spin_coupons", "support_tickets",
+      ]
+      for (const table of emailTables) {
         try {
-          await client.query(`DELETE FROM ${table} WHERE ${col} = $1`, [val])
+          const result = await client.query(
+            `DELETE FROM "${table}" WHERE LOWER(participant_email) = LOWER($1)`,
+            [email],
+          )
+          clearedRecords += result.rowCount ?? 0
         } catch (tableError: any) {
-          // Optional legacy tables may not exist in every deployment.
           if (tableError?.code !== "42P01" && tableError?.code !== "42703") throw tableError
         }
+      }
+
+      if (clearParticipation) {
+        await client.query("COMMIT")
+        return NextResponse.json({ success: true, clearedRecords, participantId, email })
       }
 
       await client.query("DELETE FROM participants WHERE id = $1", [participantId])
