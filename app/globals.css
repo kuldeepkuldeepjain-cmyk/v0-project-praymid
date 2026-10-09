@@ -1224,8 +1224,12 @@ button, a, [role="button"] {
   .terminal-icon-button:hover { background: rgba(34,211,238,0.08); border-color: #2c6d86; color: #d7f8ff; transform: translateY(-1px); }
 
   @media (max-width: 640px) {
-    .terminal-toolbar-row { gap: 5px !important; padding-inline: 8px !important; }
+    .terminal-toolbar-row { gap: 5px !important; padding-inline: 8px !important; min-width: 0; }
     .terminal-brand-lockup { padding-right: 6px !important; }
+    .terminal-toolbar-row > * { min-width: 0; }
+    .terminal-toolbar-row .terminal-icon-button { flex: 0 0 32px; }
+    .terminal-toolbar-row .terminal-header-search { flex: 1 1 auto; max-width: none; }
+
     .terminal-brand-logo { max-width: 42px !important; }
     .terminal-header-search { min-width: 0; }
     .terminal-header-search > button { padding-inline: 8px !important; }
@@ -2090,18 +2094,32 @@ button, a, [role="button"] {
     min-height: 520px;
   }
   .mt5-terminal .apple-terminal-grid {
+    display: block !important;
     min-height: 0;
-    width: 100%;
-    overflow: hidden;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative;
   }
   .mt5-terminal .apple-terminal-market,
   .mt5-terminal .apple-terminal-chart-column,
   .mt5-terminal .apple-terminal-order {
+    position: relative !important;
     width: 100% !important;
     max-width: 100% !important;
     min-width: 0 !important;
+    flex: none !important;
     border-left: 0 !important;
     border-right: 0 !important;
+  }
+  .mt5-terminal .apple-terminal-market,
+  .mt5-terminal .apple-terminal-chart-column,
+  .mt5-terminal .apple-terminal-order,
+  .mt5-terminal .reference-sidebar-collapsed {
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
   }
   .mt5-terminal .apple-terminal-chart-column,
   .mt5-terminal .apple-terminal-order,
