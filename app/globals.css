@@ -1221,7 +1221,19 @@ button, a, [role="button"] {
   color: #9eb1c5;
   transition: background 160ms ease, color 160ms ease, border-color 160ms ease, transform 120ms ease;
 }
-.terminal-icon-button:hover { background: rgba(34,211,238,0.08); border-color: #2c6d86; color: #d7f8ff; transform: translateY(-1px); }
+  .terminal-icon-button:hover { background: rgba(34,211,238,0.08); border-color: #2c6d86; color: #d7f8ff; transform: translateY(-1px); }
+
+  @media (max-width: 640px) {
+    .terminal-toolbar-row { gap: 5px !important; padding-inline: 8px !important; }
+    .terminal-brand-lockup { padding-right: 6px !important; }
+    .terminal-brand-logo { max-width: 42px !important; }
+    .terminal-header-search { min-width: 0; }
+    .terminal-header-search > button { padding-inline: 8px !important; }
+    .terminal-header-search > button span { font-size: 9px; }
+    .terminal-icon-button { width: 32px; height: 32px; flex: 0 0 32px; }
+    .terminal-account-button { padding-inline: 4px !important; }
+    .terminal-account-button > svg { display: none; }
+  }
 .terminal-icon-button:active { transform: translateY(0); }
 .terminal-menu-item { display: flex; width: 100%; align-items: center; gap: 8px; border-radius: 6px; padding: 8px; text-align: left; font-size: 11px; color: #cbd5e1; }
 .terminal-menu-item:hover { background: rgba(255,255,255,0.06); }
@@ -2069,9 +2081,11 @@ button, a, [role="button"] {
   .mt5-terminal .reference-metrics-header { overflow-x: auto; }
 }
 
-@media (max-width: 1023px) {
-  .reference-mobile-nav { display: flex; }
+  @media (max-width: 1023px) {
+  .reference-mobile-nav { display: flex !important; position: relative; z-index: 20; min-height: 46px; }
+  .reference-mobile-nav button { min-height: 38px; }
   .reference-terminal {
+
     height: min(100dvh, 900px) !important;
     min-height: 520px;
   }
