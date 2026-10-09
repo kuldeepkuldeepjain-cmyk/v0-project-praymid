@@ -81,6 +81,12 @@ export async function POST(req: NextRequest) {
     if (numericTradeFields.some((value) => typeof value !== "number" || !Number.isFinite(value))) {
       return NextResponse.json({ success: false, error: "Invalid trade values" }, { status: 400 })
     }
+    if ((action === "open" || action === "pending") && (!Number.isFinite(trade.lotSize) || trade.lotSize <= 0 || !Number.isFinite(trade.leverage) || trade.leverage <= 0)) {
+      return NextResponse.json({ success: false, error: "Lot size and leverage must be greater than zero" }, { status: 400 })
+    }
+    if (action === "open" && (!Number.isFinite(trade.margin) || trade.margin <= 0)) {
+      return NextResponse.json({ success: false, error: "Margin must be greater than zero" }, { status: 400 })
+    }
     if (auth.email.toLowerCase() !== participant_email.toLowerCase()) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     }
@@ -115,29 +121,56 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "open") {
-      const inserted = await db.query(
-        `INSERT INTO forex_trades
-           (id, participant_id, participant_email, pair, direction, lot_size, leverage,
-            open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
-            status, open_time, open_timestamp)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'open',$14,$15)
-         ON CONFLICT (id) DO NOTHING
-         RETURNING id`,
-        [
-          trade.id, participantId, participant_email, trade.pair, trade.direction,
-          trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
-          trade.trailingStopPips, trade.trailingPeak, trade.margin,
-          trade.openTime, trade.openTimestamp,
-        ]
-      )
-      if (inserted.rowCount !== 1) {
-        const existing = await db.query(
-          "SELECT participant_email, status FROM forex_trades WHERE id = $1",
-          [trade.id],
+      if (!participant) return NextResponse.json({ success: false, error: "Participant account was not found" }, { status: 404 })
+      const margin = Number(trade.margin)
+      if (!Number.isFinite(margin) || margin <= 0) return NextResponse.json({ success: false, error: "Invalid margin" }, { status: 400 })
+
+      const client = await db.connect()
+      try {
+        await client.query("BEGIN")
+        const account = await client.query(
+          "SELECT id, account_balance FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE",
+          [participant_email],
         )
-        if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "open") {
-          return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        if (!account.rows[0]) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
+        const balanceBefore = Number(account.rows[0].account_balance) || 0
+        if (balanceBefore < margin) throw Object.assign(new Error(`Insufficient balance. Available: $${balanceBefore.toFixed(2)}, required: $${margin.toFixed(2)}`), { status: 400 })
+
+        const inserted = await client.query(
+          `INSERT INTO forex_trades
+             (id, participant_id, participant_email, pair, direction, lot_size, leverage,
+              open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
+              status, open_time, open_timestamp)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'open',$14,$15)
+           ON CONFLICT (id) DO NOTHING
+           RETURNING id`,
+          [trade.id, account.rows[0].id, participant_email, trade.pair, trade.direction,
+            trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
+            trade.trailingStopPips, trade.trailingPeak, margin, trade.openTime, trade.openTimestamp]
+        )
+        if (inserted.rowCount !== 1) {
+          const existing = await client.query("SELECT participant_email, status FROM forex_trades WHERE id = $1", [trade.id])
+          if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "open") {
+            throw Object.assign(new Error("Trade ID already exists"), { status: 409 })
+          }
+          await client.query("COMMIT")
+          return NextResponse.json({ success: true, alreadySaved: true, newBalance: balanceBefore })
         }
+        const balanceAfter = Number((balanceBefore - margin).toFixed(2))
+        await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, account.rows[0].id])
+        await client.query(
+          `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+           VALUES ($1, $2, 'forex_margin_lock', $3, $4, $5, $6, 'completed')`,
+          [account.rows[0].id, participant_email, margin, `Margin locked — ${trade.pair} ${trade.direction} — ${trade.id}`, balanceBefore, balanceAfter],
+        )
+        await client.query("COMMIT")
+        return NextResponse.json({ success: true, riskFlags: tradeRisk.flags, newBalance: balanceAfter })
+      } catch (error: any) {
+        await client.query("ROLLBACK")
+        if (error?.status) return NextResponse.json({ success: false, error: error.message }, { status: error.status })
+        throw error
+      } finally {
+        client.release()
       }
     } else if (action === "pending") {
       const inserted = await db.query(
@@ -251,8 +284,8 @@ export async function POST(req: NextRequest) {
     })
     return NextResponse.json({ success: true, riskFlags: tradeRisk.flags })
   } catch (e: any) {
-    console.error("[v0] forex trades POST error:", e.message)
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 })
+    console.error("[v0] forex trades POST error:", e)
+    return NextResponse.json({ success: false, error: "Trade could not be executed. Please try again." }, { status: 500 })
   }
 }
 

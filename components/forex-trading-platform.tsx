@@ -1276,7 +1276,7 @@ function PositionSizer({
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ──────────────────────────────────────────────────────────────────
+  // ── State ─────────────��────────────────────────────────────────────────────
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -2241,27 +2241,21 @@ function PositionSizer({
       setSl(""); setTp(""); setTrailingPips("")
       setActivePanel("positions")
 
-      // Deduct margin on the server, then persist the trade. Roll back the
-      // optimistic state above if either step fails.
-      const newBal = await adjustWalletBalance(
-        -margin,
-        `Margin locked — ${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)}`
-      )
-      if (newBal === null) {
-        openTradesRef.current = openTradesRef.current.filter(item => item.id !== tradeId)
-        setOpenTrades(prev => prev.filter(item => item.id !== tradeId))
+      // The API locks margin, records the trade, and writes the ledger entry in
+      // one transaction. Never deduct or restore margin in a second request.
+      const saved = await persistOpenTrade(trade)
+      if (!saved) {
+        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
+        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
         setWalletBalance(prev => prev + margin)
         return
       }
-
-      const tradeSaved = await persistOpenTrade(trade)
-      if (!tradeSaved) {
-        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
-        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
-        await adjustWalletBalance(
-          margin,
-          `Trade save rollback — ${dir} ${lot}L ${pairSymbol}`
-        )
+      if (typeof saved.newBalance === "number") {
+        suppressExternalSync.current = true
+        setWalletBalance(saved.newBalance)
+        setBalanceLoaded(true)
+        onBalanceUpdated?.(saved.newBalance)
+        setTimeout(() => { suppressExternalSync.current = false }, 800)
       }
     }
   }
