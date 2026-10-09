@@ -150,7 +150,7 @@ export function ForexHeader({
 
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
-      <div className="flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
+      <div className="terminal-toolbar-row flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
         <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
           <img
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-A7KakQah7xwcxtqtqlfe43SgNoWIkP.png"
@@ -161,7 +161,7 @@ export function ForexHeader({
           <span className="sr-only">Elite Fund Trading Terminal</span>
         </div>
 
-        <div className="relative min-w-0 flex-1 lg:max-w-sm">
+        <div className="terminal-header-search relative min-w-0 flex-1 lg:max-w-sm">
           <button type="button" onClick={() => { setSearchOpen((value) => !value); setMenuOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={searchOpen} className="flex h-9 w-full items-center gap-2 rounded-lg border px-3 text-left text-[11px] text-slate-400 transition hover:border-slate-600" style={{ background: "#0d1a2b", borderColor: "#21354d" }}>
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">Search instruments</span>
@@ -221,7 +221,7 @@ export function ForexHeader({
 
 
         <div className="relative">
-          <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
+          <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="terminal-account-button flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400/20 text-[10px] font-black text-cyan-200">{userName.slice(0, 2).toUpperCase()}</span>
             <span className="hidden max-w-24 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountType} · 1:{leverage}</span></span>
             <ChevronDown className="h-3 w-3 text-slate-500" />
