@@ -25,7 +25,7 @@ const KUCOIN_INTERVALS: Record<string, string> = {
 function cryptoKucoinSymbol(pair: string): string | null {
   const [base, quote] = pair.split("/")
   if (!isCrypto(pair) || !base || quote !== "USD") return null
-  return `${base}-USDT`
+  return `${base}USDT`
 }
 
 async function fetchKucoinCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
@@ -35,20 +35,21 @@ async function fetchKucoinCryptoCandles(pair: string, tf: string): Promise<unkno
 
   const endAt = Math.floor(Date.now() / 1000)
   const startAt = endAt - (TF_SECONDS[tf] ?? 300) * 180
-  const url = `https://api.kucoin.com/api/v1/market/candles?symbol=${encodeURIComponent(symbol)}&type=${type}&startAt=${startAt}&endAt=${endAt}`
-  const response = await fetch(url, { headers: { Accept: "application/json" }, next: { revalidate: 0 }, signal: AbortSignal.timeout(5000) })
-  if (!response.ok) throw new Error(`KuCoin candles HTTP ${response.status}`)
+  const binanceInterval: Record<string, string> = { "1min": "1m", "5min": "5m", "15min": "15m", "30min": "30m", "1hour": "1h", "4hour": "4h", "1day": "1d", "1week": "1w" }
+  const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval[type] ?? "5m"}&limit=180`
+  const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(5000) })
+  if (!response.ok) throw new Error(`Binance candles HTTP ${response.status}`)
   const json = await response.json()
-  if (json?.code !== "200000" || !Array.isArray(json.data)) throw new Error("KuCoin returned no candles")
+  if (!Array.isArray(json)) throw new Error("Binance returned no candles")
 
   const decimals = dec(pair)
-  return json.data
+  return json
     .map((row: unknown[]) => {
-      const ts = Number(row[0])
+      const ts = Number(row[0]) / 1000
       const open = Number(row[1])
-      const close = Number(row[2])
-      const high = Number(row[3])
-      const low = Number(row[4])
+      const high = Number(row[2])
+      const low = Number(row[3])
+      const close = Number(row[4])
       const volume = Number(row[5])
       return { time: fmtTime(ts, tf), open, high, low, close, volume, ts }
     })
@@ -93,6 +94,24 @@ function aggregateCandles(candles: OhlcCandle[], timeframe: string): OhlcCandle[
     current.volume += candle.volume
   }
   return [...buckets.values()]
+}
+
+const TWELVE_INTERVALS: Record<string, string> = { "1M": "1min", "5M": "5min", "15M": "15min", "1H": "1h", "4H": "4h" }
+
+async function fetchTwelveForexCandles(pair: string, tf: string): Promise<unknown[]> {
+  const key = process.env.TWELVE_DATA_API_KEY
+  const interval = TWELVE_INTERVALS[tf]
+  if (!key || !interval) throw new Error("Twelve Data candles unavailable for this timeframe")
+  const response = await fetch(`https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(pair)}&interval=${interval}&outputsize=150&order=ASC&apikey=${encodeURIComponent(key)}`, { cache: "no-store", signal: AbortSignal.timeout(8000) })
+  if (!response.ok) throw new Error(`Twelve Data candles HTTP ${response.status}`)
+  const json = await response.json()
+  if (json?.status === "error" || !Array.isArray(json?.values)) throw new Error(json?.message ?? "Twelve Data returned no candles")
+  const d = dec(pair)
+  return json.values.map((row: Record<string, string>) => {
+    const ts = Math.floor(new Date(row.datetime).getTime() / 1000)
+    const open = Number(row.open), high = Number(row.high), low = Number(row.low), close = Number(row.close)
+    return { time: fmtTime(ts, tf), open: Number(open.toFixed(d)), high: Number(high.toFixed(d)), low: Number(low.toFixed(d)), close: Number(close.toFixed(d)), volume: Number(row.volume) || 0, ts }
+  }).filter((c: { ts: number; open: number; high: number; low: number; close: number }) => Number.isFinite(c.ts) && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
 }
 
 async function fetchGoldSpotPrice(): Promise<number | null> {
@@ -144,6 +163,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    if (!cryptoSymbol && !pair.startsWith("X") && process.env.TWELVE_DATA_API_KEY && TWELVE_INTERVALS[tf]) {
+      const candles = await fetchTwelveForexCandles(pair, tf)
+      if (candles.length === 0) throw new Error("No usable Twelve Data candles")
+      candleCache.set(cacheKey, { candles, ts: now })
+      return NextResponse.json({ candles, source: "live-twelve-data", marketDataType: "indicative-forex", ts: now })
+    }
     if (cryptoSymbol) {
       const candles = await fetchKucoinCryptoCandles(pair, tf)
       if (candles.length === 0) throw new Error("No usable crypto candles")
@@ -224,7 +249,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles: cached.candles, source: "stale", ts: cached.ts })
     }
     return NextResponse.json(
-      { candles: [], source: "offline", provider: cryptoSymbol ? "KuCoin" : "Yahoo Finance", ts: now, error: "Live candle history is temporarily unavailable" },
+      { candles: [], source: "offline", provider: cryptoSymbol ? "Binance" : "Yahoo Finance", ts: now, error: "Live candle history is temporarily unavailable" },
       { status: 503, headers: { "Cache-Control": "no-store, max-age=0", "Retry-After": "5" } },
     )
   }

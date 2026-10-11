@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
-import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec } from "@/lib/forex-instruments"
+import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec, isCrypto } from "@/lib/forex-instruments"
 
 // Cache to avoid hammering Yahoo Finance (server-side, resets on cold start)
 let cache: {
   data: Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
-  sources: Record<string, "yahoo" | "gold-api" | "stale-cache">
+  sources: Record<string, "twelve-data" | "yahoo" | "gold-api" | "stale-cache">
   ts: number
 } | null = null
 const LIVE_REFRESH_INTERVAL_MS = 3000
@@ -27,16 +27,26 @@ export async function GET() {
     // Fetch ALL instruments in a single batched Yahoo quote call instead of
     // one request per pair — cuts ~70 round trips down to 1-2, which is both
     // far faster and far less likely to trip rate limiting.
-    const [quoteResults, spotResult] = await Promise.all([
+    const [quoteResults, spotResult, twelveResults] = await Promise.all([
       fetchBatchedQuotes(ySymbols),
       fetchGoldSpot(),
+      fetchTwelveQuotes(pairs.filter((pair) => !isCrypto(pair) && !pair.startsWith("X"))),
     ])
 
     const data: Record<string, RateRow> = {}
-    const sources: Record<string, "yahoo" | "gold-api" | "stale-cache"> = {}
+    const sources: Record<string, "twelve-data" | "yahoo" | "gold-api" | "stale-cache"> = {}
     for (const pair of pairs) {
       const ySym = YAHOO_SYMBOLS[pair]
+      const twelve = twelveResults.get(pair)
       const q = quoteResults.get(ySym)
+      if (twelve) {
+        const d = dec(pair)
+        const mid = Number(twelve.price.toFixed(d))
+        const spread = TYPICAL_SPREADS[pair] ?? 0.00002
+        data[pair] = { mid, bid: Number((mid - spread / 2).toFixed(d)), ask: Number((mid + spread / 2).toFixed(d)), change: twelve.change, high: Number(twelve.high.toFixed(d)), low: Number(twelve.low.toFixed(d)), open: Number(twelve.open.toFixed(d)) }
+        sources[pair] = "twelve-data"
+        continue
+      }
       if (!q || !q.regularMarketPrice || q.regularMarketPrice <= 0) {
         const lastKnown = cache?.data[pair]
         if (lastKnown) {
@@ -83,7 +93,7 @@ export async function GET() {
     }
 
     cache = { data, sources, ts: now }
-    const hasFreshQuotes = Object.values(sources).some((source) => source === "yahoo" || source === "gold-api")
+    const hasFreshQuotes = Object.values(sources).some((source) => source === "twelve-data" || source === "yahoo" || source === "gold-api")
     const hasStaleQuotes = Object.values(sources).some((source) => source === "stale-cache")
     const hasMissingQuotes = Object.keys(data).length < pairs.length
     return NextResponse.json({
@@ -101,6 +111,29 @@ export async function GET() {
     }
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
+}
+
+type TwelveQuote = { price: number; change: number; high: number; low: number; open: number }
+
+async function fetchTwelveQuotes(pairs: string[]): Promise<Map<string, TwelveQuote>> {
+  const out = new Map<string, TwelveQuote>()
+  const key = process.env.TWELVE_DATA_API_KEY
+  if (!key || pairs.length === 0) return out
+  await Promise.all(pairs.map(async (pair) => {
+    try {
+      const response = await fetch(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(pair)}&apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), cache: "no-store" })
+      if (!response.ok) return
+      const json = await response.json()
+      const price = Number(json.close ?? json.price)
+      const open = Number(json.open)
+      const high = Number(json.high)
+      const low = Number(json.low)
+      if ([price, open, high, low].every(Number.isFinite) && price > 0) {
+        out.set(pair, { price, open, high, low, change: Number(json.percent_change) || 0 })
+      }
+    } catch {}
+  }))
+  return out
 }
 
 type YahooQuote = {
