@@ -54,7 +54,28 @@ async function fetchBinanceCryptoCandles(pair: string, tf: string): Promise<unkn
     }
   }
   if (!Array.isArray(json)) {
-    throw new Error(`${lastError}. Binance may be unavailable from this server region; retrying automatically.`)
+    const coinbaseProduct = symbol.replace(/USDT$/, "-USD")
+    const granularity = { "1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400, "1d": 86400, "1w": 604800 }[binanceInterval[type] ?? "5m"] ?? 300
+    const end = new Date()
+    const start = new Date(end.getTime() - granularity * 180 * 1000)
+    try {
+      const response = await fetch(`https://api.exchange.coinbase.com/products/${coinbaseProduct}/candles?granularity=${granularity}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`, { headers: { Accept: "application/json", "User-Agent": "EliteFund/1.0" }, cache: "no-store", signal: AbortSignal.timeout(8000) })
+      if (response.ok) {
+        const payload = await response.json()
+        if (Array.isArray(payload) && payload.length > 0) {
+          const decimals = dec(pair)
+          return payload
+            .map((row: unknown[]) => ({ ts: Number(row[0]), low: Number(row[1]), high: Number(row[2]), open: Number(row[3]), close: Number(row[4]), volume: Number(row[5]) }))
+            .filter((c: { ts: number; open: number; high: number; low: number; close: number }) => Number.isFinite(c.ts) && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
+            .sort((a: { ts: number }, b: { ts: number }) => a.ts - b.ts)
+            .slice(-150)
+            .map((c: { ts: number; open: number; high: number; low: number; close: number; volume: number }) => ({ time: fmtTime(c.ts, tf), ts: c.ts, open: Number(c.open.toFixed(decimals)), high: Number(c.high.toFixed(decimals)), low: Number(c.low.toFixed(decimals)), close: Number(c.close.toFixed(decimals)), volume: Math.round(c.volume) }))
+        }
+      }
+    } catch {
+      // Fall through to the existing safe offline response.
+    }
+    throw new Error(`${lastError}. Binance and Coinbase are unavailable; retrying automatically.`)
   }
 
   const decimals = dec(pair)
@@ -188,7 +209,7 @@ export async function GET(req: NextRequest) {
       const candles = await fetchBinanceCryptoCandles(pair, tf)
       if (candles.length === 0) throw new Error("No usable crypto candles")
       candleCache.set(cacheKey, { candles, ts: now })
-      return NextResponse.json({ candles, source: "live-binance", marketDataType: "live-crypto", ts: now })
+      return NextResponse.json({ candles, source: "live-crypto", provider: "Binance/Coinbase", marketDataType: "live-crypto", ts: now })
     }
 
     // Pull the next finer Yahoo interval for unsupported views, then aggregate
