@@ -3221,6 +3221,7 @@ function PositionSizer({
   <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
   <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded} aria-label={rateBarExpanded ? "Collapse market details" : "Expand market details"}>{rateBarExpanded ? "⌃" : "⌄"}</button>
   <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
+              </div>
               <div className="terminal-rate-details flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
                 <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
                 <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
@@ -3234,7 +3235,6 @@ function PositionSizer({
                   <span className="text-red-600 shrink-0">L<span className="text-red-400 ml-0.5">{fmt(lastCandle.low, selectedPair.symbol)}</span></span>
                   <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
                 </>}
-              </div>
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
 

@@ -1223,7 +1223,9 @@ button, a, [role="button"] {
 }
   .terminal-icon-button:hover { background: rgba(34,211,238,0.08); border-color: #2c6d86; color: #d7f8ff; transform: translateY(-1px); }
 
-  .terminal-rate-toggle { display: none; }
+  .terminal-rate-toggle { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 24px; flex: 0 0 28px; padding: 0; border: 1px solid #2c6d86; border-radius: 5px; color: #7dd3fc; background: rgba(14,116,144,.14); font-size: 16px; font-weight: 800; line-height: 1; cursor: pointer; }
+  .rate-bar-collapsed .terminal-rate-details { display: none; }
+  .rate-bar-expanded .terminal-rate-details { display: flex; width: 100%; min-height: 26px; align-items: center; }
   @media (max-width: 640px) {
     .terminal-toolbar-row { gap: 5px !important; padding-inline: 8px !important; min-width: 0; }
     .terminal-brand-lockup { padding-right: 6px !important; }
