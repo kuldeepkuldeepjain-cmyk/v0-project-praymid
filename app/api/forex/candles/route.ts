@@ -24,7 +24,7 @@ const KUCOIN_INTERVALS: Record<string, string> = {
 
 function cryptoBinanceSymbol(pair: string): string | null {
   const [base, quote] = pair.split("/")
-  if (!isCrypto(pair) || !base || quote !== "USD") return null
+  if (!isCrypto(pair) || !base || (quote !== "USD" && quote !== "USDT")) return null
   return `${base}USDT`
 }
 
@@ -39,7 +39,7 @@ async function fetchBinanceCryptoCandles(pair: string, tf: string): Promise<unkn
   const query = `symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval[type] ?? "5m"}&limit=180`
   let json: unknown = null
   let lastError = "Binance unavailable"
-  for (const host of ["api.binance.com", "api1.binance.com", "api2.binance.com", "api3.binance.com"]) {
+  for (const host of ["api.binance.com", "api1.binance.com", "api2.binance.com", "api3.binance.com", "data-api.binance.com", "api.binance.us"]) {
     try {
       const response = await fetch(`https://${host}/api/v3/klines?${query}`, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(5000) })
       if (!response.ok) {
@@ -53,7 +53,9 @@ async function fetchBinanceCryptoCandles(pair: string, tf: string): Promise<unkn
       lastError = error instanceof Error ? error.message : "Binance request failed"
     }
   }
-  if (!Array.isArray(json)) throw new Error(lastError)
+  if (!Array.isArray(json)) {
+    throw new Error(`${lastError}. Binance may be unavailable from this server region; retrying automatically.`)
+  }
 
   const decimals = dec(pair)
   return json
