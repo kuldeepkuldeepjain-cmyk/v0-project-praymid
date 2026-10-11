@@ -22,83 +22,32 @@ const KUCOIN_INTERVALS: Record<string, string> = {
   "1M": "1min", "5M": "5min", "15M": "15min", "30M": "30min", "1H": "1hour", "4H": "4hour", "1D": "1day", "1W": "1week",
 }
 
-function cryptoBinanceSymbol(pair: string): string | null {
+function cryptoCoinbaseProduct(pair: string): string | null {
   const [base, quote] = pair.split("/")
   if (!isCrypto(pair) || !base || (quote !== "USD" && quote !== "USDT")) return null
-  return `${base}USDT`
+  return `${base}-USD`
 }
 
-async function fetchBinanceCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
-  const symbol = cryptoBinanceSymbol(pair)
+async function fetchCoinbaseCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
+  const product = cryptoCoinbaseProduct(pair)
   const type = KUCOIN_INTERVALS[tf]
-  if (!symbol || !type) throw new Error("Unsupported crypto candle pair")
+  if (!product || !type) throw new Error("Unsupported crypto candle pair")
 
-  const endAt = Math.floor(Date.now() / 1000)
-  const startAt = endAt - (TF_SECONDS[tf] ?? 300) * 180
-  const binanceInterval: Record<string, string> = { "1min": "1m", "5min": "5m", "15min": "15m", "30min": "30m", "1hour": "1h", "4hour": "4h", "1day": "1d", "1week": "1w" }
-  const query = `symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval[type] ?? "5m"}&limit=180`
-  let json: unknown = null
-  let lastError = "Binance unavailable"
-  for (const host of ["api.binance.com", "api1.binance.com", "api2.binance.com", "api3.binance.com", "data-api.binance.com", "api.binance.us"]) {
-    try {
-      const response = await fetch(`https://${host}/api/v3/klines?${query}`, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(5000) })
-      if (!response.ok) {
-        lastError = `Binance candles HTTP ${response.status}`
-        continue
-      }
-      const payload = await response.json()
-      if (Array.isArray(payload)) { json = payload; break }
-      lastError = "Binance returned no candles"
-    } catch (error) {
-      lastError = error instanceof Error ? error.message : "Binance request failed"
-    }
-  }
-  if (!Array.isArray(json)) {
-    const coinbaseProduct = symbol.replace(/USDT$/, "-USD")
-    const granularity = { "1m": 60, "5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "4h": 14400, "1d": 86400, "1w": 604800 }[binanceInterval[type] ?? "5m"] ?? 300
-    const end = new Date()
-    const start = new Date(end.getTime() - granularity * 180 * 1000)
-    try {
-      const response = await fetch(`https://api.exchange.coinbase.com/products/${coinbaseProduct}/candles?granularity=${granularity}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`, { headers: { Accept: "application/json", "User-Agent": "EliteFund/1.0" }, cache: "no-store", signal: AbortSignal.timeout(8000) })
-      if (response.ok) {
-        const payload = await response.json()
-        if (Array.isArray(payload) && payload.length > 0) {
-          const decimals = dec(pair)
-          return payload
-            .map((row: unknown[]) => ({ ts: Number(row[0]), low: Number(row[1]), high: Number(row[2]), open: Number(row[3]), close: Number(row[4]), volume: Number(row[5]) }))
-            .filter((c: { ts: number; open: number; high: number; low: number; close: number }) => Number.isFinite(c.ts) && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
-            .sort((a: { ts: number }, b: { ts: number }) => a.ts - b.ts)
-            .slice(-150)
-            .map((c: { ts: number; open: number; high: number; low: number; close: number; volume: number }) => ({ time: fmtTime(c.ts, tf), ts: c.ts, open: Number(c.open.toFixed(decimals)), high: Number(c.high.toFixed(decimals)), low: Number(c.low.toFixed(decimals)), close: Number(c.close.toFixed(decimals)), volume: Math.round(c.volume) }))
-        }
-      }
-    } catch {
-      // Fall through to the existing safe offline response.
-    }
-    throw new Error(`${lastError}. Binance and Coinbase are unavailable; retrying automatically.`)
-  }
+  const granularity = { "1min": 60, "5min": 300, "15min": 900, "30min": 1800, "1hour": 3600, "4hour": 14400, "1day": 86400, "1week": 604800 }[type] ?? 300
+  const end = new Date()
+  const start = new Date(end.getTime() - granularity * 180 * 1000)
+  const response = await fetch(`https://api.exchange.coinbase.com/products/${product}/candles?granularity=${granularity}&start=${encodeURIComponent(start.toISOString())}&end=${encodeURIComponent(end.toISOString())}`, { headers: { Accept: "application/json", "User-Agent": "EliteFund/1.0" }, cache: "no-store", signal: AbortSignal.timeout(8000) })
+  if (!response.ok) throw new Error(`Coinbase candles HTTP ${response.status}`)
+  const payload = await response.json()
+  if (!Array.isArray(payload) || payload.length === 0) throw new Error("Coinbase returned no candles")
 
   const decimals = dec(pair)
-  return json
-    .map((row: unknown[]) => {
-      const ts = Number(row[0]) / 1000
-      const open = Number(row[1])
-      const high = Number(row[2])
-      const low = Number(row[3])
-      const close = Number(row[4])
-      const volume = Number(row[5])
-      return { time: fmtTime(ts, tf), open, high, low, close, volume, ts }
-    })
-    .filter((c: { ts: number; open: number; high: number; low: number; close: number }) =>
-      Number.isFinite(c.ts) && c.ts > 0 && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
+  return payload
+    .map((row: unknown[]) => ({ ts: Number(row[0]), low: Number(row[1]), high: Number(row[2]), open: Number(row[3]), close: Number(row[4]), volume: Number(row[5]) }))
+    .filter((c: { ts: number; open: number; high: number; low: number; close: number }) => Number.isFinite(c.ts) && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
     .sort((a: { ts: number }, b: { ts: number }) => a.ts - b.ts)
-    .filter((c: { ts: number }, index: number, rows: { ts: number }[]) => index === 0 || c.ts !== rows[index - 1].ts)
     .slice(-150)
-    .map((c: { time: string; open: number; high: number; low: number; close: number; volume: number; ts: number }) => ({
-      ...c,
-      open: Number(c.open.toFixed(decimals)), high: Number(c.high.toFixed(decimals)),
-      low: Number(c.low.toFixed(decimals)), close: Number(c.close.toFixed(decimals)), volume: Math.round(c.volume),
-    }))
+    .map((c: { ts: number; open: number; high: number; low: number; close: number; volume: number }) => ({ time: fmtTime(c.ts, tf), ts: c.ts, open: Number(c.open.toFixed(decimals)), high: Number(c.high.toFixed(decimals)), low: Number(c.low.toFixed(decimals)), close: Number(c.close.toFixed(decimals)), volume: Math.round(c.volume) }))
 }
 
 // Format timestamp to human-readable label based on timeframe
@@ -182,7 +131,7 @@ export async function GET(req: NextRequest) {
   const pair = searchParams.get("pair") ?? "EUR/USD"
   const tf = searchParams.get("tf") ?? "5M"
 
-  const cryptoSymbol = cryptoBinanceSymbol(pair)
+  const cryptoSymbol = cryptoCoinbaseProduct(pair)
   const ySym = YAHOO_SYMBOLS[pair]
   if (!cryptoSymbol && !ySym) return NextResponse.json({ error: "Unknown pair" }, { status: 400 })
 
@@ -206,10 +155,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles, source: "live-twelve-data", marketDataType: "indicative-forex", ts: now })
     }
     if (cryptoSymbol) {
-      const candles = await fetchBinanceCryptoCandles(pair, tf)
+      const candles = await fetchCoinbaseCryptoCandles(pair, tf)
       if (candles.length === 0) throw new Error("No usable crypto candles")
       candleCache.set(cacheKey, { candles, ts: now })
-      return NextResponse.json({ candles, source: "live-crypto", provider: "Binance/Coinbase", marketDataType: "live-crypto", ts: now })
+      return NextResponse.json({ candles, source: "live-crypto", provider: "Coinbase Exchange", marketDataType: "live-crypto", ts: now })
     }
 
     // Pull the next finer Yahoo interval for unsupported views, then aggregate
@@ -285,7 +234,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles: cached.candles, source: "stale", ts: cached.ts })
     }
     return NextResponse.json(
-      { candles: [], source: "offline", provider: cryptoSymbol ? "Binance" : "Yahoo Finance", ts: now, error: "Live candle history is temporarily unavailable" },
+      { candles: [], source: "offline", provider: cryptoSymbol ? "Coinbase Exchange" : "Yahoo Finance", ts: now, error: "Live candle history is temporarily unavailable" },
       { status: 503, headers: { "Cache-Control": "no-store, max-age=0", "Retry-After": "5" } },
     )
   }
