@@ -1336,6 +1336,7 @@ function PositionSizer({
   const [themeReady, setThemeReady] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
+  const [rateBarExpanded, setRateBarExpanded] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
 
@@ -2320,7 +2321,7 @@ function PositionSizer({
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
-  // ── Close trade ─────────────────────────────────────────────────────────��──
+  // ── Close trade ──────────────���──────────────────────────────────────────��──
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
   // Prevent double-close if tick engine and manual close race
   if (closingTradeIds.current.has(id)) return
@@ -2540,7 +2541,7 @@ function PositionSizer({
     return true
   }, [showToast, persistModify])
 
-  // ── Price Alert checker (runs each tick) ��────────────────────────────────
+  // ── Price Alert checker (runs each tick) ��─────────────────���──────────────
   useEffect(() => {
     if (priceAlerts.length === 0) return
     setPriceAlerts(prev => prev.map(a => {
@@ -3202,7 +3203,7 @@ function PositionSizer({
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+            <div className={`chart-header shrink-0 flex flex-col px-3 py-1.5 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
               <div className="chart-header-market flex min-w-0 items-center gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-black text-white tracking-wider">
@@ -3219,7 +3220,7 @@ function PositionSizer({
               <span className="bid-ask-price" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
               <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
               <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
-              <div className="flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
+              <div className="terminal-rate-details flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
                 <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
                 <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
                 <span className="text-slate-500 shrink-0">SPR <span className="text-cyan-400 font-bold">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span></span>
@@ -3235,6 +3236,9 @@ function PositionSizer({
               </div>
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
+                <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded}>
+                  {rateBarExpanded ? "Hide rates" : "Show rates"}
+                </button>
                 <span className="chart-timeframe-label">Chart interval</span>
                 <div className="flex items-center gap-2">
                   <div
