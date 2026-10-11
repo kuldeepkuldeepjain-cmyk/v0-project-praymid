@@ -1724,13 +1724,30 @@ function PositionSizer({
     }
     setCandleLoading(true)
     try {
-      const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
-      const json = await res.json().catch(() => null)
+      let res: Response | null = null
+      let json: Record<string, unknown> | null = null
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}&_=${Date.now()}`, { cache: "no-store" })
+          json = await res.json().catch(() => null)
+          if (res.ok && Array.isArray(json?.candles) && json.candles.length > 0) break
+        } catch {
+          if (attempt === 1) throw new Error("Candle provider unavailable")
+        }
+        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 800))
+      }
+      if (!res) throw new Error("Candle provider unavailable")
       if (!json || typeof json !== "object") throw new Error(`Invalid candles response (${res.status})`)
       // A provider timeout is not a terminal UI error. The route can return a
       // stale snapshot or an empty retry response while the live feed recovers.
-      if (!res.ok && !Array.isArray(json.candles)) throw new Error(String(json.error ?? `HTTP ${res.status}`))
-      if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
+      if (!res.ok && !Array.isArray(json?.candles)) throw new Error(String(json?.error ?? `HTTP ${res.status}`))
+      if (json?.error && (!Array.isArray(json.candles) || json.candles.length === 0)) {
+        if (cached?.length) {
+          setCandleError("Showing cached candles — reconnecting to live history.")
+          return
+        }
+        throw new Error(String(json.error))
+      }
       if (requestId !== candleRequestRef.current) return
       const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
@@ -1754,7 +1771,7 @@ function PositionSizer({
       console.error("[v0] Candle refresh failed:", error)
       // Never imply a synthetic/recovery series is live. Keep retrying and
       // expose the upstream state until genuine historical candles return.
-      setCandleError("Live candle history unavailable — reconnecting")
+      setCandleError(cached?.length ? "Showing cached candles — retrying live history." : "Live candle history unavailable — retrying provider.")
     } finally {
       if (requestId === candleRequestRef.current) setCandleLoading(false)
     }
