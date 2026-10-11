@@ -100,7 +100,8 @@ export async function GET() {
       rates: data,
       sources,
       source: hasFreshQuotes ? (hasStaleQuotes || hasMissingQuotes ? "partial-live" : "live") : "stale-cache",
-      provider: "Yahoo Finance quotes + Gold API XAU spot",
+      provider: "Twelve Data Forex + Yahoo fallback + Gold API XAU spot",
+      marketDataType: "indicative-forex",
       refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000,
       ts: now,
     }, { headers: { "Cache-Control": "no-store, max-age=0" } })

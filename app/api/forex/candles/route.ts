@@ -22,14 +22,14 @@ const KUCOIN_INTERVALS: Record<string, string> = {
   "1M": "1min", "5M": "5min", "15M": "15min", "30M": "30min", "1H": "1hour", "4H": "4hour", "1D": "1day", "1W": "1week",
 }
 
-function cryptoKucoinSymbol(pair: string): string | null {
+function cryptoBinanceSymbol(pair: string): string | null {
   const [base, quote] = pair.split("/")
   if (!isCrypto(pair) || !base || quote !== "USD") return null
   return `${base}USDT`
 }
 
-async function fetchKucoinCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
-  const symbol = cryptoKucoinSymbol(pair)
+async function fetchBinanceCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
+  const symbol = cryptoBinanceSymbol(pair)
   const type = KUCOIN_INTERVALS[tf]
   if (!symbol || !type) throw new Error("Unsupported crypto candle pair")
 
@@ -146,7 +146,7 @@ export async function GET(req: NextRequest) {
   const pair = searchParams.get("pair") ?? "EUR/USD"
   const tf = searchParams.get("tf") ?? "5M"
 
-  const cryptoSymbol = cryptoKucoinSymbol(pair)
+  const cryptoSymbol = cryptoBinanceSymbol(pair)
   const ySym = YAHOO_SYMBOLS[pair]
   if (!cryptoSymbol && !ySym) return NextResponse.json({ error: "Unknown pair" }, { status: 400 })
 
@@ -170,10 +170,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ candles, source: "live-twelve-data", marketDataType: "indicative-forex", ts: now })
     }
     if (cryptoSymbol) {
-      const candles = await fetchKucoinCryptoCandles(pair, tf)
+      const candles = await fetchBinanceCryptoCandles(pair, tf)
       if (candles.length === 0) throw new Error("No usable crypto candles")
       candleCache.set(cacheKey, { candles, ts: now })
-      return NextResponse.json({ candles, source: "live-kucoin", ts: now })
+      return NextResponse.json({ candles, source: "live-binance", marketDataType: "live-crypto", ts: now })
     }
 
     // Pull the next finer Yahoo interval for unsupported views, then aggregate

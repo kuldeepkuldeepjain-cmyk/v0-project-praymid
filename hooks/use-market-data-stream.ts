@@ -44,15 +44,36 @@ export function useMarketDataStream(
     const streamUrl = process.env.NEXT_PUBLIC_MARKET_DATA_WS_URL
 
     if (!streamUrl || typeof window === "undefined" || typeof WebSocket === "undefined") {
-      setStatus("fallback")
+      const eventSource = typeof window !== "undefined" ? new EventSource("/api/market-data/stream") : null
       let fallbackTimer: number | undefined
+      if (eventSource) {
+        setStatus("connecting")
+        eventSource.addEventListener("rates", (event) => {
+          try {
+            const payload = JSON.parse((event as MessageEvent).data) as StreamMessage
+            const rates = parseRates(payload)
+            if (rates) {
+              setStatus("connected")
+              onRates(rates)
+            }
+          } catch {
+            setStatus("reconnecting")
+          }
+        })
+        eventSource.addEventListener("status", () => setStatus("reconnecting"))
+        eventSource.onerror = () => setStatus("reconnecting")
+      }
       const poll = async () => {
         await fallbackFetch()
-        if (!disposed) fallbackTimer = window.setTimeout(() => void poll(), 3000)
+        if (!disposed && (!eventSource || eventSource.readyState === EventSource.CLOSED)) {
+          setStatus("fallback")
+          fallbackTimer = window.setTimeout(() => void poll(), 5000)
+        }
       }
-      void poll()
+      fallbackTimer = window.setTimeout(() => void poll(), 10000)
       return () => {
         disposed = true
+        eventSource?.close()
         if (fallbackTimer !== undefined) window.clearTimeout(fallbackTimer)
       }
     }
