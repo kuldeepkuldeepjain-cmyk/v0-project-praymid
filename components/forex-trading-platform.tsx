@@ -3218,8 +3218,9 @@ function PositionSizer({
                 })()}
               </div>
               <span className="bid-ask-price" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-              <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
-              <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
+  <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
+  <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded} aria-label={rateBarExpanded ? "Collapse market details" : "Expand market details"}>{rateBarExpanded ? "⌃" : "⌄"}</button>
+  <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
               <div className="terminal-rate-details flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
                 <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
                 <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
@@ -3236,9 +3237,7 @@ function PositionSizer({
               </div>
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
-                <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded}>
-                  {rateBarExpanded ? "Hide rates" : "Show rates"}
-                </button>
+
                 <span className="chart-timeframe-label">Chart interval</span>
                 <div className="flex items-center gap-2">
                   <div

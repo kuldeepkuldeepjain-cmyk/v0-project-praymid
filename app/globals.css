@@ -1235,7 +1235,7 @@ button, a, [role="button"] {
     .rate-bar-collapsed .terminal-rate-details { display: none; }
     .rate-bar-expanded .terminal-rate-details { display: flex; }
     .chart-timeframe-toolbar { flex-wrap: wrap; min-height: 34px; }
-    .terminal-rate-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 24px; padding: 2px 6px; border: 1px solid #2c6d86; border-radius: 5px; color: #7dd3fc; background: rgba(14,116,144,.14); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+    .terminal-rate-toggle { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 24px; flex: 0 0 28px; padding: 0; border: 1px solid #2c6d86; border-radius: 5px; color: #7dd3fc; background: rgba(14,116,144,.14); font-size: 16px; font-weight: 800; line-height: 1; }
     .chart-timeframe-label { display: none; }
     .chart-timeframe-toolbar > .flex.items-center.gap-2 { margin-left: auto; max-width: 100%; overflow-x: auto; }
 
