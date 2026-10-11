@@ -83,7 +83,7 @@ function aggregateCandles(candles: OhlcCandle[], timeframe: string): OhlcCandle[
 
 const TWELVE_INTERVALS: Record<string, string> = { "1M": "1min", "5M": "5min", "15M": "15min", "1H": "1h", "4H": "4h" }
 
-async function fetchTwelveForexCandles(pair: string, tf: string): Promise<unknown[]> {
+async function fetchTwelveMarketCandles(pair: string, tf: string): Promise<unknown[]> {
   const key = process.env.TWELVE_DATA_API_KEY
   const interval = TWELVE_INTERVALS[tf]
   if (!key || !interval) throw new Error("Twelve Data candles unavailable for this timeframe")
@@ -148,11 +148,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    if (!cryptoSymbol && !pair.startsWith("X") && process.env.TWELVE_DATA_API_KEY && TWELVE_INTERVALS[tf]) {
-      const candles = await fetchTwelveForexCandles(pair, tf)
-      if (candles.length === 0) throw new Error("No usable Twelve Data candles")
-      candleCache.set(cacheKey, { candles, ts: now })
-      return NextResponse.json({ candles, source: "live-twelve-data", marketDataType: "indicative-forex", ts: now })
+    if (process.env.TWELVE_DATA_API_KEY && TWELVE_INTERVALS[tf]) {
+      try {
+        const candles = await fetchTwelveMarketCandles(pair, tf)
+        if (candles.length === 0) throw new Error("No usable Twelve Data candles")
+        candleCache.set(cacheKey, { candles, ts: now })
+        return NextResponse.json({ candles, source: "live-twelve-data", provider: "Twelve Data", marketDataType: cryptoSymbol ? "live-crypto" : "indicative-forex", ts: now })
+      } catch (error) {
+        if (!cryptoSymbol) throw error
+      }
     }
     if (cryptoSymbol) {
       const candles = await fetchCoinbaseCryptoCandles(pair, tf)

@@ -30,7 +30,7 @@ export async function GET() {
     const [quoteResults, spotResult, twelveResults] = await Promise.all([
       fetchBatchedQuotes(ySymbols),
       fetchGoldSpot(),
-      fetchTwelveQuotes(pairs.filter((pair) => !isCrypto(pair) && !pair.startsWith("X"))),
+      fetchTwelveQuotes(pairs.filter((pair) => !pair.startsWith("X"))),
     ])
 
     const data: Record<string, RateRow> = {}
@@ -100,8 +100,8 @@ export async function GET() {
       rates: data,
       sources,
       source: hasFreshQuotes ? (hasStaleQuotes || hasMissingQuotes ? "partial-live" : "live") : "stale-cache",
-      provider: "Twelve Data Forex + Yahoo fallback + Gold API XAU spot",
-      marketDataType: "indicative-forex",
+      provider: "Twelve Data Forex/Crypto + Yahoo fallback + Gold API XAU spot",
+      marketDataType: "live-provider-data",
       refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000,
       ts: now,
     }, { headers: { "Cache-Control": "no-store, max-age=0" } })
