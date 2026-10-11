@@ -1748,7 +1748,7 @@ function PositionSizer({
         if (!prev || prev.symbol !== sym) return prev
         return pairsRef.current.find(p => p.symbol === sym) ?? prev
       })
-      setCandleError(json.source === "stale" ? "Showing cached candles — reconnecting to live history." : null)
+      setCandleError(json.source === "stale" ? "Showing cached candles — reconnecting to live history." : json.source === "offline" ? "Live candle history unavailable — retrying." : null)
     } catch (error) {
       if (requestId !== candleRequestRef.current) return
       console.error("[v0] Candle refresh failed:", error)
@@ -1790,8 +1790,9 @@ function PositionSizer({
       // snapshots. Wider frames stay on lighter polling intervals.
       "1M": 5_000, "5M": 30_000, "15M": 90_000, "30M": 180_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000, "1W": 86400_000,
     }
-    const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
-    candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
+  const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
+  const retry = () => { void fetchCandles(selectedPair.symbol, timeframe) }
+  candleIntervalRef.current = setInterval(retry, ms)
     return () => { if (candleIntervalRef.current) clearInterval(candleIntervalRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPair?.symbol, timeframe, candleError])
@@ -2485,7 +2486,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adjustWalletBalance, showToast, persistPartialClose])
 
-  // ── Modify trade ──────��────────────────────────────────────────────────────
+  // ── Modify trade ──────���────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
     const trade = openTradesRef.current.find(item => item.id === tradeId)
     const pair = trade ? pairsRef.current.find(item => item.symbol === trade.pair) : null

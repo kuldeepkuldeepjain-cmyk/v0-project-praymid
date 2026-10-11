@@ -36,11 +36,24 @@ async function fetchBinanceCryptoCandles(pair: string, tf: string): Promise<unkn
   const endAt = Math.floor(Date.now() / 1000)
   const startAt = endAt - (TF_SECONDS[tf] ?? 300) * 180
   const binanceInterval: Record<string, string> = { "1min": "1m", "5min": "5m", "15min": "15m", "30min": "30m", "1hour": "1h", "4hour": "4h", "1day": "1d", "1week": "1w" }
-  const url = `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval[type] ?? "5m"}&limit=180`
-  const response = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(5000) })
-  if (!response.ok) throw new Error(`Binance candles HTTP ${response.status}`)
-  const json = await response.json()
-  if (!Array.isArray(json)) throw new Error("Binance returned no candles")
+  const query = `symbol=${encodeURIComponent(symbol)}&interval=${binanceInterval[type] ?? "5m"}&limit=180`
+  let json: unknown = null
+  let lastError = "Binance unavailable"
+  for (const host of ["api.binance.com", "api1.binance.com", "api2.binance.com", "api3.binance.com"]) {
+    try {
+      const response = await fetch(`https://${host}/api/v3/klines?${query}`, { headers: { Accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(5000) })
+      if (!response.ok) {
+        lastError = `Binance candles HTTP ${response.status}`
+        continue
+      }
+      const payload = await response.json()
+      if (Array.isArray(payload)) { json = payload; break }
+      lastError = "Binance returned no candles"
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : "Binance request failed"
+    }
+  }
+  if (!Array.isArray(json)) throw new Error(lastError)
 
   const decimals = dec(pair)
   return json
