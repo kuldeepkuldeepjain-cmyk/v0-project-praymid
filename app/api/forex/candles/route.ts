@@ -154,8 +154,9 @@ export async function GET(req: NextRequest) {
         if (candles.length === 0) throw new Error("No usable Twelve Data candles")
         candleCache.set(cacheKey, { candles, ts: now })
         return NextResponse.json({ candles, source: "live-twelve-data", provider: "Twelve Data", marketDataType: cryptoSymbol ? "live-crypto" : "indicative-forex", ts: now })
-      } catch (error) {
-        if (!cryptoSymbol) throw error
+      } catch {
+        // Continue to the existing Yahoo historical adapter for Forex.
+        // Twelve Data quota/provider errors must not leave the chart empty.
       }
     }
     if (cryptoSymbol) {
@@ -231,7 +232,7 @@ export async function GET(req: NextRequest) {
     if (candles.length === 0) throw new Error("No usable candles")
 
     candleCache.set(cacheKey, { candles, ts: now })
-    return NextResponse.json({ candles, source: "live", ts: now })
+    return NextResponse.json({ candles, source: "live-yahoo", provider: "Yahoo Finance", marketDataType: "indicative-forex", warning: "Twelve Data unavailable; historical Forex candles may be delayed.", ts: now })
   } catch (err) {
     // Return stale cache if available
     if (cached) {
