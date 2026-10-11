@@ -1298,7 +1298,7 @@ function PositionSizer({
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
-  // Map of tradeId → partial close lot input value
+  // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(false)
@@ -1752,9 +1752,11 @@ function PositionSizer({
       const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
+      if (historicalCandles.length === 0) throw new Error("Provider returned no usable candles")
       // Keep historical OHLC values exactly as returned by the selected
       // provider. The live-tick effect below updates only the active candle.
       const candles = historicalCandles
+      setCandleError(null)
       setCandleCache(prev => ({ ...prev, [key]: candles }))
       setPairs(prev => {
         const updated = prev.map(p => p.symbol === sym ? { ...p, candles } : p)
@@ -2318,7 +2320,7 @@ function PositionSizer({
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
-  // ── Close trade ────────────────────────────────────────────────────────────
+  // ── Close trade ─────────────────────────────────────────────────────────��──
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
   // Prevent double-close if tick engine and manual close race
   if (closingTradeIds.current.has(id)) return
