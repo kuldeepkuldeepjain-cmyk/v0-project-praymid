@@ -117,6 +117,7 @@ export default function ParticipantLoginPage() {
           is_active: data.is_active !== false,
           serial_number: data.serial_number || "",
           status: data.status || "active",
+          pinConfigured: data.pinConfigured === true,
         }
 
         setParticipantAuth(
