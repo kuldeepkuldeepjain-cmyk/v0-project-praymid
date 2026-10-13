@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { execute, queryOne } from "@/lib/db"
-import { getParticipantSessionFromReq } from "@/lib/session"
+import { getParticipantSession } from "@/lib/session"
 
 async function ensurePinColumn() {
   await execute("ALTER TABLE participants ADD COLUMN IF NOT EXISTS pin_hash TEXT")
@@ -9,8 +9,8 @@ async function ensurePinColumn() {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getParticipantSessionFromReq(request)
-    if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    const session = await getParticipantSession()
+    if (!session.isLoggedIn || !session.participantId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     await ensurePinColumn()
     const participant = await queryOne<{ pin_hash: string | null }>("SELECT pin_hash FROM participants WHERE id = $1 LIMIT 1", [session.participantId])
     return NextResponse.json({ success: true, pinConfigured: Boolean(participant?.pin_hash) })
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getParticipantSessionFromReq(request)
-    if (!session) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
+    const session = await getParticipantSession()
+    if (!session.isLoggedIn || !session.participantId) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 })
     const body = await request.json()
     const pin = String(body?.pin || "")
     const confirmation = String(body?.confirmation || "")
