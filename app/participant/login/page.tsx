@@ -63,6 +63,28 @@ export default function ParticipantLoginPage() {
   const [credentialMode, setCredentialMode]         = useState<"password" | "pin">("password")
   const [googleLoading, setGoogleLoading]           = useState(false)
 
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    if (!clientId || !window.isSecureContext) return
+    const script = document.createElement("script")
+    script.src = "https://accounts.google.com/gsi/client"
+    script.async = true
+    script.onload = () => {
+      const google = (window as any).google
+      google?.accounts?.id?.initialize({ client_id: clientId, callback: (response: { credential: string }) => {
+        setGoogleLoading(true)
+        fetch("/api/auth/participant-google-one-tap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential: response.credential }) })
+          .then((result) => result.json())
+          .then((data) => { if (!data.success) throw new Error(data.error); finishGoogleLogin(data) })
+          .catch((error) => toast({ title: "Google login unavailable", description: error.message || "Use email or mobile login.", variant: "destructive" }))
+          .finally(() => setGoogleLoading(false))
+      }, auto_select: false, cancel_on_tap_outside: false })
+      google.accounts.id.prompt()
+    }
+    document.head.appendChild(script)
+    return () => script.remove()
+  }, [])
+
   const finishGoogleLogin = (data: any) => {
     const participantData = { id: data.participantId, participantId: data.participantId, email: data.email, username: data.username, name: data.name || data.full_name, walletAddress: data.walletAddress || data.wallet_address || data.bep20_address, activation_fee_paid: data.activation_fee_paid, contribution_approved: data.contribution_approved, bep20_address: data.bep20_address, contributed_amount: data.contributed_amount || 0, wallet_balance: data.wallet_balance || 0, account_balance: data.account_balance || data.wallet_balance || 0, bonus_balance: data.bonus_balance || 0, status: data.status || "active", pinConfigured: data.pinConfigured === true }
     setParticipantAuth(data.participantId || `user-${Date.now()}`, participantData.walletAddress || "", data.email, data.username, participantData.name, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
@@ -79,10 +101,12 @@ export default function ParticipantLoginPage() {
   }, [])
 
   const handleGoogleLogin = () => {
-    toast({
-      title: "Google login under maintenance",
-      description: "Google sign-in is temporarily unavailable. Please use email or mobile login.",
-    })
+    const google = (window as any).google
+    if (google?.accounts?.id) {
+      google.accounts.id.prompt()
+      return
+    }
+    toast({ title: "Google login unavailable", description: "Google One Tap is not configured for this preview. Please use email or mobile login.", variant: "destructive" })
   }
 
   const handleLogin = async (e: React.FormEvent) => {
