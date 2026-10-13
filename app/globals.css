@@ -333,6 +333,21 @@ button, a, [role="button"] {
   border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
+/* Shared admin chrome: keep the header and sidebar visibly separated from the page. */
+.glass {
+  background: rgba(255, 255, 255, 0.96);
+  color: #102033;
+  border: 1px solid #d7e1e8;
+  box-shadow: 0 12px 32px rgba(16, 32, 51, 0.08);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.glass a,
+.glass button {
+  color: inherit;
+}
+
 .aurora-bg {
   background: linear-gradient(125deg, rgba(232, 93, 59, 0.15) 0%, transparent 40%),
     linear-gradient(245deg, rgba(124, 58, 237, 0.12) 0%, transparent 40%);
@@ -1471,7 +1486,7 @@ button, a, [role="button"] {
   }
 }
 
-/* ── MT5 trading terminal workspace ───────────────────────────────────────── */
+/* ── MT5 trading terminal workspace ──────────────���────────────────────────── */
 .mt5-terminal {
   --mt5-bg: #172536;
   --mt5-panel: #1d2d3e;
