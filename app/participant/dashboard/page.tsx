@@ -1684,21 +1684,6 @@ export default function DashboardHome() {
   // be reactivated through an explicit button, never an automatic popup.
 
   useEffect(() => {
-    if (typeof window === "undefined" || !participantData?.id) return
-
-    const pendingAccountId = window.localStorage.getItem("participantNewAccountTopUpPending")
-    if (pendingAccountId !== participantData.id) return
-
-    // Consume the registration handoff before opening the modal so closing it
-    // never causes the new-account prompt to appear again.
-    window.localStorage.removeItem("participantNewAccountTopUpPending")
-    setTopUpIsFundedAccount(participantData.account_type === "funded")
-    setIsInitialFundedTopUp(participantData.account_type === "funded")
-    setShowTopUpModal(true)
-  }, [participantData?.id, participantData?.account_type])
-
-
-  useEffect(() => {
   // Funded accounts use the fixed 2% drawdown breach state, not the normal
   // account-freeze modal. Only normal accounts can enter this modal flow.
   if (!isFundedAccount && (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")) {
