@@ -36,7 +36,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "inr">("crypto")
-  const DEFAULT_INR_UPI_ID = "paytmqr5m6lfj@ptys"
+  const DEFAULT_INR_UPI_ID = "8770459735@ybl"
   const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: DEFAULT_INR_UPI_ID, bankName: null, accountNumber: null, ifsc: null, holderName: null })
   const [inrQrDataUrl, setInrQrDataUrl] = useState<string | null>(null)
   const [inrQrExpiresAt, setInrQrExpiresAt] = useState<number | null>(null)
@@ -456,7 +456,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                       <div className="flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-orange-900"><Clock3 className="size-4" /> Pay within {inrCountdownLabel}</div>
                     </div>
                   ) : <div className="rounded-xl border border-dashed border-orange-300 bg-white p-4 text-center text-xs text-orange-700">Enter an INR amount to generate the QR code.</div>}
-                  <div className="grid gap-2 text-xs text-orange-950 sm:grid-cols-2"><p><span className="font-semibold">UPI ID:</span> {inrDetails.upiId || "Not configured"}</p><p><span className="font-semibold">Account:</span> {inrDetails.accountNumber || "Not configured"}</p><p><span className="font-semibold">Bank:</span> {inrDetails.bankName || "Not configured"}</p><p><span className="font-semibold">IFSC:</span> {inrDetails.ifsc || "Not configured"}</p></div>
+                  <div className="grid gap-2 text-xs text-orange-950 sm:grid-cols-2"><p><span className="font-semibold">Payment:</span> Scan the QR to pay securely</p><p><span className="font-semibold">Account:</span> {inrDetails.accountNumber || "Not configured"}</p><p><span className="font-semibold">Bank:</span> {inrDetails.bankName || "Not configured"}</p><p><span className="font-semibold">IFSC:</span> {inrDetails.ifsc || "Not configured"}</p></div>
                 </div>
               ) : null}
 
