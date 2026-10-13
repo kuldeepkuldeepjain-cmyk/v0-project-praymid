@@ -38,6 +38,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "inr">("crypto")
   const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: null, bankName: null, accountNumber: null, ifsc: null, holderName: null })
   const [inrQrDataUrl, setInrQrDataUrl] = useState<string | null>(null)
+  const [inrQrExpiresAt, setInrQrExpiresAt] = useState<number | null>(null)
+  const [inrSecondsRemaining, setInrSecondsRemaining] = useState(0)
   const [loadingAddress, setLoadingAddress] = useState(false)
   const [checkingFundedTier, setCheckingFundedTier] = useState(false)
   const [fundedTierEligibility, setFundedTierEligibility] = useState<boolean | null>(null)
@@ -59,6 +61,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setNetwork("ALL")
     setPaymentMethod("crypto")
     setInrQrDataUrl(null)
+    setInrQrExpiresAt(null)
+    setInrSecondsRemaining(0)
     setFundingMode("actual")
     setFundedTierEligibility(null)
     setPendingRequests([])
@@ -132,12 +136,28 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   useEffect(() => {
     if (paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       setInrQrDataUrl(null)
+      setInrQrExpiresAt(null)
+      setInrSecondsRemaining(0)
       return
     }
+    const expiresAt = Date.now() + 5 * 60 * 1000
+    setInrQrExpiresAt(expiresAt)
+    setInrSecondsRemaining(5 * 60)
     QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${Number(amount).toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
       .then(setInrQrDataUrl)
       .catch(() => setInrQrDataUrl(null))
   }, [paymentMethod, inrDetails.upiId, inrDetails.holderName, amount])
+
+  useEffect(() => {
+    if (!inrQrExpiresAt) return
+    const updateCountdown = () => setInrSecondsRemaining(Math.max(0, Math.ceil((inrQrExpiresAt - Date.now()) / 1000)))
+    updateCountdown()
+    const timer = window.setInterval(updateCountdown, 1000)
+    return () => window.clearInterval(timer)
+  }, [inrQrExpiresAt])
+
+  const inrQrExpired = paymentMethod === "inr" && inrQrExpiresAt !== null && inrSecondsRemaining <= 0
+  const inrCountdownLabel = `${String(Math.floor(inrSecondsRemaining / 60)).padStart(2, "0")}:${String(inrSecondsRemaining % 60).padStart(2, "0")}`
 
   // Generate a real, scannable QR code for the selected deposit address.
   useEffect(() => {
@@ -404,7 +424,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               {paymentMethod === "inr" ? (
                 <div className="space-y-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
                   <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered INR amount.</p></div>
-                  {inrQrDataUrl ? <div className="flex justify-center rounded-xl bg-white p-3"><img src={inrQrDataUrl} alt={`UPI QR code for ₹${amount || "0"}`} className="size-48" /></div> : <div className="rounded-xl border border-dashed border-orange-300 bg-white p-4 text-center text-xs text-orange-700">Enter an INR amount to generate the QR code.</div>}
+                  {inrQrExpired ? (
+                    <div className="rounded-xl border border-dashed border-red-300 bg-white p-4 text-center text-xs text-red-700">This payment QR expired. Change the amount to generate a fresh QR code.</div>
+                  ) : inrQrDataUrl ? (
+                    <div className="space-y-3">
+                      <div className="flex justify-center rounded-xl bg-white p-3"><img src={inrQrDataUrl} alt={`UPI QR code for ₹${amount || "0"}`} className="size-48" /></div>
+                      <div className="flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-orange-900"><Clock3 className="size-4" /> Pay within {inrCountdownLabel}</div>
+                    </div>
+                  ) : <div className="rounded-xl border border-dashed border-orange-300 bg-white p-4 text-center text-xs text-orange-700">Enter an INR amount to generate the QR code.</div>}
                   <div className="grid gap-2 text-xs text-orange-950 sm:grid-cols-2"><p><span className="font-semibold">UPI ID:</span> {inrDetails.upiId || "Not configured"}</p><p><span className="font-semibold">Account:</span> {inrDetails.accountNumber || "Not configured"}</p><p><span className="font-semibold">Bank:</span> {inrDetails.bankName || "Not configured"}</p><p><span className="font-semibold">IFSC:</span> {inrDetails.ifsc || "Not configured"}</p></div>
                 </div>
               ) : null}
