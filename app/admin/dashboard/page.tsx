@@ -564,8 +564,8 @@ export default function AdminDashboard() {
             </div>
             <div className="space-y-4 rounded-xl border border-amber-500/20 bg-amber-950/20 p-4 md:col-span-2">
               <div>
-                <h3 className="text-sm font-semibold text-amber-200">INR Bank Account Details</h3>
-                <p className="mt-1 text-xs text-amber-300/70">These details are shown to participants when they select INR in Add Funds.</p>
+                <h3 className="text-sm font-semibold text-amber-200">INR / UPI Payment Details</h3>
+                <p className="mt-1 text-xs text-amber-300/70">Configure the bank account and UPI destination shown when participants select INR in Add Funds. The participant QR uses this UPI ID and the entered amount.</p>
               </div>
               <div className="grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
