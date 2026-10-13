@@ -253,10 +253,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && step !== "submitting") onClose() }}>
-      <DialogContent className="w-[calc(100vw-24px)] max-w-lg bg-slate-50 border border-slate-200 shadow-2xl p-0 overflow-hidden max-h-[92dvh] flex flex-col">
+      <DialogContent className="w-[calc(100vw-24px)] max-w-xl bg-white border border-slate-200 shadow-[0_24px_80px_rgba(15,36,56,0.2)] p-0 overflow-hidden max-h-[92dvh] flex flex-col">
         {/* Payment gateway header */}
         <div className="relative flex-shrink-0 overflow-hidden bg-[#102a43] px-5 py-5 text-white">
-          <div className="absolute inset-y-0 right-0 w-1/2 bg-gradient-to-l from-cyan-400/10 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-1/2 border-l border-white/5 bg-[#163e5c]/40" />
           <div className="relative flex items-start justify-between gap-3">
             <div className="flex items-start gap-3">
               <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10">
@@ -274,11 +274,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               </button>
             )}
           </div>
-          <div className="relative mt-4 flex items-center gap-2 text-[10px] font-semibold text-slate-300">
-            <ShieldCheck className="size-3.5 text-emerald-300" />
-            <span>Payment request reviewed manually</span>
-            <span className="text-slate-500">•</span>
-            <span>USDT supported</span>
+          <div className="relative mt-4 grid grid-cols-3 gap-2 text-[9px] font-semibold">
+            <div className="flex items-center gap-1.5 text-cyan-100"><span className="grid size-5 place-items-center rounded-full bg-cyan-300 text-[#102a43]">1</span><span>Choose method</span></div>
+            <div className="flex items-center gap-1.5 text-slate-300"><span className="grid size-5 place-items-center rounded-full border border-white/20">2</span><span>Pay securely</span></div>
+            <div className="flex items-center gap-1.5 text-slate-300"><span className="grid size-5 place-items-center rounded-full border border-white/20">3</span><span>Submit proof</span></div>
           </div>
         </div>
 
@@ -289,7 +288,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-4 py-5 sm:px-6">
+        <div className="overflow-y-auto flex-1 bg-slate-50/70 px-4 py-5 sm:px-6">
 
           {/* FORM STEP */}
           {(step === "form" || step === "submitting") && (
@@ -393,14 +392,36 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="topup-payment-method" className="text-xs font-semibold text-slate-700">Payment currency <span className="text-red-500">*</span></Label>
-                <select id="topup-payment-method" value={paymentMethod} onChange={(event) => { const next = event.target.value as "crypto" | "inr"; setPaymentMethod(next); setNetwork(next === "inr" ? "INR" : "ALL") }} disabled={step === "submitting"} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-violet-500">
-  <option value="crypto">USDT / Crypto</option>
-  <option value="inr">INR via UPI / Bank transfer</option>
-  </select>
-  {paymentMethod === "inr" && <p className="mt-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-medium leading-4 text-orange-800">Note: Payouts are sent to the same account used to add funds.</p>}
-  </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Payment method</p><h3 className="mt-1 text-sm font-bold text-slate-900">How would you like to pay?</h3></div>
+                  <ShieldCheck className="size-5 text-emerald-600" />
+                </div>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
+                  <button type="button" role="radio" aria-checked={paymentMethod === "inr"} onClick={() => { setPaymentMethod("inr"); setNetwork("INR") }} disabled={step === "submitting"} className={`rounded-xl border p-3 text-left transition-all ${paymentMethod === "inr" ? "border-orange-500 bg-orange-50 ring-2 ring-orange-100" : "border-slate-200 bg-white hover:border-orange-300"}`}>
+                    <div className="flex items-start justify-between gap-2"><span className="grid size-8 place-items-center rounded-lg bg-orange-100 text-sm font-black text-orange-700">₹</span><span className={`mt-1 size-3 rounded-full border-2 ${paymentMethod === "inr" ? "border-orange-600 bg-orange-600 ring-2 ring-orange-200" : "border-slate-300"}`} /></div>
+                    <p className="mt-2 text-xs font-bold text-slate-900">UPI / Bank transfer</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Scan a QR for an exact INR amount</p>
+                  </button>
+                  <button type="button" role="radio" aria-checked={paymentMethod === "crypto"} onClick={() => { setPaymentMethod("crypto"); setNetwork("ALL") }} disabled={step === "submitting"} className={`rounded-xl border p-3 text-left transition-all ${paymentMethod === "crypto" ? "border-blue-600 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-blue-300"}`}>
+                    <div className="flex items-start justify-between gap-2"><span className="grid size-8 place-items-center rounded-lg bg-blue-100 text-xs font-black text-blue-700">₮</span><span className={`mt-1 size-3 rounded-full border-2 ${paymentMethod === "crypto" ? "border-blue-600 bg-blue-600 ring-2 ring-blue-200" : "border-slate-300"}`} /></div>
+                    <p className="mt-2 text-xs font-bold text-slate-900">USDT / Crypto</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Send USDT on your selected network</p>
+                  </button>
+                </div>
+                {paymentMethod === "inr" && <p className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-medium leading-4 text-orange-800">Payouts are sent to the same account used to add funds.</p>}
+              </div>
+
+              {/* Amount */}
+              <div className="space-y-1">
+                <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
+                  {paymentMethod === "inr" ? "Amount (USD) — QR in INR" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input id="topup-amount" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-9 pr-14 text-sm border border-slate-200 focus:border-violet-500 rounded-lg" disabled={step === "submitting"} />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">{paymentMethod === "inr" ? "USD" : "USDT"}</span>
+                </div>
+                {amount && !isAmountValid && <p className="text-[10px] text-red-500">{fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
+                {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
+              </div>
 
               {/* Network selector */}
               {paymentMethod === "crypto" && (<div className="space-y-1.5">
@@ -426,7 +447,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
               {paymentMethod === "inr" ? (
                 <div className="space-y-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
-                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered INR amount.</p></div>
+                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered dollar amount and converted to INR at ₹104 per $1.</p></div>
                   {inrQrExpired ? (
                     <div className="rounded-xl border border-dashed border-red-300 bg-white p-4 text-center text-xs text-red-700">This payment QR expired. Change the amount to generate a fresh QR code.</div>
                   ) : inrQrDataUrl ? (
@@ -502,34 +523,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </p>
               </div>)}
 
-              {/* Amount */}
-              <div className="space-y-1">
-                  <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
-                  {paymentMethod === "inr" ? "Amount (USD) — QR in INR" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="topup-amount"
-                    type="number"
-                    placeholder="Exact amount sent"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="h-9 pr-14 text-sm border border-slate-200 focus:border-violet-500 rounded-lg"
-                    disabled={step === "submitting"}
-                  />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    {paymentMethod === "inr" ? "USD" : "USDT"}
-                  </span>
-                </div>
-                {amount && !isAmountValid && (
-                  <p className="text-[10px] text-red-500">
-                    {isFundedAccount && isInitialFundedTopUp && fundingMode === "funded"
-                      ? "Choose one funded amount: $50, $100, $250, $500, or $1,000"
-                      : "Minimum amount is $5 USDT"}
-                  </p>
-                )}
-                {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
-              </div>
 
 {/* Transaction proof */}
   <div className="space-y-1">

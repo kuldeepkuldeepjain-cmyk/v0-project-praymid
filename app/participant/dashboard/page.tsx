@@ -2207,7 +2207,7 @@ export default function DashboardHome() {
                 <User />
                 <span>Profile</span>
               </Link>
-              <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+              <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item elite-terminal-add-fund">
                 <PlusCircle />
                 <span>Add Fund</span>
               </Link>
