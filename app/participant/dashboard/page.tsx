@@ -1561,6 +1561,7 @@ export default function DashboardHome() {
       // Coerce PostgreSQL numeric strings to numbers to prevent .toFixed() crashes
       const updatedData = {
         ...data,
+        pinConfigured: data.pinConfigured === true,
         participantId: data.id,
         walletAddress: data.wallet_address || data.bep20_address || "",
         bep20_address: data.wallet_address || data.bep20_address || "",
@@ -1575,6 +1576,7 @@ export default function DashboardHome() {
         total_referrals: Number(data.total_referrals) || 0,
       }
       setParticipantData(updatedData)
+      setShowPinSetup(updatedData.pinConfigured !== true)
       localStorage.setItem("participantData", JSON.stringify(updatedData))
     } catch (error) {
       console.error("[v0] Error refreshing participant data:", error)
@@ -1599,7 +1601,7 @@ export default function DashboardHome() {
           }
           setParticipantData(data)
           setParticipantId(data.id || data.participantId || "")
-          if (data.pinConfigured !== true) setShowPinSetup(true)
+          // PIN setup visibility is decided from the fresh database response below.
 
   if (data.account_type !== "funded" && (data.account_frozen || data.is_frozen || data.status === "frozen")) {
   setShowFrozenModal(true)

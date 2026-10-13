@@ -107,6 +107,7 @@ export async function GET(request: Request) {
         funded_tier_top_up_count: fundedTierTopUpCount,
         has_funded_tier_top_up: fundedTierTopUpCount > 0,
         has_prior_top_up: topUpCount > 0,
+        pinConfigured: Boolean(p.pin_hash),
       },
     })
   } catch {
