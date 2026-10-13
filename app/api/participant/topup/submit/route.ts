@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
     const authenticatedEmail = auth.email.toLowerCase().trim()
 
     if (!amount || !transactionHash) {
-      return NextResponse.json({ success: false, message: "Amount and transaction hash are required" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Amount and transaction hash or UPI transaction ID are required" }, { status: 400 })
     }
 
     const parsedAmount = Number(amount)
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const normalizedTransactionHash = String(transactionHash).trim()
     if (normalizedTransactionHash.length < 10 || normalizedTransactionHash.length > 200) {
-      return NextResponse.json({ success: false, message: "Enter a valid transaction hash" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Enter a valid transaction hash or UPI transaction ID" }, { status: 400 })
     }
 
     const existingTx = await query(

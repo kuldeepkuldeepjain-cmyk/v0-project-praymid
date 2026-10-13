@@ -142,9 +142,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       return
     }
     const expiresAt = Date.now() + 5 * 60 * 1000
+    const inrAmount = Number(amount) * 104
     setInrQrExpiresAt(expiresAt)
     setInrSecondsRemaining(5 * 60)
-    QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${Number(amount).toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
+    QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${inrAmount.toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
       .then(setInrQrDataUrl)
       .catch(() => setInrQrDataUrl(null))
   }, [paymentMethod, inrDetails.upiId, inrDetails.holderName, amount])
@@ -326,7 +327,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                       {canUseFundedTier ? (
                         <div className="mt-3 grid grid-cols-2 gap-2 pl-7">
                           {[50, 100, 250, 500, 1000].map((tier) => (
-                            <button key={tier} type="button" onClick={() => { setFundingMode("funded"); setAmount(String(tier)) }} disabled={step === "submitting"} className={`rounded-lg border px-2.5 py-2 text-left text-[10px] transition-colors ${Number(amount) === tier && fundingMode === "funded" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}>
+                            <button key={tier} type="button" onClick={() => { setFundingMode("funded"); setPaymentMethod("inr"); setNetwork("INR"); setAmount(String(tier)) }} disabled={step === "submitting"} className={`rounded-lg border px-2.5 py-2 text-left text-[10px] transition-colors ${Number(amount) === tier && fundingMode === "funded" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}>
                               <span className="block font-bold">${tier.toLocaleString()} payment</span>
                               <span className="mt-0.5 block opacity-80">${(tier * 100).toLocaleString()} funded</span>
                             </button>
@@ -395,10 +396,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               <div className="space-y-1.5">
                 <Label htmlFor="topup-payment-method" className="text-xs font-semibold text-slate-700">Payment currency <span className="text-red-500">*</span></Label>
                 <select id="topup-payment-method" value={paymentMethod} onChange={(event) => { const next = event.target.value as "crypto" | "inr"; setPaymentMethod(next); setNetwork(next === "inr" ? "INR" : "ALL") }} disabled={step === "submitting"} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-violet-500">
-                  <option value="crypto">USDT / Crypto</option>
-                  <option value="inr">INR via UPI / Bank transfer</option>
-                </select>
-              </div>
+  <option value="crypto">USDT / Crypto</option>
+  <option value="inr">INR via UPI / Bank transfer</option>
+  </select>
+  {paymentMethod === "inr" && <p className="mt-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-medium leading-4 text-orange-800">Note: Payouts are sent to the same account used to add funds.</p>}
+  </div>
 
               {/* Network selector */}
               {paymentMethod === "crypto" && (<div className="space-y-1.5">
@@ -503,7 +505,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               {/* Amount */}
               <div className="space-y-1">
                   <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
-                  {paymentMethod === "inr" ? "Amount to Pay (INR)" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
+                  {paymentMethod === "inr" ? "Amount (USD) — QR in INR" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -516,7 +518,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     disabled={step === "submitting"}
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    {paymentMethod === "inr" ? "INR" : "USDT"}
+                    {paymentMethod === "inr" ? "USD" : "USDT"}
                   </span>
                 </div>
                 {amount && !isAmountValid && (
@@ -526,16 +528,17 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                       : "Minimum amount is $5 USDT"}
                   </p>
                 )}
+                {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
               </div>
 
-              {/* Transaction Hash */}
-              <div className="space-y-1">
-                <Label htmlFor="topup-txhash" className="text-xs font-semibold text-slate-700">
-                  Transaction Hash <span className="text-red-500">*</span>
-                </Label>
+{/* Transaction proof */}
+  <div className="space-y-1">
+  <Label htmlFor="topup-txhash" className="text-xs font-semibold text-slate-700">
+  Transaction Hash / UPI Transaction ID <span className="text-red-500">*</span>
+  </Label>
                 <Input
                   id="topup-txhash"
-                  placeholder="0x1234567890abcdef..."
+                  placeholder={paymentMethod === "inr" ? "Enter UPI transaction ID / UTR number" : "0x1234567890abcdef..."}
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
                   className="h-9 font-mono text-xs border border-slate-200 focus:border-violet-500 rounded-lg"
