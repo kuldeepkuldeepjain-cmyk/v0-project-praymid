@@ -396,10 +396,11 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
               <div className="space-y-1.5">
                 <Label htmlFor="topup-payment-method" className="text-xs font-semibold text-slate-700">Payment currency <span className="text-red-500">*</span></Label>
                 <select id="topup-payment-method" value={paymentMethod} onChange={(event) => { const next = event.target.value as "crypto" | "inr"; setPaymentMethod(next); setNetwork(next === "inr" ? "INR" : "ALL") }} disabled={step === "submitting"} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-violet-500">
-                  <option value="crypto">USDT / Crypto</option>
-                  <option value="inr">INR via UPI / Bank transfer</option>
-                </select>
-              </div>
+  <option value="crypto">USDT / Crypto</option>
+  <option value="inr">INR via UPI / Bank transfer</option>
+  </select>
+  {paymentMethod === "inr" && <p className="mt-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-medium leading-4 text-orange-800">Note: Payouts are sent to the same account used to add funds.</p>}
+  </div>
 
               {/* Network selector */}
               {paymentMethod === "crypto" && (<div className="space-y-1.5">
