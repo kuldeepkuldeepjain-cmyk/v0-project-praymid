@@ -27,7 +27,7 @@ export async function GET() {
     inr_account_number: settings.topup_inr_account_number || null,
     inr_ifsc_code: settings.topup_inr_ifsc_code || null,
     inr_account_holder_name: settings.topup_inr_account_holder_name || null,
-    inr_upi_id: settings.topup_inr_upi_id || null,
+    inr_upi_id: settings.topup_inr_upi_id || "8770459735@ybl",
     usdt_inr_rate: Number(settings.topup_usdt_inr_rate) > 0 ? Number(settings.topup_usdt_inr_rate) : 104,
   })
 
