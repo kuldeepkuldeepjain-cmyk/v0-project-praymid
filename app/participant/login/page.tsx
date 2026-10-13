@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -60,6 +60,24 @@ export default function ParticipantLoginPage() {
   const [pendingVerification, setPendingVerification] = useState(false)
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
   const [loginMode, setLoginMode]                   = useState<"email" | "mobile">("email")
+  const [googleLoading, setGoogleLoading]           = useState(false)
+
+  const finishGoogleLogin = (data: any) => {
+    const participantData = { id: data.participantId, participantId: data.participantId, email: data.email, username: data.username, name: data.name || data.full_name, walletAddress: data.walletAddress || data.wallet_address || data.bep20_address, activation_fee_paid: data.activation_fee_paid, contribution_approved: data.contribution_approved, bep20_address: data.bep20_address, contributed_amount: data.contributed_amount || 0, wallet_balance: data.wallet_balance || 0, account_balance: data.account_balance || data.wallet_balance || 0, bonus_balance: data.bonus_balance || 0, status: data.status || "active", pinConfigured: data.pinConfigured === true }
+    setParticipantAuth(data.participantId || `user-${Date.now()}`, participantData.walletAddress || "", data.email, data.username, participantData.name, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
+    localStorage.setItem("participantData", JSON.stringify(participantData))
+    router.push("/participant/dashboard")
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("google_error")) toast({ title: "Google login failed", description: "Please use your registered participant email or try again.", variant: "destructive" })
+    if (params.get("google") !== "1") return
+    setGoogleLoading(true)
+    fetch("/api/auth/participant-google", { method: "POST" }).then((response) => response.json()).then((data) => { if (data.success) finishGoogleLogin(data); else throw new Error(data.error) }).catch(() => toast({ title: "Google login failed", description: "Please try again.", variant: "destructive" })).finally(() => setGoogleLoading(false))
+  }, [])
+
+  const handleGoogleLogin = () => { setGoogleLoading(true); window.location.href = "/api/auth/google/start" }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -331,9 +349,14 @@ export default function ParticipantLoginPage() {
                         {mode === "email" ? "Email" : "Mobile"}
                       </button>
                     ))}
-                  </div>
+  </div>
 
-                  {/* Identifier field */}
+  <button type="button" onClick={handleGoogleLogin} disabled={googleLoading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.06] text-sm font-semibold text-white transition hover:bg-white/[0.1] disabled:opacity-60">
+    {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-bold text-slate-800">G</span>}
+    {googleLoading ? "Connecting to Google…" : "Continue with Google"}
+  </button>
+
+  {/* Identifier field */}
                   {loginMode === "email" ? (
                     <div className="space-y-1.5">
                       <Label htmlFor="email" className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
