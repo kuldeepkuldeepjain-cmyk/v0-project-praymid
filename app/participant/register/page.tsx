@@ -92,6 +92,7 @@ export default function ParticipantRegisterPage() {
   const isLightTheme = theme === "light"
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
@@ -161,6 +162,15 @@ export default function ParticipantRegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!acceptedTerms) {
+      toast({
+        title: "Terms and Conditions Required",
+        description: "Please accept the Terms and Conditions before creating your account.",
+        variant: "destructive",
+      })
+      return
+    }
 
     if (captchaInput.toUpperCase() !== captcha.answer) {
       toast({
@@ -713,9 +723,25 @@ export default function ParticipantRegisterPage() {
                 </p>
               </div>
 
+              <label className="flex items-start gap-3 rounded-xl border border-slate-700/80 bg-slate-950/50 p-4 text-sm text-slate-300 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+                <input
+                  type="checkbox"
+                  checked={acceptedTerms}
+                  onChange={(e) => setAcceptedTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-emerald-500"
+                  required
+                />
+                <span className="leading-6">
+                  I agree to the{" "}
+                  <a href="/terms" target="_blank" rel="noreferrer" className="font-semibold text-emerald-300 underline underline-offset-2 hover:text-emerald-200">
+                    Terms and Conditions
+                  </a>{" "}and acknowledge the applicable risk disclosures.
+                </span>
+              </label>
+
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || !acceptedTerms}
                 className="w-full h-14 bg-gradient-to-r from-amber-300 via-yellow-500 to-cyan-400 hover:from-amber-200 hover:via-yellow-400 hover:to-cyan-300 text-slate-950 rounded-xl shadow-2xl shadow-amber-400/20 font-bold text-base transition-all hover:scale-[1.02] hover:shadow-amber-400/40 animate-fade-in-up relative overflow-hidden group"
                 style={{ animationDelay: "0.5s" }}
               >

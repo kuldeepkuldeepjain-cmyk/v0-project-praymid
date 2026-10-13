@@ -15,9 +15,9 @@ export async function GET(req: NextRequest) {
   if (!rate.allowed) return NextResponse.json({ success: false, error: "Too many requests" }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
 
   const { searchParams } = new URL(req.url)
-  const email = searchParams.get("email")
-  if (!email) return NextResponse.json({ success: false, error: "email is required" }, { status: 400 })
-  if (auth.email.toLowerCase() !== email.toLowerCase()) {
+  const requestedEmail = searchParams.get("email")?.trim()
+  const email = auth.email
+  if (requestedEmail && requestedEmail.toLowerCase() !== email.toLowerCase()) {
     return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
   }
 
