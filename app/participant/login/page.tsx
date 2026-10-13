@@ -60,6 +60,7 @@ export default function ParticipantLoginPage() {
   const [pendingVerification, setPendingVerification] = useState(false)
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
   const [loginMode, setLoginMode]                   = useState<"email" | "mobile">("email")
+  const [credentialMode, setCredentialMode]         = useState<"password" | "pin">("password")
   const [googleLoading, setGoogleLoading]           = useState(false)
 
   const finishGoogleLogin = (data: any) => {
@@ -87,12 +88,11 @@ export default function ParticipantLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     const identifier = loginMode === "email" ? email : mobile_number
-    if (!identifier || !password) {
+    const credential = credentialMode === "pin" ? password : password
+    if (!identifier || !credential || (credentialMode === "pin" && !/^\d{4,6}$/.test(credential))) {
       toast({
         title: "Missing fields",
-        description: loginMode === "email"
-          ? "Please enter your email and password"
-          : "Please enter your mobile number and password",
+        description: credentialMode === "pin" ? "Please enter your 4 to 6 digit PIN" : loginMode === "email" ? "Please enter your email and password" : "Please enter your mobile number and password",
         variant: "destructive",
       })
       return
@@ -100,8 +100,8 @@ export default function ParticipantLoginPage() {
 
     setLoading(true)
     try {
-      const body = loginMode === "email" ? { email, password } : { mobile_number, password }
-      const response = await fetch("/api/auth/participant-login", {
+      const body = credentialMode === "pin" ? (loginMode === "email" ? { email, pin: credential } : { mobile_number, pin: credential }) : (loginMode === "email" ? { email, password } : { mobile_number, password })
+      const response = await fetch(credentialMode === "pin" ? "/api/auth/participant-pin-login" : "/api/auth/participant-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -338,7 +338,16 @@ export default function ParticipantLoginPage() {
               {!pendingVerification && (
                 <form onSubmit={handleLogin} className="space-y-5">
 
-                  {/* Mode toggle */}
+                  {/* Login method toggle */}
+                  <div className="flex gap-1 rounded-2xl border border-white/[0.08] bg-black/15 p-1.5">
+                    {(["password", "pin"] as const).map((method) => (
+                      <button key={method} type="button" onClick={() => setCredentialMode(method)} className={`flex-1 rounded-md py-2 text-sm font-semibold transition-all ${credentialMode === method ? "bg-cyan-500/20 text-cyan-300" : "text-slate-500 hover:text-slate-300"}`}>
+                        {method === "password" ? "Password" : "PIN"}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Identifier toggle */}
                   <div className="flex gap-1 rounded-2xl border border-white/[0.08] bg-black/15 p-1.5">
                     {(["email", "mobile"] as const).map((mode) => (
                       <button
@@ -397,40 +406,17 @@ export default function ParticipantLoginPage() {
                     </div>
                   )}
 
-                  {/* Password field */}
+                  {/* Password or PIN field */}
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password" className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                        Password
+                        {credentialMode === "pin" ? "Login PIN" : "Password"}
                       </Label>
-                      <button
-                        type="button"
-                        onClick={() => setForgotPasswordOpen(true)}
-                        className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition-colors"
-                      >
-                        <HelpCircle className="w-3 h-3" />
-                        Forgot password?
-                      </button>
+                      {credentialMode === "password" && <button type="button" onClick={() => setForgotPasswordOpen(true)} className="text-xs text-cyan-400 hover:text-cyan-300 font-medium flex items-center gap-1 transition-colors"><HelpCircle className="w-3 h-3" />Forgot password?</button>}
                     </div>
                     <div className="relative">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="h-11 pr-10 bg-slate-800/60 border-slate-700/60 text-white placeholder:text-slate-600 focus:border-cyan-500/60 focus:ring-cyan-500/20 transition-all"
-                        required
-                        autoComplete="current-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                      <Input id="password" inputMode={credentialMode === "pin" ? "numeric" : undefined} type={credentialMode === "pin" ? "password" : showPassword ? "text" : "password"} maxLength={credentialMode === "pin" ? 6 : undefined} placeholder={credentialMode === "pin" ? "Enter your PIN" : "Enter your password"} value={password} onChange={(e) => setPassword(credentialMode === "pin" ? e.target.value.replace(/\D/g, "") : e.target.value)} className="h-11 pr-10 bg-slate-800/60 border-slate-700/60 text-white placeholder:text-slate-600 focus:border-cyan-500/60 focus:ring-cyan-500/20 transition-all" required autoComplete={credentialMode === "pin" ? "one-time-code" : "current-password"} />
+                      {credentialMode === "password" && <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>}
                     </div>
                   </div>
 
