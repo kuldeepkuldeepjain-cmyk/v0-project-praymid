@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,6 +62,7 @@ export default function ParticipantLoginPage() {
   const [loginMode, setLoginMode]                   = useState<"email" | "mobile">("email")
   const [credentialMode, setCredentialMode]         = useState<"password" | "pin">("password")
   const [googleLoading, setGoogleLoading]           = useState(false)
+  const googleButtonRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
@@ -79,8 +80,10 @@ export default function ParticipantLoginPage() {
           .catch((error) => toast({ title: "Google login unavailable", description: error.message || "Use email or mobile login.", variant: "destructive" }))
           .finally(() => setGoogleLoading(false))
       }, auto_select: false, cancel_on_tap_outside: false })
+      google.accounts.id.renderButton(googleButtonRef.current, { theme: "outline", size: "large", width: 360, text: "continue_with", shape: "rectangular" })
       google.accounts.id.prompt()
     }
+    script.onerror = () => toast({ title: "Google login unavailable", description: "Google sign-in could not be loaded. Please use email or mobile login.", variant: "destructive" })
     document.head.appendChild(script)
     return () => script.remove()
   }, [])
@@ -388,6 +391,8 @@ export default function ParticipantLoginPage() {
                       </button>
                     ))}
   </div>
+
+  <div ref={googleButtonRef} className="flex min-h-0 justify-center overflow-hidden rounded-xl [&>div]:max-w-full" aria-label="Google One Tap sign-in" />
 
   <button type="button" onClick={handleGoogleLogin} disabled={googleLoading} className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/[0.12] bg-white/[0.06] text-sm font-semibold text-white transition hover:bg-white/[0.1] disabled:opacity-60">
     {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="grid h-5 w-5 place-items-center rounded-full bg-white text-xs font-bold text-slate-800">G</span>}
