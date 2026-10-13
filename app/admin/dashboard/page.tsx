@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   ChevronRight,
   ArrowUpRight,
+  CreditCard,
 } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
@@ -61,7 +62,7 @@ export default function AdminDashboard() {
   const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "", usdt_inr_rate: "102" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "overview" | "terminal" | "participants" | "wallets" | "topups" | "support" | "settings"
+    "overview" | "terminal" | "participants" | "wallets" | "topups" | "support" | "payments" | "settings"
   >("overview")
   const [openTicketCount, setOpenTicketCount] = useState(0)
 
@@ -285,6 +286,7 @@ export default function AdminDashboard() {
               { id: "wallets", label: "Approved Wallets", icon: Wallet },
               { id: "topups", label: "Top Up Requests", icon: ArrowUpRight },
               { id: "support", label: "Support Tickets", icon: MessageSquare, badge: openTicketCount },
+              { id: "payments", label: "UPI / Bank Details", icon: CreditCard },
               { id: "settings", label: "Settings & Security", icon: SlidersHorizontal },
             ] as const
           ).map((item) => {
@@ -324,6 +326,7 @@ export default function AdminDashboard() {
               { id: "wallets", label: "Wallets", icon: Wallet },
               { id: "topups", label: "Top Ups", icon: ArrowUpRight },
               { id: "support", label: "Support", icon: MessageSquare, badge: openTicketCount },
+              { id: "payments", label: "UPI / Bank", icon: CreditCard },
               { id: "settings", label: "Settings", icon: SlidersHorizontal },
             ] as const
           ).map((item) => {
@@ -538,15 +541,15 @@ export default function AdminDashboard() {
         </Card>
         )}
 
-        {activeTab === "settings" && (
+        {(activeTab === "settings" || activeTab === "payments") && (
           <div className="space-y-8">
         {/* Payment Wallet Settings */}
         <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
           <CardHeader>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-white">Admin Wallet Addresses</CardTitle>
-                <CardDescription>Set the USDT deposit addresses and INR bank details shown in Add Funds.</CardDescription>
+<CardTitle className="text-white">UPI / Bank Payment Details</CardTitle>
+              <CardDescription>Enter and save the UPI ID and INR bank details shown to participants in Add Funds.</CardDescription>
               </div>
               <Badge className="w-fit border-cyan-500/30 bg-cyan-500/10 text-cyan-300">Admin only</Badge>
             </div>
