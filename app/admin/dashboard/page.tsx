@@ -59,7 +59,7 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [walletsError, setWalletsError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
-  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "", usdt_inr_rate: "102" })
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "", usdt_inr_rate: "104" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
     "overview" | "terminal" | "participants" | "wallets" | "topups" | "support" | "payments" | "settings"
@@ -590,8 +590,8 @@ export default function AdminDashboard() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="usdt-inr-rate" className="text-sm font-medium text-amber-200">USDT to INR Rate</label>
-                  <Input id="usdt-inr-rate" type="number" min="0.01" step="0.01" value={paymentSettings.usdt_inr_rate} onChange={(event) => setPaymentSettings((current) => ({ ...current, usdt_inr_rate: event.target.value }))} placeholder="102" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
-                  <p className="text-xs text-amber-300/70">Example: 100 USDT = ₹10,200 at rate 102.</p>
+                  <Input id="usdt-inr-rate" type="number" min="0.01" step="0.01" value={paymentSettings.usdt_inr_rate} onChange={(event) => setPaymentSettings((current) => ({ ...current, usdt_inr_rate: event.target.value }))} placeholder="104" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+                  <p className="text-xs text-amber-300/70">Example: 100 USDT = ₹10,400 at rate 104.</p>
                 </div>
   <div className="space-y-2">
   <label htmlFor="inr-account-holder" className="text-sm font-medium text-amber-200">Account Holder Name</label>
