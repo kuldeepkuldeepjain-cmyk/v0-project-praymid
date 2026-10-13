@@ -57,7 +57,7 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [walletsError, setWalletsError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
-  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", usdt_inr_rate: "102" })
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "", usdt_inr_rate: "102" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
     "overview" | "terminal" | "participants" | "wallets" | "support" | "settings"
@@ -117,7 +117,7 @@ export default function AdminDashboard() {
       if (!response.ok) throw new Error(`Payment settings unavailable (${response.status})`)
       const data = await response.json()
       if (!data.success) throw new Error(data.error || "Payment settings returned an invalid response")
-      setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "", usdt_inr_rate: data.usdt_inr_rate || "102" })
+      setPaymentSettings({ trc20_address: data.trc20_address || "", bep20_address: data.bep20_address || "", erc20_address: data.erc20_address || "", inr_bank_name: data.inr_bank_name || "", inr_account_number: data.inr_account_number || "", inr_ifsc_code: data.inr_ifsc_code || "", inr_account_holder_name: data.inr_account_holder_name || "", inr_upi_id: data.inr_upi_id || "", usdt_inr_rate: data.usdt_inr_rate || "102" })
       setSettingsError(null)
     } catch (error) {
       console.error("[v0] Failed to fetch payment settings:", error)
@@ -585,10 +585,15 @@ export default function AdminDashboard() {
                   <Input id="usdt-inr-rate" type="number" min="0.01" step="0.01" value={paymentSettings.usdt_inr_rate} onChange={(event) => setPaymentSettings((current) => ({ ...current, usdt_inr_rate: event.target.value }))} placeholder="102" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
                   <p className="text-xs text-amber-300/70">Example: 100 USDT = ₹10,200 at rate 102.</p>
                 </div>
-                <div className="space-y-2">
-                  <label htmlFor="inr-account-holder" className="text-sm font-medium text-amber-200">Account Holder Name</label>
-                  <Input id="inr-account-holder" value={paymentSettings.inr_account_holder_name} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_account_holder_name: event.target.value }))} placeholder="Enter account holder name" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 text-white placeholder:text-amber-300/50" />
-                </div>
+  <div className="space-y-2">
+  <label htmlFor="inr-account-holder" className="text-sm font-medium text-amber-200">Account Holder Name</label>
+  <Input id="inr-account-holder" value={paymentSettings.inr_account_holder_name} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_account_holder_name: event.target.value }))} placeholder="Enter account holder name" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 text-white placeholder:text-amber-300/50" />
+  </div>
+  <div className="space-y-2">
+  <label htmlFor="inr-upi-id" className="text-sm font-medium text-amber-200">UPI ID</label>
+  <Input id="inr-upi-id" value={paymentSettings.inr_upi_id} onChange={(event) => setPaymentSettings((current) => ({ ...current, inr_upi_id: event.target.value.trim() }))} placeholder="merchant@upi" autoComplete="off" className="border-amber-500/30 bg-amber-950/40 font-mono text-white placeholder:text-amber-300/50" />
+  <p className="text-xs text-amber-300/70">Participants receive a QR with the selected INR amount.</p>
+  </div>
               </div>
             </div>
             <div className="md:col-span-2">

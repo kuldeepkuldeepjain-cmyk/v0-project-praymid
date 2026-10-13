@@ -34,7 +34,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
-  const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20">("ALL")
+  const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
+  const [paymentMethod, setPaymentMethod] = useState<"crypto" | "inr">("crypto")
+  const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: null, bankName: null, accountNumber: null, ifsc: null, holderName: null })
+  const [inrQrDataUrl, setInrQrDataUrl] = useState<string | null>(null)
   const [loadingAddress, setLoadingAddress] = useState(false)
   const [checkingFundedTier, setCheckingFundedTier] = useState(false)
   const [fundedTierEligibility, setFundedTierEligibility] = useState<boolean | null>(null)
@@ -54,6 +57,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
+    setPaymentMethod("crypto")
+    setInrQrDataUrl(null)
     setFundingMode("actual")
     setFundedTierEligibility(null)
     setPendingRequests([])
@@ -104,6 +109,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         const res = await fetch("/api/public/settings")
         const data = await res.json()
         setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
+        setInrDetails({ upiId: data.inr_upi_id || null, bankName: data.inr_bank_name || null, accountNumber: data.inr_account_number || null, ifsc: data.inr_ifsc_code || null, holderName: data.inr_account_holder_name || null })
       } catch {
         setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
       } finally {
@@ -122,6 +128,16 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }
 
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
+
+  useEffect(() => {
+    if (paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+      setInrQrDataUrl(null)
+      return
+    }
+    QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${Number(amount).toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
+      .then(setInrQrDataUrl)
+      .catch(() => setInrQrDataUrl(null))
+  }, [paymentMethod, inrDetails.upiId, inrDetails.holderName, amount])
 
   // Generate a real, scannable QR code for the selected deposit address.
   useEffect(() => {
@@ -355,8 +371,16 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </div>
               </div>
 
-              {/* Network selector */}
               <div className="space-y-1.5">
+                <Label htmlFor="topup-payment-method" className="text-xs font-semibold text-slate-700">Payment currency <span className="text-red-500">*</span></Label>
+                <select id="topup-payment-method" value={paymentMethod} onChange={(event) => { const next = event.target.value as "crypto" | "inr"; setPaymentMethod(next); setNetwork(next === "inr" ? "INR" : "ALL") }} disabled={step === "submitting"} className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-violet-500">
+                  <option value="crypto">USDT / Crypto</option>
+                  <option value="inr">INR via UPI / Bank transfer</option>
+                </select>
+              </div>
+
+              {/* Network selector */}
+              {paymentMethod === "crypto" && (<div className="space-y-1.5">
                 <Label htmlFor="topup-network" className="text-xs font-semibold text-slate-700">
                   Deposit Network <span className="text-red-500">*</span>
                 </Label>
@@ -375,10 +399,18 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 <p className="text-[10px] text-slate-500">
                   Select the USDT network used for your transfer.
                 </p>
-              </div>
+              </div>)}
+
+              {paymentMethod === "inr" ? (
+                <div className="space-y-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
+                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered INR amount.</p></div>
+                  {inrQrDataUrl ? <div className="flex justify-center rounded-xl bg-white p-3"><img src={inrQrDataUrl} alt={`UPI QR code for ₹${amount || "0"}`} className="size-48" /></div> : <div className="rounded-xl border border-dashed border-orange-300 bg-white p-4 text-center text-xs text-orange-700">Enter an INR amount to generate the QR code.</div>}
+                  <div className="grid gap-2 text-xs text-orange-950 sm:grid-cols-2"><p><span className="font-semibold">UPI ID:</span> {inrDetails.upiId || "Not configured"}</p><p><span className="font-semibold">Account:</span> {inrDetails.accountNumber || "Not configured"}</p><p><span className="font-semibold">Bank:</span> {inrDetails.bankName || "Not configured"}</p><p><span className="font-semibold">IFSC:</span> {inrDetails.ifsc || "Not configured"}</p></div>
+                </div>
+              ) : null}
 
               {/* Wallet Address */}
-              <div className="space-y-1">
+              {paymentMethod === "crypto" && (<div className="space-y-1">
                 <Label className="text-xs font-semibold text-slate-700">{network === "ALL" ? "USDT Deposit Address" : `${network} Deposit Address (USDT)`}</Label>
                 {loadingAddress ? (
                   <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2.5 animate-pulse">
@@ -438,12 +470,12 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 <p className="text-[10px] text-slate-500">
                   Send USDT using the selected network to this address, then fill in your transaction details below.
                 </p>
-              </div>
+              </div>)}
 
               {/* Amount */}
               <div className="space-y-1">
                   <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
-                  Amount Sent (USDT) <span className="text-red-500">*</span>
+                  {paymentMethod === "inr" ? "Amount to Pay (INR)" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -456,7 +488,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                     disabled={step === "submitting"}
                   />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    USDT
+                    {paymentMethod === "inr" ? "INR" : "USDT"}
                   </span>
                 </div>
                 {amount && !isAmountValid && (

@@ -4,7 +4,7 @@ import { query } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 const legacyBep20Key = "topup_bep20_address"
-const inrBankSettingKeys = ["topup_inr_bank_name", "topup_inr_account_number", "topup_inr_ifsc_code", "topup_inr_account_holder_name", "topup_usdt_inr_rate"] as const
+const inrBankSettingKeys = ["topup_inr_bank_name", "topup_inr_account_number", "topup_inr_ifsc_code", "topup_inr_account_holder_name", "topup_inr_upi_id", "topup_usdt_inr_rate"] as const
 
 export async function GET(request: NextRequest) {
   const auth = await requireAdminSession(request)
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const rows = (await query(
       `SELECT setting_key, setting_value FROM system_settings
-       WHERE setting_key IN ('topup_trc20_address', 'topup_erc20_address', $1, $2, $3, $4, $5)`,
+       WHERE setting_key IN ('topup_trc20_address', 'topup_erc20_address', $1, $2, $3, $4, $5, $6)`,
       [legacyBep20Key, ...inrBankSettingKeys],
     )) as Array<{ setting_key: string; setting_value: string | null }>
     const settings = Object.fromEntries(rows.map((row) => [row.setting_key, row.setting_value || ""]))
@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       inr_account_number: settings.topup_inr_account_number || "",
       inr_ifsc_code: settings.topup_inr_ifsc_code || "",
       inr_account_holder_name: settings.topup_inr_account_holder_name || "",
+      inr_upi_id: settings.topup_inr_upi_id || "",
       usdt_inr_rate: settings.topup_usdt_inr_rate || "102",
     })
   } catch (error) {
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
     const inrAccountNumber = typeof body.inr_account_number === "string" ? body.inr_account_number.trim() : ""
     const inrIfscCode = typeof body.inr_ifsc_code === "string" ? body.inr_ifsc_code.trim().toUpperCase() : ""
     const inrAccountHolderName = typeof body.inr_account_holder_name === "string" ? body.inr_account_holder_name.trim() : ""
+    const inrUpiId = typeof body.inr_upi_id === "string" ? body.inr_upi_id.trim() : ""
     const usdtInrRate = typeof body.usdt_inr_rate === "string" || typeof body.usdt_inr_rate === "number" ? String(body.usdt_inr_rate).trim() : "102"
 
     // Keep all deposit addresses in system_settings, which is present in every
@@ -59,7 +61,8 @@ export async function POST(request: NextRequest) {
          ($13, $14, $15, NOW()),
          ($16, $17, $18, NOW()),
          ($19, $20, $21, NOW()),
-         ($22, $23, $24, NOW())
+         ($22, $23, $24, NOW()),
+         ($25, $26, $27, NOW())
        ON CONFLICT(setting_key) DO UPDATE
        SET setting_value = EXCLUDED.setting_value, updated_at = NOW()`,
       [
@@ -70,6 +73,7 @@ export async function POST(request: NextRequest) {
         randomUUID(), "topup_inr_account_number", inrAccountNumber,
         randomUUID(), "topup_inr_ifsc_code", inrIfscCode,
         randomUUID(), "topup_inr_account_holder_name", inrAccountHolderName,
+        randomUUID(), "topup_inr_upi_id", inrUpiId,
         randomUUID(), "topup_usdt_inr_rate", usdtInrRate,
       ],
     )
