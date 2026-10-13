@@ -36,7 +36,8 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
   const [network, setNetwork] = useState<"ALL" | "TRC20" | "BEP20" | "ERC20" | "INR">("ALL")
   const [paymentMethod, setPaymentMethod] = useState<"crypto" | "inr">("crypto")
-  const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: null, bankName: null, accountNumber: null, ifsc: null, holderName: null })
+  const DEFAULT_INR_UPI_ID = "paytmqr5m6lfj@ptys"
+  const [inrDetails, setInrDetails] = useState<{ upiId: string | null; bankName: string | null; accountNumber: string | null; ifsc: string | null; holderName: string | null }>({ upiId: DEFAULT_INR_UPI_ID, bankName: null, accountNumber: null, ifsc: null, holderName: null })
   const [inrQrDataUrl, setInrQrDataUrl] = useState<string | null>(null)
   const [inrQrExpiresAt, setInrQrExpiresAt] = useState<number | null>(null)
   const [inrSecondsRemaining, setInrSecondsRemaining] = useState(0)
@@ -113,7 +114,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         const res = await fetch("/api/public/settings")
         const data = await res.json()
         setWalletAddresses({ TRC20: data.trc20_address || null, BEP20: data.bep20_address || data.topup_address || null, ERC20: data.erc20_address || null })
-        setInrDetails({ upiId: data.inr_upi_id || null, bankName: data.inr_bank_name || null, accountNumber: data.inr_account_number || null, ifsc: data.inr_ifsc_code || null, holderName: data.inr_account_holder_name || null })
+        setInrDetails({ upiId: data.inr_upi_id || DEFAULT_INR_UPI_ID, bankName: data.inr_bank_name || null, accountNumber: data.inr_account_number || null, ifsc: data.inr_ifsc_code || null, holderName: data.inr_account_holder_name || null })
       } catch {
         setWalletAddresses({ TRC20: null, BEP20: null, ERC20: null })
       } finally {
