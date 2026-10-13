@@ -3012,6 +3012,40 @@ button, a, [role="button"] {
   box-shadow: inset 3px 0 #65b5f3, 0 5px 18px rgba(20,83,125,.12);
   }
 .elite-terminal-nav-item.is-active svg { color: #65b5f3; }
+
+.elite-terminal-nav-item.elite-terminal-add-fund {
+  position: relative;
+  margin: 6px 0;
+  color: #fff3d0;
+  background: linear-gradient(100deg, rgba(232, 93, 59, .28), rgba(244, 166, 35, .16));
+  border-color: rgba(244, 166, 35, .5);
+  box-shadow: 0 0 0 1px rgba(244, 166, 35, .1), 0 8px 24px rgba(232, 93, 59, .18);
+  animation: elite-add-fund-pulse 2.4s ease-in-out infinite;
+}
+
+.elite-terminal-nav-item.elite-terminal-add-fund::after {
+  content: "START HERE";
+  margin-left: auto;
+  padding: 3px 6px;
+  border-radius: 999px;
+  background: #f4a623;
+  color: #241508;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.elite-terminal-nav-item.elite-terminal-add-fund svg { color: #f4a623; }
+.elite-terminal-nav-item.elite-terminal-add-fund:hover { color: #fff8e8; background: linear-gradient(100deg, rgba(232, 93, 59, .4), rgba(244, 166, 35, .24)); }
+
+@keyframes elite-add-fund-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(244, 166, 35, .1), 0 8px 24px rgba(232, 93, 59, .18); }
+  50% { box-shadow: 0 0 0 4px rgba(244, 166, 35, .12), 0 10px 30px rgba(232, 93, 59, .3); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .elite-terminal-nav-item.elite-terminal-add-fund { animation: none; }
+}
 .elite-terminal-nav-item svg { width: 18px; height: 18px; color: #7891a7; stroke-width: 1.8; }
 .elite-terminal-nav-count {
   margin-left: auto;
