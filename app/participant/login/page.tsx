@@ -77,7 +77,12 @@ export default function ParticipantLoginPage() {
     fetch("/api/auth/participant-google", { method: "POST" }).then((response) => response.json()).then((data) => { if (data.success) finishGoogleLogin(data); else throw new Error(data.error) }).catch(() => toast({ title: "Google login failed", description: "Please try again.", variant: "destructive" })).finally(() => setGoogleLoading(false))
   }, [])
 
-  const handleGoogleLogin = () => { setGoogleLoading(true); window.location.href = "/api/auth/google/start" }
+  const handleGoogleLogin = () => {
+    toast({
+      title: "Google login under maintenance",
+      description: "Google sign-in is temporarily unavailable. Please use email or mobile login.",
+    })
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
