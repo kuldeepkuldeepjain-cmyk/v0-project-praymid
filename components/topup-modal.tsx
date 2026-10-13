@@ -402,6 +402,19 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   {paymentMethod === "inr" && <p className="mt-1.5 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-medium leading-4 text-orange-800">Note: Payouts are sent to the same account used to add funds.</p>}
   </div>
 
+              {/* Amount */}
+              <div className="space-y-1">
+                <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
+                  {paymentMethod === "inr" ? "Amount (USD) — QR in INR" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input id="topup-amount" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-9 pr-14 text-sm border border-slate-200 focus:border-violet-500 rounded-lg" disabled={step === "submitting"} />
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">{paymentMethod === "inr" ? "USD" : "USDT"}</span>
+                </div>
+                {amount && !isAmountValid && <p className="text-[10px] text-red-500">{fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
+                {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
+              </div>
+
               {/* Network selector */}
               {paymentMethod === "crypto" && (<div className="space-y-1.5">
                 <Label htmlFor="topup-network" className="text-xs font-semibold text-slate-700">
@@ -426,7 +439,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
               {paymentMethod === "inr" ? (
                 <div className="space-y-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
-                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered INR amount.</p></div>
+                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered dollar amount and converted to INR at ₹104 per $1.</p></div>
                   {inrQrExpired ? (
                     <div className="rounded-xl border border-dashed border-red-300 bg-white p-4 text-center text-xs text-red-700">This payment QR expired. Change the amount to generate a fresh QR code.</div>
                   ) : inrQrDataUrl ? (
@@ -502,34 +515,6 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </p>
               </div>)}
 
-              {/* Amount */}
-              <div className="space-y-1">
-                  <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
-                  {paymentMethod === "inr" ? "Amount (USD) — QR in INR" : "Amount Sent (USDT)"} <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="topup-amount"
-                    type="number"
-                    placeholder="Exact amount sent"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="h-9 pr-14 text-sm border border-slate-200 focus:border-violet-500 rounded-lg"
-                    disabled={step === "submitting"}
-                  />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
-                    {paymentMethod === "inr" ? "USD" : "USDT"}
-                  </span>
-                </div>
-                {amount && !isAmountValid && (
-                  <p className="text-[10px] text-red-500">
-                    {isFundedAccount && isInitialFundedTopUp && fundingMode === "funded"
-                      ? "Choose one funded amount: $50, $100, $250, $500, or $1,000"
-                      : "Minimum amount is $5 USDT"}
-                  </p>
-                )}
-                {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
-              </div>
 
 {/* Transaction proof */}
   <div className="space-y-1">
