@@ -530,14 +530,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
               </div>
 
-              {/* Transaction Hash */}
-              <div className="space-y-1">
-                <Label htmlFor="topup-txhash" className="text-xs font-semibold text-slate-700">
-                  Transaction Hash <span className="text-red-500">*</span>
-                </Label>
+{/* Transaction proof */}
+  <div className="space-y-1">
+  <Label htmlFor="topup-txhash" className="text-xs font-semibold text-slate-700">
+  Transaction Hash / UPI Transaction ID <span className="text-red-500">*</span>
+  </Label>
                 <Input
                   id="topup-txhash"
-                  placeholder="0x1234567890abcdef..."
+                  placeholder={paymentMethod === "inr" ? "Enter UPI transaction ID / UTR number" : "0x1234567890abcdef..."}
                   value={txHash}
                   onChange={(e) => setTxHash(e.target.value)}
                   className="h-9 font-mono text-xs border border-slate-200 focus:border-violet-500 rounded-lg"
