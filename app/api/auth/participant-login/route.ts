@@ -28,6 +28,9 @@ export async function POST(request: NextRequest) {
     let emailKey = email ? email.toLowerCase().trim() : null
     let mobileKey = mobile_number ? mobile_number.toString().trim() : null
 
+    // Keep the PIN column available for existing participant databases before reading it.
+    await execute("ALTER TABLE participants ADD COLUMN IF NOT EXISTS pin_hash TEXT").catch(() => {})
+
     // Query participant by email or mobile number
     let rows: any[] = []
     if (emailKey) {
@@ -37,6 +40,7 @@ export async function POST(request: NextRequest) {
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
                 account_type,
+                pin_hash,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants WHERE email = $1 LIMIT 1`,
         [emailKey]
@@ -48,6 +52,7 @@ export async function POST(request: NextRequest) {
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
                 account_type,
+                pin_hash,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants
          WHERE mobile_number = $1
@@ -179,6 +184,7 @@ export async function POST(request: NextRequest) {
       is_active: participant.is_active !== false,
       otp_verified: participant.otp_verified || false,
       details_completed: participant.details_completed || false,
+      pinConfigured: Boolean(participant.pin_hash),
       country: participant.country || "",
       state: participant.state || "",
       pin_code: participant.pin_code || "",

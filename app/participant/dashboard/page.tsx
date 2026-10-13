@@ -27,6 +27,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 import { NoticeBoard } from "@/components/notice-board"
+import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 
 
 
@@ -1479,6 +1480,7 @@ export default function DashboardHome() {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
+  const [showPinSetup, setShowPinSetup] = useState(false)
   
   // Profile completion check removed — details_completed column does not exist in DB schema
   // Users should not be forced off the dashboard for missing this field
@@ -1597,6 +1599,7 @@ export default function DashboardHome() {
           }
           setParticipantData(data)
           setParticipantId(data.id || data.participantId || "")
+          if (data.pinConfigured !== true) setShowPinSetup(true)
 
   if (data.account_type !== "funded" && (data.account_frozen || data.is_frozen || data.status === "frozen")) {
   setShowFrozenModal(true)
@@ -1789,6 +1792,19 @@ export default function DashboardHome() {
             </div>
           )}
         </div>
+      )}
+
+      {showPinSetup && participantData && (
+        <ParticipantPinSetup
+          onComplete={() => {
+            setShowPinSetup(false)
+            setParticipantData((current: any) => {
+              const updated = current ? { ...current, pinConfigured: true } : current
+              if (updated) localStorage.setItem("participantData", JSON.stringify(updated))
+              return updated
+            })
+          }}
+        />
       )}
 
       {/* Frozen Account Modal */}

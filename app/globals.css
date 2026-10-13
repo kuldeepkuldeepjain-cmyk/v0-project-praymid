@@ -1223,12 +1223,23 @@ button, a, [role="button"] {
 }
   .terminal-icon-button:hover { background: rgba(34,211,238,0.08); border-color: #2c6d86; color: #d7f8ff; transform: translateY(-1px); }
 
+  .terminal-rate-toggle { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 24px; flex: 0 0 28px; padding: 0; border: 1px solid #2c6d86; border-radius: 5px; color: #7dd3fc; background: rgba(14,116,144,.14); font-size: 16px; font-weight: 800; line-height: 1; cursor: pointer; }
+  .rate-bar-collapsed .terminal-rate-details { display: none; }
+  .rate-bar-expanded .terminal-rate-details { display: flex; width: 100%; min-height: 26px; align-items: center; }
   @media (max-width: 640px) {
     .terminal-toolbar-row { gap: 5px !important; padding-inline: 8px !important; min-width: 0; }
     .terminal-brand-lockup { padding-right: 6px !important; }
     .terminal-toolbar-row > * { min-width: 0; }
     .terminal-toolbar-row .terminal-icon-button { flex: 0 0 32px; }
     .terminal-toolbar-row .terminal-header-search { flex: 1 1 auto; max-width: none; }
+    .chart-header-market { gap: 6px !important; flex-wrap: wrap; }
+    .terminal-rate-details { order: 3; flex-basis: 100%; max-width: 100%; padding-top: 4px; border-top: 1px solid rgba(30,45,69,.8); }
+    .rate-bar-collapsed .terminal-rate-details { display: none; }
+    .rate-bar-expanded .terminal-rate-details { display: flex; }
+    .chart-timeframe-toolbar { flex-wrap: wrap; min-height: 34px; }
+    .terminal-rate-toggle { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 24px; flex: 0 0 28px; padding: 0; border: 1px solid #2c6d86; border-radius: 5px; color: #7dd3fc; background: rgba(14,116,144,.14); font-size: 16px; font-weight: 800; line-height: 1; }
+    .chart-timeframe-label { display: none; }
+    .chart-timeframe-toolbar > .flex.items-center.gap-2 { margin-left: auto; max-width: 100%; overflow-x: auto; }
 
     .terminal-brand-logo { max-width: 42px !important; }
     .terminal-header-search { min-width: 0; }

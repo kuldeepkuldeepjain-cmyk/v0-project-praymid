@@ -1298,7 +1298,7 @@ function PositionSizer({
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
-  // Map of tradeId → partial close lot input value
+  // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
   const [online, setOnline]           = useState(false)
@@ -1336,6 +1336,7 @@ function PositionSizer({
   const [themeReady, setThemeReady] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
+  const [rateBarExpanded, setRateBarExpanded] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
 
@@ -1724,20 +1725,39 @@ function PositionSizer({
     }
     setCandleLoading(true)
     try {
-      const res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}`, { cache: "no-store" })
-      const json = await res.json().catch(() => null)
+      let res: Response | null = null
+      let json: Record<string, unknown> | null = null
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          res = await fetch(`/api/forex/candles?pair=${encodeURIComponent(sym)}&tf=${tf}&_=${Date.now()}`, { cache: "no-store" })
+          json = await res.json().catch(() => null)
+          if (res.ok && Array.isArray(json?.candles) && json.candles.length > 0) break
+        } catch {
+          if (attempt === 1) throw new Error("Candle provider unavailable")
+        }
+        if (attempt === 0) await new Promise(resolve => setTimeout(resolve, 800))
+      }
+      if (!res) throw new Error("Candle provider unavailable")
       if (!json || typeof json !== "object") throw new Error(`Invalid candles response (${res.status})`)
       // A provider timeout is not a terminal UI error. The route can return a
       // stale snapshot or an empty retry response while the live feed recovers.
-      if (!res.ok && !Array.isArray(json.candles)) throw new Error(String(json.error ?? `HTTP ${res.status}`))
-      if (json.error && (!Array.isArray(json.candles) || json.candles.length === 0)) throw new Error(String(json.error))
+      if (!res.ok && !Array.isArray(json?.candles)) throw new Error(String(json?.error ?? `HTTP ${res.status}`))
+      if (json?.error && (!Array.isArray(json.candles) || json.candles.length === 0)) {
+        if (cached?.length) {
+          setCandleError("Showing cached candles — reconnecting to live history.")
+          return
+        }
+        throw new Error(String(json.error))
+      }
       if (requestId !== candleRequestRef.current) return
       const historicalCandles: Candle[] = Array.isArray(json.candles)
         ? json.candles.filter((c: Candle | null | undefined): c is Candle => !!c && [c.open, c.high, c.low, c.close].every((value) => typeof value === "number" && Number.isFinite(value)))
         : []
+      if (historicalCandles.length === 0) throw new Error("Provider returned no usable candles")
       // Keep historical OHLC values exactly as returned by the selected
       // provider. The live-tick effect below updates only the active candle.
       const candles = historicalCandles
+      setCandleError(null)
       setCandleCache(prev => ({ ...prev, [key]: candles }))
       setPairs(prev => {
         const updated = prev.map(p => p.symbol === sym ? { ...p, candles } : p)
@@ -1748,13 +1768,13 @@ function PositionSizer({
         if (!prev || prev.symbol !== sym) return prev
         return pairsRef.current.find(p => p.symbol === sym) ?? prev
       })
-      setCandleError(json.source === "stale" ? "Showing cached candles — reconnecting to live history." : null)
+      setCandleError(json.source === "stale" ? "Showing cached candles — reconnecting to live history." : json.source === "offline" ? "Live candle history unavailable — retrying." : null)
     } catch (error) {
       if (requestId !== candleRequestRef.current) return
       console.error("[v0] Candle refresh failed:", error)
       // Never imply a synthetic/recovery series is live. Keep retrying and
       // expose the upstream state until genuine historical candles return.
-      setCandleError("Live candle history unavailable — reconnecting")
+      setCandleError(cached?.length ? "Showing cached candles — retrying live history." : "Live candle history unavailable — retrying provider.")
     } finally {
       if (requestId === candleRequestRef.current) setCandleLoading(false)
     }
@@ -1790,8 +1810,9 @@ function PositionSizer({
       // snapshots. Wider frames stay on lighter polling intervals.
       "1M": 5_000, "5M": 30_000, "15M": 90_000, "30M": 180_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000, "1W": 86400_000,
     }
-    const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
-    candleIntervalRef.current = setInterval(() => fetchCandles(selectedPair.symbol, timeframe), ms)
+  const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
+  const retry = () => { void fetchCandles(selectedPair.symbol, timeframe) }
+  candleIntervalRef.current = setInterval(retry, ms)
     return () => { if (candleIntervalRef.current) clearInterval(candleIntervalRef.current) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPair?.symbol, timeframe, candleError])
@@ -2300,7 +2321,7 @@ function PositionSizer({
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
-  // ── Close trade ────────────────────────────────────────────────────────────
+  // ── Close trade ──────────────���──────────────────────────────────────────��──
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
   // Prevent double-close if tick engine and manual close race
   if (closingTradeIds.current.has(id)) return
@@ -2485,7 +2506,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adjustWalletBalance, showToast, persistPartialClose])
 
-  // ── Modify trade ──────��────────────────────────────────────────────────────
+  // ── Modify trade ──────���────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
     const trade = openTradesRef.current.find(item => item.id === tradeId)
     const pair = trade ? pairsRef.current.find(item => item.symbol === trade.pair) : null
@@ -2520,7 +2541,7 @@ function PositionSizer({
     return true
   }, [showToast, persistModify])
 
-  // ── Price Alert checker (runs each tick) ��────────────────────────────────
+  // ── Price Alert checker (runs each tick) ��─────────────────���──────────────
   useEffect(() => {
     if (priceAlerts.length === 0) return
     setPriceAlerts(prev => prev.map(a => {
@@ -3182,7 +3203,7 @@ function PositionSizer({
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+            <div className={`chart-header shrink-0 flex flex-col px-3 py-1.5 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
               <div className="chart-header-market flex min-w-0 items-center gap-3">
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-black text-white tracking-wider">
@@ -3197,9 +3218,11 @@ function PositionSizer({
                 })()}
               </div>
               <span className="bid-ask-price" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-              <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
-              <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
-              <div className="flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
+  <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
+  <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded} aria-label={rateBarExpanded ? "Collapse market details" : "Expand market details"}>{rateBarExpanded ? "⌃" : "⌄"}</button>
+  <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
+              </div>
+              <div className="terminal-rate-details flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
                 <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
                 <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
                 <span className="text-slate-500 shrink-0">SPR <span className="text-cyan-400 font-bold">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span></span>
@@ -3213,8 +3236,8 @@ function PositionSizer({
                   <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
                 </>}
               </div>
-              </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
+
                 <span className="chart-timeframe-label">Chart interval</span>
                 <div className="flex items-center gap-2">
                   <div
