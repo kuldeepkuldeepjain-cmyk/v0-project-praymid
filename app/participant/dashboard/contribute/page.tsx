@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
-import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
+import { getParticipantData, isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 interface ParticipantData {
   email?: string
@@ -42,14 +42,20 @@ export default function AddFundPage() {
     }
 
     const storedData = localStorage.getItem("participantData")
-    if (!storedData) return
+    const sessionData = getParticipantData()
+    if (!storedData && !sessionData) {
+      setAccountDataLoaded(true)
+      return
+    }
 
     try {
-      const parsedData = JSON.parse(storedData) as ParticipantData
+      const parsedData = storedData
+        ? JSON.parse(storedData) as ParticipantData
+        : { email: sessionData?.email, username: sessionData?.username, account_balance: 0 } as ParticipantData
       setParticipantData(parsedData)
 
       if (parsedData.email) {
-        participantFetch(`/api/participant/me?email=${encodeURIComponent(parsedData.email)}`)
+        participantFetch("/api/participant/me")
           .then((response) => response.json())
           .then((data) => {
             if (data.participant) {
