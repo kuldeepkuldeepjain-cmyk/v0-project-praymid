@@ -158,7 +158,16 @@ export function ForexHeader({
             alt="Elite Fund — Trade Higher"
             className="terminal-brand-logo"
           />
+          <span className="hidden min-w-0 pl-3 leading-none sm:block">
+            <strong className="block truncate text-[11px] font-black uppercase tracking-[0.16em] text-white">Trading Terminal</strong>
+            <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">Institutional workspace</span>
+          </span>
           <span className="sr-only">Elite Fund Trading Terminal</span>
+        </div>
+
+        <div className="hidden shrink-0 items-center gap-1.5 lg:flex">
+          <span className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-[9px] font-black uppercase tracking-wider" style={{ color: marketColor, borderColor: `${marketColor}55`, background: `${marketColor}12` }}><CircleDot className="h-3 w-3" />{marketStatus}</span>
+          <span className="rounded-md border px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400" style={{ borderColor: "#21354d", background: "#0d1a2b" }}>1:{leverage} · {accountType}</span>
         </div>
 
         <div className="terminal-header-search relative min-w-0 flex-1 lg:max-w-sm">
@@ -190,7 +199,7 @@ export function ForexHeader({
         </div>
 
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="terminal-header-metrics flex min-w-0 items-center gap-1 overflow-x-auto terminal-scroll">
           <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
@@ -223,7 +232,7 @@ export function ForexHeader({
         <div className="relative">
           <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="terminal-account-button flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400/20 text-[10px] font-black text-cyan-200">{userName.slice(0, 2).toUpperCase()}</span>
-            <span className="hidden max-w-24 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountType} · 1:{leverage}</span></span>
+            <span className="hidden max-w-28 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountId ? `#${accountId.slice(0, 8)}` : accountType} · {isConnected ? "LIVE" : "OFFLINE"}</span></span>
             <ChevronDown className="h-3 w-3 text-slate-500" />
           </button>
           {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-500">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("support") }} className="terminal-menu-item"><LifeBuoy className="h-3.5 w-3.5 text-cyan-300" />Support Center</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("smart-alerts") }} className="terminal-menu-item"><Bell className="h-3.5 w-3.5 text-amber-300" />Smart Alerts</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
