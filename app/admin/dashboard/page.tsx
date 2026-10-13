@@ -33,6 +33,7 @@ import { PlatformRevenueTracker } from "@/components/admin/platform-revenue-trac
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 import { AdminControlRoom } from "@/components/admin/admin-control-room"
 import { SupportTicketsPanel } from "@/components/support-tickets-panel"
+import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 
 interface ApprovedWallet {
   id: string
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
   const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "", usdt_inr_rate: "102" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "overview" | "terminal" | "participants" | "wallets" | "support" | "settings"
+    "overview" | "terminal" | "participants" | "wallets" | "topups" | "support" | "settings"
   >("overview")
   const [openTicketCount, setOpenTicketCount] = useState(0)
 
@@ -282,6 +283,7 @@ export default function AdminDashboard() {
               { id: "terminal", label: "Trading Terminal", icon: Activity },
               { id: "participants", label: "Participants", icon: Users },
               { id: "wallets", label: "Approved Wallets", icon: Wallet },
+              { id: "topups", label: "Top Up Requests", icon: ArrowUpRight },
               { id: "support", label: "Support Tickets", icon: MessageSquare, badge: openTicketCount },
               { id: "settings", label: "Settings & Security", icon: SlidersHorizontal },
             ] as const
@@ -320,6 +322,7 @@ export default function AdminDashboard() {
               { id: "terminal", label: "Terminal", icon: Activity },
               { id: "participants", label: "Users", icon: Users },
               { id: "wallets", label: "Wallets", icon: Wallet },
+              { id: "topups", label: "Top Ups", icon: ArrowUpRight },
               { id: "support", label: "Support", icon: MessageSquare, badge: openTicketCount },
               { id: "settings", label: "Settings", icon: SlidersHorizontal },
             ] as const
@@ -422,8 +425,10 @@ export default function AdminDashboard() {
           </section>
         )}
 
-        {activeTab === "wallets" && (
-        <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
+  {activeTab === "topups" && <TopUpRequestsPanel />}
+
+  {activeTab === "wallets" && (
+  <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
