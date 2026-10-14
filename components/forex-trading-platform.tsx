@@ -1250,7 +1250,7 @@ function PositionSizer({
   )
 }
 
-// ─��─ Main Component ───────────────────────────────────�������───────────────────────
+// ─��─ Main Component ───────────────────────────────────���������───────────────────────
 
   export function ForexTradingPlatform({
   participantEmail,
@@ -3335,7 +3335,8 @@ function PositionSizer({
   <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 p-6 text-center text-slate-400 text-xs">
   <div className="flex size-10 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300">!</div>
   <div><p className="font-bold text-slate-200">Chart temporarily unavailable</p><p className="mt-1 max-w-xs text-slate-500">The live feed is reconnecting. Your trading controls remain available.</p></div>
-  <button type="button" onClick={() => { setChartReloadKey((key) => key + 1); if (selectedPair) void fetchCandles(selectedPair.symbol, timeframe) }} className="rounded border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-bold uppercase tracking-wide text-cyan-300 transition-colors hover:bg-cyan-400/20">Reload Chart</button>
+  {selectedPair?.candles?.length ? <div className="h-48 w-full max-w-xl overflow-hidden rounded-lg border border-slate-700/60"><TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /></div> : null}
+  <button type="button" onClick={() => { setChartReloadKey((key) => key + 1); if (selectedPair) void fetchCandles(selectedPair.symbol, timeframe) }} className="rounded border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-bold uppercase tracking-wide text-cyan-300 transition-colors hover:bg-cyan-400/20">Retry feed</button>
   </div>
   }>
     {chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" /> : <TradingChart
