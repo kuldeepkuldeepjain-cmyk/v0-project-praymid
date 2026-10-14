@@ -1345,6 +1345,21 @@ button, a, [role="button"] {
   }
 
 /* Institutional terminal layout polish */
+.mt5-terminal .text-slate-700 { color: #8da1b5 !important; }
+.mt5-terminal .text-slate-600 { color: #a0b1c2 !important; }
+.mt5-terminal .text-slate-500 { color: #b1c0ce !important; }
+.mt5-terminal .text-slate-400 { color: #c9d5df !important; }
+.mt5-terminal .text-slate-300 { color: #d8e2ea !important; }
+.mt5-terminal .chart-timeframe-label { color: #d8e5ee; font-weight: 800; letter-spacing: .08em; }
+.mt5-terminal .terminal-rate-details .text-slate-500 { color: #afc0ce !important; }
+.mt5-terminal .terminal-rate-details .text-slate-700 { color: #8da1b5 !important; }
+.mt5-terminal .chart-header .bid-ask-price { text-shadow: 0 0 12px currentColor; }
+.mt5-terminal .chart-header button[aria-pressed="false"] { color: #b9c9d6 !important; }
+.mt5-terminal .chart-header button[aria-pressed="true"] { color: #031015 !important; }
+.mt5-terminal .apple-terminal-market,
+.mt5-terminal .apple-terminal-order { color: #d7e3ec; }
+
+
 .apple-terminal-grid {
   display: grid;
   grid-template-columns: minmax(220px, 248px) minmax(0, 1fr) minmax(292px, 320px);

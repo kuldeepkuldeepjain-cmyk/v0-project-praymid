@@ -1250,7 +1250,7 @@ function PositionSizer({
   )
 }
 
-// ─��─ Main Component ───────────────────────────────────���������───────────────────────
+// ─��─ Main Component ───────────────────────────────────�����������───────────────────────
 
   export function ForexTradingPlatform({
   participantEmail,
@@ -2127,7 +2127,7 @@ function PositionSizer({
     return () => { cancelled = true }
   }, [loadTrades])
 
-  // ── Execute market trade ───────────────────────────────────���───────────────
+  // ── Execute market trade ───────────────────────────────────���─��─────────────
   // Opens the confirmation modal ����� called by both executeTrade and quickTrade
   const requestConfirm = (
     dir: TradeDirection,
@@ -3287,12 +3287,12 @@ function PositionSizer({
                             background: active
                               ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)"
                               : "transparent",
-                            color: active ? "#031015" : "#8296ab",
+                            color: active ? "#031015" : "#b9c9d6",
                             boxShadow: active
                               ? "0 2px 6px rgba(34,211,238,0.4), inset 0 1px 0 rgba(255,255,255,0.3)"
                               : "none",
                           }}
-                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#e2f4fa" }}
+                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#f3fbff" }}
                           onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#8296ab" }}
                         >
                           {tf}
