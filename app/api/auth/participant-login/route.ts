@@ -101,14 +101,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Sign-in is temporarily unavailable while your account is under security review." }, { status: 403 })
     }
 
-    // Block login if mobile OTP not yet verified by admin
-    if (participant.otp_verified === false) {
+    if (participant.otp_verified === false || participant.status === "pending" || participant.is_active === false) {
       await updateParticipantSecurityProfile(participant.email, request, 20)
-      await recordSecurityEvent({ eventType: "participant_login_pending_verification", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 20 })
+      await recordSecurityEvent({ eventType: "participant_login_pending_email_verification", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 20 })
       return NextResponse.json({
         success: false,
-        error: "Your account is pending admin verification. Please wait for admin to verify your mobile OTP before logging in.",
+        error: "Please verify your email before signing in. Check your inbox for the verification code.",
         pendingVerification: true,
+        emailVerificationRequired: true,
       }, { status: 403 })
     }
 
