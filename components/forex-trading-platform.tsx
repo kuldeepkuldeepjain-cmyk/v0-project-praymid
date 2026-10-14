@@ -1297,7 +1297,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────────
+  // ── State ─────────────��────────────────────────────────────────────────���───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -3772,7 +3772,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       </div>
 
       {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��══════════ */}
-      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 360 : 250, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 430 : 340, minHeight: isCompactViewport ? 430 : 340, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
           {([
