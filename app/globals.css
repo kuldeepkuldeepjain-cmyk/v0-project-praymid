@@ -51,6 +51,10 @@
   --home-brand: #54d6e8;
   --home-positive: #4bd6a0;
   --home-warning: #f0b86b;
+  --trust-surface: #0b1725;
+  --trust-line: #24384d;
+  --trust-accent: #55d6e8;
+  --trust-positive: #4bd6a0;
 }
 
 .dark {
@@ -2071,7 +2075,7 @@ button, a, [role="button"] {
   }
 }
 
-/* ── Sleek institutional market sidebar ───────────────��───────────────────── */
+/* ── Sleek institutional market sidebar ───────────────��─────���─────────────── */
 .mt5-terminal .apple-terminal-market {
   width: 276px !important;
   background: #0b1421 !important;
