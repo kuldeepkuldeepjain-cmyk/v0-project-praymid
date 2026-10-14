@@ -35,8 +35,6 @@ export async function POST(request: Request) {
     const walletAddress = null
     const normalizedAccountType = accountType === "funded" ? "funded" : "normal"
     const newReferralCode = generateReferralCode(username)
-    const emailVerificationCode = String(Math.floor(100000 + Math.random() * 900000))
-
     try {
       // Check duplicates
       const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
@@ -59,53 +57,25 @@ export async function POST(request: Request) {
         }
       }
 
-      await query(`CREATE TABLE IF NOT EXISTS registration_email_verifications (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE NOT NULL,
-        verification_code TEXT NOT NULL, registration_data JSONB NOT NULL,
-        expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
-      )`)
-      await query(
-        `INSERT INTO registration_email_verifications (email, verification_code, registration_data, expires_at)
-         VALUES ($1, $2, $3::jsonb, NOW() + INTERVAL '15 minutes')
-         ON CONFLICT (email) DO UPDATE SET verification_code = EXCLUDED.verification_code, registration_data = EXCLUDED.registration_data, expires_at = EXCLUDED.expires_at, created_at = NOW()`,
-        [emailKey, emailVerificationCode, JSON.stringify({ fullName, username: usernameKey, email: emailKey, password: password.trim(), walletAddress, newReferralCode, referralCode: referralCode ? referralCode.toUpperCase() : null, normalizedAccountType, mobileNumber: `${selectedCountryCode}${mobileNumberClean}`, firstName: firstName.trim() })],
+      const inserted = await query<Record<string, any>>(
+        `INSERT INTO participants
+          (full_name, username, email, password_hash, plain_password, wallet_address,
+           referral_code, referred_by, account_type, account_balance, status, is_active,
+           whatsapp_otp, otp_verified, mobile_number, is_deleted)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'active',true,NULL,true,$10,false)
+         RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
+        [fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
+          newReferralCode, referralCode ? referralCode.toUpperCase() : null,
+          normalizedAccountType, `${selectedCountryCode}${mobileNumberClean}`]
       )
-      const knockApiKey = process.env.KNOCK_API_KEY
-      const knockWorkflow = process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || process.env.KNOCK_WORKFLOW_KEY || "email-verification"
-      if (!knockApiKey) {
-        await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
-        return NextResponse.json({ success: false, message: "Email verification is not configured yet. Please contact support." }, { status: 503 })
+      const newParticipant = inserted[0]
+      if (referralCode) {
+        await query(`UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1, total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`, [referralCode.toUpperCase()])
       }
-      const knockHeaders = { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" }
-      const identifyResponse = await fetch(`https://api.knock.app/v1/users/${encodeURIComponent(emailKey)}`, {
-        method: "PUT",
-        headers: knockHeaders,
-        body: JSON.stringify({ id: emailKey, email: emailKey, name: fullName }),
-      })
-      if (!identifyResponse.ok) {
-        const identifyError = await identifyResponse.text().catch(() => "")
-        console.error("[v0] Knock recipient identify failed:", identifyResponse.status, identifyError.slice(0, 500))
-        await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
-        return NextResponse.json({ success: false, message: "We couldn’t prepare the verification email. Please try again." }, { status: 502 })
-      }
-      const knockResponse = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(knockWorkflow)}/trigger`, {
-        method: "POST",
-        headers: knockHeaders,
-        body: JSON.stringify({ recipients: [emailKey], data: { code: emailVerificationCode, firstName: firstName.trim(), verificationCode: emailVerificationCode } }),
-      })
-      if (!knockResponse.ok) {
-        const knockError = await knockResponse.text().catch(() => "")
-        console.error("[v0] Knock verification trigger failed:", knockResponse.status, knockError.slice(0, 500))
-        await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
-        return NextResponse.json({ success: false, message: knockResponse.status === 404 ? "Email verification workflow was not found. Please contact support." : "We couldn’t send the verification email. Please try again." }, { status: 502 })
-      }
-      console.log("[v0] Verification email sent; account creation is pending verification for:", email)
-
       return NextResponse.json({
         success: true,
-        verificationRequired: true,
-        message: "Registration successful. Please verify your email before signing in.",
-        participantId: null,
+        message: "Registration successful! Your account is ready to use.",
+        participantId: newParticipant.id,
         walletAddress: walletAddress,
         username: usernameKey,
         email: emailKey,
@@ -118,9 +88,9 @@ export async function POST(request: Request) {
         bonus_balance: 0,
         total_referrals: 0,
         total_earnings: 0,
-        status: "pending",
+        status: "active",
         rank: "bronze",
-        is_active: false,
+        is_active: true,
         details_completed: false,
         created_at: new Date().toISOString(),
       }, { status: 200 })
