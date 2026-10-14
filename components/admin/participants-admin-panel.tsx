@@ -20,7 +20,9 @@ interface Participant {
   created_at: string
   referral_code: string
   total_referrals: number
-}
+  last_ip_address?: string | null
+  last_seen_at?: string | null
+  }
 
 export function ParticipantsAdminPanel() {
   const { toast } = useToast()
@@ -162,7 +164,9 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Account Type</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Referrals</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
-              <th className="text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
+              <th className="text-left py-3 px-4 text-slate-400 font-medium">Location</th>
+  <th className="text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
+  <th className="text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
             </tr>
           </thead>
           <tbody>
@@ -197,9 +201,11 @@ export function ParticipantsAdminPanel() {
                     {participant.status}
                   </Badge>
                 </td>
-                <td className="py-3 px-4 text-slate-400 text-xs">
-                  {new Date(participant.created_at).toLocaleDateString()}
-                </td>
+<td className="py-3 px-4 text-slate-400 text-xs">Not captured</td>
+  <td className="py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
+  <td className="py-3 px-4 text-slate-400 text-xs">
+  {new Date(participant.created_at).toLocaleDateString()}
+  </td>
               </tr>
             ))}
           </tbody>
