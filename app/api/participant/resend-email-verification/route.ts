@@ -17,9 +17,12 @@ export async function POST(request: Request) {
     await query("UPDATE registration_email_verifications SET verification_code = $1, expires_at = NOW() + INTERVAL '15 minutes' WHERE LOWER(email) = $2", [code, email])
     const registrationData = pending[0].registration_data
 
-    const response = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || "email-verification")}/trigger`, {
+    const knockApiKey = process.env.KNOCK_API_KEY
+    const knockWorkflow = process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || process.env.KNOCK_WORKFLOW_KEY || "email-verification"
+    if (!knockApiKey) return NextResponse.json({ success: false, message: "Email verification is not configured yet. Please contact support." }, { status: 503 })
+    const response = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(knockWorkflow)}/trigger`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${process.env.KNOCK_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({ recipients: [{ id: email, email }], data: { code, verificationCode: code, firstName: registrationData.firstName || registrationData.fullName?.split(" ")[0] || "there" } }),
     })
     if (!response.ok) return NextResponse.json({ success: false, message: "Unable to send a new verification email right now." }, { status: 502 })

@@ -70,14 +70,22 @@ export async function POST(request: Request) {
          ON CONFLICT (email) DO UPDATE SET verification_code = EXCLUDED.verification_code, registration_data = EXCLUDED.registration_data, expires_at = EXCLUDED.expires_at, created_at = NOW()`,
         [emailKey, emailVerificationCode, JSON.stringify({ fullName, username: usernameKey, email: emailKey, password: password.trim(), walletAddress, newReferralCode, referralCode: referralCode ? referralCode.toUpperCase() : null, normalizedAccountType, mobileNumber: `${selectedCountryCode}${mobileNumberClean}`, firstName: firstName.trim() })],
       )
-      const knockResponse = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || "email-verification")}/trigger`, {
+      const knockApiKey = process.env.KNOCK_API_KEY
+      const knockWorkflow = process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || process.env.KNOCK_WORKFLOW_KEY || "email-verification"
+      if (!knockApiKey) {
+        await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
+        return NextResponse.json({ success: false, message: "Email verification is not configured yet. Please contact support." }, { status: 503 })
+      }
+      const knockResponse = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(knockWorkflow)}/trigger`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${process.env.KNOCK_API_KEY}`, "Content-Type": "application/json" },
+        headers: { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" },
         body: JSON.stringify({ recipients: [{ id: emailKey, email: emailKey }], data: { code: emailVerificationCode, firstName: firstName.trim(), verificationCode: emailVerificationCode } }),
       })
       if (!knockResponse.ok) {
+        const knockError = await knockResponse.text().catch(() => "")
+        console.error("[v0] Knock verification trigger failed:", knockResponse.status, knockError.slice(0, 500))
         await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
-        return NextResponse.json({ success: false, message: "We couldn’t send the verification email. Please try again." }, { status: 502 })
+        return NextResponse.json({ success: false, message: knockResponse.status === 404 ? "Email verification workflow was not found. Please contact support." : "We couldn’t send the verification email. Please try again." }, { status: 502 })
       }
       console.log("[v0] Verification email sent; account creation is pending verification for:", email)
 
