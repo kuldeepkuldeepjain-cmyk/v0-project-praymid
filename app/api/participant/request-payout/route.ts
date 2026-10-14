@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getPool, query } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
-import { getActiveRestriction, getSecurityContext, recordSecurityEvent } from "@/lib/security"
+import { enforceRateLimit, getActiveRestriction, getSecurityContext, recordSecurityEvent } from "@/lib/security"
 
 const SUPPORTED_METHODS = ["BEP20", "TRC20", "ERC20", "INR", "DIRECT"] as const
 
@@ -32,6 +32,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
+
+  const context = getSecurityContext(request)
+  const rate = await enforceRateLimit("withdrawal", `${auth.email.toLowerCase().trim()}:${context.ipAddress || "unknown"}`)
+  if (!rate.allowed) {
+    await recordSecurityEvent({ eventType: "withdrawal_rate_limited", actorType: "participant", actorEmail: auth.email, request, riskScore: 80 })
+    return NextResponse.json({ success: false, error: "Too many withdrawal attempts. Please wait before trying again." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
+  }
 
   try {
     const body = await request.json()
@@ -104,6 +111,17 @@ export async function POST(request: NextRequest) {
 
     try {
       await client.query("BEGIN")
+      const duplicate = await client.query(
+        `SELECT id, status FROM payout_requests
+         WHERE participant_id = $1 AND amount = $2 AND payout_method = $3 AND wallet_address = $4
+           AND status IN ('pending', 'processing') AND created_at > NOW() - INTERVAL '10 minutes'
+         ORDER BY created_at DESC LIMIT 1`,
+        [participant.id, amount, method, walletAddress],
+      )
+      if (duplicate.rows[0]) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "An identical withdrawal is already being reviewed.", requestId: duplicate.rows[0].id }, { status: 409 })
+      }
       const locked = await client.query(
         "SELECT account_balance FROM participants WHERE id = $1 FOR UPDATE",
         [participant.id],

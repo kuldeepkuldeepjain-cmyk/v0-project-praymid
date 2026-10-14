@@ -23,7 +23,7 @@ function getCredentials(loginType: string) {
 
 export async function POST(request: NextRequest) {
   const context = getSecurityContext(request)
-  const rate = await enforceRateLimit("login", context.ipAddress || "unknown")
+    const rate = await enforceRateLimit("login", `${context.ipAddress || "unknown"}:${context.deviceHash}`)
   if (!rate.allowed) {
     await recordSecurityEvent({ eventType: "login_rate_limited", actorType: "admin", request, riskScore: 70 })
     return NextResponse.json({ success: false, error: "Too many login attempts. Try again later." }, { status: 429, headers: { "Retry-After": String(rate.retryAfter || 60) } })
