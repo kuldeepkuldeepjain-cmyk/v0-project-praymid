@@ -6,7 +6,7 @@ type TradingViewAdvancedChartProps = {
   symbol: string
   theme?: "light" | "dark"
   interval?: string
-  height?: number
+  height?: number | string
 }
 
 const SYMBOL_MAP: Record<string, string> = {
@@ -67,7 +67,7 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
   }, [interval, theme, tradingViewSymbol])
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-700/70 bg-[#0b1220]" aria-label={`TradingView live chart for ${symbol}`}>
+    <section className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl border border-slate-700/70 bg-[#0b1220]" aria-label={`TradingView live chart for ${symbol}`}>
       <div className="flex items-center justify-between border-b border-slate-700/70 px-3 py-2">
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.8)]" aria-hidden="true" />
