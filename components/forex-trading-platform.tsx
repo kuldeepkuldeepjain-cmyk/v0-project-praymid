@@ -1808,7 +1808,7 @@ function PositionSizer({
       // Refresh the 1-minute history frequently enough to pick up the next
       // server candle while live ticks keep the active candle moving between
       // snapshots. Wider frames stay on lighter polling intervals.
-      "1M": 5_000, "5M": 30_000, "15M": 90_000, "30M": 180_000, "1H": 240_000, "4H": 600_000, "1D": 3600_000, "1W": 86400_000,
+      "1M": 2_000, "5M": 5_000, "15M": 15_000, "30M": 30_000, "1H": 60_000, "4H": 120_000, "1D": 300_000, "1W": 900_000,
     }
   const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
   const retry = () => { void fetchCandles(selectedPair.symbol, timeframe) }
@@ -3206,7 +3206,7 @@ function PositionSizer({
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────���─��─────────���─���─���────���─��────────────────������─────── */}
+        {/* ── CENTER: Chart ────���─��────���────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
