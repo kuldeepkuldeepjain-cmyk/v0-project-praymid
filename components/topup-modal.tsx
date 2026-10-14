@@ -419,6 +419,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   <Input id="topup-amount" type="number" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-9 pr-14 text-sm border border-slate-200 focus:border-violet-500 rounded-lg" disabled={step === "submitting"} />
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">{paymentMethod === "inr" ? "USD" : "USDT"}</span>
                 </div>
+                <div className="flex flex-wrap gap-2 pt-1" aria-label="Quick funding amounts">{(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <button key={quickAmount} type="button" onClick={() => setAmount(String(quickAmount))} disabled={step === "submitting"} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 disabled:opacity-50">${quickAmount}</button>)}</div>
                 {amount && !isAmountValid && <p className="text-[10px] text-red-500">{fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
                 {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
               </div>

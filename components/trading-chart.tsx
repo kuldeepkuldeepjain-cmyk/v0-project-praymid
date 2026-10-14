@@ -1087,7 +1087,7 @@ export function TradingChart({
 
         {isExpanded && onQuickTrade && !isLoading && (
           <div
-            className="absolute bottom-4 left-1/2 z-30 flex w-[min(360px,calc(100%-24px))] -translate-x-1/2 items-stretch gap-2 rounded-xl p-2"
+            className="absolute bottom-3 left-1/2 z-30 flex w-[min(280px,calc(100%-20px))] -translate-x-1/2 items-stretch gap-1.5 rounded-lg p-1.5"
             style={{
               background: "rgba(4,8,15,0.92)",
               border: "1px solid rgba(148,163,184,0.2)",
@@ -1098,19 +1098,19 @@ export function TradingChart({
             <button
               type="button"
               onClick={() => onQuickTrade("SELL")}
-              className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
+              className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 transition-transform hover:-translate-y-0.5 active:translate-y-0"
               aria-label={`Sell ${safeSymbol} at ${sellPrice !== undefined ? fmtP(sellPrice) : "market price"}`}
             >
-              <span className="relative z-10 flex items-center gap-1.5 text-xs font-black">SELL</span>
+              <span className="relative z-10 flex items-center gap-1.5 text-[10px] font-black tracking-[0.12em]">SELL</span>
               {sellPrice !== undefined && <span className="relative z-10 price-mono text-[9px] opacity-80">{fmtP(sellPrice)}</span>}
             </button>
             <button
               type="button"
               onClick={() => onQuickTrade("BUY")}
-              className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5"
+              className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 transition-transform hover:-translate-y-0.5 active:translate-y-0"
               aria-label={`Buy ${safeSymbol} at ${buyPrice !== undefined ? fmtP(buyPrice) : "market price"}`}
             >
-              <span className="relative z-10 flex items-center gap-1.5 text-xs font-black">BUY</span>
+              <span className="relative z-10 flex items-center gap-1.5 text-[10px] font-black tracking-[0.12em]">BUY</span>
               {buyPrice !== undefined && <span className="relative z-10 price-mono text-[9px] opacity-80">{fmtP(buyPrice)}</span>}
             </button>
           </div>

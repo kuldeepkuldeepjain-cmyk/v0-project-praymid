@@ -14,6 +14,7 @@ const limiters = {
   login: redis ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, "10 m"), prefix: "security:login" }) : null,
   trade: redis ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, "1 m"), prefix: "security:trade" }) : null,
   api: redis ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(120, "1 m"), prefix: "security:api" }) : null,
+  withdrawal: redis ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, "15 m"), prefix: "security:withdrawal" }) : null,
 }
 
 export type SecurityContext = {
