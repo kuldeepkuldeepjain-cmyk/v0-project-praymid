@@ -2024,6 +2024,30 @@ export default function DashboardHome() {
               </div>
             </div>
 
+            {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
+            <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-cyan-400/20 bg-slate-950/80 shadow-[0_12px_40px_rgba(8,145,178,0.12)] sm:mx-4" aria-labelledby="funding-launchpad-title">
+              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-300">
+                    <Wallet className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 id="funding-launchpad-title" className="text-sm font-black tracking-wide text-white sm:text-base">Ready to put your balance to work?</h2>
+                      <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-300">Secure flow</span>
+                    </div>
+                    <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">Add funds in a few simple steps. Choose your amount, review the instructions, and submit proof from one clear screen.</p>
+                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                      <span><b className="text-cyan-300">1</b> Choose amount</span><span><b className="text-cyan-300">2</b> Transfer</span><span><b className="text-cyan-300">3</b> Track approval</span>
+                    </div>
+                  </div>
+                </div>
+                <button type="button" onClick={() => { setTopUpIsFundedAccount(false); setIsInitialFundedTopUp(false); setShowTopUpModal(true) }} className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:bg-cyan-300 active:scale-[0.98]">
+                  <Plus className="h-4 w-4" /> Add funds
+                </button>
+              </div>
+            </section>
+
             {/* ── LIVE TICKER BAR ──────────────────────────────── */}
             <div className="ticker-wrap border-y py-1.5" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
               <div className="ticker-tape text-[10px] font-mono font-bold text-slate-500 gap-6">
