@@ -4,7 +4,7 @@ import { requireParticipantSession } from "@/lib/auth-middleware"
 import { getFundedBaseAmount, getFundedPayoutAmount } from "@/lib/funded-account"
 import { getActiveRestriction, getSecurityContext, recordSecurityEvent } from "@/lib/security"
 
-const SUPPORTED_METHODS = ["BEP20", "TRC20", "ERC20", "DIRECT"] as const
+const SUPPORTED_METHODS = ["BEP20", "TRC20", "ERC20", "INR", "DIRECT"] as const
 
 export async function GET(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -52,7 +52,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unsupported payout network" }, { status: 400 })
     }
 
-    if (method !== "DIRECT") {
+    if (method === "INR") {
+      let details: any
+      try { details = JSON.parse(walletAddress) } catch { details = null }
+      const validUpi = typeof details?.upiId === "string" && /^[\w.-]+@[\w.-]+$/.test(details.upiId)
+      const validBank = typeof details?.accountName === "string" && details.accountName.trim().length >= 2 && typeof details?.accountNumber === "string" && /^\d{8,20}$/.test(details.accountNumber) && typeof details?.ifsc === "string" && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(details.ifsc)
+      if (!validUpi && !validBank) return NextResponse.json({ success: false, error: "INR payouts require a valid UPI ID or bank account with IFSC" }, { status: 400 })
+    } else if (method !== "DIRECT") {
       const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(walletAddress)
       const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(walletAddress)
       if (method === "TRC20" ? !isTronAddress : !isEvmAddress) {

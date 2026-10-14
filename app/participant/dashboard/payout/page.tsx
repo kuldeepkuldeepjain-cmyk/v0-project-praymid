@@ -63,6 +63,18 @@ const NETWORKS = [
     ring: "ring-indigo-500",
     addressHint: "Starts with 0x, 42 characters",
   },
+  {
+    id: "INR",
+    label: "UPI or bank account",
+    ticker: "Indian Rupees (INR)",
+    fee: 0,
+    eta: "1 - 2 business days",
+    accent: "from-orange-500 to-pink-500",
+    border: "border-orange-300",
+    bg: "bg-orange-50",
+    ring: "ring-orange-500",
+    addressHint: "UPI ID or bank account details",
+  },
 ] as const
 
 type NetworkId = (typeof NETWORKS)[number]["id"]
@@ -80,7 +92,11 @@ export default function PayoutPage() {
   const [payoutNumber] = useState(() => Math.floor(Math.random() * (34000 - 5000 + 1)) + 5000)
   const [showPayoutDialog, setShowPayoutDialog] = useState(false)
   const [bep20Address, setBep20Address] = useState("")
-  const [selectedNetwork, setSelectedNetwork] = useState<NetworkId>("BEP20")
+  const [upiId, setUpiId] = useState("")
+  const [bankAccountName, setBankAccountName] = useState("")
+  const [bankAccountNumber, setBankAccountNumber] = useState("")
+  const [bankIfsc, setBankIfsc] = useState("")
+  const [selectedNetwork, setSelectedNetwork] = useState<NetworkId | "INR">("BEP20")
   const [withdrawAmount, setWithdrawAmount] = useState("")
   const [showDisputeDialog, setShowDisputeDialog] = useState(false)
   const [disputePayoutId, setDisputePayoutId] = useState<string | null>(null)
@@ -202,27 +218,27 @@ export default function PayoutPage() {
       ? getFundedPayoutAmount(participantData?.account_balance, participantData?.funded_amount)
       : Number(withdrawAmount) || 0
 
-  if (!bep20Address.trim()) {
-  toast({
-  title: `${selectedNetwork} Address Required`,
-  description: `Please enter your ${selectedNetwork} wallet address`,
-  variant: "destructive",
-  })
-  return
-  }
-
-  const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(bep20Address.trim())
-  const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(bep20Address.trim())
-  const validNetworkAddress = selectedNetwork === "TRC20" ? isTronAddress : isEvmAddress
-  if (!validNetworkAddress) {
-  toast({
-  title: "Invalid Address",
-  description: selectedNetwork === "TRC20"
-  ? "Please enter a valid TRC20 address starting with T"
-  : `Please enter a valid ${selectedNetwork} address starting with 0x`,
-  variant: "destructive",
-  })
-  return
+  let payoutDestination = bep20Address.trim()
+  if (selectedNetwork === "INR") {
+    const validUpi = /^[\w.-]+@[\w.-]+$/.test(upiId.trim())
+    const validIfsc = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(bankIfsc.trim().toUpperCase())
+    if (!validUpi && !(bankAccountName.trim() && bankAccountNumber.trim().length >= 8 && validIfsc)) {
+      toast({ title: "INR payout details required", description: "Enter a valid UPI ID, or complete the bank account and IFSC details.", variant: "destructive" })
+      return
+    }
+    payoutDestination = JSON.stringify({ currency: "INR", upiId: upiId.trim() || null, accountName: bankAccountName.trim() || null, accountNumber: bankAccountNumber.trim() || null, ifsc: bankIfsc.trim().toUpperCase() || null })
+  } else {
+    if (!payoutDestination) {
+      toast({ title: `${selectedNetwork} Address Required`, description: `Please enter your ${selectedNetwork} wallet address`, variant: "destructive" })
+      return
+    }
+    const isEvmAddress = /^(0x)[a-fA-F0-9]{40}$/.test(payoutDestination)
+    const isTronAddress = /^T[a-zA-Z0-9]{33}$/.test(payoutDestination)
+    const validNetworkAddress = selectedNetwork === "TRC20" ? isTronAddress : isEvmAddress
+    if (!validNetworkAddress) {
+      toast({ title: "Invalid Address", description: selectedNetwork === "TRC20" ? "Please enter a valid TRC20 address starting with T" : `Please enter a valid ${selectedNetwork} address starting with 0x`, variant: "destructive" })
+      return
+    }
   }
 
     setIsWithdrawing(true)
@@ -232,7 +248,7 @@ export default function PayoutPage() {
         body: JSON.stringify({
           email: participantData?.email,
           amount: requestedAmount,
-          bep20_address: bep20Address,
+          bep20_address: payoutDestination,
           payout_method: selectedNetwork,
         }),
       })
@@ -529,8 +545,8 @@ export default function PayoutPage() {
   {/* Network selector */}
   <div className="space-y-2 mb-5">
     <p className="text-sm font-semibold text-slate-700">Withdrawal Network</p>
-    <div className="grid grid-cols-3 gap-2">
-      {NETWORKS.map((network) => {
+  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+  {NETWORKS.map((network) => {
         const isSelected = selectedNetwork === network.id
         const isDisabled = isFrozenFundedAccount || hasActivePayout
         return (
@@ -907,24 +923,16 @@ export default function PayoutPage() {
               </button>
             </div>
 
-            {/* Wallet Address Input */}
-            <div className="space-y-1.5">
-              <Label htmlFor="bep20Address" className="text-xs sm:text-sm font-semibold text-slate-700">
-                {selectedNetworkConfig.id} Wallet Address
-              </Label>
-              <Input
-                id="bep20Address"
-                type="text"
-                placeholder={`Enter your ${selectedNetworkConfig.id} address`}
-                value={bep20Address}
-                onChange={(e) => setBep20Address(e.target.value)}
-                className="h-10 sm:h-11 text-xs sm:text-sm font-mono"
-                disabled={isWithdrawing}
-              />
-              <p className="text-[11px] text-slate-500 leading-snug">
-                {selectedNetworkConfig.addressHint}. Double-check — funds sent to the wrong address cannot be recovered.
-              </p>
-            </div>
+  {selectedNetwork === "INR" ? (
+    <div className="space-y-3">
+      <div className="rounded-lg border border-orange-200 bg-orange-50 p-3 text-xs text-orange-900">Choose either a UPI ID or bank account. Your payout will be reviewed before it is processed.</div>
+      <div className="space-y-1.5"><Label htmlFor="upiId" className="text-xs sm:text-sm font-semibold text-slate-700">UPI ID <span className="font-normal text-slate-400">(optional if using bank)</span></Label><Input id="upiId" placeholder="name@bank" value={upiId} onChange={(e) => setUpiId(e.target.value)} disabled={isWithdrawing} /></div>
+      <div className="grid gap-3 sm:grid-cols-2"><div className="space-y-1.5"><Label htmlFor="bankAccountName" className="text-xs font-semibold text-slate-700">Account holder name</Label><Input id="bankAccountName" placeholder="As per bank records" value={bankAccountName} onChange={(e) => setBankAccountName(e.target.value)} disabled={isWithdrawing} /></div><div className="space-y-1.5"><Label htmlFor="bankAccountNumber" className="text-xs font-semibold text-slate-700">Account number</Label><Input id="bankAccountNumber" inputMode="numeric" placeholder="Bank account number" value={bankAccountNumber} onChange={(e) => setBankAccountNumber(e.target.value.replace(/\D/g, ""))} disabled={isWithdrawing} /></div></div>
+      <div className="space-y-1.5"><Label htmlFor="bankIfsc" className="text-xs font-semibold text-slate-700">IFSC code</Label><Input id="bankIfsc" placeholder="ABCD0123456" value={bankIfsc} onChange={(e) => setBankIfsc(e.target.value.toUpperCase())} maxLength={11} disabled={isWithdrawing} /></div>
+    </div>
+  ) : (
+    <div className="space-y-1.5"><Label htmlFor="bep20Address" className="text-xs sm:text-sm font-semibold text-slate-700">{selectedNetworkConfig.id} Wallet Address</Label><Input id="bep20Address" type="text" placeholder={`Enter your ${selectedNetworkConfig.id} address`} value={bep20Address} onChange={(e) => setBep20Address(e.target.value)} className="h-10 sm:h-11 text-xs sm:text-sm font-mono" disabled={isWithdrawing} /><p className="text-[11px] text-slate-500 leading-snug">{selectedNetworkConfig.addressHint}. Double-check — funds sent to the wrong address cannot be recovered.</p></div>
+  )}
 
             {/* Notification Alert */}
             <div className="rounded-lg p-3 bg-emerald-50 border border-emerald-200">
