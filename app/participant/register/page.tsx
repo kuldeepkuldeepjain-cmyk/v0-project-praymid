@@ -163,6 +163,23 @@ export default function ParticipantRegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    const normalizedEmail = formData.email.trim().toLowerCase()
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)
+    const mobileDigits = formData.mobileNumber.replace(/\D/g, "")
+    const mobileIsValid = formData.country === "India"
+      ? /^[6-9]\d{9}$/.test(mobileDigits)
+      : /^\d{6,15}$/.test(mobileDigits)
+
+    if (!emailIsValid) {
+      toast({ title: "Invalid email address", description: "Enter a valid email address such as name@example.com.", variant: "destructive" })
+      return
+    }
+
+    if (!mobileIsValid) {
+      toast({ title: "Invalid mobile number", description: formData.country === "India" ? "India requires a valid 10-digit mobile number starting with 6, 7, 8, or 9." : "Enter a valid mobile number for the selected country.", variant: "destructive" })
+      return
+    }
+
     if (!acceptedTerms) {
       toast({
         title: "Terms and Conditions Required",
@@ -559,9 +576,10 @@ export default function ParticipantRegisterPage() {
                       inputMode="tel"
                       placeholder="9876543210"
                       value={formData.mobileNumber}
-                      onChange={(e) => handleChange("mobileNumber", e.target.value.replace(/\D/g, ""))}
-                      className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-[#22d3ee] focus:ring-[#22d3ee]/20 transition-all hover:border-[#22d3ee]/50 focus:shadow-lg focus:shadow-[#22d3ee]/10"
-                      maxLength={15}
+onChange={(e) => handleChange("mobileNumber", e.target.value.replace(/\D/g, "").slice(0, formData.country === "India" ? 10 : 15))}
+  className="h-12 bg-gradient-to-r from-slate-950/80 to-slate-900/60 border-slate-700 focus:border-[#22d3ee] focus:ring-[#22d3ee]/20 transition-all hover:border-[#22d3ee]/50 focus:shadow-lg focus:shadow-[#22d3ee]/10"
+  maxLength={formData.country === "India" ? 10 : 15}
+  pattern={formData.country === "India" ? "[6-9][0-9]{9}" : "[0-9]{6,15}"}
                       required
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#22d3ee]/0 via-[#22d3ee]/5 to-[#22d3ee]/0 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none rounded-md" />

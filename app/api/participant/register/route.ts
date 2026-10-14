@@ -21,8 +21,19 @@ export async function POST(request: Request) {
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`
     const emailKey = email.toLowerCase().trim()
+    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailKey)
+    if (!emailIsValid) {
+      return NextResponse.json({ success: false, message: "Please enter a valid email address" }, { status: 400 })
+    }
     const usernameKey = username.toLowerCase().trim()
-    const mobileNumberClean = mobileNumber?.toString().trim() || null
+    const mobileNumberClean = mobileNumber?.toString().replace(/\D/g, "") || ""
+    const selectedCountryCode = String(countryCode || "")
+    const mobileIsValid = country === "India" || selectedCountryCode === "+91"
+      ? /^[6-9]\d{9}$/.test(mobileNumberClean.replace(/^91/, ""))
+      : /^\d{6,15}$/.test(mobileNumberClean.replace(/^\+/, "").replace(selectedCountryCode.replace(/^\+/, ""), ""))
+    if (!mobileIsValid) {
+      return NextResponse.json({ success: false, message: country === "India" || selectedCountryCode === "+91" ? "India requires a valid 10-digit mobile number" : "Please enter a valid mobile number for the selected country" }, { status: 400 })
+    }
     const walletAddress = null
     const normalizedAccountType = accountType === "funded" ? "funded" : "normal"
     const newReferralCode = generateReferralCode(username)
@@ -60,7 +71,7 @@ export async function POST(request: Request) {
         [
           fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
           newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-          normalizedAccountType, whatsappOtp || null, mobileNumberClean,
+          normalizedAccountType, whatsappOtp || null, `${selectedCountryCode}${mobileNumberClean}`,
         ]
       )
 
