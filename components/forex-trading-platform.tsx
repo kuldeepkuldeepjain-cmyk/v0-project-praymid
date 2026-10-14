@@ -1437,6 +1437,8 @@ function PositionSizer({
   const openTradesRef   = useRef<OpenTrade[]>([])
   const freshRateSymbolsRef = useRef<Set<string>>(new Set())
   const freshRateUpdatedAtRef = useRef<Record<string, number>>({})
+  const lastUiUpdateRef = useRef(0)
+  const tickUpdateScheduledRef = useRef(false)
   const hasFreshRate = useCallback(
     (symbol: string) => freshRateSymbolsRef.current.has(symbol) && Date.now() - (freshRateUpdatedAtRef.current[symbol] ?? 0) <= 10_000,
     [],
@@ -1670,10 +1672,20 @@ function PositionSizer({
       && !!selectedRate
       && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
       && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
-    setOnline(selectedRateIsValid)
-    setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
-    setLastUpdated(new Date())
-    if (freshRateSymbolsRef.current.size > 0) setTickCount(count => count + 1)
+    const now = Date.now()
+    if (now - lastUiUpdateRef.current >= 500) {
+      lastUiUpdateRef.current = now
+      setOnline(selectedRateIsValid)
+      setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
+      setLastUpdated(new Date(now))
+    }
+    if (freshRateSymbolsRef.current.size > 0 && !tickUpdateScheduledRef.current) {
+      tickUpdateScheduledRef.current = true
+      window.setTimeout(() => {
+        tickUpdateScheduledRef.current = false
+        setTickCount((count) => count + 1)
+      }, 100)
+    }
   }, [hasFreshRate])
 
   // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
@@ -2219,7 +2231,7 @@ function PositionSizer({
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
     const pairSymbol = selectedPair.symbol
 
-    // Close the modal and reflect the trade right away — persistence and margin
+    // Close the modal and reflect the trade right away �� persistence and margin
     // deduction continue in the background so the button doesn't sit on a spinner
     // waiting on two sequential network round trips. Any failure rolls back below.
     setTradeConfirm(null)
@@ -3206,7 +3218,7 @@ function PositionSizer({
           </div>
         </div>
 
-        {/* ── CENTER: Chart ────���─��────���────���─���─���────���─��────────────────������─────── */}
+        {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
