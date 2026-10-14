@@ -2024,6 +2024,28 @@ export default function DashboardHome() {
               </div>
             </div>
 
+            {/* ── INSTITUTIONAL WELCOME HERO ───────────────────── */}
+            <section className="relative mx-3 mt-3 overflow-hidden border border-[#8f6f2d]/45 bg-[#101722] shadow-[0_18px_50px_rgba(0,0,0,0.22)] sm:mx-4" aria-labelledby="elitefund-welcome-title">
+              <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-2xl">
+                  <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
+                    <span className="inline-flex items-center gap-2 text-[#d6b66b]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0] shadow-[0_0_10px_#4bd6a0]" /> EliteFund private markets</span>
+                    <span className="text-slate-600">/</span><span className="text-slate-500">Participant workspace</span>
+                  </div>
+                  <h1 id="elitefund-welcome-title" className="max-w-xl text-2xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">Your capital, clearly accounted for.</h1>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">Explore markets, review your account, and make informed funding decisions from one secure operating view.</p>
+                  <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Live market access</span><span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Transparent records</span><span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Human support</span>
+                  </div>
+                </div>
+                <div className="min-w-0 border border-slate-700/80 bg-[#0a111b] p-4 sm:min-w-[250px]">
+                  <div className="mb-4 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Available balance</span><Wallet className="h-4 w-4 text-[#d6b66b]" /></div>
+                  <p className="text-3xl font-semibold tracking-tight text-white">$<AnimatedNumber value={walletBalance} decimals={2} /></p>
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3 text-[10px] uppercase tracking-wider"><span className="text-slate-500">Account status</span><span className="flex items-center gap-1.5 font-bold text-[#4bd6a0]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0]" /> Active</span></div>
+                </div>
+              </div>
+            </section>
+
             {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
             <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-cyan-400/20 bg-slate-950/80 shadow-[0_12px_40px_rgba(8,145,178,0.12)] sm:mx-4" aria-labelledby="funding-launchpad-title">
               <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
@@ -2077,6 +2099,17 @@ export default function DashboardHome() {
                 <p><span className="font-bold text-slate-300">Risk notice:</span> Trading involves risk. Review your balance, activity, and funding status before taking action.</p>
                 <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 hover:text-white">View account activity <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
               </div>
+            </section>
+
+            {/* ── JOURNEY & OPERATING TERMS ────────────────────── */}
+            <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
+              <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d6b66b]">Your next best step</p><h2 className="mt-1 text-base font-semibold text-white">Move at your own pace</h2></div><Sparkles className="h-5 w-5 text-[#d6b66b]" /></div>
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  {[{ n: "01", title: "Secure", text: "Review your profile and protection settings." }, { n: "02", title: "Explore", text: "Use the demo terminal before funding." }, { n: "03", title: "Decide", text: "Add funds only when the terms are clear." }].map((step) => <div key={step.n} className="border border-slate-700/60 bg-[#0a111b] p-3"><span className="font-mono text-[10px] text-[#d6b66b]">{step.n}</span><h3 className="mt-3 text-sm font-semibold text-white">{step.title}</h3><p className="mt-1 text-[11px] leading-5 text-slate-500">{step.text}</p></div>)}
+                </div>
+              </div>
+              <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-[#d6b66b]" /><h2 className="text-sm font-semibold text-white">Before you fund</h2></div><ul className="mt-4 space-y-3 text-xs leading-5 text-slate-400"><li className="flex gap-2"><span className="text-[#4bd6a0]">•</span> Review deposit minimums and processing status.</li><li className="flex gap-2"><span className="text-[#4bd6a0]">•</span> Withdrawal eligibility follows account terms.</li><li className="flex gap-2"><span className="text-[#4bd6a0]">•</span> Transaction history remains available for review.</li></ul><Link href="/terms" className="mt-4 inline-flex items-center gap-1 text-[11px] font-bold text-[#d6b66b] hover:text-[#f0d68a]">Read terms and disclosures <ArrowUpRight className="h-3 w-3" /></Link></div>
             </section>
 
             {/* ── LIVE TICKER BAR ──────────────────────────────── */}
