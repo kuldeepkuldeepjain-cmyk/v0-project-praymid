@@ -16,7 +16,9 @@ export async function GET() {
         is_active,
         created_at,
         referral_code,
-        COALESCE(total_referrals, 0) as total_referrals
+        COALESCE(total_referrals, 0) as total_referrals,
+        (SELECT ps.ip_address::text FROM participant_sessions ps WHERE ps.participant_id = participants.id AND ps.ip_address IS NOT NULL ORDER BY ps.last_activity DESC NULLS LAST LIMIT 1) AS last_ip_address,
+        (SELECT ps.last_activity FROM participant_sessions ps WHERE ps.participant_id = participants.id ORDER BY ps.last_activity DESC NULLS LAST LIMIT 1) AS last_seen_at
        FROM participants
        ORDER BY created_at DESC
        LIMIT 1000`
