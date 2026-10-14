@@ -303,14 +303,26 @@ export function TradingChart({
   const macdd  = useMemo(() => calcMACD(closes),     [closes])
 
   function toLineData(arr: (number | null)[]): LineData[] {
+    const seen = new Set<number>()
     return arr
       .map((v, i) => ({ time: times[i], value: v ?? NaN }))
-      .filter((d) => Number.isFinite(Number(d.time)) && Number(d.time) > 0 && Number.isFinite(d.value as number))
+      .filter((d) => {
+        const time = Number(d.time)
+        if (!Number.isFinite(time) || time <= 0 || !Number.isFinite(d.value as number) || seen.has(time)) return false
+        seen.add(time)
+        return true
+      })
   }
   function toHistData(arr: (number | null)[], pos: string, neg: string): HistogramData[] {
+    const seen = new Set<number>()
     return arr
       .map((v, i) => ({ time: times[i], value: v ?? NaN, color: (v ?? 0) >= 0 ? pos : neg }))
-      .filter((d) => Number.isFinite(Number(d.time)) && Number(d.time) > 0 && Number.isFinite(d.value as number))
+      .filter((d) => {
+        const time = Number(d.time)
+        if (!Number.isFinite(time) || time <= 0 || !Number.isFinite(d.value as number) || seen.has(time)) return false
+        seen.add(time)
+        return true
+      })
   }
 
   // ── Create chart on mount ──────────────────────────────────────────────────
@@ -541,15 +553,23 @@ export function TradingChart({
     && Number.isFinite(latestTime)
     && lastCandleTimeRef.current === latestTime
 
-  if (canIncrementallyUpdate) {
-    candleSerRef.current.update(candleData[candleData.length - 1])
-    volSerRef.current.update(volData[volData.length - 1])
-  } else {
-    candleSerRef.current.setData(candleData)
-    volSerRef.current.setData(volData)
-    candleCountRef.current = candleData.length
+  if (volData.length !== candleData.length) return
+  try {
+    if (canIncrementallyUpdate) {
+      candleSerRef.current.update(candleData[candleData.length - 1])
+      volSerRef.current.update(volData[volData.length - 1])
+    } else {
+      candleSerRef.current.setData(candleData)
+      volSerRef.current.setData(volData)
+      candleCountRef.current = candleData.length
+    }
+    if (Number.isFinite(latestTime)) lastCandleTimeRef.current = latestTime
+  } catch (error) {
+    console.error("[v0] Chart candle update failed; retrying with a clean series:", error)
+    candleCountRef.current = 0
+    lastCandleTimeRef.current = null
+    return
   }
-  if (Number.isFinite(latestTime)) lastCandleTimeRef.current = latestTime
     if (chartRef.current && previousCount !== candleData.length && !userAdjustedViewRef.current) {
       const visibleBars = candleData.length > 120 ? 90 : Math.min(90, candleData.length)
       const from = Math.max(0, candleData.length - visibleBars)
