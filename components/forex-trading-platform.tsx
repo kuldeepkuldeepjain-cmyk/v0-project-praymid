@@ -1250,7 +1250,7 @@ function PositionSizer({
   )
 }
 
-// ─��─ Main Component ───────────────────────────────────────────────────────────
+// ─��─ Main Component ───────────────────────────────────���───────────────────────
 
   export function ForexTradingPlatform({
   participantEmail,
@@ -3327,7 +3327,7 @@ function PositionSizer({
 
 {/* Chart + BUY/SELL strip */}
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-  <div className="relative flex-1 min-h-0 mobile-terminal-chart-wrap">
+  <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap">
   {selectedPair && chartLayout === "single" ? (
   <ErrorBoundary fallback={
     <div className="flex flex-col items-center justify-center h-full gap-2 p-4 text-center text-slate-400 text-xs">
@@ -3335,7 +3335,7 @@ function PositionSizer({
       <button type="button" onClick={() => { if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded font-bold uppercase text-[10px] hover:bg-cyan-500/30">Reload Chart</button>
     </div>
   }>
-    {chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height={chartExpanded ? 720 : 560} /> : <TradingChart
+    {chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" /> : <TradingChart
       key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
       candles={selectedPair.candles}
       sym={selectedPair.symbol}
