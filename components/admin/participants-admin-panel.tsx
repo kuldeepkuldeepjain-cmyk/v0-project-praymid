@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { Loader2, RefreshCw, Download } from "lucide-react"
+import { Loader2, RefreshCw, Download, Trash2 } from "lucide-react"
 
 interface Participant {
   id: string
@@ -50,6 +50,23 @@ export function ParticipantsAdminPanel() {
       toast({ title: "Error", description: "Failed to load participants data", variant: "destructive" })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteParticipant = async (participant: Participant) => {
+    if (!window.confirm(`Permanently delete ${participant.full_name || participant.email} and all related database records? This cannot be undone.`)) return
+    try {
+      const response = await fetch("/api/admin/delete-participant", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ participantId: participant.id }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Unable to delete participant")
+      setParticipants((current) => current.filter((item) => item.id !== participant.id))
+      toast({ title: "Participant deleted", description: "The participant and related database records were removed." })
+    } catch (error) {
+      toast({ title: "Delete failed", description: error instanceof Error ? error.message : "Unable to delete participant", variant: "destructive" })
     }
   }
 
@@ -167,6 +184,7 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Location</th>
   <th className="text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
   <th className="text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
+              <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -206,6 +224,11 @@ export function ParticipantsAdminPanel() {
   <td className="py-3 px-4 text-slate-400 text-xs">
   {new Date(participant.created_at).toLocaleDateString()}
   </td>
+                <td className="py-3 px-4 text-right">
+                  <Button type="button" variant="outline" size="sm" onClick={() => handleDeleteParticipant(participant)} className="border-red-500/30 text-red-300 hover:bg-red-500/15 hover:text-red-200">
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                  </Button>
+                </td>
               </tr>
             ))}
           </tbody>
