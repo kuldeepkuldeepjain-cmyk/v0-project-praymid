@@ -611,14 +611,14 @@ export default function PayoutPage() {
         disabled={isFrozenFundedAccount || hasActivePayout}
         className="h-14 pl-8 pr-20 text-lg font-bold rounded-xl"
       />
-      <button
-        type="button"
-        onClick={() => setWithdrawAmount(String(walletBalance))}
-        disabled={isFrozenFundedAccount || hasActivePayout}
-        className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold hover:bg-emerald-200 disabled:opacity-50"
-      >
-        MAX
-      </button>
+  <button
+  type="button"
+  onClick={() => setWithdrawAmount(String(walletBalance))}
+  disabled={isFrozenFundedAccount || hasActivePayout}
+  className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold hover:bg-emerald-200 disabled:opacity-50"
+  >
+  MAX
+  </button>
     </div>
     <div className="flex items-center gap-2">
       {QUICK_PERCENTAGES.map((pct) => (
@@ -984,8 +984,8 @@ export default function PayoutPage() {
             <Button
               type="button"
               onClick={handleWithdrawal}
-              disabled={isWithdrawing || !bep20Address}
-              className="flex-1 h-10 sm:h-11 rounded-xl text-sm font-semibold text-white"
+  disabled={isWithdrawing || (selectedNetwork === "INR" ? (!upiId.trim() && !(bankAccountName.trim() && bankAccountNumber.trim() && bankIfsc.trim())) : !bep20Address)}
+  className="flex-1 h-10 sm:h-11 rounded-xl text-sm font-semibold text-white"
               style={{
                 background: "linear-gradient(135deg, #10b981, #34d399)",
                 boxShadow: "0 4px 0 #047857",
