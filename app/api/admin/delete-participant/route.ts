@@ -44,6 +44,27 @@ export async function DELETE(request: NextRequest) {
       )
 
       let clearedRecords = 0
+
+      // Clear legacy email-owned records before resolving FK dependencies. Some
+      // older tables reference participant-owned rows indirectly, so removing
+      // them first prevents the dependency pass from stalling.
+      const emailTables = [
+        "forex_trades", "transactions", "payment_submissions", "payout_requests",
+        "predictions", "topup_requests", "contribution_ledger", "gas_approvals",
+        "invite_logs", "spin_coupons", "support_tickets",
+      ]
+      for (const table of emailTables) {
+        try {
+          const result = await client.query(
+            `DELETE FROM "${table}" WHERE LOWER(participant_email) = LOWER($1)`,
+            [email],
+          )
+          clearedRecords += result.rowCount ?? 0
+        } catch (tableError: any) {
+          if (tableError?.code !== "42P01" && tableError?.code !== "42703" && tableError?.code !== "42P10") throw tableError
+        }
+      }
+
       let pendingForeignKeys = [...foreignKeys.rows]
       while (pendingForeignKeys.length > 0) {
         const nextPending: typeof pendingForeignKeys = []
@@ -73,24 +94,6 @@ export async function DELETE(request: NextRequest) {
         pendingForeignKeys = nextPending
       }
 
-      // Also remove legacy email-only participation rows that have no FK.
-      const emailTables = [
-        "forex_trades", "transactions", "payment_submissions", "payout_requests",
-        "predictions", "topup_requests", "contribution_ledger", "gas_approvals",
-        "invite_logs", "spin_coupons", "support_tickets",
-      ]
-      for (const table of emailTables) {
-        try {
-          const result = await client.query(
-            `DELETE FROM "${table}" WHERE LOWER(participant_email) = LOWER($1)`,
-            [email],
-          )
-          clearedRecords += result.rowCount ?? 0
-        } catch (tableError: any) {
-          if (tableError?.code !== "42P01" && tableError?.code !== "42703") throw tableError
-        }
-      }
-
       if (clearParticipation) {
         await client.query("COMMIT")
         return NextResponse.json({ success: true, clearedRecords, participantId, email })
@@ -113,8 +116,9 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Admin participant deletion failed:", error)
+    const message = error instanceof Error ? error.message : "Unable to complete this account action"
     return NextResponse.json(
-      { error: "Unable to complete this account action. Please try clearing participation first." },
+      { error: message.includes("dependencies") ? "Some participation records are still linked. Refresh the participant list and retry." : "Unable to complete this account action. Please retry." },
       { status: 500 }
     )
   }
