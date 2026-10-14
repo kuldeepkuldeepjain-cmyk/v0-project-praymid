@@ -24,6 +24,7 @@ import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
 import { AdminControlRoom } from "@/components/admin/admin-control-room"
+import { ParticipantActivityMonitor } from "@/components/admin/participant-activity-monitor"
 
 interface ApprovedWallet {
   id: string
@@ -359,6 +360,17 @@ export default function SuperAdminDashboard() {
                 })
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Participant Activity Monitor */}
+        <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Participant Activity Monitor</CardTitle>
+            <CardDescription className="text-cyan-200">Review participant sign-ins, funding, withdrawals, KYC, and account activity from the live audit stream.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ParticipantActivityMonitor />
           </CardContent>
         </Card>
 
