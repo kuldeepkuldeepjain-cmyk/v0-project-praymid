@@ -404,7 +404,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 p-6">
         <Trophy className="h-10 w-10" style={{ color: "#1e2d45" }} />
-        <p className="text-[11px] font-bold tracking-wider uppercase" style={{ color: "#2d4565" }}>No trade history yet</p>
+        <p className="text-[11px] font-bold tracking-wider uppercase" style={{ color: "#9fb4c8" }}>No trade history yet</p>
         <p className="text-[10px] text-center" style={{ color: "#1e2d45" }}>Place and close trades to see your performance analytics</p>
       </div>
     )
@@ -1250,7 +1250,7 @@ function PositionSizer({
   )
 }
 
-// ─��─ Main Component ───────────────────────────────────�����������───────────────────────
+// ─��─ Main Component ───────────────────────────────────�������������───────────────────────
 
   export function ForexTradingPlatform({
   participantEmail,
@@ -3100,9 +3100,9 @@ function PositionSizer({
           </div>
 
           <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "rgba(255,255,255,0.58)", borderBottom: "1px solid rgba(29,42,58,0.08)" }}>
-            <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#2d4565" }}>Instrument</span>
-            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Bid / Ask</span>
-            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#2d4565" }}>Chg%</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#9fb4c8" }}>Instrument</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#9fb4c8" }}>Bid / Ask</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#9fb4c8" }}>Chg%</span>
           </div>
 
           <div id="market-watch-instruments" className="flex-1 overflow-y-auto terminal-scroll">
@@ -3134,7 +3134,7 @@ function PositionSizer({
                           <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
                             {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
                           </span>
-                          <span className="text-[8px] ml-auto" style={{ color: "#2d4565" }}>{catPairs.length}</span>
+                          <span className="text-[8px] ml-auto" style={{ color: "#9fb4c8" }}>{catPairs.length}</span>
                         </div>
                       )}
                       {catPairs.map(p => {
@@ -3168,14 +3168,14 @@ function PositionSizer({
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1">
                                     <span className="text-[11px] font-black leading-none" style={{ color: isSelected ? "#ffffff" : "#c8d4e4" }}>{base}</span>
-                                    <span className="text-[9px] font-bold leading-none" style={{ color: "#3d5a7a" }}>/{quote}</span>
+                                    <span className="text-[9px] font-bold leading-none" style={{ color: "#89a3bb" }}>/{quote}</span>
                                   </div>
-                                  <div className="text-[8px] leading-none mt-0.5 truncate" style={{ color: "#2d4565" }}>{FULL_NAMES[p.symbol] ?? p.symbol}</div>
+                                  <div className="text-[8px] leading-none mt-0.5 truncate" style={{ color: "#9fb4c8" }}>{FULL_NAMES[p.symbol] ?? p.symbol}</div>
                                 </div>
                               </div>
                               <div className="text-right">
                                 <div className="price-mono text-[10px] font-black leading-none" style={{ color: up ? "#10b981" : "#ef4444" }}>{fmt(p.bid, p.symbol)}</div>
-                                <div className="price-mono text-[9px] leading-none mt-0.5" style={{ color: "#2d4565" }}>{fmt(p.ask, p.symbol)}</div>
+                                <div className="price-mono text-[9px] leading-none mt-0.5" style={{ color: "#9fb4c8" }}>{fmt(p.ask, p.symbol)}</div>
                               </div>
                               <div className="text-right">
                                 <div className="price-mono text-[10px] font-black leading-none" style={{ color: up ? "#10b981" : "#ef4444" }}>
@@ -3204,7 +3204,7 @@ function PositionSizer({
                 <span className="absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#10b981", animation: "ping 2s cubic-bezier(0,0,0.2,1) infinite" }} />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: "#10b981" }} />
               </span>
-              <span className="text-[9px] font-black tracking-wider truncate" style={{ color: "#1e3a5f" }}>
+              <span className="text-[9px] font-black tracking-wider truncate" style={{ color: "#345777" }}>
                 {visibleInstrumentCount} {hasInstrumentSearch ? "matching " : ""}live instruments
               </span>
             </div>
@@ -3585,7 +3585,7 @@ function PositionSizer({
                         className="flex-1 py-1 text-[7px] font-black tracking-wide rounded-md transition-all active:scale-95"
                         style={lotSize === l
                           ? { background: "rgba(168,85,247,0.18)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.4)", boxShadow: "0 0 8px rgba(168,85,247,0.2)" }
-                          : { background: "#0a1020", color: "#2d4565", border: "1px solid #1a2640" }}>
+                          : { background: "#0a1020", color: "#9fb4c8", border: "1px solid #1a2640" }}>
                         {l}
                       </button>
                     ))}
