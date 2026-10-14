@@ -87,6 +87,14 @@ export async function POST(req: NextRequest) {
     if (action === "open" && (!Number.isFinite(trade.margin) || trade.margin <= 0)) {
       return NextResponse.json({ success: false, error: "Margin must be greater than zero" }, { status: 400 })
     }
+    if ((action === "open" || action === "pending") && Number.isFinite(trade.openPrice)) {
+      const entry = Number(trade.openPrice)
+      const sl = trade.sl === null || trade.sl === undefined ? null : Number(trade.sl)
+      const tp = trade.tp === null || trade.tp === undefined ? null : Number(trade.tp)
+      const validSl = sl === null || (Number.isFinite(sl) && (trade.direction === "BUY" ? sl < entry : sl > entry))
+      const validTp = tp === null || (Number.isFinite(tp) && (trade.direction === "BUY" ? tp > entry : tp < entry))
+      if (!validSl || !validTp) return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the trade direction" }, { status: 400 })
+    }
     if (auth.email.toLowerCase() !== participant_email.toLowerCase()) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     }
@@ -392,6 +400,13 @@ export async function PATCH(req: NextRequest) {
       }
     } else if (action === "modify") {
       const { sl, tp, trailingStopPips } = body
+      const current = await db.query("SELECT direction, open_price FROM forex_trades WHERE id = $1 AND LOWER(participant_email) = LOWER($2) AND status = 'open'", [id, participant_email])
+      if (!current.rows[0]) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
+      const entry = Number(current.rows[0].open_price)
+      const direction = current.rows[0].direction
+      const validSl = sl === null || sl === undefined || (Number.isFinite(Number(sl)) && (direction === "BUY" ? Number(sl) < entry : Number(sl) > entry))
+      const validTp = tp === null || tp === undefined || (Number.isFinite(Number(tp)) && (direction === "BUY" ? Number(tp) > entry : Number(tp) < entry))
+      if (!validSl || !validTp) return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the trade direction" }, { status: 400 })
       const result = await db.query(
         `UPDATE forex_trades SET sl = $1, tp = $2, trailing_stop_pips = $3, updated_at = NOW()
          WHERE id = $4 AND LOWER(participant_email) = LOWER($5) AND status = 'open'`,

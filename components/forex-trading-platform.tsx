@@ -1874,6 +1874,13 @@ function PositionSizer({
     return () => { if (swapIntervalRef.current) clearInterval(swapIntervalRef.current) }
   }, [])
 
+  // Keep risk checks running independently of chart redraws. This guarantees
+  // SL/TP is evaluated even when a market-data update does not cause a React render.
+  useEffect(() => {
+    const riskCheckInterval = setInterval(() => setTickCount((count) => count + 1), 1000)
+    return () => clearInterval(riskCheckInterval)
+  }, [])
+
   // ── P&L engine + SL/TP/Trailing engine ────────────────────────────────────
   useEffect(() => {
     // Always read live trade list from the ref — never the stale closure value
