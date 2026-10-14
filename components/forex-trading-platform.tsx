@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { createPortal } from "react-dom"
 import {
-  TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle,
+  TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
@@ -1250,6 +1250,26 @@ function PositionSizer({
   )
 }
 
+function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair: ForexPair | null; openTrades: OpenTrade[]; walletBalance: number; onOpenRisk: () => void }) {
+  const change = pair?.change ?? 0
+  const trend = change > 0.15 ? "positive momentum" : change < -0.15 ? "negative momentum" : "mixed momentum"
+  const spreadPips = pair ? (pair.ask - pair.bid) / pip(pair.symbol) : 0
+  const exposure = openTrades.reduce((total, trade) => total + Math.abs(trade.margin), 0)
+  const riskShare = walletBalance > 0 ? (exposure / walletBalance) * 100 : 0
+  const checklist = [
+    { label: "Live quote connected", ok: Boolean(pair && pair.bid > 0) },
+    { label: "Spread within normal range", ok: spreadPips > 0 && spreadPips < 8 },
+    { label: "Risk plan attached", ok: openTrades.length === 0 || openTrades.every((trade) => trade.sl !== null) },
+  ]
+  return <div className="flex h-full flex-col gap-2 overflow-y-auto p-2 terminal-scroll">
+    <div className="border border-cyan-400/25 bg-[#0a1120] p-3"><div className="flex items-start gap-2"><div className="flex h-7 w-7 items-center justify-center border border-cyan-300/30 bg-cyan-400/10 text-cyan-300"><BrainCircuit className="h-4 w-4" /></div><div><p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">AI trading guide</p><p className="mt-1 text-xs font-semibold text-white">Context, not predictions</p></div><span className="ml-auto rounded border border-emerald-400/25 px-1.5 py-0.5 text-[8px] font-bold uppercase text-emerald-300">Assist</span></div><p className="mt-3 text-[11px] leading-5 text-slate-400">Inspect market conditions and risk before you decide. This guide does not place trades or guarantee outcomes.</p></div>
+    <div className="border border-slate-800 bg-[#0a1120] p-3"><div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Current read</span><span className="font-mono text-[9px] text-slate-500">{pair?.symbol ?? "—"}</span></div><p className="mt-3 text-sm font-semibold text-white">{pair ? `${trend} with ${spreadPips.toFixed(1)} pip spread` : "Select an instrument to begin"}</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Based on the current quote and recent session movement.</p></div>
+    <div className="border border-slate-800 bg-[#0a1120] p-3"><div className="mb-3 flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Pre-trade checklist</span><span className="font-mono text-[9px] text-slate-500">{checklist.filter((item) => item.ok).length}/{checklist.length}</span></div><div className="space-y-2">{checklist.map((item) => <div key={item.label} className="flex items-center gap-2 text-[10px] text-slate-400"><span className={`h-1.5 w-1.5 rounded-full ${item.ok ? "bg-emerald-400" : "bg-amber-400"}`} />{item.label}<span className="ml-auto text-[9px] uppercase tracking-wider text-slate-600">{item.ok ? "ready" : "review"}</span></div>)}</div></div>
+    <div className="border border-slate-800 bg-[#0a1120] p-3"><div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">Exposure lens</span><span className="font-mono text-[10px] text-cyan-300">{riskShare.toFixed(1)}%</span></div><div className="mt-2 h-1.5 bg-slate-800"><div className={`h-full ${riskShare > 30 ? "bg-amber-400" : "bg-cyan-400"}`} style={{ width: `${Math.min(riskShare, 100)}%` }} /></div><p className="mt-2 text-[10px] leading-4 text-slate-500">Review margin usage and stops before increasing exposure.</p><button type="button" onClick={onOpenRisk} className="mt-3 inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-cyan-300 hover:text-cyan-200">Open risk analytics <ArrowUpRight className="h-3 w-3" /></button></div>
+    <p className="px-1 text-[9px] leading-4 text-slate-600">Educational guidance only. Trading involves risk, including possible loss of capital.</p>
+  </div>
+}
+
 // ─��─ Main Component ───────────────────────────────────�������������───────────────────────
 
   export function ForexTradingPlatform({
@@ -1292,7 +1312,7 @@ function PositionSizer({
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach">("positions")
   const [positionsPopupOpen, setPositionsPopupOpen] = useState(false)
   const [historyPopupOpen, setHistoryPopupOpen] = useState(false)
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
@@ -2762,6 +2782,7 @@ function PositionSizer({
   { id: "panel-support", label: "Open support center", hint: "Live chat, tickets, FAQ, and account support", icon: LifeBuoy, action: () => setActivePanel("support") },
     { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
     { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
+  { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => setActivePanel("ai-coach") },
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
@@ -4187,8 +4208,11 @@ function PositionSizer({
             <TradeJournalPanel closed={closedTrades} equityHistory={equityHistory} />
           )}
 
-          {/* ── News & Economic Calendar ── */}
-          {activePanel === "news" && <NewsCalendarPanel />}
+  {/* ── News & Economic Calendar ── */}
+  {activePanel === "news" && <NewsCalendarPanel />}
+
+  {/* ── AI Trading Guide ── */}
+  {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
 
         </div>
       </div>
