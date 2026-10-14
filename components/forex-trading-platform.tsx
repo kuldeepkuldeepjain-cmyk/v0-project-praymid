@@ -1337,7 +1337,7 @@ function PositionSizer({
   const [themeReady, setThemeReady] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
-  const [chartProvider, setChartProvider] = useState<"native" | "tradingview">("tradingview")
+  const [chartProvider, setChartProvider] = useState<"native" | "tradingview">("native")
   const [rateBarExpanded, setRateBarExpanded] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})

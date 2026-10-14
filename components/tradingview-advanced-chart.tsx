@@ -71,7 +71,7 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
       <div className="flex items-center justify-between border-b border-slate-700/70 px-3 py-2">
         <div className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,.8)]" aria-hidden="true" />
-          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">TradingView Live</span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300">TradingView Reference</span>
         </div>
         <span className="text-[10px] text-slate-500">{tradingViewSymbol}</span>
       </div>
