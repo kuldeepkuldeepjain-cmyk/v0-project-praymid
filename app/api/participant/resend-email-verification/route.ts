@@ -20,10 +20,17 @@ export async function POST(request: Request) {
     const knockApiKey = process.env.KNOCK_API_KEY
     const knockWorkflow = process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || process.env.KNOCK_WORKFLOW_KEY || "email-verification"
     if (!knockApiKey) return NextResponse.json({ success: false, message: "Email verification is not configured yet. Please contact support." }, { status: 503 })
+    const knockHeaders = { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" }
+    const identifyResponse = await fetch(`https://api.knock.app/v1/users/${encodeURIComponent(email)}`, {
+      method: "PUT",
+      headers: knockHeaders,
+      body: JSON.stringify({ id: email, email, name: registrationData.fullName || email }),
+    })
+    if (!identifyResponse.ok) return NextResponse.json({ success: false, message: "Unable to prepare a new verification email right now." }, { status: 502 })
     const response = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(knockWorkflow)}/trigger`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" },
-      body: JSON.stringify({ recipients: [{ id: email, email }], data: { code, verificationCode: code, firstName: registrationData.firstName || registrationData.fullName?.split(" ")[0] || "there" } }),
+      headers: knockHeaders,
+      body: JSON.stringify({ recipients: [email], data: { code, verificationCode: code, firstName: registrationData.firstName || registrationData.fullName?.split(" ")[0] || "there" } }),
     })
     if (!response.ok) return NextResponse.json({ success: false, message: "Unable to send a new verification email right now." }, { status: 502 })
     return NextResponse.json({ success: true, message: "A new verification code has been sent." })

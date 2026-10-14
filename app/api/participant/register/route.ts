@@ -76,10 +76,22 @@ export async function POST(request: Request) {
         await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
         return NextResponse.json({ success: false, message: "Email verification is not configured yet. Please contact support." }, { status: 503 })
       }
+      const knockHeaders = { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" }
+      const identifyResponse = await fetch(`https://api.knock.app/v1/users/${encodeURIComponent(emailKey)}`, {
+        method: "PUT",
+        headers: knockHeaders,
+        body: JSON.stringify({ id: emailKey, email: emailKey, name: fullName }),
+      })
+      if (!identifyResponse.ok) {
+        const identifyError = await identifyResponse.text().catch(() => "")
+        console.error("[v0] Knock recipient identify failed:", identifyResponse.status, identifyError.slice(0, 500))
+        await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
+        return NextResponse.json({ success: false, message: "We couldn’t prepare the verification email. Please try again." }, { status: 502 })
+      }
       const knockResponse = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(knockWorkflow)}/trigger`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" },
-        body: JSON.stringify({ recipients: [{ id: emailKey, email: emailKey }], data: { code: emailVerificationCode, firstName: firstName.trim(), verificationCode: emailVerificationCode } }),
+        headers: knockHeaders,
+        body: JSON.stringify({ recipients: [emailKey], data: { code: emailVerificationCode, firstName: firstName.trim(), verificationCode: emailVerificationCode } }),
       })
       if (!knockResponse.ok) {
         const knockError = await knockResponse.text().catch(() => "")
