@@ -116,7 +116,7 @@ async function fetchGoldSpotPrice(): Promise<number | null> {
 // Candle cache: key = "pair|tf"
 const candleCache = new Map<string, { candles: unknown[]; ts: number }>()
 const CACHE_TTL: Record<string, number> = {
-  "1M":  5_000,    // 5s: keep the active one-minute candle responsive
+  "1M":  1_000,    // 1s: keep the active one-minute candle live
   "5M":  30_000,   // 30s
   "15M": 90_000,   // 90s
   "30M": 180_000,  // 3 min
