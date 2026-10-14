@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server"
-import { randomUUID } from "node:crypto"
-import { query, execute } from "@/lib/db"
-import { setParticipantSession } from "@/lib/session"
+import { query } from "@/lib/db"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -93,28 +91,6 @@ export async function POST(request: Request) {
       }
       console.log("[v0] Registration verification sent for:", email, "ID:", newParticipant.id)
 
-      // Establish the signed participant session immediately so the new account
-      // can open Add Funds without needing a second login.
-      const sessionId = randomUUID()
-      await execute(
-        `INSERT INTO participant_sessions (id, participant_id, participant_email, token, user_agent)
-         VALUES ($1, $2, $3, $1, $4)`,
-        [sessionId, newParticipant.id, emailKey, request.headers.get("user-agent") || "registration"],
-      ).catch(() => {})
-      try {
-        await setParticipantSession({
-          participantId: String(newParticipant.id),
-          email: emailKey,
-          role: "participant",
-          sessionId,
-          lastActivityAt: Date.now(),
-        })
-      } catch (sessionError) {
-        // Account creation already succeeded. A cookie/session write failure must
-        // not turn a successful registration into a misleading 500 response.
-        console.error("[v0] Participant session setup failed after registration:", sessionError)
-      }
-
       // Increment referrer's referral count if a valid referral code was used
       if (referralCode) {
         try {
@@ -144,9 +120,9 @@ export async function POST(request: Request) {
         bonus_balance: 0,
         total_referrals: 0,
         total_earnings: 0,
-        status: "active",
+        status: "pending",
         rank: "bronze",
-        is_active: true,
+        is_active: false,
         details_completed: false,
         created_at: newParticipant.created_at,
       }, { status: 200 })
