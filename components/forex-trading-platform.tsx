@@ -1250,7 +1250,7 @@ function PositionSizer({
   )
 }
 
-// ─��─ Main Component ───────────────────────────────────���───────────────────────
+// ─��─ Main Component ───────────────────────────────────�������───────────────────────
 
   export function ForexTradingPlatform({
   participantEmail,
@@ -1338,6 +1338,7 @@ function PositionSizer({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
   const [chartProvider, setChartProvider] = useState<"native" | "tradingview">("native")
+  const [chartReloadKey, setChartReloadKey] = useState(0)
   const [rateBarExpanded, setRateBarExpanded] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
@@ -3225,8 +3226,9 @@ function PositionSizer({
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className={`chart-header shrink-0 flex flex-col px-3 py-1.5 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+            <div className={`chart-header shrink-0 flex flex-col px-3 py-2 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
               <div className="chart-header-market flex min-w-0 items-center gap-3">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live API</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-sm font-black text-white tracking-wider">
                   {ASSET_ICON[selectedPair.symbol] && <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>}
@@ -3260,7 +3262,7 @@ function PositionSizer({
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
 
-                <span className="chart-timeframe-label">Chart interval</span>
+                <div className="flex items-center gap-2"><span className="size-1.5 rounded-full bg-cyan-400" /><span className="chart-timeframe-label">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span></div>
                 <div className="flex items-center gap-2">
                   <div
                     className="flex items-center gap-0.5 p-0.5"
@@ -3329,11 +3331,12 @@ function PositionSizer({
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
   <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap">
   {selectedPair && chartLayout === "single" ? (
-  <ErrorBoundary fallback={
-    <div className="flex flex-col items-center justify-center h-full gap-2 p-4 text-center text-slate-400 text-xs">
-      <p>Chart feed encountered a temporary issue.</p>
-      <button type="button" onClick={() => { if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded font-bold uppercase text-[10px] hover:bg-cyan-500/30">Reload Chart</button>
-    </div>
+<ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
+  <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 p-6 text-center text-slate-400 text-xs">
+  <div className="flex size-10 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300">!</div>
+  <div><p className="font-bold text-slate-200">Chart temporarily unavailable</p><p className="mt-1 max-w-xs text-slate-500">The live feed is reconnecting. Your trading controls remain available.</p></div>
+  <button type="button" onClick={() => { setChartReloadKey((key) => key + 1); if (selectedPair) void fetchCandles(selectedPair.symbol, timeframe) }} className="rounded border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-bold uppercase tracking-wide text-cyan-300 transition-colors hover:bg-cyan-400/20">Reload Chart</button>
+  </div>
   }>
     {chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" /> : <TradingChart
       key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
@@ -3403,7 +3406,7 @@ function PositionSizer({
           </div>
         ) : (
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ width: "min(292px,100%)", borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
+          style={{ width: "min(320px,100%)", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
