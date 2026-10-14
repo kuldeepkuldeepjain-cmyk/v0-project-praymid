@@ -14,6 +14,7 @@ import {
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
+import { TradingViewAdvancedChart } from "@/components/tradingview-advanced-chart"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -1336,6 +1337,7 @@ function PositionSizer({
   const [themeReady, setThemeReady] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
+  const [chartProvider, setChartProvider] = useState<"native" | "tradingview">("tradingview")
   const [rateBarExpanded, setRateBarExpanded] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
@@ -1812,7 +1814,7 @@ function PositionSizer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────���────�����──────────�����������────
+  // ── Re-fetch candles when pair/TF changes ─────────────���────������──────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2746,6 +2748,7 @@ function PositionSizer({
     { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
     { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
     { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
+  { id: "tradingview", label: chartProvider === "tradingview" ? "Use native chart" : "Use TradingView live chart", hint: "Switch the chart engine", icon: Activity, action: () => setChartProvider(v => v === "tradingview" ? "native" : "tradingview") },
     { id: "panel-positions", label: "Show open positions", hint: "Switch the bottom blotter to positions", icon: Layers, action: () => setActivePanel("positions") },
     { id: "panel-pending", label: "Show pending orders", hint: "Switch the bottom blotter to pending orders", icon: Clock, action: () => setActivePanel("pending") },
     { id: "panel-history", label: "Show trade history", hint: "Switch the bottom blotter to closed trades", icon: History, action: () => setActivePanel("history") },
@@ -2763,7 +2766,7 @@ function PositionSizer({
     { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
     { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
+  ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ height: "100%", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
@@ -3311,6 +3314,7 @@ function PositionSizer({
                   >
                     {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
                   </button>
+                  <button type="button" onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")} className="rounded px-2 py-1 text-[9px] font-bold uppercase tracking-wide transition-colors" style={{ color: chartProvider === "tradingview" ? "#7dd3fc" : "#94a3b8", background: chartProvider === "tradingview" ? "rgba(14,165,233,.16)" : "transparent", border: `1px solid ${chartProvider === "tradingview" ? "rgba(14,165,233,.4)" : "transparent"}` }} aria-label="Toggle TradingView live chart">{chartProvider === "tradingview" ? "TradingView Live" : "Native Chart"}</button>
                   {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
                 </div>
               </div>
@@ -3331,7 +3335,7 @@ function PositionSizer({
       <button type="button" onClick={() => { if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="px-3 py-1 bg-cyan-500/20 text-cyan-300 rounded font-bold uppercase text-[10px] hover:bg-cyan-500/30">Reload Chart</button>
     </div>
   }>
-    <TradingChart
+    {chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height={chartExpanded ? 720 : 560} /> : <TradingChart
       key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
       candles={selectedPair.candles}
       sym={selectedPair.symbol}
@@ -3344,7 +3348,7 @@ function PositionSizer({
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-  />
+  />}
   </ErrorBoundary>
   ) : selectedPair && chartLayout === "grid" ? (
   <MiniChartGrid
