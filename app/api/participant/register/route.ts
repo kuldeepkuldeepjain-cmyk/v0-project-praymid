@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     const walletAddress = null
     const normalizedAccountType = accountType === "funded" ? "funded" : "normal"
     const newReferralCode = generateReferralCode(username)
+    const emailVerificationCode = String(Math.floor(100000 + Math.random() * 900000))
 
     try {
       // Check duplicates
@@ -66,12 +67,12 @@ export async function POST(request: Request) {
           (full_name, username, email, password_hash, plain_password, wallet_address,
            referral_code, referred_by, account_type, account_balance, status, is_active,
            whatsapp_otp, otp_verified, mobile_number, is_deleted)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'active',true,$10,true,$11,false)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'pending',false,$10,false,$11,false)
          RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
         [
           fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
           newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-          normalizedAccountType, whatsappOtp || null, `${selectedCountryCode}${mobileNumberClean}`,
+          normalizedAccountType, emailVerificationCode, `${selectedCountryCode}${mobileNumberClean}`,
         ]
       )
 
@@ -81,7 +82,16 @@ export async function POST(request: Request) {
       }
 
       const newParticipant = inserted[0]
-      console.log("[v0] Registration successful for:", email, "ID:", newParticipant.id)
+      const knockResponse = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || "email-verification")}/trigger`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${process.env.KNOCK_API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ recipients: [{ id: emailKey, email: emailKey }], data: { code: emailVerificationCode, firstName: firstName.trim(), verificationCode: emailVerificationCode } }),
+      })
+      if (!knockResponse.ok) {
+        await query("DELETE FROM participants WHERE id = $1", [newParticipant.id])
+        return NextResponse.json({ success: false, message: "We couldn’t send the verification email. Please try again." }, { status: 502 })
+      }
+      console.log("[v0] Registration verification sent for:", email, "ID:", newParticipant.id)
 
       // Establish the signed participant session immediately so the new account
       // can open Add Funds without needing a second login.
@@ -119,7 +129,8 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        message: "Registration successful! Your account is now active. You can log in immediately.",
+        verificationRequired: true,
+        message: "Registration successful. Please verify your email before signing in.",
         participantId: newParticipant.id,
         walletAddress: walletAddress,
         username: usernameKey,

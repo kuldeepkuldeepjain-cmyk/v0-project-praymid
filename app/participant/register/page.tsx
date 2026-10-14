@@ -99,6 +99,9 @@ export default function ParticipantRegisterPage() {
 
   // Post-registration state
   const [referralApplied, setReferralApplied] = useState(false)
+  const [verificationPending, setVerificationPending] = useState(false)
+  const [verificationCode, setVerificationCode] = useState("")
+  const [verificationEmail, setVerificationEmail] = useState("")
 
   const defaultCountry = COUNTRIES_DATA[0]
   const [formData, setFormData] = useState({
@@ -253,6 +256,13 @@ export default function ParticipantRegisterPage() {
         message: "We couldn’t complete registration right now. Please try again.",
       }))
 
+      if (data.success && data.verificationRequired) {
+        setVerificationPending(true)
+        setVerificationEmail(formData.email.trim().toLowerCase())
+        toast({ title: "Check your email", description: "Enter the 6-digit verification code sent by Knock." })
+        return
+      }
+
       if (data.success) {
         // Set sessionStorage auth so isParticipantAuthenticated() returns true
         const token = data.participantId || `preview-${Date.now()}`
@@ -399,7 +409,15 @@ export default function ParticipantRegisterPage() {
                 <p className={cn("text-sm", isLightTheme ? "text-blue-700" : "text-blue-200/80")}>Join Elite Fund in less than a minute</p>
               </div>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {verificationPending && (
+    <div className="mx-auto mb-6 max-w-md rounded-2xl border border-cyan-400/30 bg-slate-900/80 p-6 shadow-xl">
+      <h2 className="text-xl font-bold text-white">Verify your email</h2>
+      <p className="mt-2 text-sm text-slate-300">Enter the 6-digit code sent to {verificationEmail}.</p>
+      <Input value={verificationCode} onChange={(event) => setVerificationCode(event.target.value.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" maxLength={6} placeholder="000000" className="mt-5 h-12 text-center text-lg tracking-[0.35em]" aria-label="Email verification code" />
+      <Button type="button" className="mt-4 w-full" disabled={verificationCode.length !== 6 || loading} onClick={async () => { setLoading(true); try { const response = await fetch("/api/participant/verify-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: verificationEmail, code: verificationCode }) }); const result = await response.json(); if (!response.ok) throw new Error(result.message); toast({ title: "Email verified", description: "You can now sign in." }); setVerificationPending(false); setVerificationCode(""); } catch (error) { toast({ title: "Verification failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); } finally { setLoading(false) } }}>Verify email</Button>
+    </div>
+  )}
+  <form onSubmit={handleSubmit} className={cn("space-y-4", verificationPending && "hidden")}>
               {/* Name and Surname */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in-up" style={{ animationDelay: "0.05s" }}>
                 <div className="space-y-2">
