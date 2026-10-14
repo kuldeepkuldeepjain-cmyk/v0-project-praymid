@@ -59,55 +59,33 @@ export async function POST(request: Request) {
         }
       }
 
-      // Insert new participant
-      const inserted = await query<Record<string, any>>(
-        `INSERT INTO participants
-          (full_name, username, email, password_hash, plain_password, wallet_address,
-           referral_code, referred_by, account_type, account_balance, status, is_active,
-           whatsapp_otp, otp_verified, mobile_number, is_deleted)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'pending',false,$10,false,$11,false)
-         RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
-        [
-          fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
-          newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-          normalizedAccountType, emailVerificationCode, `${selectedCountryCode}${mobileNumberClean}`,
-        ]
+      await query(`CREATE TABLE IF NOT EXISTS registration_email_verifications (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(), email TEXT UNIQUE NOT NULL,
+        verification_code TEXT NOT NULL, registration_data JSONB NOT NULL,
+        expires_at TIMESTAMPTZ NOT NULL, created_at TIMESTAMPTZ DEFAULT NOW()
+      )`)
+      await query(
+        `INSERT INTO registration_email_verifications (email, verification_code, registration_data, expires_at)
+         VALUES ($1, $2, $3::jsonb, NOW() + INTERVAL '15 minutes')
+         ON CONFLICT (email) DO UPDATE SET verification_code = EXCLUDED.verification_code, registration_data = EXCLUDED.registration_data, expires_at = EXCLUDED.expires_at, created_at = NOW()`,
+        [emailKey, emailVerificationCode, JSON.stringify({ fullName, username: usernameKey, email: emailKey, password: password.trim(), walletAddress, newReferralCode, referralCode: referralCode ? referralCode.toUpperCase() : null, normalizedAccountType, mobileNumber: `${selectedCountryCode}${mobileNumberClean}`, firstName: firstName.trim() })],
       )
-
-      if (!inserted || inserted.length === 0) {
-        console.log("[v0] Failed to insert participant")
-        return NextResponse.json({ success: false, message: "Failed to create account. Please try again." }, { status: 500 })
-      }
-
-      const newParticipant = inserted[0]
       const knockResponse = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || "email-verification")}/trigger`, {
         method: "POST",
         headers: { Authorization: `Bearer ${process.env.KNOCK_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({ recipients: [{ id: emailKey, email: emailKey }], data: { code: emailVerificationCode, firstName: firstName.trim(), verificationCode: emailVerificationCode } }),
       })
       if (!knockResponse.ok) {
-        await query("DELETE FROM participants WHERE id = $1", [newParticipant.id])
+        await query("DELETE FROM registration_email_verifications WHERE email = $1", [emailKey])
         return NextResponse.json({ success: false, message: "We couldn’t send the verification email. Please try again." }, { status: 502 })
       }
-      console.log("[v0] Registration verification sent for:", email, "ID:", newParticipant.id)
-
-      // Increment referrer's referral count if a valid referral code was used
-      if (referralCode) {
-        try {
-          await query(
-            `UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1, total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`,
-            [referralCode.toUpperCase()]
-          )
-        } catch (e) {
-          console.log("[v0] Failed to increment referrer count:", e)
-        }
-      }
+      console.log("[v0] Verification email sent; account creation is pending verification for:", email)
 
       return NextResponse.json({
         success: true,
         verificationRequired: true,
         message: "Registration successful. Please verify your email before signing in.",
-        participantId: newParticipant.id,
+        participantId: null,
         walletAddress: walletAddress,
         username: usernameKey,
         email: emailKey,
@@ -124,7 +102,7 @@ export async function POST(request: Request) {
         rank: "bronze",
         is_active: false,
         details_completed: false,
-        created_at: newParticipant.created_at,
+        created_at: new Date().toISOString(),
       }, { status: 200 })
     } catch (dbError: any) {
       console.error("[v0] Database error during registration:", dbError)

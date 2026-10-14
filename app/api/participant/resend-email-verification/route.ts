@@ -10,23 +10,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "Enter a valid email address." }, { status: 400 })
     }
 
-    const participants = await query<{ id: string; full_name: string | null }>(
-      `SELECT id, full_name FROM participants
-       WHERE LOWER(email) = $1 AND otp_verified = false AND status = 'pending' AND is_deleted = false
-       LIMIT 1`,
-      [email],
-    )
-    if (!participants.length) {
-      return NextResponse.json({ success: true, message: "If the account is pending verification, a new code has been sent." })
-    }
+    const pending = await query<{ registration_data: any }>(`SELECT registration_data FROM registration_email_verifications WHERE LOWER(email) = $1 LIMIT 1`, [email])
+    if (!pending.length) return NextResponse.json({ success: true, message: "If the registration is pending verification, a new code has been sent." })
 
     const code = String(Math.floor(100000 + Math.random() * 900000))
-    await query("UPDATE participants SET whatsapp_otp = $1, created_at = NOW(), updated_at = NOW() WHERE id = $2", [code, participants[0].id])
+    await query("UPDATE registration_email_verifications SET verification_code = $1, expires_at = NOW() + INTERVAL '15 minutes' WHERE LOWER(email) = $2", [code, email])
+    const registrationData = pending[0].registration_data
 
     const response = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || "email-verification")}/trigger`, {
       method: "POST",
       headers: { Authorization: `Bearer ${process.env.KNOCK_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ recipients: [{ id: email, email }], data: { code, verificationCode: code, firstName: participants[0].full_name?.split(" ")[0] || "there" } }),
+      body: JSON.stringify({ recipients: [{ id: email, email }], data: { code, verificationCode: code, firstName: registrationData.firstName || registrationData.fullName?.split(" ")[0] || "there" } }),
     })
     if (!response.ok) return NextResponse.json({ success: false, message: "Unable to send a new verification email right now." }, { status: 502 })
     return NextResponse.json({ success: true, message: "A new verification code has been sent." })
