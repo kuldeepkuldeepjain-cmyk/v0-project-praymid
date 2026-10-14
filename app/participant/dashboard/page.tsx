@@ -10,7 +10,7 @@ import {
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
   AlertCircle, Home, Plus, PlusCircle, MessageCircle, BarChart2, Menu, Search,
-  ChevronDown, FileText, ShieldCheck, Palette, BellRing, SlidersHorizontal,
+  ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
@@ -2045,6 +2045,37 @@ export default function DashboardHome() {
                 <button type="button" onClick={() => { setTopUpIsFundedAccount(false); setIsInitialFundedTopUp(false); setShowTopUpModal(true) }} className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:bg-cyan-300 active:scale-[0.98]">
                   <Plus className="h-4 w-4" /> Add funds
                 </button>
+              </div>
+            </section>
+
+            {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
+            <section className="mx-3 mt-3 border border-slate-700/60 bg-slate-950/75 sm:mx-4" aria-labelledby="account-confidence-title">
+              <div className="flex flex-col gap-4 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+                <div>
+                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">Account confidence</p>
+                  <h2 id="account-confidence-title" className="text-lg font-semibold tracking-tight text-white">A clearer way to manage your account</h2>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Every important action is visible, reviewable, and supported by a clear record.</p>
+                </div>
+                <Link href="/participant/dashboard/profile" className="inline-flex items-center gap-2 text-xs font-bold text-cyan-300 transition hover:text-cyan-200"><ShieldCheck className="h-4 w-4" /> Review account settings</Link>
+              </div>
+              <div className="grid gap-px bg-slate-800/70 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  { icon: ShieldCheck, label: "Account security", value: "Protected", detail: "Session controls active", tone: "text-emerald-300" },
+                  { icon: BadgeCheck, label: "Identity status", value: participantData?.kyc_status === "approved" ? "Verified" : "Action available", detail: participantData?.kyc_status === "approved" ? "KYC approved" : "Complete your profile", tone: "text-cyan-300" },
+                  { icon: ReceiptText, label: "Funding records", value: "Traceable", detail: "Requests and status history", tone: "text-blue-300" },
+                  { icon: Headphones, label: "Help when needed", value: "Support ready", detail: "Contact the support team", tone: "text-amber-300" },
+                ].map(({ icon: Icon, label, value, detail, tone }) => (
+                  <div key={label} className="bg-slate-950/80 p-4">
+                    <Icon className={`mb-3 h-4 w-4 ${tone}`} />
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
+                    <p className={`mt-1 text-sm font-bold ${tone}`}>{value}</p>
+                    <p className="mt-1 text-[11px] leading-4 text-slate-500">{detail}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex flex-col gap-3 border-t border-slate-800/80 p-4 text-[11px] leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                <p><span className="font-bold text-slate-300">Risk notice:</span> Trading involves risk. Review your balance, activity, and funding status before taking action.</p>
+                <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 hover:text-white">View account activity <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
               </div>
             </section>
 
