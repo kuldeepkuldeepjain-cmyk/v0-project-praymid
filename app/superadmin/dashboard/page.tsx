@@ -23,6 +23,7 @@ import {
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
 import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-panel"
+import { AdminControlRoom } from "@/components/admin/admin-control-room"
 
 interface ApprovedWallet {
   id: string
@@ -358,6 +359,17 @@ export default function SuperAdminDashboard() {
                 })
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* KYC Review Workspace */}
+        <Card className="bg-black/40 border-cyan-500/30 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-white">Participant KYC Review</CardTitle>
+            <CardDescription className="text-cyan-200">Review submitted identity records, move requests into review, and approve or reject KYC from the live database.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AdminControlRoom />
           </CardContent>
         </Card>
 
