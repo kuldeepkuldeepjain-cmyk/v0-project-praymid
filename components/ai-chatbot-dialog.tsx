@@ -75,7 +75,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <DialogTitle className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white drop-shadow-lg truncate">
-                  FlowChain AI Assistant
+                  EliteFund AI Assistant
                 </DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm text-white/90 hidden sm:block">
                   Ask me anything about the platform
