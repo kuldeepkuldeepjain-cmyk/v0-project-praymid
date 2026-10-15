@@ -4,12 +4,12 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react"
 import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
-  CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert,
+  CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert, ShieldCheck,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
-  Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket,
+  Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
@@ -368,6 +368,24 @@ function isSessionOpen(s: TradingSession, utcH: number): boolean {
 }
 
 // ─── Performance Dashboard ──────────────────────────────────────────────────��
+
+function TrustCenterPanel({ isFundedAccount, walletBalance, online }: { isFundedAccount: boolean; walletBalance: number; online: boolean }) {
+  const protections = [
+    { label: "Account data", detail: "Protected session and scoped account access", icon: LockKeyhole },
+    { label: "Trade controls", detail: "Orders pass server-side risk validation", icon: ShieldCheck },
+    { label: "Execution status", detail: online ? "Market connection is currently online" : "Connection needs attention", icon: Activity },
+    { label: "Account rules", detail: isFundedAccount ? "Funded-account limits are active" : "Standard account rules are active", icon: FileCheck2 },
+  ]
+
+  return <div className="flex h-full flex-col overflow-y-auto terminal-scroll p-3" style={{ background: "#070d18" }}>
+    <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-[#10283b] to-[#0a1322] p-4">
+      <div className="flex items-start gap-3"><div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/25 bg-cyan-300/10"><ShieldCheck className="size-5 text-cyan-200" /></div><div><p className="text-[12px] font-black uppercase tracking-[.14em] text-white">Trust & account protection</p><p className="mt-1 text-[10px] leading-relaxed text-slate-400">Clear controls, visible account rules, and support when you need it.</p></div></div>
+      <div className="mt-4 grid grid-cols-2 gap-2"><div className="rounded-xl border border-slate-700/70 bg-slate-950/40 p-3"><p className="text-[9px] uppercase tracking-wider text-slate-500">Account equity</p><p className="mt-1 price-mono text-sm font-black text-white">${walletBalance.toFixed(2)}</p></div><div className="rounded-xl border border-slate-700/70 bg-slate-950/40 p-3"><p className="text-[9px] uppercase tracking-wider text-slate-500">Connection</p><p className={`mt-1 text-sm font-black ${online ? "text-emerald-300" : "text-amber-300"}`}>{online ? "Online" : "Reconnecting"}</p></div></div>
+    </div>
+    <div className="mt-3 space-y-2">{protections.map(({ label, detail, icon: Icon }) => <div key={label} className="flex items-start gap-3 rounded-xl border border-slate-800 bg-slate-950/35 p-3"><Icon className="mt-0.5 size-4 shrink-0 text-cyan-300" /><div><p className="text-[10px] font-black uppercase tracking-wider text-slate-200">{label}</p><p className="mt-1 text-[10px] leading-relaxed text-slate-500">{detail}</p></div></div>)}</div>
+    <div className="mt-3 rounded-xl border border-amber-400/20 bg-amber-400/5 p-3"><p className="text-[10px] font-black uppercase tracking-wider text-amber-200">Trade responsibly</p><p className="mt-1 text-[10px] leading-relaxed text-slate-400">Trading involves risk. Review margin, drawdown, and order size before confirming every trade.</p></div>
+  </div>
+}
 
 function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   closed: ClosedTrade[]; equityHistory: number[]; walletBalance: number
@@ -1297,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────�����������───
+  // ── State ─────────────��────────────────────────────────────────────────�������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1312,7 +1330,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach">("positions")
+  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach" | "trust">("positions")
   const [positionsPopupOpen, setPositionsPopupOpen] = useState(false)
   const [historyPopupOpen, setHistoryPopupOpen] = useState(false)
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
@@ -2802,6 +2820,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
     { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
   { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => setActivePanel("ai-coach") },
+  { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => setActivePanel("trust") },
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
@@ -3807,6 +3826,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
             { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
             { id: "smart-alerts",label: `Smart (${smartAlerts.filter(a => a.status === "warning" || a.status === "triggered").length})`, icon: BellRing },
             { id: "support",     label: "Support",                            icon: LifeBuoy },
+  { id: "trust",       label: "Trust",                              icon: ShieldCheck },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
             { id: "stats",       label: "Stats",                              icon: Activity },
@@ -4190,6 +4210,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
           {/* ── Smart Risk Alerts ── */}
           {activePanel === "smart-alerts" && <SmartAlertsPanel alerts={smartAlerts} />}
+
+          {/* ── Trust & Account Protection ── */}
+          {activePanel === "trust" && <TrustCenterPanel isFundedAccount={isFundedAccount} walletBalance={walletBalance} online={online} />}
 
           {/* ── 24/7 Support Center ── */}
           {activePanel === "support" && <SupportCenterPanel />}
