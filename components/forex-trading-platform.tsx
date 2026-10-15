@@ -1297,7 +1297,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────���������───
+  // ── State ─────────────��────────────────────────────────────────────────�����������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -2243,6 +2243,19 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   setTradeConfirm({ ...tradeConfirm, lotSize: nextLot, margin, pipVal, liqPrice })
   }
 
+  const updateConfirmLeverage = (value: string) => {
+    if (!tradeConfirm || !selectedPair) return
+    const maxLeverage = isFundedAccount ? 100 : 100
+    const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
+    const margin = calcMargin(selectedPair.symbol, tradeConfirm.lotSize, tradeConfirm.price, nextLeverage)
+    const cs = contractSize(selectedPair.symbol)
+    const liqDist = margin / (tradeConfirm.lotSize * cs)
+    const liqPrice = tradeConfirm.direction === "BUY"
+      ? parseFloat((tradeConfirm.price - liqDist).toFixed(5))
+      : parseFloat((tradeConfirm.price + liqDist).toFixed(5))
+    setTradeConfirm({ ...tradeConfirm, leverage: nextLeverage, margin, liqPrice })
+  }
+
   const confirmAndPlace = async () => {
     if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
@@ -2972,7 +2985,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════════��════ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════════��══���═ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -4434,6 +4447,18 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                   <span className="text-[10px] font-bold text-slate-400">lots</span>
                   <button type="button" onClick={() => updateConfirmLotSize(String(tradeConfirm.lotSize + 0.01))} disabled={confirmLoading} className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-700 text-sm font-bold text-slate-300 hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-40" aria-label="Increase lots">+</button>
                 </div>
+              </div>
+            </div>
+
+            <div className="mx-5 mt-3 rounded-xl px-4 py-3" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <label htmlFor="confirm-leverage" className="block text-[9px] font-black uppercase tracking-widest text-amber-300">Leverage</label>
+                  <p className="mt-1 text-[9px] text-slate-400">Choose leverage before placing the order.</p>
+                </div>
+                <select id="confirm-leverage" value={tradeConfirm.leverage} onChange={(event) => updateConfirmLeverage(event.target.value)} disabled={confirmLoading} className="h-8 rounded-lg border border-amber-500/40 bg-slate-950 px-3 text-center font-mono text-sm font-bold text-amber-200 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30 disabled:opacity-40" aria-label="Trade leverage">
+                  {[1, 10, 25, 50, 75, 100].map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
+                </select>
               </div>
             </div>
 
