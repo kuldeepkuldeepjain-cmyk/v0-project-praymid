@@ -121,6 +121,10 @@ export async function POST(request: NextRequest) {
             [payout.participant_email, "payout_rejected", payout.amount, `Payout rejected and refunded - $${payout.amount}`, String(payoutId)],
           )
         }
+        await client.query(
+          "INSERT INTO activity_logs (actor_email, action, target_type, details) VALUES ($1, $2, $3, $4)",
+          [auth.email, "payout_rejected", "payout", `Rejected payout of $${payout.amount} for ${payout.participant_email}${adminNotes ? `: ${String(adminNotes).slice(0, 300)}` : ""}`],
+        )
       }
 
       await client.query("COMMIT")

@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CheckCircle2, Copy, Download, Loader2 } from "lucide-react"
+import { CheckCircle2, Copy, Download, Loader2, XCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { adminFetch } from "@/lib/auth"
 
@@ -64,14 +64,14 @@ export function AllPayoutsPanel() {
     fetchPayouts()
   }, [fetchPayouts])
 
-  const updatePayoutStatus = async (payout: PayoutRecord, status: "processing" | "completed", transactionHash?: string | null) => {
+  const updatePayoutStatus = async (payout: PayoutRecord, status: "processing" | "completed" | "rejected", transactionHash?: string | null, adminNotes?: string) => {
     if (["completed", "rejected", "cancelled"].includes(payout.status.toLowerCase())) return
 
     setUpdatingId(payout.id)
     try {
       const response = await adminFetch("/api/admin/update-payout-status", {
         method: "POST",
-        body: JSON.stringify({ payoutId: payout.id, status, transactionHash: transactionHash ?? undefined }),
+        body: JSON.stringify({ payoutId: payout.id, status, transactionHash: transactionHash ?? undefined, adminNotes: adminNotes?.trim() || undefined }),
       })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Could not update payout")
@@ -99,6 +99,18 @@ export function AllPayoutsPanel() {
     if (transactionHash === null) return
     if (!window.confirm(`Mark the $${payout.amount.toFixed(2)} payout to ${payout.wallet_address} as completed?`)) return
     await updatePayoutStatus(payout, "completed", transactionHash.trim() || null)
+  }
+
+  const handleRejectPayout = async (payout: PayoutRecord) => {
+    const reason = window.prompt("Enter a rejection reason for the participant:", "")
+    if (reason === null) return
+    const trimmedReason = reason.trim()
+    if (!trimmedReason) {
+      toast({ title: "Rejection reason required", description: "Please provide a reason before rejecting this payout.", variant: "destructive" })
+      return
+    }
+    if (!window.confirm(`Reject the $${payout.amount.toFixed(2)} payout and refund the participant balance?`)) return
+    await updatePayoutStatus(payout, "rejected", null, trimmedReason)
   }
 
   const copyAddress = async (address: string) => {
@@ -295,6 +307,10 @@ export function AllPayoutsPanel() {
                               {updatingId === payout.id ? "Updating..." : "In process"}
                             </Button>
                           )}
+                          <Button type="button" size="sm" variant="outline" className="gap-1.5 border-red-300 text-red-700 hover:bg-red-50" disabled={updatingId === payout.id} onClick={() => handleRejectPayout(payout)}>
+                            {updatingId === payout.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                            {updatingId === payout.id ? "Updating..." : "Reject & refund"}
+                          </Button>
                           <Button type="button" size="sm" className="gap-1.5 bg-emerald-600 text-white hover:bg-emerald-700" disabled={updatingId === payout.id || !payout.wallet_address} onClick={() => handleCompletePayout(payout)}>
                             {updatingId === payout.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                             {updatingId === payout.id ? "Updating..." : "Complete payout"}
