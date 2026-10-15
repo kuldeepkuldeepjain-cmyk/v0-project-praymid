@@ -91,6 +91,7 @@ export default function ParticipantRegisterPage() {
   const { theme, setTheme } = useTheme()
   const isLightTheme = theme === "light"
   const [loading, setLoading] = useState(false)
+  const [emailVerification, setEmailVerification] = useState<{ email: string; code: string } | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
@@ -254,6 +255,11 @@ export default function ParticipantRegisterPage() {
       }))
 
       if (data.success) {
+        if (data.requiresEmailVerification) {
+          setEmailVerification({ email: data.email || formData.email, code: "" })
+          toast({ title: "Check your email", description: "Enter the 6-digit code we sent to verify your account." })
+          return
+        }
         // Set sessionStorage auth so isParticipantAuthenticated() returns true
         const token = data.participantId || `preview-${Date.now()}`
         setParticipantAuth(
@@ -377,7 +383,19 @@ export default function ParticipantRegisterPage() {
 
       {/* Main content */}
       <div className="w-full max-w-2xl relative z-10 my-8">
-        <Card className={cn(
+        {emailVerification ? (
+          <Card className={cn("border shadow-2xl", isLightTheme ? "border-cyan-200 bg-white" : "border-cyan-400/20 bg-slate-900/95")}>
+            <CardContent className="space-y-5 p-6 sm:p-8">
+              <FlowChainLogo size="xs" showTagline={false} />
+              <div><h1 className={cn("text-2xl font-bold", isLightTheme ? "text-slate-950" : "text-white")}>Verify your email</h1><p className={cn("mt-2 text-sm", isLightTheme ? "text-slate-600" : "text-slate-300")}>Enter the 6-digit code sent to {emailVerification.email}.</p></div>
+              <form className="space-y-4" onSubmit={async (event) => { event.preventDefault(); if (!/^\d{6}$/.test(emailVerification.code)) return; setLoading(true); try { const response = await fetch("/api/participant/verify-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: emailVerification.email, code: emailVerification.code }) }); const result = await response.json(); if (!response.ok || !result.success) throw new Error(result.message || "Verification failed"); toast({ title: "Email verified", description: "Your account is ready. Please sign in." }); router.push("/participant/login"); } catch (error) { toast({ title: "Verification failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }); } finally { setLoading(false) } }}>
+                <Input autoFocus inputMode="numeric" maxLength={6} value={emailVerification.code} onChange={(event) => setEmailVerification({ ...emailVerification, code: event.target.value.replace(/\D/g, "").slice(0, 6) })} placeholder="123456" aria-label="Email verification code" />
+                <Button type="submit" disabled={loading || emailVerification.code.length !== 6} className="w-full">{loading ? "Verifying…" : "Verify email"}</Button>
+              </form>
+              <Button type="button" variant="ghost" onClick={() => setEmailVerification(null)}>Back to registration</Button>
+            </CardContent>
+          </Card>
+        ) : <Card className={cn(
           "backdrop-blur-xl animate-fade-in-up-delay-1 overflow-hidden relative group transition-colors duration-500",
           isLightTheme
             ? "border-slate-200 bg-white/95 shadow-2xl shadow-slate-300/40"
@@ -777,7 +795,7 @@ onChange={(e) => handleChange("mobileNumber", e.target.value.replace(/\D/g, "").
               </Button>
             </form>
           </CardContent>
-        </Card>
+        </Card>}
 
         <p className="text-center text-sm text-slate-400 animate-fade-in-up-delay-2">
           Already have an account?{" "}
