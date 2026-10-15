@@ -3,7 +3,7 @@ import { query } from "@/lib/db"
 
 export async function POST(request: Request) {
   try {
-    const { email } = await request.json()
+    const { email, otp } = await request.json()
 
     if (!email) {
       return NextResponse.json({ success: false, error: "Email required" }, { status: 400 })
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
 
     // Check if admin has approved the password reset OTP
     const rows = await query(
-      `SELECT password_reset_otp_verified, password_reset_otp_created_at 
+      `SELECT password_reset_otp, password_reset_otp_verified, password_reset_otp_created_at 
        FROM participants 
        WHERE email = $1`,
       [emailKey]
@@ -24,6 +24,10 @@ export async function POST(request: Request) {
     }
 
     const participant = rows[0]
+    const submittedOtp = String(otp || "").trim()
+    if (!/^\d{6}$/.test(submittedOtp) || submittedOtp !== String(participant.password_reset_otp || "")) {
+      return NextResponse.json({ success: false, approved: false, error: "The verification code is incorrect." }, { status: 400 })
+    }
 
     // Check if OTP has expired (10 minutes)
     if (participant.password_reset_otp_created_at) {
@@ -36,11 +40,8 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      approved: participant.password_reset_otp_verified === true,
-      message: participant.password_reset_otp_verified ? "OTP approved" : "Waiting for admin approval"
-    })
+    await query(`UPDATE participants SET password_reset_otp_verified = true WHERE email = $1`, [emailKey])
+    return NextResponse.json({ success: true, approved: true, message: "OTP verified" })
   } catch (error: any) {
     console.error("[check-approval]:", error.message || error)
     return NextResponse.json({ success: false, error: error.message || "Failed to check OTP approval" }, { status: 500 })

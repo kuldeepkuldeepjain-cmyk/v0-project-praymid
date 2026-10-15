@@ -22,6 +22,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
   const [email, setEmail] = useState("")
   const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
+  const [maskedEmail, setMaskedEmail] = useState("")
   const [copied, setCopied] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -49,12 +50,9 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
       const data = await response.json()
 
       if (data.success) {
-        setOtp(data.otp)
+        setMaskedEmail(data.maskedEmail || email.trim())
         setStep("otp")
-        toast({
-          title: "OTP Generated",
-          description: "Copy the code and send it to admin on WhatsApp",
-        })
+        toast({ title: "Verification code sent", description: `Check ${data.maskedEmail || email.trim()} for your six-digit code.` })
       } else {
         toast({
           title: "Error",
@@ -228,7 +226,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
                 disabled={loading}
                 className="border-violet-300"
               />
-              <p className="text-xs text-gray-500">We'll send an OTP to your registered WhatsApp number</p>
+              <p className="text-xs text-gray-500">We&apos;ll send a secure six-digit code to your registered email address.</p>
             </div>
 
             <Button
@@ -242,15 +240,15 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
           </div>
         )}
 
-        {/* Step 2: Send OTP on WhatsApp */}
+        {/* Step 2: Verify email OTP */}
         {step === "otp" && (
           <div className="space-y-4">
             {/* OTP Display Card */}
             <Card className="border-2 border-violet-200 bg-violet-50">
               <CardContent className="pt-4">
-                <p className="text-xs font-medium text-gray-600 mb-2">Your OTP Code:</p>
+                <p className="text-xs font-medium text-gray-600 mb-2">Enter the code sent to {maskedEmail || email}</p>
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-violet-700 font-mono tracking-widest mb-3">{otp}</p>
+                  <Input inputMode="numeric" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" aria-label="Email verification code" className="mb-3 text-center font-mono text-xl tracking-[0.4em]" />
                   <Button
                     type="button"
                     onClick={copyOtp}
