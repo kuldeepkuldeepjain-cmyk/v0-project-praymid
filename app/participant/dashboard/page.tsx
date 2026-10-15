@@ -26,7 +26,6 @@ import { AIChatbotDialog } from "@/components/ai-chatbot-dialog"
 import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
-import { NoticeBoard } from "@/components/notice-board"
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 
@@ -2257,8 +2256,6 @@ export default function DashboardHome() {
           </div>
         )}
 
-        {/* Notice Board - Display important announcements */}
-        <NoticeBoard />
 
       </main>
 
