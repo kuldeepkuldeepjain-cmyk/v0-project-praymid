@@ -1297,7 +1297,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────���───
+  // ── State ─────────────��────────────────────────────────────────────────�����───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1852,7 +1852,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPair?.symbol, timeframe, candleError])
 
-  // ── Live-tick last candle ────────────────────────────����─────────────────────
+  // ── Live-tick last candle ���───────────────────────────����─────────────────────
   useEffect(() => {
     if (!selectedPair || !Array.isArray(selectedPair.candles) || selectedPair.candles.length === 0) return
     const mid = (selectedPair.bid + selectedPair.ask) / 2
@@ -3595,12 +3595,13 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                     Trade size (lots)
                     <span className="ml-1.5 normal-case tracking-normal font-medium text-slate-500">How much you trade</span>
                   </label>
-                  <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
-                    step="0.01" min="0.01" max="100"
+  <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
+  step="0.01" min="0.01" max="100" aria-describedby="lot-size-help"
                     className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
-                    placeholder="0.01"
-                  />
-                  <div className="flex gap-1 mt-1.5">
+  placeholder="0.01"
+  />
+  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Funded account minimum: 0.01 lots</p>}
+  <div className="flex gap-1 mt-1.5">
                     {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
                       <button key={l} onClick={() => setLotSize(l)}
                         className="flex-1 py-1 text-[7px] font-black tracking-wide rounded-md transition-all active:scale-95"
