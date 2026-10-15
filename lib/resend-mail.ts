@@ -3,6 +3,7 @@ import { Resend } from "resend"
 const FROM = "Elite Fund <verify@elitefund.sbs>"
 
 export async function sendVerificationEmail(to: string, code: string) {
+
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { ok: false as const, status: 503, message: "Email service is not configured." }
 
@@ -11,9 +12,9 @@ export async function sendVerificationEmail(to: string, code: string) {
     {
       from: FROM,
       to: [to],
-      subject: "Verify your Elite Fund account",
-      text: `Your Elite Fund verification code is ${code}. It expires in 15 minutes. If you did not create this account, ignore this email.`,
-      html: `<p>Your Elite Fund verification code is <strong>${code}</strong>.</p><p>This code expires in 15 minutes.</p><p>If you did not create this account, you can ignore this email.</p>`,
+      subject: "Your Elite Fund password reset code",
+      text: `Your Elite Fund password reset code is ${code}. It expires in 10 minutes. If you did not request a password reset, you can ignore this email.`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2>Reset your password</h2><p>Use this one-time code to reset your Elite Fund password:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center">${code}</p><p>This code expires in 10 minutes and can only be used once.</p><p style="color:#64748b">If you did not request this, you can safely ignore this email.</p></div>`,
     },
     { idempotencyKey: `registration-verification/${to}/${code}` },
   )
