@@ -1485,6 +1485,34 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
+  const [liveRates, setLiveRates] = useState<Record<string, { mid: number; change: number }>>({})
+  const [marketStatus, setMarketStatus] = useState<"live" | "stale" | "offline">("offline")
+
+  useEffect(() => {
+    const source = new EventSource("/api/market-data/stream")
+    const handleRates = (event: Event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data)
+        if (payload?.rates) {
+          setLiveRates(payload.rates)
+          setMarketStatus(payload.source === "live" || payload.source === "partial-live" ? "live" : "stale")
+        }
+      } catch {
+        setMarketStatus("stale")
+      }
+    }
+    const handleStatus = (event: Event) => {
+      try {
+        setMarketStatus(JSON.parse((event as MessageEvent<string>).data)?.status === "offline" ? "offline" : "stale")
+      } catch {
+        setMarketStatus("stale")
+      }
+    }
+    source.addEventListener("rates", handleRates)
+    source.addEventListener("status", handleStatus)
+    source.onerror = () => setMarketStatus((current) => current === "live" ? "stale" : "offline")
+    return () => source.close()
+  }, [])
   const [queueData, setQueueData] = useState<any>(null)
   const [showPinSetup, setShowPinSetup] = useState(false)
   
@@ -2133,14 +2161,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             {/* ── LIVE TICKER BAR ──────────────────────────────── */}
             <div className="ticker-wrap border-y py-1.5" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
               <div className="ticker-tape text-[10px] font-mono font-bold text-slate-500 gap-6">
-                {["EUR/USD · 1.0842", "GBP/USD · 1.2734", "USD/JPY · 149.32", "BTC/USD · 67,420", "ETH/USD · 3,580", "XAU/USD · 2,318", "USD/CHF · 0.9012", "AUD/USD · 0.6521",
-                  "EUR/USD · 1.0842", "GBP/USD · 1.2734", "USD/JPY · 149.32", "BTC/USD · 67,420", "ETH/USD · 3,580", "XAU/USD · 2,318", "USD/CHF · 0.9012", "AUD/USD · 0.6521"
-                ].map((item, i) => (
-                  <span key={i} className="shrink-0 mx-4">
-                    <span className="text-slate-600 mr-1">▸</span>
-                    {item}
-                  </span>
-                ))}
+                {["EUR/USD", "GBP/USD", "USD/JPY", "BTC/USD", "ETH/USD", "XAU/USD", "USD/CHF", "AUD/USD"].map((symbol) => {
+                  const quote = liveRates[symbol]
+                  const decimals = symbol.includes("JPY") ? 3 : symbol.includes("BTC") || symbol.includes("ETH") || symbol.includes("XAU") ? 2 : 4
+                  const value = quote ? quote.mid.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : "—"
+                  const change = quote?.change
+                  return <span key={symbol} className="mx-4 shrink-0"><span className="mr-1 text-slate-600">▸</span>{symbol} · {value} {typeof change === "number" ? <span className={change >= 0 ? "text-emerald-400" : "text-red-400"}>{change >= 0 ? "+" : ""}{change.toFixed(2)}%</span> : null}</span>
+                })}
+                <span className={`mx-4 shrink-0 text-[9px] uppercase tracking-wider ${marketStatus === "live" ? "text-emerald-400" : "text-amber-400"}`}>{marketStatus === "live" ? "Live rates" : marketStatus === "stale" ? "Stale rates" : "Rates unavailable"}</span>
               </div>
             </div>
 
