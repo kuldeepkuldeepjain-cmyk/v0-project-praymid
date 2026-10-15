@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
+import { generateVerificationCode, isValidEmail, sendVerificationEmail } from "@/lib/resend-mail"
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -13,27 +14,11 @@ export async function POST(request: Request) {
     const pending = await query<{ registration_data: any }>(`SELECT registration_data FROM registration_email_verifications WHERE LOWER(email) = $1 LIMIT 1`, [email])
     if (!pending.length) return NextResponse.json({ success: true, message: "If the registration is pending verification, a new code has been sent." })
 
-    const code = String(Math.floor(100000 + Math.random() * 900000))
+    const code = generateVerificationCode()
     await query("UPDATE registration_email_verifications SET verification_code = $1, expires_at = NOW() + INTERVAL '15 minutes' WHERE LOWER(email) = $2", [code, email])
-    const registrationData = pending[0].registration_data
-
-    const knockApiKey = process.env.KNOCK_API_KEY
-    const knockWorkflow = process.env.KNOCK_EMAIL_VERIFICATION_WORKFLOW || process.env.KNOCK_WORKFLOW_KEY || "email-verification"
-    if (!knockApiKey) return NextResponse.json({ success: false, message: "Email verification is not configured yet. Please contact support." }, { status: 503 })
-    const knockHeaders = { Authorization: `Bearer ${knockApiKey}`, Accept: "application/json", "Content-Type": "application/json" }
-    const identifyResponse = await fetch(`https://api.knock.app/v1/users/${encodeURIComponent(email)}`, {
-      method: "PUT",
-      headers: knockHeaders,
-      body: JSON.stringify({ id: email, email, name: registrationData.fullName || email }),
-    })
-    if (!identifyResponse.ok) return NextResponse.json({ success: false, message: "Unable to prepare a new verification email right now." }, { status: 502 })
-    const response = await fetch(`https://api.knock.app/v1/workflows/${encodeURIComponent(knockWorkflow)}/trigger`, {
-      method: "POST",
-      headers: knockHeaders,
-      body: JSON.stringify({ recipients: [email], data: { code, verificationCode: code, firstName: registrationData.firstName || registrationData.fullName?.split(" ")[0] || "there" } }),
-    })
-    if (!response.ok) return NextResponse.json({ success: false, message: "Unable to send a new verification email right now." }, { status: 502 })
-    return NextResponse.json({ success: true, message: "A new verification code has been sent." })
+    const delivery = await sendVerificationEmail(email, code)
+    if (!delivery.ok) return NextResponse.json({ success: false, message: delivery.message, requestId: delivery.requestId || null }, { status: delivery.status })
+    return NextResponse.json({ success: true, message: "A new verification email has been sent.", requestId: delivery.requestId || null })
   } catch (error) {
     console.error("[v0] Resend email verification failed:", error)
     return NextResponse.json({ success: false, message: "Verification email is temporarily unavailable." }, { status: 500 })

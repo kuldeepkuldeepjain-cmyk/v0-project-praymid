@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
+import { generateVerificationCode, isValidEmail, sendVerificationEmail } from "@/lib/resend-mail"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -19,7 +20,7 @@ export async function POST(request: Request) {
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`
     const emailKey = email.toLowerCase().trim()
-    const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emailKey)
+    const emailIsValid = isValidEmail(emailKey)
     if (!emailIsValid) {
       return NextResponse.json({ success: false, message: "Please enter a valid email address" }, { status: 400 })
     }
@@ -57,43 +58,16 @@ export async function POST(request: Request) {
         }
       }
 
-      const inserted = await query<Record<string, any>>(
-        `INSERT INTO participants
-          (full_name, username, email, password_hash, plain_password, wallet_address,
-           referral_code, referred_by, account_type, account_balance, status, is_active,
-           whatsapp_otp, otp_verified, mobile_number, is_deleted)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'active',true,NULL,true,$10,false)
-         RETURNING id, full_name, username, email, referral_code, account_balance, status, is_active, created_at`,
-        [fullName, usernameKey, emailKey, password.trim(), password.trim(), walletAddress,
-          newReferralCode, referralCode ? referralCode.toUpperCase() : null,
-          normalizedAccountType, `${selectedCountryCode}${mobileNumberClean}`]
-      )
-      const newParticipant = inserted[0]
-      if (referralCode) {
-        await query(`UPDATE participants SET referral_count = COALESCE(referral_count, 0) + 1, total_referrals = COALESCE(total_referrals, 0) + 1 WHERE referral_code = $1`, [referralCode.toUpperCase()])
+      const verificationCode = generateVerificationCode()
+      const registrationData = { fullName, firstName: firstName.trim(), username: usernameKey, email: emailKey, password: password.trim(), walletAddress, newReferralCode, referralCode: referralCode ? referralCode.toUpperCase() : null, normalizedAccountType, mobileNumber: `${selectedCountryCode}${mobileNumberClean}` }
+      await query(`DELETE FROM registration_email_verifications WHERE LOWER(email) = $1`, [emailKey])
+      await query(`INSERT INTO registration_email_verifications (email, verification_code, registration_data, expires_at) VALUES ($1, $2, $3::jsonb, NOW() + INTERVAL '15 minutes')`, [emailKey, verificationCode, JSON.stringify(registrationData)])
+      const delivery = await sendVerificationEmail(emailKey, verificationCode)
+      if (!delivery.ok) {
+        await query(`DELETE FROM registration_email_verifications WHERE LOWER(email) = $1`, [emailKey])
+        return NextResponse.json({ success: false, message: delivery.message, requestId: delivery.requestId || null }, { status: delivery.status })
       }
-      return NextResponse.json({
-        success: true,
-        message: "Registration successful! Your account is ready to use.",
-        participantId: newParticipant.id,
-        walletAddress: walletAddress,
-        username: usernameKey,
-        email: emailKey,
-        name: fullName,
-        full_name: fullName,
-        referralCode: newReferralCode,
-        referral_code: newReferralCode,
-        wallet_balance: 0,
-        account_balance: 0,
-        bonus_balance: 0,
-        total_referrals: 0,
-        total_earnings: 0,
-        status: "active",
-        rank: "bronze",
-        is_active: true,
-        details_completed: false,
-        created_at: new Date().toISOString(),
-      }, { status: 200 })
+      return NextResponse.json({ success: true, requiresEmailVerification: true, message: "Check your email for a verification code.", email: emailKey, requestId: delivery.requestId || null }, { status: 200 })
     } catch (dbError: any) {
       console.error("[v0] Database error during registration:", dbError)
       const code = String(dbError?.code || "")
