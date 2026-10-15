@@ -3,7 +3,7 @@ import { query, execute } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, newPassword } = await request.json()
+    const { email, otp, newPassword } = await request.json()
 
     if (!email || !newPassword) {
       return NextResponse.json({ error: "Email and new password are required" }, { status: 400 })
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Check admin has approved the OTP
     const checkRows = await query(
-      `SELECT password_reset_otp_verified FROM participants WHERE email = $1`,
+      `SELECT password_reset_otp, password_reset_otp_verified, password_reset_otp_created_at FROM participants WHERE email = $1`,
       [emailKey]
     )
 
