@@ -189,7 +189,7 @@ export default function HelpPage() {
           </CardContent>
         </Card>
 
-        {/* Ticket / message history, including admin-sent messages */}
+        {/* Private ticket history: the API scopes this list to the signed-in participant. */}
         <Card className="border-0 shadow-sm bg-white">
           <CardContent className="p-4">
             <div className="flex items-center gap-3 mb-4">
@@ -198,7 +198,7 @@ export default function HelpPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-slate-900">Your Messages</h3>
-                <p className="text-sm text-slate-500">Replies from support and admin appear here</p>
+                <p className="text-sm text-slate-500">Only your private support conversation appears here</p>
               </div>
             </div>
 

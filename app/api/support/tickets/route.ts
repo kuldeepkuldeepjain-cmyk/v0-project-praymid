@@ -111,8 +111,8 @@ export async function GET(request: NextRequest) {
     if (!participant.ok) return participant.response
 
     const rows = await query<Record<string, unknown>>(
-      `SELECT * FROM support_tickets WHERE participant_id = $1 OR LOWER(participant_email) = $2 ORDER BY created_at DESC LIMIT 100`,
-      [participant.participantId, participant.email.toLowerCase()],
+      `SELECT * FROM support_tickets WHERE participant_id = $1 ORDER BY created_at DESC LIMIT 100`,
+      [participant.participantId],
     )
     return NextResponse.json({ success: true, tickets: rows.map(toTicket) })
   } catch (error) {

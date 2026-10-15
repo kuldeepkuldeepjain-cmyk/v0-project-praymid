@@ -59,6 +59,8 @@ export default function ProfilePage() {
   const isAuthenticated = isParticipantAuthenticated()
   const isFundedAccount = participantData?.account_type === "funded"
   const accountTypeLabel = isFundedAccount ? "Funded Account" : "Normal Account"
+  const kycStatus = String(kyc?.status ?? "").trim().toLowerCase()
+  const isKycVerified = kycStatus === "approved" || kycStatus === "completed"
 
   useEffect(() => {
     setMounted(true)
@@ -457,12 +459,12 @@ export default function ProfilePage() {
           <div className="mt-2 sm:mt-2.5 md:mt-3 flex flex-wrap items-center justify-center gap-2">
             <Badge
               className={`px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-medium animate-fade-in ${
-                participantData.activation_fee_paid
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30"
-                  : "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30"
+  isKycVerified || participantData.activation_fee_paid
+  ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/30"
+  : "bg-gradient-to-r from-amber-400 to-orange-500 text-white shadow-lg shadow-amber-500/30"
               }`}
             >
-              {participantData.activation_fee_paid ? "Verified Account" : "Pending Verification"}
+              {isKycVerified || participantData.activation_fee_paid ? "Verified" : "Pending Verification"}
             </Badge>
             <Badge className={`px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-semibold ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/15 text-cyan-200"}`}>
               {accountTypeLabel}
