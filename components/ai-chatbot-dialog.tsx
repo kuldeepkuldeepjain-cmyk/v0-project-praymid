@@ -112,7 +112,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
                   {[
                     { text: "Check my balance", icon: <Trophy className="h-3 w-3" />, prompt: userEmail ? `Check my account balance and stats for ${userEmail}` : "How do I check my balance?" },
                     { text: "Platform stats", icon: <Sparkles className="h-3 w-3" />, prompt: "Show me current platform statistics" },
-                    { text: "Top contributors", icon: <Trophy className="h-3 w-3" />, prompt: "Who are the top contributors on the leaderboard?" },
+                    { text: "Top terminal traders", icon: <Trophy className="h-3 w-3" />, prompt: "Who are the top traders on the Trading Terminal leaderboard?" },
                     { text: "How predictions work", icon: <ArrowUpRight className="h-3 w-3" />, prompt: "How does prediction trading work?" },
                   ].map((item, index) => (
                     <Button
