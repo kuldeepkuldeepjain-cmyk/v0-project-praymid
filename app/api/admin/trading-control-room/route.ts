@@ -269,12 +269,27 @@ export async function POST(request: NextRequest) {
         await client.query("ROLLBACK")
         return NextResponse.json({ success: false, error: "This KYC record has already been finalized." }, { status: 409 })
       }
+      const rejectionReason = body.status === "rejected" ? String(body.reason || "KYC documents require correction").trim() : null
       await client.query(
         `UPDATE participant_kyc_verifications
          SET status = $1, rejection_reason = $2, reviewed_by = $3, reviewed_at = NOW(), updated_at = NOW()
          WHERE id = $4`,
-        [body.status, body.status === "rejected" ? String(body.reason || "KYC documents require correction") : null, auth.email, verificationId],
+        [body.status, rejectionReason, auth.email, verificationId],
       )
+      if (body.status === "rejected") {
+        const participant = await client.query<{ participant_email: string }>(
+          "SELECT participant_email FROM participant_kyc_verifications WHERE id = $1",
+          [verificationId],
+        )
+        const participantEmail = participant.rows[0]?.participant_email
+        if (participantEmail) {
+          await client.query(
+            `INSERT INTO notifications (user_email, type, title, message)
+             VALUES ($1, $2, $3, $4)`,
+            [participantEmail, "warning", "KYC resubmission required", `Your KYC submission was rejected. ${rejectionReason || "Please review your documents and resubmit."}`],
+          )
+        }
+      }
       targetType = "kyc_verification"
       targetId = verificationId
       actionName = `kyc_${String(body.status)}`
