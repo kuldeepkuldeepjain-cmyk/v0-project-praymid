@@ -101,6 +101,10 @@ export async function GET(request: NextRequest) {
     // Staff can view every ticket; participants can only view their own.
     const staff = await requireSupportStaff(request)
     if (staff.ok) {
+      if (new URL(request.url).searchParams.get("count") === "1") {
+        const rows = await query<{ open_count: number }>(`SELECT COUNT(*)::int AS open_count FROM support_tickets WHERE status = 'open'`)
+        return NextResponse.json({ success: true, openCount: Number(rows[0]?.open_count ?? 0) })
+      }
       const rows = await query<Record<string, unknown>>(
         `SELECT * FROM support_tickets ORDER BY CASE WHEN status = 'open' THEN 0 WHEN status = 'in_progress' THEN 1 ELSE 2 END, created_at DESC LIMIT 500`,
       )

@@ -69,17 +69,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchOpenTicketCount = async () => {
       try {
-        const response = await adminFetch("/api/support/tickets")
+        const response = await adminFetch("/api/support/tickets?count=1")
         const data = await response.json()
-        if (data.success) {
-          setOpenTicketCount(data.tickets.filter((t: { status: string }) => t.status === "open").length)
-        }
+        if (data.success) setOpenTicketCount(Number(data.openCount ?? 0))
       } catch {
         // non-critical badge count, ignore failures
       }
     }
     fetchOpenTicketCount()
-    const interval = setInterval(fetchOpenTicketCount, 8000)
+    const interval = setInterval(fetchOpenTicketCount, 30000)
     return () => clearInterval(interval)
   }, [])
 
