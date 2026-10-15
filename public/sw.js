@@ -1,4 +1,4 @@
-const CACHE_NAME = "elite-fund-v2";
+const CACHE_NAME = "elite-fund-v3";
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
@@ -40,7 +40,9 @@ self.addEventListener("fetch", (event) => {
   // Skip non-GET requests and cross-origin requests
   if (request.method !== "GET" || url.origin !== self.location.origin) return;
 
-  // Network-first for API, auth, and dynamic routes
+  // Network-first for API, auth, dynamic routes, and Next.js chunks.
+  // Hashed chunks must never be served from an older deployment cache: a stale
+  // page can otherwise request a chunk that no longer exists and crash React.
   if (
     url.pathname === "/" ||
     url.pathname.startsWith("/api/") ||
@@ -51,14 +53,7 @@ self.addEventListener("fetch", (event) => {
   ) {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          // Cache successful GET responses for _next static files
-          if (response.ok && url.pathname.startsWith("/_next/static/")) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          }
-          return response;
-        })
+        .then((response) => response)
         .catch(() => caches.match(request))
     );
     return;
