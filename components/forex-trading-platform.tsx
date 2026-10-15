@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────����������������───
+  // ── State ─────────────��────────────────────────────────────────────────������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -2682,7 +2682,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
     : 0
-  const estimatedFees = 0
+  const estimatedFees: number | null = null
   const estimatedSpreadCost = selectedPair
     ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
     : 0
@@ -3029,7 +3029,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════════��══���═ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════���═══��══���═ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -4526,7 +4526,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 { label: "Leverage", value: `1:${tradeConfirm.leverage}`, color: "#f8fafc" },
                 { label: "Pip Value", value: `$${tradeConfirm.pipVal.toFixed(4)} / pip`, color: "#94a3b8" },
                 { label: "Spread", value: `${((selectedPair?.spread ?? 0) / pip(tradeConfirm.pair)).toFixed(1)} pips · $${estimatedSpreadCost.toFixed(2)}`, color: "#fbbf24" },
-                { label: "Estimated Fees", value: `$${estimatedFees.toFixed(2)} · engine fee`, color: "#94a3b8" },
+                { label: "Estimated Fees", value: estimatedFees == null ? "Not returned by engine" : `$${Number(estimatedFees).toFixed(2)}`, color: "#94a3b8" },
                 {
                   label: "Stop Loss",
                   value: tradeConfirm.sl ? fmt(tradeConfirm.sl, tradeConfirm.pair) : "None",

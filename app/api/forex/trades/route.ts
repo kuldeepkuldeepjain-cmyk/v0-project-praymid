@@ -77,22 +77,36 @@ export async function POST(req: NextRequest) {
     if (typeof participant_email !== "string" || !participant_email.trim() || !allowedActions.has(action) || !trade?.id) {
       return NextResponse.json({ success: false, error: "Invalid trade request" }, { status: 400 })
     }
-    const numericTradeFields = [trade.lotSize, trade.leverage, trade.openPrice, trade.margin].filter((value) => value !== undefined && value !== null)
+    const allowedDirections = new Set(["BUY", "SELL"])
+    const allowedOrderTypes = new Set(["MARKET", "LIMIT", "STOP", "BUY_LIMIT", "SELL_LIMIT", "BUY_STOP", "SELL_STOP"])
+    if (typeof trade.pair !== "string" || !trade.pair.trim() || !allowedDirections.has(trade.direction)) {
+      return NextResponse.json({ success: false, error: "Instrument and direction are required" }, { status: 400 })
+    }
+    if (action === "pending" && (typeof trade.orderType !== "string" || !allowedOrderTypes.has(trade.orderType))) {
+      return NextResponse.json({ success: false, error: "Unsupported pending order type" }, { status: 400 })
+    }
+    const numericTradeFields = [trade.lotSize, trade.leverage, trade.openPrice, trade.targetPrice, trade.margin, trade.sl, trade.tp].filter((value) => value !== undefined && value !== null)
     if (numericTradeFields.some((value) => typeof value !== "number" || !Number.isFinite(value))) {
       return NextResponse.json({ success: false, error: "Invalid trade values" }, { status: 400 })
     }
-    if ((action === "open" || action === "pending") && (!Number.isFinite(trade.lotSize) || trade.lotSize <= 0 || !Number.isFinite(trade.leverage) || trade.leverage <= 0)) {
+    if ((action === "open" || action === "pending") && (!Number.isFinite(trade.lotSize) || trade.lotSize <= 0 || trade.lotSize > 1000 || !Number.isFinite(trade.leverage) || trade.leverage <= 0 || trade.leverage > 100)) {
       return NextResponse.json({ success: false, error: "Lot size and leverage must be greater than zero" }, { status: 400 })
     }
     if (action === "open" && (!Number.isFinite(trade.margin) || trade.margin <= 0)) {
       return NextResponse.json({ success: false, error: "Margin must be greater than zero" }, { status: 400 })
     }
+    if ((action === "open" || action === "pending") && (!Number.isFinite(trade.openPrice) || trade.openPrice <= 0)) {
+      return NextResponse.json({ success: false, error: "A valid execution price is required" }, { status: 400 })
+    }
+    if (action === "pending" && (!Number.isFinite(trade.targetPrice) || trade.targetPrice <= 0)) {
+      return NextResponse.json({ success: false, error: "A valid target price is required for pending orders" }, { status: 400 })
+    }
     if ((action === "open" || action === "pending") && Number.isFinite(trade.openPrice)) {
       const entry = Number(trade.openPrice)
       const sl = trade.sl === null || trade.sl === undefined ? null : Number(trade.sl)
       const tp = trade.tp === null || trade.tp === undefined ? null : Number(trade.tp)
-      const validSl = sl === null || (Number.isFinite(sl) && (trade.direction === "BUY" ? sl < entry : sl > entry))
-      const validTp = tp === null || (Number.isFinite(tp) && (trade.direction === "BUY" ? tp > entry : tp < entry))
+      const validSl = sl === null || (Number.isFinite(sl) && sl > 0 && (trade.direction === "BUY" ? sl < entry : sl > entry))
+      const validTp = tp === null || (Number.isFinite(tp) && tp > 0 && (trade.direction === "BUY" ? tp > entry : tp < entry))
       if (!validSl || !validTp) return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the trade direction" }, { status: 400 })
     }
     if (auth.email.toLowerCase() !== participant_email.toLowerCase()) {
@@ -301,7 +315,15 @@ export async function POST(req: NextRequest) {
       riskScore: tradeRisk.riskScore,
       metadata: { flags: tradeRisk.flags, participantId },
     })
-    return NextResponse.json({ success: true, riskFlags: tradeRisk.flags })
+    return NextResponse.json({
+      success: true,
+      execution: {
+        id: String(trade.id),
+        status: action === "open" ? "accepted" : action === "pending" ? "working" : "recorded",
+        serverTimestamp: new Date().toISOString(),
+      },
+      riskFlags: tradeRisk.flags,
+    })
   } catch (e: any) {
     console.error("[v0] forex trades POST error:", e)
     return NextResponse.json({ success: false, error: "Trade could not be executed. Please try again." }, { status: 500 })
