@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     const db = getPool()
     if (!db) return NextResponse.json({ error: "Database unavailable" }, { status: 503 })
     const result = await db.query(
-      "SELECT id, participant_email, legal_name, date_of_birth, country, document_type, document_number, status, rejection_reason, submitted_at, reviewed_at FROM participant_kyc_verifications WHERE participant_email = $1 ORDER BY submitted_at DESC LIMIT 1",
+      "SELECT id, participant_email, legal_name, date_of_birth, country, document_type, document_number, document_front_url, document_back_url, selfie_url, status, rejection_reason, submitted_at, reviewed_at FROM participant_kyc_verifications WHERE participant_email = $1 ORDER BY submitted_at DESC LIMIT 1",
       [email],
     )
     return NextResponse.json({ success: true, verification: result.rows[0] ?? null })
@@ -24,8 +24,14 @@ export async function POST(request: Request) {
     const legalName = String(body.legal_name || "").trim()
     const country = String(body.country || "").trim()
     const documentType = String(body.document_type || "").trim()
-    if (!email || !legalName || !country || !documentType) {
-      return NextResponse.json({ error: "Legal name, country, and document type are required" }, { status: 400 })
+    const documentFrontUrl = String(body.document_front_url || "").trim()
+    const documentBackUrl = String(body.document_back_url || "").trim()
+    const selfieUrl = String(body.selfie_url || "").trim()
+    if (!email || !legalName || !country || !documentType || !documentFrontUrl || !documentBackUrl || !selfieUrl) {
+      return NextResponse.json({ error: "Legal name, country, document type, front, back, and live selfie are required" }, { status: 400 })
+    }
+    if ([documentFrontUrl, documentBackUrl, selfieUrl].some(value => value.length > 8_000_000 || !/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value))) {
+      return NextResponse.json({ error: "Upload valid JPG, PNG, or WEBP images under 6 MB each" }, { status: 400 })
     }
     const db = getPool()
     if (!db) return NextResponse.json({ error: "Database unavailable" }, { status: 503 })
@@ -38,7 +44,7 @@ export async function POST(request: Request) {
     const result = await db.query(
       `INSERT INTO participant_kyc_verifications (participant_id, participant_email, legal_name, date_of_birth, country, document_type, document_number, document_front_url, document_back_url, selfie_url)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, participant_email, legal_name, date_of_birth, country, document_type, document_number, status, submitted_at`,
-      [participant.rows[0].id, email, legalName, body.date_of_birth || null, country, documentType, body.document_number?.trim() || null, body.document_front_url || null, body.document_back_url || null, body.selfie_url || null],
+      [participant.rows[0].id, email, legalName, body.date_of_birth || null, country, documentType, body.document_number?.trim() || null, documentFrontUrl, documentBackUrl, selfieUrl],
     )
     return NextResponse.json({ success: true, verification: result.rows[0] }, { status: 201 })
   } catch {
