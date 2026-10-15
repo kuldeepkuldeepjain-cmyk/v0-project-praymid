@@ -103,9 +103,9 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
                 <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center mb-2 sm:mb-3 md:mb-4 shadow-lg sm:shadow-2xl animate-float">
                   <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-white" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 sm:mb-2 px-2">Welcome to FlowChain AI</h3>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 sm:mb-2 px-2">Welcome to EliteFund AI</h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed px-3 sm:px-4">
-                  I'm your intelligent assistant powered by advanced AI. Ask me about contributions, withdrawals, ranks,
+                  I'm your intelligent assistant powered by advanced AI. Ask me about the Trading Terminal, withdrawals, ranks,
                   or any other questions!
                 </p>
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-3 sm:mt-4 md:mt-6 w-full max-w-md px-2">
