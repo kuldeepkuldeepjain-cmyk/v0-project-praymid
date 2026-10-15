@@ -27,6 +27,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 import { NoticeBoard } from "@/components/notice-board"
+import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 
 
@@ -1445,7 +1446,7 @@ export default function DashboardHome() {
   const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
   const [isTerminalSettingsOpen, setIsTerminalSettingsOpen] = useState(false)
   const [activeSettingsSection, setActiveSettingsSection] = useState("Account")
-  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("trading")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string
@@ -1918,6 +1919,18 @@ export default function DashboardHome() {
       <main className={activeTab === "trading" ? "hidden" : "pb-24 md:pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
+            <ParticipantOnboardingDashboard
+              displayName={displayName}
+              email={participantData.email}
+              isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
+              onExploreTerminal={() => setActiveTab("trading")}
+              onAddFunds={() => {
+                setTopUpIsFundedAccount(false)
+                setIsInitialFundedTopUp(false)
+                setShowTopUpModal(true)
+              }}
+              onHelp={() => setIsChatOpen(true)}
+            />
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
             <div className="relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
