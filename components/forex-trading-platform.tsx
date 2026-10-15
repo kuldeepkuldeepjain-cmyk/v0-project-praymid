@@ -1297,7 +1297,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────�����───
+  // ── State ─────────────��────────────────────────────────────────────────�������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -2197,6 +2197,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       return
     }
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
+    if (isFundedAccount && margin < 3000) { showToast("error", "Funded accounts require a minimum order amount of 3000"); return }
 
     if (slNum !== null && direction === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
     if (slNum !== null && direction === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
@@ -2253,6 +2254,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
     const pairSymbol = selectedPair.symbol
+    if (isFundedAccount && margin < 3000) {
+      setTradeConfirm(null)
+      showToast("error", "Funded accounts require a minimum order amount of 3000")
+      return
+    }
 
     // Close the modal and reflect the trade right away �� persistence and margin
     // deduction continue in the background so the button doesn't sit on a spinner
@@ -3600,7 +3606,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                     className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
   placeholder="0.01"
   />
-  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Funded account minimum: 0.01 lots</p>}
+  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Minimum lot: 0.01 · Minimum order amount: 3000</p>}
   <div className="flex gap-1 mt-1.5">
                     {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
                       <button key={l} onClick={() => setLotSize(l)}
