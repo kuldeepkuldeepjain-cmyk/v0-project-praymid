@@ -185,7 +185,7 @@ function ContributionNotificationBar({
         </div>
         <div>
           <p className={`text-sm font-medium ${isUrgent ? "text-red-800" : "text-orange-900"}`}>
-            Contribute $100 in{" "}
+            Review your account before funding{" "}
             <span className="font-bold">
               {timeRemaining.hours}h {timeRemaining.minutes}m
             </span>
