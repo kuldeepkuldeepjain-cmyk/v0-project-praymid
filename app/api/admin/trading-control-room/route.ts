@@ -271,9 +271,9 @@ export async function POST(request: NextRequest) {
       }
       await client.query(
         `UPDATE participant_kyc_verifications
-         SET status = $1, reviewed_by = $2, reviewed_at = NOW(), updated_at = NOW()
-         WHERE id = $3`,
-        [body.status, auth.email, verificationId],
+         SET status = $1, rejection_reason = $2, reviewed_by = $3, reviewed_at = NOW(), updated_at = NOW()
+         WHERE id = $4`,
+        [body.status, body.status === "rejected" ? String(body.reason || "KYC documents require correction") : null, auth.email, verificationId],
       )
       targetType = "kyc_verification"
       targetId = verificationId
