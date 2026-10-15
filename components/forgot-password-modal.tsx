@@ -7,9 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
-import { Phone, MessageCircle, Lock, Copy, Check, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react"
-
-const ADMIN_WHATSAPP = "+995574450590"
+import { Lock, Check, AlertCircle, Loader2, Eye, EyeOff } from "lucide-react"
 
 interface ForgotPasswordModalProps {
   open: boolean
@@ -23,7 +21,6 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
   const [otp, setOtp] = useState("")
   const [loading, setLoading] = useState(false)
   const [maskedEmail, setMaskedEmail] = useState("")
-  const [copied, setCopied] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -71,21 +68,6 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
     }
   }
 
-  const copyOtp = () => {
-    navigator.clipboard.writeText(otp)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-    toast({
-      title: "Copied",
-      description: "OTP copied to clipboard",
-    })
-  }
-
-  const sendOtpOnWhatsApp = () => {
-    const msg = `My OTP for password reset: ${otp}`
-    window.open(`https://wa.me/${ADMIN_WHATSAPP.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`, "_blank")
-  }
-
   const handleContinue = async () => {
     setLoading(true)
     try {
@@ -99,10 +81,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
 
       if (data.approved) {
         setStep("password")
-        toast({
-          title: "OTP Approved",
-          description: "Admin has approved your OTP. Set your new password.",
-        })
+        toast({ title: "Email verified", description: "Create a new password for your account." })
       } else {
         toast({
           title: "Waiting for Admin",
@@ -235,7 +214,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
               className="w-full bg-violet-600 hover:bg-violet-700"
             >
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Generate OTP
+              Send verification code
             </Button>
           </div>
         )}
@@ -249,58 +228,15 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
                 <p className="text-xs font-medium text-gray-600 mb-2">Enter the code sent to {maskedEmail || email}</p>
                 <div className="text-center">
                   <Input inputMode="numeric" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" aria-label="Email verification code" className="mb-3 text-center font-mono text-xl tracking-[0.4em]" />
-                  <Button
-                    type="button"
-                    onClick={copyOtp}
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-violet-300 hover:bg-violet-100"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-4 w-4 mr-2 text-green-600" />
-                        Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copy OTP
-                      </>
-                    )}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* WhatsApp Number Card */}
-            <Card className="border-2 border-green-200 bg-green-50">
-              <CardContent className="pt-4">
-                <p className="text-xs font-medium text-green-700 mb-2">Send to Admin:</p>
-                <p className="text-lg font-bold text-green-900 text-center mb-3">{ADMIN_WHATSAPP}</p>
-              </CardContent>
-            </Card>
-
-            {/* Send on WhatsApp Button */}
-            <Button
-              type="button"
-              onClick={sendOtpOnWhatsApp}
-              className="w-full bg-green-600 hover:bg-green-700"
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Send OTP on WhatsApp
-            </Button>
-
-            {/* Instructions */}
             <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2">
               <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
               <div className="text-sm text-blue-700">
-                <p className="font-medium mb-1">Instructions:</p>
-                <ol className="list-decimal list-inside space-y-0.5 text-xs">
-                  <li>Copy the OTP code above</li>
-                  <li>Send it to the admin on WhatsApp</li>
-                  <li>Admin will approve it in the OTP panel</li>
-                  <li>Click Continue once you've sent the OTP</li>
-                </ol>
+                <p className="font-medium mb-1">Secure verification</p>
+                <p className="text-xs">Enter the six-digit code from your email. The code expires in 10 minutes and can only be used once.</p>
               </div>
             </div>
 
@@ -311,7 +247,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
               className="w-full bg-violet-600 hover:bg-violet-700"
             >
               {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Continue (Waiting for Admin Approval)
+              Verify code and continue
             </Button>
 
             <Button
@@ -333,7 +269,7 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
           <div className="space-y-4">
             <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex gap-2">
               <Check className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-green-700">OTP approved! Set your new password.</p>
+              <p className="text-sm text-green-700">Email verified. Create a new password.</p>
             </div>
 
             {/* New Password */}
