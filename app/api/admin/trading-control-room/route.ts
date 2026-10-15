@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         : action === "reject-payment"
           ? isUuid(body.paymentId) && typeof body.reason === "string" && body.reason.trim().length >= 5 && body.reason.trim().length <= 500
           : action === "review-kyc"
-          ? isUuid(body.verificationId) && ["under_review", "approved"].includes(String(body.status))
+          ? isUuid(body.verificationId) && ["under_review", "approved", "rejected"].includes(String(body.status)) && (String(body.status) !== "rejected" || (typeof body.reason === "string" && body.reason.trim().length >= 5 && body.reason.trim().length <= 500))
           : false
   if (!validAction) return NextResponse.json({ success: false, error: "Invalid control-room action." }, { status: 400 })
 
