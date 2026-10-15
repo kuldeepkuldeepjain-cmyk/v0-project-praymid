@@ -75,7 +75,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <DialogTitle className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white drop-shadow-lg truncate">
-                  FlowChain AI Assistant
+                  EliteFund AI Assistant
                 </DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm text-white/90 hidden sm:block">
                   Ask me anything about the platform
@@ -103,16 +103,16 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
                 <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center mb-2 sm:mb-3 md:mb-4 shadow-lg sm:shadow-2xl animate-float">
                   <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-white" />
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 sm:mb-2 px-2">Welcome to FlowChain AI</h3>
+                <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 sm:mb-2 px-2">Welcome to EliteFund AI</h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed px-3 sm:px-4">
-                  I'm your intelligent assistant powered by advanced AI. Ask me about contributions, withdrawals, ranks,
+                  I'm your intelligent assistant powered by advanced AI. Ask me about the Trading Terminal, withdrawals, ranks,
                   or any other questions!
                 </p>
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-3 sm:mt-4 md:mt-6 w-full max-w-md px-2">
                   {[
                     { text: "Check my balance", icon: <Trophy className="h-3 w-3" />, prompt: userEmail ? `Check my account balance and stats for ${userEmail}` : "How do I check my balance?" },
                     { text: "Platform stats", icon: <Sparkles className="h-3 w-3" />, prompt: "Show me current platform statistics" },
-                    { text: "Top contributors", icon: <Trophy className="h-3 w-3" />, prompt: "Who are the top contributors on the leaderboard?" },
+                    { text: "Top terminal traders", icon: <Trophy className="h-3 w-3" />, prompt: "Who are the top traders on the Trading Terminal leaderboard?" },
                     { text: "How predictions work", icon: <ArrowUpRight className="h-3 w-3" />, prompt: "How does prediction trading work?" },
                   ].map((item, index) => (
                     <Button

@@ -36,13 +36,6 @@ const MARKET_PAIRS = [
   { symbol: "ETH/USD", price: "2,452.0", change: "+1.85%", up: true },
 ]
 
-const STATS = [
-  { label: "Active Traders", value: "15,000+" },
-  { label: "Daily Volume", value: "$2.4B+" },
-  { label: "Instruments", value: "50+" },
-  { label: "Uptime", value: "99.9%" },
-]
-
 const FEATURES = [
   { icon: CandlestickChart, label: "Real-time Charts", desc: "6 timeframes, live data" },
   { icon: Shield,           label: "Bank-grade Security", desc: "Enterprise encryption" },
@@ -248,14 +241,9 @@ export default function ParticipantLoginPage() {
 
           {/* Stats row */}
           <div className="relative z-10">
-            <div className="grid grid-cols-4 gap-4 pt-8 border-t border-slate-800">
-              {STATS.map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-lg font-bold text-white">{value}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
+  <div className="border-t border-slate-800 pt-8">
+          <p className="text-xs leading-5 text-slate-500">Market prices and account information shown after sign-in are provided for your session and may change as data refreshes.</p>
+        </div>
 
             {/* Live ticker */}
             <div className="mt-6 overflow-hidden rounded-2xl border border-white/[0.09] bg-white/[0.045] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">

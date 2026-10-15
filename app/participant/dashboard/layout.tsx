@@ -16,12 +16,12 @@ export default function DashboardLayout({
   const navRef = useRef<HTMLDivElement>(null)
 
   const navItems = [
-    { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", shortLabel: "Pred", color: "#10B981", gradient: "from-emerald-400 to-teal-500", glow: "shadow-emerald-500/40" },
-    { href: "/participant/dashboard", icon: Home, label: "Dashboard", shortLabel: "Home", color: "#3b82f6", gradient: "from-blue-500 to-blue-700", glow: "shadow-blue-500/40" },
-    { href: "/participant/dashboard/profile", icon: User, label: "Profile", shortLabel: "Prof", color: "#22d3ee", gradient: "from-cyan-400 to-blue-500", glow: "shadow-cyan-500/40" },
-    { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Add Fund", shortLabel: "Fund", color: "#14B8A6", gradient: "from-teal-400 to-cyan-500", glow: "shadow-teal-500/40" },
-    { href: "/participant/dashboard/payout", icon: Wallet, label: "Payout", shortLabel: "Pay", color: "#F59E0B", gradient: "from-amber-400 to-yellow-500", glow: "shadow-amber-500/40" },
-    { href: "/participant/dashboard/refer", icon: Gift, label: "Refer & Earn", shortLabel: "Refer", color: "#E85D3B", gradient: "from-orange-400 to-red-500", glow: "shadow-orange-500/40" },
+    { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Terminal", shortLabel: "Trade", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard", icon: Home, label: "Overview", shortLabel: "Home", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard/profile", icon: User, label: "Profile", shortLabel: "Profile", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Add funds", shortLabel: "Fund", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard/payout", icon: Wallet, label: "Payout", shortLabel: "Payout", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard/refer", icon: Gift, label: "Referrals", shortLabel: "Refer", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
   ]
 
   const isActive = (href: string) => {
@@ -58,15 +58,7 @@ export default function DashboardLayout({
   // ── BACKGROUND LAYERS (shared across breakpoints) ─────────────────────
   const BgLayers = () => (
     <>
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 120% 60% at 50% -10%, rgba(59,130,246,0.18) 0%, transparent 55%)" }} />
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 80% 50% at -20% 60%, rgba(34,211,238,0.06) 0%, transparent 50%)" }} />
-      <div className="fixed inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse 70% 50% at 120% 80%, rgba(16,185,129,0.06) 0%, transparent 50%)" }} />
-      <div className="fixed inset-0 pointer-events-none depth-grid opacity-40" />
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="glow-orb absolute w-[600px] h-[600px] -top-48 -left-32 bg-gradient-to-br from-blue-600/12 to-transparent" style={{ animationDelay: "0s" }} />
-        <div className="glow-orb absolute w-[500px] h-[500px] top-1/2 -right-48 bg-gradient-to-br from-cyan-500/8 to-transparent" style={{ animationDelay: "2s" }} />
-        <div className="glow-orb absolute w-[400px] h-[400px] bottom-0 left-1/3 bg-gradient-to-br from-blue-500/8 to-transparent" style={{ animationDelay: "4s" }} />
-      </div>
+      <div className="fixed inset-0 pointer-events-none bg-[#111315]" />
     </>
   )
 
@@ -102,7 +94,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen min-h-dvh" style={{ background: "#07111f" }}>
+    <div className="terminal-page min-h-screen min-h-dvh" style={{ background: "#111315" }}>
       <BgLayers />
 
       {/* ── TABLET & DESKTOP LAYOUT (md+): Full-width content + bottom nav ── */}
