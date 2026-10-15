@@ -2180,54 +2180,6 @@ export default function DashboardHome() {
 
 
 
-            {/* ── PROMO CARDS ROW ──────────────────────────────── */}
-            <div className="px-4 pt-3 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {/* Lucky Spin */}
-              <button
-                onClick={() => setActiveTab("wheel")}
-                className="holo-shine text-left rounded-2xl p-3.5 transition-all active:scale-95 relative overflow-hidden"
-                style={{
-                  background: "linear-gradient(145deg, rgba(251,191,36,0.12) 0%, rgba(245,158,11,0.06) 100%)",
-                  border: "1px solid rgba(251,191,36,0.2)",
-                  boxShadow: "0 4px 24px rgba(251,191,36,0.1), inset 0 1px 0 rgba(255,255,255,0.06)"
-                }}
-              >
-                <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)", filter: "blur(16px)", transform: "translate(30%, -30%)" }} />
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2.5" style={{ background: "rgba(251,191,36,0.15)", boxShadow: "0 0 16px rgba(251,191,36,0.3), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
-                  <Sparkles className="h-4 w-4 text-amber-400" style={{ filter: "drop-shadow(0 0 4px rgba(251,191,36,0.8))" }} />
-                </div>
-                <p className="text-white text-xs font-black">Lucky Spin</p>
-                <p className="text-slate-500 text-[10px] mt-0.5">$5 per spin</p>
-                <span className="mt-2 inline-flex items-center gap-0.5 text-[10px] font-bold" style={{ color: "#fbbf24", textShadow: "0 0 8px rgba(251,191,36,0.5)" }}>
-                  Spin Now <ChevronRight className="h-3 w-3" />
-                </span>
-              </button>
-
-              {/* Refer & Earn */}
-              <Link href="/participant/dashboard/refer">
-                <div
-                  className="holo-shine rounded-2xl p-3.5 transition-all active:scale-95 relative overflow-hidden"
-                  style={{
-                    background: "linear-gradient(145deg, rgba(16,185,129,0.12) 0%, rgba(5,150,105,0.06) 100%)",
-                    border: "1px solid rgba(16,185,129,0.2)",
-                    boxShadow: "0 4px 24px rgba(16,185,129,0.1), inset 0 1px 0 rgba(255,255,255,0.06)"
-                  }}
-                >
-                  <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)", filter: "blur(16px)", transform: "translate(30%, -30%)" }} />
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2.5" style={{ background: "rgba(16,185,129,0.15)", boxShadow: "0 0 16px rgba(16,185,129,0.3), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
-                    <Gift className="h-4 w-4 text-emerald-400" style={{ filter: "drop-shadow(0 0 4px rgba(16,185,129,0.8))" }} />
-                  </div>
-                  <p className="text-white text-xs font-black">Refer &amp; Earn</p>
-                  <p className="text-slate-500 text-[10px] mt-0.5">$5 per referral</p>
-                  <span className="mt-2 inline-flex items-center gap-0.5 text-[10px] font-bold" style={{ color: "#34d399", textShadow: "0 0 8px rgba(52,211,153,0.5)" }}>
-                    Invite Now <ChevronRight className="h-3 w-3" />
-                  </span>
-                </div>
-              </Link>
-            </div>
-
-
-
           </>
         )}
 
