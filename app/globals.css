@@ -3299,6 +3299,26 @@ button, a, [role="button"] {
   .elite-terminal-account-metric { display: none; }
   .elite-terminal-search { width: min(420px, 40vw); }
 }
+
+/* Laptop screens have less vertical room than desktop monitors. The inline
+   blotter height is intentionally overridden here so the chart and order panel
+   share the viewport without leaving an oversized blank lower area. */
+@media (min-width: 768px) and (max-height: 850px) {
+  .elite-terminal-header { height: 60px; flex-basis: 60px; padding-inline: 20px; }
+  .elite-terminal-platform { overflow: hidden; }
+  .reference-terminal .apple-terminal-blotter {
+    height: 112px !important;
+    min-height: 112px !important;
+  }
+  .reference-terminal .apple-terminal-blotter-tabs button {
+    padding: 8px 14px !important;
+    min-height: 34px;
+  }
+  .reference-terminal .apple-terminal-grid,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-order { min-height: 0 !important; }
+}
+
 @media (max-width: 767px) {
   html,
   body {
