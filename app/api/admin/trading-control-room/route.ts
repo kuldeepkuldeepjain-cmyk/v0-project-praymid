@@ -85,7 +85,7 @@ export async function GET() {
   FROM payment_submissions ORDER BY created_at DESC LIMIT 100
       `),
       query(`
-        SELECT id::text AS id, participant_email, legal_name, country, document_type, status, submitted_at, reviewed_at, reviewed_by
+        SELECT id::text AS id, participant_email, legal_name, country, document_type, document_number, document_front_url, document_back_url, selfie_url, status, rejection_reason, submitted_at, reviewed_at, reviewed_by
         FROM participant_kyc_verifications ORDER BY submitted_at DESC LIMIT 100
       `),
       query(`
