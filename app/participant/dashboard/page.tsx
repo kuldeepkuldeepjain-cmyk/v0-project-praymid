@@ -3,7 +3,7 @@
 // Participant dashboard v2
 import type React from "react"
 import { useEffect, useState, useCallback, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
@@ -1434,8 +1434,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   )
 }
 
-export default function DashboardHome() {
+  export default function DashboardHome() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1446,6 +1447,11 @@ export default function DashboardHome() {
   const [isTerminalSettingsOpen, setIsTerminalSettingsOpen] = useState(false)
   const [activeSettingsSection, setActiveSettingsSection] = useState("Account")
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
+
+  useEffect(() => {
+    if (searchParams.get("view") === "terminal") setActiveTab("trading")
+  }, [searchParams])
+
   const [participantData, setParticipantData] = useState<{
     wallet: string
     id?: string

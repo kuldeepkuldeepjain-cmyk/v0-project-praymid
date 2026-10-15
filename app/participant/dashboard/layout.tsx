@@ -16,8 +16,9 @@ export default function DashboardLayout({
   const navRef = useRef<HTMLDivElement>(null)
 
   const navItems = [
-    { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Terminal", shortLabel: "Trade", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
     { href: "/participant/dashboard", icon: Home, label: "Overview", shortLabel: "Home", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard?view=terminal", icon: TrendingUp, label: "Trading Terminal", shortLabel: "Terminal", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
+    { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Prediction", shortLabel: "Predict", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
     { href: "/participant/dashboard/profile", icon: User, label: "Profile", shortLabel: "Profile", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
     { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Add funds", shortLabel: "Fund", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
     { href: "/participant/dashboard/payout", icon: Wallet, label: "Payout", shortLabel: "Payout", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
