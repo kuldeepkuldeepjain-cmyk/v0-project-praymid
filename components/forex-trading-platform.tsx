@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────�������������───
+  // ── State ─────────────��────────────────────────────────────────────────���������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1323,7 +1323,10 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize]         = useState("0.01")
   const [leverage, setLeverage]       = useState("100")
-  const effectiveLeverage = Math.min(isFundedAccount ? (parseFloat(leverage) || 1) : (parseFloat(leverage) || 1), 100)
+  useEffect(() => {
+    if (isFundedAccount) setLeverage("1")
+  }, [isFundedAccount])
+  const effectiveLeverage = Math.min(isFundedAccount ? 1 : (parseFloat(leverage) || 1), 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -2263,8 +2266,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   const updateConfirmLeverage = (value: string) => {
     if (!tradeConfirm || !selectedPair) return
-    const maxLeverage = isFundedAccount ? 100 : 100
-    const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
+const maxLeverage = isFundedAccount ? 1 : 100
+  const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
     const margin = calcMargin(selectedPair.symbol, tradeConfirm.lotSize, tradeConfirm.price, nextLeverage)
     const cs = contractSize(selectedPair.symbol)
     const liqDist = margin / (tradeConfirm.lotSize * cs)
@@ -3659,7 +3662,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                   {isFundedAccount ? (
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
                       className="input-3d w-full price-mono text-sm font-black text-amber-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["1","10","25","50","75","100"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#fbbf24" }}>1:{l}</option>)}
+                      {["1"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#fbbf24" }}>1:{l}</option>)}
                     </select>
                   ) : (
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
@@ -4480,7 +4483,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                   <p className="mt-1 text-[9px] text-slate-400">Choose leverage before placing the order.</p>
                 </div>
                 <select id="confirm-leverage" value={tradeConfirm.leverage} onChange={(event) => updateConfirmLeverage(event.target.value)} disabled={confirmLoading} className="h-8 rounded-lg border border-amber-500/40 bg-slate-950 px-3 text-center font-mono text-sm font-bold text-amber-200 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30 disabled:opacity-40" aria-label="Trade leverage">
-                  {[1, 10, 25, 50, 75, 100].map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
+                  {(isFundedAccount ? [1] : [1, 10, 25, 50, 75, 100]).map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
                 </select>
               </div>
             </div>
