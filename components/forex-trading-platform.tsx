@@ -1297,15 +1297,15 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────�������───
+  // ── State ─────────────��────────────────────────────────────────────────���������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
   const [timeframe, setTimeframe]     = useState<TimeFrame>("5M")
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("200")
-  const effectiveLeverage = isFundedAccount ? 1 : parseFloat(leverage) || 1
+  const [leverage, setLeverage]       = useState("100")
+  const effectiveLeverage = Math.min(isFundedAccount ? (parseFloat(leverage) || 1) : (parseFloat(leverage) || 1), 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -3419,7 +3419,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   </div>
         </div>
         </div>
-        {/* ── RIGHT: Order Ticket ────────────────────��───────────────────────── */}
+        {/* ── RIGHT: Order Ticket ───────────��────────��───────────────────────── */}
         {rightPanelHidden ? (
           <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
@@ -3620,15 +3620,15 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                   </div>
                 </div>
 
-                {/* Funded accounts always reserve the full actual-price notional. */}
                 <div className="mb-2">
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
-                    {isFundedAccount ? "Actual Price Only" : "Leverage"}
+                    Leverage {isFundedAccount ? "(max 100x)" : ""}
                   </label>
                   {isFundedAccount ? (
-                    <div className="input-3d w-full price-mono text-sm font-black px-2.5 py-2" style={{ color: "#fbbf24" }}>
-                      No leverage · 1:1
-                    </div>
+                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
+                      className="input-3d w-full price-mono text-sm font-black text-amber-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
+                      {["1","10","25","50","75","100"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#fbbf24" }}>1:{l}</option>)}
+                    </select>
                   ) : (
                     <select value={leverage} onChange={e => setLeverage(e.target.value)}
                       className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
@@ -3690,7 +3690,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
                     { label: "Margin",    value: `$${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}`, color: "#f59e0b" },
                     { label: "Pip Value", value: `$${pipVal.toFixed(4)}`, color: "#22d3ee" },
                     { label: "Notional",  value: `$${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}`, color: "#a78bfa" },
-                    { label: isFundedAccount ? "Actual Price" : "Leverage", value: isFundedAccount ? "1:1" : `×${leverage}`, color: isFundedAccount ? "#fbbf24" : "#fb923c" },
+                    { label: "Leverage", value: `×${effectiveLeverage}`, color: isFundedAccount ? "#fbbf24" : "#fb923c" },
                   ].map(item => (
                     <div key={item.label} className="px-2 py-1.5" style={{ background: "#070a10", border: "1px solid #1a2640", borderRadius: 3 }}>
                       <p className="text-[8px] text-slate-700 mb-0.5 tracking-wider uppercase">{item.label}</p>

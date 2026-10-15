@@ -109,6 +109,9 @@ export async function POST(req: NextRequest) {
       if (!Number.isFinite(trade.lotSize) || trade.lotSize < 0.01) {
         return NextResponse.json({ success: false, error: "Funded accounts require a minimum lot size of 0.01" }, { status: 400 })
       }
+      if (!Number.isFinite(trade.leverage) || trade.leverage < 1 || trade.leverage > 100) {
+        return NextResponse.json({ success: false, error: "Funded accounts allow leverage up to 100x" }, { status: 400 })
+      }
       if (action === "open" && (!Number.isFinite(trade.margin) || trade.margin < 3000)) {
         return NextResponse.json({ success: false, error: "Funded accounts require a minimum order amount of 3000" }, { status: 400 })
       }
