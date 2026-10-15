@@ -8,45 +8,17 @@ export async function POST(req: Request) {
   const { messages, userEmail }: { messages: UIMessage[]; userEmail?: string } = await req.json()
   const db = getPool()!
 
-  const systemPrompt = `You are FlowChain AI Assistant, an advanced intelligent assistant for the FlowChain platform.
+  const systemPrompt = `You are EliteFund AI, the in-app assistant for the EliteFund Trading Terminal.
 
-FlowChain Platform Overview:
-- Contribution & Earnings platform with gamification elements
-- Users contribute funds and earn rewards through participation
-- Progress through ranks: Bronze → Silver → Gold → Platinum → Diamond
-- $100 activation fee required within 7 days of registration
+Your job is to help participants understand the terminal and their own account using simple, accurate language. Explain markets, demo trading, account verification, funding, withdrawals, security, fees, policies, and support. Never promise profits or imply trading is risk-free. Do not invent prices, balances, approvals, policies, or business credentials. If live data is unavailable, say so clearly. Encourage users to review risk before trading and to use demo mode first.
 
-Core Features:
-1. Contributions: Crypto (USDT BEP20) or Bank Transfer payments
-2. Withdrawals: Request payouts to wallet addresses (requires gas fee approval)
-3. Predictions: Trade crypto price movements (BTC, ETH, BNB, etc.) with 1-minute settlements
-4. Luck Wheel: Spin to win rewards (costs $5, prizes: $1-$100)
-5. Leaderboard: Track top contributors and earn rank badges
+You can use the real-time tools below. Only discuss account data returned for the signed-in participant. Never reveal another participant's information. Be concise, professional, and transparent.`
 
-Ranks & Benefits:
-- Bronze: Entry level (0-499 contributions)
-- Silver: 500-999 contributions
-- Gold: 1,000-2,499 contributions
-- Platinum: 2,500-4,999 contributions
-- Diamond: 5,000+ contributions (Elite status)
-
-Gas Fee System:
-- 100 USDT gas approval required before first withdrawal
-- One-time payment to cover blockchain transaction costs
-- Processed by admin within 24 hours
-
-Prediction Trading:
-- 60-second trades on crypto pairs
-- Long (UP) or Short (DOWN) positions
-- 1.9x payout multiplier on wins
-- Real-time price tracking with live charts
-
-Support & Help:
-- Submit tickets via dashboard
-- Response within 24 hours
-- Categories: Technical, Payment, Withdrawal, Account
-
-You have access to real-time platform data through tools. Use them to provide accurate, personalized assistance. Be professional, helpful, and concise.`
+  const signedInEmail = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : ""
+  const getAuthorizedEmail = (email: string) => {
+    const requestedEmail = email.trim().toLowerCase()
+    return signedInEmail && requestedEmail === signedInEmail ? requestedEmail : null
+  }
 
   const result = streamText({
     model: "openai/gpt-4o-mini",
@@ -79,9 +51,10 @@ You have access to real-time platform data through tools. Use them to provide ac
         description: "Get the top contributors on the leaderboard",
         inputSchema: z.object({ limit: z.number().default(5) }),
         execute: async ({ limit }) => {
+          const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 10)
           const { rows } = await db.query(
             "SELECT username, total_earnings, rank, total_referrals FROM participants ORDER BY total_earnings DESC LIMIT $1",
-            [limit]
+            [safeLimit]
           )
           return {
             topContributors: rows.map((p: any, idx: number) => ({
@@ -98,9 +71,11 @@ You have access to real-time platform data through tools. Use them to provide ac
         description: "Check a user's account balance and earnings",
         inputSchema: z.object({ email: z.string().email() }),
         execute: async ({ email }) => {
+          const authorizedEmail = getAuthorizedEmail(email)
+          if (!authorizedEmail) return { error: "You can only view your own account data." }
           const { rows } = await db.query(
-            "SELECT account_balance, bonus_balance, total_earnings, rank, total_referrals FROM participants WHERE email = $1",
-            [email]
+            "SELECT account_balance, bonus_balance, total_earnings, rank, total_referrals FROM participants WHERE LOWER(email) = $1",
+            [authorizedEmail]
           )
           const data = rows[0]
           if (!data) return { error: "User not found or unauthorized" }
@@ -117,9 +92,11 @@ You have access to real-time platform data through tools. Use them to provide ac
         description: "Get recent transaction history for a user",
         inputSchema: z.object({ email: z.string().email(), limit: z.number().default(5) }),
         execute: async ({ email, limit }) => {
+          const authorizedEmail = getAuthorizedEmail(email)
+          if (!authorizedEmail) return { error: "You can only view your own account data." }
           const { rows } = await db.query(
-            "SELECT type, amount, status, description, created_at FROM transactions WHERE participant_email = $1 ORDER BY created_at DESC LIMIT $2",
-            [email, limit]
+            "SELECT type, amount, status, description, created_at FROM transactions WHERE LOWER(participant_email) = $1 ORDER BY created_at DESC LIMIT $2",
+            [authorizedEmail, Math.min(Math.max(Math.floor(limit), 1), 20)]
           )
           return {
             transactions: rows.map((t: any) => ({
@@ -136,9 +113,11 @@ You have access to real-time platform data through tools. Use them to provide ac
         description: "Get active prediction trades for a user",
         inputSchema: z.object({ email: z.string().email() }),
         execute: async ({ email }) => {
+          const authorizedEmail = getAuthorizedEmail(email)
+          if (!authorizedEmail) return { error: "You can only view your own account data." }
           const { rows } = await db.query(
-            "SELECT crypto_pair, prediction_type, amount, entry_price, status, created_at FROM predictions WHERE participant_email = $1 AND status = 'pending' ORDER BY created_at DESC",
-            [email]
+            "SELECT crypto_pair, prediction_type, amount, entry_price, status, created_at FROM predictions WHERE LOWER(participant_email) = $1 AND status = 'pending' ORDER BY created_at DESC",
+            [authorizedEmail]
           )
           return {
             activePredictions: rows.map((p: any) => ({
