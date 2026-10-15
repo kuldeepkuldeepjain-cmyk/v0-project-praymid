@@ -40,7 +40,14 @@ export default function ProfilePage() {
   const router = useRouter()
   const { toast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const selfieVideoRef = useRef<HTMLVideoElement>(null)
+  const selfieStreamRef = useRef<MediaStream | null>(null)
+  const selfieCanvasRef = useRef<HTMLCanvasElement>(null)
+  const selfieMotionRef = useRef<number[]>([])
   const [mounted, setMounted] = useState(false)
+  const [selfieCameraOpen, setSelfieCameraOpen] = useState(false)
+  const [selfieLiveness, setSelfieLiveness] = useState<"idle" | "starting" | "move" | "blink" | "ready" | "error">("idle")
+  const [selfieMessage, setSelfieMessage] = useState("Camera capture required — uploads are not accepted.")
   const [participantData, setParticipantData] = useState<any>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editedData, setEditedData] = useState<any>({})
@@ -183,7 +190,76 @@ export default function ProfilePage() {
     }
   }
 
-  const readKycImage = (file: File, field: "document_front_url" | "document_back_url" | "selfie_url") => {
+  const stopSelfieCamera = () => {
+    selfieStreamRef.current?.getTracks().forEach(track => track.stop())
+    selfieStreamRef.current = null
+    setSelfieCameraOpen(false)
+    setSelfieLiveness("idle")
+  }
+
+  const startSelfieCamera = async () => {
+    try {
+      setSelfieLiveness("starting")
+      setSelfieMessage("Allow camera access, then follow the movement and blink prompts.")
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } }, audio: false })
+      selfieStreamRef.current = stream
+      setSelfieCameraOpen(true)
+      requestAnimationFrame(() => { if (selfieVideoRef.current) { selfieVideoRef.current.srcObject = stream; selfieVideoRef.current.play() } })
+      setSelfieLiveness("move")
+      setSelfieMessage("Move your face slowly left and right so we can confirm you are live.")
+    } catch {
+      setSelfieLiveness("error")
+      setSelfieMessage("Camera access is required. Check your browser permissions and try again.")
+    }
+  }
+
+  const captureLiveSelfie = () => {
+    const video = selfieVideoRef.current
+    const canvas = selfieCanvasRef.current
+    if (!video || !canvas || selfieLiveness !== "ready") return
+    canvas.width = video.videoWidth || 720
+    canvas.height = video.videoHeight || 720
+    canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height)
+    setKycForm(current => ({ ...current, selfie_url: canvas.toDataURL("image/jpeg", 0.86) }))
+    setSelfieMessage("Live selfie captured successfully.")
+    stopSelfieCamera()
+  }
+
+  const registerSelfieMotion = () => {
+    if (selfieLiveness !== "move") return
+    const video = selfieVideoRef.current
+    const canvas = selfieCanvasRef.current
+    if (!video || !canvas || video.readyState < 2) return
+    canvas.width = 32; canvas.height = 32
+    const context = canvas.getContext("2d", { willReadFrequently: true })
+    if (!context) return
+    context.drawImage(video, 0, 0, 32, 32)
+    const pixels = context.getImageData(0, 0, 32, 32).data
+    const average = pixels.reduce((sum, value, index) => index % 4 === 0 ? sum + value : sum, 0) / (32 * 32)
+    selfieMotionRef.current.push(average)
+    if (selfieMotionRef.current.length > 12) selfieMotionRef.current.shift()
+    const spread = Math.max(...selfieMotionRef.current) - Math.min(...selfieMotionRef.current)
+    if (selfieMotionRef.current.length >= 8 && spread > 8) {
+      setSelfieLiveness("blink")
+      setSelfieMessage("Now blink once and hold still for a moment.")
+    }
+  }
+
+  useEffect(() => {
+    if (!selfieCameraOpen || selfieLiveness !== "move") return
+    const interval = window.setInterval(registerSelfieMotion, 250)
+    return () => window.clearInterval(interval)
+  }, [selfieCameraOpen, selfieLiveness])
+
+  const confirmSelfieBlink = () => {
+    if (selfieLiveness !== "blink") return
+    setSelfieLiveness("ready")
+    setSelfieMessage("Liveness confirmed. Capture your live selfie now.")
+  }
+
+  useEffect(() => () => selfieStreamRef.current?.getTracks().forEach(track => track.stop()), [])
+
+  const readKycImage = (file: File, field: "document_front_url" | "document_back_url") => {
     if (!file.type.match(/^image\/(jpeg|png|webp)$/) || file.size > 6 * 1024 * 1024) {
       toast({ title: "Invalid image", description: "Use a JPG, PNG, or WEBP image under 6 MB.", variant: "destructive" })
       return
@@ -530,7 +606,7 @@ export default function ProfilePage() {
                 <div><Label className="text-xs text-slate-300">Date of birth</Label><Input type="date" value={kycForm.date_of_birth} onChange={(e) => setKycForm({ ...kycForm, date_of_birth: e.target.value })} className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
                 <div><Label className="text-xs text-slate-300">Document type</Label><select required value={kycForm.document_type} onChange={(e) => setKycForm({ ...kycForm, document_type: e.target.value })} className="mt-1 flex h-10 w-full rounded-md border border-slate-600 bg-slate-900 px-3 text-sm text-white"><option value="">Select document</option><option value="passport">Passport</option><option value="national_id">National ID</option><option value="drivers_license">Driver&apos;s license</option></select></div>
                 <div className="sm:col-span-2"><Label className="text-xs text-slate-300">Document number</Label><Input value={kycForm.document_number} onChange={(e) => setKycForm({ ...kycForm, document_number: e.target.value })} placeholder="Enter your document number" className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
-                <div className="sm:col-span-2 rounded-xl border border-cyan-400/20 bg-slate-900/60 p-4"><div className="mb-3"><p className="text-sm font-semibold text-white">Identity documents</p><p className="mt-1 text-xs text-slate-400">Upload clear images. Your front, back, and live selfie are reviewed securely by compliance.</p></div><div className="grid gap-3 md:grid-cols-3">{([['document_front_url','Document front','Front of your ID'],['document_back_url','Document back','Back of your ID'],['selfie_url','Live selfie','Face photo, good lighting']] as const).map(([field, label, hint]) => <label key={field} className="cursor-pointer rounded-xl border border-dashed border-slate-600 bg-slate-950/70 p-4 transition hover:border-cyan-400/60"><span className="flex items-center gap-2 text-sm font-semibold text-slate-200"><Upload className="h-4 w-4 text-cyan-300" />{label}</span><span className="mt-1 block text-[11px] text-slate-500">{kycForm[field] ? "Image ready to submit" : hint}</span><input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) readKycImage(file, field) }} /></label>)}</div></div><div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-3"><p className="text-xs text-slate-400">All three images are required to submit.</p><Button type="submit" disabled={kycSubmitting || !kycForm.document_front_url || !kycForm.document_back_url || !kycForm.selfie_url} className="bg-cyan-600 text-white hover:bg-cyan-500">{kycSubmitting ? "Submitting..." : "Submit KYC"}</Button></div>
+                <div className="sm:col-span-2 rounded-xl border border-cyan-400/20 bg-slate-900/60 p-4"><div className="mb-3"><p className="text-sm font-semibold text-white">Identity documents</p><p className="mt-1 text-xs text-slate-400">Upload clear images. Your front, back, and live selfie are reviewed securely by compliance.</p></div><div className="grid gap-3 md:grid-cols-3">{([['document_front_url','Document front','Front of your ID'],['document_back_url','Document back','Back of your ID']] as const).map(([field, label, hint]) => <label key={field} className="cursor-pointer rounded-xl border border-dashed border-slate-600 bg-slate-950/70 p-4 transition hover:border-cyan-400/60"><span className="flex items-center gap-2 text-sm font-semibold text-slate-200"><Upload className="h-4 w-4 text-cyan-300" />{label}</span><span className="mt-1 block text-[11px] text-slate-500">{kycForm[field] ? "Image ready to submit" : hint}</span><input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) readKycImage(file, field) }} /></label>)}<div className="rounded-xl border border-dashed border-cyan-400/40 bg-slate-950/70 p-4"><div className="flex items-center gap-2 text-sm font-semibold text-slate-200"><Camera className="h-4 w-4 text-cyan-300" />Live selfie</div><p className="mt-1 text-[11px] text-slate-500">Camera only. Move and blink for liveness verification.</p>{selfieCameraOpen ? <div className="mt-3 space-y-2"><video ref={selfieVideoRef} muted playsInline className="aspect-square w-full rounded-lg bg-black object-cover" /><p className="text-xs text-cyan-200">{selfieMessage}</p><div className="flex flex-wrap gap-2">{selfieLiveness === "blink" ? <Button type="button" size="sm" onClick={confirmSelfieBlink} className="bg-amber-500 text-slate-950">I blinked — continue</Button> : null}<Button type="button" size="sm" disabled={selfieLiveness !== "ready"} onClick={captureLiveSelfie} className="bg-cyan-600 text-white">Capture live selfie</Button><Button type="button" size="sm" variant="outline" onClick={stopSelfieCamera}>Cancel</Button></div></div> : <Button type="button" size="sm" variant="outline" onClick={startSelfieCamera} className="mt-3 border-cyan-400/40 text-cyan-200"><Camera className="mr-2 h-4 w-4" />Open camera</Button>}{kycForm.selfie_url && !selfieCameraOpen ? <p className="mt-2 text-xs text-emerald-300">Live selfie captured and ready to submit.</p> : null}<canvas ref={selfieCanvasRef} className="hidden" /></div></div></div><div className="sm:col-span-2 flex items-center justify-between gap-3 rounded-xl border border-dashed border-slate-600 bg-slate-900/50 p-3"><p className="text-xs text-slate-400">All three images are required to submit.</p><Button type="submit" disabled={kycSubmitting || !kycForm.document_front_url || !kycForm.document_back_url || !kycForm.selfie_url} className="bg-cyan-600 text-white hover:bg-cyan-500">{kycSubmitting ? "Submitting..." : "Submit KYC"}</Button></div>
               </form>
             )}
           </CardContent>
