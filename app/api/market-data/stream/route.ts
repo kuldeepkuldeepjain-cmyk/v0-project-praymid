@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       }
       controller.enqueue(encoder.encode(`: connected\n\n`))
       await send()
-      timer = setInterval(() => void send(), 3_000)
+      timer = setInterval(() => void send(), 1_000)
     },
     cancel() {
       closed = true

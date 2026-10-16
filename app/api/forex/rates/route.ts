@@ -120,20 +120,33 @@ async function fetchTwelveQuotes(pairs: string[]): Promise<Map<string, TwelveQuo
   const out = new Map<string, TwelveQuote>()
   const key = process.env.TWELVE_DATA_API_KEY
   if (!key || pairs.length === 0) return out
-  await Promise.all(pairs.map(async (pair) => {
-    try {
-      const response = await fetch(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(pair)}&apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), cache: "no-store" })
-      if (!response.ok) return
-      const json = await response.json()
-      const price = Number(json.close ?? json.price)
-      const open = Number(json.open)
-      const high = Number(json.high)
-      const low = Number(json.low)
+
+  try {
+    const requests = Object.fromEntries(pairs.map((pair, index) => [
+      `pair_${index}`,
+      { url: `/quote?symbol=${encodeURIComponent(pair)}&apikey=${encodeURIComponent(key)}` },
+    ]))
+    const response = await fetch("https://api.twelvedata.com/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(requests),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      cache: "no-store",
+    })
+    if (!response.ok) return out
+    const json = await response.json() as Record<string, Record<string, unknown>>
+    pairs.forEach((pair, index) => {
+      const quote = json[`pair_${index}`]
+      if (!quote || quote.status === "error") return
+      const price = Number(quote.close ?? quote.price)
+      const open = Number(quote.open)
+      const high = Number(quote.high)
+      const low = Number(quote.low)
       if ([price, open, high, low].every(Number.isFinite) && price > 0) {
-        out.set(pair, { price, open, high, low, change: Number(json.percent_change) || 0 })
+        out.set(pair, { price, open, high, low, change: Number(quote.percent_change) || 0 })
       }
-    } catch {}
-  }))
+    })
+  } catch {}
   return out
 }
 
