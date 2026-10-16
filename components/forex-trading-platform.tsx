@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
+import type { PointerEvent as ReactPointerEvent } from "react"
 import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
@@ -1340,6 +1341,29 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
+  const [marketPanelWidth, setMarketPanelWidth] = useState(256)
+  const [orderPanelWidth, setOrderPanelWidth] = useState(320)
+  const resizeRef = useRef<{ side: "market" | "order"; startX: number; startWidth: number } | null>(null)
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      const resize = resizeRef.current
+      if (!resize) return
+      if (resize.side === "market") setMarketPanelWidth(Math.max(208, Math.min(380, resize.startWidth + event.clientX - resize.startX)))
+      else setOrderPanelWidth(Math.max(280, Math.min(440, resize.startWidth - (event.clientX - resize.startX))))
+    }
+    const onPointerUp = () => { resizeRef.current = null; document.body.style.cursor = ""; document.body.style.userSelect = "" }
+    window.addEventListener("pointermove", onPointerMove)
+    window.addEventListener("pointerup", onPointerUp)
+    return () => { window.removeEventListener("pointermove", onPointerMove); window.removeEventListener("pointerup", onPointerUp) }
+  }, [])
+
+  const beginPanelResize = (side: "market" | "order", event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    resizeRef.current = { side, startX: event.clientX, startWidth: side === "market" ? marketPanelWidth : orderPanelWidth }
+    document.body.style.cursor = "col-resize"
+    document.body.style.userSelect = "none"
+  }
 
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
@@ -3027,7 +3051,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═���═��══������ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════������═���═��══������ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3146,7 +3170,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+          style={{ width: `min(${marketPanelWidth}px,100%)`, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -3303,6 +3327,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
           </div>
         </div>
+        {!chartExpanded && <div role="separator" aria-label="Resize Market Watch panel" onPointerDown={(event) => beginPanelResize("market", event)} className="terminal-resize-handle hidden lg:flex" />}
 
         {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
@@ -3488,8 +3513,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </button>
           </div>
         ) : (
+        <>
+        {!chartExpanded && <div role="separator" aria-label="Resize Order Panel" onPointerDown={(event) => beginPanelResize("order", event)} className="terminal-resize-handle hidden lg:flex" />}
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ width: "min(320px,100%)", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
+          style={{ width: `min(${orderPanelWidth}px,100%)`, borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3830,6 +3857,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
           )}
         </div>
+        </>
         )}
       </div>
 
