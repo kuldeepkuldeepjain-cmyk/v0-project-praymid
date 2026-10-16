@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next"
 
-const siteUrl = "https://www.elitefund.sbs"
+const siteUrl = "https://elitefund.sbs"
 
 const publicRoutes = [
   "",
