@@ -15,7 +15,6 @@ import {
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
-import { TradingViewAdvancedChart } from "@/components/tradingview-advanced-chart"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -355,7 +354,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────��────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────���────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1862,7 +1861,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [candleCache])
 
-  // ── Init ───────────────────────────────────────────────────────────────────
+  // ── Init ───────────────────────────────────────────────────────────────��───
   useEffect(() => {
   const init: ForexPair[] = PAIRS_CONFIG.map(p => {
   const seed = SEED_PRICES[p.symbol] ?? 0
@@ -3446,20 +3445,20 @@ const maxLeverage = isFundedAccount ? 1 : 100
   <button type="button" onClick={() => { setChartReloadKey((key) => key + 1); if (selectedPair) void fetchCandles(selectedPair.symbol, timeframe) }} className="rounded border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-bold uppercase tracking-wide text-cyan-300 transition-colors hover:bg-cyan-400/20">Retry feed</button>
   </div>
   }>
-    {chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" /> : <TradingChart
-      key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
-      candles={selectedPair.candles}
-      sym={selectedPair.symbol}
-      tf={timeframe}
-      openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-      onExpand={() => setChartExpanded(e => !e)}
-      isExpanded={chartExpanded}
-      onQuickTrade={quickTrade}
+<TradingChart
+  key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
+  candles={selectedPair.candles}
+  sym={selectedPair.symbol}
+  tf={timeframe}
+  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+  onExpand={() => setChartExpanded(e => !e)}
+  isExpanded={chartExpanded}
+  onQuickTrade={quickTrade}
       buyPrice={selectedPair.ask}
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-  />}
+  />
   </ErrorBoundary>
   ) : selectedPair && chartLayout === "grid" ? (
   <MiniChartGrid
