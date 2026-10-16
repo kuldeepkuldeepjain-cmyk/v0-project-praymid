@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────������������������───
+  // ── State ─────────────��────────────────────────────────────────────────��������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1637,7 +1637,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       await new Promise((resolve) => setTimeout(resolve, 400))
     }
     console.error("[v0] Trade persistence failed:", label, lastError)
-    showToast("error", `${label} could not be saved. Your screen is still updated; please refresh to reconcile.`)
+    showToast("error", `${label} could not be confirmed by the server. Refresh before placing another order.`)
     return false
   }, [showToast])
 
@@ -3029,7 +3029,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════���═══��══���═ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═══��══���═ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)

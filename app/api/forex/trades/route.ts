@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     const pending = rows.filter((r: any) => r.status === "pending").map(toPendingOrder)
     const closed = rows.filter((r: any) => r.status === "closed").map(toClosedTrade).slice(0, 100)
 
-    return NextResponse.json({ success: true, open, pending, closed })
+    return NextResponse.json({ success: true, open, pending, closed }, { headers: { "Cache-Control": "private, no-store" } })
   } catch (e: any) {
     return NextResponse.json({ success: false, error: e.message }, { status: 500 })
   }
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
     const db = getPool()
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
 
-    const participantRows = await db.query("SELECT id, account_frozen, is_frozen, account_type, funded_breach_status FROM participants WHERE email = $1", [participant_email])
+    const participantRows = await db.query("SELECT id, account_frozen, is_frozen, account_type, funded_breach_status FROM participants WHERE LOWER(email) = LOWER($1)", [participant_email])
     const participant = participantRows.rows[0]
     const participantId = participant?.id ?? null
     if ((action === "open" || action === "pending") && participant?.account_type === "funded") {
