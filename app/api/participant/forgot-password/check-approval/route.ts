@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     const emailKey = email.toLowerCase().trim()
 
-    // Check if admin has approved the password reset OTP
+    // Verify the password-reset OTP sent through the reset email route
     const rows = await query(
       `SELECT password_reset_otp, password_reset_otp_verified, password_reset_otp_created_at 
        FROM participants 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       const tenMinutes = 10 * 60 * 1000
 
       if (now - createdAt > tenMinutes) {
-        return NextResponse.json({ success: true, approved: false, message: "OTP has expired" })
+        return NextResponse.json({ success: false, approved: false, error: "This code has expired. Request a new reset code." }, { status: 400 })
       }
     }
 

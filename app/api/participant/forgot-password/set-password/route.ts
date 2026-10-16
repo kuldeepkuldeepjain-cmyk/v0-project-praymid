@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const emailKey = email.toLowerCase().trim()
 
-    // Check admin has approved the OTP
+    // Re-check the verified reset OTP and its expiry before changing the password.
     const checkRows = await query(
       `SELECT password_reset_otp, password_reset_otp_verified, password_reset_otp_created_at FROM participants WHERE email = $1`,
       [emailKey]
@@ -25,8 +25,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Account not found" }, { status: 404 })
     }
 
-    if (!checkRows[0].password_reset_otp_verified) {
-      return NextResponse.json({ error: "OTP not approved by admin yet" }, { status: 403 })
+    const resetRecord = checkRows[0]
+    if (!resetRecord.password_reset_otp_verified || String(otp || "").trim() !== String(resetRecord.password_reset_otp || "")) {
+      return NextResponse.json({ error: "Verify the password reset code first." }, { status: 403 })
+    }
+    if (!resetRecord.password_reset_otp_created_at || Date.now() - new Date(resetRecord.password_reset_otp_created_at).getTime() > 10 * 60 * 1000) {
+      return NextResponse.json({ error: "This reset code has expired. Request a new code." }, { status: 400 })
     }
 
     // Update password and clear OTP

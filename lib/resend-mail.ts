@@ -3,7 +3,26 @@ import { Resend } from "resend"
 const FROM = "Elite Fund <verify@elitefund.sbs>"
 
 export async function sendVerificationEmail(to: string, code: string) {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return { ok: false as const, status: 503, message: "Email service is not configured." }
 
+  const resend = new Resend(apiKey)
+  const result = await resend.emails.send(
+    {
+      from: FROM,
+      to: [to],
+      subject: "Verify your Elite Fund registration",
+      text: `Your Elite Fund registration verification code is ${code}. It expires in 15 minutes.`,
+      html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2>Verify your Elite Fund registration</h2><p>Use this code to complete your registration:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center">${code}</p><p>This code expires in 15 minutes.</p></div>`,
+    },
+    { idempotencyKey: `registration-verification/${to}/${code}` },
+  )
+
+  if (result.error) return { ok: false as const, status: 502, message: "The verification email could not be sent.", requestId: result.error.name }
+  return { ok: true as const, requestId: result.data?.id }
+}
+
+export async function sendPasswordResetEmail(to: string, code: string) {
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) return { ok: false as const, status: 503, message: "Email service is not configured." }
 
@@ -16,10 +35,10 @@ export async function sendVerificationEmail(to: string, code: string) {
       text: `Your Elite Fund password reset code is ${code}. It expires in 10 minutes. If you did not request a password reset, you can ignore this email.`,
       html: `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto"><h2>Reset your password</h2><p>Use this one-time code to reset your Elite Fund password:</p><p style="font-size:32px;font-weight:700;letter-spacing:8px;text-align:center">${code}</p><p>This code expires in 10 minutes and can only be used once.</p><p style="color:#64748b">If you did not request this, you can safely ignore this email.</p></div>`,
     },
-    { idempotencyKey: `registration-verification/${to}/${code}` },
+    { idempotencyKey: `password-reset/${to}/${code}` },
   )
 
-  if (result.error) return { ok: false as const, status: 502, message: "The verification email could not be sent.", requestId: result.error.name }
+  if (result.error) return { ok: false as const, status: 502, message: "The password reset email could not be sent.", requestId: result.error.name }
   return { ok: true as const, requestId: result.data?.id }
 }
 
