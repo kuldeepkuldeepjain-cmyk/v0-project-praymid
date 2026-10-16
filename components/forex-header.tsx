@@ -9,6 +9,7 @@ import {
   CircleDot,
   Clock,
   Globe,
+  Home,
   Layers,
   LifeBuoy,
   LineChart,
@@ -164,6 +165,18 @@ export function ForexHeader({
           </span>
           <span className="sr-only">Elite Fund Trading Terminal</span>
         </div>
+
+        <button
+          type="button"
+          onClick={() => { window.location.href = "/" }}
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          style={{ borderColor: "#21354d", background: "#0d1a2b" }}
+          aria-label="Return to home page"
+          title="Return to home page"
+        >
+          <Home className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Home</span>
+        </button>
 
         <div className="hidden shrink-0 items-center gap-1.5 lg:flex">
           <span className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-[9px] font-black uppercase tracking-wider" style={{ color: marketColor, borderColor: `${marketColor}55`, background: `${marketColor}12` }}><CircleDot className="h-3 w-3" />{marketStatus}</span>
