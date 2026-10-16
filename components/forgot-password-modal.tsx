@@ -83,10 +83,11 @@ export function ForgotPasswordModal({ open, onOpenChange }: ForgotPasswordModalP
         setStep("password")
         toast({ title: "Email verified", description: "Create a new password for your account." })
       } else {
-        toast({
-          title: "Waiting for Admin",
-          description: "Admin hasn't approved your OTP yet. Please try again in a moment.",
-        })
+      toast({
+        title: "Invalid reset code",
+        description: data.error || "Enter the six-digit code from your password reset email.",
+        variant: "destructive",
+      })
       }
     } catch (error) {
       toast({

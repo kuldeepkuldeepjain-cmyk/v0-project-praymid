@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
-import { sendVerificationEmail } from "@/lib/resend-mail"
+import { sendPasswordResetEmail } from "@/lib/resend-mail"
 
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       [otp, emailKey]
     )
 
-    const emailResult = await sendVerificationEmail(emailKey, otp)
+    const emailResult = await sendPasswordResetEmail(emailKey, otp)
     if (!emailResult.ok) {
       return NextResponse.json({ error: "We could not send the reset code. Please try again later." }, { status: emailResult.status })
     }
