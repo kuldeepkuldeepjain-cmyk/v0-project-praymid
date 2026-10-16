@@ -12,7 +12,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Participant ID is required" }, { status: 400 })
     }
 
-    const db = getPool()!
+    const db = getPool()
+    if (!db) {
+      return NextResponse.json({ error: "Database is unavailable. Please retry shortly." }, { status: 503 })
+    }
 
     // Admin deletion intentionally applies to every account state, including frozen participants.
     const res = await db.query("SELECT id, email FROM participants WHERE id = $1", [participantId])
@@ -35,12 +38,13 @@ export async function DELETE(request: NextRequest) {
          JOIN pg_class child ON child.oid = constraint_row.conrelid
          JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
          JOIN pg_attribute child_col ON child_col.attrelid = child.oid
-           AND child_col.attnum = constraint_row.conkey[1]
+           AND child_col.attnum = ANY(constraint_row.conkey)
          WHERE constraint_row.contype = 'f'
            AND parent_ns.nspname = 'public'
            AND parent.relname = 'participants'
            AND array_length(constraint_row.conkey, 1) = 1
-           AND child_ns.nspname = 'public'`,
+           AND child_ns.nspname = 'public'
+           AND child.relname <> 'participants'`,
       )
 
       let clearedRecords = 0
