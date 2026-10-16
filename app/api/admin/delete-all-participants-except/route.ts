@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
        JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
        JOIN pg_class child ON child.oid = constraint_row.conrelid
        JOIN pg_namespace child_ns ON child_ns.oid = child.relnamespace
-       JOIN pg_attribute child_col ON child_col.attrelid = child.oid AND child_col.attnum = constraint_row.conkey[1]
+       JOIN pg_attribute child_col ON child_col.attrelid = child.oid AND child_col.attnum = ANY(constraint_row.conkey)
        WHERE constraint_row.contype = 'f'
          AND parent_ns.nspname = 'public'
          AND parent.relname = 'participants'
@@ -84,9 +84,17 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {})
     console.error("[v0] Admin clear participants failed:", error)
+    const databaseError = error as { code?: string; constraint?: string; detail?: string }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to clear participant data. Please retry." },
-      { status: 500 },
+      {
+        error:
+          databaseError.code === "23503"
+            ? `Participant data is still linked by ${databaseError.constraint || "another record"}. Refresh and retry.`
+            : error instanceof Error
+              ? error.message
+              : "Unable to clear participant data. Please retry.",
+      },
+      { status: databaseError.code === "23503" ? 409 : 500 },
     )
   } finally {
     client.release()

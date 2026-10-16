@@ -120,10 +120,17 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Admin participant deletion failed:", error)
+    const databaseError = error as { code?: string; constraint?: string; detail?: string }
+    if (databaseError.code === "23503") {
+      return NextResponse.json(
+        { error: `Participant data is still linked by ${databaseError.constraint || "another record"}. Clear participation first, then retry deletion.` },
+        { status: 409 },
+      )
+    }
     const message = error instanceof Error ? error.message : "Unable to complete this account action"
     return NextResponse.json(
       { error: message.includes("dependencies") ? "Some participation records are still linked. Refresh the participant list and retry." : "Unable to complete this account action. Please retry." },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }
