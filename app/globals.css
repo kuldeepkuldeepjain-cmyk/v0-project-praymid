@@ -1458,7 +1458,7 @@ button, a, [role="button"] {
 }
 @media (max-width: 520px) {
   .apple-terminal-chart-column { min-height: 440px; }
-  .apple-terminal-market { max-height: 52dvh; }
+  .apple-terminal-market { min-height: 300px; max-height: 68dvh; overflow: auto; }
 }
 
 @keyframes terminal-scanline {
