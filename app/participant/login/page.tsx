@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -54,44 +54,6 @@ export default function ParticipantLoginPage() {
   const [forgotPasswordOpen, setForgotPasswordOpen] = useState(false)
   const [loginMode, setLoginMode]                   = useState<"email" | "mobile">("email")
   const [credentialMode, setCredentialMode]         = useState<"password" | "pin">("password")
-
-  const completeGoogleLogin = async (credential: string) => {
-    setLoading(true)
-    try {
-      const response = await fetch("/api/auth/participant-google-one-tap", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ credential }) })
-      const data = await response.json()
-      if (!response.ok || !data.success) throw new Error(data.error || "Google sign-in failed")
-      const participantData = { id: data.participantId, participantId: data.participantId, email: data.email, username: data.username, name: data.name, walletAddress: data.walletAddress, activation_fee_paid: data.activation_fee_paid, contribution_approved: data.contribution_approved, bep20_address: data.bep20_address, contributed_amount: 0, wallet_balance: data.wallet_balance, account_balance: data.account_balance, bonus_balance: data.bonus_balance, participation_count: 0, referral_count: 0, referral_earnings: 0, referral_code: data.referral_code || "", status: data.status || "active", is_active: data.is_active !== false, is_frozen: data.is_frozen, account_type: data.account_type, created_at: data.created_at, pinConfigured: false }
-      setParticipantAuth(data.participantId, data.walletAddress || data.bep20_address || "", data.email, data.username, data.name, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
-      localStorage.setItem("participantData", JSON.stringify(participantData))
-      window.location.href = "/participant/dashboard"
-    } catch (error) {
-      toast({ title: "Google sign-in failed", description: error instanceof Error ? error.message : "Please use email and password.", variant: "destructive" })
-    } finally { setLoading(false) }
-  }
-
-  useEffect(() => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    const isEmbeddedPreview = typeof window !== "undefined" && (window.self !== window.top || process.env.NEXT_PUBLIC_VERCEL_ENV === "preview")
-    if (!clientId || isEmbeddedPreview) return
-    const setup = () => {
-      const google = (window as any).google
-      if (!google?.accounts?.id) return
-      google.accounts.id.initialize({ client_id: clientId, callback: (response: { credential: string }) => void completeGoogleLogin(response.credential), auto_select: false, cancel_on_tap_outside: true })
-      google.accounts.id.prompt()
-      const button = document.getElementById("google-one-tap-button")
-      if (button) google.accounts.id.renderButton(button, { theme: "outline", size: "large", width: 360, text: "continue_with" })
-    }
-    if ((window as any).google?.accounts?.id) setup()
-    else {
-      const script = document.createElement("script")
-      script.src = "https://accounts.google.com/gsi/client"
-      script.async = true
-      script.onload = setup
-      script.onerror = () => script.remove()
-      document.head.appendChild(script)
-    }
-  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -447,15 +409,7 @@ export default function ParticipantLoginPage() {
                 </form>
               )}
 
-  {/* Google One Tap / Sign in with Google */}
-  {process.env.NEXT_PUBLIC_VERCEL_ENV !== "preview" && <div id="google-one-tap-button" className="flex min-h-10 justify-center" aria-label="Continue with Google" />}
 
-  {/* Divider */}
-  <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-slate-800" />
-                <span className="text-xs text-slate-600">or</span>
-                <div className="flex-1 h-px bg-slate-800" />
-              </div>
 
               {/* Register link */}
               <p className="text-center text-sm text-slate-500">
