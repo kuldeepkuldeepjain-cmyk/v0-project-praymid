@@ -4,6 +4,7 @@ import WebSocket from "ws"
 export const runtime = "nodejs"
 
 const TIINGO_SYMBOLS = ["eurusd", "gbpusd", "usdjpy", "usdchf", "audusd", "usdcad", "nzdusd", "eurgbp", "euraud", "eurchf", "gbpjpy", "xauusd"]
+const TIINGO_CRYPTO_SYMBOLS = ["btcusd", "ethusd", "bnbusd"]
 
 type LiveRate = { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }
 type RatesPayload = { rates: Record<string, LiveRate>; sources?: Record<string, string>; ts?: number; source?: string; provider?: string; refreshIntervalSeconds?: number }
@@ -13,14 +14,23 @@ function pairForTicker(ticker: string) {
   return normalized.length === 6 ? `${normalized.slice(0, 3).toUpperCase()}/${normalized.slice(3).toUpperCase()}` : null
 }
 
-function applyTiingoTick(payload: RatesPayload, message: unknown) {
-  if (!Array.isArray(message) || message[0] !== "A" || typeof message[2] !== "string") return false
+function applyTiingoTick(payload: RatesPayload, message: unknown, market: "fx" | "crypto") {
+  if (!Array.isArray(message) || typeof message[2] !== "string") return false
+  const event = message[0]
   const pair = pairForTicker(message[2])
-  const bid = Number(message[4])
-  const ask = Number(message[6])
-  if (!pair || !Number.isFinite(bid) || !Number.isFinite(ask) || bid <= 0 || ask <= 0) return false
+  if (!pair) return false
+
   const previous = payload.rates[pair]
-  const mid = (bid + ask) / 2
+  let bid = Number(message[4])
+  let ask = Number(message[6])
+  if (market === "crypto" && event === "T") {
+    const trade = Number(message[4])
+    bid = previous?.bid ?? trade
+    ask = previous?.ask ?? trade
+  }
+  if ((event !== "A" && event !== "T") || !Number.isFinite(bid) || !Number.isFinite(ask) || bid <= 0 || ask <= 0) return false
+
+  const mid = market === "crypto" && event === "T" ? bid : (bid + ask) / 2
   payload.rates[pair] = {
     bid,
     ask,
@@ -33,7 +43,7 @@ function applyTiingoTick(payload: RatesPayload, message: unknown) {
   payload.sources = { ...payload.sources, [pair]: "tiingo" }
   payload.ts = Date.now()
   payload.source = "live-tiingo-websocket"
-  payload.provider = "Tiingo FX WebSocket top-of-book"
+  payload.provider = market === "crypto" ? "Tiingo Crypto WebSocket top-of-book and last trade" : "Tiingo FX WebSocket top-of-book"
   return true
 }
 
@@ -42,6 +52,7 @@ export async function GET(request: NextRequest) {
   let closed = false
   let fallbackTimer: ReturnType<typeof setInterval> | undefined
   let tiingoSocket: WebSocket | undefined
+  let tiingoCryptoSocket: WebSocket | undefined
   let payload: RatesPayload = { rates: {} }
 
   const stream = new ReadableStream<Uint8Array>({
@@ -75,13 +86,29 @@ export async function GET(request: NextRequest) {
         tiingoSocket.on("message", (raw) => {
           try {
             const message = JSON.parse(raw.toString()) as unknown
-            if (applyTiingoTick(payload, message)) send("rates", payload)
+            if (applyTiingoTick(payload, message, "fx")) send("rates", payload)
           } catch {
             // Ignore malformed provider packets.
           }
         })
         tiingoSocket.on("close", () => { if (!closed) send("status", { status: "reconnecting", provider: "Tiingo FX WebSocket", ts: Date.now() }) })
         tiingoSocket.on("error", () => { if (!closed) send("status", { status: "fallback", provider: "REST fallback", ts: Date.now() }) })
+
+        tiingoCryptoSocket = new WebSocket("wss://api.tiingo.com/crypto")
+        tiingoCryptoSocket.on("open", () => {
+          tiingoCryptoSocket?.send(JSON.stringify({ eventName: "subscribe", authorization: token, eventData: { thresholdLevel: 5, tickers: TIINGO_CRYPTO_SYMBOLS } }))
+          send("status", { status: "connected", provider: "Tiingo Crypto WebSocket", ts: Date.now() })
+        })
+        tiingoCryptoSocket.on("message", (raw) => {
+          try {
+            const message = JSON.parse(raw.toString()) as unknown
+            if (applyTiingoTick(payload, message, "crypto")) send("rates", payload)
+          } catch {
+            // Ignore malformed provider packets without interrupting FX updates.
+          }
+        })
+        tiingoCryptoSocket.on("close", () => { if (!closed) send("status", { status: "reconnecting", provider: "Tiingo Crypto WebSocket", ts: Date.now() }) })
+        tiingoCryptoSocket.on("error", () => { if (!closed) send("status", { status: "fallback", provider: "Tiingo Crypto REST fallback", ts: Date.now() }) })
       }
       fallbackTimer = setInterval(() => { if (!tiingoSocket || tiingoSocket.readyState !== WebSocket.OPEN) void refreshFallback() }, 1_000)
     },
@@ -89,6 +116,7 @@ export async function GET(request: NextRequest) {
       closed = true
       if (fallbackTimer) clearInterval(fallbackTimer)
       tiingoSocket?.close()
+      tiingoCryptoSocket?.close()
     },
   })
 
