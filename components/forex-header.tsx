@@ -154,8 +154,8 @@ export function ForexHeader({
       <div className="terminal-toolbar-row flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
         <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
           <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-A7KakQah7xwcxtqtqlfe43SgNoWIkP.png"
-            onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
+src="/elite-fund-logo.jpg"
+                onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
             alt="Elite Fund — Trade Higher"
             className="terminal-brand-logo"
           />

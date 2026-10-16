@@ -1340,6 +1340,19 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
+
+  useEffect(() => {
+    const handleSidebarShortcut = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== "o" || !event.ctrlKey || !event.shiftKey || event.metaKey || event.altKey) return
+      const target = event.target as HTMLElement | null
+      if (target?.closest("input, textarea, select, [contenteditable=\"true\"]")) return
+      event.preventDefault()
+      setRightPanelHidden(value => !value)
+    }
+    window.addEventListener("keydown", handleSidebarShortcut)
+    return () => window.removeEventListener("keydown", handleSidebarShortcut)
+  }, [])
+
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
@@ -3026,7 +3039,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═══��══���═ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═══��══������ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3479,8 +3492,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(false)}
-              aria-label="Show trading sidebar"
-              title="Show trading sidebar"
+              aria-label="Show trading sidebar (Ctrl+Shift+O)"
+              title="Show trading sidebar (Ctrl+Shift+O)"
               className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -3510,8 +3523,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(true)}
-              aria-label="Hide trading sidebar"
-              title="Hide trading sidebar"
+              aria-label="Hide trading sidebar (Ctrl+Shift+O)"
+              title="Hide trading sidebar (Ctrl+Shift+O)"
               className="px-2 text-slate-500 transition-colors hover:text-cyan-400"
             >
               <ChevronRight className="h-3.5 w-3.5" />
