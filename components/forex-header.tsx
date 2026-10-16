@@ -46,6 +46,8 @@ interface ForexHeaderProps {
   onToggleTheme: () => void
   theme: "dark" | "light"
   onToggleWatchlist: () => void
+  onToggleSidebar: () => void
+  sidebarOpen: boolean
   onOpenDeposit: () => void
   onOpenWithdraw: () => void
   onOpenTransfer: () => void
@@ -100,6 +102,8 @@ export function ForexHeader({
   onToggleTheme,
   theme,
   onToggleWatchlist,
+  onToggleSidebar,
+  sidebarOpen,
   onOpenDeposit,
   onOpenWithdraw,
   onOpenTransfer,
@@ -154,8 +158,8 @@ export function ForexHeader({
       <div className="terminal-toolbar-row flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
         <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
           <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-A7KakQah7xwcxtqtqlfe43SgNoWIkP.png"
-            onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
+src="/elite-fund-logo.jpg"
+                onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
             alt="Elite Fund — Trade Higher"
             className="terminal-brand-logo"
           />
@@ -168,11 +172,11 @@ export function ForexHeader({
 
         <button
           type="button"
-          onClick={() => { window.location.href = "/" }}
+          onClick={() => { window.location.assign("/participant/dashboard") }}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
           style={{ borderColor: "#21354d", background: "#0d1a2b" }}
-          aria-label="Return to home page"
-          title="Return to home page"
+          aria-label="Return to participant welcome home"
+          title="Return to participant welcome home"
         >
           <Home className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Home</span>
@@ -221,7 +225,7 @@ export function ForexHeader({
         </div>
 
         <div className="relative">
-          <button type="button" onClick={() => { setMenuOpen((value) => !value); setSearchOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={menuOpen} className="terminal-icon-button" aria-label={menuOpen ? "Close terminal menu" : "Open terminal menu"}><Menu className="h-4 w-4" /></button>
+          <button type="button" onClick={() => { onToggleSidebar(); setMenuOpen(false); setSearchOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={sidebarOpen} className="terminal-icon-button" aria-label={sidebarOpen ? "Close market watch sidebar" : "Open market watch sidebar"} title={sidebarOpen ? "Close market watch sidebar" : "Open market watch sidebar"}><Menu className="h-4 w-4" /></button>
           {menuOpen && <div className="absolute right-0 top-full z-50 mt-2 max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-1rem))] overflow-y-auto rounded-lg border p-1.5 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}>
             {menuItems.map((item) => <button key={item.id} type="button" onClick={() => navigateFromMenu(item.id)} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
             <div className="my-1 border-t" style={{ borderColor: "#1b2b40" }} />

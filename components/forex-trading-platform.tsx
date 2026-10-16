@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────��������������������───
+  // ── State ─────────────��────────────────────────────────────────────────����������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1340,6 +1340,20 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
+  const [marketWatchOpen, setMarketWatchOpen] = useState(true)
+
+  useEffect(() => {
+    const handleSidebarShortcut = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() !== "o" || !event.ctrlKey || !event.shiftKey || event.metaKey || event.altKey) return
+      const target = event.target as HTMLElement | null
+      if (target?.closest("input, textarea, select, [contenteditable=\"true\"]")) return
+      event.preventDefault()
+      setRightPanelHidden(value => !value)
+    }
+    window.addEventListener("keydown", handleSidebarShortcut)
+    return () => window.removeEventListener("keydown", handleSidebarShortcut)
+  }, [])
+
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
@@ -1857,7 +1871,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Re-fetch candles when pair/TF changes ─────────────���────������──────────�����������────
+  // ── Re-fetch candles when pair/TF changes ──��──────────���────������──────────�����������────
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2938,6 +2952,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
   onToggleWatchlist={() => setMobileTab("market")}
+  onToggleSidebar={() => setMarketWatchOpen((value) => !value)}
+  sidebarOpen={marketWatchOpen}
   onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
         onOpenWithdraw={() => { window.location.assign("/participant/dashboard/payout") }}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
@@ -3026,7 +3042,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═══��══���═ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═══��══������ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3144,7 +3160,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
-        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${marketWatchOpen && (mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden")}`}
           style={{ width: "min(256px,100%)", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3479,8 +3495,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(false)}
-              aria-label="Show trading sidebar"
-              title="Show trading sidebar"
+              aria-label="Show trading sidebar (Ctrl+Shift+O)"
+              title="Show trading sidebar (Ctrl+Shift+O)"
               className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -3510,8 +3526,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(true)}
-              aria-label="Hide trading sidebar"
-              title="Hide trading sidebar"
+              aria-label="Hide trading sidebar (Ctrl+Shift+O)"
+              title="Hide trading sidebar (Ctrl+Shift+O)"
               className="px-2 text-slate-500 transition-colors hover:text-cyan-400"
             >
               <ChevronRight className="h-3.5 w-3.5" />
