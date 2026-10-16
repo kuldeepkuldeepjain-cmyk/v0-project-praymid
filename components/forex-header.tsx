@@ -168,7 +168,7 @@ src="/elite-fund-logo.jpg"
 
         <button
           type="button"
-          onClick={() => { window.location.href = "/" }}
+          onClick={() => { window.location.href = "/participant/dashboard" }}
           className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
           style={{ borderColor: "#21354d", background: "#0d1a2b" }}
           aria-label="Return to home page"
