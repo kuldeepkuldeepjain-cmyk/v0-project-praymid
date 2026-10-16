@@ -512,13 +512,11 @@ function PredictPageContent() {
 
         {/* Low-liquidity warning — shown when Forex tab is active or forex assets are visible */}
         {(assetFilter === "forex" || assetFilter === "all") && (
-          <div className="mb-3 sm:mb-4 flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3 text-amber-900 shadow-sm">
-            <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-            <p className="text-xs leading-relaxed">
-              <span className="font-bold">Low Liquidity Warning:</span> Forex pairs move slowly and may show no movement during short timeframes. If no price change is detected when your trade closes, your bet amount will be automatically refunded to your wallet — no profit, no loss. Consider trading crypto or commodity pairs for more reliable results.
-            </p>
+          <div className="mb-3 overflow-hidden rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900 shadow-sm" role="status" aria-label="Market liquidity notice">
+            <div className="ticker-tape flex min-w-max items-center gap-12 whitespace-nowrap text-xs font-medium">
+              <span>Forex may be slow: unchanged prices are refunded. Crypto and commodities may move more reliably.</span>
+              <span aria-hidden="true">Forex may be slow: unchanged prices are refunded. Crypto and commodities may move more reliably.</span>
+            </div>
           </div>
         )}
 
