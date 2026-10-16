@@ -28,6 +28,26 @@ function cryptoCoinbaseProduct(pair: string): string | null {
   return `${base}-USD`
 }
 
+async function fetchTiingoCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
+  const token = process.env.TIINGO_API_KEY
+  const resampleFreq = TIINGO_INTERVALS[tf]
+  const [base, quote] = pair.split("/")
+  if (!token || !resampleFreq || !base || !quote) throw new Error("Tiingo crypto candles unavailable")
+  const ticker = `${base.toLowerCase()}${quote.toLowerCase()}`
+  const end = new Date()
+  const start = new Date(end.getTime() - (TF_SECONDS[tf] ?? 60) * 180 * 1000)
+  const response = await fetch(`https://api.tiingo.com/tiingo/crypto/prices?tickers=${encodeURIComponent(ticker)}&startDate=${encodeURIComponent(start.toISOString())}&endDate=${encodeURIComponent(end.toISOString())}&resampleFreq=${encodeURIComponent(resampleFreq)}&token=${encodeURIComponent(token)}`, { headers: { accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(8000) })
+  if (!response.ok) throw new Error(`Tiingo crypto candles HTTP ${response.status}`)
+  const json = await response.json()
+  const rows = Array.isArray(json) ? (Array.isArray(json[0]?.priceData) ? json[0].priceData : json) : []
+  if (rows.length === 0) throw new Error("Tiingo returned no crypto candles")
+  return rows.map((row: Record<string, unknown>) => {
+    const ts = Math.floor(new Date(String(row.date ?? row.timestamp)).getTime() / 1000)
+    const open = Number(row.open), high = Number(row.high), low = Number(row.low), close = Number(row.close)
+    return { time: fmtTime(ts, tf), ts, open, high, low, close, volume: Number(row.volume) || 0 }
+  }).filter((c: { ts: number; open: number; high: number; low: number; close: number }) => Number.isFinite(c.ts) && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
+}
+
 async function fetchCoinbaseCryptoCandles(pair: string, tf: string): Promise<unknown[]> {
   const product = cryptoCoinbaseProduct(pair)
   const type = KUCOIN_INTERVALS[tf]
@@ -82,6 +102,26 @@ function aggregateCandles(candles: OhlcCandle[], timeframe: string): OhlcCandle[
 }
 
 const TWELVE_INTERVALS: Record<string, string> = { "1M": "1min", "5M": "5min", "15M": "15min", "1H": "1h", "4H": "4h" }
+const TIINGO_INTERVALS: Record<string, string> = { "1M": "1min", "5M": "5min", "15M": "15min", "1H": "1hour", "4H": "4hour", "1D": "1day", "1W": "1week" }
+
+async function fetchTiingoMarketCandles(pair: string, tf: string): Promise<unknown[]> {
+  const token = process.env.TIINGO_API_KEY
+  const resampleFreq = TIINGO_INTERVALS[tf]
+  if (!token || !resampleFreq) throw new Error("Tiingo candles unavailable for this timeframe")
+  const ticker = pair.replace("/", "").toLowerCase()
+  const end = new Date()
+  const start = new Date(end.getTime() - (TF_SECONDS[tf] ?? 60) * 180 * 1000)
+  const response = await fetch(`https://api.tiingo.com/tiingo/fx/${encodeURIComponent(ticker)}/prices?startDate=${encodeURIComponent(start.toISOString())}&endDate=${encodeURIComponent(end.toISOString())}&resampleFreq=${encodeURIComponent(resampleFreq)}&token=${encodeURIComponent(token)}`, { headers: { accept: "application/json" }, cache: "no-store", signal: AbortSignal.timeout(8000) })
+  if (!response.ok) throw new Error(`Tiingo candles HTTP ${response.status}`)
+  const json = await response.json()
+  if (!Array.isArray(json) || json.length === 0) throw new Error("Tiingo returned no candles")
+  const d = dec(pair)
+  return json.map((row: Record<string, unknown>) => {
+    const ts = Math.floor(new Date(String(row.date)).getTime() / 1000)
+    const open = Number(row.openPrice), high = Number(row.highPrice), low = Number(row.lowPrice), close = Number(row.closePrice)
+    return { time: fmtTime(ts, tf), open: Number(open.toFixed(d)), high: Number(high.toFixed(d)), low: Number(low.toFixed(d)), close: Number(close.toFixed(d)), volume: 0, ts }
+  }).filter((c: { ts: number; open: number; high: number; low: number; close: number }) => Number.isFinite(c.ts) && [c.open, c.high, c.low, c.close].every(Number.isFinite) && c.open > 0 && c.high >= c.low)
+}
 
 async function fetchTwelveMarketCandles(pair: string, tf: string): Promise<unknown[]> {
   const key = process.env.TWELVE_DATA_API_KEY
@@ -166,6 +206,16 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    if (!cryptoSymbol && process.env.TIINGO_API_KEY && TIINGO_INTERVALS[tf]) {
+      try {
+        const candles = await fetchTiingoMarketCandles(pair, tf)
+        if (candles.length === 0) throw new Error("No usable Tiingo candles")
+        candleCache.set(cacheKey, { candles, ts: now })
+        return NextResponse.json({ candles, source: "live-tiingo", provider: "Tiingo FX", marketDataType: "live-forex", ts: now })
+      } catch {
+        // Continue to Twelve Data/Yahoo fallbacks if Tiingo is unavailable.
+      }
+    }
     if (process.env.TWELVE_DATA_API_KEY && TWELVE_INTERVALS[tf]) {
       try {
         const candles = await fetchTwelveMarketCandles(pair, tf)
@@ -175,6 +225,17 @@ export async function GET(req: NextRequest) {
       } catch {
         // Continue to the existing Yahoo historical adapter for Forex.
         // Twelve Data quota/provider errors must not leave the chart empty.
+      }
+    }
+    if (cryptoSymbol && process.env.TIINGO_API_KEY && TIINGO_INTERVALS[tf]) {
+      try {
+        const candles = await fetchTiingoCryptoCandles(pair, tf)
+        if (candles.length > 0) {
+          candleCache.set(cacheKey, { candles, ts: now })
+          return NextResponse.json({ candles, source: "live-tiingo", provider: "Tiingo Crypto", marketDataType: "live-crypto", ts: now })
+        }
+      } catch {
+        // Continue to Coinbase if Tiingo crypto history is unavailable.
       }
     }
     if (cryptoSymbol) {
