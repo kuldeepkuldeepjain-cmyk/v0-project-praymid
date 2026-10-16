@@ -33,6 +33,11 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
+    const isEmbeddedPreview = window.self !== window.top || process.env.NEXT_PUBLIC_VERCEL_ENV === "preview"
+    if (isEmbeddedPreview) {
+      container.replaceChildren()
+      return
+    }
     container.replaceChildren()
 
     const widget = document.createElement("div")
@@ -75,7 +80,9 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
         </div>
         <span className="text-[10px] text-slate-500">{tradingViewSymbol}</span>
       </div>
-      <div ref={containerRef} className="tradingview-widget-container" style={{ height, width: "100%" }} />
+      <div ref={containerRef} className="tradingview-widget-container flex items-center justify-center" style={{ height, width: "100%" }}>
+        <p className="px-6 text-center text-xs text-slate-500">Reference chart unavailable in embedded preview. Live prices continue through EliteFund market data.</p>
+      </div>
     </section>
   )
 }
