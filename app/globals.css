@@ -1419,9 +1419,6 @@ button, a, [role="button"] {
   background: #070b13;
 }
   .apple-terminal-chart-column { min-width: 0; min-height: 0; overflow: hidden; }
-  @media (min-width: 841px) {
-  .apple-terminal-grid.market-watch-closed { grid-template-columns: minmax(0, 1fr) minmax(292px, 320px); }
-  }
   .chart-header { gap: 8px; }
 .chart-header-market { min-height: 34px; }
 .chart-timeframe-toolbar { min-height: 34px; padding-top: 2px; }
