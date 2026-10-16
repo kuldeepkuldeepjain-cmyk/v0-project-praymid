@@ -1742,18 +1742,12 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
       && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
     const now = Date.now()
-    if (now - lastUiUpdateRef.current >= 500) {
-      lastUiUpdateRef.current = now
-      setOnline(selectedRateIsValid)
-      setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
-      setLastUpdated(new Date(now))
-    }
-    if (freshRateSymbolsRef.current.size > 0 && !tickUpdateScheduledRef.current) {
-      tickUpdateScheduledRef.current = true
-      window.setTimeout(() => {
-        tickUpdateScheduledRef.current = false
-        setTickCount((count) => count + 1)
-      }, 100)
+    lastUiUpdateRef.current = now
+    setOnline(selectedRateIsValid)
+    setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
+    setLastUpdated(new Date(now))
+    if (freshRateSymbolsRef.current.size > 0) {
+      setTickCount((count) => count + 1)
     }
   }, [hasFreshRate])
 
@@ -2536,7 +2530,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     if (soundEnabled) playTerminalSound("breakeven")
   }, [persistModify, soundEnabled])
 
-  // ── Funded account breach ───────��────���─────────────────────────────────────
+  // ── Funded account breach ───────��────���───────────────────────���─────────────
   // When the drawdown limit is breached, every open position is force-closed
   // (booking whatever loss/gain it currently holds), the account is frozen,
   // and the trader is shown a clear breach notice.
