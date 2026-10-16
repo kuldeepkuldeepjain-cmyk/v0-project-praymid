@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────������������������������───
+  // ── State ─────────────��────────────────────────────────────────────────��������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -2952,7 +2952,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
   onToggleWatchlist={() => setMobileTab("market")}
-  onToggleSidebar={() => setMarketWatchOpen((value) => !value)}
+  onToggleSidebar={() => setMarketWatchOpen((value) => {
+    const nextOpen = !value
+    if (nextOpen && isCompactViewport) setMobileTab("market")
+    return nextOpen
+  })}
   sidebarOpen={marketWatchOpen}
   onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
         onOpenWithdraw={() => { window.location.assign("/participant/dashboard/payout") }}
