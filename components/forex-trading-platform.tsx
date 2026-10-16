@@ -355,7 +355,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��─────────────────────────────────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────��────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1890,7 +1890,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       // Refresh the 1-minute history frequently enough to pick up the next
       // server candle while live ticks keep the active candle moving between
       // snapshots. Wider frames stay on lighter polling intervals.
-      "1M": 2_000, "5M": 5_000, "15M": 15_000, "30M": 30_000, "1H": 60_000, "4H": 120_000, "1D": 300_000, "1W": 900_000,
+      "1M": 1_000, "5M": 3_000, "15M": 15_000, "30M": 30_000, "1H": 60_000, "4H": 120_000, "1D": 300_000, "1W": 900_000,
     }
   const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
   const retry = () => { void fetchCandles(selectedPair.symbol, timeframe) }
@@ -3165,7 +3165,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         ))}
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════════════���═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════════════�����═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}

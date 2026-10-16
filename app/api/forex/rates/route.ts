@@ -7,8 +7,8 @@ let cache: {
   sources: Record<string, "twelve-data" | "yahoo" | "gold-api" | "stale-cache">
   ts: number
 } | null = null
-const LIVE_REFRESH_INTERVAL_MS = 3000
-const CACHE_TTL_MS = LIVE_REFRESH_INTERVAL_MS // refresh every 3s max
+const LIVE_REFRESH_INTERVAL_MS = 1000
+const CACHE_TTL_MS = LIVE_REFRESH_INTERVAL_MS // refresh once per second max to protect upstream providers
 const UPSTREAM_TIMEOUT_MS = 4000 // bound each provider request so live quote refreshes recover quickly
 
 type RateRow = { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }

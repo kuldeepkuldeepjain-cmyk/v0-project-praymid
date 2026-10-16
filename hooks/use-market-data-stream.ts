@@ -67,10 +67,10 @@ export function useMarketDataStream(
         await fallbackFetch()
         if (!disposed && (!eventSource || eventSource.readyState === EventSource.CLOSED)) {
           setStatus("fallback")
-          fallbackTimer = window.setTimeout(() => void poll(), 2000)
+          fallbackTimer = window.setTimeout(() => void poll(), 1000)
         }
       }
-      fallbackTimer = window.setTimeout(() => void poll(), 2000)
+      fallbackTimer = window.setTimeout(() => void poll(), 1000)
       return () => {
         disposed = true
         eventSource?.close()
