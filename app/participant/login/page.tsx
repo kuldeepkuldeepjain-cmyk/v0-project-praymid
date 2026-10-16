@@ -72,7 +72,8 @@ export default function ParticipantLoginPage() {
 
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
-    if (!clientId) return
+    const isEmbeddedPreview = typeof window !== "undefined" && (window.self !== window.top || process.env.NEXT_PUBLIC_VERCEL_ENV === "preview")
+    if (!clientId || isEmbeddedPreview) return
     const setup = () => {
       const google = (window as any).google
       if (!google?.accounts?.id) return
@@ -82,7 +83,14 @@ export default function ParticipantLoginPage() {
       if (button) google.accounts.id.renderButton(button, { theme: "outline", size: "large", width: 360, text: "continue_with" })
     }
     if ((window as any).google?.accounts?.id) setup()
-    else { const script = document.createElement("script"); script.src = "https://accounts.google.com/gsi/client"; script.async = true; script.onload = setup; document.head.appendChild(script) }
+    else {
+      const script = document.createElement("script")
+      script.src = "https://accounts.google.com/gsi/client"
+      script.async = true
+      script.onload = setup
+      script.onerror = () => script.remove()
+      document.head.appendChild(script)
+    }
   }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -440,7 +448,7 @@ export default function ParticipantLoginPage() {
               )}
 
   {/* Google One Tap / Sign in with Google */}
-  <div id="google-one-tap-button" className="flex min-h-10 justify-center" aria-label="Continue with Google" />
+  {process.env.NEXT_PUBLIC_VERCEL_ENV !== "preview" && <div id="google-one-tap-button" className="flex min-h-10 justify-center" aria-label="Continue with Google" />}
 
   {/* Divider */}
   <div className="flex items-center gap-3">

@@ -1437,6 +1437,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   export default function DashboardHome() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const terminalView = searchParams.get("view") === "terminal"
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1449,8 +1450,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
 
   useEffect(() => {
-    if (searchParams.get("view") === "terminal") setActiveTab("trading")
-  }, [searchParams])
+    if (terminalView && activeTab !== "trading") setActiveTab("trading")
+  }, [terminalView, activeTab])
 
   const [participantData, setParticipantData] = useState<{
     wallet: string
@@ -1485,6 +1486,34 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
+  const [liveRates, setLiveRates] = useState<Record<string, { mid: number; change: number }>>({})
+  const [marketStatus, setMarketStatus] = useState<"live" | "stale" | "offline">("offline")
+
+  useEffect(() => {
+    const source = new EventSource("/api/market-data/stream")
+    const handleRates = (event: Event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data)
+        if (payload?.rates) {
+          setLiveRates(payload.rates)
+          setMarketStatus(payload.source === "live" || payload.source === "partial-live" ? "live" : "stale")
+        }
+      } catch {
+        setMarketStatus("stale")
+      }
+    }
+    const handleStatus = (event: Event) => {
+      try {
+        setMarketStatus(JSON.parse((event as MessageEvent<string>).data)?.status === "offline" ? "offline" : "stale")
+      } catch {
+        setMarketStatus("stale")
+      }
+    }
+    source.addEventListener("rates", handleRates)
+    source.addEventListener("status", handleStatus)
+    source.onerror = () => setMarketStatus((current) => current === "live" ? "stale" : "offline")
+    return () => source.close()
+  }, [])
   const [queueData, setQueueData] = useState<any>(null)
   const [showPinSetup, setShowPinSetup] = useState(false)
   
@@ -1754,7 +1783,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Max Loss Allowed</span><strong className="price-mono text-white">${fundedDrawdownSnapshot.maxLossAllowed.toFixed(2)}</strong></div>
             <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach Equity</span><strong className="price-mono text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
             <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Current Equity</span><strong className="price-mono text-white">${fundedDrawdownSnapshot.currentEquity.toFixed(2)}</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining Drawdown</span><strong className="price-mono text-emerald-300">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
+            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining Drawdown</span><strong className="price-mono text-[#d6b66b]">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
             <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Drawdown Used</span><strong className="price-mono text-amber-300">{fundedDrawdownSnapshot.drawdownUsedPercent.toFixed(1)}%</strong></div>
             <div>
               <span className="block text-[10px] uppercase tracking-wider text-slate-500">Warning Level</span>
@@ -1878,7 +1907,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           </div>
 
           {/* Center — live ticker */}
-          <div className="participant-header-live flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)", boxShadow: "0 0 12px rgba(16,185,129,0.1)" }}>
+          <div className="participant-header-live flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: "rgba(117,198,154,0.06)", border: "1px solid rgba(117,198,154,0.2)", boxShadow: "none" }}>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.9)" }} />
             <span className="text-emerald-400 text-[10px] font-bold tracking-widest">LIVE</span>
           </div>
@@ -1887,7 +1916,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           <div className="participant-header-actions flex items-center gap-1.5 min-w-0">
             <div
               className="participant-header-balance flex items-center gap-1.5 rounded-lg px-2 py-1.5"
-              style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(52,211,153,0.28)", boxShadow: "0 0 14px rgba(16,185,129,0.08)" }}
+              style={{ background: "rgba(214,182,107,0.08)", border: "1px solid rgba(214,182,107,0.24)", boxShadow: "none" }}
               aria-label={`Current balance $${walletBalance.toFixed(2)}`}
             >
               <Wallet className="h-3.5 w-3.5 text-emerald-300" />
@@ -1937,14 +1966,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               onHelp={() => setIsChatOpen(true)}
             />
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
-            <div className="relative overflow-hidden hero-card-deep">
+            <div className="hidden relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
               <div className="absolute inset-0 depth-grid opacity-50 pointer-events-none" />
               {/* Scan line */}
               <div className="scan-line pointer-events-none" />
               {/* Deep glow orbs */}
-              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(37,99,235,0.25) 0%, transparent 70%)", filter: "blur(40px)" }} />
-              <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(34,211,238,0.12) 0%, transparent 70%)", filter: "blur(36px)" }} />
+              <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(214,182,107,0.12) 0%, transparent 70%)", filter: "blur(40px)" }} />
+              <div className="absolute -bottom-16 -left-16 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(214,182,107,0.06) 0%, transparent 70%)", filter: "blur(36px)" }} />
 
               {/* ── Mobile hero layout */}
               <div className="lg:hidden px-4 pt-6 pb-7">
@@ -1966,9 +1995,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 </div>
                 <div className="grid grid-cols-3 gap-2 relative mb-4">
                   {[
-                    { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.7)" },
-                    { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.7)" },
-                    { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.7)" },
+                    { label: "Referral", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(214,182,107,0.82)" },
+                    { label: "Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(214,182,107,0.82)" },
+                    { label: "Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(117,198,154,0.82)" },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="stat-chip-dark rounded-xl p-3 text-center">
                       <p className="text-slate-500 text-[9px] uppercase tracking-widest mb-1">{label}</p>
@@ -2029,9 +2058,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 {/* Right: stat chips */}
                 <div className="flex-shrink-0 grid grid-cols-3 gap-3 w-full lg:w-[360px]">
                   {[
-                    { label: "Referral Earnings", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(167,139,250,0.85)" },
-                    { label: "Total Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(34,211,238,0.85)" },
-                    { label: "Total Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(52,211,153,0.85)" },
+                    { label: "Referral Earnings", value: `$${referralEarnings.toFixed(0)}`, color: "rgba(214,182,107,0.9)" },
+                    { label: "Total Trades", value: String(participantData?.participation_count ?? 0), color: "rgba(214,182,107,0.9)" },
+                    { label: "Total Earnings", value: `$${Number(participantData?.total_earnings ?? 0).toFixed(0)}`, color: "rgba(117,198,154,0.9)" },
                   ].map(({ label, value, color }) => (
                     <div key={label} className="stat-chip-dark rounded-2xl p-4 text-center">
                       <p className="text-slate-500 text-[10px] uppercase tracking-widest mb-2">{label}</p>
@@ -2065,16 +2094,16 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </section>
 
             {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
-            <section className="mx-3 mt-3 overflow-hidden rounded-2xl border border-cyan-400/20 bg-slate-950/80 shadow-[0_12px_40px_rgba(8,145,178,0.12)] sm:mx-4" aria-labelledby="funding-launchpad-title">
+            <section className="mx-3 mt-3 overflow-hidden border border-slate-700/70 bg-[#181b1f] sm:mx-4" aria-labelledby="funding-launchpad-title">
               <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-400/10 text-cyan-300">
+                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/30 bg-[#d6b66b]/10 text-[#d6b66b]">
                     <Wallet className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 id="funding-launchpad-title" className="text-sm font-black tracking-wide text-white sm:text-base">Ready to put your balance to work?</h2>
-                      <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-emerald-300">Secure flow</span>
+                      <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#d6b66b]">Secure flow</span>
                     </div>
                     <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">Add funds in a few simple steps. Choose your amount, review the instructions, and submit proof from one clear screen.</p>
                     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -2082,7 +2111,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                     </div>
                   </div>
                 </div>
-                <button type="button" onClick={() => { setTopUpIsFundedAccount(false); setIsInitialFundedTopUp(false); setShowTopUpModal(true) }} className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-400 px-5 text-xs font-black uppercase tracking-wider text-slate-950 shadow-[0_8px_24px_rgba(34,211,238,0.2)] transition hover:bg-cyan-300 active:scale-[0.98]">
+                <button type="button" onClick={() => { setTopUpIsFundedAccount(false); setIsInitialFundedTopUp(false); setShowTopUpModal(true) }} className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#d6b66b] px-5 text-xs font-black uppercase tracking-wider text-[#111315] shadow-[0_8px_24px_rgba(214,182,107,0.12)] transition hover:bg-[#e2c982] active:scale-[0.98]">
                   <Plus className="h-4 w-4" /> Add funds
                 </button>
               </div>
@@ -2092,17 +2121,17 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             <section className="mx-3 mt-3 border border-slate-700/60 bg-slate-950/75 sm:mx-4" aria-labelledby="account-confidence-title">
               <div className="flex flex-col gap-4 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
                 <div>
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-cyan-300">Account confidence</p>
+                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Account overview</p>
                   <h2 id="account-confidence-title" className="text-lg font-semibold tracking-tight text-white">A clearer way to manage your account</h2>
                   <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Every important action is visible, reviewable, and supported by a clear record.</p>
                 </div>
-                <Link href="/participant/dashboard/profile" className="inline-flex items-center gap-2 text-xs font-bold text-cyan-300 transition hover:text-cyan-200"><ShieldCheck className="h-4 w-4" /> Review account settings</Link>
+                <Link href="/participant/dashboard/profile" className="inline-flex items-center gap-2 text-xs font-bold text-[#d6b66b] transition hover:text-[#e2c982]"><ShieldCheck className="h-4 w-4" /> Review account settings</Link>
               </div>
               <div className="grid gap-px bg-slate-800/70 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { icon: ShieldCheck, label: "Account security", value: "Protected", detail: "Session controls active", tone: "text-emerald-300" },
-                  { icon: BadgeCheck, label: "Identity status", value: participantData?.kyc_status === "approved" ? "Verified" : "Action available", detail: participantData?.kyc_status === "approved" ? "KYC approved" : "Complete your profile", tone: "text-cyan-300" },
-                  { icon: ReceiptText, label: "Funding records", value: "Traceable", detail: "Requests and status history", tone: "text-blue-300" },
+                  { icon: BadgeCheck, label: "Identity status", value: participantData?.kyc_status === "approved" ? "Verified" : "Action available", detail: participantData?.kyc_status === "approved" ? "KYC approved" : "Complete your profile", tone: "text-[#d6b66b]" },
+                  { icon: ReceiptText, label: "Funding records", value: "Traceable", detail: "Requests and status history", tone: "text-slate-300" },
                   { icon: Headphones, label: "Help when needed", value: "Support ready", detail: "Contact the support team", tone: "text-amber-300" },
                 ].map(({ icon: Icon, label, value, detail, tone }) => (
                   <div key={label} className="bg-slate-950/80 p-4">
@@ -2133,14 +2162,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             {/* ── LIVE TICKER BAR ──────────────────────────────── */}
             <div className="ticker-wrap border-y py-1.5" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
               <div className="ticker-tape text-[10px] font-mono font-bold text-slate-500 gap-6">
-                {["EUR/USD · 1.0842", "GBP/USD · 1.2734", "USD/JPY · 149.32", "BTC/USD · 67,420", "ETH/USD · 3,580", "XAU/USD · 2,318", "USD/CHF · 0.9012", "AUD/USD · 0.6521",
-                  "EUR/USD · 1.0842", "GBP/USD · 1.2734", "USD/JPY · 149.32", "BTC/USD · 67,420", "ETH/USD · 3,580", "XAU/USD · 2,318", "USD/CHF · 0.9012", "AUD/USD · 0.6521"
-                ].map((item, i) => (
-                  <span key={i} className="shrink-0 mx-4">
-                    <span className="text-slate-600 mr-1">▸</span>
-                    {item}
-                  </span>
-                ))}
+                {["EUR/USD", "GBP/USD", "USD/JPY", "BTC/USD", "ETH/USD", "XAU/USD", "USD/CHF", "AUD/USD"].map((symbol) => {
+                  const quote = liveRates[symbol]
+                  const decimals = symbol.includes("JPY") ? 3 : symbol.includes("BTC") || symbol.includes("ETH") || symbol.includes("XAU") ? 2 : 4
+                  const value = quote ? quote.mid.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : "—"
+                  const change = quote?.change
+                  return <span key={symbol} className="mx-4 shrink-0"><span className="mr-1 text-slate-600">▸</span>{symbol} · {value} {typeof change === "number" ? <span className={change >= 0 ? "text-emerald-400" : "text-red-400"}>{change >= 0 ? "+" : ""}{change.toFixed(2)}%</span> : null}</span>
+                })}
+                <span className={`mx-4 shrink-0 text-[9px] uppercase tracking-wider ${marketStatus === "live" ? "text-emerald-400" : "text-amber-400"}`}>{marketStatus === "live" ? "Live rates" : marketStatus === "stale" ? "Stale rates" : "Rates unavailable"}</span>
               </div>
             </div>
 
@@ -2153,7 +2182,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 style={{
                   background: "linear-gradient(145deg, rgba(34,211,238,0.18) 0%, rgba(6,182,212,0.08) 100%)",
                   border: "1px solid rgba(34,211,238,0.35)",
-                  boxShadow: "0 0 16px rgba(34,211,238,0.12)",
+                  boxShadow: "0 0 16px rgba(214,182,107,0.06)",
                 }}
               >
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(34,211,238,0.18)", boxShadow: "0 0 14px rgba(34,211,238,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}>

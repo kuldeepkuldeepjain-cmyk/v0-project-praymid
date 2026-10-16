@@ -22,21 +22,23 @@ export async function POST(req: NextRequest) {
   try {
     const { email, delta, description } = await req.json()
 
-    if (!email || typeof delta !== "number" || !isFinite(delta)) {
+    if (typeof email !== "string" || !email.trim() || typeof delta !== "number" || !isFinite(delta)) {
       return NextResponse.json({ success: false, error: "Missing or invalid fields" }, { status: 400 })
     }
+
+    // Authorize before handling zero-value reads as well as writes.
+    if (auth.email.toLowerCase() !== email.trim().toLowerCase()) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
+    }
+    const normalizedEmail = email.trim().toLowerCase()
 
     // delta = 0 is valid (breakeven trade — no balance change needed, skip DB write)
     if (delta === 0) {
       const db = getPool()
-      const { rows } = await db!.query("SELECT account_balance FROM participants WHERE email = $1", [email])
+      if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
+      const { rows } = await db.query("SELECT account_balance FROM participants WHERE LOWER(email) = $1", [normalizedEmail])
       const bal = parseFloat(rows[0]?.account_balance) || 0
       return NextResponse.json({ success: true, newBalance: bal })
-    }
-
-    // Only allow the authenticated participant to adjust their own balance
-    if (auth.email.toLowerCase() !== email.toLowerCase()) {
-      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 })
     }
 
     const db = getPool()

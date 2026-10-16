@@ -177,16 +177,16 @@ export default function ReferPage() {
 
   if (!mounted || !participantData) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-[#7c3aed] to-[#E85D3B] animate-pulse" />
+      <div className="min-h-screen bg-[#f5f6f7] flex items-center justify-center">
+        <div className="h-10 w-10 rounded-lg bg-[#d6b66b] animate-pulse" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-gradient-to-b from-purple-50 via-white to-orange-50">
+    <div className="min-h-screen min-h-dvh bg-[#f5f6f7]">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white shadow-sm">
         <div className="px-4 py-4 flex items-center gap-4">
           <Link href="/participant/dashboard">
             <Button variant="ghost" size="icon" className="h-10 w-10 bg-transparent">
@@ -200,10 +200,7 @@ export default function ReferPage() {
       <main className="px-4 lg:px-8 py-6 lg:py-8 space-y-6 max-w-3xl mx-auto">
         {/* Hero Card */}
         <Card 
-          className="border-0 shadow-2xl relative overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #c084fc 50%, #E85D3B 100%)",
-          }}
+          className="border border-slate-700 bg-[#1d2024] shadow-[0_18px_45px_rgba(15,23,42,0.16)] relative overflow-hidden"
         >
           <CardContent className="p-6 relative">
             {/* Background decoration */}
@@ -243,7 +240,7 @@ export default function ReferPage() {
               {pendingEarnings > 0 && (
                 <Button
                   onClick={() => claimReward(participantData?.email)}
-                  className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+                  className="w-full mt-4 bg-[#d6b66b] hover:bg-[#e2c982] text-[#111315] font-semibold"
                 >
                   <Gift className="h-4 w-4 mr-2" />
                   Claim ${pendingEarnings.toFixed(2)} Now
@@ -254,20 +251,20 @@ export default function ReferPage() {
         </Card>
 
         {/* Share Referral Link */}
-        <Card className="border-0 shadow-lg bg-white">
+        <Card className="border border-slate-200 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
           <CardContent className="p-6">
             <h3 className="font-bold text-slate-900 mb-4">Share Your Referral Link</h3>
             
             {/* Referral Link Display */}
             <div className="bg-slate-50 rounded-lg p-4 border-2 border-dashed border-slate-300 mb-4">
               <div className="flex items-center gap-2">
-                <code className="text-sm font-mono text-purple-600 flex-1 break-all">
+                <code className="text-sm font-mono text-[#806936] flex-1 break-all">
                   {referralLink}
                 </code>
                 <Button
                   onClick={() => copyToClipboard(referralLink)}
                   size="sm"
-                  className="flex-shrink-0 bg-purple-600 hover:bg-purple-700"
+                  className="flex-shrink-0 bg-[#d6b66b] hover:bg-[#e2c982] text-[#111315]"
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -283,14 +280,14 @@ export default function ReferPage() {
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   onClick={() => shareVia("whatsapp")}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold"
+                  className="w-full bg-[#6b8f7a] hover:bg-[#5d806d] text-white text-xs font-semibold"
                 >
                   <MessageCircle className="h-4 w-4 mr-1" />
                   WhatsApp
                 </Button>
                 <Button
                   onClick={() => shareVia("twitter")}
-                  className="w-full bg-blue-400 hover:bg-blue-500 text-white text-xs font-semibold"
+                  className="w-full bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold"
                 >
                   X
                 </Button>
@@ -327,12 +324,12 @@ export default function ReferPage() {
         </Card>
 
         {/* How it Works */}
-        <Card className="border-0 shadow-lg bg-white">
+        <Card className="border border-slate-200 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
           <CardContent className="p-6">
             <h3 className="font-bold text-slate-900 mb-4 text-lg">How to Earn $5 Per Referral</h3>
             <div className="space-y-4">
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#806936] font-bold text-sm flex-shrink-0">
                   1
                 </div>
                 <div>
@@ -343,7 +340,7 @@ export default function ReferPage() {
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#806936] font-bold text-sm flex-shrink-0">
                   2
                 </div>
                 <div>
@@ -354,7 +351,7 @@ export default function ReferPage() {
                 </div>
               </div>
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-bold text-sm flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#806936] font-bold text-sm flex-shrink-0">
                   3
                 </div>
                 <div>
@@ -391,10 +388,10 @@ export default function ReferPage() {
         </Card>
 
         {/* Your Referral Code Card */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-emerald-50 to-emerald-100">
+        <Card className="border-0 shadow-lg bg-[#d6b66b]/10">
           <CardContent className="p-4">
             <h3 className="font-semibold text-slate-900 mb-2 text-sm">Referral Code</h3>
-            <div className="bg-white rounded-lg p-3 border-2 border-emerald-300">
+            <div className="bg-white rounded-lg p-3 border border-[#d6b66b]/50">
               <code className="text-lg font-bold text-emerald-600 tracking-wider">
                 {participantData?.referral_code}
               </code>

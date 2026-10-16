@@ -33,10 +33,10 @@ const NETWORKS = [
     ticker: "USDT (BEP20)",
     fee: 1,
     eta: "1 - 5 minutes",
-    accent: "from-amber-400 to-yellow-500",
-    border: "border-amber-300",
-    bg: "bg-amber-50",
-    ring: "ring-amber-500",
+    accent: "from-[#d6b66b] to-[#b8954f]",
+    border: "border-[#d6b66b]/50",
+    bg: "bg-[#d6b66b]/10",
+    ring: "ring-[#d6b66b]",
     addressHint: "Starts with 0x, 42 characters",
   },
   {
@@ -45,10 +45,10 @@ const NETWORKS = [
     ticker: "USDT (TRC20)",
     fee: 1,
     eta: "1 - 5 minutes",
-    accent: "from-red-500 to-rose-600",
-    border: "border-red-300",
-    bg: "bg-red-50",
-    ring: "ring-red-500",
+    accent: "from-[#a8655b] to-[#824c45]",
+    border: "border-[#a8655b]/50",
+    bg: "bg-[#a8655b]/10",
+    ring: "ring-[#a8655b]",
     addressHint: "Starts with T, 34 characters",
   },
   {
@@ -57,10 +57,10 @@ const NETWORKS = [
     ticker: "USDT (ERC20)",
     fee: 5,
     eta: "5 - 30 minutes",
-    accent: "from-indigo-500 to-blue-600",
-    border: "border-indigo-300",
-    bg: "bg-indigo-50",
-    ring: "ring-indigo-500",
+    accent: "from-[#8b929c] to-[#5f6873]",
+    border: "border-slate-500/60",
+    bg: "bg-slate-500/10",
+    ring: "ring-slate-400",
     addressHint: "Starts with 0x, 42 characters",
   },
   {
@@ -69,10 +69,10 @@ const NETWORKS = [
     ticker: "Indian Rupees (INR)",
     fee: 0,
     eta: "1 - 2 business days",
-    accent: "from-orange-500 to-pink-500",
-    border: "border-orange-300",
-    bg: "bg-orange-50",
-    ring: "ring-orange-500",
+    accent: "from-[#c69b5b] to-[#9a7544]",
+    border: "border-[#c69b5b]/50",
+    bg: "bg-[#c69b5b]/10",
+    ring: "ring-[#c69b5b]",
     addressHint: "UPI ID or bank account details",
   },
 ] as const
@@ -452,7 +452,7 @@ export default function PayoutPage() {
   }
 
   return (
-  <div className="payout-page min-h-screen min-h-dvh relative overflow-hidden">
+  <div className="payout-page min-h-screen min-h-dvh relative overflow-hidden bg-[#f5f6f7]">
   {isFrozenFundedAccount && (
   <div className="mx-auto max-w-5xl px-4 pt-4">
   <div className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:flex-row sm:items-center sm:justify-between">
@@ -474,21 +474,21 @@ export default function PayoutPage() {
       </div>
 
       <header
-        className="payout-header sticky top-0 z-40 border-b"
+        className="payout-header sticky top-0 z-40 border-b border-slate-200 bg-white"
         style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}
       >
         <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/participant/dashboard">
               <button className="h-10 w-10 rounded-xl flex items-center justify-center hover:bg-slate-50 transition-colors bg-transparent">
-                <ArrowLeft className="h-5 w-5 text-[#E85D3B]" />
+                <ArrowLeft className="h-5 w-5 text-[#a8655b]" />
               </button>
             </Link>
             <h1 className="text-lg font-semibold text-slate-900">Withdraw Funds</h1>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full">
-            <Wallet className="h-4 w-4 text-[#10b981]" />
-            <span className="text-sm font-semibold text-[#10b981]">${walletBalance.toFixed(2)}</span>
+            <Wallet className="h-4 w-4 text-[#6b8f7a]" />
+            <span className="text-sm font-semibold text-[#6b8f7a]">${walletBalance.toFixed(2)}</span>
           </div>
         </div>
       </header>
@@ -523,10 +523,10 @@ export default function PayoutPage() {
 
 
         {/* Withdrawal Request Card */}
-        <Card className="payout-request-card border shadow-lg rounded-2xl overflow-hidden">
+        <Card className="payout-request-card border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.06)] rounded-xl overflow-hidden">
           <CardContent className="p-5 sm:p-6">
             <div className="flex items-center gap-2 mb-3">
-              <Wallet className="h-5 w-5 text-[#10b981]" />
+              <Wallet className="h-5 w-5 text-[#6b8f7a]" />
               <p className="text-sm text-slate-500 font-medium">Available Balance</p>
             </div>
 
@@ -534,7 +534,7 @@ export default function PayoutPage() {
             <p
               className="text-center text-[42px] font-extrabold my-4"
               style={{
-                background: "linear-gradient(135deg, #10b981, #059669)",
+                background: "linear-gradient(135deg, #a4854d, #d6b66b)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
               }}
@@ -615,7 +615,7 @@ export default function PayoutPage() {
   type="button"
   onClick={() => setWithdrawAmount(String(walletBalance))}
   disabled={isFrozenFundedAccount || hasActivePayout}
-  className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700 text-xs font-bold hover:bg-emerald-200 disabled:opacity-50"
+  className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-lg bg-[#d6b66b]/15 text-[#806936] text-xs font-bold hover:bg-[#d6b66b]/25 disabled:opacity-50"
   >
   MAX
   </button>
@@ -656,7 +656,7 @@ export default function PayoutPage() {
       </div>
       <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-200">
         <span className="text-slate-600 font-medium">You will receive</span>
-        <span className="font-bold text-emerald-600">${amountAfterFee.toFixed(2)}</span>
+        <span className="font-bold text-[#6b8f7a]">${amountAfterFee.toFixed(2)}</span>
       </div>
       <div className="flex items-center justify-between text-xs pt-1">
         <span className="text-slate-400">Estimated arrival</span>
@@ -670,7 +670,7 @@ export default function PayoutPage() {
               disabled={!canWithdraw}
               className="w-full h-14 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 transition-all active:scale-[0.97] bg-transparent"
               style={{
-                background: canWithdraw ? "linear-gradient(135deg, #10b981, #34d399)" : "#cbd5e1",
+                background: canWithdraw ? "linear-gradient(135deg, #b8954f, #d6b66b)" : "#cbd5e1",
                 boxShadow: canWithdraw ? "0 4px 0 #047857, 0 8px 24px rgba(16, 185, 129, 0.4)" : "none",
                 cursor: !canWithdraw ? "not-allowed" : "pointer",
                 opacity: !canWithdraw ? 0.6 : 1,
@@ -695,7 +695,7 @@ export default function PayoutPage() {
         </Card>
 
         {/* Withdrawal History */}
-        <Card className="payout-history-card border shadow-lg rounded-2xl">
+        <Card className="payout-history-card border border-slate-200 bg-white shadow-[0_12px_35px_rgba(15,23,42,0.06)] rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock className="h-4 w-4 text-emerald-600" />
@@ -718,7 +718,7 @@ export default function PayoutPage() {
                       <Badge
                         className={
                           payout.status === "completed"
-                            ? "bg-emerald-100 text-emerald-700 border border-[#10b981]"
+                            ? "bg-[#6b8f7a]/10 text-[#527361] border border-[#6b8f7a]/40"
                             : payout.status === "approved"
                               ? "bg-blue-100 text-blue-700 border border-blue-400"
                               : payout.status === "processing"
@@ -961,7 +961,7 @@ export default function PayoutPage() {
               </div>
               <div className="flex items-center justify-between pt-1.5 border-t border-slate-200">
                 <span className="text-xs sm:text-sm text-slate-600">You will receive</span>
-                <span className="text-base sm:text-lg font-bold text-[#10b981]">${amountAfterFee.toFixed(2)}</span>
+                <span className="text-base sm:text-lg font-bold text-[#6b8f7a]">${amountAfterFee.toFixed(2)}</span>
               </div>
               <div className="flex items-center justify-between pt-1.5 border-t border-slate-200">
                 <span className="text-xs sm:text-sm text-slate-600">Estimated arrival</span>

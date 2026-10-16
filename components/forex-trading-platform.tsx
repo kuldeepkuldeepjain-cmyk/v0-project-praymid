@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────���������������───
+  // ── State ─────────────��────────────────────────────────────────────────��������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1365,6 +1365,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
+  const confirmInFlight = useRef(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
   const [pendingExpiry, setPendingExpiry] = useState<"GTC" | "TODAY">("GTC")
@@ -1636,7 +1637,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       await new Promise((resolve) => setTimeout(resolve, 400))
     }
     console.error("[v0] Trade persistence failed:", label, lastError)
-    showToast("error", `${label} could not be saved. Your screen is still updated; please refresh to reconcile.`)
+    showToast("error", `${label} could not be confirmed by the server. Refresh before placing another order.`)
     return false
   }, [showToast])
 
@@ -2278,11 +2279,15 @@ const maxLeverage = isFundedAccount ? 1 : 100
   }
 
   const confirmAndPlace = async () => {
+    if (confirmInFlight.current || confirmLoading) return
     if (tradingLocked) { setTradeConfirm(null); showToast("warning", "Account frozen — trading is disabled"); return }
     if (!tradeConfirm || !selectedPair) return
+    confirmInFlight.current = true
+    setConfirmLoading(true)
     if (!hasFreshRate(tradeConfirm.pair)) {
       setTradeConfirm(null)
       setConfirmLoading(false)
+      confirmInFlight.current = false
       showToast("warning", "Live quote expired before confirmation. Please review a fresh quote.")
       return
     }
@@ -2290,6 +2295,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
     const pairSymbol = selectedPair.symbol
     if (isFundedAccount && margin < 3000) {
       setTradeConfirm(null)
+      setConfirmLoading(false)
+      confirmInFlight.current = false
       showToast("error", "Funded accounts require a minimum order amount of 3000")
       return
     }
@@ -2298,7 +2305,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
     // deduction continue in the background so the button doesn't sit on a spinner
     // waiting on two sequential network round trips. Any failure rolls back below.
     setTradeConfirm(null)
-    setConfirmLoading(false)
 
     if (isPending && tradeConfirm.pendingOrderType && tradeConfirm.pendingPrice) {
       const order: PendingOrder = {
@@ -2316,7 +2322,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
       const pendingSaved = await persistPendingOrder(order)
       if (!pendingSaved) {
         setPendingOrders(prev => prev.filter(item => item.id !== order.id))
+        showToast("error", `${order.orderType.replace("_", " ")} was rejected by the trading engine.`)
+      } else {
+        showToast("success", `${order.orderType.replace("_", " ")} accepted by the trading engine.`)
       }
+      confirmInFlight.current = false
+      setConfirmLoading(false)
     } else {
       const tradeId = genId()
       const trade: OpenTrade = {
@@ -2351,8 +2362,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
         openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
         setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
         setWalletBalance(prev => prev + margin)
+        showToast("error", `${pairSymbol} order was rejected by the trading engine. Margin was released.`)
+        confirmInFlight.current = false
+        setConfirmLoading(false)
         return
       }
+      showToast("success", `${dir} ${pairSymbol} execution confirmed by the trading engine.`)
       if (typeof saved.newBalance === "number") {
         suppressExternalSync.current = true
         setWalletBalance(saved.newBalance)
@@ -2664,6 +2679,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
     : 0
+  const estimatedFees: number | null = null
+  const estimatedSpreadCost = selectedPair
+    ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
+    : 0
   const pipVal = selectedPair
     ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
     : 0
@@ -2800,7 +2819,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     onDecreaseLot: () => setLotSize(prev => { const n = parseFloat(prev) || 0.01; return String(Math.max(0.01, Math.round((n - 0.01) * 100) / 100)) }),
   })
 
-  // ── Command palette actions ──────────────────────────────────────────────────
+  // ── Command palette actions ────────────────────────────────────────────���─────
   const commandActions = useMemo(() => [
     { id: "buy", label: "Quick BUY at market", hint: "Open a long position at the current ask", icon: TrendingUp, shortcut: "B", action: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("BUY") } },
     { id: "sell", label: "Quick SELL at market", hint: "Open a short position at the current bid", icon: TrendingDown, shortcut: "S", action: () => { if (!tradingLocked && selectedPair && balanceLoaded) quickTrade("SELL") } },
@@ -3007,7 +3026,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </button>
       </nav>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════════════════��══���═ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���═══════���═══��══���═ */}
       <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -4490,7 +4509,9 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
             {/* Order summary grid */}
             <div className="px-5 py-4 grid grid-cols-2 gap-2.5">
-              {[
+                {[
+                { label: "Instrument", value: tradeConfirm.pair, color: "#f8fafc" },
+                { label: "Order Type", value: tradeConfirm.isPending ? (tradeConfirm.pendingOrderType?.replace("_", " ") ?? "Pending") : "MARKET", color: "#22d3ee" },
                 {
                   label: "Entry Price",
                   value: tradeConfirm.isPending && tradeConfirm.pendingPrice
@@ -4501,6 +4522,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 { label: "Lot Size", value: `${tradeConfirm.lotSize} L`, color: "#f8fafc" },
                 { label: "Leverage", value: `1:${tradeConfirm.leverage}`, color: "#f8fafc" },
                 { label: "Pip Value", value: `$${tradeConfirm.pipVal.toFixed(4)} / pip`, color: "#94a3b8" },
+                { label: "Spread", value: `${((selectedPair?.spread ?? 0) / pip(tradeConfirm.pair)).toFixed(1)} pips · $${estimatedSpreadCost.toFixed(2)}`, color: "#fbbf24" },
+                { label: "Estimated Fees", value: estimatedFees == null ? "Not returned by engine" : `$${Number(estimatedFees).toFixed(2)}`, color: "#94a3b8" },
                 {
                   label: "Stop Loss",
                   value: tradeConfirm.sl ? fmt(tradeConfirm.sl, tradeConfirm.pair) : "None",
@@ -4517,9 +4540,9 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   color: tradeConfirm.trailingPips ? "#f59e0b" : "#475569",
                 },
                 {
-                  label: "Liq. Price",
-                  value: fmt(tradeConfirm.liqPrice, tradeConfirm.pair),
-                  color: "#f97316",
+                  label: tradeConfirm.isPending ? "Liquidation Risk" : "Liq. Price",
+                  value: tradeConfirm.isPending ? "Calculated at fill" : fmt(tradeConfirm.liqPrice, tradeConfirm.pair),
+                  color: tradeConfirm.isPending ? "#94a3b8" : "#f97316",
                 },
               ].map(({ label, value, color }) => (
                 <div

@@ -512,13 +512,11 @@ function PredictPageContent() {
 
         {/* Low-liquidity warning — shown when Forex tab is active or forex assets are visible */}
         {(assetFilter === "forex" || assetFilter === "all") && (
-          <div className="mb-3 sm:mb-4 flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-3 text-amber-900 shadow-sm">
-            <svg className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
-            <p className="text-xs leading-relaxed">
-              <span className="font-bold">Low Liquidity Warning:</span> Forex pairs move slowly and may show no movement during short timeframes. If no price change is detected when your trade closes, your bet amount will be automatically refunded to your wallet — no profit, no loss. Consider trading crypto or commodity pairs for more reliable results.
-            </p>
+          <div className="mb-3 overflow-hidden rounded-lg border border-amber-300/70 bg-amber-50 px-3 py-2 text-amber-900 shadow-sm" role="status" aria-label="Market liquidity notice">
+            <div className="ticker-tape flex min-w-max items-center gap-12 whitespace-nowrap text-xs font-medium">
+              <span>Forex may be slow: unchanged prices are refunded. Crypto and commodities may move more reliably.</span>
+              <span aria-hidden="true">Forex may be slow: unchanged prices are refunded. Crypto and commodities may move more reliably.</span>
+            </div>
           </div>
         )}
 
@@ -573,11 +571,11 @@ function PredictPageContent() {
                   }}
                   className={`relative overflow-hidden bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer ${
                     flashColor === 'green' 
-                      ? 'border-green-400 bg-emerald-950/30'
+                      ? 'border-emerald-300/60 bg-emerald-50/10'
                       : flashColor === 'red' 
-                      ? 'border-red-400 bg-red-950/30'
+                      ? 'border-rose-300/60 bg-rose-50/10'
                       : hasActiveTrade
-                      ? 'border-blue-400 sm:border-2 bg-blue-500/10'
+                      ? 'border-[#d6b66b]/60 sm:border-2 bg-[#d6b66b]/10'
                       : 'border-slate-700 sm:border-2'
                   }`}
                 >
@@ -645,7 +643,7 @@ function PredictPageContent() {
                         setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
                         setShowBetDialog(true)
                       }}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg shadow-emerald-950/30 text-xs sm:text-sm"
+                      className="border border-emerald-300/50 bg-emerald-100/80 text-emerald-800 hover:bg-emerald-100 font-semibold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-sm shadow-emerald-900/10 text-xs sm:text-sm transition-colors"
                     >
                       <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       UP
@@ -660,7 +658,7 @@ function PredictPageContent() {
                         setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
                         setShowBetDialog(true)
                       }}
-                      className="bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg shadow-red-950/30 text-xs sm:text-sm"
+                      className="border border-rose-300/60 bg-rose-100/80 text-rose-800 hover:bg-rose-100 font-semibold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-sm shadow-rose-900/10 text-xs sm:text-sm transition-colors"
                     >
                       <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       DOWN
@@ -682,7 +680,7 @@ function PredictPageContent() {
           {/* Compact header */}
           <DialogHeader className="px-4 pt-4 pb-2 flex-shrink-0">
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
-              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black text-white ${betDirection === "up" ? "bg-green-500" : "bg-red-500"}`}>
+              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black text-white ${betDirection === "up" ? "bg-emerald-100 text-emerald-800 border border-emerald-300/60" : "bg-rose-100 text-rose-800 border border-rose-300/60"}`}>
                 {betDirection.toUpperCase()}
               </span>
               Place Trade
