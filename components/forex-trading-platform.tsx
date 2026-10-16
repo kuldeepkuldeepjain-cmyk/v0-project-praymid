@@ -1770,7 +1770,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
         && Number.isFinite(json.ts)
         && Date.now() - json.ts <= 5_000
       const freshSymbols = responseHasLiveQuotes || responseHasRecentCache
-        ? Object.keys(json.rates).filter(symbol => ["twelve-data", "yahoo", "gold-api"].includes(json.sources?.[symbol]))
+        ? Object.keys(json.rates).filter(symbol => ["tiingo", "twelve-data", "yahoo", "gold-api"].includes(json.sources?.[symbol]))
         : []
       applyRateMap(json.rates, freshSymbols)
       const selectedSymbol = selectedPairRef.current?.symbol ?? ""
@@ -2537,7 +2537,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     if (soundEnabled) playTerminalSound("breakeven")
   }, [persistModify, soundEnabled])
 
-  // ── Funded account breach ───────��──────────────────────────────────────────
+  // ── Funded account breach ───────��────���─────────────────────────────────────
   // When the drawdown limit is breached, every open position is force-closed
   // (booking whatever loss/gain it currently holds), the account is frozen,
   // and the trader is shown a clear breach notice.
@@ -3165,7 +3165,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         ))}
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════════════�����═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��═══════════════════════════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}

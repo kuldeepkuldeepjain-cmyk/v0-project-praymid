@@ -4,7 +4,7 @@ import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec, isCrypto } from "@/lib
 // Cache to avoid hammering Yahoo Finance (server-side, resets on cold start)
 let cache: {
   data: Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
-  sources: Record<string, "twelve-data" | "yahoo" | "gold-api" | "stale-cache">
+  sources: Record<string, "tiingo" | "twelve-data" | "yahoo" | "gold-api" | "stale-cache">
   ts: number
 } | null = null
 const LIVE_REFRESH_INTERVAL_MS = 1000
@@ -27,18 +27,27 @@ export async function GET() {
     // Fetch ALL instruments in a single batched Yahoo quote call instead of
     // one request per pair — cuts ~70 round trips down to 1-2, which is both
     // far faster and far less likely to trip rate limiting.
-    const [quoteResults, spotResult, twelveResults] = await Promise.all([
+    const [quoteResults, spotResult, tiingoResults, twelveResults] = await Promise.all([
       fetchBatchedQuotes(ySymbols),
       fetchGoldSpot(),
+      fetchTiingoQuotes(pairs),
       fetchTwelveQuotes(pairs),
     ])
 
     const data: Record<string, RateRow> = {}
-    const sources: Record<string, "twelve-data" | "yahoo" | "gold-api" | "stale-cache"> = {}
+    const sources: Record<string, "tiingo" | "twelve-data" | "yahoo" | "gold-api" | "stale-cache"> = {}
     for (const pair of pairs) {
       const ySym = YAHOO_SYMBOLS[pair]
+      const tiingo = tiingoResults.get(pair)
       const twelve = twelveResults.get(pair)
       const q = quoteResults.get(ySym)
+      if (tiingo) {
+        const d = dec(pair)
+        const mid = Number(tiingo.mid.toFixed(d))
+        data[pair] = { mid, bid: Number(tiingo.bid.toFixed(d)), ask: Number(tiingo.ask.toFixed(d)), change: tiingo.change, high: Number(tiingo.high.toFixed(d)), low: Number(tiingo.low.toFixed(d)), open: Number(tiingo.open.toFixed(d)) }
+        sources[pair] = "tiingo"
+        continue
+      }
       if (twelve) {
         const d = dec(pair)
         const mid = Number(twelve.price.toFixed(d))
@@ -93,14 +102,14 @@ export async function GET() {
     }
 
     cache = { data, sources, ts: now }
-    const hasFreshQuotes = Object.values(sources).some((source) => source === "twelve-data" || source === "yahoo" || source === "gold-api")
+    const hasFreshQuotes = Object.values(sources).some((source) => source === "tiingo" || source === "twelve-data" || source === "yahoo" || source === "gold-api")
     const hasStaleQuotes = Object.values(sources).some((source) => source === "stale-cache")
     const hasMissingQuotes = Object.keys(data).length < pairs.length
     return NextResponse.json({
       rates: data,
       sources,
       source: hasFreshQuotes ? (hasStaleQuotes || hasMissingQuotes ? "partial-live" : "live") : "stale-cache",
-      provider: "Twelve Data TradingView-aligned live quotes + Yahoo fallback + Gold API spot fallback",
+      provider: "Tiingo live FX quotes + Twelve Data fallback + Yahoo fallback + Gold API spot fallback",
       marketDataType: "live-provider-data",
       refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000,
       ts: now,
@@ -114,26 +123,74 @@ export async function GET() {
   }
 }
 
+type TiingoQuote = { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }
+
+async function fetchTiingoQuotes(pairs: string[]): Promise<Map<string, TiingoQuote>> {
+  const out = new Map<string, TiingoQuote>()
+  const token = process.env.TIINGO_API_KEY
+  if (!token || pairs.length === 0) return out
+  try {
+    const tickers = pairs.map((pair) => pair.replace("/", "").toLowerCase()).join(",")
+    const response = await fetch(`https://api.tiingo.com/tiingo/fx/top?tickers=${encodeURIComponent(tickers)}&token=${encodeURIComponent(token)}`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      cache: "no-store",
+    })
+    if (!response.ok) return out
+    const quotes = await response.json() as Array<Record<string, unknown>>
+    for (const quote of quotes) {
+      const ticker = String(quote.ticker ?? "").toUpperCase()
+      const pair = ticker.length === 6 ? `${ticker.slice(0, 3)}/${ticker.slice(3)}` : ""
+      const bid = Number(quote.bidPrice)
+      const ask = Number(quote.askPrice)
+      const mid = Number(quote.midPrice ?? (bid + ask) / 2)
+      if (!pair || !Number.isFinite(bid) || !Number.isFinite(ask) || !Number.isFinite(mid) || bid <= 0 || ask <= 0) continue
+      const previous = Number(quote.previousClose)
+      const openValue = Number(quote.open)
+      const open = Number.isFinite(openValue) && openValue > 0 ? openValue : (Number.isFinite(previous) && previous > 0 ? previous : mid)
+      const highValue = Number(quote.high)
+      const lowValue = Number(quote.low)
+      const high = Number.isFinite(highValue) && highValue > 0 ? highValue : Math.max(mid, open)
+      const low = Number.isFinite(lowValue) && lowValue > 0 ? lowValue : Math.min(mid, open)
+      out.set(pair, { bid, ask, mid, change: Number.isFinite(previous) && previous > 0 ? ((mid - previous) / previous) * 100 : 0, high, low, open })
+    }
+  } catch {}
+  return out
+}
+
 type TwelveQuote = { price: number; change: number; high: number; low: number; open: number }
 
 async function fetchTwelveQuotes(pairs: string[]): Promise<Map<string, TwelveQuote>> {
   const out = new Map<string, TwelveQuote>()
   const key = process.env.TWELVE_DATA_API_KEY
   if (!key || pairs.length === 0) return out
-  await Promise.all(pairs.map(async (pair) => {
-    try {
-      const response = await fetch(`https://api.twelvedata.com/quote?symbol=${encodeURIComponent(pair)}&apikey=${encodeURIComponent(key)}`, { signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), cache: "no-store" })
-      if (!response.ok) return
-      const json = await response.json()
-      const price = Number(json.close ?? json.price)
-      const open = Number(json.open)
-      const high = Number(json.high)
-      const low = Number(json.low)
+
+  try {
+    const requests = Object.fromEntries(pairs.map((pair, index) => [
+      `pair_${index}`,
+      { url: `/quote?symbol=${encodeURIComponent(pair)}&apikey=${encodeURIComponent(key)}` },
+    ]))
+    const response = await fetch("https://api.twelvedata.com/batch", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(requests),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      cache: "no-store",
+    })
+    if (!response.ok) return out
+    const json = await response.json() as Record<string, Record<string, unknown>>
+    pairs.forEach((pair, index) => {
+      const quote = json[`pair_${index}`]
+      if (!quote || quote.status === "error") return
+      const price = Number(quote.close ?? quote.price)
+      const open = Number(quote.open)
+      const high = Number(quote.high)
+      const low = Number(quote.low)
       if ([price, open, high, low].every(Number.isFinite) && price > 0) {
-        out.set(pair, { price, open, high, low, change: Number(json.percent_change) || 0 })
+        out.set(pair, { price, open, high, low, change: Number(quote.percent_change) || 0 })
       }
-    } catch {}
-  }))
+    })
+  } catch {}
   return out
 }
 
