@@ -216,12 +216,12 @@ export async function GET(req: NextRequest) {
         // Continue to Twelve Data/Yahoo fallbacks if Tiingo is unavailable.
       }
     }
-    if (process.env.TWELVE_DATA_API_KEY && TWELVE_INTERVALS[tf]) {
+    if (!cryptoSymbol && process.env.TWELVE_DATA_API_KEY && TWELVE_INTERVALS[tf]) {
       try {
         const candles = await fetchTwelveMarketCandles(pair, tf)
         if (candles.length === 0) throw new Error("No usable Twelve Data candles")
         candleCache.set(cacheKey, { candles, ts: now })
-        return NextResponse.json({ candles, source: "live-twelve-data", provider: "Twelve Data", marketDataType: cryptoSymbol ? "live-crypto" : "indicative-forex", ts: now })
+        return NextResponse.json({ candles, source: "live-twelve-data", provider: "Twelve Data", marketDataType: "indicative-forex", ts: now })
       } catch {
         // Continue to the existing Yahoo historical adapter for Forex.
         // Twelve Data quota/provider errors must not leave the chart empty.
