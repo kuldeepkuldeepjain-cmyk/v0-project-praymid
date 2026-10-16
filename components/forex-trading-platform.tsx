@@ -15,6 +15,7 @@ import {
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
+import { TradingViewAdvancedChart } from "@/components/tradingview-advanced-chart"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -2692,7 +2693,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     showToast("info", "Pending order cancelled")
   }
 
-  // ── Derived values ───────────────────────────────────────────────��───�����─────
+  // ── Derived values ────────────────────────────────────────────���──��───�����─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
@@ -3161,7 +3162,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
       {/* ══ MAIN 3-COLUMN GRID ═��═══════════════════════════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
-        {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
+        {/* ── LEFT: Market Watch ──────────────────────���──────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
           style={{ width: `min(${marketPanelWidth}px,100%)`, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
@@ -3439,7 +3440,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   <button type="button" onClick={() => { setChartReloadKey((key) => key + 1); if (selectedPair) void fetchCandles(selectedPair.symbol, timeframe) }} className="rounded border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-bold uppercase tracking-wide text-cyan-300 transition-colors hover:bg-cyan-400/20">Retry feed</button>
   </div>
   }>
-<TradingChart
+{chartProvider === "tradingview" ? <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" /> : <TradingChart
   key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
   candles={selectedPair.candles}
   sym={selectedPair.symbol}
@@ -3452,7 +3453,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-  />
+  />}
   </ErrorBoundary>
   ) : selectedPair && chartLayout === "grid" ? (
   <MiniChartGrid
