@@ -86,8 +86,8 @@ export default function AddFundPage() {
   const canUseFundedTier = isFundedAccount && !hasFundedTierTopUp
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-slate-100 bg-white">
+    <div className="min-h-screen bg-[#111315] flex flex-col">
+      <header className="border-b border-slate-800 bg-[#15181b]">
         <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-4">
           <Link href="/participant/dashboard" aria-label="Back to dashboard">
             <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-600 hover:text-slate-900">
@@ -102,9 +102,9 @@ export default function AddFundPage() {
       </header>
 
       <main className="flex flex-1 items-start justify-center px-4 py-10">
-        <Card className="w-full max-w-lg overflow-hidden border-2 border-violet-200 shadow-lg">
+        <Card className="w-full max-w-lg overflow-hidden border border-slate-700 bg-[#181b1f] shadow-[0_20px_60px_rgba(0,0,0,0.24)]">
           <CardContent className="p-0">
-            <div className={`px-6 py-8 text-center text-white ${isFundedAccountBreached ? "bg-gradient-to-br from-emerald-600 to-teal-600" : "bg-gradient-to-br from-violet-600 to-indigo-600"}`}>
+            <div className={`px-6 py-8 text-center text-white ${isFundedAccountBreached ? "bg-[#3a2523]" : "bg-[#24201a]"}`}>
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
                 <Wallet className="h-8 w-8" />
               </div>
@@ -125,7 +125,7 @@ export default function AddFundPage() {
               <Button
                 type="button"
                 onClick={() => { setOpenFundedTier(false); setShowTopUpModal(true) }}
-                className={`h-12 w-full text-base font-semibold text-white shadow-md ${isFundedAccountBreached ? "bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700" : "bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700"}`}
+                className={`h-12 w-full text-base font-semibold text-white shadow-md ${isFundedAccountBreached ? "bg-[#a8655b] hover:bg-[#bd7469]" : "bg-[#d6b66b] text-[#111315] hover:bg-[#e2c982]"}`}
               >
                 <Wallet className="mr-2 h-5 w-5" />
                 {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}
@@ -136,7 +136,7 @@ export default function AddFundPage() {
                     type="button"
                     disabled={!canUseFundedTier}
                     onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }}
-                    className="h-12 w-full border border-emerald-200 bg-emerald-50 text-base font-semibold text-emerald-800 shadow-sm hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 w-full border border-[#d6b66b]/40 bg-[#d6b66b]/10 text-base font-semibold text-[#e2c982] shadow-sm hover:bg-[#d6b66b]/15 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ShieldCheck className="mr-2 h-5 w-5" />
                     {canUseFundedTier ? "Funded-tier Fund" : "Funded-tier Fund Used"}
