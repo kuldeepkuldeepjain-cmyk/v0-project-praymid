@@ -571,11 +571,11 @@ function PredictPageContent() {
                   }}
                   className={`relative overflow-hidden bg-slate-800/90 backdrop-blur-sm rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] shadow-md cursor-pointer ${
                     flashColor === 'green' 
-                      ? 'border-green-400 bg-emerald-950/30'
+                      ? 'border-emerald-300/60 bg-emerald-50/10'
                       : flashColor === 'red' 
-                      ? 'border-red-400 bg-red-950/30'
+                      ? 'border-rose-300/60 bg-rose-50/10'
                       : hasActiveTrade
-                      ? 'border-blue-400 sm:border-2 bg-blue-500/10'
+                      ? 'border-[#d6b66b]/60 sm:border-2 bg-[#d6b66b]/10'
                       : 'border-slate-700 sm:border-2'
                   }`}
                 >
@@ -643,7 +643,7 @@ function PredictPageContent() {
                         setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
                         setShowBetDialog(true)
                       }}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg shadow-emerald-950/30 text-xs sm:text-sm"
+                      className="border border-emerald-300/50 bg-emerald-100/80 text-emerald-800 hover:bg-emerald-100 font-semibold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-sm shadow-emerald-900/10 text-xs sm:text-sm transition-colors"
                     >
                       <ArrowUp className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       UP
@@ -658,7 +658,7 @@ function PredictPageContent() {
                         setSelectedTimeframe(asset.type === 'commodity' ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
                         setShowBetDialog(true)
                       }}
-                      className="bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-lg shadow-red-950/30 text-xs sm:text-sm"
+                      className="border border-rose-300/60 bg-rose-100/80 text-rose-800 hover:bg-rose-100 font-semibold rounded-lg sm:rounded-xl h-9 sm:h-10 md:h-12 shadow-sm shadow-rose-900/10 text-xs sm:text-sm transition-colors"
                     >
                       <ArrowDown className="h-3 w-3 sm:h-4 sm:w-4 mr-0.5 sm:mr-1" />
                       DOWN
@@ -680,7 +680,7 @@ function PredictPageContent() {
           {/* Compact header */}
           <DialogHeader className="px-4 pt-4 pb-2 flex-shrink-0">
             <DialogTitle className="text-sm font-bold flex items-center gap-2">
-              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black text-white ${betDirection === "up" ? "bg-green-500" : "bg-red-500"}`}>
+              <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black text-white ${betDirection === "up" ? "bg-emerald-100 text-emerald-800 border border-emerald-300/60" : "bg-rose-100 text-rose-800 border border-rose-300/60"}`}>
                 {betDirection.toUpperCase()}
               </span>
               Place Trade
