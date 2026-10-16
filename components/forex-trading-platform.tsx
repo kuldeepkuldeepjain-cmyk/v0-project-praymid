@@ -1316,7 +1316,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────�����������������������������───
+  // ── State ─────────────��─────────────────────────────────���──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1770,7 +1770,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
         && Number.isFinite(json.ts)
         && Date.now() - json.ts <= 5_000
       const freshSymbols = responseHasLiveQuotes || responseHasRecentCache
-        ? Object.keys(json.rates).filter(symbol => json.sources?.[symbol] === "yahoo" || json.sources?.[symbol] === "gold-api")
+        ? Object.keys(json.rates).filter(symbol => ["twelve-data", "yahoo", "gold-api"].includes(json.sources?.[symbol]))
         : []
       applyRateMap(json.rates, freshSymbols)
       const selectedSymbol = selectedPairRef.current?.symbol ?? ""
@@ -3165,7 +3165,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         ))}
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��══════════════════════════════════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════════════���═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
