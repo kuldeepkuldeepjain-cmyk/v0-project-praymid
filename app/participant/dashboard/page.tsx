@@ -1437,6 +1437,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   export default function DashboardHome() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const terminalView = searchParams.get("view") === "terminal"
   const { toast } = useToast()
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -1449,8 +1450,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
 
   useEffect(() => {
-    if (searchParams.get("view") === "terminal") setActiveTab("trading")
-  }, [searchParams])
+    if (terminalView && activeTab !== "trading") setActiveTab("trading")
+  }, [terminalView, activeTab])
 
   const [participantData, setParticipantData] = useState<{
     wallet: string
