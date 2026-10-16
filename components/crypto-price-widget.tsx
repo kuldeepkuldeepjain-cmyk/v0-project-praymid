@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, TrendingDown } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 type CryptoPrice = {
   symbol: string
@@ -13,10 +13,25 @@ type CryptoPrice = {
 
 export function CryptoPriceWidget() {
   const [prices, setPrices] = useState<CryptoPrice[]>([
-    { symbol: "BTC", name: "Bitcoin", price: 97234.56, change24h: 2.34 },
-    { symbol: "ETH", name: "Ethereum", price: 3421.89, change24h: -1.23 },
-    { symbol: "BNB", name: "BNB", price: 612.45, change24h: 0.87 },
+    { symbol: "BTC", name: "Bitcoin", price: 0, change24h: 0 },
+    { symbol: "ETH", name: "Ethereum", price: 0, change24h: 0 },
+    { symbol: "BNB", name: "BNB", price: 0, change24h: 0 },
   ])
+
+  useEffect(() => {
+    let active = true
+    const fetchPrices = async () => {
+      try {
+        const response = await fetch("/api/crypto/rates", { cache: "no-store" })
+        if (!response.ok) return
+        const json = await response.json() as { rates?: CryptoPrice[] }
+        if (active && json.rates?.length) setPrices((current) => current.map((item) => json.rates?.find((rate) => rate.symbol === item.symbol) ? { ...item, ...json.rates.find((rate) => rate.symbol === item.symbol) } : item))
+      } catch {}
+    }
+    void fetchPrices()
+    const timer = window.setInterval(fetchPrices, 1_000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [])
 
   return (
     <Card>
