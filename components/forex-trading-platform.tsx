@@ -2379,9 +2379,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
   }
 
   // ��─ Quick trade — routes through confirmation modal ───────────���───────────��
-  confirmInFlight.current = false
-  setConfirmLoading(false)
-
   const quickTrade = (dir: TradeDirection) => {
   if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
