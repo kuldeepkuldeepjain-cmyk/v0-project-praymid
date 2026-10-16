@@ -3204,10 +3204,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
           </div>
 
-          <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "rgba(255,255,255,0.58)", borderBottom: "1px solid rgba(29,42,58,0.08)" }}>
-            <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#9fb4c8" }}>Instrument</span>
-            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#9fb4c8" }}>Bid / Ask</span>
-            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#9fb4c8" }}>Chg%</span>
+          <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "#0a1321", borderBottom: "1px solid #1e2d45" }}>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#6f8aa3" }}>Instrument</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#6f8aa3" }}>Bid / Ask</span>
+            <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#6f8aa3" }}>Chg%</span>
           </div>
 
           <div id="market-watch-instruments" className="flex-1 overflow-y-auto terminal-scroll">
@@ -3234,12 +3234,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
                     <div key={cat}>
                       {(activeCategory === "All" || hasInstrumentSearch) && (
                         <div className="apple-market-category-row flex items-center gap-2 px-3 py-1.5 sticky top-0 z-10"
-                          style={{ background: "rgba(255,255,255,0.58)", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid rgba(29,42,58,0.08)" }}>
+                          style={{ background: "#0b1625", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid #152338" }}>
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
                           <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
                             {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
                           </span>
-                          <span className="text-[8px] ml-auto" style={{ color: "#9fb4c8" }}>{catPairs.length}</span>
+                          <span className="text-[8px] ml-auto" style={{ color: "#6f8aa3" }}>{catPairs.length}</span>
                         </div>
                       )}
                       {catPairs.map(p => {
@@ -3303,7 +3303,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             )}
           </div>
 
-          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2 gap-2" style={{ borderTop: "1px solid rgba(29,42,58,0.1)", background: "linear-gradient(180deg, rgba(248,250,252,0.7), rgba(241,245,249,0.9))" }}>
+          <div className="apple-market-footer shrink-0 flex items-center justify-between px-3 py-2 gap-2" style={{ borderTop: "1px solid #1e2d45", background: "#0a1321" }}>
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="relative flex h-1.5 w-1.5 shrink-0">
                 <span className="absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#10b981", animation: "ping 2s cubic-bezier(0,0,0.2,1) infinite" }} />

@@ -2366,7 +2366,12 @@ button, a, [role="button"] {
   background: #142638 !important;
   border-color: #31536c !important;
 }
-.mt5-terminal .mw-row .price-mono { letter-spacing: -0.01em; }
+.mt5-terminal .mw-row .price-mono { letter-spacing: .015em; font-variant-numeric: tabular-nums; }
+.mt5-terminal .mw-row { min-height: 58px; transition: background .16s ease, transform .16s ease; }
+.mt5-terminal .mw-row:hover { background: linear-gradient(90deg, rgba(34,211,238,.09), rgba(34,211,238,.025)) !important; transform: translateX(2px); }
+.mt5-terminal .mw-row:focus-visible { outline: 1px solid #22d3ee; outline-offset: -1px; }
+.mt5-terminal .mw-badge { box-shadow: inset 0 0 12px rgba(255,255,255,.025); }
+.mt5-terminal .apple-market-table-head span { color: #6f8aa3 !important; }
 .mt5-terminal .apple-market-footer {
   min-height: 34px;
   padding-block: 7px !important;
