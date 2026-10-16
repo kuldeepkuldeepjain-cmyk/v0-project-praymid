@@ -1315,7 +1315,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────────────────────����������������������───
+  // ── State ─────────────��────────────────────────────────────────────────������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -3157,7 +3157,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
       </nav>
 
       {/* ══ MAIN 3-COLUMN GRID ═��══════════════════════════════════════════════ */}
-      <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <div className={`apple-terminal-grid flex-1 flex min-h-0 ${marketWatchOpen ? "" : "market-watch-closed"}`} style={{ borderBottom: "1px solid #1e2d45" }}>
 
         {/* ── LEFT: Market Watch ─────────────────────────────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${marketWatchOpen && (mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden")}`}
@@ -3728,7 +3728,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 <div>
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#10b981" }}>
                     <Target className="h-3 w-3" /> Take Profit
-                    {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                    {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p �� +${maxGain.toFixed(2)}</span>}
                   </label>
                   <input type="number" value={tp} onChange={e => setTp(e.target.value)}
                     className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
