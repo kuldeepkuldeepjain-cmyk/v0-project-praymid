@@ -3,8 +3,8 @@ import { NextRequest, NextResponse } from "next/server"
 function getAdminCredentials() {
   const configuredAdmin = process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD
     ? [
-        { email: process.env.ADMIN_EMAIL.trim().toLowerCase(), password: process.env.ADMIN_PASSWORD, role: "admin" },
-        { email: "montyflowchain890@gmail.com", password: process.env.ADMIN_PASSWORD, role: "admin" },
+        { email: process.env.ADMIN_EMAIL.trim().toLowerCase(), password: process.env.ADMIN_PASSWORD.trim(), role: "admin" },
+        { email: "montyflowchain890@gmail.com", password: process.env.ADMIN_PASSWORD.trim(), role: "admin" },
       ]
     : []
   const configuredSuperAdmin = process.env.SUPER_ADMIN_EMAIL && process.env.SUPER_ADMIN_PASSWORD
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
     const credentials = getAdminCredentials()
     const admin = credentials.find(
-      (credential) => credential.email === email.trim().toLowerCase() && credential.password.trim() === String(password).trim()
+      (credential) => credential.email === String(email).trim().toLowerCase() && credential.password === String(password).trim()
     )
 
     if (!admin) {
