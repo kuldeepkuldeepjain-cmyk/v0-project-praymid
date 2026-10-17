@@ -16,14 +16,15 @@ export async function GET() {
     const quotes = await response.json() as Array<Record<string, unknown>>
     const rates = quotes.flatMap((quote) => {
       const ticker = String(quote.ticker ?? "").toLowerCase()
-      const symbol = ticker.slice(0, 3).toUpperCase()
+      const symbol = ticker.length >= 6 ? `${ticker.slice(0, 3).toUpperCase()}/${ticker.slice(3, 6).toUpperCase()}` : ""
       const top = Array.isArray(quote.topOfBookData) ? quote.topOfBookData[0] as Record<string, unknown> | undefined : undefined
       const bid = Number(top?.bidPrice)
       const ask = Number(top?.askPrice)
-      const price = Number(top?.lastPrice ?? (bid + ask) / 2)
+      const lastTrade = Number(top?.lastPrice)
+      const price = Number.isFinite(bid) && Number.isFinite(ask) && bid > 0 && ask > 0 ? (bid + ask) / 2 : lastTrade
       const prev = Number(quote.prevClose ?? quote.previousClose)
       if (!symbol || !Number.isFinite(price) || price <= 0) return []
-      return [{ symbol, price, change24h: Number.isFinite(prev) && prev > 0 ? ((price - prev) / prev) * 100 : 0, timestamp: top?.quoteTimestamp ?? new Date().toISOString() }]
+      return [{ symbol, price, bid, ask, change24h: Number.isFinite(prev) && prev > 0 ? ((price - prev) / prev) * 100 : 0, timestamp: top?.quoteTimestamp ?? new Date().toISOString() }]
     })
 
     return NextResponse.json({ provider: "tiingo", rates, timestamp: new Date().toISOString() }, { headers: { "Cache-Control": "no-store" } })
