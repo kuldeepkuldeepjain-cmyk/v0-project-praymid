@@ -316,8 +316,6 @@ export function ParticipantDatabaseView() {
   const deleteParticipant = async (participantId: string) => {
     setIsDeleting(true)
     try {
-      console.log("[v0] Starting delete for participant:", participantId)
-      
       if (!participantId || participantId.trim() === "") {
         throw new Error("Invalid participant ID")
       }
@@ -329,12 +327,7 @@ export function ParticipantDatabaseView() {
       })
 
       const data = await response.json()
-      console.log("[v0] Delete response status:", response.status)
-      console.log("[v0] Delete response data:", data)
-
       if (!response.ok) {
-        console.error("[v0] Delete failed with status:", response.status)
-        console.error("[v0] Error details:", data)
         const errorMessage = data.details || data.error || `Failed with status ${response.status}`
         throw new Error(errorMessage)
       }
@@ -343,9 +336,7 @@ export function ParticipantDatabaseView() {
         throw new Error(data.error || "Delete operation did not complete successfully")
       }
 
-      console.log("[v0] Delete successful, removing from UI")
-      // Remove participant from list
-      setParticipants(participants.filter((p) => p.id !== participantId))
+      setParticipants((current) => current.filter((p) => p.id !== participantId))
       setShowDeleteConfirmation(false)
       setDeletingParticipantId(null)
 
@@ -354,9 +345,7 @@ export function ParticipantDatabaseView() {
         description: `Participant (${data.email}) and ${data.deletedRelatedRecords || 0} related records permanently deleted`,
       })
     } catch (error) {
-      console.error("[v0] Delete error caught:", error)
       const errorMsg = error instanceof Error ? error.message : "Unknown error occurred"
-      console.error("[v0] Error message:", errorMsg)
       
       toast({
         title: "Deletion Failed",

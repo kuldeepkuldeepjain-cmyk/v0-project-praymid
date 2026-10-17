@@ -25,6 +25,7 @@ export async function DELETE(request: NextRequest) {
     const { email } = res.rows[0]
 
     const client = await db.connect()
+    let deletedRelatedRecords = 0
     try {
       await client.query("BEGIN")
 
@@ -98,6 +99,7 @@ export async function DELETE(request: NextRequest) {
         pendingForeignKeys = nextPending
       }
 
+      deletedRelatedRecords = clearedRecords
       if (clearParticipation) {
         await client.query("COMMIT")
         return NextResponse.json({ success: true, clearedRecords, participantId, email })
@@ -117,6 +119,7 @@ export async function DELETE(request: NextRequest) {
       message: `Participant ${email} and all related data permanently deleted`,
       participantId,
       email,
+      deletedRelatedRecords,
     })
   } catch (error) {
     console.error("[v0] Admin participant deletion failed:", error)
