@@ -32,7 +32,7 @@ export async function DELETE(request: NextRequest) {
       // Discover every real foreign-key dependency instead of maintaining a
       // fragile table list that can miss newly added participation tables.
       const foreignKeys = await client.query(
-        `SELECT child_ns.nspname AS schema_name, child.relname AS table_name, child_col.attname AS column_name, constraint_row.confdeltype AS delete_action
+        `SELECT child_ns.nspname AS schema_name, child.relname AS table_name, child_col.attname AS column_name, constraint_row.confdeltype AS delete_action, child_col.attnotnull AS is_not_null
          FROM pg_constraint constraint_row
          JOIN pg_class parent ON parent.oid = constraint_row.confrelid
          JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
@@ -46,9 +46,7 @@ export async function DELETE(request: NextRequest) {
            AND array_length(constraint_row.conkey, 1) = 1
            AND child_ns.nspname = 'public'
            AND child.relname <> 'participants'
-           -- Let PostgreSQL handle SET NULL/CASCADE relationships. Only
-           -- remove restrictive child rows explicitly before deleting parent.
-           AND constraint_row.confdeltype IN ('a', 'r')`,
+           AND constraint_row.confdeltype IN ('a', 'r', 'n')`,
       )
 
       let clearedRecords = 0
@@ -80,10 +78,12 @@ export async function DELETE(request: NextRequest) {
         for (const row of pendingForeignKeys) {
           const identifier = (value: string) => `"${String(value).replaceAll('"', '""')}"`
           try {
-            const result = await client.query(
-              `DELETE FROM ${identifier(row.schema_name)}.${identifier(row.table_name)} WHERE ${identifier(row.column_name)} = $1`,
-              [participantId],
-            )
+            const tableName = `${identifier(row.schema_name)}.${identifier(row.table_name)}`
+            const columnName = identifier(row.column_name)
+            const statement = row.delete_action === "n" && !row.is_not_null
+              ? `UPDATE ${tableName} SET ${columnName} = NULL WHERE ${columnName} = $1`
+              : `DELETE FROM ${tableName} WHERE ${columnName} = $1`
+            const result = await client.query(statement, [participantId])
             const deleted = result.rowCount ?? 0
             clearedRecords += deleted
             deletedThisPass += deleted
