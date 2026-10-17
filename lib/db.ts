@@ -53,6 +53,23 @@ export async function execute(sql: string, params: any[] = []): Promise<number> 
   return result.rowCount ?? 0
 }
 
+export async function withTransaction<T>(callback: (client: import("pg").PoolClient) => Promise<T>): Promise<T> {
+  const pool = getPool()
+  if (!pool) throw new Error("No database connection — set DATABASE_URL or POSTGRES_URL")
+  const client = await pool.connect()
+  try {
+    await client.query("BEGIN")
+    const result = await callback(client)
+    await client.query("COMMIT")
+    return result
+  } catch (error) {
+    await client.query("ROLLBACK").catch(() => undefined)
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
 // Compatibility shim — used by routes that call getServiceClient()
 export function getServiceClient() {
   return {
