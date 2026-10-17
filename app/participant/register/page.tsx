@@ -239,7 +239,7 @@ export default function ParticipantRegisterPage() {
           lastName: formData.lastName,
           username: formData.username,
           email: formData.email,
-          mobileNumber: `${formData.countryCode}${formData.mobileNumber}`,
+          mobileNumber: formData.mobileNumber,
           countryCode: formData.countryCode,
           password: formData.password,
           country: formData.country,
