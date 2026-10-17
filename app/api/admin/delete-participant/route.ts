@@ -32,7 +32,7 @@ export async function DELETE(request: NextRequest) {
       // Discover every real foreign-key dependency instead of maintaining a
       // fragile table list that can miss newly added participation tables.
       const foreignKeys = await client.query(
-        `SELECT child_ns.nspname AS schema_name, child.relname AS table_name, child_col.attname AS column_name
+        `SELECT child_ns.nspname AS schema_name, child.relname AS table_name, child_col.attname AS column_name, constraint_row.confdeltype AS delete_action
          FROM pg_constraint constraint_row
          JOIN pg_class parent ON parent.oid = constraint_row.confrelid
          JOIN pg_namespace parent_ns ON parent_ns.oid = parent.relnamespace
@@ -45,7 +45,10 @@ export async function DELETE(request: NextRequest) {
            AND parent.relname = 'participants'
            AND array_length(constraint_row.conkey, 1) = 1
            AND child_ns.nspname = 'public'
-           AND child.relname <> 'participants'`,
+           AND child.relname <> 'participants'
+           -- Let PostgreSQL handle SET NULL/CASCADE relationships. Only
+           -- remove restrictive child rows explicitly before deleting parent.
+           AND constraint_row.confdeltype IN ('a', 'r')`,
       )
 
       let clearedRecords = 0
@@ -123,10 +126,10 @@ export async function DELETE(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] Admin participant deletion failed:", error)
-    const databaseError = error as { code?: string; constraint?: string; detail?: string }
+    const databaseError = error as { code?: string; constraint?: string; detail?: string; table?: string }
     if (databaseError.code === "23503") {
       return NextResponse.json(
-        { error: `Participant data is still linked by ${databaseError.constraint || "another record"}. Clear participation first, then retry deletion.` },
+        { error: `Participant data is still linked by ${databaseError.constraint || databaseError.table || "another record"}. Clear participation first, then retry deletion.` },
         { status: 409 },
       )
     }
