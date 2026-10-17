@@ -2148,6 +2148,22 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </section>
 
+            {/* ── INSTITUTIONAL OPERATING STANDARD ─────────────── */}
+            <section className="mx-3 mt-3 border border-slate-700/60 bg-[#0d1520] sm:mx-4" aria-labelledby="operating-standard-title">
+              <div className="flex flex-col gap-3 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Institutional operating standard</p>
+                  <h2 id="operating-standard-title" className="mt-1 text-lg font-semibold tracking-tight text-white">Built for decisions you can stand behind.</h2>
+                </div>
+                <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-emerald-300"><ShieldCheck className="h-4 w-4" /> Controls in view</span>
+              </div>
+              <div className="grid gap-px bg-slate-800/70 md:grid-cols-3">
+                {[{ icon: ReceiptText, title: "Clear records", text: "Funding requests, account activity, and payouts stay organized for review." }, { icon: SlidersHorizontal, title: "Measured access", text: "Use the terminal, account controls, and funding flows at your own pace." }, { icon: Headphones, title: "Responsive support", text: "Get help from a real support channel when a question needs context." }].map(({ icon: Icon, title, text }) => (
+                  <div key={title} className="bg-[#0d1520] p-4 sm:p-5"><Icon className="h-4 w-4 text-[#d6b66b]" /><h3 className="mt-3 text-sm font-semibold text-white">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{text}</p></div>
+                ))}
+              </div>
+            </section>
+
             {/* ── JOURNEY & OPERATING TERMS ────────────────────── */}
             <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
               <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5">
