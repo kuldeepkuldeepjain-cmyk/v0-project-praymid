@@ -46,6 +46,7 @@ export function useMarketDataStream(
     if (!streamUrl || typeof window === "undefined" || typeof WebSocket === "undefined") {
       const eventSource = typeof window !== "undefined" ? new EventSource("/api/market-data/stream") : null
       let fallbackTimer: number | undefined
+      let pollInFlight = false
       if (eventSource) {
         setStatus("connecting")
         eventSource.addEventListener("rates", (event) => {
@@ -64,13 +65,19 @@ export function useMarketDataStream(
         eventSource.onerror = () => setStatus("reconnecting")
       }
       const poll = async () => {
-        await fallbackFetch()
-        if (!disposed && (!eventSource || eventSource.readyState === EventSource.CLOSED)) {
-          setStatus("fallback")
-          fallbackTimer = window.setTimeout(() => void poll(), 1000)
+        if (disposed || pollInFlight) return
+        pollInFlight = true
+        try {
+          await fallbackFetch()
+          if (!disposed && (!eventSource || eventSource.readyState === EventSource.CLOSED)) setStatus("fallback")
+        } finally {
+          pollInFlight = false
+          if (!disposed) fallbackTimer = window.setTimeout(() => void poll(), 3000)
         }
       }
-      fallbackTimer = window.setTimeout(() => void poll(), 1000)
+      // Keep a REST safety poll running even when SSE is connected. Some providers
+      // omit instruments from a stream packet, while /rates returns the full board.
+      fallbackTimer = window.setTimeout(() => void poll(), 300)
       return () => {
         disposed = true
         eventSource?.close()
