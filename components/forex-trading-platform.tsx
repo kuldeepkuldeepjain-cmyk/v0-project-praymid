@@ -3685,6 +3685,28 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   </div>
                 )}
 
+                {/* Quick order actions */}
+                <div className="mb-2 rounded-lg border border-cyan-400/20 bg-[#07101b] p-2" aria-label="Quick order actions">
+                  <div className="mb-1.5 flex items-center justify-between"><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Quick order setup</span><span className="text-[8px] text-slate-600">One tap applies risk levels</span></div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
+                      <button key={preset.label} type="button" onClick={() => {
+                        if (preset.slPips === 0) { setSl(""); setTp(""); return }
+                        const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                        const unit = pip(selectedPair.symbol)
+                        const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
+                        const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
+                        setSl(stop.toFixed(decimals(selectedPair.symbol)))
+                        setTp(target.toFixed(decimals(selectedPair.symbol)))
+                      }} className="rounded border border-[#243752] bg-[#0b1625] px-1 py-1.5 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/50 hover:bg-cyan-400/10 hover:text-cyan-200 active:scale-95">{preset.label}</button>
+                    ))}
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-2 gap-1">
+                    <button type="button" onClick={() => setOrderDirection("BUY")} className="rounded border border-emerald-400/25 bg-emerald-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-400/20">Buy at ask</button>
+                    <button type="button" onClick={() => setOrderDirection("SELL")} className="rounded border border-rose-400/25 bg-rose-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-rose-300 transition hover:bg-rose-400/20">Sell at bid</button>
+                  </div>
+                </div>
+
                 {/* Pending price (only for limit/stop) */}
                 {orderType !== "market" && (
                   <div className="mb-1.5">
@@ -3894,7 +3916,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��══════════ */}
+      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 430 : 340, minHeight: isCompactViewport ? 430 : 340, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
