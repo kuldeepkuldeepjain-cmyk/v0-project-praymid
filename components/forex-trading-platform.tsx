@@ -355,7 +355,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────���────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────�����────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1316,7 +1316,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��─────────────────────────────────���──────────────�����������������������������───
+  // ── State ─────────────��────────────────────────────────�����──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -1389,6 +1389,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
+  const [tradeRestrictionNotice, setTradeRestrictionNotice] = useState<string | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const confirmInFlight = useRef(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
@@ -2313,10 +2314,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
     const pairSymbol = selectedPair.symbol
     if (isFundedAccount && margin < 3000) {
+      const message = "This funded account requires a minimum order amount of $3,000. Increase your position size before placing this trade."
+      setTradeRestrictionNotice(message)
       setTradeConfirm(null)
       setConfirmLoading(false)
       confirmInFlight.current = false
-      showToast("error", "Funded accounts require a minimum order amount of 3000")
+      showToast("error", message)
       return
     }
 
@@ -2415,6 +2418,13 @@ const maxLeverage = isFundedAccount ? 1 : 100
   const lev = effectiveLeverage
   const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
   const margin = calcMargin(selectedPair.symbol, lot, price, lev)
+  if (isFundedAccount && margin < 3000) {
+  const message = "This funded account requires a minimum order amount of $3,000. Increase your position size before placing this trade."
+  setTradeRestrictionNotice(message)
+  showToast("error", message)
+  setMobileTab("order")
+  return
+  }
   if (walletBalance < margin) {
     showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
     setMobileTab("order")
@@ -3475,6 +3485,13 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </div>
   )}
   </div>
+  {isFundedAccount && (
+  <div className="flex shrink-0 items-start gap-2 border-t border-amber-400/20 bg-amber-400/[0.08] px-3 py-2.5 text-[11px] text-amber-100" role="status" aria-live="polite">
+    <LockKeyhole className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+    <div className="min-w-0 flex-1"><strong className="font-black uppercase tracking-wide text-amber-200">Funded account trade rule</strong><p className="mt-0.5 leading-4 text-amber-100/75">Every trade must meet the minimum $3,000 order amount. If a trade is below this limit, it will be blocked and explained here.</p>{tradeRestrictionNotice && <p className="mt-1 font-semibold text-amber-100">{tradeRestrictionNotice}</p>}</div>
+    {tradeRestrictionNotice && <button type="button" onClick={() => setTradeRestrictionNotice(null)} className="rounded p-1 text-amber-200/70 hover:bg-amber-200/10 hover:text-amber-100" aria-label="Dismiss trade restriction notice"><X className="size-3.5" /></button>}
+  </div>
+  )}
   <div className="reference-chart-trade-dock shrink-0">
     <div className="reference-chart-trade-heading">
       <span>Quick trade</span>
@@ -4431,9 +4448,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
           onClick={(e) => { if (e.target === e.currentTarget && !confirmLoading) setTradeConfirm(null) }}
         >
           <div
-            className="relative flex flex-col rounded-2xl overflow-hidden"
+            className="relative flex max-h-full flex-col rounded-2xl overflow-y-auto overflow-x-hidden"
             style={{
-              width: "min(420px, 94vw)",
+              width: "min(360px, calc(100vw - 24px))",
+              maxHeight: "calc(100% - 24px)",
               background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
               border: "1px solid rgba(255,255,255,0.07)",
               boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,
@@ -4441,7 +4459,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
           >
             {/* Header */}
             <div
-              className="flex items-center justify-between px-5 py-4"
+              className="flex items-center justify-between px-4 py-3"
               style={{
                 background: tradeConfirm.direction === "BUY"
                   ? "linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%)"
@@ -4492,7 +4510,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
 
             {/* Quantity can be adjusted before the final confirmation. */}
-            <div className="mx-5 mt-4 rounded-xl px-4 py-3" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
+            <div className="mx-4 mt-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label htmlFor="confirm-lot-size" className="block text-[9px] font-black uppercase tracking-widest text-cyan-300">Trade quantity</label>
@@ -4531,7 +4549,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
 
             {/* Order summary grid */}
-            <div className="px-5 py-4 grid grid-cols-2 gap-2.5">
+            <div className="px-4 py-3 grid grid-cols-2 gap-2">
                 {[
                 { label: "Instrument", value: tradeConfirm.pair, color: "#f8fafc" },
                 { label: "Order Type", value: tradeConfirm.isPending ? (tradeConfirm.pendingOrderType?.replace("_", " ") ?? "Pending") : "MARKET", color: "#22d3ee" },
