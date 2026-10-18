@@ -4,7 +4,6 @@ const siteUrl = "https://elitefund.sbs"
 
 const publicRoutes = [
   "",
-  "/lending",
   "/leaderboard",
   "/privacy",
   "/terms",
@@ -17,7 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return publicRoutes.map((path) => ({
     url: `${siteUrl}${path}`,
     lastModified: now,
-    changeFrequency: path === "" || path === "/lending" ? "weekly" : "monthly",
-    priority: path === "" ? 1 : path === "/lending" ? 0.8 : 0.6,
+    changeFrequency: path === "" ? "weekly" : "monthly",
+    priority: path === "" ? 1 : 0.6,
   }))
 }

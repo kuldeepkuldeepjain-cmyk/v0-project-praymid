@@ -438,14 +438,14 @@ export default function LandingPage() {
               ["How It Works", "#features"],
               ["Programs", "#programs"],
               ["Payouts", "/participant/dashboard/payout"],
-              ["FAQ", "/lending"],
+              ["FAQ", "/terms"],
               ["Affiliate", "/participant/dashboard/refer"],
             ]} />
             <FooterColumn title="Company" links={[
               ["About Us", "#security"],
               ["Contact", "/participant/dashboard/settings/help"],
               ["Help Center", "/participant/dashboard/settings/help"],
-              ["Blog", "/lending"],
+              ["Blog", "/"],
               ["Careers", "/participant/register"],
             ]} />
             <FooterColumn title="Legal" links={[
