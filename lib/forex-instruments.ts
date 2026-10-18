@@ -19,6 +19,15 @@ const FOREX_CONFIG: PairConfig[] = [
   { base: "EUR", quote: "GBP", symbol: "EUR/GBP", category: "Forex" },
 ]
 
+const EXTENDED_FOREX_CONFIG: PairConfig[] = [
+  ["EUR", "JPY"], ["GBP", "JPY"], ["AUD", "JPY"], ["NZD", "JPY"], ["CAD", "JPY"],
+  ["CHF", "JPY"], ["EUR", "CHF"], ["GBP", "CHF"], ["AUD", "CAD"], ["AUD", "NZD"],
+  ["EUR", "AUD"], ["EUR", "CAD"], ["EUR", "NZD"], ["GBP", "AUD"], ["GBP", "CAD"],
+  ["GBP", "NZD"], ["NZD", "CAD"], ["NZD", "CHF"], ["USD", "SGD"], ["USD", "HKD"],
+  ["USD", "NOK"], ["USD", "SEK"], ["USD", "DKK"], ["USD", "MXN"], ["USD", "ZAR"],
+  ["USD", "TRY"], ["EUR", "NOK"], ["EUR", "SEK"], ["EUR", "DKK"], ["GBP", "NOK"],
+].map(([base, quote]) => ({ base, quote, symbol: `${base}/${quote}`, category: "Forex" as const }))
+
 const COMMODITIES_CONFIG: PairConfig[] = [
   { base: "XAU", quote: "USD", symbol: "XAU/USD", category: "Commodities" },
   { base: "XAG", quote: "USD", symbol: "XAG/USD", category: "Commodities" },
@@ -158,12 +167,14 @@ const CRYPTO_DEFS: CryptoDef[] = [...CRYPTO_MAJORS, ...CRYPTO_ALTS]
 
 export const PAIRS_CONFIG: PairConfig[] = [
   ...FOREX_CONFIG,
+  ...EXTENDED_FOREX_CONFIG,
   ...COMMODITIES_CONFIG,
   ...CRYPTO_DEFS.map((c): PairConfig => ({ base: c.ticker, quote: "USD", symbol: `${c.ticker}/USD`, category: "Crypto" })),
 ]
 
 export const YAHOO_SYMBOLS: Record<string, string> = {
   ...FOREX_YAHOO,
+  ...Object.fromEntries(EXTENDED_FOREX_CONFIG.map(c => [c.symbol, `${c.base}${c.quote}=X`])),
   ...Object.fromEntries(CRYPTO_DEFS.map(c => [`${c.ticker}/USD`, `${c.ticker}-USD`])),
 }
 
