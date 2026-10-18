@@ -36,7 +36,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
 
   const [input, setInput] = useState("")
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, error, regenerate } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ id, messages }) => ({
@@ -169,6 +169,13 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
                 </div>
               </div>
             ))}
+
+            {error && (
+              <div className="mx-1 flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert">
+                <span>EliteFund AI could not complete that request. Please retry.</span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => regenerate()} className="h-7 px-2 text-rose-700 hover:bg-rose-100">Retry</Button>
+              </div>
+            )}
 
             {isStreaming && (
               <div className="flex gap-2 sm:gap-2.5 md:gap-3 animate-fade-in">
