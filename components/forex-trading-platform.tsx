@@ -212,6 +212,12 @@ function calcMargin(sym: string, lots: number, price: number, leverage: number):
   return notional / safeLev
 }
 
+function minimumLotsForMargin(sym: string, price: number, leverage: number, minimumMargin: number): number {
+  const marginPerLot = calcMargin(sym, 1, price, leverage)
+  if (!Number.isFinite(marginPerLot) || marginPerLot <= 0) return 0.01
+  return Math.max(0.01, Math.ceil((minimumMargin / marginPerLot) * 100) / 100)
+}
+
 function playTerminalSound(type: "buy" | "sell" | "close" | "breakeven" | "alert" | "click") {
   if (typeof window === "undefined") return
   try {
@@ -355,7 +361,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────�������────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────��������────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1316,7 +1322,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��───────────────────────────────�������──────────────�����������������������������───
+  // ── State ─────────────��─────────────────────────────��─�������──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -2705,6 +2711,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
   // ── Derived values ────────────────────────────────────────────���──��───�����─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
+  const minimumFundedLots = selectedPair ? minimumLotsForMargin(selectedPair.symbol, midPrice, effectiveLeverage, 3000) : 0.01
+  useEffect(() => {
+    if (!isFundedAccount || !selectedPair || !Number.isFinite(minimumFundedLots)) return
+    setLotSize(current => Math.max(Number.parseFloat(current) || 0.01, minimumFundedLots).toFixed(2))
+  }, [isFundedAccount, selectedPair?.symbol, midPrice, effectiveLeverage, minimumFundedLots])
   const estimatedMargin = selectedPair
     ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
     : 0
@@ -3732,12 +3743,18 @@ const maxLeverage = isFundedAccount ? 1 : 100
                     Trade size (lots)
                     <span className="ml-1.5 normal-case tracking-normal font-medium text-slate-500">How much you trade</span>
                   </label>
-  <input type="number" value={lotSize} onChange={e => setLotSize(e.target.value)}
-  step="0.01" min="0.01" max="100" aria-describedby="lot-size-help"
+  <input type="number" value={lotSize} onChange={e => {
+    const next = Number.parseFloat(e.target.value)
+    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+  }}
+  onBlur={() => {
+    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+  }}
+  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
                     className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
   placeholder="0.01"
   />
-  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Minimum lot: 0.01 · Minimum order amount: 3000</p>}
+  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Auto minimum for {selectedPair?.symbol ?? "instrument"}: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
   <div className="flex gap-1 mt-1.5">
                     {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
                       <button key={l} onClick={() => setLotSize(l)}
