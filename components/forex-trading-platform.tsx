@@ -355,7 +355,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────�����────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────������────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1316,7 +1316,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��────────────────────────────────�����──────────────�����������������������������───
+  // ── State ─────────────��───────────────────────────────�������──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -3370,6 +3370,28 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   <span className="text-red-600 shrink-0">L<span className="text-red-400 ml-0.5">{fmt(lastCandle.low, selectedPair.symbol)}</span></span>
                   <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
                 </>}
+              </div>
+              <div className="grid grid-cols-2 gap-1.5 border-t border-[#1e2d45] bg-[#060a12] px-3 py-2 sm:grid-cols-4" aria-label="Advanced market intelligence">
+                {[
+                  { label: "Session range", value: `${fmt(selectedPair.high - selectedPair.low, selectedPair.symbol)} · ${(Math.abs(selectedPair.change ?? 0) * 100).toFixed(0)}% bias`, tone: (selectedPair.change ?? 0) >= 0 ? "#34d399" : "#f87171" },
+                  { label: "Spread quality", value: `${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`, tone: "#22d3ee" },
+                  { label: "Execution", value: online ? "Live · low latency" : "Reconnecting", tone: online ? "#34d399" : "#fbbf24" },
+                  { label: "Risk state", value: isFrozen ? "Trading locked" : `${openTrades.length} open · ${(totalMargin / Math.max(equity, 1) * 100).toFixed(1)}% margin`, tone: isFrozen ? "#f87171" : "#fbbf24" },
+                ].map(item => (
+                  <div key={item.label} className="min-w-0 rounded border border-[#15243a] bg-[#0a1120] px-2 py-1.5">
+                    <p className="truncate text-[7px] font-black uppercase tracking-[0.14em] text-slate-600">{item.label}</p>
+                    <p className="mt-0.5 truncate font-mono text-[10px] font-bold" style={{ color: item.tone }}>{item.value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center gap-1.5 overflow-x-auto border-t border-[#15243a] bg-[#080d17] px-3 py-1.5 terminal-scroll" aria-label="Advanced terminal tools">
+                <span className="mr-1 shrink-0 text-[7px] font-black uppercase tracking-[0.16em] text-slate-600">Workspace</span>
+                {[{ label: "L2 Book", panel: "dom" as const, icon: BarChart2 }, { label: "Risk", panel: "risk" as const, icon: ShieldAlert }, { label: "Alerts", panel: "alerts" as const, icon: Bell }, { label: "AI Guide", panel: "ai-coach" as const, icon: BrainCircuit }].map(({ label, panel, icon: Icon }) => (
+                  <button key={panel} type="button" onClick={() => setActivePanel(panel)} className="inline-flex shrink-0 items-center gap-1 rounded border border-[#243752] bg-[#0d1625] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-cyan-300">
+                    <Icon className="size-3" />{label}
+                  </button>
+                ))}
+                <span className="ml-auto shrink-0 font-mono text-[8px] text-slate-600">{tickCount.toLocaleString()} ticks · {online ? "FEED OK" : "FEED DEGRADED"}</span>
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
 
