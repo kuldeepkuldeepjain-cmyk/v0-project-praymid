@@ -355,7 +355,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────����────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────�����────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1316,7 +1316,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
-  // ── State ─────────────��─────────────────────────────────���──────────────�����������������������������───
+  // ── State ─────────────��────────────────────────────────�����──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
@@ -4448,9 +4448,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
           onClick={(e) => { if (e.target === e.currentTarget && !confirmLoading) setTradeConfirm(null) }}
         >
           <div
-            className="relative flex flex-col rounded-2xl overflow-hidden"
+            className="relative flex max-h-full flex-col rounded-2xl overflow-y-auto overflow-x-hidden"
             style={{
-              width: "min(420px, 94vw)",
+              width: "min(360px, calc(100vw - 24px))",
+              maxHeight: "calc(100% - 24px)",
               background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
               border: "1px solid rgba(255,255,255,0.07)",
               boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,
@@ -4458,7 +4459,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
           >
             {/* Header */}
             <div
-              className="flex items-center justify-between px-5 py-4"
+              className="flex items-center justify-between px-4 py-3"
               style={{
                 background: tradeConfirm.direction === "BUY"
                   ? "linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%)"
@@ -4509,7 +4510,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
 
             {/* Quantity can be adjusted before the final confirmation. */}
-            <div className="mx-5 mt-4 rounded-xl px-4 py-3" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
+            <div className="mx-4 mt-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label htmlFor="confirm-lot-size" className="block text-[9px] font-black uppercase tracking-widest text-cyan-300">Trade quantity</label>
@@ -4548,7 +4549,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
 
             {/* Order summary grid */}
-            <div className="px-5 py-4 grid grid-cols-2 gap-2.5">
+            <div className="px-4 py-3 grid grid-cols-2 gap-2">
                 {[
                 { label: "Instrument", value: tradeConfirm.pair, color: "#f8fafc" },
                 { label: "Order Type", value: tradeConfirm.isPending ? (tradeConfirm.pendingOrderType?.replace("_", " ") ?? "Pending") : "MARKET", color: "#22d3ee" },
