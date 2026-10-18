@@ -355,7 +355,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────���────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────����────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -1389,6 +1389,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
+  const [tradeRestrictionNotice, setTradeRestrictionNotice] = useState<string | null>(null)
   const [confirmLoading, setConfirmLoading] = useState(false)
   const confirmInFlight = useRef(false)
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
@@ -2313,10 +2314,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
     const pairSymbol = selectedPair.symbol
     if (isFundedAccount && margin < 3000) {
+      const message = "This funded account requires a minimum order amount of $3,000. Increase your position size before placing this trade."
+      setTradeRestrictionNotice(message)
       setTradeConfirm(null)
       setConfirmLoading(false)
       confirmInFlight.current = false
-      showToast("error", "Funded accounts require a minimum order amount of 3000")
+      showToast("error", message)
       return
     }
 
@@ -2415,6 +2418,13 @@ const maxLeverage = isFundedAccount ? 1 : 100
   const lev = effectiveLeverage
   const price  = dir === "BUY" ? selectedPair.ask : selectedPair.bid
   const margin = calcMargin(selectedPair.symbol, lot, price, lev)
+  if (isFundedAccount && margin < 3000) {
+  const message = "This funded account requires a minimum order amount of $3,000. Increase your position size before placing this trade."
+  setTradeRestrictionNotice(message)
+  showToast("error", message)
+  setMobileTab("order")
+  return
+  }
   if (walletBalance < margin) {
     showToast("error", `Need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`)
     setMobileTab("order")
@@ -3475,6 +3485,13 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </div>
   )}
   </div>
+  {isFundedAccount && (
+  <div className="flex shrink-0 items-start gap-2 border-t border-amber-400/20 bg-amber-400/[0.08] px-3 py-2.5 text-[11px] text-amber-100" role="status" aria-live="polite">
+    <LockKeyhole className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
+    <div className="min-w-0 flex-1"><strong className="font-black uppercase tracking-wide text-amber-200">Funded account trade rule</strong><p className="mt-0.5 leading-4 text-amber-100/75">Every trade must meet the minimum $3,000 order amount. If a trade is below this limit, it will be blocked and explained here.</p>{tradeRestrictionNotice && <p className="mt-1 font-semibold text-amber-100">{tradeRestrictionNotice}</p>}</div>
+    {tradeRestrictionNotice && <button type="button" onClick={() => setTradeRestrictionNotice(null)} className="rounded p-1 text-amber-200/70 hover:bg-amber-200/10 hover:text-amber-100" aria-label="Dismiss trade restriction notice"><X className="size-3.5" /></button>}
+  </div>
+  )}
   <div className="reference-chart-trade-dock shrink-0">
     <div className="reference-chart-trade-heading">
       <span>Quick trade</span>
