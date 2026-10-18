@@ -355,7 +355,7 @@ function calcPerfStats(closed: ClosedTrade[]): PerfStats {
   }
 }
 
-// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────������────────
+// ─── Trading Sessions (UTC hours) �����������─────��────────────────────────────�������────────
 const SESSIONS: TradingSession[] = [
   { name: "Sydney",  open: 21, close: 6,  tz: "AEST", color: "#a78bfa" },
   { name: "Tokyo",   open: 0,  close: 9,  tz: "JST",  color: "#f59e0b" },
@@ -3507,13 +3507,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   </div>
   )}
   </div>
-  {isFundedAccount && (
-  <div className="flex shrink-0 items-start gap-2 border-t border-amber-400/20 bg-amber-400/[0.08] px-3 py-2.5 text-[11px] text-amber-100" role="status" aria-live="polite">
-    <LockKeyhole className="mt-0.5 size-3.5 shrink-0 text-amber-300" />
-    <div className="min-w-0 flex-1"><strong className="font-black uppercase tracking-wide text-amber-200">Funded account trade rule</strong><p className="mt-0.5 leading-4 text-amber-100/75">Every trade must meet the minimum $3,000 order amount. If a trade is below this limit, it will be blocked and explained here.</p>{tradeRestrictionNotice && <p className="mt-1 font-semibold text-amber-100">{tradeRestrictionNotice}</p>}</div>
-    {tradeRestrictionNotice && <button type="button" onClick={() => setTradeRestrictionNotice(null)} className="rounded p-1 text-amber-200/70 hover:bg-amber-200/10 hover:text-amber-100" aria-label="Dismiss trade restriction notice"><X className="size-3.5" /></button>}
-  </div>
-  )}
+
   <div className="reference-chart-trade-dock shrink-0">
     <div className="reference-chart-trade-heading">
       <span>Quick trade</span>
@@ -3684,6 +3678,28 @@ const maxLeverage = isFundedAccount ? 1 : 100
                     </div>
                   </div>
                 )}
+
+                {/* Quick order actions */}
+                <div className="mb-2 rounded-lg border border-cyan-400/20 bg-[#07101b] p-2" aria-label="Quick order actions">
+                  <div className="mb-1.5 flex items-center justify-between"><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Quick order setup</span><span className="text-[8px] text-slate-600">One tap applies risk levels</span></div>
+                  <div className="grid grid-cols-4 gap-1">
+                    {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
+                      <button key={preset.label} type="button" onClick={() => {
+                        if (preset.slPips === 0) { setSl(""); setTp(""); return }
+                        const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                        const unit = pip(selectedPair.symbol)
+                        const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
+                        const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
+                        setSl(stop.toFixed(decimals(selectedPair.symbol)))
+                        setTp(target.toFixed(decimals(selectedPair.symbol)))
+                      }} className="rounded border border-[#243752] bg-[#0b1625] px-1 py-1.5 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/50 hover:bg-cyan-400/10 hover:text-cyan-200 active:scale-95">{preset.label}</button>
+                    ))}
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-2 gap-1">
+                    <button type="button" onClick={() => setOrderDirection("BUY")} className="rounded border border-emerald-400/25 bg-emerald-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-400/20">Buy at ask</button>
+                    <button type="button" onClick={() => setOrderDirection("SELL")} className="rounded border border-rose-400/25 bg-rose-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-rose-300 transition hover:bg-rose-400/20">Sell at bid</button>
+                  </div>
+                </div>
 
                 {/* Pending price (only for limit/stop) */}
                 {orderType !== "market" && (
@@ -3894,7 +3910,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         )}
       </div>
 
-      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��══════════ */}
+      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
       <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 430 : 340, minHeight: isCompactViewport ? 430 : 340, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
@@ -4461,6 +4477,21 @@ const maxLeverage = isFundedAccount ? 1 : 100
       <div className="flex items-center justify-between border-t border-[#1a2640] bg-[#080f1b] px-3 py-1.5 text-[8px] text-slate-600 sm:px-4"><span>{closedTrades.length} completed trades</span><button type="button" onClick={() => void loadTrades()} className="flex items-center gap-1 rounded-md px-2 py-1 font-bold uppercase tracking-[0.12em] text-cyan-300 hover:bg-cyan-400/10"><RefreshCw className="size-3" /> Refresh</button></div>
     </div>
   </div>
+  )}
+
+  {tradeRestrictionNotice && (
+    <div className="absolute inset-0 z-[75] flex items-center justify-center bg-[#02060f]/80 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="trade-restriction-title">
+      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-amber-400/35 bg-[#0a1422] shadow-2xl shadow-black/60">
+        <div className="h-1 bg-amber-400" />
+        <div className="p-5 text-center">
+          <div className="mx-auto flex size-11 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10"><LockKeyhole className="size-5 text-amber-300" /></div>
+          <p className="mt-3 text-[9px] font-black uppercase tracking-[0.2em] text-amber-300">Trade restricted</p>
+          <h2 id="trade-restriction-title" className="mt-1 text-base font-black text-white">Order cannot be placed</h2>
+          <p className="mt-2 text-xs leading-5 text-slate-400">{tradeRestrictionNotice}</p>
+          <button type="button" autoFocus onClick={() => setTradeRestrictionNotice(null)} className="mt-4 w-full rounded-lg bg-amber-400 px-4 py-2.5 text-xs font-black uppercase tracking-wider text-[#111315] transition hover:bg-amber-300">Review order</button>
+        </div>
+      </div>
+    </div>
   )}
 
   {tradeConfirm && (
