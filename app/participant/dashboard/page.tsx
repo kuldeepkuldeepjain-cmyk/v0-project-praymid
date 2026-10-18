@@ -2164,6 +2164,25 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </section>
 
+            {/* ── AI TRADE COACH ────────────────────────────────── */}
+            <section className="mx-3 mt-3 overflow-hidden border border-[#d6b66b]/35 bg-[#111c28] sm:mx-4" aria-labelledby="ai-trade-coach-title">
+              <div className="flex flex-col gap-5 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/35 bg-[#d6b66b]/10 text-[#d6b66b]"><Sparkles className="h-5 w-5" /></div>
+                  <div className="max-w-2xl">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">EliteFund AI trade coach</p>
+                    <h2 id="ai-trade-coach-title" className="mt-1 text-lg font-semibold tracking-tight text-white">Plan the trade before you place it.</h2>
+                    <p className="mt-2 text-xs leading-5 text-slate-400">Get a structured walkthrough for market context, entry logic, invalidation, position sizing, and review. The coach is educational and never promises returns or tells you what to buy.</p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500"><span className="border border-slate-700 bg-[#0a111b] px-2.5 py-1.5">Thesis</span><span className="border border-slate-700 bg-[#0a111b] px-2.5 py-1.5">Risk plan</span><span className="border border-slate-700 bg-[#0a111b] px-2.5 py-1.5">Post-trade review</span></div>
+                  </div>
+                </div>
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
+                  <button type="button" onClick={() => setIsChatOpen(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#d6b66b] px-4 text-xs font-black uppercase tracking-wider text-[#111315] transition hover:bg-[#e2c982] active:scale-[0.98]"><Sparkles className="h-4 w-4" /> Ask AI to guide me</button>
+                  <button type="button" onClick={() => { setIsChatOpen(true); }} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-700 px-4 text-xs font-bold uppercase tracking-wider text-slate-300 transition hover:border-[#d6b66b]/60 hover:text-white"><ShieldCheck className="h-4 w-4" /> Open risk checklist</button>
+                </div>
+              </div>
+            </section>
+
             {/* ── JOURNEY & OPERATING TERMS ────────────────────── */}
             <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
               <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5">
