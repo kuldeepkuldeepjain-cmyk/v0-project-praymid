@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
-import type { PointerEvent as ReactPointerEvent } from "react"
+
 import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
@@ -1347,29 +1347,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
-  const [marketPanelWidth, setMarketPanelWidth] = useState(256)
-  const [orderPanelWidth, setOrderPanelWidth] = useState(320)
-  const resizeRef = useRef<{ side: "market" | "order"; startX: number; startWidth: number } | null>(null)
-
-  useEffect(() => {
-    const onPointerMove = (event: PointerEvent) => {
-      const resize = resizeRef.current
-      if (!resize) return
-      if (resize.side === "market") setMarketPanelWidth(Math.max(208, Math.min(380, resize.startWidth + event.clientX - resize.startX)))
-      else setOrderPanelWidth(Math.max(280, Math.min(440, resize.startWidth - (event.clientX - resize.startX))))
-    }
-    const onPointerUp = () => { resizeRef.current = null; document.body.style.cursor = ""; document.body.style.userSelect = "" }
-    window.addEventListener("pointermove", onPointerMove)
-    window.addEventListener("pointerup", onPointerUp)
-    return () => { window.removeEventListener("pointermove", onPointerMove); window.removeEventListener("pointerup", onPointerUp) }
-  }, [])
-
-  const beginPanelResize = (side: "market" | "order", event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    resizeRef.current = { side, startX: event.clientX, startWidth: side === "market" ? marketPanelWidth : orderPanelWidth }
-    document.body.style.cursor = "col-resize"
-    document.body.style.userSelect = "none"
-  }
+  const marketPanelWidth = 256
+  const orderPanelWidth = 320
 
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
@@ -1619,7 +1598,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
 
-  // ── Balance API ────────────���───────────────────────────────────────────────
+  // ── Balance API ────────────������──────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
     try {
       // Prevent the externalBalance useEffect from overwriting the fresh DB value
@@ -3340,8 +3319,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
           </div>
         </div>
-        {!chartExpanded && <div role="separator" aria-label="Resize Market Watch panel" onPointerDown={(event) => beginPanelResize("market", event)} className="terminal-resize-handle hidden lg:flex" />}
-
         {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
@@ -3550,7 +3527,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
           </div>
         ) : (
         <>
-        {!chartExpanded && <div role="separator" aria-label="Resize Order Panel" onPointerDown={(event) => beginPanelResize("order", event)} className="terminal-resize-handle hidden lg:flex" />}
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
           style={{ flex: `0 0 ${orderPanelWidth}px`, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
@@ -4387,7 +4363,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���───────────────���─────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���───────────────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"

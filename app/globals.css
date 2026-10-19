@@ -1534,17 +1534,6 @@ button, a, [role="button"] {
   box-shadow: 0 0 0 3px rgba(57, 183, 216, .12) !important;
 }
 
-.terminal-resize-handle {
-  width: 5px !important;
-  background: #233448 !important;
-  transition: background 140ms ease;
-}
-
-.terminal-resize-handle:hover,
-.terminal-resize-handle:active {
-  background: var(--terminal-blue) !important;
-}
-
 @media (min-width: 1200px) {
   .apple-terminal-grid { gap: 2px; padding: 2px; }
   .apple-terminal-market,
@@ -5068,14 +5057,10 @@ button, a, [role="button"] {
     min-width: 0 !important;
     height: 100%;
   }
-  .reference-terminal .terminal-resize-handle {
-    flex: 0 0 5px;
-    cursor: col-resize;
-  }
 }
 
 /* ── Terminal layout engine (desktop/tablet) ─────────────────────────────
-   One viewport-tall workspace: header strips on top, resizable three-panel
+   One viewport-tall workspace: header strips on top, fixed three-panel
    workspace in the middle, compact blotter at the bottom. The chart always
    gets the remaining center space — nothing may push it out of view. */
 @media (min-width: 768px) {
