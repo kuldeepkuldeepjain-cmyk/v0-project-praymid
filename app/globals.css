@@ -90,8 +90,10 @@
 .terminal-chart-surface {
   contain: layout paint style;
   isolation: isolate;
-  content-visibility: auto;
+  content-visibility: visible;
   contain-intrinsic-size: 720px 520px;
+  width: 100%;
+  min-width: 0;
 }
 
 .terminal-page button,
@@ -1420,9 +1422,10 @@ button, a, [role="button"] {
   }
   .apple-terminal-market,
   .apple-terminal-order { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
-  .apple-terminal-chart-column { display: flex; flex-direction: column; }
-  .mobile-terminal-chart-wrap { min-height: 0; height: auto; max-height: none; flex: 1 1 auto; }
-  .mobile-terminal-chart-wrap .apple-trading-chart { min-height: 0; }
+  .apple-terminal-chart-column { display: flex; flex: 1 1 0%; flex-direction: column; height: 100%; min-width: 0; }
+  .apple-terminal-chart-column > .flex-1 { min-height: 0; height: 100%; }
+  .mobile-terminal-chart-wrap { min-height: 420px; height: auto; max-height: none; flex: 1 1 0%; width: 100%; min-width: 0; }
+  .mobile-terminal-chart-wrap .apple-trading-chart { display: flex; min-height: 420px; height: 100%; width: 100%; }
   .reference-chart-trade-dock { padding: 12px 14px 14px; }
 }
 
