@@ -2287,6 +2287,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       ──────────────────────────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
         <div className="elite-terminal-shell">
+          {isTerminalMenuOpen && (
+            <button
+              type="button"
+              className="elite-terminal-sidebar-backdrop"
+              aria-label="Close terminal navigation"
+              onClick={() => setIsTerminalMenuOpen(false)}
+            />
+          )}
           <aside className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`} aria-label="Trading terminal navigation">
             <div className="elite-terminal-brand">
               <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} aria-label="Go to trading dashboard home">
@@ -2478,6 +2486,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}
   fundedTopUpAvailable={isFundedAccount}
+  onOpenSidebar={() => setIsTerminalMenuOpen(true)}
   onAddFunds={() => {
   // The funded plan stays visible until the first funded payment is recorded.
   setTopUpIsFundedAccount(isFundedAccount)

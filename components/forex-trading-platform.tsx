@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react"
-import type { PointerEvent as ReactPointerEvent } from "react"
+
 import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
@@ -603,7 +603,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} · {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -1306,6 +1306,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onBalanceUpdated,
   onAccountFrozen,
   onAddFunds,
+  onOpenSidebar,
   onAddFundedFunds,
   fundedTopUpAvailable = false,
   onStatsUpdate,
@@ -1318,6 +1319,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onBalanceUpdated?: (newBalance: number) => void
   onAccountFrozen?: () => void
   onAddFunds?: () => void
+  onOpenSidebar?: () => void
   onAddFundedFunds?: () => void
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
@@ -1347,29 +1349,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
-  const [marketPanelWidth, setMarketPanelWidth] = useState(256)
-  const [orderPanelWidth, setOrderPanelWidth] = useState(320)
-  const resizeRef = useRef<{ side: "market" | "order"; startX: number; startWidth: number } | null>(null)
-
-  useEffect(() => {
-    const onPointerMove = (event: PointerEvent) => {
-      const resize = resizeRef.current
-      if (!resize) return
-      if (resize.side === "market") setMarketPanelWidth(Math.max(208, Math.min(380, resize.startWidth + event.clientX - resize.startX)))
-      else setOrderPanelWidth(Math.max(280, Math.min(440, resize.startWidth - (event.clientX - resize.startX))))
-    }
-    const onPointerUp = () => { resizeRef.current = null; document.body.style.cursor = ""; document.body.style.userSelect = "" }
-    window.addEventListener("pointermove", onPointerMove)
-    window.addEventListener("pointerup", onPointerUp)
-    return () => { window.removeEventListener("pointermove", onPointerMove); window.removeEventListener("pointerup", onPointerUp) }
-  }, [])
-
-  const beginPanelResize = (side: "market" | "order", event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    resizeRef.current = { side, startX: event.clientX, startWidth: side === "market" ? marketPanelWidth : orderPanelWidth }
-    document.body.style.cursor = "col-resize"
-    document.body.style.userSelect = "none"
-  }
+  const marketPanelWidth = 256
+  const orderPanelWidth = 320
 
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
@@ -1619,7 +1600,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
 
-  // ── Balance API ────────────────────────────────────────────────────────────
+  // ── Balance API ────────────������──────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
     try {
       // Prevent the externalBalance useEffect from overwriting the fresh DB value
@@ -2978,8 +2959,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
   onToggleWatchlist={() => setMobileTab("market")}
-  onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
-        onOpenWithdraw={() => { window.location.assign("/participant/dashboard/payout") }}
+        onOpenSidebar={onOpenSidebar}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
   onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
         onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
@@ -3034,40 +3014,40 @@ const maxLeverage = isFundedAccount ? 1 : 100
         marketStatus={online ? "open" : "closed"}
       />
 
-      <div className="reference-metrics reference-metrics-header" aria-label="Account metrics">
-        {[
-          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
-          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
-          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-        ].map(item => (
-          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
-          </div>
-        ))}
-      </div>
-
-      <nav className="reference-fund-rail" aria-label="Account actions">
-        <div className="reference-fund-rail-label">Account</div>
-        <button type="button" className="reference-fund-action reference-fund-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
-          <Wallet className="h-4 w-4" />
-          <span>Add Funds</span>
-        </button>
-        <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
-          <ArrowUpDown className="h-4 w-4" />
-          <span>Withdraw</span>
-        </button>
-  <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
-  <TrendingUp className="h-4 w-4" />
-  <span>Prediction</span>
-  </button>
-      </nav>
+      <header className="terminal-account-bar" aria-label="Account overview">
+        <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
+          {[
+            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
+            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+            { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold", bar: true },
+            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+            { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+          ].map(item => (
+            <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
+              <span className="terminal-stat-label">{item.label}</span>
+              <strong className="terminal-stat-value">{item.value}</strong>
+              {item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+            </div>
+          ))}
+        </div>
+        <nav className="terminal-account-actions" aria-label="Account actions">
+          <button type="button" className="terminal-action terminal-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
+            <Wallet className="h-3.5 w-3.5" />
+            <span>Add Funds</span>
+          </button>
+          <button type="button" className="terminal-action" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            <span>Withdraw</span>
+          </button>
+          <button type="button" className="terminal-action terminal-action-accent" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span>Prediction</span>
+          </button>
+        </nav>
+      </header>
 
       {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════������═���═��══������ */}
-      <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
+      <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
           if (!pair) return null
@@ -3185,7 +3165,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: `min(${marketPanelWidth}px,100%)`, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+          style={{ flex: `0 0 ${marketPanelWidth}px`, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -3342,8 +3322,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
           </div>
         </div>
-        {!chartExpanded && <div role="separator" aria-label="Resize Market Watch panel" onPointerDown={(event) => beginPanelResize("market", event)} className="terminal-resize-handle hidden lg:flex" />}
-
         {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
@@ -3552,9 +3530,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
           </div>
         ) : (
         <>
-        {!chartExpanded && <div role="separator" aria-label="Resize Order Panel" onPointerDown={(event) => beginPanelResize("order", event)} className="terminal-resize-handle hidden lg:flex" />}
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ width: `min(${orderPanelWidth}px,100%)`, borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
+          style={{ flex: `0 0 ${orderPanelWidth}px`, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -4389,7 +4366,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���───────────────���─────────────────────────── */}
+      {/* ── Trade Confirmation Modal ──���───────────────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"
