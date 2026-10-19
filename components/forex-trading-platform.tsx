@@ -1619,7 +1619,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
 
-  // ── Balance API ────────────��───────────────────────────────────────────────
+  // ── Balance API ────────────���───────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
     try {
       // Prevent the externalBalance useEffect from overwriting the fresh DB value
@@ -3034,40 +3034,40 @@ const maxLeverage = isFundedAccount ? 1 : 100
         marketStatus={online ? "open" : "closed"}
       />
 
-      <div className="reference-metrics reference-metrics-header" aria-label="Account metrics">
-        {[
-          { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
-          { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-          { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold" },
-          { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-          { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-        ].map(item => (
-          <div key={item.label} className={`reference-metric-card tone-${item.tone}`}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            {item.label === "Margin Used" && <div className="reference-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
-          </div>
-        ))}
-      </div>
-
-      <nav className="reference-fund-rail" aria-label="Account actions">
-        <div className="reference-fund-rail-label">Account</div>
-        <button type="button" className="reference-fund-action reference-fund-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
-          <Wallet className="h-4 w-4" />
-          <span>Add Funds</span>
-        </button>
-        <button type="button" className="reference-fund-action reference-fund-action-payout" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
-          <ArrowUpDown className="h-4 w-4" />
-          <span>Withdraw</span>
-        </button>
-  <button type="button" className="reference-fund-action reference-fund-action-prediction" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
-  <TrendingUp className="h-4 w-4" />
-  <span>Prediction</span>
-  </button>
-      </nav>
+      <header className="terminal-account-bar" aria-label="Account overview">
+        <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
+          {[
+            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
+            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+            { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold", bar: true },
+            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+            { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+          ].map(item => (
+            <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
+              <span className="terminal-stat-label">{item.label}</span>
+              <strong className="terminal-stat-value">{item.value}</strong>
+              {item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+            </div>
+          ))}
+        </div>
+        <nav className="terminal-account-actions" aria-label="Account actions">
+          <button type="button" className="terminal-action terminal-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
+            <Wallet className="h-3.5 w-3.5" />
+            <span>Add Funds</span>
+          </button>
+          <button type="button" className="terminal-action" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            <span>Withdraw</span>
+          </button>
+          <button type="button" className="terminal-action terminal-action-accent" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+            <TrendingUp className="h-3.5 w-3.5" />
+            <span>Prediction</span>
+          </button>
+        </nav>
+      </header>
 
       {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════������═���═��══������ */}
-      <div className="reference-watchlist shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
+      <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
           if (!pair) return null
