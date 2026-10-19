@@ -86,6 +86,42 @@
 .terminal-page .terminal-positive { color: var(--terminal-positive); }
 .terminal-page .terminal-negative { color: var(--terminal-negative); }
 
+/* Exchange-style interaction and rendering primitives. */
+.terminal-chart-surface {
+  contain: layout paint style;
+  isolation: isolate;
+  content-visibility: auto;
+  contain-intrinsic-size: 720px 520px;
+}
+
+.terminal-page button,
+.terminal-page [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.terminal-page .price-mono,
+.terminal-page input[type="number"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+.terminal-page .terminal-scroll,
+.terminal-page .overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--terminal-line) transparent;
+  overscroll-behavior-inline: contain;
+}
+
+.terminal-page .terminal-scroll::-webkit-scrollbar,
+.terminal-page .overflow-x-auto::-webkit-scrollbar { height: 5px; width: 5px; }
+.terminal-page .terminal-scroll::-webkit-scrollbar-thumb,
+.terminal-page .overflow-x-auto::-webkit-scrollbar-thumb { background: var(--terminal-line); border-radius: 999px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .terminal-page button { transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease, transform 120ms ease; }
+  .terminal-page button:active { transform: translateY(1px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .terminal-page *, .terminal-page *::before, .terminal-page *::after {
     animation-duration: 0.01ms !important;

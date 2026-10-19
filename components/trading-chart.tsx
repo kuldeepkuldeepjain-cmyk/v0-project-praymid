@@ -764,7 +764,7 @@ export function TradingChart({
   const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
 
   return (
-    <div className="apple-trading-chart flex flex-col w-full h-full select-none" style={{ background: "#09121e" }}>
+    <div className="apple-trading-chart terminal-chart-surface flex flex-col w-full h-full select-none" style={{ background: "#09121e" }}>
 
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
+import { PAIRS_CONFIG } from "@/lib/forex-instruments"
 
-const symbols = ["btcusd", "ethusd", "bnbusd"] as const
+const symbols = PAIRS_CONFIG.filter((pair) => pair.category === "Crypto").map((pair) => pair.symbol.replace("/", "").toLowerCase())
 
 export async function GET() {
   const token = process.env.TIINGO_API_KEY
