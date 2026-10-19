@@ -3157,13 +3157,41 @@ button, a, [role="button"] {
 .elite-terminal-sidebar {
   width: 248px;
   flex: 0 0 248px;
-  display: flex;
+  display: none;
   flex-direction: column;
   padding: 0 14px 16px;
   background: linear-gradient(180deg, #0a111b 0%, #070d15 62%, #060a11 100%);
   border-right: 1px solid #203044;
   box-shadow: 10px 0 32px rgba(0,0,0,.12);
   }
+/* The sidebar is hidden by default on every viewport and opens as an
+   overlay drawer when the terminal menu button toggles it. */
+.elite-terminal-sidebar.is-open {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 80;
+  display: flex;
+  width: min(270px, 86vw);
+  flex-basis: min(270px, 86vw);
+  padding-inline: 16px;
+  box-shadow: 18px 0 48px rgba(0,0,0,.45);
+}
+.elite-terminal-sidebar.is-open::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0,0,0,.52);
+}
+.elite-terminal-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 75;
+  border: 0;
+  padding: 0;
+  background: rgba(0,0,0,.52);
+  cursor: default;
+}
 .elite-terminal-sidebar-account {
   display: flex;
   align-items: center;
@@ -3228,7 +3256,7 @@ button, a, [role="button"] {
 .elite-terminal-brand strong { color: #f2f4f7; font-size: 17px; letter-spacing: .03em; }
 .elite-terminal-brand span { color: #d0ad6d; font-size: 8px; letter-spacing: .24em; }
 .elite-terminal-sidebar-close {
-  display: none;
+  display: grid;
   margin-left: auto;
   width: 34px;
   height: 34px;
@@ -3489,7 +3517,6 @@ button, a, [role="button"] {
 .reference-status-spacer { flex: 1; }
 .reference-status-divider { color: #526174; }
 @media (max-width: 1100px) {
-  .elite-terminal-sidebar { width: 224px; flex-basis: 224px; padding-inline: 12px; }
   .elite-terminal-account-metrics { gap: 12px; }
   .elite-terminal-account-metric { display: none; }
   .elite-terminal-search { width: min(420px, 40vw); }
@@ -3551,25 +3578,6 @@ button, a, [role="button"] {
     justify-content: center;
   }
 
-  .elite-terminal-sidebar { display: none; }
-  .elite-terminal-sidebar-close { display: grid; }
-  .elite-terminal-sidebar.is-open {
-    position: fixed;
-    inset: 0 auto 0 0;
-    z-index: 80;
-    display: flex;
-    width: min(270px, 86vw);
-    flex-basis: min(270px, 86vw);
-    padding-inline: 16px;
-    box-shadow: 18px 0 48px rgba(0,0,0,.45);
-  }
-  .elite-terminal-sidebar.is-open::after {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    background: rgba(0,0,0,.52);
-  }
   .elite-terminal-header { height: 60px; flex-basis: 60px; padding-inline: 10px; gap: 8px; }
   .elite-terminal-menu { width: 34px; height: 40px; flex: 0 0 34px; }
   .elite-terminal-search { width: auto; min-width: 0; height: 40px; flex: 1; padding-inline: 11px; gap: 8px; }

@@ -603,7 +603,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} · {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -1306,6 +1306,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onBalanceUpdated,
   onAccountFrozen,
   onAddFunds,
+  onOpenSidebar,
   onAddFundedFunds,
   fundedTopUpAvailable = false,
   onStatsUpdate,
@@ -1318,6 +1319,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onBalanceUpdated?: (newBalance: number) => void
   onAccountFrozen?: () => void
   onAddFunds?: () => void
+  onOpenSidebar?: () => void
   onAddFundedFunds?: () => void
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
@@ -2957,6 +2959,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
   onToggleWatchlist={() => setMobileTab("market")}
+        onOpenSidebar={onOpenSidebar}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
   onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
         onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}

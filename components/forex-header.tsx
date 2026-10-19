@@ -44,6 +44,7 @@ interface ForexHeaderProps {
   onToggleTheme: () => void
   theme: "dark" | "light"
   onToggleWatchlist: () => void
+  onOpenSidebar?: () => void
   onOpenTransfer: () => void
   onOpenSettings: () => void
   onOpenProfile: () => void
@@ -96,6 +97,7 @@ export function ForexHeader({
   onToggleTheme,
   theme,
   onToggleWatchlist,
+  onOpenSidebar,
   onOpenTransfer,
   onOpenSettings,
   onOpenProfile,
@@ -146,6 +148,17 @@ export function ForexHeader({
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
       <div className="terminal-toolbar-row flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
+        {onOpenSidebar && (
+          <button
+            type="button"
+            onClick={onOpenSidebar}
+            aria-label="Open terminal navigation"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            style={{ borderColor: "#21354d", background: "#0d1a2b" }}
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+        )}
         <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
           <img
 src="/elite-fund-logo.jpg"
