@@ -2978,8 +2978,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
         onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
         theme={isDarkTheme ? "dark" : "light"}
   onToggleWatchlist={() => setMobileTab("market")}
-  onOpenDeposit={() => onAddFunds?.() || showToast("info", "Deposit flow opened")}
-        onOpenWithdraw={() => { window.location.assign("/participant/dashboard/payout") }}
         onOpenTransfer={() => showToast("info", "Transfer flow opened")}
   onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
         onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}

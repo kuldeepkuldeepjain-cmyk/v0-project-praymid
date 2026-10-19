@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   Bell,
   ChevronDown,
   CircleDot,
@@ -46,8 +44,6 @@ interface ForexHeaderProps {
   onToggleTheme: () => void
   theme: "dark" | "light"
   onToggleWatchlist: () => void
-  onOpenDeposit: () => void
-  onOpenWithdraw: () => void
   onOpenTransfer: () => void
   onOpenSettings: () => void
   onOpenProfile: () => void
@@ -100,8 +96,6 @@ export function ForexHeader({
   onToggleTheme,
   theme,
   onToggleWatchlist,
-  onOpenDeposit,
-  onOpenWithdraw,
   onOpenTransfer,
   onOpenSettings,
   onOpenProfile,
@@ -216,8 +210,6 @@ src="/elite-fund-logo.jpg"
           <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
-          <button type="button" onClick={onOpenDeposit} className="terminal-toolbar-action text-emerald-300"><ArrowDownRight className="h-3 w-3" />Deposit</button>
-          <button type="button" onClick={onOpenWithdraw} className="terminal-toolbar-action text-amber-300"><ArrowUpRight className="h-3 w-3" />Withdraw</button>
         </div>
 
         <div className="relative">
@@ -226,8 +218,6 @@ src="/elite-fund-logo.jpg"
             {menuItems.map((item) => <button key={item.id} type="button" onClick={() => navigateFromMenu(item.id)} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
             <div className="my-1 border-t" style={{ borderColor: "#1b2b40" }} />
             <button type="button" onClick={() => { onToggleWatchlist(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Wallet className="h-3.5 w-3.5 text-cyan-300" />Focus watchlist</button>
-            <button type="button" onClick={() => { onOpenDeposit(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-emerald-300 hover:bg-white/5"><ArrowDownRight className="h-3.5 w-3.5" />Deposit funds</button>
-            <button type="button" onClick={() => { onOpenWithdraw(); setMenuOpen(false) }} className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-amber-300 hover:bg-white/5"><ArrowUpRight className="h-3.5 w-3.5" />Withdraw funds</button>
             <button type="button" onClick={() => { onOpenTransfer(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Wallet className="h-3.5 w-3.5" />Transfer funds</button>
             <button type="button" onClick={() => { onToggleFullscreen(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</button>
             <button type="button" onClick={() => { onToggleLock(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">{isLocked ? "Unlock trading" : "Lock trading"}</button>
