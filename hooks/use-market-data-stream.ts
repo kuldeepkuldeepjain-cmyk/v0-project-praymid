@@ -72,7 +72,7 @@ export function useMarketDataStream(
           if (!disposed && (!eventSource || eventSource.readyState === EventSource.CLOSED)) setStatus("fallback")
         } finally {
           pollInFlight = false
-          if (!disposed) fallbackTimer = window.setTimeout(() => void poll(), 3000)
+          if (!disposed) fallbackTimer = window.setTimeout(() => void poll(), 1000)
         }
       }
       // Keep a REST safety poll running even when SSE is connected. Some providers
