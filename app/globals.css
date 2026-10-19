@@ -1431,6 +1431,125 @@ button, a, [role="button"] {
   .apple-trading-terminal { max-width: 1920px; margin-inline: auto; }
 }
 
+/* EliteFund terminal refresh: layered workspace chrome without changing behavior. */
+.apple-trading-terminal {
+  --terminal-blue: #39b7d8;
+  --terminal-blue-soft: rgba(57, 183, 216, .12);
+  --terminal-surface: #08111d;
+  --terminal-surface-2: #0c1725;
+  --terminal-border: rgba(112, 151, 183, .22);
+  background: #050a11 !important;
+  border-top: 0 !important;
+  color: #d8e2ec;
+}
+
+.apple-trading-terminal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(circle at 50% -10%, rgba(31, 104, 145, .16), transparent 38%);
+}
+
+.apple-trading-terminal > nav {
+  min-height: 54px;
+  padding-inline: 16px;
+  background: rgba(7, 16, 28, .96) !important;
+  border-bottom: 1px solid var(--terminal-border) !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .24) !important;
+  backdrop-filter: blur(14px);
+}
+
+.apple-terminal-grid {
+  gap: 1px;
+  background: #233448;
+}
+
+.apple-terminal-market,
+.apple-terminal-order,
+.apple-terminal-chart-column {
+  background: var(--terminal-surface) !important;
+  border-color: var(--terminal-border) !important;
+}
+
+.apple-terminal-market > div:first-child,
+.apple-terminal-order > div:first-child,
+.chart-header {
+  background: linear-gradient(180deg, #102337 0%, #0a1421 100%) !important;
+  border-color: rgba(57, 183, 216, .24) !important;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .2) !important;
+}
+
+.apple-terminal-market > div:first-child::after,
+.apple-terminal-order > div:first-child::after {
+  content: "";
+  display: block;
+  height: 2px;
+  margin: 10px -12px -10px;
+  background: linear-gradient(90deg, var(--terminal-blue), transparent 75%);
+  opacity: .65;
+}
+
+.apple-terminal-market .reference-watch-card {
+  border-color: rgba(112, 151, 183, .16) !important;
+  background: rgba(10, 23, 37, .78) !important;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.apple-terminal-market .reference-watch-card:hover,
+.apple-terminal-market .reference-watch-card.is-selected {
+  border-color: rgba(57, 183, 216, .7) !important;
+  background: var(--terminal-blue-soft) !important;
+  transform: translateX(2px);
+}
+
+.apple-terminal-chart-column > .chart-header {
+  padding: 14px 16px 12px !important;
+}
+
+.apple-terminal-chart-column .chart-timeframe-toolbar {
+  background: #07101b !important;
+  border-color: var(--terminal-border) !important;
+}
+
+.apple-terminal-order {
+  box-shadow: -12px 0 28px rgba(0, 0, 0, .16);
+}
+
+.apple-terminal-order input,
+.apple-terminal-order select,
+.apple-terminal-order textarea {
+  border-color: rgba(112, 151, 183, .28) !important;
+  background: #07111e !important;
+  color: #e7f0f7 !important;
+}
+
+.apple-terminal-order input:focus,
+.apple-terminal-order select:focus,
+.apple-terminal-order textarea:focus {
+  border-color: var(--terminal-blue) !important;
+  box-shadow: 0 0 0 3px rgba(57, 183, 216, .12) !important;
+}
+
+.terminal-resize-handle {
+  width: 5px !important;
+  background: #233448 !important;
+  transition: background 140ms ease;
+}
+
+.terminal-resize-handle:hover,
+.terminal-resize-handle:active {
+  background: var(--terminal-blue) !important;
+}
+
+@media (min-width: 1200px) {
+  .apple-terminal-grid { gap: 2px; padding: 2px; }
+  .apple-terminal-market,
+  .apple-terminal-order,
+  .apple-terminal-chart-column { border-radius: 5px; overflow: hidden; }
+}
+
 .apple-terminal-grid {
   display: grid;
   grid-template-columns: minmax(220px, 248px) minmax(0, 1fr) minmax(292px, 320px);
