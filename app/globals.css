@@ -1422,10 +1422,10 @@ button, a, [role="button"] {
   }
   .apple-terminal-market,
   .apple-terminal-order { overflow-y: auto; overflow-x: hidden; scrollbar-gutter: stable; }
-  .apple-terminal-chart-column { display: flex; flex: 1 1 0%; flex-direction: column; height: 100%; min-width: 0; }
-  .apple-terminal-chart-column > .flex-1 { min-height: 0; height: 100%; }
-  .mobile-terminal-chart-wrap { min-height: 420px; height: auto; max-height: none; flex: 1 1 0%; width: 100%; min-width: 0; }
-  .mobile-terminal-chart-wrap .apple-trading-chart { display: flex; min-height: 420px; height: 100%; width: 100%; }
+  .apple-terminal-chart-column { display: flex; flex: 1 1 0%; flex-direction: column; height: 100%; min-width: 0; min-height: 0; }
+  .apple-terminal-chart-column > .flex-1 { min-height: 0; }
+  .mobile-terminal-chart-wrap { min-height: 0; height: auto; max-height: none; flex: 1 1 0%; width: 100%; min-width: 0; }
+  .mobile-terminal-chart-wrap .apple-trading-chart { display: flex; min-height: 0; height: 100%; width: 100%; }
   .reference-chart-trade-dock { padding: 12px 14px 14px; }
 }
 
@@ -5071,5 +5071,99 @@ button, a, [role="button"] {
   .reference-terminal .terminal-resize-handle {
     flex: 0 0 5px;
     cursor: col-resize;
+  }
+}
+
+/* ── Terminal layout engine (desktop/tablet) ─────────────────────────────
+   One viewport-tall workspace: header strips on top, resizable three-panel
+   workspace in the middle, compact blotter at the bottom. The chart always
+   gets the remaining center space — nothing may push it out of view. */
+@media (min-width: 768px) {
+  .elite-terminal-workspace {
+    height: 100dvh;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .elite-terminal-platform {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .apple-trading-terminal.reference-terminal {
+    height: 100dvh;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .elite-terminal-platform > .reference-terminal {
+    height: 100%;
+    max-height: 100%;
+  }
+  .reference-terminal .apple-terminal-grid {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden;
+  }
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-order {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    height: 100%;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+  .reference-terminal .apple-terminal-chart-column > .flex-1 {
+    min-height: 0 !important;
+  }
+  .reference-terminal .mobile-terminal-chart-wrap {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  .reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart {
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+  /* Compact blotter: positions strip stays reachable without eating the chart. */
+  .reference-terminal .apple-terminal-blotter {
+    height: 216px !important;
+    min-height: 216px !important;
+    flex: 0 0 216px;
+  }
+  /* Collapsed rate bar (default): hide the secondary intelligence rows so the
+     chart owns the center. The ⌄ toggle still reveals them on demand. */
+  .rate-bar-collapsed [aria-label="Advanced market intelligence"],
+  .rate-bar-collapsed [aria-label="Advanced terminal tools"] {
+    display: none !important;
+  }
+  .reference-terminal .chart-header { padding: 8px 12px !important; }
+  .reference-terminal .chart-timeframe-toolbar { min-height: 34px; }
+
+  /* Chart-first density: slim the account strips so the workspace owns the screen. */
+  .reference-terminal .reference-metrics { gap: 8px; padding: 8px 12px; }
+  .reference-terminal .reference-metric-card { padding: 6px 12px !important; min-height: 0 !important; }
+  .reference-terminal .reference-metric-card span { font-size: 9px; }
+  .reference-terminal .reference-metric-card strong { font-size: 13px; }
+  .reference-terminal .reference-fund-rail { gap: 8px; padding: 6px 12px; }
+  .reference-terminal .reference-fund-action { height: 32px !important; min-height: 32px !important; font-size: 11px; }
+  .reference-terminal .reference-watchlist { padding: 6px 12px; gap: 8px; }
+  .reference-terminal .reference-watch-card { height: 52px; min-width: 168px; }
+}
+
+@media (min-width: 768px) and (max-height: 820px) {
+  .reference-terminal .apple-terminal-blotter {
+    height: 176px !important;
+    min-height: 176px !important;
+    flex-basis: 176px;
   }
 }

@@ -1619,7 +1619,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
 
-  // ── Balance API ────────────────────────────────────────────────────────────
+  // ── Balance API ────────────��───────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
     try {
       // Prevent the externalBalance useEffect from overwriting the fresh DB value
@@ -3185,7 +3185,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������──────────────── */}
         <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ width: `min(${marketPanelWidth}px,100%)`, borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+          style={{ flex: `0 0 ${marketPanelWidth}px`, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -3554,7 +3554,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <>
         {!chartExpanded && <div role="separator" aria-label="Resize Order Panel" onPointerDown={(event) => beginPanelResize("order", event)} className="terminal-resize-handle hidden lg:flex" />}
         <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ width: `min(${orderPanelWidth}px,100%)`, borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
+          style={{ flex: `0 0 ${orderPanelWidth}px`, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
