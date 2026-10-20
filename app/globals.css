@@ -5855,4 +5855,46 @@ body:has(.reference-terminal) {
     height: 360px !important;
     min-height: 360px !important;
   }
+
+  /* Mobile chart contract: use explicit dimensions at every small viewport so
+     the chart cannot collapse inside a flex child with min-height: 0. */
+  .reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: 520px !important;
+    min-height: 520px !important;
+    max-height: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .reference-terminal .apple-terminal-chart-column > .chart-header {
+    flex: 0 0 auto !important;
+    min-height: 72px !important;
+  }
+  .reference-terminal .apple-terminal-chart-column > .flex-1 {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 360px !important;
+    max-height: none !important;
+    visibility: visible !important;
+    overflow: hidden !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart,
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart-canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 360px !important;
+    visibility: visible !important;
+  }
 }
