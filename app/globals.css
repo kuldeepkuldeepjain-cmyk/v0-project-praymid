@@ -5527,8 +5527,25 @@ button, a, [role="button"] {
     min-height: clamp(360px, 52dvh, 580px) !important;
     height: 100% !important;
   }
-  .apple-trading-terminal.reference-terminal .apple-terminal-market { max-height: 380px; min-height: 0 !important; }
-  .apple-trading-terminal.reference-terminal .apple-terminal-order { max-height: none; min-height: 440px !important; }
+  /* The top watch rail replaces the desktop Market Watch column on mobile,
+     leaving the reference sequence: chart → order ticket → positions/history. */
+  .apple-trading-terminal.reference-terminal .apple-terminal-market {
+    display: none !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-order {
+    display: flex !important;
+    order: 1;
+    max-height: none;
+    min-height: 440px !important;
+    padding-bottom: 8px;
+    border-radius: 12px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-order > div {
+    max-width: 100%;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-order button {
+    min-height: 42px;
+  }
   .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
     flex-basis: 260px !important;
     height: 260px !important;
@@ -5542,6 +5559,7 @@ button, a, [role="button"] {
   .apple-trading-terminal.reference-terminal .terminal-watch-strip .reference-watch-card { min-width: 116px !important; }
   .apple-trading-terminal.reference-terminal .apple-terminal-chart-column { min-height: 410px !important; height: 410px !important; }
   .apple-trading-terminal.reference-terminal .apple-terminal-order { min-height: 500px !important; }
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs > button:not(.terminal-footer-toggle) { padding-inline: 14px; }
 }
 
 /* ── Hideable activity footer ───────────────────────────────────────────── */
