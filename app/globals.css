@@ -7021,66 +7021,70 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   letter-spacing: .01em;
 }
 
-/* Account overview strip: make the two primary risk metrics visually scannable. */
+/* Compact account overview: quiet structure with two clear focal metrics. */
 .reference-terminal .terminal-account-bar {
-  align-items: stretch;
-  gap: 12px;
-  padding: 9px 12px;
-  background: linear-gradient(180deg, rgba(12,28,48,.98), rgba(7,17,31,.98)) !important;
-  border-bottom: 1px solid rgba(82,125,168,.28) !important;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: #08182b !important;
+  border-bottom: 1px solid rgba(82,125,168,.24) !important;
 }
 .reference-terminal .terminal-account-stats {
-  align-items: stretch;
-  gap: 7px;
+  align-items: center;
+  gap: 5px;
   min-width: 0;
 }
 .reference-terminal .terminal-stat {
   position: relative;
-  min-width: 118px;
-  padding: 8px 12px !important;
-  border: 1px solid rgba(73,108,143,.28) !important;
-  border-radius: 6px;
-  background: rgba(10,24,41,.72) !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+  min-width: 104px;
+  padding: 5px 9px !important;
+  border: 1px solid rgba(73,108,143,.26) !important;
+  border-radius: 4px;
+  background: rgba(10,24,41,.62) !important;
 }
-.reference-terminal .terminal-stat:first-child { border-left: 1px solid rgba(73,108,143,.28) !important; }
 .reference-terminal .terminal-stat-label {
-  color: #7f9bb8 !important;
-  font-size: 9px !important;
+  color: #7892ad !important;
+  font-size: 8px !important;
   font-weight: 700;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
+  line-height: 1;
   text-transform: uppercase;
 }
 .reference-terminal .terminal-stat-value {
   display: block;
-  margin-top: 4px;
-  color: #e8f1fa !important;
-  font-size: 15px !important;
-  line-height: 1.1;
+  margin-top: 3px;
+  color: #e5eef7 !important;
+  font-size: 13px !important;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
 }
-.reference-terminal .terminal-stat-featured,
-.reference-terminal .terminal-stat:nth-child(3) {
-  border-color: rgba(72,145,214,.68) !important;
-  background: linear-gradient(135deg, rgba(34,99,157,.5), rgba(9,27,48,.94)) !important;
-  box-shadow: inset 0 1px 0 rgba(178,222,255,.14), 0 4px 14px rgba(0,0,0,.16);
+.reference-terminal .terminal-stat-featured {
+  min-width: 116px;
+  border-color: rgba(77,156,224,.62) !important;
+  background: rgba(27,83,132,.42) !important;
+  box-shadow: inset 2px 0 0 #4d9ce0;
 }
+.reference-terminal .terminal-stat-featured .terminal-stat-label { color: #8fc7f4 !important; }
+.reference-terminal .terminal-stat-featured .terminal-stat-value { color: #f4f8fc !important; font-size: 14px !important; }
+.reference-terminal .terminal-stat:nth-child(3) {
+  border-color: rgba(213,164,67,.5) !important;
+  background: rgba(103,75,24,.22) !important;
+}
+.reference-terminal .terminal-stat:nth-child(3) .terminal-stat-value { color: #f0c86e !important; }
 .reference-terminal .terminal-stat-featured::after,
 .reference-terminal .terminal-stat:nth-child(3)::after {
   position: absolute;
-  top: 7px;
-  right: 9px;
-  color: #75b9eb;
-  font-size: 8px;
+  top: 5px;
+  right: 7px;
+  font-size: 7px;
   font-weight: 800;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
 }
-.reference-terminal .terminal-stat-featured::after { content: "ACCOUNT"; }
+.reference-terminal .terminal-stat-featured::after { content: "LIVE"; color: #8fc7f4; }
 .reference-terminal .terminal-stat:nth-child(3)::after { content: "RISK"; color: #e7bd63; }
-.reference-terminal .terminal-stat:nth-child(3) .terminal-stat-value { color: #f0c86e !important; }
 .reference-terminal .terminal-margin-bar {
-  height: 3px;
-  margin-top: 7px;
+  height: 2px;
+  margin-top: 5px;
   overflow: hidden;
   border-radius: 999px;
   background: rgba(255,255,255,.1);
@@ -7089,13 +7093,14 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #d49d3a, #f0cf79);
+  background: #d4a443;
 }
 @media (max-width: 900px) {
-  .reference-terminal .terminal-account-bar { padding: 8px; gap: 8px; }
-  .reference-terminal .terminal-account-stats { gap: 6px; }
-  .reference-terminal .terminal-stat { min-width: 108px; padding-inline: 10px !important; }
-  .reference-terminal .terminal-account-actions { gap: 6px; }
+  .reference-terminal .terminal-account-bar { padding: 5px 7px; gap: 6px; }
+  .reference-terminal .terminal-account-stats { gap: 4px; }
+  .reference-terminal .terminal-stat { min-width: 94px; padding-inline: 7px !important; }
+  .reference-terminal .terminal-stat-value { font-size: 12px !important; }
+  .reference-terminal .terminal-account-actions { gap: 4px; }
 }
 
 /* Professional execution controls: clear direction without consumer-style glow. */
