@@ -4339,7 +4339,7 @@ button, a, [role="button"] {
     order: 1 !important;
     overflow: hidden !important;
   }
-  .reference-terminal.compact-terminal .apple-terminal-chart-column > div:first-child {
+  .reference-terminal.compact-terminal .apple-terminal-chart-column > div:first-child:not(.chart-header) {
     display: flex !important;
     flex: 1 1 auto !important;
     height: auto !important;
@@ -5922,7 +5922,7 @@ body:has(.reference-terminal) {
   }
   .reference-terminal .chart-surface .apple-trading-chart,
   .reference-terminal .chart-surface canvas,
-  .reference-terminal .chart-surface svg {
+  .reference-terminal .chart-surface .apple-trading-chart-canvas svg {
     display: block !important;
     width: 100% !important;
     min-width: 0 !important;
