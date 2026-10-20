@@ -32,6 +32,53 @@ import {
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
+import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
+
+// ─── Workspace layout (UI preferences only — never market or account data) ──
+
+const DOCK_AUTOSAVE_ID = "elitefund-terminal-columns-v1"
+const BLOTTER_HEIGHT_KEY = "elitefund-terminal-blotter-height"
+const TAB_ORDER_KEY = "elitefund-terminal-tab-order"
+const MIN_BLOTTER_HEIGHT = 150
+
+function DockGroup({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+  if (!enabled) return <>{children}</>
+  return (
+    <PanelGroup direction="horizontal" autoSaveId={DOCK_AUTOSAVE_ID} className="terminal-dock-group">
+      {children}
+    </PanelGroup>
+  )
+}
+
+function DockPanel({ enabled, id, order, defaultSize, minSize, maxSize, children }: {
+  enabled: boolean; id: string; order: number; defaultSize: number; minSize: number; maxSize?: number; children: ReactNode
+}) {
+  if (!enabled) return <>{children}</>
+  return (
+    <Panel id={id} order={order} defaultSize={defaultSize} minSize={minSize} maxSize={maxSize} className="terminal-dock-panel">
+      {children}
+    </Panel>
+  )
+}
+
+function DockHandle({ enabled }: { enabled: boolean }) {
+  if (!enabled) return null
+  return (
+    <PanelResizeHandle className="terminal-dock-handle">
+      <span aria-hidden="true" />
+    </PanelResizeHandle>
+  )
+}
+
+function applyTabOrder<T extends { id: string }>(items: T[], order: string[]): T[] {
+  if (!order.length) return items
+  const rank = (id: string) => {
+    const saved = order.indexOf(id)
+    return saved === -1 ? order.length + items.findIndex(item => item.id === id) : saved
+  }
+  return [...items].sort((a, b) => rank(a.id) - rank(b.id))
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -603,7 +650,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00���������{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00�������������{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -1420,6 +1467,89 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   window.addEventListener("resize", updateViewport)
   return () => window.removeEventListener("resize", updateViewport)
   }, [])
+
+  const dockEnabled = !isCompactViewport
+  const [layoutKey, setLayoutKey] = useState(0)
+  const [blotterHeight, setBlotterHeight] = useState<number | null>(null)
+  const [tabOrder, setTabOrder] = useState<string[]>([])
+  const [draggedTab, setDraggedTab] = useState<string | null>(null)
+  const blotterRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    try {
+      const savedHeight = Number(window.localStorage.getItem(BLOTTER_HEIGHT_KEY))
+      if (savedHeight >= MIN_BLOTTER_HEIGHT) setBlotterHeight(savedHeight)
+      const savedOrder: unknown = JSON.parse(window.localStorage.getItem(TAB_ORDER_KEY) ?? "[]")
+      if (Array.isArray(savedOrder)) setTabOrder(savedOrder.filter((value): value is string => typeof value === "string"))
+    } catch {
+      // Ignore unreadable layout preferences and fall back to defaults.
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!chartExpanded) return
+    const exitExpanded = (event: KeyboardEvent) => { if (event.key === "Escape") setChartExpanded(false) }
+    window.addEventListener("keydown", exitExpanded)
+    return () => window.removeEventListener("keydown", exitExpanded)
+  }, [chartExpanded])
+
+  const clampBlotterHeight = (height: number) =>
+    Math.round(Math.min(Math.max(height, MIN_BLOTTER_HEIGHT), Math.max(MIN_BLOTTER_HEIGHT, window.innerHeight * 0.7)))
+
+  const saveBlotterHeight = (height: number | null) => {
+    try {
+      if (height === null) window.localStorage.removeItem(BLOTTER_HEIGHT_KEY)
+      else window.localStorage.setItem(BLOTTER_HEIGHT_KEY, String(height))
+    } catch {}
+  }
+
+  const startBlotterResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const startY = event.clientY
+    const startHeight = blotterRef.current?.getBoundingClientRect().height ?? 260
+    let latest = startHeight
+    const onMove = (moveEvent: PointerEvent) => {
+      latest = clampBlotterHeight(startHeight + startY - moveEvent.clientY)
+      setBlotterHeight(latest)
+    }
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      document.body.classList.remove("is-resizing-terminal")
+      saveBlotterHeight(latest)
+    }
+    document.body.classList.add("is-resizing-terminal")
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+  }
+
+  const handleBlotterResizeKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
+    event.preventDefault()
+    const current = blotterHeight ?? blotterRef.current?.getBoundingClientRect().height ?? 260
+    const next = clampBlotterHeight(current + (event.key === "ArrowUp" ? 24 : -24))
+    setBlotterHeight(next)
+    saveBlotterHeight(next)
+  }
+
+  const moveTab = (from: string, to: string, ids: string[]) => {
+    if (from === to) return
+    const next = ids.filter(id => id !== from)
+    next.splice(next.indexOf(to), 0, from)
+    setTabOrder(next)
+    try { window.localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(next)) } catch {}
+  }
+
+  const resetTerminalLayout = () => {
+    try {
+      window.localStorage.removeItem(`react-resizable-panels:${DOCK_AUTOSAVE_ID}`)
+      window.localStorage.removeItem(TAB_ORDER_KEY)
+    } catch {}
+    saveBlotterHeight(null)
+    setBlotterHeight(null)
+    setTabOrder([])
+    setLayoutKey(key => key + 1)
+  }
 
   useEffect(() => {
   if (isCompactViewport) setActivePanel("dom")
@@ -2388,7 +2518,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     }
   }
 
-  // ��─ Quick trade — routes through confirmation modal ───────────���───────────��
+  // ��─ Quick trade — routes through confirmation modal ────────��──���───────────��
   const quickTrade = (dir: TradeDirection) => {
   if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
@@ -2435,7 +2565,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
-  // ── Close trade ──────────────���──────────────────────────────────────────��──
+  // ── Close trade ──────────────���──────────────────────────────────────────����─���
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
   // Prevent double-close if tick engine and manual close race
   if (closingTradeIds.current.has(id)) return
@@ -2873,12 +3003,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
   ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} text-slate-900`} style={{ minHeight: "100dvh", height: "auto", width: "100%", position: "relative", fontFamily: "Arial, Helvetica, sans-serif", borderTop: "3px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} text-slate-900`} style={{ minHeight: "100dvh", height: "auto", width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
 
-      {/* ── Command Palette (Ctrl+K) ── */}
+      {/* ── Command Palette (Ctrl+K) ─�� */}
       <CommandPalette open={commandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} actions={commandActions} />
 
       {profilePanel && (
@@ -3163,10 +3293,13 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
       {/* ══ MAIN 3-COLUMN GRID ═��═══════════════════════════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <DockGroup key={layoutKey} enabled={dockEnabled}>
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������──────────────── */}
-        <div className={`apple-terminal-market flex-col shrink-0 transition-all duration-200 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ flex: `0 0 ${marketPanelWidth}px`, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+        {(!dockEnabled || !chartExpanded) && (
+        <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
+        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -3324,7 +3457,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
           </div>
         </div>
         {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
-        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col transition-all duration-200 ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        </DockPanel>
+        )}
+        {!chartExpanded && <DockHandle enabled={dockEnabled} />}
+        <DockPanel enabled={dockEnabled} id="chart" order={2} defaultSize={57} minSize={34}>
+        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className={`chart-header shrink-0 flex flex-col px-3 py-2 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
@@ -3452,7 +3589,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
 {/* Chart + BUY/SELL strip */}
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-  <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap">
+  <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap chart-surface">
   {selectedPair && chartLayout === "single" ? (
 <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
   <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 p-6 text-center text-slate-400 text-xs">
@@ -3517,7 +3654,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </div>
         </div>
         {/* ── RIGHT: Order Ticket ───────────��────────��───────────────────────── */}
-        {rightPanelHidden ? (
+        </DockPanel>
+        {dockEnabled && chartExpanded ? null : rightPanelHidden ? (
           <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
               type="button"
@@ -3531,8 +3669,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
           </div>
         ) : (
         <>
-        <div className={`apple-terminal-order flex-col shrink-0 transition-all duration-200 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
-          style={{ flex: `0 0 ${orderPanelWidth}px`, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
+        <DockHandle enabled={dockEnabled} />
+        <DockPanel enabled={dockEnabled} id="order" order={3} defaultSize={24} minSize={19} maxSize={36}>
+        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3901,12 +4041,36 @@ const maxLeverage = isFundedAccount ? 1 : 100
             </div>
           )}
         </div>
+        </DockPanel>
         </>
         )}
+      </DockGroup>
       </div>
 
       {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
-      <section className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} flex flex-col shrink-0`} aria-label="Trading activity footer" style={{ background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <section
+        ref={blotterRef}
+        className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
+        aria-label="Trading activity footer"
+        style={{ background: "#060a12", borderTop: "1px solid #1e2d45", ...(dockEnabled && footerOpen && blotterHeight ? { "--blotter-h": `${blotterHeight}px` } : {}) } as CSSProperties}
+      >
+        {dockEnabled && footerOpen && (
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize trading activity panel"
+            aria-valuemin={MIN_BLOTTER_HEIGHT}
+            aria-valuenow={blotterHeight ?? undefined}
+            tabIndex={0}
+            title="Drag to resize · double-click to reset"
+            className="terminal-blotter-resizer"
+            onPointerDown={startBlotterResize}
+            onKeyDown={handleBlotterResizeKey}
+            onDoubleClick={() => { setBlotterHeight(null); saveBlotterHeight(null) }}
+          >
+            <span aria-hidden="true" />
+          </div>
+        )}
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: footerOpen ? "1px solid #1a2640" : "0", background: "#060a12" }}>
           <button
@@ -3920,7 +4084,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             {footerOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
             <span className="terminal-footer-toggle-label">Activity</span>
           </button>
-          {([
+          {applyTabOrder([
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
@@ -3936,8 +4100,16 @@ const maxLeverage = isFundedAccount ? 1 : 100
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
             { id: "stats",       label: "Stats",                              icon: Activity },
-          ] as { id: typeof activePanel; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => (
-            <button key={id} onClick={() => { setActivePanel(id); if (id === "positions") setPositionsPopupOpen(true); if (id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
+          ] as { id: typeof activePanel; label: string; icon: any }[], tabOrder).map(({ id, label, icon: Icon }, _index, orderedTabs) => (
+            <button key={id}
+              draggable={dockEnabled}
+              onDragStart={(event) => { setDraggedTab(id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", id) }}
+              onDragOver={(event) => { if (draggedTab) event.preventDefault() }}
+              onDrop={(event) => { event.preventDefault(); if (draggedTab) moveTab(draggedTab, id, orderedTabs.map(tab => tab.id)); setDraggedTab(null) }}
+              onDragEnd={() => setDraggedTab(null)}
+              data-dragging={draggedTab === id ? "true" : undefined}
+              title={dockEnabled ? `${label} · drag to reorder` : undefined}
+              onClick={() => { setActivePanel(id); if (id === "positions") setPositionsPopupOpen(true); if (id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
               style={activePanel === id
                 ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
@@ -3945,6 +4117,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
               <Icon className="h-3 w-3" />{label}
             </button>
           ))}
+          {dockEnabled && (
+            <button type="button" onClick={resetTerminalLayout} className="terminal-layout-reset" aria-label="Reset panel sizes and tab order">
+              Reset layout
+            </button>
+          )}
         </div>
 
         {/* Blotter content */}

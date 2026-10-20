@@ -5908,6 +5908,28 @@ body:has(.reference-terminal) {
     min-height: 300px !important;
     height: 100% !important;
   }
+  .reference-terminal .chart-surface {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 320px !important;
+    min-width: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+  }
+  .reference-terminal .chart-surface .apple-trading-chart,
+  .reference-terminal .chart-surface canvas,
+  .reference-terminal .chart-surface svg {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 300px !important;
+    height: 100% !important;
+    visibility: visible !important;
+  }
   .reference-terminal .apple-terminal-order {
     order: 2 !important;
     width: 100% !important;
@@ -6034,3 +6056,108 @@ body:has(.reference-terminal) {
     visibility: visible !important;
   }
 }
+
+/* ─── Institutional workspace: resizable dock, blotter resizer, refined type ─── */
+.mt5-terminal.is-docked .apple-terminal-grid { display: flex !important; }
+.mt5-terminal .terminal-dock-group {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto !important;
+  align-items: stretch;
+}
+.mt5-terminal .terminal-dock-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+.mt5-terminal .terminal-dock-panel > * { width: 100%; min-width: 0; }
+
+.mt5-terminal .terminal-dock-handle {
+  position: relative;
+  flex: 0 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0b1422;
+  border-inline: 1px solid #1a2a3f;
+  cursor: col-resize;
+  outline: none;
+  transition: background-color 120ms ease;
+}
+.mt5-terminal .terminal-dock-handle > span {
+  width: 2px;
+  height: 28px;
+  border-radius: 2px;
+  background: #2a3f5a;
+  transition: background-color 120ms ease, height 120ms ease;
+}
+.mt5-terminal .terminal-dock-handle:hover,
+.mt5-terminal .terminal-dock-handle[data-resize-handle-state="drag"],
+.mt5-terminal .terminal-dock-handle:focus-visible { background: #10233a; }
+.mt5-terminal .terminal-dock-handle:hover > span,
+.mt5-terminal .terminal-dock-handle[data-resize-handle-state="drag"] > span,
+.mt5-terminal .terminal-dock-handle:focus-visible > span { background: #38bdf8; height: 44px; }
+
+.mt5-terminal .terminal-blotter-resizer {
+  flex: 0 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+  background: #08101b;
+  border-bottom: 1px solid #16243a;
+  touch-action: none;
+  outline: none;
+}
+.mt5-terminal .terminal-blotter-resizer > span {
+  width: 36px;
+  height: 2px;
+  border-radius: 2px;
+  background: #2a3f5a;
+  transition: background-color 120ms ease, width 120ms ease;
+}
+.mt5-terminal .terminal-blotter-resizer:hover > span,
+.mt5-terminal .terminal-blotter-resizer:focus-visible > span { background: #38bdf8; width: 56px; }
+
+.mt5-terminal.is-docked .apple-terminal-blotter.is-open.has-custom-height {
+  height: var(--blotter-h) !important;
+  min-height: var(--blotter-h) !important;
+  max-height: none !important;
+  flex-basis: var(--blotter-h) !important;
+}
+
+body.is-resizing-terminal { cursor: row-resize; user-select: none; }
+
+.mt5-terminal .apple-terminal-blotter-tabs button[draggable="true"] { cursor: grab; }
+.mt5-terminal .apple-terminal-blotter-tabs button[data-dragging="true"] { opacity: .45; cursor: grabbing; }
+
+.mt5-terminal .terminal-layout-reset {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  height: 100%;
+  min-height: 32px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #7f93ab;
+  border-left: 1px solid #1a2a3f;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+.mt5-terminal .terminal-layout-reset:hover { color: #e2ecf7; background: #10233a; }
+
+/* Refined typography: numeric data aligns in columns, focus is always visible. */
+.mt5-terminal { -webkit-font-smoothing: antialiased; }
+.mt5-terminal .price-mono,
+.mt5-terminal .terminal-stat-value,
+.mt5-terminal table td { font-variant-numeric: tabular-nums; }
+.mt5-terminal button:focus-visible,
+.mt5-terminal input:focus-visible,
+.mt5-terminal select:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 1px;
+}
+
+/* Expanded chart fills the workspace on desktop. */
+.mt5-terminal.is-docked.is-chart-expanded .apple-terminal-grid { min-height: calc(100dvh - 140px); }
