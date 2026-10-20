@@ -121,7 +121,7 @@ export function ForexHeader({
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [useLocalTime, setUseLocalTime] = useState(false)
-  const [localTime, setLocalTime] = useState(serverTime)
+  const [localTime, setLocalTime] = useState("")
   const [localZone, setLocalZone] = useState("Local")
   const unreadCount = notifications.filter((item) => !item.read).length
   const pnlUp = totalPnl >= 0
