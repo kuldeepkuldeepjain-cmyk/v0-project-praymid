@@ -603,7 +603,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00–{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00���{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -1348,6 +1348,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
+  const [footerOpen, setFooterOpen] = useState(true)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
   const marketPanelWidth = 256
   const orderPanelWidth = 320
@@ -3905,9 +3906,19 @@ const maxLeverage = isFundedAccount ? 1 : 100
       </div>
 
       {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
-      <div className="apple-terminal-blotter flex flex-col shrink-0" style={{ height: isCompactViewport ? 430 : 340, minHeight: isCompactViewport ? 430 : 340, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <section className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} flex flex-col shrink-0`} aria-label="Trading activity footer" style={{ height: footerOpen ? (isCompactViewport ? 430 : 340) : 42, minHeight: footerOpen ? (isCompactViewport ? 430 : 340) : 42, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
-        <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: "1px solid #1a2640", background: "#060a12" }}>
+        <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: footerOpen ? "1px solid #1a2640" : "0", background: "#060a12" }}>
+          <button
+            type="button"
+            onClick={() => setFooterOpen(value => !value)}
+            aria-expanded={footerOpen}
+            aria-controls="terminal-activity-content"
+            aria-label={footerOpen ? "Hide trading activity" : "Show trading activity"}
+            className="terminal-footer-toggle order-first flex h-9 w-10 shrink-0 items-center justify-center border-r border-[#1b3047] text-slate-400 transition hover:bg-cyan-300/10 hover:text-cyan-200"
+          >
+            {footerOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+          </button>
           {([
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
             { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
@@ -3936,7 +3947,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </div>
 
         {/* Blotter content */}
-        <div className="flex-1 overflow-y-auto terminal-scroll">
+        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll" hidden={!footerOpen}>
 
           {/* ── Open Positions ── */}
           {activePanel === "positions" && (

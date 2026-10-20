@@ -5523,3 +5523,36 @@ button, a, [role="button"] {
   .apple-trading-terminal.reference-terminal .apple-terminal-chart-column { min-height: 410px !important; height: 410px !important; }
   .apple-trading-terminal.reference-terminal .apple-terminal-order { min-height: 500px !important; }
 }
+
+/* ── Hideable activity footer ───────────────────────────────────────────── */
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+  transition: height 180ms ease, min-height 180ms ease;
+  overflow: hidden;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-collapsed {
+  height: 42px !important;
+  min-height: 42px !important;
+  flex-basis: 42px !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-collapsed .apple-terminal-blotter-tabs {
+  border-bottom: 0 !important;
+}
+.apple-trading-terminal.reference-terminal .terminal-footer-toggle {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #08121f;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs > button:not(.terminal-footer-toggle) {
+  min-height: 40px;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs > button:not(.terminal-footer-toggle):hover {
+  background: rgba(70, 201, 232, .08) !important;
+}
+@media (max-width: 840px) {
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-open {
+    height: 260px !important;
+    min-height: 260px !important;
+    flex-basis: 260px !important;
+  }
+}
