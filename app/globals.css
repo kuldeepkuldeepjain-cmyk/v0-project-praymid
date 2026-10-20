@@ -6894,5 +6894,36 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
   html:has(.reference-terminal), body:has(.reference-terminal) {
     overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .apple-trading-terminal.reference-terminal,
+  .apple-trading-terminal.reference-terminal .apple-terminal-grid,
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column,
+  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap,
+  .apple-trading-terminal.reference-terminal .apple-terminal-order,
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+    touch-action: pan-y !important;
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav {
+    display: flex !important;
+    width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    touch-action: pan-x;
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav::-webkit-scrollbar { display: none; }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button {
+    flex: 1 0 58px;
+    min-width: 58px;
+    white-space: nowrap;
+  }
+  .apple-trading-terminal.reference-terminal button,
+  .apple-trading-terminal.reference-terminal input,
+  .apple-trading-terminal.reference-terminal select,
+  .apple-trading-terminal.reference-terminal textarea {
+    touch-action: manipulation;
   }
 }

@@ -3305,6 +3305,9 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
           <Globe2 aria-hidden="true" /><span>Markets</span>
         </button>
+        <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions") }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
+          <Zap aria-hidden="true" /><span>Order</span>
+        </button>
         <button type="button" className="mobile-nav-direction" onClick={() => { setDirection(value => value === "BUY" ? "SELL" : "BUY"); setMobileTab("chart") }} aria-label={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`} title={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`}>
           <ArrowUpDown aria-hidden="true" />
         </button>
@@ -3316,7 +3319,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════���══════��������═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════�����══════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
