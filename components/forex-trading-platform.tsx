@@ -603,7 +603,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00�����{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00�������{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -3918,6 +3918,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             className="terminal-footer-toggle order-first flex h-9 w-10 shrink-0 items-center justify-center border-r border-[#1b3047] text-slate-400 transition hover:bg-cyan-300/10 hover:text-cyan-200"
           >
             {footerOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            <span className="terminal-footer-toggle-label">Activity</span>
           </button>
           {([
             { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },

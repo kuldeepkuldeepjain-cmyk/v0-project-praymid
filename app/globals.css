@@ -5503,9 +5503,19 @@ button, a, [role="button"] {
     flex: 0 0 auto !important;
   }
   .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
     order: -1;
     min-height: clamp(390px, 58dvh, 640px) !important;
     height: clamp(390px, 58dvh, 640px) !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .flex-1 {
+    display: flex !important;
+    min-height: 0 !important;
+  }
+  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap {
+    display: block !important;
+    min-height: clamp(360px, 52dvh, 580px) !important;
+    height: 100% !important;
   }
   .apple-trading-terminal.reference-terminal .apple-terminal-market { max-height: 380px; min-height: 0 !important; }
   .apple-trading-terminal.reference-terminal .apple-terminal-order { max-height: none; min-height: 440px !important; }
@@ -5541,7 +5551,31 @@ button, a, [role="button"] {
   position: sticky;
   left: 0;
   z-index: 2;
+  gap: 5px;
+  width: auto;
+  padding-inline: 10px;
   background: #08121f;
+  color: #9eb7cc;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.apple-trading-terminal.reference-terminal .terminal-footer-toggle:hover {
+  color: #63d7ef;
+  background: #0c2032;
+}
+.apple-trading-terminal.reference-terminal .terminal-footer-toggle-label {
+  white-space: nowrap;
+}
+@media (max-width: 520px) {
+  .apple-trading-terminal.reference-terminal .terminal-footer-toggle {
+    min-width: 76px;
+    padding-inline: 8px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-footer-toggle-label {
+    display: inline;
+  }
 }
 .apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs > button:not(.terminal-footer-toggle) {
   min-height: 40px;
