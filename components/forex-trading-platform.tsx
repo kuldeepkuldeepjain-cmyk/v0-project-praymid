@@ -1420,7 +1420,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const candleRequestRef = useRef(0)
-  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("market")
+  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
@@ -1551,10 +1551,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     setLayoutKey(key => key + 1)
   }
 
-  useEffect(() => {
-  if (isCompactViewport) setActivePanel("dom")
-  }, [isCompactViewport])
-  
   useEffect(() => {
   setThemeReady(true)
     try {
@@ -2340,7 +2336,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     })
   }
 
-  const executeTrade = () => {
+  const executeTrade = (tradeDirection: TradeDirection = direction) => {
     if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
     if (!selectedPair) return
     if (!hasFreshRate(selectedPair.symbol)) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
@@ -2348,7 +2344,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
 
-    const price  = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+    setDirection(tradeDirection)
+    const price  = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
     const slNum  = sl ? parseFloat(sl) : null
     const tpNum  = tp ? parseFloat(tp) : null
     const trailN = trailingPips ? parseFloat(trailingPips) : null
@@ -2359,10 +2356,10 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     const margin = calcMargin(selectedPair.symbol, lot, price, lev)
     if (isFundedAccount && margin < 3000) { showToast("error", "Funded accounts require a minimum order amount of 3000"); return }
 
-    if (slNum !== null && direction === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
-    if (slNum !== null && direction === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
-    if (tpNum !== null && direction === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
-    if (tpNum !== null && direction === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
+    if (slNum !== null && tradeDirection === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
+    if (slNum !== null && tradeDirection === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
+    if (tpNum !== null && tradeDirection === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
+    if (tpNum !== null && tradeDirection === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
     if (orderType === "market" && walletBalance < margin) {
       showToast("error", `Insufficient balance — need $${margin.toFixed(2)}, have $${walletBalance.toFixed(2)}`); return
     }
@@ -2370,23 +2367,23 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     if (orderType !== "market") {
       const pPrice = parseFloat(pendingPrice)
       if (isNaN(pPrice) || pPrice <= 0) { showToast("error", "Enter a valid pending order price"); return }
-      const currentQuote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+      const currentQuote = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
       const isInvalidLevel = orderType === "limit"
-        ? (direction === "BUY" ? pPrice >= currentQuote : pPrice <= currentQuote)
-        : (direction === "BUY" ? pPrice <= currentQuote : pPrice >= currentQuote)
+        ? (tradeDirection === "BUY" ? pPrice >= currentQuote : pPrice <= currentQuote)
+        : (tradeDirection === "BUY" ? pPrice <= currentQuote : pPrice >= currentQuote)
       if (isInvalidLevel) {
-        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${direction === "BUY" ? "ask" : "bid"}`)
+        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${tradeDirection === "BUY" ? "ask" : "bid"}`)
         return
       }
       const oType: PendingOrder["orderType"] =
         orderType === "limit"
-          ? direction === "BUY" ? "BUY_LIMIT" : "SELL_LIMIT"
-          : direction === "BUY" ? "BUY_STOP" : "SELL_STOP"
-      requestConfirm(direction, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price: pPrice, expiry: pendingExpiry })
+          ? tradeDirection === "BUY" ? "BUY_LIMIT" : "SELL_LIMIT"
+          : tradeDirection === "BUY" ? "BUY_STOP" : "SELL_STOP"
+      requestConfirm(tradeDirection, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price: pPrice, expiry: pendingExpiry })
       return
     }
 
-    requestConfirm(direction, lot, lev, price, slNum, tpNum, trailN, false)
+    requestConfirm(tradeDirection, lot, lev, price, slNum, tpNum, trailN, false)
   }
 
   // Actual placement — called after user confirms
@@ -3048,7 +3045,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
 
 
-{/* ══ PROFESSIONAL HEADER (brand, search, tools, account, metrics) ══ */}
+{/* Desktop terminal controls */}
+<div className="reference-desktop-header">
 <ForexHeader
   walletBalance={walletBalance}
   equity={equity}
@@ -3144,20 +3142,42 @@ const maxLeverage = isFundedAccount ? 1 : 100
         serverTime="UTC"
         marketStatus={online ? "open" : "closed"}
       />
+</div>
+
+      <header className="mobile-terminal-header">
+        <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
+          <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
+          <span><strong>ELITE FUND</strong><small>TRADE BEYOND LIMITS</small></span>
+        </a>
+        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label={`${isFundedAccount ? "Funded" : "Live"} account balance and account menu`}>
+          <Award aria-hidden="true" />
+          <span><small>{isFundedAccount ? "Funded Account" : "Live Account"}</small><strong>${(isFundedAccount ? (fundedAmount ?? fundedBaseAmount) : walletBalance).toLocaleString("en-US", { maximumFractionDigits: 0 })}</strong></span>
+          <ChevronDown aria-hidden="true" />
+        </button>
+        <button type="button" className="mobile-terminal-notifications" onClick={() => { setMobileTab("chart"); setActivePanel("alerts"); setFooterOpen(true) }} aria-label="Open trading alerts">
+          <Bell aria-hidden="true" />
+          {(adminNotifications.filter(item => !item.read).length + toasts.length) > 0 && <span>{adminNotifications.filter(item => !item.read).length + toasts.length}</span>}
+        </button>
+      </header>
 
       <header className="terminal-account-bar" aria-label="Account overview">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
-          {[
+          {(isCompactViewport ? [
+            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
+            { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
+            { label: "Daily DD", value: `${dailyDrawdownPct.toFixed(2)}%`, tone: dailyDrawdownPct > 0 ? "red" : "neutral" },
+            { label: "Open trades", value: String(openTrades.length), tone: "gold" },
+          ] : [
             { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
             { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
             { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold", bar: true },
             { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
             { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-          ].map(item => (
+          ]).map(item => (
             <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
               <span className="terminal-stat-label">{item.label}</span>
               <strong className="terminal-stat-value">{item.value}</strong>
-              {item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+              {"bar" in item && item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
             </div>
           ))}
         </div>
@@ -3278,17 +3298,22 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </button>
       </div>
 
-      <nav className="reference-mobile-nav" aria-label="Terminal workspace panels">
-        {([
-          { id: "market", label: "Watchlist", icon: Activity },
-          { id: "chart", label: "Chart", icon: CandlestickChart },
-          { id: "order", label: "Order", icon: Zap },
-        ] as const).map(({ id, label, icon: Icon }) => (
-          <button key={id} type="button" onClick={() => setMobileTab(id)} aria-current={mobileTab === id ? "page" : undefined} className={mobileTab === id ? "is-active" : ""}>
-            <Icon className="h-3.5 w-3.5" />
-            <span>{label}</span>
-          </button>
-        ))}
+      <nav className="reference-mobile-nav" aria-label="Trading navigation">
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab !== "market" && activePanel === "positions" ? "page" : undefined} className={mobileTab !== "market" && activePanel === "positions" ? "is-active" : ""}>
+          <CandlestickChart aria-hidden="true" /><span>Trade</span>
+        </button>
+        <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
+          <Globe2 aria-hidden="true" /><span>Markets</span>
+        </button>
+        <button type="button" className="mobile-nav-direction" onClick={() => { setDirection(value => value === "BUY" ? "SELL" : "BUY"); setMobileTab("chart") }} aria-label={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`} title={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`}>
+          <ArrowUpDown aria-hidden="true" />
+        </button>
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("performance"); setFooterOpen(true) }} aria-current={activePanel === "performance" ? "page" : undefined} className={activePanel === "performance" ? "is-active" : ""}>
+          <BarChart aria-hidden="true" /><span>Analytics</span>
+        </button>
+        <button type="button" onClick={() => onOpenSidebar?.()}>
+          <UserRound aria-hidden="true" /><span>Account</span>
+        </button>
       </nav>
 
       {/* ══ MAIN 3-COLUMN GRID ═��═══════════════════════════��������═════════════════ */}
@@ -3461,7 +3486,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         )}
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
         <DockPanel enabled={dockEnabled} id="chart" order={2} defaultSize={57} minSize={34}>
-        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab === "chart" || mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className={`chart-header shrink-0 flex flex-col px-3 py-2 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
@@ -3671,7 +3696,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <>
         <DockHandle enabled={dockEnabled} />
         <DockPanel enabled={dockEnabled} id="order" order={3} defaultSize={24} minSize={19} maxSize={36}>
-        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab === "order" || mobileTab === "chart" && isCompactViewport ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
@@ -3705,8 +3730,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
           {/* Order panel */}
           {rightPanelTab === "order" && selectedPair ? (
             <div className="flex-1 overflow-y-auto terminal-scroll">
-              <div className="flex flex-col gap-0 p-2">
-                <div className="sticky top-0 z-20 mb-2 flex items-center justify-between rounded-lg border border-cyan-400/30 bg-[#071221]/95 px-2.5 py-2 shadow-lg shadow-cyan-950/20 backdrop-blur">
+              <div className="mobile-order-ticket flex flex-col gap-0 p-2">
+                <div className="mobile-order-builder-banner sticky top-0 z-20 mb-2 flex items-center justify-between rounded-lg border border-cyan-400/30 bg-[#071221]/95 px-2.5 py-2 shadow-lg shadow-cyan-950/20 backdrop-blur">
                   <div>
                     <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">1. Build your trade</p>
                     <p className="mt-0.5 text-[10px] text-slate-300">{selectedPair.symbol} · {orderType === "market" ? "Buy or sell at the live price" : `${orderType.toUpperCase()} order`}</p>
@@ -3747,7 +3772,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 </div>
 
                 {/* BUY/SELL toggle — keep the direction choice explicit for beginners */}
-                <div className="mb-2 grid grid-cols-2 gap-1.5">
+                <div className="mobile-order-side-toggle mb-2 grid grid-cols-2 gap-1.5">
                   {(["BUY","SELL"] as TradeDirection[]).map(d => (
                     <button key={d} type="button" onClick={() => setOrderDirection(d)}
                       aria-label={d === "BUY" ? "Buy because you expect the price to rise" : "Sell because you expect the price to fall"}
@@ -3772,7 +3797,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 </div>
 
                 {/* Executable quote snapshot */}
-                <div className="mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
+                <div className="mobile-order-quote mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
                   <div className="flex items-center justify-between px-2 py-1.5" style={{ borderBottom: "1px solid #1a2640" }}>
                     <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
@@ -3795,7 +3820,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
                 {/* Live Market Sentiment Bar */}
                 {selectedPair && (
-                  <div className="mb-2 p-2 rounded-lg" style={{ background: "#060b13", border: "1px solid #142032" }}>
+                  <div className="mobile-order-sentiment mb-2 p-2 rounded-lg" style={{ background: "#060b13", border: "1px solid #142032" }}>
                     <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider mb-1">
                       <span className="text-emerald-400">Buyers {Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
                       <span className="text-slate-400 font-bold">Order Flow</span>
@@ -3809,7 +3834,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 )}
 
                 {/* Quick order actions */}
-                <div className="mb-2 rounded-lg border border-cyan-400/20 bg-[#07101b] p-2" aria-label="Quick order actions">
+                <div className="mobile-order-presets mb-2 rounded-lg border border-cyan-400/20 bg-[#07101b] p-2" aria-label="Quick order actions">
                   <div className="mb-1.5 flex items-center justify-between"><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Quick order setup</span><span className="text-[8px] text-slate-600">One tap applies risk levels</span></div>
                   <div className="grid grid-cols-4 gap-1">
                     {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
@@ -3832,7 +3857,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
                 {/* Pending price (only for limit/stop) */}
                 {orderType !== "market" && (
-                  <div className="mb-1.5">
+                  <div className="mobile-pending-order mb-1.5">
                     <p className="mb-1 text-[8px] leading-relaxed text-slate-500">{orderType === "limit" ? (direction === "BUY" ? "Buy below the current ask" : "Sell above the current bid") : (direction === "BUY" ? "Buy above the current ask" : "Sell below the current bid")}. The order activates automatically when price reaches your level.</p>
                     <label className="text-[9px] font-bold tracking-widest uppercase block mb-1" style={{ color: "#22d3ee" }}>
                       {orderType === "limit" ? "Limit Price" : "Stop Price"}
@@ -3856,7 +3881,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 )}
 
                 {/* Volume (3D input) */}
-                <div className="mb-2">
+                <div className="mobile-lot-field mb-2">
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#a855f7" }}>
                     Trade size (lots)
                     <span className="ml-1.5 normal-case tracking-normal font-medium text-slate-500">How much you trade</span>
@@ -3886,7 +3911,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   </div>
                 </div>
 
-                <div className="mb-2">
+                <div className="mobile-leverage-field mb-2">
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
                     Leverage {isFundedAccount ? "(max 100x)" : ""}
                   </label>
@@ -3904,7 +3929,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 </div>
 
                 {/* Risk controls */}
-                <div className="mb-2 grid grid-cols-2 gap-2">
+                <div className="mobile-risk-controls mb-2 grid grid-cols-2 gap-2">
                 {/* SL */}
                 <div>
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#ef4444" }}>
@@ -3937,7 +3962,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 </div>
 
                 {/* Trailing Stop */}
-                <div className="mb-2">
+                <div className="mobile-trailing-field mb-2">
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#a78bfa" }}>
                     <ArrowUpDown className="h-3 w-3" /> Trailing Stop (pips)
                   </label>
@@ -3951,7 +3976,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 </div>
 
                 {/* Metrics grid */}
-                <div className="grid grid-cols-2 gap-1 mb-2">
+                <div className="mobile-order-metrics grid grid-cols-2 gap-1 mb-2">
                   {[
                     { label: "Margin",    value: `$${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}`, color: "#f59e0b" },
                     { label: "Pip Value", value: `$${pipVal.toFixed(4)}`, color: "#22d3ee" },
@@ -3966,7 +3991,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 </div>
 
                 {/* Live execution summary */}
-                <div className="mb-2 overflow-hidden rounded-lg border border-cyan-400/20 bg-[#07101b] shadow-[0_0_24px_rgba(34,211,238,0.06)]">
+                <div className="mobile-execution-preview mb-2 overflow-hidden rounded-lg border border-cyan-400/20 bg-[#07101b] shadow-[0_0_24px_rgba(34,211,238,0.06)]">
                   <div className="flex items-center justify-between border-b border-cyan-400/10 px-2.5 py-1.5">
                     <div className="flex items-center gap-1.5"><Activity className="h-3 w-3 text-cyan-300" /><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Execution preview</span></div>
                     <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />Live calc</span>
@@ -3980,7 +4005,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
                 {/* R:R display */}
                 {rrRatio !== null && (
-                  <div className="mb-2 px-2 py-1.5 text-[10px]" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 3 }}>
+                  <div className="mobile-order-reward mb-2 px-2 py-1.5 text-[10px]" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 3 }}>
                     {slVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Loss</span><span className="price-mono font-black text-red-400">-${maxLoss.toFixed(2)} ({slPips.toFixed(1)}p)</span></div>}
                     {tpVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Gain</span><span className="price-mono font-black text-emerald-400">+${maxGain.toFixed(2)} ({tpPips.toFixed(1)}p)</span></div>}
                     <div className="flex justify-between"><span className="text-slate-500">R:R</span><span className="price-mono font-black text-cyan-400">1:{rrRatio}</span></div>
@@ -3989,7 +4014,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
                 {/* Balance warning */}
                 {balanceLoaded && estimatedMargin > walletBalance && (
-                  <div className="flex items-center gap-1.5 px-2 py-1.5 mb-2 text-[10px] font-bold"
+                  <div className="mobile-margin-warning flex items-center gap-1.5 px-2 py-1.5 mb-2 text-[10px] font-bold"
                     style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 3 }}>
                     <AlertTriangle className="h-3 w-3 shrink-0" />
                     Need ${estimatedMargin.toFixed(2)}
@@ -3997,14 +4022,14 @@ const maxLeverage = isFundedAccount ? 1 : 100
                 )}
 
                 {/* Execute (3D) */}
-                <div className="mb-1 flex items-center justify-between px-0.5">
+                <div className="mobile-execute-label mb-1 flex items-center justify-between px-0.5">
                   <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-500">Ready to place</span>
                   <span className={`text-[9px] font-black uppercase ${direction === "BUY" ? "text-emerald-300" : "text-red-300"}`}>{direction} {selectedPair.symbol}</span>
                 </div>
                 <button
-                  onClick={executeTrade}
+                  className={`mobile-desktop-execute w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
+                  onClick={() => executeTrade()}
                   disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
-                  className={`w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
                 >
                   <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
                   <span className="relative z-10" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
@@ -4013,6 +4038,20 @@ const maxLeverage = isFundedAccount ? 1 : 100
                       : `Place ${direction} ${orderType.toUpperCase()}`}
                   </span>
                 </button>
+                <div className="mobile-order-actions" aria-label="Buy or sell at live market price">
+                  <button type="button" onClick={() => executeTrade("SELL")} disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance} aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}>
+                    <span>Sell</span><strong>{fmt(selectedPair.bid, selectedPair.symbol)}</strong>
+                  </button>
+                  <span className="mobile-order-spread"><small>Spread</small><strong>{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}</strong></span>
+                  <button type="button" onClick={() => executeTrade("BUY")} disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance} aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}>
+                    <span>Buy</span><strong>{fmt(selectedPair.ask, selectedPair.symbol)}</strong>
+                  </button>
+                </div>
+                <div className="mobile-order-risk-summary">
+                  <span>Margin: ${estimatedMargin.toFixed(2)}</span>
+                  <span>Risk: <strong>-${maxLoss.toFixed(2)}</strong></span>
+                  <span>Reward: <strong>+${maxGain.toFixed(2)}</strong></span>
+                </div>
 
               </div>
             </div>
@@ -4085,8 +4124,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
             <span className="terminal-footer-toggle-label">Activity</span>
           </button>
           {applyTabOrder([
-            { id: "positions",   label: `Open (${openTrades.length})`,      icon: Layers },
-            { id: "pending",     label: `Pending (${pendingOrders.length})`, icon: Clock },
+            { id: "positions",   label: `Positions (${openTrades.length})`, icon: Layers },
+            { id: "pending",     label: `Orders (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
             { id: "dom",         label: "Order Book",                         icon: BarChart2 },
             { id: "risk",        label: "Risk",                               icon: ShieldAlert },
@@ -4109,7 +4148,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
               onDragEnd={() => setDraggedTab(null)}
               data-dragging={draggedTab === id ? "true" : undefined}
               title={dockEnabled ? `${label} · drag to reorder` : undefined}
-              onClick={() => { setActivePanel(id); if (id === "positions") setPositionsPopupOpen(true); if (id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
+              data-panel={id}
+              onClick={() => { setActivePanel(id); if (!isCompactViewport && id === "positions") setPositionsPopupOpen(true); if (!isCompactViewport && id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
               style={activePanel === id
                 ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
@@ -4138,7 +4178,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             ) : (
               <div className="flex flex-col h-full">
               {/* Positions live summary bar */}
-              <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto" style={{ background: "linear-gradient(180deg,#060a13,#04070d)", borderBottom: "1px solid #1a2640" }}>
+              <div className="mobile-position-summary flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto" style={{ background: "linear-gradient(180deg,#060a13,#04070d)", borderBottom: "1px solid #1a2640" }}>
                 {[
                   { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.09)" : "rgba(248,113,113,0.09)" },
                   { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
@@ -4147,13 +4187,13 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
                   { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-1.5 px-2.5 h-8 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
+                  <div key={i} className="mobile-position-metric flex items-center gap-1.5 px-2.5 h-8 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
                     <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#4d6a95" }}>{item.label}</span>
                     <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
                   </div>
                 ))}
                 {/* 1-Click Mass Position Actions */}
-                <div className="ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
+                <div className="mobile-position-mass-actions ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
                   <button
                     type="button"
                     onClick={applyBreakEvenSL}
@@ -4172,14 +4212,15 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   </button>
                   <button
                     type="button"
+                    aria-label={`Close all ${openTrades.length} open positions`}
                     onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
-                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
+                    className="mobile-close-all px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
                     style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
                     <X className="h-2.5 w-2.5" /> Close All
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
+              <div className="mobile-position-list flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
                 {openTrades.map(trade => {
                   const isBuy    = trade.direction === "BUY"
                   const pnlPos   = trade.pnl >= 0
@@ -4192,12 +4233,12 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   const isGd     = isGold(trade.pair)
 
                   return (
-                    <div key={trade.id} className={`rounded-xl price-mono text-[11px] overflow-hidden transition-shadow duration-300 ${Date.now() - trade.openTimestamp < 4000 ? "animate-pulse" : ""}`}
+                    <div key={trade.id} className={`mobile-position-card rounded-xl price-mono text-[11px] overflow-hidden transition-shadow duration-300 ${Date.now() - trade.openTimestamp < 4000 ? "animate-pulse" : ""}`}
                       style={{ background: "#0d1625", border: `1px solid ${pnlPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, boxShadow: `0 0 0 1px rgba(0,0,0,0.2), 0 4px 16px -4px ${pnlPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
                       {/* Direction accent strip */}
                       <div className="h-[3px] w-full" style={{ background: isBuy ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
                       {/* Card header */}
-                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42", background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
+                      <div className="mobile-position-card-header flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42", background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
                         <div className="flex items-center gap-2 min-w-0">
                           <div className="relative flex items-center justify-center w-9 h-9 rounded-full font-black text-[11px] shrink-0"
                             style={{ background: isGd ? "linear-gradient(135deg,#d97706,#b45309)" : isCr ? "linear-gradient(135deg,#3b82f6,#1d4ed8)" : "linear-gradient(135deg,#1976c9,#0f4c81)", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
@@ -4241,7 +4282,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                       </div>
 
                       {/* SL/TP/Trailing/Swap row */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
+                      <div className="mobile-position-protection grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
                         <div>
                           <p className="text-[8px] text-slate-500 mb-0.5">SL</p>
                           <p className="font-bold text-red-400 text-[11px]">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
@@ -4265,7 +4306,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
                       </div>
 
                       {/* Partial close row */}
-                      <div className="flex gap-1.5 px-3 pb-1.5 items-center">
+                      <div className="mobile-position-partial flex gap-1.5 px-3 pb-1.5 items-center">
                         <span className="text-[8px] font-black uppercase tracking-wider shrink-0" style={{ color: "#3d5a80" }}>Partial</span>
                         <input
                           type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
@@ -4287,16 +4328,17 @@ const maxLeverage = isFundedAccount ? 1 : 100
                       </div>
 
                       {/* Action buttons */}
-                      <div className="flex gap-1.5 px-3 py-2">
+                      <div className="mobile-position-actions flex gap-1.5 px-3 py-2">
                         <button
                           onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
-                          className="flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
+                          className="mobile-position-modify flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
                           style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
                           <Edit3 className="h-3 w-3" /> Modify SL/TP
                         </button>
                         <button
+                          aria-label={`Close ${trade.pair} position`}
                           onClick={() => closeTrade(trade.id)}
-                          className="flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
+                          className="mobile-position-close flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
                           style={{
                             background: trade.pnl >= 0 ? "linear-gradient(135deg,#065f46,#059669)" : "linear-gradient(135deg,#7f1d1d,#dc2626)",
                             color: "#fff",

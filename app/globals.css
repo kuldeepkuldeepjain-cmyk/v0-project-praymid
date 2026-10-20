@@ -6161,3 +6161,543 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 
 /* Expanded chart fills the workspace on desktop. */
 .mt5-terminal.is-docked.is-chart-expanded .apple-terminal-grid { min-height: calc(100dvh - 140px); }
+
+/* Mobile trading terminal: compact, quote-first layout inspired by the supplied reference. */
+.reference-desktop-header { display: block; }
+.mobile-terminal-header,
+.reference-mobile-nav { display: none; }
+
+@media (max-width: 767px) {
+  html:has(.reference-terminal),
+  body:has(.reference-terminal) {
+    min-height: 100%;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background: #030812;
+  }
+
+  .reference-terminal {
+    --mobile-terminal-bg: #030812;
+    --mobile-terminal-panel: #091522;
+    --mobile-terminal-border: rgba(243, 247, 252, .12);
+    --mobile-terminal-ink: #f3f7fc;
+    --mobile-terminal-muted: rgba(243, 247, 252, .62);
+    --mobile-terminal-blue: #0e8bff;
+    --mobile-terminal-green: #00c990;
+    --mobile-terminal-red: #ef4664;
+    width: 100% !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+    border-top: 0 !important;
+    border-radius: 0 !important;
+    background: var(--mobile-terminal-bg) !important;
+    color: var(--mobile-terminal-ink) !important;
+  }
+
+  .reference-desktop-header { display: none !important; }
+  .mobile-terminal-header {
+    display: flex;
+    min-height: 66px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px 8px;
+    background: var(--mobile-terminal-bg);
+  }
+  .mobile-terminal-brand {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    color: var(--mobile-terminal-ink);
+    text-decoration: none;
+  }
+  .mobile-terminal-brand img {
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    object-fit: contain;
+  }
+  .mobile-terminal-brand span,
+  .mobile-terminal-account span { display: flex; min-width: 0; flex-direction: column; }
+  .mobile-terminal-brand strong { font-size: 13px; line-height: 1.15; letter-spacing: .08em; }
+  .mobile-terminal-brand small { margin-top: 3px; color: var(--mobile-terminal-muted); font-size: 8px; font-weight: 700; letter-spacing: .08em; }
+  .mobile-terminal-account {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 9px;
+    border: 1px solid var(--mobile-terminal-border);
+    border-radius: 12px;
+    background: var(--mobile-terminal-panel);
+    color: var(--mobile-terminal-ink);
+    cursor: pointer;
+    text-align: left;
+  }
+  .mobile-terminal-account > svg:first-child { width: 19px; height: 19px; flex: 0 0 auto; color: var(--mobile-terminal-blue); }
+  .mobile-terminal-account > svg:last-child { width: 14px; height: 14px; flex: 0 0 auto; color: var(--mobile-terminal-muted); }
+  .mobile-terminal-account small { overflow: hidden; color: var(--mobile-terminal-muted); font-size: 9px; white-space: nowrap; text-overflow: ellipsis; }
+  .mobile-terminal-account strong { margin-top: 2px; color: var(--mobile-terminal-ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+  .mobile-terminal-notifications {
+    position: relative;
+    display: flex;
+    width: 34px;
+    height: 38px;
+    flex: 0 0 34px;
+    align-items: center;
+    justify-content: center;
+    color: var(--mobile-terminal-muted);
+  }
+  .mobile-terminal-notifications svg { width: 20px; height: 20px; }
+  .mobile-terminal-notifications span {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--mobile-terminal-red);
+    color: var(--mobile-terminal-ink);
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 16px;
+    text-align: center;
+  }
+
+  .reference-terminal .terminal-account-bar {
+    display: block !important;
+    margin: 0 8px 8px !important;
+    padding: 0 !important;
+    overflow: hidden;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 14px !important;
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .terminal-account-stats {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+    overflow: visible !important;
+  }
+  .reference-terminal .terminal-stat {
+    min-width: 0 !important;
+    padding: 9px 7px !important;
+    border-right: 1px solid var(--mobile-terminal-border);
+  }
+  .reference-terminal .terminal-stat:last-child { border-right: 0; }
+  .reference-terminal .terminal-stat-label {
+    display: block;
+    overflow: hidden;
+    color: var(--mobile-terminal-muted) !important;
+    font-size: 8px !important;
+    letter-spacing: .02em !important;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .reference-terminal .terminal-stat-value {
+    display: block;
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--mobile-terminal-ink) !important;
+    font-size: clamp(10px, 3.1vw, 13px) !important;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .reference-terminal .terminal-stat.tone-green .terminal-stat-value { color: var(--mobile-terminal-green) !important; }
+  .reference-terminal .terminal-stat.tone-red .terminal-stat-value { color: var(--mobile-terminal-red) !important; }
+  .reference-terminal .terminal-stat.tone-gold .terminal-stat-value { color: var(--mobile-terminal-blue) !important; }
+  .reference-terminal .terminal-account-actions,
+  .reference-terminal .reference-watchlist { display: none !important; }
+
+  .reference-terminal .reference-mobile-nav {
+    position: fixed;
+    z-index: 100;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(66px + env(safe-area-inset-bottom));
+    align-items: center;
+    gap: 2px;
+    padding: 5px 8px calc(7px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--mobile-terminal-border);
+    background: rgba(3, 8, 18, .97);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .reference-terminal .reference-mobile-nav button {
+    display: flex;
+    min-width: 0;
+    min-height: 46px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--mobile-terminal-muted) !important;
+    font-size: 9px;
+    font-weight: 700;
+  }
+  .reference-terminal .reference-mobile-nav button svg { width: 20px; height: 20px; }
+  .reference-terminal .reference-mobile-nav button.is-active { color: var(--mobile-terminal-blue) !important; }
+  .reference-terminal .reference-mobile-nav .mobile-nav-direction {
+    width: 54px;
+    height: 54px;
+    min-height: 54px;
+    justify-self: center;
+    border: 1px solid rgba(243, 247, 252, .22);
+    border-radius: 50%;
+    background: var(--mobile-terminal-blue);
+    color: var(--mobile-terminal-ink) !important;
+    box-shadow: 0 4px 20px rgba(14, 139, 255, .32);
+  }
+  .reference-terminal .reference-mobile-nav .mobile-nav-direction svg { width: 24px; height: 24px; }
+  .reference-terminal .reference-statusbar { display: none !important; }
+
+  .reference-terminal .apple-terminal-grid {
+    display: flex !important;
+    flex: none !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 8px 8px !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .reference-terminal .apple-terminal-market {
+    order: 0 !important;
+    width: 100% !important;
+    min-height: min(65dvh, 520px) !important;
+    max-height: none !important;
+    flex: none !important;
+    overflow: auto !important;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 14px;
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .apple-terminal-market.hidden,
+  .reference-terminal .apple-terminal-chart-column.hidden,
+  .reference-terminal .apple-terminal-order.hidden { display: none !important; }
+
+  .reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
+    order: 1 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    flex: none !important;
+    overflow: hidden !important;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 14px;
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .apple-terminal-chart-column > .chart-header {
+    flex: 0 0 auto !important;
+    gap: 0 !important;
+    padding: 10px 10px 8px !important;
+    border: 0 !important;
+    background: var(--mobile-terminal-panel) !important;
+    box-shadow: none !important;
+  }
+  .reference-terminal .chart-header-market {
+    min-height: 36px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 8px !important;
+  }
+  .reference-terminal .chart-header-market > span:first-child,
+  .reference-terminal .chart-header-market > .w-px,
+  .reference-terminal .chart-header .terminal-rate-details,
+  .reference-terminal .chart-header [aria-label="Advanced market intelligence"],
+  .reference-terminal .chart-header [aria-label="Advanced terminal tools"] { display: none !important; }
+  .reference-terminal .chart-header-market > div:first-of-type { min-width: 0; }
+  .reference-terminal .chart-header-market > div:first-of-type > span { font-size: 13px !important; }
+  .reference-terminal .chart-header-market .bid-ask-price { font-size: 21px !important; font-weight: 800; }
+  .reference-terminal .chart-header-market > .price-mono { font-size: 11px !important; }
+  .reference-terminal .chart-timeframe-toolbar {
+    justify-content: flex-start !important;
+    gap: 5px !important;
+    min-height: 39px;
+    margin-top: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .reference-terminal .chart-timeframe-toolbar::-webkit-scrollbar { display: none; }
+  .reference-terminal .chart-timeframe-toolbar > div:first-child { display: none !important; }
+  .reference-terminal .chart-timeframe-toolbar > div:nth-child(2) { flex: 0 0 auto; gap: 2px !important; }
+  .reference-terminal .chart-timeframe-toolbar button { min-height: 32px; padding-inline: 8px !important; font-size: 10px !important; }
+  .reference-terminal .chart-timeframe-toolbar button[aria-label="Toggle TradingView live chart"] { display: none !important; }
+  .reference-terminal .apple-terminal-chart-column > .flex-1 {
+    display: flex !important;
+    flex: none !important;
+    width: 100% !important;
+    min-height: 0 !important;
+    height: 290px !important;
+    overflow: hidden !important;
+    background: var(--mobile-terminal-bg) !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap,
+  .reference-terminal .apple-terminal-chart-column .chart-surface {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 290px !important;
+    overflow: hidden !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart,
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart canvas,
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart-canvas,
+  .reference-terminal .apple-terminal-chart-column .chart-surface canvas {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    visibility: visible !important;
+  }
+  .reference-terminal .reference-chart-trade-dock { display: none !important; }
+
+  .reference-terminal .apple-terminal-order {
+    display: flex !important;
+    order: 2 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    flex: none !important;
+    overflow: visible !important;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 14px;
+    background: var(--mobile-terminal-panel) !important;
+    box-shadow: none !important;
+  }
+  .reference-terminal .apple-terminal-order > div:first-child { display: none !important; }
+  .reference-terminal .apple-terminal-order > .flex-1 { flex: none !important; height: auto !important; overflow: visible !important; }
+  .reference-terminal .mobile-order-ticket {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+  .reference-terminal .mobile-order-ticket > * { min-width: 0; margin: 0 !important; grid-column: 1 / -1; }
+  .reference-terminal .mobile-order-builder-banner,
+  .reference-terminal .mobile-order-quote,
+  .reference-terminal .mobile-order-sentiment,
+  .reference-terminal .mobile-order-presets,
+  .reference-terminal .mobile-trailing-field,
+  .reference-terminal .mobile-order-metrics,
+  .reference-terminal .mobile-execution-preview,
+  .reference-terminal .mobile-order-reward,
+  .reference-terminal .mobile-execute-label,
+  .reference-terminal .mobile-desktop-execute { display: none !important; }
+  .reference-terminal .mobile-order-ticket .apple-order-type-tabs { grid-column: 1 / -1; margin: 0 !important; border: 1px solid var(--mobile-terminal-border) !important; background: rgba(243, 247, 252, .05) !important; }
+  .reference-terminal .apple-order-type-tabs button { min-height: 42px; padding: 7px 4px !important; color: var(--mobile-terminal-muted) !important; }
+  .reference-terminal .apple-order-type-tabs button[aria-pressed="true"] { background: rgba(14, 139, 255, .2) !important; color: var(--mobile-terminal-ink) !important; border-color: var(--mobile-terminal-blue) !important; }
+  .reference-terminal .apple-order-type-tabs button span:nth-child(2) { display: none !important; }
+  .reference-terminal .mobile-order-side-toggle { grid-column: 1 / -1; margin: 0 !important; }
+  .reference-terminal .mobile-order-side-toggle button { min-height: 38px; border-radius: 9px !important; }
+  .reference-terminal .mobile-order-side-toggle button > span:last-child { display: none; }
+  .reference-terminal .mobile-lot-field,
+  .reference-terminal .mobile-leverage-field { grid-column: span 1 !important; min-width: 0; }
+  .reference-terminal .mobile-lot-field label,
+  .reference-terminal .mobile-leverage-field label,
+  .reference-terminal .mobile-risk-controls label { margin-bottom: 5px !important; color: var(--mobile-terminal-muted) !important; font-size: 9px !important; letter-spacing: .08em !important; }
+  .reference-terminal .mobile-lot-field input,
+  .reference-terminal .mobile-leverage-field select,
+  .reference-terminal .mobile-risk-controls input,
+  .reference-terminal .mobile-pending-order input {
+    min-height: 42px;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 9px !important;
+    background: rgba(3, 8, 18, .76) !important;
+    color: var(--mobile-terminal-ink) !important;
+    font-size: 13px !important;
+  }
+  .reference-terminal .mobile-lot-field > div { gap: 4px !important; }
+  .reference-terminal .mobile-lot-field > div button { min-height: 30px; padding: 4px !important; font-size: 8px !important; }
+  .reference-terminal .mobile-pending-order { grid-column: 1 / -1; }
+  .reference-terminal .mobile-risk-controls { grid-column: 1 / -1; gap: 8px !important; }
+  .reference-terminal .mobile-margin-warning { grid-column: 1 / -1; }
+  .reference-terminal .mobile-order-ticket > .mobile-order-reward { display: none !important; }
+  .reference-terminal .mobile-order-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 7px;
+    grid-column: 1 / -1;
+    padding-top: 2px;
+  }
+  .reference-terminal .mobile-order-actions button {
+    display: flex;
+    min-width: 0;
+    min-height: 58px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1px solid var(--mobile-terminal-border);
+    border-radius: 11px;
+    color: var(--mobile-terminal-ink);
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+  .reference-terminal .mobile-order-actions button:first-child { background: var(--mobile-terminal-red); }
+  .reference-terminal .mobile-order-actions button:last-child { background: var(--mobile-terminal-green); }
+  .reference-terminal .mobile-order-actions button:disabled { opacity: .5; }
+  .reference-terminal .mobile-order-actions button strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+  .reference-terminal .mobile-order-spread {
+    display: flex;
+    min-width: 54px;
+    flex-direction: column;
+    align-items: center;
+    padding: 5px 4px;
+    border: 1px solid var(--mobile-terminal-border);
+    border-radius: 9px;
+    color: var(--mobile-terminal-ink);
+  }
+  .reference-terminal .mobile-order-spread small { color: var(--mobile-terminal-muted); font-size: 8px; }
+  .reference-terminal .mobile-order-spread strong { margin-top: 2px; font-size: 11px; }
+  .reference-terminal .mobile-order-risk-summary {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 8px;
+    grid-column: 1 / -1;
+    padding: 1px 2px 0;
+    color: var(--mobile-terminal-muted);
+    font-size: 9px;
+  }
+  .reference-terminal .mobile-order-risk-summary strong { color: var(--mobile-terminal-green); }
+
+  .reference-terminal .apple-terminal-blotter {
+    display: flex !important;
+    order: 3 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 270px !important;
+    max-height: none !important;
+    flex: none !important;
+    margin: 0 0 8px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 14px;
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .apple-terminal-blotter.is-collapsed { height: 46px !important; }
+  .reference-terminal .apple-terminal-blotter.is-open { height: 270px !important; min-height: 0 !important; }
+  .reference-terminal .terminal-blotter-resizer,
+  .reference-terminal .terminal-footer-toggle,
+  .reference-terminal .terminal-layout-reset,
+  .reference-terminal .mobile-position-metric { display: none !important; }
+  .reference-terminal .apple-terminal-blotter-tabs {
+    min-height: 44px;
+    gap: 0;
+    border-bottom: 1px solid var(--mobile-terminal-border) !important;
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .apple-terminal-blotter-tabs button[data-panel] {
+    display: none !important;
+    min-height: 42px;
+    padding-inline: 12px !important;
+    color: var(--mobile-terminal-muted) !important;
+    font-size: 10px !important;
+    letter-spacing: 0 !important;
+  }
+  .reference-terminal .apple-terminal-blotter-tabs button[data-panel="positions"],
+  .reference-terminal .apple-terminal-blotter-tabs button[data-panel="pending"],
+  .reference-terminal .apple-terminal-blotter-tabs button[data-panel="history"] { display: flex !important; }
+  .reference-terminal .apple-terminal-blotter-tabs button[aria-current="page"],
+  .reference-terminal .apple-terminal-blotter-tabs button[data-panel][style*="border-bottom: 2px solid"] {
+    color: var(--mobile-terminal-blue) !important;
+    border-bottom-color: var(--mobile-terminal-blue) !important;
+  }
+  .reference-terminal #terminal-activity-content { min-height: 0; overflow: auto !important; }
+  .reference-terminal .mobile-position-summary { min-height: 38px; justify-content: flex-end; }
+  .reference-terminal .mobile-position-mass-actions { margin: 5px 8px !important; }
+  .reference-terminal .mobile-position-mass-actions button:first-child,
+  .reference-terminal .mobile-position-mass-actions button:nth-child(2) { display: none !important; }
+  .reference-terminal .mobile-position-mass-actions .mobile-close-all {
+    display: flex !important;
+    min-height: 30px;
+    padding: 5px 11px !important;
+    border-color: var(--mobile-terminal-red) !important;
+    border-radius: 9px !important;
+    color: var(--mobile-terminal-red) !important;
+    font-size: 10px !important;
+  }
+  .reference-terminal .mobile-position-list { gap: 0 !important; padding: 0 !important; }
+  .reference-terminal .mobile-position-card {
+    position: relative;
+    overflow: hidden;
+    border: 0 !important;
+    border-bottom: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .reference-terminal .mobile-position-card > div:first-child { display: none !important; }
+  .reference-terminal .mobile-position-card-header {
+    min-height: 58px;
+    padding: 8px 52px 8px 10px !important;
+    border-bottom: 0 !important;
+    background: transparent !important;
+  }
+  .reference-terminal .mobile-position-card-header > div:first-child > div:first-child {
+    width: 34px !important;
+    height: 34px !important;
+    background: var(--mobile-terminal-blue) !important;
+  }
+  .reference-terminal .mobile-position-card-header .font-black.text-white.text-\[13px\] { font-size: 12px !important; }
+  .reference-terminal .mobile-position-card-header .text-\[22px\] { font-size: 15px !important; }
+  .reference-terminal .mobile-position-prices {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    padding: 0 10px 9px 52px !important;
+    border: 0 !important;
+  }
+  .reference-terminal .mobile-position-prices > div:nth-child(n + 3) { display: none !important; }
+  .reference-terminal .mobile-position-prices p:first-child,
+  .reference-terminal .mobile-position-prices p:last-child { font-size: 9px !important; }
+  .reference-terminal .mobile-position-protection,
+  .reference-terminal .mobile-position-partial,
+  .reference-terminal .mobile-position-modify { display: none !important; }
+  .reference-terminal .mobile-position-actions {
+    position: absolute;
+    top: 16px;
+    right: 8px;
+    padding: 0 !important;
+  }
+  .reference-terminal .mobile-position-close {
+    display: flex !important;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+    border: 1px solid var(--mobile-terminal-border) !important;
+    border-radius: 10px !important;
+    background: var(--mobile-terminal-panel) !important;
+    color: var(--mobile-terminal-ink) !important;
+    font-size: 0 !important;
+  }
+  .reference-terminal .mobile-position-close svg { width: 16px; height: 16px; }
+}
