@@ -3190,7 +3190,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </a>
         <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label={`${isFundedAccount ? "Funded" : "Live"} account balance and account menu`}>
           <Award aria-hidden="true" />
-          <span><small>{isFundedAccount ? "Funded Account" : "Live Account"}</small><strong>${(isFundedAccount ? (fundedAmount ?? fundedBaseAmount) : walletBalance).toLocaleString("en-US", { maximumFractionDigits: 0 })}</strong></span>
+          <span><small>{isFundedAccount ? "Funded Account · Balance" : "Live Account · Balance"}</small><strong>${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
           <ChevronDown aria-hidden="true" />
         </button>
         <button type="button" className="mobile-terminal-notifications" onClick={() => { setMobileTab("chart"); setActivePanel("alerts"); setFooterOpen(true) }} aria-label="Open trading alerts">
@@ -3202,9 +3202,10 @@ const maxLeverage = isFundedAccount ? 1 : 100
       <header className="terminal-account-bar" aria-label="Account overview">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
           {(isCompactViewport ? [
+            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral", featured: true },
             { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
             { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
-            { label: "Daily DD", value: `${dailyDrawdownPct.toFixed(2)}%`, tone: dailyDrawdownPct > 0 ? "red" : "neutral" },
+            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
             { label: "Open trades", value: String(openTrades.length), tone: "gold" },
           ] : [
             { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
@@ -3213,7 +3214,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
             { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
           ]).map(item => (
-            <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
+            <div key={item.label} className={`terminal-stat tone-${item.tone}${"featured" in item && item.featured ? " terminal-stat-featured" : ""}`}>
               <span className="terminal-stat-label">{item.label}</span>
               <strong className="terminal-stat-value">{item.value}</strong>
               {"bar" in item && item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}

@@ -6998,6 +6998,29 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   color: #7db8ed !important;
 }
 
+.reference-terminal .terminal-stat-featured {
+  position: relative;
+  min-width: 132px;
+  padding: 7px 12px !important;
+  border: 1px solid rgba(47,128,201,.48) !important;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(47,128,201,.18), rgba(11,23,40,.92)) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+.reference-terminal .terminal-stat-featured .terminal-stat-label::before {
+  content: "ACCOUNT";
+  display: block;
+  margin-bottom: 2px;
+  color: #6f91b2;
+  font-size: 8px;
+  letter-spacing: .16em;
+}
+.reference-terminal .terminal-stat-featured .terminal-stat-value {
+  color: #f4f8fc !important;
+  font-size: 16px !important;
+  letter-spacing: .01em;
+}
+
 /* Professional execution controls: clear direction without consumer-style glow. */
 .reference-terminal .btn-3d-execute-buy,
 .reference-terminal .btn-3d-execute-sell {
