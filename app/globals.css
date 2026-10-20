@@ -5752,3 +5752,66 @@ button, a, [role="button"] {
     margin-inline: 6px;
   }
 }
+
+/* Final viewport-safe override: the terminal must grow with its content on
+   mobile/tablet so the chart and activity sections are reachable by scrolling. */
+@media (max-width: 767px) {
+  html:has(.elite-terminal-workspace),
+  body:has(.elite-terminal-workspace) {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  .elite-terminal-workspace,
+  .elite-terminal-platform,
+  .apple-trading-terminal.reference-terminal {
+    display: flex !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-grid {
+    display: flex !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
+    flex: none !important;
+    height: clamp(420px, 68dvh, 680px) !important;
+    min-height: 420px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .flex-1,
+  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap,
+  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-order {
+    display: flex !important;
+    flex: none !important;
+    height: auto !important;
+    min-height: 520px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+    flex: none !important;
+    height: auto !important;
+    min-height: 300px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
