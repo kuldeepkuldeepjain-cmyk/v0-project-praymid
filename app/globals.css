@@ -6902,8 +6902,17 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .apple-trading-terminal.reference-terminal .apple-terminal-chart-column,
   .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap,
   .apple-trading-terminal.reference-terminal .apple-terminal-order,
-  .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter,
+  .apple-trading-terminal.reference-terminal .apple-trading-chart,
+  .apple-trading-terminal.reference-terminal .apple-trading-chart canvas,
+  .apple-trading-terminal.reference-terminal .apple-trading-chart svg {
     touch-action: pan-y !important;
+  }
+  .apple-trading-terminal.reference-terminal {
+    padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav {
+    touch-action: pan-x !important;
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav {
     display: flex !important;

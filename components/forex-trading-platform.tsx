@@ -3311,8 +3311,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <button type="button" className="mobile-nav-direction" onClick={() => { setDirection(value => value === "BUY" ? "SELL" : "BUY"); setMobileTab("chart") }} aria-label={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`} title={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`}>
           <ArrowUpDown aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("performance"); setFooterOpen(true) }} aria-current={activePanel === "performance" ? "page" : undefined} className={activePanel === "performance" ? "is-active" : ""}>
-          <BarChart aria-hidden="true" /><span>Analytics</span>
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("history"); setFooterOpen(true) }} aria-current={activePanel === "history" ? "page" : undefined} className={activePanel === "history" ? "is-active" : ""} aria-label="Open order history">
+          <History aria-hidden="true" /><span>History</span>
         </button>
         <button type="button" onClick={() => onOpenSidebar?.()}>
           <UserRound aria-hidden="true" /><span>Account</span>
