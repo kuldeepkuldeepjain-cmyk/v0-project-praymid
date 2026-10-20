@@ -5790,6 +5790,142 @@ body:has(.reference-terminal) {
   }
 }
 
+/* Adaptive terminal contract: viewport-aware panels with page-level scrolling. */
+.reference-terminal,
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter {
+  max-height: none !important;
+  overflow: visible !important;
+}
+.reference-terminal {
+  width: 100% !important;
+  min-height: 100dvh !important;
+  height: auto !important;
+}
+.reference-terminal .apple-terminal-grid {
+  display: flex !important;
+  flex: none !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+.reference-terminal .apple-terminal-chart-column {
+  display: flex !important;
+  flex-direction: column !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: clamp(480px, 68dvh, 720px) !important;
+}
+.reference-terminal .apple-terminal-order {
+  flex: 0 1 clamp(280px, 25vw, 380px) !important;
+  min-width: 0 !important;
+  min-height: 520px !important;
+  height: auto !important;
+}
+.reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap,
+.reference-terminal .apple-terminal-chart-column .apple-trading-chart,
+.reference-terminal .apple-terminal-chart-column canvas {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: 100% !important;
+  visibility: visible !important;
+}
+.reference-terminal .apple-terminal-blotter {
+  flex: none !important;
+  width: calc(100% - 16px) !important;
+  min-height: 48px !important;
+  height: auto !important;
+  margin: 8px !important;
+}
+.reference-terminal .apple-terminal-blotter.is-open {
+  min-height: 280px !important;
+  height: clamp(280px, 42dvh, 440px) !important;
+}
+@media (min-width: 1101px) {
+  .reference-terminal .apple-terminal-grid {
+    display: grid !important;
+    grid-template-columns: minmax(220px, 18vw) minmax(0, 1fr) minmax(300px, 25vw) !important;
+    align-items: stretch !important;
+  }
+  .reference-terminal .apple-terminal-market {
+    min-width: 0 !important;
+    height: clamp(480px, 68dvh, 720px) !important;
+    overflow-y: auto !important;
+  }
+  .reference-terminal .apple-terminal-order {
+    min-width: 0 !important;
+  }
+}
+@media (min-width: 768px) and (max-width: 1100px) {
+  .reference-terminal .apple-terminal-grid {
+    display: grid !important;
+    grid-template-columns: minmax(190px, 24vw) minmax(0, 1fr) !important;
+  }
+  .reference-terminal .apple-terminal-market {
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 480px !important;
+    overflow-y: auto !important;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    height: clamp(460px, 64dvh, 640px) !important;
+  }
+  .reference-terminal .apple-terminal-order {
+    grid-column: 1 / -1 !important;
+    min-height: 460px !important;
+  }
+}
+@media (max-width: 767px) {
+  html:has(.reference-terminal),
+  body:has(.reference-terminal) {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  .reference-terminal .apple-terminal-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+  .reference-terminal .apple-terminal-market {
+    display: none !important;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    order: 1 !important;
+    width: 100% !important;
+    height: clamp(400px, 62dvh, 560px) !important;
+    min-height: 400px !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap,
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart,
+  .reference-terminal .apple-terminal-chart-column canvas {
+    min-height: 300px !important;
+    height: 100% !important;
+  }
+  .reference-terminal .apple-terminal-order {
+    order: 2 !important;
+    width: 100% !important;
+    min-height: 480px !important;
+    height: auto !important;
+  }
+  .reference-terminal .apple-terminal-blotter {
+    order: 3 !important;
+    width: calc(100% - 16px) !important;
+    min-height: 48px !important;
+    margin: 8px !important;
+  }
+  .reference-terminal .apple-terminal-blotter.is-open {
+    height: clamp(260px, 48dvh, 400px) !important;
+    min-height: 260px !important;
+  }
+}
+
 /* Last-resort mobile flow: override older flex/min-height rules so the chart,
    order form, and footer each occupy their own visible document section. */
 @media (max-width: 767px) {
@@ -5854,5 +5990,47 @@ body:has(.reference-terminal) {
   .reference-terminal .apple-terminal-blotter.is-open {
     height: 360px !important;
     min-height: 360px !important;
+  }
+
+  /* Mobile chart contract: use explicit dimensions at every small viewport so
+     the chart cannot collapse inside a flex child with min-height: 0. */
+  .reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 0 0 auto !important;
+    width: 100% !important;
+    height: 520px !important;
+    min-height: 520px !important;
+    max-height: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+  .reference-terminal .apple-terminal-chart-column > .chart-header {
+    flex: 0 0 auto !important;
+    min-height: 72px !important;
+  }
+  .reference-terminal .apple-terminal-chart-column > .flex-1 {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 360px !important;
+    max-height: none !important;
+    visibility: visible !important;
+    overflow: hidden !important;
+  }
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart,
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart-canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 360px !important;
+    visibility: visible !important;
   }
 }
