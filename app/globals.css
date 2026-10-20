@@ -7021,6 +7021,57 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   letter-spacing: .01em;
 }
 
+/* Dual chart workspace: preserve a readable native chart and a distinct TradingView reference panel. */
+.reference-terminal .terminal-dual-chart-stack {
+  display: grid;
+  grid-template-rows: minmax(360px, 1fr) minmax(250px, .7fr);
+  gap: 8px;
+  height: 100%;
+  min-height: 620px;
+  padding: 8px;
+  background: #07111f;
+}
+.reference-terminal .terminal-native-chart-panel,
+.reference-terminal .terminal-tradingview-panel {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #20344e;
+  border-radius: 6px;
+  background: #0b1728;
+}
+.reference-terminal .terminal-native-chart-panel { display: flex; flex-direction: column; }
+.reference-terminal .terminal-native-chart-panel > .apple-trading-chart { flex: 1; min-height: 0; border: 0 !important; border-radius: 0 !important; }
+.reference-terminal .terminal-chart-panel-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-bottom: 1px solid #20344e;
+  color: #a9bdd2;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.reference-terminal .terminal-chart-panel-label span:last-child {
+  margin-left: auto;
+  color: #5f7891;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.reference-terminal .terminal-chart-status-dot { width: 6px; height: 6px; border-radius: 999px; background: #35c98b; box-shadow: 0 0 8px rgba(53,201,139,.65); }
+.reference-terminal .terminal-tradingview-panel > section { height: 100% !important; border: 0 !important; border-radius: 0 !important; }
+.reference-terminal .terminal-tradingview-panel:not(.is-active) { opacity: .82; }
+@media (max-width: 767px) {
+  .reference-terminal .terminal-dual-chart-stack {
+    grid-template-rows: minmax(330px, 1fr) minmax(235px, .72fr);
+    min-height: 585px;
+    padding: 5px;
+    gap: 6px;
+  }
+}
+
 /* Compact account overview: quiet structure with two clear focal metrics. */
 .reference-terminal .terminal-account-bar {
   align-items: center;
