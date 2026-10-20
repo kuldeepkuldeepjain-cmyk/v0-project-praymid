@@ -1410,9 +1410,9 @@ button, a, [role="button"] {
     box-shadow: 0 20px 60px rgba(0, 0, 0, .28), 0 0 0 1px rgba(94, 149, 194, .12);
   }
   .apple-terminal-grid {
-    display: flex;
-    min-height: 0;
-    height: 100%;
+  display: flex;
+  min-height: 0;
+  height: auto;
   }
   .apple-terminal-market,
   .apple-terminal-order,
@@ -4899,7 +4899,7 @@ button, a, [role="button"] {
   min-width: 0;
   min-height: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 .mt5-terminal.reference-terminal > .apple-terminal-topbar,
 .mt5-terminal.reference-terminal > .reference-metrics,
@@ -4968,11 +4968,12 @@ button, a, [role="button"] {
 }
 .mt5-terminal.reference-terminal > .apple-terminal-grid {
   display: flex !important;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-width: 0;
   min-height: 0;
   max-width: 100%;
-  overflow: hidden;
+  height: auto;
+  overflow: visible;
 }
 .mt5-terminal.reference-terminal .apple-terminal-market,
 .mt5-terminal.reference-terminal .apple-terminal-chart-column,
@@ -4980,7 +4981,7 @@ button, a, [role="button"] {
   min-width: 0 !important;
   min-height: 0;
   max-width: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 .mt5-terminal.reference-terminal .apple-terminal-market > *,
 .mt5-terminal.reference-terminal .apple-terminal-chart-column > *,
@@ -5588,5 +5589,89 @@ button, a, [role="button"] {
     height: 260px !important;
     min-height: 260px !important;
     flex-basis: 260px !important;
+  }
+}
+
+/* Final responsive contract: the document owns vertical scrolling and every
+   terminal section remains visible in normal flow. */
+html:has(.elite-terminal-workspace),
+body:has(.elite-terminal-workspace) {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+.elite-terminal-workspace,
+.elite-terminal-platform,
+.elite-terminal-platform > .reference-terminal,
+.apple-trading-terminal.reference-terminal {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-grid {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-market,
+.apple-trading-terminal.reference-terminal .apple-terminal-chart-column,
+.apple-trading-terminal.reference-terminal .apple-terminal-order {
+  max-height: none !important;
+  overflow: visible !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
+  min-height: 560px !important;
+  height: 560px !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 42px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-open {
+  min-height: 260px !important;
+  height: 260px !important;
+}
+@media (max-width: 767px) {
+  .apple-trading-terminal.reference-terminal .apple-terminal-grid {
+    flex-direction: column !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-market {
+    display: none !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
+    order: 1 !important;
+    width: 100% !important;
+    min-height: 420px !important;
+    height: clamp(420px, 68dvh, 680px) !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-order {
+    order: 2 !important;
+    width: 100% !important;
+    min-height: 480px !important;
+    height: auto !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+    order: 3 !important;
+    width: calc(100% - 16px) !important;
+    margin: 0 8px 8px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-open {
+    min-height: 260px !important;
+    height: clamp(260px, 48dvh, 430px) !important;
   }
 }
