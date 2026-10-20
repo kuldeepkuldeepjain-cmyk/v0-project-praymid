@@ -6038,6 +6038,56 @@ body:has(.elite-terminal-workspace) {
   min-width: 140px !important;
   max-width: 300px !important;
 }
+/* Final footer contract: always-visible tabs, responsive panel, scrollable content. */
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  width: calc(100% - 16px) !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  margin: 8px !important;
+  border: 1px solid #203d56 !important;
+  border-radius: 10px !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-open {
+  height: clamp(260px, 38dvh, 430px) !important;
+  min-height: clamp(260px, 38dvh, 430px) !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs {
+  display: flex !important;
+  flex: 0 0 46px !important;
+  min-height: 46px !important;
+  width: 100% !important;
+  align-items: stretch !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs button {
+  min-height: 44px !important;
+  white-space: nowrap !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs .terminal-footer-toggle {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 2 !important;
+  flex: 0 0 52px !important;
+  background: #081522 !important;
+}
+.apple-trading-terminal.reference-terminal #terminal-activity-content {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-collapsed #terminal-activity-content {
+  display: none !important;
+}
 @media (max-width: 840px) {
   .apple-trading-terminal.reference-terminal .terminal-toolbar {
     min-height: 54px !important;
