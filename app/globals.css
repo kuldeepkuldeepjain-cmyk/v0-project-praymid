@@ -5753,6 +5753,39 @@ button, a, [role="button"] {
   }
 }
 
+/* Universal terminal sizing: keep every workspace visible and let the page
+   scroll naturally instead of clipping a fixed-height terminal. */
+html:has(.elite-terminal-workspace),
+body:has(.elite-terminal-workspace) {
+  min-height: 100%;
+  height: auto !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+.elite-terminal-workspace,
+.elite-terminal-platform,
+.apple-trading-terminal.reference-terminal {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 100dvh !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-grid {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
+  min-height: clamp(420px, 64dvh, 760px) !important;
+  height: clamp(420px, 64dvh, 760px) !important;
+  max-height: none !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+  max-height: none !important;
+}
+
 /* Final viewport-safe override: the terminal must grow with its content on
    mobile/tablet so the chart and activity sections are reachable by scrolling. */
 @media (max-width: 767px) {
