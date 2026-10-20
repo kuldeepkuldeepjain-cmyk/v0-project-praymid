@@ -33,11 +33,6 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
-    const isEmbeddedPreview = window.self !== window.top || process.env.NEXT_PUBLIC_VERCEL_ENV === "preview"
-    if (isEmbeddedPreview) {
-      container.replaceChildren()
-      return
-    }
     container.replaceChildren()
 
     const widget = document.createElement("div")
