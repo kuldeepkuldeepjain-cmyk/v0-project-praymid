@@ -6998,6 +6998,60 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   color: #7db8ed !important;
 }
 
+/* Professional execution controls: clear direction without consumer-style glow. */
+.reference-terminal .btn-3d-execute-buy,
+.reference-terminal .btn-3d-execute-sell {
+  min-height: 44px;
+  border-width: 1px !important;
+  border-style: solid !important;
+  border-radius: 5px !important;
+  color: #f7fbff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 2px 8px rgba(0,0,0,.22) !important;
+  transform: none !important;
+  filter: none !important;
+  transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease !important;
+}
+.reference-terminal .btn-3d-execute-buy {
+  background: #116b50 !important;
+  border-color: #35b987 !important;
+}
+.reference-terminal .btn-3d-execute-buy:hover:not(:disabled) {
+  background: #178261 !important;
+  border-color: #5ed6aa !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 4px 12px rgba(20,145,104,.28) !important;
+  transform: translateY(-1px) !important;
+}
+.reference-terminal .btn-3d-execute-buy:active:not(:disabled) {
+  background: #0d5b45 !important;
+  transform: translateY(0) !important;
+}
+.reference-terminal .btn-3d-execute-sell {
+  background: #873d48 !important;
+  border-color: #e67b84 !important;
+}
+.reference-terminal .btn-3d-execute-sell:hover:not(:disabled) {
+  background: #a94b57 !important;
+  border-color: #f2a0a6 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 4px 12px rgba(181,63,78,.28) !important;
+  transform: translateY(-1px) !important;
+}
+.reference-terminal .btn-3d-execute-sell:active:not(:disabled) {
+  background: #74333e !important;
+  transform: translateY(0) !important;
+}
+.reference-terminal .btn-3d-execute-buy::before,
+.reference-terminal .btn-3d-execute-buy::after,
+.reference-terminal .btn-3d-execute-sell::before,
+.reference-terminal .btn-3d-execute-sell::after {
+  display: none !important;
+}
+.reference-terminal .btn-3d-execute-buy:disabled,
+.reference-terminal .btn-3d-execute-sell:disabled {
+  opacity: .45;
+  filter: grayscale(.7) !important;
+  box-shadow: none !important;
+}
+
 @media (max-width: 767px) {
   html:has(.reference-terminal),
   html:has(.terminal-live-surface),
