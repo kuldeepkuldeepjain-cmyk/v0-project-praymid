@@ -6880,6 +6880,124 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .reference-terminal .apple-terminal-chart-column .chart-surface { height: 78dvh !important; min-height: 200px !important; }
 }
 
+/* Institutional workstation theme: disciplined navy surfaces, data-first contrast, restrained accents. */
+.reference-terminal {
+  --institutional-bg: #07111f;
+  --institutional-panel: #0b1728;
+  --institutional-panel-raised: #102238;
+  --institutional-line: #20344e;
+  --institutional-text: #e7eef7;
+  --institutional-muted: #91a4ba;
+  --institutional-blue: #2f80c9;
+  --institutional-green: #35c98b;
+  --institutional-red: #ef6b73;
+  color: var(--institutional-text) !important;
+  background: var(--institutional-bg) !important;
+  border-top-color: var(--institutional-blue) !important;
+  letter-spacing: .01em;
+}
+.reference-terminal .apple-terminal-topbar,
+.reference-terminal .mobile-terminal-header,
+.reference-terminal .apple-terminal-summary,
+.reference-terminal .reference-watchlist,
+.reference-terminal .chart-header,
+.reference-terminal .apple-terminal-blotter,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-market {
+  background: var(--institutional-panel) !important;
+  border-color: var(--institutional-line) !important;
+}
+.reference-terminal .apple-terminal-topbar,
+.reference-terminal .mobile-terminal-header {
+  box-shadow: 0 1px 0 rgba(47,128,201,.3), 0 10px 26px rgba(0,0,0,.18) !important;
+}
+.reference-terminal .apple-terminal-summary {
+  background: #0d1b2d !important;
+  border-bottom-color: var(--institutional-line) !important;
+}
+.reference-terminal .reference-watchlist {
+  background: #091525 !important;
+  border-color: var(--institutional-line) !important;
+}
+.reference-terminal .reference-watch-card {
+  background: var(--institutional-panel-raised) !important;
+  border-color: var(--institutional-line) !important;
+  box-shadow: none !important;
+}
+.reference-terminal .reference-watch-card.is-selected {
+  background: rgba(47,128,201,.2) !important;
+  border-color: var(--institutional-blue) !important;
+  box-shadow: inset 0 0 0 1px rgba(47,128,201,.18) !important;
+}
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .apple-terminal-blotter {
+  border-color: var(--institutional-line) !important;
+}
+.reference-terminal .apple-terminal-market > div:first-child,
+.reference-terminal .apple-terminal-order > div:first-child {
+  background: var(--institutional-panel-raised) !important;
+  border-bottom-color: var(--institutional-line) !important;
+}
+.reference-terminal .chart-symbol-switch {
+  color: var(--institutional-text) !important;
+  background: rgba(47,128,201,.15) !important;
+  border-color: rgba(47,128,201,.55) !important;
+}
+.reference-terminal button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell):not(.mobile-nav-direction),
+.reference-terminal select,
+.reference-terminal input {
+  border-color: var(--institutional-line) !important;
+}
+.reference-terminal button:hover,
+.reference-terminal .reference-mobile-nav button.is-active {
+  background: rgba(47,128,201,.16) !important;
+  border-color: rgba(47,128,201,.7) !important;
+}
+.reference-terminal .btn-3d-execute-buy,
+.reference-terminal .btn-3d-execute-sell {
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+.reference-terminal .btn-3d-execute-buy { background: #167a59 !important; border-color: #35c98b !important; }
+.reference-terminal .btn-3d-execute-sell { background: #9d3d49 !important; border-color: #ef6b73 !important; }
+.reference-terminal .terminal-rate-details,
+.reference-terminal .terminal-chart-toolbar,
+.reference-terminal .apple-terminal-blotter-tabs {
+  background: #091525 !important;
+  border-color: var(--institutional-line) !important;
+}
+.reference-terminal .terminal-rate-details strong,
+.reference-terminal .terminal-rate-details b { color: var(--institutional-text) !important; }
+.reference-terminal .terminal-rate-details .text-emerald-300,
+.reference-terminal .text-emerald-300,
+.reference-terminal .text-green-400 { color: var(--institutional-green) !important; }
+.reference-terminal .terminal-rate-details .text-red-300,
+.reference-terminal .text-red-300,
+.reference-terminal .text-red-400 { color: var(--institutional-red) !important; }
+.reference-terminal .terminal-chart-toolbar button[aria-pressed="true"],
+.reference-terminal .terminal-chart-toolbar button.is-active {
+  background: var(--institutional-blue) !important;
+  color: #fff !important;
+  border-color: var(--institutional-blue) !important;
+}
+.reference-terminal .apple-terminal-blotter-tabs button[aria-current="page"] {
+  color: #7db8ed !important;
+  border-bottom-color: var(--institutional-blue) !important;
+}
+.reference-terminal .reference-mobile-nav {
+  background: rgba(7,17,31,.96) !important;
+  border-top-color: var(--institutional-line) !important;
+  box-shadow: 0 -8px 22px rgba(0,0,0,.22) !important;
+}
+.reference-terminal .reference-mobile-nav button.is-active {
+  color: #7db8ed !important;
+}
+
 @media (max-width: 767px) {
   html:has(.reference-terminal),
   html:has(.terminal-live-surface),
