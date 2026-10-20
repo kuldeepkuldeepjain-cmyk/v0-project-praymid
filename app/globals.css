@@ -5908,6 +5908,29 @@ body:has(.reference-terminal) {
     min-height: 300px !important;
     height: 100% !important;
   }
+  .reference-terminal .chart-surface {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 320px !important;
+    min-width: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow: hidden !important;
+  }
+  .reference-terminal .chart-surface .apple-trading-chart,
+  .reference-terminal .chart-surface canvas,
+  .reference-terminal .chart-surface svg {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 300px !important;
+    height: 100% !important;
+  visibility: visible !important;
+  }
+  }
   .reference-terminal .apple-terminal-order {
     order: 2 !important;
     width: 100% !important;

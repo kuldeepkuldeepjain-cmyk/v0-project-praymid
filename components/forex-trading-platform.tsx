@@ -603,7 +603,7 @@ function MarketSessionsPanel() {
                     {open ? "OPEN" : "CLOSED"}
                   </span>
                 </div>
-                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00���������{String(s.close).padStart(2,"0")}:00 UTC</div>
+                <div className="text-[8px] text-slate-500 mb-1.5">{s.tz} �� {String(s.open).padStart(2,"0")}:00�����������{String(s.close).padStart(2,"0")}:00 UTC</div>
                 {open && (
                   <div className="h-1 rounded-full overflow-hidden" style={{ background: "#111827" }}>
                     <div className="h-full rounded-full transition-all" style={{ width: `${prog}%`, background: s.color }} />
@@ -2388,7 +2388,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     }
   }
 
-  // ��─ Quick trade — routes through confirmation modal ───────────���───────────��
+  // ��─ Quick trade — routes through confirmation modal ────────��──���───────────��
   const quickTrade = (dir: TradeDirection) => {
   if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
   if (!selectedPair) return
@@ -2435,7 +2435,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
-  // ── Close trade ──────────────���──────────────────────────────────────────��──
+  // ── Close trade ──────────────���──────────────────────────────────────────��─���
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
   // Prevent double-close if tick engine and manual close race
   if (closingTradeIds.current.has(id)) return
@@ -3452,7 +3452,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
 
 {/* Chart + BUY/SELL strip */}
   <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-  <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap">
+  <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap chart-surface">
   {selectedPair && chartLayout === "single" ? (
 <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
   <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 p-6 text-center text-slate-400 text-xs">
