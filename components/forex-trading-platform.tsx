@@ -3316,7 +3316,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��═══════════════════════════��������═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════���══════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
@@ -3493,10 +3493,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
               <div className="chart-header-market flex min-w-0 items-center gap-3">
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live API</span>
               <div className="flex items-baseline gap-2">
-                <span className="text-sm font-black text-white tracking-wider">
+                <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch text-sm font-black text-white tracking-wider" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
                   {ASSET_ICON[selectedPair.symbol] && <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>}
                   {selectedPair.symbol}
-                </span>
+                  <ChevronDown className="chart-symbol-chevron" aria-hidden="true" />
+                </button>
                 {(() => {
                   const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
                   if (!cat || cat === "Forex") return null
