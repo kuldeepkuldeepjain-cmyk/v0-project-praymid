@@ -7021,6 +7021,130 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   letter-spacing: .01em;
 }
 
+/* Compact mobile terminal header: keep account, alerts, and actions reachable without hiding the workspace. */
+.reference-terminal .mobile-terminal-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 6px 8px;
+  background: #08182b !important;
+  border-bottom: 1px solid #20344e !important;
+}
+.reference-terminal .mobile-terminal-brand {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 7px;
+  color: #e7eef7;
+  text-decoration: none;
+}
+.reference-terminal .mobile-terminal-brand img {
+  width: 25px;
+  height: 25px;
+  flex: 0 0 auto;
+  border-radius: 5px;
+  object-fit: cover;
+}
+.reference-terminal .mobile-terminal-brand span { display: grid; min-width: 0; line-height: 1; }
+.reference-terminal .mobile-terminal-brand strong { overflow: hidden; font-size: 10px; letter-spacing: .1em; text-overflow: ellipsis; white-space: nowrap; }
+.reference-terminal .mobile-terminal-brand small { margin-top: 3px; color: #6f91b2; font-size: 7px; letter-spacing: .08em; }
+.reference-terminal .mobile-terminal-account {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 155px;
+  padding: 5px 7px;
+  border: 1px solid rgba(77,156,224,.48) !important;
+  border-radius: 5px;
+  background: rgba(27,83,132,.28) !important;
+  color: #eaf4fc !important;
+}
+.reference-terminal .mobile-terminal-account svg { width: 13px; height: 13px; flex: 0 0 auto; color: #82c4f1; }
+.reference-terminal .mobile-terminal-account span { display: grid; min-width: 0; text-align: right; }
+.reference-terminal .mobile-terminal-account small { overflow: hidden; color: #8fc7f4; font-size: 7px; font-weight: 700; letter-spacing: .05em; text-overflow: ellipsis; white-space: nowrap; }
+.reference-terminal .mobile-terminal-account strong { font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.reference-terminal .mobile-terminal-account > svg:last-child { width: 11px; color: #7892ad; }
+.reference-terminal .mobile-terminal-notifications {
+  position: relative;
+  display: grid;
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  place-items: center;
+  border: 1px solid #294461 !important;
+  border-radius: 5px;
+  background: #102238 !important;
+  color: #a9c2db !important;
+}
+.reference-terminal .mobile-terminal-notifications svg { width: 15px; height: 15px; }
+.reference-terminal .mobile-terminal-notifications > span { position: absolute; top: -4px; right: -4px; min-width: 14px; padding: 1px 3px; border-radius: 999px; background: #c95660; color: #fff; font-size: 8px; line-height: 12px; }
+@media (min-width: 768px) {
+  .reference-terminal .mobile-terminal-header { display: none !important; }
+}
+@media (max-width: 380px) {
+  .reference-terminal .mobile-terminal-brand small { display: none; }
+  .reference-terminal .mobile-terminal-account { max-width: 132px; }
+  .reference-terminal .mobile-terminal-account small { max-width: 82px; }
+}
+
+/* Dual chart workspace: preserve a readable native chart and a distinct TradingView reference panel. */
+.reference-terminal .terminal-dual-chart-stack {
+  display: grid;
+  grid-template-rows: minmax(360px, 1fr) minmax(250px, .7fr);
+  gap: 8px;
+  height: 100%;
+  min-height: 620px;
+  padding: 8px;
+  background: #07111f;
+}
+.reference-terminal .terminal-native-chart-panel,
+.reference-terminal .terminal-tradingview-panel {
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid #20344e;
+  border-radius: 6px;
+  background: #0b1728;
+}
+.reference-terminal .terminal-native-chart-panel { display: flex; flex-direction: column; }
+.reference-terminal .terminal-native-chart-panel > .apple-trading-chart { flex: 1; min-height: 0; border: 0 !important; border-radius: 0 !important; }
+.reference-terminal .terminal-chart-panel-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border-bottom: 1px solid #20344e;
+  color: #a9bdd2;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.reference-terminal .terminal-chart-panel-label span:last-child {
+  margin-left: auto;
+  color: #5f7891;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.reference-terminal .terminal-chart-status-dot { width: 6px; height: 6px; border-radius: 999px; background: #35c98b; box-shadow: 0 0 8px rgba(53,201,139,.65); }
+.reference-terminal .terminal-tradingview-panel > section { height: 100% !important; border: 0 !important; border-radius: 0 !important; }
+.reference-terminal .terminal-tradingview-panel:not(.is-active) { opacity: .82; }
+@media (max-width: 767px) {
+  .reference-terminal .terminal-dual-chart-stack {
+    grid-template-rows: minmax(330px, 1fr) minmax(235px, .72fr);
+    min-height: 585px;
+    padding: 5px;
+    gap: 6px;
+  }
+}
+
 /* Compact account overview: quiet structure with two clear focal metrics. */
 .reference-terminal .terminal-account-bar {
   align-items: center;
