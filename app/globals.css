@@ -7021,6 +7021,83 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   letter-spacing: .01em;
 }
 
+/* Account overview strip: make the two primary risk metrics visually scannable. */
+.reference-terminal .terminal-account-bar {
+  align-items: stretch;
+  gap: 12px;
+  padding: 9px 12px;
+  background: linear-gradient(180deg, rgba(12,28,48,.98), rgba(7,17,31,.98)) !important;
+  border-bottom: 1px solid rgba(82,125,168,.28) !important;
+}
+.reference-terminal .terminal-account-stats {
+  align-items: stretch;
+  gap: 7px;
+  min-width: 0;
+}
+.reference-terminal .terminal-stat {
+  position: relative;
+  min-width: 118px;
+  padding: 8px 12px !important;
+  border: 1px solid rgba(73,108,143,.28) !important;
+  border-radius: 6px;
+  background: rgba(10,24,41,.72) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+.reference-terminal .terminal-stat:first-child { border-left: 1px solid rgba(73,108,143,.28) !important; }
+.reference-terminal .terminal-stat-label {
+  color: #7f9bb8 !important;
+  font-size: 9px !important;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.reference-terminal .terminal-stat-value {
+  display: block;
+  margin-top: 4px;
+  color: #e8f1fa !important;
+  font-size: 15px !important;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.reference-terminal .terminal-stat-featured,
+.reference-terminal .terminal-stat:nth-child(3) {
+  border-color: rgba(72,145,214,.68) !important;
+  background: linear-gradient(135deg, rgba(34,99,157,.5), rgba(9,27,48,.94)) !important;
+  box-shadow: inset 0 1px 0 rgba(178,222,255,.14), 0 4px 14px rgba(0,0,0,.16);
+}
+.reference-terminal .terminal-stat-featured::after,
+.reference-terminal .terminal-stat:nth-child(3)::after {
+  position: absolute;
+  top: 7px;
+  right: 9px;
+  color: #75b9eb;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.reference-terminal .terminal-stat-featured::after { content: "ACCOUNT"; }
+.reference-terminal .terminal-stat:nth-child(3)::after { content: "RISK"; color: #e7bd63; }
+.reference-terminal .terminal-stat:nth-child(3) .terminal-stat-value { color: #f0c86e !important; }
+.reference-terminal .terminal-margin-bar {
+  height: 3px;
+  margin-top: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.1);
+}
+.reference-terminal .terminal-margin-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d49d3a, #f0cf79);
+}
+@media (max-width: 900px) {
+  .reference-terminal .terminal-account-bar { padding: 8px; gap: 8px; }
+  .reference-terminal .terminal-account-stats { gap: 6px; }
+  .reference-terminal .terminal-stat { min-width: 108px; padding-inline: 10px !important; }
+  .reference-terminal .terminal-account-actions { gap: 6px; }
+}
+
 /* Professional execution controls: clear direction without consumer-style glow. */
 .reference-terminal .btn-3d-execute-buy,
 .reference-terminal .btn-3d-execute-sell {

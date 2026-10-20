@@ -1376,7 +1376,15 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
   const [activeCategory, setActiveCategory] = useState<AssetCategory | "All">("All")
   const [timeframe, setTimeframe]     = useState<TimeFrame>("5M")
+  const [utcClock, setUtcClock] = useState("--:--:--")
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
+
+  useEffect(() => {
+    const updateClock = () => setUtcClock(new Date().toLocaleTimeString("en-US", { hour12: false }))
+    updateClock()
+    const timer = window.setInterval(updateClock, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
   const [lotSize, setLotSize]         = useState("0.01")
   const [leverage, setLeverage]       = useState("100")
   useEffect(() => {
@@ -3206,7 +3214,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
             { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
             { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
             { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-            { label: "Open trades", value: String(openTrades.length), tone: "gold" },
           ] : [
             { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
             { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
@@ -3363,7 +3370,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
-        {/* ── LEFT: Market Watch ──────────────────────���──────�������──────────────── */}
+        {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
         <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
         <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
@@ -4637,7 +4644,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <span className="reference-status-divider">|</span>
         <span>Ping: 42 ms</span>
         <span className="reference-status-divider">|</span>
-        <span>{new Date().toLocaleTimeString("en-US", { hour12: false })} (UTC+5:30)</span>
+        <span>{utcClock} (UTC+5:30)</span>
       </div>
 
       {/* ── Trade Confirmation Modal ──���───────────────���────────────────────���────── */}
