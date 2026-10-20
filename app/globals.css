@@ -6719,6 +6719,25 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 }
 
 @media (max-width: 767px) {
+  html:has(.reference-terminal),
+  body:has(.reference-terminal) {
+    height: auto !important;
+    min-height: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  .elite-terminal-workspace:has(.reference-terminal),
+  .elite-terminal-platform:has(.reference-terminal) {
+    height: auto !important;
+    min-height: 100dvh;
+    overflow: visible !important;
+  }
+  .apple-trading-terminal.reference-terminal {
+    height: auto !important;
+    min-height: 100dvh;
+    max-height: none !important;
+    overflow: visible !important;
+  }
   .apple-trading-terminal.reference-terminal .reference-watchlist {
     display: flex !important;
     flex-wrap: nowrap;
@@ -6859,4 +6878,21 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .reference-terminal .apple-terminal-chart-column > .flex-1,
   .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap,
   .reference-terminal .apple-terminal-chart-column .chart-surface { height: 78dvh !important; min-height: 200px !important; }
+}
+
+@media (max-width: 767px) {
+  html:has(.reference-terminal),
+  body:has(.reference-terminal),
+  .elite-terminal-workspace:has(.reference-terminal),
+  .elite-terminal-platform:has(.reference-terminal),
+  .apple-trading-terminal.reference-terminal {
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+  html:has(.reference-terminal), body:has(.reference-terminal) {
+    overflow-y: auto !important;
+  }
 }
