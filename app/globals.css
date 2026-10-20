@@ -5479,7 +5479,14 @@ button, a, [role="button"] {
     height: auto !important;
     max-height: none !important;
     overflow-x: hidden !important;
+    overflow-y: visible !important;
+  }
+  html:has(.apple-trading-terminal.reference-terminal),
+  body:has(.apple-trading-terminal.reference-terminal) {
+    min-height: 100%;
+    height: auto !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
   }
   .apple-trading-terminal.reference-terminal .terminal-toolbar,
   .apple-trading-terminal.reference-terminal .terminal-account-bar,
@@ -5500,7 +5507,10 @@ button, a, [role="button"] {
   .apple-trading-terminal.reference-terminal .terminal-watch-strip { min-height: 56px !important; padding: 6px 8px !important; }
   .apple-trading-terminal.reference-terminal .terminal-watch-strip .reference-watch-card { height: 42px !important; min-width: 128px !important; }
   .apple-trading-terminal.reference-terminal .apple-terminal-grid {
+    display: flex !important;
+    flex: 0 0 auto !important;
     min-height: 0 !important;
+    height: auto !important;
     overflow: visible !important;
     flex-direction: column !important;
   }
@@ -5514,6 +5524,7 @@ button, a, [role="button"] {
     display: flex !important;
     order: -1;
     width: 100% !important;
+    flex: 0 0 auto !important;
     min-height: clamp(390px, 58dvh, 640px) !important;
     height: clamp(390px, 58dvh, 640px) !important;
     overflow: visible !important;
@@ -5547,6 +5558,7 @@ button, a, [role="button"] {
     min-height: 42px;
   }
   .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+    flex: 0 0 auto !important;
     flex-basis: 260px !important;
     height: 260px !important;
     min-height: 260px !important;
