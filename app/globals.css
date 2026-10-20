@@ -5987,3 +5987,121 @@ body:has(.elite-terminal-workspace) {
     grid-template-columns: minmax(224px, 16vw) minmax(0, 1fr) minmax(300px, 23vw) !important;
   }
 }
+
+/* Final header contract: keep the complete toolbar in the document flow,
+   visible on large screens and safely scrollable on narrow screens. */
+.apple-trading-terminal.reference-terminal .terminal-toolbar {
+  position: relative !important;
+  z-index: 20 !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 58px !important;
+  max-height: none !important;
+  overflow: visible !important;
+  contain: none !important;
+}
+.apple-trading-terminal.reference-terminal .terminal-toolbar-row {
+  display: flex !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 58px !important;
+  height: auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: thin;
+  scrollbar-color: #2b5877 transparent;
+}
+.apple-trading-terminal.reference-terminal .terminal-toolbar-row > * {
+  flex: 0 0 auto !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.apple-trading-terminal.reference-terminal .terminal-brand-lockup,
+.apple-trading-terminal.reference-terminal .terminal-header-search,
+.apple-trading-terminal.reference-terminal .terminal-toolbar-stat,
+.apple-trading-terminal.reference-terminal .terminal-toolbar-action,
+.apple-trading-terminal.reference-terminal .terminal-account-button,
+.apple-trading-terminal.reference-terminal .terminal-icon-button {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+.apple-trading-terminal.reference-terminal .terminal-brand-lockup {
+  flex: 0 0 auto !important;
+  min-width: 132px !important;
+}
+.apple-trading-terminal.reference-terminal .terminal-header-search {
+  flex: 1 1 180px !important;
+  min-width: 140px !important;
+  max-width: 300px !important;
+}
+/* Final footer contract: always-visible tabs, responsive panel, scrollable content. */
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  width: calc(100% - 16px) !important;
+  height: 46px !important;
+  min-height: 46px !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  margin: 8px !important;
+  border: 1px solid #203d56 !important;
+  border-radius: 10px !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-open {
+  height: clamp(260px, 38dvh, 430px) !important;
+  min-height: clamp(260px, 38dvh, 430px) !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs {
+  display: flex !important;
+  flex: 0 0 46px !important;
+  min-height: 46px !important;
+  width: 100% !important;
+  align-items: stretch !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs button {
+  min-height: 44px !important;
+  white-space: nowrap !important;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter-tabs .terminal-footer-toggle {
+  position: sticky !important;
+  left: 0 !important;
+  z-index: 2 !important;
+  flex: 0 0 52px !important;
+  background: #081522 !important;
+}
+.apple-trading-terminal.reference-terminal #terminal-activity-content {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+.apple-trading-terminal.reference-terminal .apple-terminal-blotter.is-collapsed #terminal-activity-content {
+  display: none !important;
+}
+@media (max-width: 840px) {
+  .apple-trading-terminal.reference-terminal .terminal-toolbar {
+    min-height: 54px !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-toolbar-row {
+    min-height: 54px !important;
+    padding-inline: 8px !important;
+    gap: 6px !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup {
+    min-width: 108px !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-search {
+    flex: 0 0 150px !important;
+    min-width: 150px !important;
+  }
+}

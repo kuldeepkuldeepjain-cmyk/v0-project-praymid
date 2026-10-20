@@ -2435,7 +2435,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
   // Tracks IDs that are in the middle of being closed to prevent concurrent double-close
   const closingTradeIds = useRef<Set<string>>(new Set())
 
-  // ── Close trade ──────────────���──────────────────────────────────────────��──
+  // ── Close trade ──────────────���──────────────────────────────────────────��─���
   const closeTrade = (id: string, reason: ClosedTrade["closeReason"] = "manual") => {
   // Prevent double-close if tick engine and manual close race
   if (closingTradeIds.current.has(id)) return
@@ -3906,7 +3906,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
       </div>
 
       {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
-      <section className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} flex flex-col shrink-0`} aria-label="Trading activity footer" style={{ height: footerOpen ? (isCompactViewport ? 430 : 340) : 42, minHeight: footerOpen ? (isCompactViewport ? 430 : 340) : 42, background: "#060a12", borderTop: "1px solid #1e2d45" }}>
+      <section className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} flex flex-col shrink-0`} aria-label="Trading activity footer" style={{ background: "#060a12", borderTop: "1px solid #1e2d45" }}>
         {/* Tab bar */}
         <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: footerOpen ? "1px solid #1a2640" : "0", background: "#060a12" }}>
           <button
