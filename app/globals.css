@@ -289,7 +289,7 @@
   color: var(--foreground) !important;
 }
 
-/* ── Mobile-first responsive utilities ─────────────────��─────────────────── */
+/* ── Mobile-first responsive utilities ─────────────────���─────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -5787,5 +5787,72 @@ body:has(.reference-terminal) {
     order: 3 !important;
     width: calc(100% - 16px) !important;
     margin: 0 8px 8px !important;
+  }
+}
+
+/* Last-resort mobile flow: override older flex/min-height rules so the chart,
+   order form, and footer each occupy their own visible document section. */
+@media (max-width: 767px) {
+  html:has(.reference-terminal),
+  body:has(.reference-terminal) {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+  .reference-terminal,
+  .reference-terminal .apple-terminal-grid,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-order,
+  .reference-terminal .apple-terminal-blotter {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .reference-terminal .apple-terminal-grid {
+    display: flex !important;
+    flex: none !important;
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
+    flex: none !important;
+    order: 1 !important;
+    width: 100% !important;
+    height: 520px !important;
+    min-height: 520px !important;
+  }
+  .reference-terminal .apple-terminal-chart-column > .flex-1,
+  .reference-terminal .mobile-terminal-chart-wrap,
+  .reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 360px !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .reference-terminal .apple-terminal-order {
+    display: flex !important;
+    flex: none !important;
+    order: 2 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 540px !important;
+  }
+  .reference-terminal .apple-terminal-blotter {
+    display: flex !important;
+    flex: none !important;
+    order: 3 !important;
+    width: calc(100% - 16px) !important;
+    height: auto !important;
+    min-height: 48px !important;
+    margin: 8px !important;
+  }
+  .reference-terminal .apple-terminal-blotter.is-open {
+    height: 360px !important;
+    min-height: 360px !important;
   }
 }
