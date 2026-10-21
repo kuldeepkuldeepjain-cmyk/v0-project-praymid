@@ -7105,6 +7105,64 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   letter-spacing: .06em;
 }
 
+/* Desktop workspace: allow the full terminal to scroll without clipping chart activity. */
+@media (min-width: 768px) {
+  .reference-terminal {
+    height: auto !important;
+    min-height: 100dvh;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .reference-terminal .apple-terminal-grid {
+    min-height: 720px;
+    overflow: visible !important;
+  }
+  .reference-terminal .apple-terminal-chart-column {
+    min-height: 760px;
+    overflow: visible !important;
+  }
+  .reference-terminal .terminal-dual-chart-stack {
+    min-height: 760px;
+  }
+}
+.reference-terminal .terminal-chart-activity-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 42px;
+  padding: 5px 7px;
+  overflow-x: auto;
+  border: 1px solid #20344e;
+  border-top: 0;
+  background: #08182b;
+}
+.reference-terminal .terminal-chart-activity-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: #7892ad;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.reference-terminal .terminal-chart-activity-tabs button span {
+  color: #a8bfd4;
+  font-variant-numeric: tabular-nums;
+}
+.reference-terminal .terminal-chart-activity-tabs button:hover,
+.reference-terminal .terminal-chart-activity-tabs button.is-active {
+  border-color: #35658e;
+  background: #12304d;
+  color: #e5f2fb;
+}
+.reference-terminal .terminal-chart-activity-tabs button.is-active span { color: #69b7ec; }
+
 /* Compact mobile terminal header: keep account, alerts, and actions reachable without hiding the workspace. */
 .reference-terminal .mobile-terminal-header {
   position: sticky;
