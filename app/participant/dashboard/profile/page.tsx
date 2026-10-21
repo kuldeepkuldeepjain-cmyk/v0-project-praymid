@@ -195,6 +195,8 @@ export default function ProfilePage() {
   const stopSelfieCamera = () => {
     selfieStreamRef.current?.getTracks().forEach(track => track.stop())
     selfieStreamRef.current = null
+    if (selfieVideoRef.current) selfieVideoRef.current.srcObject = null
+    selfieMotionRef.current = []
     setSelfieCameraOpen(false)
     setSelfieLiveness("idle")
   }
@@ -202,13 +204,15 @@ export default function ProfilePage() {
   const startSelfieCamera = async () => {
     try {
       setSelfieLiveness("starting")
-      setSelfieMessage("Allow camera access, then follow the movement and blink prompts.")
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 720 } }, audio: false })
+      selfieMotionRef.current = []
+      setSelfieMessage("Allow camera access. Center your face inside the guide and hold your phone steady.")
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Camera is not supported")
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "user" }, width: { ideal: 960, min: 480 }, height: { ideal: 960, min: 480 } }, audio: false })
       selfieStreamRef.current = stream
       setSelfieCameraOpen(true)
       requestAnimationFrame(() => { if (selfieVideoRef.current) { selfieVideoRef.current.srcObject = stream; selfieVideoRef.current.play() } })
       setSelfieLiveness("move")
-      setSelfieMessage("Move your face slowly left and right so we can confirm you are live.")
+      setSelfieMessage("Slowly turn your face left and right. We will confirm you automatically.")
     } catch {
       setSelfieLiveness("error")
       setSelfieMessage("Camera access is required. Check your browser permissions and try again.")
@@ -242,8 +246,8 @@ export default function ProfilePage() {
     if (selfieMotionRef.current.length > 12) selfieMotionRef.current.shift()
     const spread = Math.max(...selfieMotionRef.current) - Math.min(...selfieMotionRef.current)
     if (selfieMotionRef.current.length >= 8 && spread > 8) {
-      setSelfieLiveness("blink")
-      setSelfieMessage("Now blink once and hold still for a moment.")
+      setSelfieLiveness("ready")
+      setSelfieMessage("Liveness confirmed. Hold still, then tap Capture selfie.")
     }
   }
 
