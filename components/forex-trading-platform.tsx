@@ -3672,27 +3672,31 @@ const maxLeverage = isFundedAccount ? 1 : 100
     {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
   </div>
   }>
-<div className="terminal-dual-chart-stack">
-  <div className="terminal-native-chart-panel">
-    <div className="terminal-chart-panel-label"><span className="terminal-chart-status-dot" /> Native Candlestick Chart <span>{selectedPair.symbol}</span></div>
-    <TradingChart
-      key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
-      candles={selectedPair.candles}
-      sym={selectedPair.symbol}
-      tf={timeframe}
-      openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-      onExpand={() => setChartExpanded(e => !e)}
-      isExpanded={chartExpanded}
-      onQuickTrade={quickTrade}
-      buyPrice={selectedPair.ask}
-      sellPrice={selectedPair.bid}
-      darkTheme={isDarkTheme}
-      marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-    />
-  </div>
-  <div className={`terminal-tradingview-panel${chartProvider === "tradingview" ? " is-active" : ""}`}>
-    <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
-  </div>
+<div className="terminal-single-chart-stack">
+  {chartProvider === "native" ? (
+    <div className="terminal-native-chart-panel">
+      <div className="terminal-chart-panel-label"><span className="terminal-chart-status-dot" /> Native Candlestick Chart <span>{selectedPair.symbol}</span></div>
+      <TradingChart
+        key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
+        candles={selectedPair.candles}
+        sym={selectedPair.symbol}
+        tf={timeframe}
+        openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+        onExpand={() => setChartExpanded(e => !e)}
+        isExpanded={chartExpanded}
+        onQuickTrade={quickTrade}
+        buyPrice={selectedPair.ask}
+        sellPrice={selectedPair.bid}
+        darkTheme={isDarkTheme}
+        marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+      />
+    </div>
+  ) : (
+    <div className="terminal-tradingview-panel is-active">
+      <div className="terminal-chart-panel-label"><span className="terminal-chart-status-dot" /> TradingView Live <span>{selectedPair.symbol}</span></div>
+      <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
+    </div>
+  )}
 </div>
   <div className="terminal-chart-activity-tabs" role="tablist" aria-label="Chart activity panels">
     <button type="button" role="tab" aria-selected={activePanel === "positions"} className={activePanel === "positions" ? "is-active" : ""} onClick={() => { setActivePanel("positions"); setFooterOpen(true) }}><Layers className="h-3.5 w-3.5" /> Positions <span>{openTrades.length}</span></button>

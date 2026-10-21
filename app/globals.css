@@ -5533,7 +5533,7 @@ button, a, [role="button"] {
   .apple-trading-terminal.reference-terminal .apple-terminal-order { min-height: 500px !important; }
 }
 
-/* ── Hideable activity footer ───────────────────────────────────────────── */
+/* ── Hideable activity footer ───────────────────��───────────────────────── */
 .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
   transition: height 180ms ease, min-height 180ms ease;
   overflow: hidden;
@@ -7103,6 +7103,41 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   font-size: 9px;
   font-weight: 800;
   letter-spacing: .06em;
+}
+
+/* Single-provider chart workspace: one clear chart at a time with a stable readable frame. */
+.reference-terminal .terminal-single-chart-stack {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+  padding: 8px;
+  background: #07111f;
+}
+.reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
+.reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel {
+  display: flex;
+  flex: 1;
+  min-height: 360px;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #294662;
+  border-radius: 6px;
+  background: #0b1728;
+}
+.reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel > .apple-trading-chart,
+.reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel > section {
+  flex: 1;
+  min-height: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+.reference-terminal .terminal-single-chart-stack .terminal-chart-panel-label {
+  flex: 0 0 30px;
+}
+@media (max-width: 767px) {
+  .reference-terminal .terminal-single-chart-stack { padding: 5px; }
+  .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
+  .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel { min-height: 330px; }
 }
 
 /* Desktop workspace: allow the full terminal to scroll without clipping chart activity. */
