@@ -37,9 +37,9 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
     const isEmbeddedPreview = window.self !== window.top || process.env.NEXT_PUBLIC_VERCEL_ENV === "preview"
     if (isEmbeddedPreview) {
       container.replaceChildren()
-      const fallback = document.createElement("p")
-      fallback.className = "px-6 text-center text-xs text-slate-500"
-      fallback.textContent = "Reference chart unavailable in embedded preview. Live prices continue through EliteFund market data."
+      const fallback = document.createElement("div")
+      fallback.className = "tradingview-silent-fallback"
+      fallback.setAttribute("aria-hidden", "true")
       container.appendChild(fallback)
       return
     }
@@ -87,7 +87,7 @@ export function TradingViewAdvancedChart({ symbol, theme = "dark", interval = "5
         <span className="text-[10px] text-slate-500">{tradingViewSymbol}</span>
       </div>
       <div ref={containerRef} className="tradingview-widget-container flex items-center justify-center" style={{ height, width: "100%" }}>
-        <p className="px-6 text-center text-xs text-slate-500">Reference chart unavailable in embedded preview. Live prices continue through EliteFund market data.</p>
+        <div className="tradingview-silent-fallback" aria-hidden="true" />
       </div>
     </section>
   )
