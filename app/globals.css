@@ -7163,6 +7163,18 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 }
 .reference-terminal .terminal-chart-activity-tabs button.is-active span { color: #69b7ec; }
 
+.reference-terminal .chart-silent-error,
+.reference-terminal .tradingview-silent-fallback {
+  display: flex;
+  min-height: 100%;
+  width: 100%;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  background: #0b1728;
+}
+.reference-terminal .tradingview-silent-fallback { opacity: .7; }
+
 /* Compact mobile terminal header: keep account, alerts, and actions reachable without hiding the workspace. */
 .reference-terminal .mobile-terminal-header {
   position: sticky;

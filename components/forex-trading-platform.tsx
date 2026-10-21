@@ -3668,11 +3668,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
   <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap chart-surface">
   {selectedPair && chartLayout === "single" ? (
 <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
-  <div className="flex h-full min-h-[360px] flex-col items-center justify-center gap-3 p-6 text-center text-slate-400 text-xs">
-  <div className="flex size-10 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 text-amber-300">!</div>
-  <div><p className="font-bold text-slate-200">Chart temporarily unavailable</p><p className="mt-1 max-w-xs text-slate-500">The live feed is reconnecting. Your trading controls remain available.</p></div>
-  {selectedPair?.candles?.length ? <div className="h-48 w-full max-w-xl overflow-hidden rounded-lg border border-slate-700/60"><TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /></div> : null}
-  <button type="button" onClick={() => { setChartReloadKey((key) => key + 1); if (selectedPair) void fetchCandles(selectedPair.symbol, timeframe) }} className="rounded border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 font-bold uppercase tracking-wide text-cyan-300 transition-colors hover:bg-cyan-400/20">Retry feed</button>
+  <div className="chart-silent-error" aria-hidden="true">
+    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
   </div>
   }>
 <div className="terminal-dual-chart-stack">

@@ -28,7 +28,9 @@ export function GlobalErrorListener() {
     }
 
     const handleError = (event: ErrorEvent) => {
+      const isCrossOriginScriptError = event.message === "Script error." || (!event.error && event.filename && !event.filename.startsWith(window.location.origin))
       console.error("[v0] Uncaught error:", event.error ?? event.message)
+      if (isCrossOriginScriptError) return
       Sentry.captureException(event.error ?? new Error(event.message))
       notify("An unexpected error occurred. Please try again.")
     }
