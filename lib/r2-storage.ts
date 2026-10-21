@@ -1,16 +1,19 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
 
+const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID
+const ACCESS_KEY_ID = process.env.CLOUDFLARE_S3_ACCESS_KEY_ID
+const SECRET_ACCESS_KEY = process.env.CLOUDFLARE_S3_SECRET_ACCESS_KEY
+const BUCKET_NAME = process.env.CLOUDFLARE_R2_BUCKET_NAME
+const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL
+
 const s3Client = new S3Client({
   region: "auto",
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    accessKeyId: ACCESS_KEY_ID || "",
+    secretAccessKey: SECRET_ACCESS_KEY || "",
   },
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: ACCOUNT_ID ? `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined,
 })
-
-const BUCKET_NAME = process.env.R2_BUCKET_NAME!
-const PUBLIC_URL = process.env.R2_PUBLIC_URL!
 
 /**
  * Upload a file to Cloudflare R2
@@ -33,7 +36,8 @@ export async function uploadToR2(
         ContentType: contentType,
       })
     )
-    return `${PUBLIC_URL}/${fileName}`
+    if (!PUBLIC_URL) throw new Error("Cloudflare R2 public URL is not configured")
+    return `${PUBLIC_URL.replace(/\/$/, "")}/${fileName}`
   } catch (error) {
     console.error("[R2] Upload error:", error)
     throw new Error("Failed to upload image")
