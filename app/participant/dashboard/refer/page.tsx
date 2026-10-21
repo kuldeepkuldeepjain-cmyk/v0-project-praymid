@@ -49,8 +49,9 @@ export default function ReferPage() {
         const referralRes = await participantFetch(`/api/participant/referrals?email=${encodeURIComponent(parsedData.email)}`)
         const referralJson = await referralRes.json()
         if (referralJson.success) {
-          setTotalEarnings(Number(referralJson.referralEarnings) || 0)
-          setPendingEarnings(Number(referralJson.referralEarnings) || 0)
+          const earnings = Number(referralJson.referralEarnings) || 0
+          setTotalEarnings(earnings)
+          setPendingEarnings(earnings)
         }
       } catch (err) {
         console.error("[v0] Error in fetchData:", err)
