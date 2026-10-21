@@ -1510,7 +1510,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
 
-  const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
+  const DEFAULT_WATCHLIST = ["XAU/USD", "EUR/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
   const [watchlistReady, setWatchlistReady] = useState(false)
   const fundedBaseAmount = isFundedAccount
@@ -1626,7 +1626,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       if (savedWatchlist) {
         const parsed = JSON.parse(savedWatchlist)
         if (Array.isArray(parsed) && parsed.every(s => typeof s === "string") && parsed.length > 0) {
-          setWatchlistSymbols(parsed)
+          const prioritized = ["XAU/USD", ...parsed.filter(symbol => symbol !== "XAU/USD")]
+          setWatchlistSymbols(prioritized)
         }
       }
     } catch {}
@@ -2050,8 +2051,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   }
   })
     setPairs(init); pairsRef.current = init
-    setSelectedPair(init[0]); setLoading(false)
-    fetchRates(); fetchCandles(init[0].symbol, "5M")
+    const defaultPair = init.find(pair => pair.symbol === "XAU/USD") ?? init[0]
+    setSelectedPair(defaultPair); setLoading(false)
+    fetchRates(); fetchCandles(defaultPair.symbol, "5M")
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -3376,7 +3378,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════�����══════��������═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
