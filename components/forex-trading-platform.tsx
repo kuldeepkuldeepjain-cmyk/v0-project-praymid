@@ -249,6 +249,15 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
   return { pnl, pipCount: Number.isFinite(pipCount) ? parseFloat(pipCount.toFixed(1)) : 0, returnOnMargin: Number.isFinite(returnOnMargin) ? returnOnMargin : 0, margin }
 }
 
+function defaultLotsForOrderValue(sym: string, price: number, targetValue = 3000): string {
+  const safePrice = Number.isFinite(price) && price > 0 ? price : 1
+  const size = contractSize(sym)
+  const isUsdBase = (sym || "").startsWith("USD/")
+  const rawLots = isUsdBase ? targetValue / size : targetValue / (size * safePrice)
+  const lots = Math.max(0.01, Math.min(100, Math.round(rawLots * 100) / 100))
+  return lots.toFixed(2)
+}
+
 function calcMargin(sym: string, lots: number, price: number, leverage: number): number {
   const safeLev   = Number.isFinite(leverage) && leverage > 0 ? leverage : 100
   const safeLots  = Number.isFinite(lots) && lots > 0 ? lots : 0.01
@@ -1387,6 +1396,14 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   }, [])
   const [lotSize, setLotSize]         = useState("0.01")
   const [leverage, setLeverage]       = useState("100")
+  const defaultOrderInstrumentRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!selectedPair || defaultOrderInstrumentRef.current === selectedPair.symbol) return
+    const midPrice = (selectedPair.bid + selectedPair.ask) / 2
+    setLotSize(defaultLotsForOrderValue(selectedPair.symbol, midPrice, 3000))
+    defaultOrderInstrumentRef.current = selectedPair.symbol
+  }, [selectedPair?.symbol])
   useEffect(() => {
     if (isFundedAccount) setLeverage("1")
   }, [isFundedAccount])
@@ -2733,7 +2750,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     if (enteredBreachCondition) handleFundedBreach()
   }, [fundedLossLimitReached, handleFundedBreach])
 
-  // ── Partial close trade ────────────────────────��──────────────────���────────
+  // ── Partial close trade ────────────────────────���──────────────────���────────
   const partialCloseTrade = useCallback((id: string, closeLots: number) => {
     const trade = openTradesRef.current.find(t => t.id === id)
     if (!trade) return
