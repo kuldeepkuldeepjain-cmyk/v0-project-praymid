@@ -3697,6 +3697,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
     <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
   </div>
 </div>
+  <div className="terminal-chart-activity-tabs" role="tablist" aria-label="Chart activity panels">
+    <button type="button" role="tab" aria-selected={activePanel === "positions"} className={activePanel === "positions" ? "is-active" : ""} onClick={() => { setActivePanel("positions"); setFooterOpen(true) }}><Layers className="h-3.5 w-3.5" /> Positions <span>{openTrades.length}</span></button>
+    <button type="button" role="tab" aria-selected={activePanel === "pending"} className={activePanel === "pending" ? "is-active" : ""} onClick={() => { setActivePanel("pending"); setFooterOpen(true) }}><Clock className="h-3.5 w-3.5" /> Orders <span>{pendingOrders.length}</span></button>
+    <button type="button" role="tab" aria-selected={activePanel === "history"} className={activePanel === "history" ? "is-active" : ""} onClick={() => { setActivePanel("history"); setFooterOpen(true) }}><History className="h-3.5 w-3.5" /> History <span>{closedTrades.length}</span></button>
+  </div>
   </ErrorBoundary>
   ) : selectedPair && chartLayout === "grid" ? (
   <MiniChartGrid
