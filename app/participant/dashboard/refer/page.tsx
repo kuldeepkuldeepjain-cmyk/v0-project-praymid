@@ -20,7 +20,7 @@ export default function ReferPage() {
   const [showCopyAlert, setShowCopyAlert] = useState(false)
 
   const isAuthenticated = isParticipantAuthenticated()
-  const REWARD_PER_REFERRAL = 5 // $5 per referral when they add funds or complete contribution
+  const REWARD_PER_REFERRAL = 5 // $5 after the referred account is funded with $50 or more
 
   useEffect(() => {
     setMounted(true)
@@ -145,7 +145,7 @@ export default function ReferPage() {
   }
 
   const shareVia = (platform: string) => {
-    const message = `🎯 Join Elite Fund and start earning! I'm earning $5 for every friend who joins using my link. Get rewarded when they add funds or complete tasks: ${referralLink}`
+    const message = `🎯 Join Elite Fund and start earning! I'm earning $5 for every friend who joins using my link. Get rewarded when their account is funded with $50 or more: ${referralLink}`
     const encodedMsg = encodeURIComponent(message)
     const encodedLink = encodeURIComponent(referralLink)
     let shareUrl = ""
@@ -215,7 +215,7 @@ export default function ReferPage() {
                     Earn $5 Per Referral
                   </h2>
                   <p className="text-white/90 text-sm">
-                    Get $5 USDT every time a friend adds funds or completes a contribution. No limits!
+                    Get $5 USDT when a referred account is funded with $50 or more. No limits!
                   </p>
                 </div>
                 <Heart className="h-12 w-12 text-white/90" />
@@ -358,7 +358,7 @@ export default function ReferPage() {
                 <div>
                   <p className="font-semibold text-slate-900 text-sm">They Add Funds or Contribute</p>
                   <p className="text-xs text-slate-600">
-                    When they add funds to wallet or complete contribution cycle
+                    When their account is funded with $50 or more
                   </p>
                 </div>
               </div>
