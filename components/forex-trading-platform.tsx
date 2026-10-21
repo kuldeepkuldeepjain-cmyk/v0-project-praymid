@@ -1404,10 +1404,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     setLotSize(defaultLotsForOrderValue(selectedPair.symbol, midPrice, 3000))
     defaultOrderInstrumentRef.current = selectedPair.symbol
   }, [selectedPair?.symbol])
-  useEffect(() => {
-    if (isFundedAccount) setLeverage("1")
-  }, [isFundedAccount])
-  const effectiveLeverage = Math.min(isFundedAccount ? 1 : (parseFloat(leverage) || 1), 100)
+  const effectiveLeverage = Math.min(isFundedAccount ? (parseFloat(leverage) || 1) : (parseFloat(leverage) || 1), 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -2468,7 +2465,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   const updateConfirmLeverage = (value: string) => {
     if (!tradeConfirm || !selectedPair) return
-const maxLeverage = isFundedAccount ? 1 : 100
+const maxLeverage = 100
   const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
     const margin = calcMargin(selectedPair.symbol, tradeConfirm.lotSize, tradeConfirm.price, nextLeverage)
     const cs = contractSize(selectedPair.symbol)
