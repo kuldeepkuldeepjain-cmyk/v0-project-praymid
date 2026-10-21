@@ -30,7 +30,9 @@ export async function POST(request: Request) {
     if (!email || !legalName || !country || !documentType || !documentFrontUrl || !documentBackUrl || !selfieUrl) {
       return NextResponse.json({ error: "Legal name, country, document type, front, back, and live selfie are required" }, { status: 400 })
     }
-    if ([documentFrontUrl, documentBackUrl, selfieUrl].some(value => value.length > 8_000_000 || !/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value))) {
+    const isImageData = (value: string) => /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(value) && value.length <= 8_000_000
+    const isStoredImageUrl = (value: string) => /^https?:\/\/[^\s]+$/i.test(value)
+    if ([documentFrontUrl, documentBackUrl, selfieUrl].some(value => !isImageData(value) && !isStoredImageUrl(value))) {
       return NextResponse.json({ error: "Upload valid JPG, PNG, or WEBP images under 6 MB each" }, { status: 400 })
     }
     const db = getPool()
