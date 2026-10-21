@@ -261,8 +261,8 @@ export function ParticipantDatabaseView() {
       p.username,
       p.full_name || p.name || "",
       p.email,
-      p.phone || "",
-      p.mobile_number || "",
+      p.mobile_number || p.phone || "",
+      p.mobile_number || p.phone || "",
       p.country_code || "",
       p.country || "",
       p.state || "",
@@ -293,9 +293,10 @@ export function ParticipantDatabaseView() {
       new Date(p.last_active).toLocaleString(),
     ])
 
-    const csvContent = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n")
+    const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`
+    const csvContent = [headers.map(csvCell).join(","), ...rows.map((row) => row.map(csvCell).join(","))].join("\r\n")
 
-    const blob = new Blob([csvContent], { type: "text/csv" })
+    const blob = new Blob(["\uFEFF", csvContent], { type: "text/csv;charset=utf-8" })
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
