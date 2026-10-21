@@ -116,11 +116,14 @@ export async function POST(req: NextRequest) {
         [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up${isFundedAccount ? ` for a $${creditedAmount.toLocaleString()} funded account` : ""}`]
       ).catch(() => {})
 
-      // Credit $5 to referrer if this participant was referred (only once per referred user)
-      const referrerRows = await query(
+      // Credit $5 only after a qualifying funded event: $50+ for normal accounts,
+      // or a funded-account tier whose credited funded amount is $50+.
+      const qualifyingFundAmount = isFundedAccount ? creditedAmount : depositAmount
+      const meetsReferralFundingThreshold = qualifyingFundAmount >= 50
+      const referrerRows = meetsReferralFundingThreshold ? await query(
         `SELECT id, email, account_balance, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
         [topup.participant_email]
-      )
+      ) : []
       if (referrerRows.length > 0) {
         const referrer = referrerRows[0] as any
         

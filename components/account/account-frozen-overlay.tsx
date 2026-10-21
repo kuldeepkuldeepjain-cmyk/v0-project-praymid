@@ -113,12 +113,7 @@ export function AccountFrozenOverlay({
               <Lock className="h-10 w-10 text-white" />
             </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Account Activation Required</h1>
-            <p className="text-slate-500 max-w-md mx-auto">
-              To access all FlowChain features and start participating, a one-time activation fee is required.
-            </p>
-          </div>
+          <div aria-hidden="true" />
         </div>
 
         {/* Warning Alert */}
