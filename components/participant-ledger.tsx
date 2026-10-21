@@ -28,7 +28,6 @@ import {
   ArrowUpDown,
   FileText,
 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
 import { participantFetch } from "@/lib/auth"
 
 interface LedgerEntry {
@@ -75,8 +74,6 @@ export function ParticipantLedger({ participantId }: LedgerProps) {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalEntries, setTotalEntries] = useState(0)
   const limit = 15
-  const { toast } = useToast()
-
   useEffect(() => { fetchLedger() }, [participantId, filterType, sortOrder, currentPage])
 
   const fetchLedger = async () => {
@@ -91,7 +88,9 @@ export function ParticipantLedger({ participantId }: LedgerProps) {
       setEntries(data.data || [])
       setTotalEntries(data.pagination?.total || 0)
     } catch {
-      toast({ title: "Error", description: "Failed to load ledger", variant: "destructive" })
+      // Keep the profile usable when ledger data is temporarily unavailable.
+      setEntries([])
+      setTotalEntries(0)
     } finally {
       setLoading(false)
     }
