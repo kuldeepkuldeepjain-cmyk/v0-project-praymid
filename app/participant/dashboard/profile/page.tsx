@@ -277,13 +277,37 @@ export default function ProfilePage() {
 
   const submitKyc = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (!participantData?.email || kycSubmitting) return
     setKycSubmitting(true)
     try {
-      const res = await participantFetch("/api/participant/kyc", { method: "POST", body: JSON.stringify({ email: participantData.email, ...kycForm }) })
-      const json = await res.json()
+      const imageFields = [
+        ["document_front_url", "kyc-front"],
+        ["document_back_url", "kyc-back"],
+        ["selfie_url", "kyc-selfie"],
+      ] as const
+      const uploaded = { ...kycForm }
+      for (const [field, type] of imageFields) {
+        const image = uploaded[field]
+        if (!image) throw new Error("Please provide all required identity images")
+        if (image.startsWith("data:")) {
+          const uploadResponse = await participantFetch("/api/participant/upload-image", {
+            method: "POST",
+            body: JSON.stringify({ image, type }),
+          })
+          const uploadJson = await uploadResponse.json().catch(() => ({}))
+          if (!uploadResponse.ok || !uploadJson.url) throw new Error(uploadJson.error || "Unable to save identity image")
+          uploaded[field] = uploadJson.url
+        }
+      }
+      const res = await participantFetch("/api/participant/kyc", {
+        method: "POST",
+        body: JSON.stringify({ email: participantData.email, ...uploaded }),
+      })
+      const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error || "Unable to submit KYC")
       setKyc(json.verification)
-      toast({ title: "KYC submitted", description: "Your documents are now awaiting verification." })
+      setKycForm(uploaded)
+      toast({ title: "KYC submitted", description: "Your documents are now securely awaiting verification." })
     } catch (error) {
       toast({ title: "KYC submission failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" })
     } finally {

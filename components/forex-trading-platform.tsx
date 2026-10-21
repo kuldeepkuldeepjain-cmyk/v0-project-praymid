@@ -249,6 +249,15 @@ function calcPnl(trade: { direction: TradeDirection; openPrice: number; lotSize:
   return { pnl, pipCount: Number.isFinite(pipCount) ? parseFloat(pipCount.toFixed(1)) : 0, returnOnMargin: Number.isFinite(returnOnMargin) ? returnOnMargin : 0, margin }
 }
 
+function defaultLotsForOrderValue(sym: string, price: number, targetValue = 3000): string {
+  const safePrice = Number.isFinite(price) && price > 0 ? price : 1
+  const size = contractSize(sym)
+  const isUsdBase = (sym || "").startsWith("USD/")
+  const rawLots = isUsdBase ? targetValue / size : targetValue / (size * safePrice)
+  const lots = Math.max(0.01, Math.min(100, Math.round(rawLots * 100) / 100))
+  return lots.toFixed(2)
+}
+
 function calcMargin(sym: string, lots: number, price: number, leverage: number): number {
   const safeLev   = Number.isFinite(leverage) && leverage > 0 ? leverage : 100
   const safeLots  = Number.isFinite(lots) && lots > 0 ? lots : 0.01
@@ -1386,11 +1395,16 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => window.clearInterval(timer)
   }, [])
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("100")
+  const [leverage, setLeverage]       = useState("10")
+  const defaultOrderInstrumentRef = useRef<string | null>(null)
+
   useEffect(() => {
-    if (isFundedAccount) setLeverage("1")
-  }, [isFundedAccount])
-  const effectiveLeverage = Math.min(isFundedAccount ? 1 : (parseFloat(leverage) || 1), 100)
+    if (!selectedPair || defaultOrderInstrumentRef.current === selectedPair.symbol) return
+    const midPrice = (selectedPair.bid + selectedPair.ask) / 2
+    setLotSize(defaultLotsForOrderValue(selectedPair.symbol, midPrice, 3000))
+    defaultOrderInstrumentRef.current = selectedPair.symbol
+  }, [selectedPair?.symbol])
+  const effectiveLeverage = Math.min(isFundedAccount ? (parseFloat(leverage) || 1) : (parseFloat(leverage) || 1), 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -1493,7 +1507,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [soundEnabled, setSoundEnabled] = useState(true)
   const smartAlertNotifiedRef = useRef<Record<string, boolean>>({})
 
-  const DEFAULT_WATCHLIST = ["EUR/USD", "XAU/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
+  const DEFAULT_WATCHLIST = ["XAU/USD", "EUR/USD", "GBP/USD", "USD/JPY", "BTC/USD"]
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>(DEFAULT_WATCHLIST)
   const [watchlistReady, setWatchlistReady] = useState(false)
   const fundedBaseAmount = isFundedAccount
@@ -1609,7 +1623,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       if (savedWatchlist) {
         const parsed = JSON.parse(savedWatchlist)
         if (Array.isArray(parsed) && parsed.every(s => typeof s === "string") && parsed.length > 0) {
-          setWatchlistSymbols(parsed)
+          const prioritized = ["XAU/USD", ...parsed.filter(symbol => symbol !== "XAU/USD")]
+          setWatchlistSymbols(prioritized)
         }
       }
     } catch {}
@@ -2033,8 +2048,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   }
   })
     setPairs(init); pairsRef.current = init
-    setSelectedPair(init[0]); setLoading(false)
-    fetchRates(); fetchCandles(init[0].symbol, "5M")
+    const defaultPair = init.find(pair => pair.symbol === "XAU/USD") ?? init[0]
+    setSelectedPair(defaultPair); setLoading(false)
+    fetchRates(); fetchCandles(defaultPair.symbol, "5M")
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -2449,7 +2465,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   const updateConfirmLeverage = (value: string) => {
     if (!tradeConfirm || !selectedPair) return
-const maxLeverage = isFundedAccount ? 1 : 100
+const maxLeverage = 100
   const nextLeverage = Math.min(maxLeverage, Math.max(1, Number(value) || 1))
     const margin = calcMargin(selectedPair.symbol, tradeConfirm.lotSize, tradeConfirm.price, nextLeverage)
     const cs = contractSize(selectedPair.symbol)
@@ -2733,7 +2749,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     if (enteredBreachCondition) handleFundedBreach()
   }, [fundedLossLimitReached, handleFundedBreach])
 
-  // ── Partial close trade ────────────────────────��──────────────────���────────
+  // ── Partial close trade ────────────────────────���──────────────────���────────
   const partialCloseTrade = useCallback((id: string, closeLots: number) => {
     const trade = openTradesRef.current.find(t => t.id === id)
     if (!trade) return
@@ -3359,7 +3375,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��════════════════════�����══════��������═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
@@ -3973,17 +3989,11 @@ const maxLeverage = isFundedAccount ? 1 : 100
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
                     Leverage {isFundedAccount ? "(max 100x)" : ""}
                   </label>
-                  {isFundedAccount ? (
-                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="input-3d w-full price-mono text-sm font-black text-amber-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["1"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#fbbf24" }}>1:{l}</option>)}
-                    </select>
-                  ) : (
-                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["50","100","200","500","1000"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
-                    </select>
-                  )}
+                  <select value={leverage} onChange={e => setLeverage(e.target.value)}
+                    aria-label="Select leverage"
+                    className={`input-3d w-full price-mono text-sm font-black focus:outline-none px-2.5 py-2 appearance-none cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
+                    {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value} style={{ background: "#080c14", color: isFundedAccount ? "#fbbf24" : "#22d3ee" }}>1:{value}</option>)}
+                  </select>
                 </div>
 
                 {/* Risk controls */}
@@ -4185,7 +4195,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
             { id: "positions",   label: `Positions (${openTrades.length})`, icon: Layers },
             { id: "pending",     label: `Orders (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
-            { id: "dom",         label: "Order Book",                         icon: BarChart2 },
+            { id: "dom",         label: "L2 Book",                            icon: BarChart2 },
             { id: "risk",        label: "Risk",                               icon: ShieldAlert },
             { id: "journal",     label: "Journal",                            icon: BookOpen },
             { id: "news",        label: "News",                               icon: Newspaper },
@@ -4196,7 +4206,8 @@ const maxLeverage = isFundedAccount ? 1 : 100
   { id: "trust",       label: "Trust",                              icon: ShieldCheck },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
-            { id: "stats",       label: "Stats",                              icon: Activity },
+            { id: "stats",       label: "Stats",                               icon: Activity },
+            { id: "ai-coach",    label: "AI Guide",                            icon: BrainCircuit },
           ] as { id: typeof activePanel; label: string; icon: any }[], tabOrder).map(({ id, label, icon: Icon }, _index, orderedTabs) => (
             <button key={id}
               draggable={dockEnabled}
@@ -4644,7 +4655,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
       </section>
 
       <div className="reference-statusbar shrink-0">
-        <span><i />Connected</span>
+        <span><i />{online ? "Connected" : "Reconnecting"}</span>
         <strong>Live Account</strong>
         <span className="reference-status-spacer" />
         <span>Server: Elite-Trade-Live-1</span>
@@ -4654,7 +4665,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
         <span>{utcClock} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���───────────────���────────────────────���────── */}
+      {/* ── Trade Confirmation Modal ──����───────────────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"
