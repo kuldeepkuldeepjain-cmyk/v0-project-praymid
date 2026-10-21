@@ -2733,7 +2733,7 @@ const maxLeverage = isFundedAccount ? 1 : 100
     if (enteredBreachCondition) handleFundedBreach()
   }, [fundedLossLimitReached, handleFundedBreach])
 
-  // ── Partial close trade ───────────────────────────────────────────���────────
+  // ── Partial close trade ────────────────────────��──────────────────���────────
   const partialCloseTrade = useCallback((id: string, closeLots: number) => {
     const trade = openTradesRef.current.find(t => t.id === id)
     if (!trade) return
@@ -3069,13 +3069,6 @@ const maxLeverage = isFundedAccount ? 1 : 100
               {profilePanel === "support" ? <SupportCenterPanel /> : <SmartAlertsPanel alerts={smartAlerts} />}
             </div>
           </div>
-        </div>
-      )}
-
-      {(marketError || candleError) && (
-        <div className="absolute left-2 right-2 top-12 z-40 flex items-center justify-between gap-2 rounded border border-amber-400/30 bg-amber-950/95 px-2.5 py-1.5 text-[9px] text-amber-100 shadow-lg">
-          <span>{marketError || candleError}</span>
-          <button type="button" onClick={() => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) }} className="shrink-0 font-bold uppercase tracking-wider underline underline-offset-2">Retry</button>
         </div>
       )}
 
