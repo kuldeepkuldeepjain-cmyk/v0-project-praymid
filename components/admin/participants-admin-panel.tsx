@@ -13,6 +13,7 @@ interface Participant {
   full_name: string
   username: string
   email: string
+  mobile_number?: string | null
   account_balance: number
   account_type?: string
   status: string
