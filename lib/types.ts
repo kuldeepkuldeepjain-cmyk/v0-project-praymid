@@ -127,7 +127,6 @@ export type ParticipantUser = {
   email: string
   name?: string
   phone?: string
-  mobile_number?: string
   date_of_birth?: string
   gender?: string
   occupation?: string
