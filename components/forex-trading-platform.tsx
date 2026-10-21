@@ -1395,7 +1395,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => window.clearInterval(timer)
   }, [])
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("100")
+  const [leverage, setLeverage]       = useState("10")
   const defaultOrderInstrumentRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -3989,17 +3989,11 @@ const maxLeverage = 100
                   <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
                     Leverage {isFundedAccount ? "(max 100x)" : ""}
                   </label>
-                  {isFundedAccount ? (
-                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="input-3d w-full price-mono text-sm font-black text-amber-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["1"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#fbbf24" }}>1:{l}</option>)}
-                    </select>
-                  ) : (
-                    <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                      className="input-3d w-full price-mono text-sm font-black text-cyan-300 focus:outline-none px-2.5 py-2 appearance-none cursor-pointer">
-                      {["50","100","200","500","1000"].map(l => <option key={l} value={l} style={{ background: "#080c14", color: "#22d3ee" }}>1:{l}</option>)}
-                    </select>
-                  )}
+                  <select value={leverage} onChange={e => setLeverage(e.target.value)}
+                    aria-label="Select leverage"
+                    className={`input-3d w-full price-mono text-sm font-black focus:outline-none px-2.5 py-2 appearance-none cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
+                    {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value} style={{ background: "#080c14", color: isFundedAccount ? "#fbbf24" : "#22d3ee" }}>1:{value}</option>)}
+                  </select>
                 </div>
 
                 {/* Risk controls */}
