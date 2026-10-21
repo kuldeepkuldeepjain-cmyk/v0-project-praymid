@@ -4201,7 +4201,7 @@ const maxLeverage = 100
             { id: "positions",   label: `Positions (${openTrades.length})`, icon: Layers },
             { id: "pending",     label: `Orders (${pendingOrders.length})`, icon: Clock },
             { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
-            { id: "dom",         label: "Order Book",                         icon: BarChart2 },
+            { id: "dom",         label: "L2 Book",                            icon: BarChart2 },
             { id: "risk",        label: "Risk",                               icon: ShieldAlert },
             { id: "journal",     label: "Journal",                            icon: BookOpen },
             { id: "news",        label: "News",                               icon: Newspaper },
@@ -4212,7 +4212,8 @@ const maxLeverage = 100
   { id: "trust",       label: "Trust",                              icon: ShieldCheck },
             { id: "sessions",    label: "Sessions",                           icon: Globe2 },
             { id: "depth",       label: "Depth",                              icon: BarChart2 },
-            { id: "stats",       label: "Stats",                              icon: Activity },
+            { id: "stats",       label: "Stats",                               icon: Activity },
+            { id: "ai-coach",    label: "AI Guide",                            icon: BrainCircuit },
           ] as { id: typeof activePanel; label: string; icon: any }[], tabOrder).map(({ id, label, icon: Icon }, _index, orderedTabs) => (
             <button key={id}
               draggable={dockEnabled}
@@ -4660,7 +4661,7 @@ const maxLeverage = 100
       </section>
 
       <div className="reference-statusbar shrink-0">
-        <span><i />Connected</span>
+        <span><i />{online ? "Connected" : "Reconnecting"}</span>
         <strong>Live Account</strong>
         <span className="reference-status-spacer" />
         <span>Server: Elite-Trade-Live-1</span>
@@ -4670,7 +4671,7 @@ const maxLeverage = 100
         <span>{utcClock} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──���───────────────���────────────────────���────── */}
+      {/* ── Trade Confirmation Modal ──����───────────────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"
