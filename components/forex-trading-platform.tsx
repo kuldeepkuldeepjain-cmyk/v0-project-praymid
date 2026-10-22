@@ -4813,9 +4813,9 @@ const maxLeverage = 100
                 borderBottom: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <div
-                  className="flex items-center justify-center w-10 h-10 rounded-xl"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg"
                   style={{
                     background: tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
                     border: `1px solid ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
@@ -4858,7 +4858,7 @@ const maxLeverage = 100
             </div>
 
             {/* Quantity can be adjusted before the final confirmation. */}
-            <div className="mx-4 mt-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
+            <div className="mx-3 mt-2 rounded-lg px-2.5 py-2" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label htmlFor="confirm-lot-size" className="block text-[9px] font-black uppercase tracking-widest text-cyan-300">Trade quantity</label>
@@ -4884,7 +4884,7 @@ const maxLeverage = 100
               </div>
             </div>
 
-            <div className="mx-5 mt-3 rounded-xl px-4 py-3" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}>
+            <div className="mx-3 mt-2 rounded-lg px-2.5 py-2" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label htmlFor="confirm-leverage" className="block text-[9px] font-black uppercase tracking-widest text-amber-300">Leverage</label>
@@ -4897,7 +4897,7 @@ const maxLeverage = 100
             </div>
 
             {/* Order summary grid */}
-            <div className="px-4 py-3 grid grid-cols-2 gap-2">
+            <div className="px-3 py-2.5 grid grid-cols-2 gap-1.5">
                 {[
                 { label: "Instrument", value: tradeConfirm.pair, color: "#f8fafc" },
                 { label: "Order Type", value: tradeConfirm.isPending ? (tradeConfirm.pendingOrderType?.replace("_", " ") ?? "Pending") : "MARKET", color: "#22d3ee" },
@@ -4936,7 +4936,7 @@ const maxLeverage = 100
               ].map(({ label, value, color }) => (
                 <div
                   key={label}
-                  className="flex flex-col gap-1 px-3 py-2.5 rounded-xl"
+                  className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2 rounded-lg"
                   style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
                 >
                   <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(148,163,184,0.5)" }}>{label}</span>
@@ -4947,7 +4947,7 @@ const maxLeverage = 100
 
             {/* Margin block */}
             <div
-              className="mx-5 mb-3 rounded-xl px-4 py-3 flex items-center justify-between"
+              className="mx-3 mb-2 rounded-lg px-3 py-2 flex items-center justify-between"
               style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
             >
               <div className="flex flex-col gap-0.5">
