@@ -3607,10 +3607,12 @@ const maxLeverage = 100
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
 
-                <div className="flex items-center gap-2"><span className="size-1.5 rounded-full bg-cyan-400" /><span className="chart-timeframe-label">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span></div>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2"><span className="size-1.5 shrink-0 rounded-full bg-cyan-400" /><span className="chart-timeframe-label truncate">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span><select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="ml-1 hidden rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select></div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="shrink-0 rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select>
+                  <select value={timeframe} onChange={e => setTimeframe(e.target.value as TimeFrame)} aria-label="Select chart timeframe" className="rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black text-slate-200 outline-none sm:hidden"><option value="1M">1M</option><option value="5M">5M</option><option value="15M">15M</option><option value="30M">30M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option></select>
                   <div
-                    className="flex items-center gap-0.5 p-0.5"
+                    className="hidden items-center gap-0.5 p-0.5 sm:flex"
                     style={{
                       borderRadius: 8,
                       background: "linear-gradient(180deg, #0a0f1a 0%, #060a12 100%)",
