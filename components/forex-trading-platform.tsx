@@ -1684,6 +1684,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const openTradesRef   = useRef<OpenTrade[]>([])
   const freshRateSymbolsRef = useRef<Set<string>>(new Set())
   const freshRateUpdatedAtRef = useRef<Record<string, number>>({})
+  const latestQuoteRef = useRef<Record<string, { bid: number; ask: number; receivedAt: number }>>({})
   const lastUiUpdateRef = useRef(0)
   const tickUpdateScheduledRef = useRef(false)
   const hasFreshRate = useCallback(
@@ -1894,7 +1895,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       }),
     )
     const receivedAt = Date.now()
-    for (const symbol of freshRateSymbolsRef.current) freshRateUpdatedAtRef.current[symbol] = receivedAt
+    for (const symbol of freshRateSymbolsRef.current) {
+      freshRateUpdatedAtRef.current[symbol] = receivedAt
+      const rate = rateMap[symbol]
+      if (rate) latestQuoteRef.current[symbol] = { bid: rate.bid, ask: rate.ask, receivedAt }
+    }
     setPairs(prev => {
       let changed = false
       const updated = prev.map(pair => {
@@ -2402,13 +2407,14 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const executeTrade = (tradeDirection: TradeDirection = direction) => {
     if (tradingLocked) { showToast("warning", "Account frozen — trading is disabled"); return }
     if (!selectedPair) return
-    if (!hasFreshRate(selectedPair.symbol)) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
+    const quote = latestQuoteRef.current[selectedPair.symbol]
+    if (!quote || !hasFreshRate(selectedPair.symbol) || Date.now() - quote.receivedAt > 10_000) { showToast("warning", "Waiting for a fresh live quote for this instrument."); return }
     const lot = parseFloat(lotSize); const lev = effectiveLeverage
     if (isNaN(lot) || lot <= 0 || lot > 100) { showToast("error", "Lot size: 0.01 – 100"); return }
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
 
     setDirection(tradeDirection)
-    const price  = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
+    const price  = tradeDirection === "BUY" ? quote.ask : quote.bid
     const slNum  = sl ? parseFloat(sl) : null
     const tpNum  = tp ? parseFloat(tp) : null
     const trailN = trailingPips ? parseFloat(trailingPips) : null
@@ -2430,7 +2436,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     if (orderType !== "market") {
       const pPrice = parseFloat(pendingPrice)
       if (isNaN(pPrice) || pPrice <= 0) { showToast("error", "Enter a valid pending order price"); return }
-      const currentQuote = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
+      const currentQuote = tradeDirection === "BUY" ? quote.ask : quote.bid
       const isInvalidLevel = orderType === "limit"
         ? (tradeDirection === "BUY" ? pPrice >= currentQuote : pPrice <= currentQuote)
         : (tradeDirection === "BUY" ? pPrice <= currentQuote : pPrice >= currentQuote)
