@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
+import { requireParticipantSession } from "@/lib/auth-middleware"
 
 export async function GET(request: Request) {
   try {
@@ -19,8 +20,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const session = await requireParticipantSession()
+    if (!session.ok) return session.response
     const body = await request.json()
-    const email = String(body.email || "").toLowerCase().trim()
+    const email = session.email.toLowerCase().trim()
     const legalName = String(body.legal_name || "").trim()
     const country = String(body.country || "").trim()
     const documentType = String(body.document_type || "").trim()
