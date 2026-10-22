@@ -2917,6 +2917,85 @@ button, a, [role="button"] {
   .reference-terminal .apple-terminal-order { flex-basis: 380px; width: 380px !important; }
 }
 
+/* Institutional terminal hierarchy: one surface, three deliberate zones, consistent rhythm. */
+.reference-terminal {
+  background: #07111f !important;
+  border-color: #284766 !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .035);
+}
+.reference-terminal .apple-terminal-topbar,
+.reference-terminal .terminal-toolbar {
+  background: #0a1727;
+  border-bottom: 1px solid #203a57;
+}
+.reference-terminal .apple-terminal-summary {
+  background: #0b1b2e;
+  border-bottom: 1px solid #203a57;
+}
+.reference-terminal .apple-terminal-grid {
+  gap: 1px;
+  background: #203a57;
+}
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-chart-column {
+  background: #081525;
+  border: 0;
+}
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.reference-terminal .apple-terminal-chart-column {
+  background: #06101c;
+}
+.reference-terminal .apple-terminal-market > div:first-child,
+.reference-terminal .apple-terminal-order > div:first-child {
+  background: #0c1d31;
+  border-bottom: 1px solid #203a57;
+}
+.reference-terminal .apple-terminal-blotter,
+.reference-terminal .apple-terminal-mobile-tabs,
+.reference-terminal .reference-statusbar {
+  background: #09182a;
+  border-color: #203a57;
+}
+.reference-terminal .apple-terminal-mobile-tabs button {
+  color: #8da6bd;
+  transition: color .16s ease, background .16s ease;
+}
+.reference-terminal .apple-terminal-mobile-tabs button:hover,
+.reference-terminal .apple-terminal-mobile-tabs button[aria-selected="true"] {
+  background: #122a43;
+  color: #d9efff;
+}
+.reference-terminal .reference-watch-card {
+  border-color: #274661;
+  background: #0d2034;
+  transition: border-color .16s ease, transform .16s ease;
+}
+.reference-terminal .reference-watch-card:hover {
+  border-color: #4d9ce0;
+  transform: translateY(-1px);
+}
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .apple-terminal-blotter {
+  scrollbar-width: thin;
+  scrollbar-color: #294967 transparent;
+}
+@media (max-width: 767px) {
+  .reference-terminal .apple-terminal-grid { gap: 0; }
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-order,
+  .reference-terminal .apple-terminal-chart-column { border-bottom: 1px solid #203a57; }
+  .reference-terminal .apple-terminal-mobile-tabs {
+    border-top: 1px solid #294967;
+    box-shadow: 0 -10px 24px rgba(0,0,0,.16);
+  }
+}
+
 .slide-out-to-left {
   --tw-exit-translate-x: -100%;
 }
