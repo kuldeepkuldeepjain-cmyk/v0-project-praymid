@@ -3106,6 +3106,7 @@ const maxLeverage = 100
 <ForexHeader
   walletBalance={walletBalance}
   equity={equity}
+  freeMargin={Math.max(0, equity - lockedMargin)}
   totalPnl={totalPnl}
   openTradesCount={openTrades.length}
         pendingOrdersCount={pendingOrders.length}

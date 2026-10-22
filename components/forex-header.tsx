@@ -25,6 +25,7 @@ import {
 interface ForexHeaderProps {
   walletBalance: number
   equity: number
+  freeMargin: number
   totalPnl: number
   openTradesCount: number
   pendingOrdersCount: number
@@ -78,6 +79,7 @@ const menuItems = [
 export function ForexHeader({
   walletBalance,
   equity,
+  freeMargin,
   totalPnl,
   openTradesCount,
   pendingOrdersCount,
@@ -222,6 +224,7 @@ src="/elite-fund-logo.jpg"
         <div className="terminal-header-metrics flex min-w-0 items-center gap-1 overflow-x-auto terminal-scroll">
           <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
+          <div className="terminal-toolbar-stat"><span>Free Margin</span><strong>{formatMoney(freeMargin)}</strong></div>
           <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
         </div>
 
