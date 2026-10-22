@@ -3607,10 +3607,12 @@ const maxLeverage = 100
               </div>
               <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
 
-                <div className="flex items-center gap-2"><span className="size-1.5 rounded-full bg-cyan-400" /><span className="chart-timeframe-label">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span></div>
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2"><span className="size-1.5 shrink-0 rounded-full bg-cyan-400" /><span className="chart-timeframe-label truncate">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span><select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="ml-1 hidden rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select></div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="shrink-0 rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select>
+                  <select value={timeframe} onChange={e => setTimeframe(e.target.value as TimeFrame)} aria-label="Select chart timeframe" className="rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black text-slate-200 outline-none sm:hidden"><option value="1M">1M</option><option value="5M">5M</option><option value="15M">15M</option><option value="30M">30M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option></select>
                   <div
-                    className="flex items-center gap-0.5 p-0.5"
+                    className="hidden items-center gap-0.5 p-0.5 sm:flex"
                     style={{
                       borderRadius: 8,
                       background: "linear-gradient(180deg, #0a0f1a 0%, #060a12 100%)",
@@ -4796,8 +4798,8 @@ const maxLeverage = 100
           <div
             className="relative flex max-h-full flex-col rounded-2xl overflow-y-auto overflow-x-hidden"
             style={{
-              width: "min(360px, calc(100vw - 24px))",
-              maxHeight: "calc(100% - 24px)",
+              width: "min(340px, calc(100vw - 20px))",
+              maxHeight: "calc(100% - 16px)",
               background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
               border: "1px solid rgba(255,255,255,0.07)",
               boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,
@@ -4805,7 +4807,7 @@ const maxLeverage = 100
           >
             {/* Header */}
             <div
-              className="flex items-center justify-between px-4 py-3"
+              className="flex items-center justify-between px-3 py-2"
               style={{
                 background: tradeConfirm.direction === "BUY"
                   ? "linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%)"
@@ -4813,9 +4815,9 @@ const maxLeverage = 100
                 borderBottom: "1px solid rgba(255,255,255,0.06)",
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5">
                 <div
-                  className="flex items-center justify-center w-10 h-10 rounded-xl"
+                  className="flex items-center justify-center w-8 h-8 rounded-lg"
                   style={{
                     background: tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
                     border: `1px solid ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
@@ -4847,6 +4849,8 @@ const maxLeverage = 100
                 </div>
               </div>
               <button
+                type="button"
+                aria-label="Close trade confirmation"
                 onClick={() => { if (!confirmLoading) setTradeConfirm(null) }}
                 className="flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-white/10"
                 style={{ color: "rgba(148,163,184,0.6)" }}
@@ -4856,7 +4860,7 @@ const maxLeverage = 100
             </div>
 
             {/* Quantity can be adjusted before the final confirmation. */}
-            <div className="mx-4 mt-3 rounded-xl px-3 py-2.5" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
+            <div className="mx-3 mt-2 rounded-lg px-2.5 py-2" style={{ background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.18)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label htmlFor="confirm-lot-size" className="block text-[9px] font-black uppercase tracking-widest text-cyan-300">Trade quantity</label>
@@ -4882,20 +4886,20 @@ const maxLeverage = 100
               </div>
             </div>
 
-            <div className="mx-5 mt-3 rounded-xl px-4 py-3" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}>
+            <div className="mx-3 mt-2 rounded-lg px-2.5 py-2" style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.18)" }}>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <label htmlFor="confirm-leverage" className="block text-[9px] font-black uppercase tracking-widest text-amber-300">Leverage</label>
                   <p className="mt-1 text-[9px] text-slate-400">Choose leverage before placing the order.</p>
                 </div>
                 <select id="confirm-leverage" value={tradeConfirm.leverage} onChange={(event) => updateConfirmLeverage(event.target.value)} disabled={confirmLoading} className="h-8 rounded-lg border border-amber-500/40 bg-slate-950 px-3 text-center font-mono text-sm font-bold text-amber-200 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30 disabled:opacity-40" aria-label="Trade leverage">
-                  {(isFundedAccount ? [1] : [1, 10, 25, 50, 75, 100]).map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
+                  {[1, 5, 10, 20, 50, 100].map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
                 </select>
               </div>
             </div>
 
             {/* Order summary grid */}
-            <div className="px-4 py-3 grid grid-cols-2 gap-2">
+            <div className="px-3 py-2.5 grid grid-cols-2 gap-1.5">
                 {[
                 { label: "Instrument", value: tradeConfirm.pair, color: "#f8fafc" },
                 { label: "Order Type", value: tradeConfirm.isPending ? (tradeConfirm.pendingOrderType?.replace("_", " ") ?? "Pending") : "MARKET", color: "#22d3ee" },
@@ -4934,7 +4938,7 @@ const maxLeverage = 100
               ].map(({ label, value, color }) => (
                 <div
                   key={label}
-                  className="flex flex-col gap-1 px-3 py-2.5 rounded-xl"
+                  className="flex min-w-0 flex-col gap-0.5 px-2.5 py-2 rounded-lg"
                   style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
                 >
                   <span className="text-[9px] font-bold tracking-widest uppercase" style={{ color: "rgba(148,163,184,0.5)" }}>{label}</span>
@@ -4945,7 +4949,7 @@ const maxLeverage = 100
 
             {/* Margin block */}
             <div
-              className="mx-5 mb-3 rounded-xl px-4 py-3 flex items-center justify-between"
+              className="mx-3 mb-2 rounded-lg px-3 py-2 flex items-center justify-between"
               style={{ background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.2)" }}
             >
               <div className="flex flex-col gap-0.5">
@@ -4991,7 +4995,7 @@ const maxLeverage = 100
             )}
 
             {/* Action buttons */}
-            <div className="px-5 pb-5 flex gap-3">
+            <div className="px-4 pb-4 flex gap-2">
               <button
                 onClick={() => { if (!confirmLoading) setTradeConfirm(null) }}
                 disabled={confirmLoading}
