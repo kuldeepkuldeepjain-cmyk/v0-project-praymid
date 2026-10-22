@@ -7800,8 +7800,20 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     width: 100% !important;
     max-width: 100% !important;
   }
-  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart-canvas {
-    touch-action: none !important;
+  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart-canvas,
+  .apple-trading-terminal.reference-terminal .native-chart-gesture-surface {
+    touch-action: pan-x pinch-zoom !important;
+    overscroll-behavior: contain;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .apple-trading-terminal.reference-terminal .native-chart-gesture-surface canvas {
+    touch-action: pan-x pinch-zoom !important;
+  }
+  .native-chart-gesture-surface,
+  .native-chart-gesture-surface canvas {
+    touch-action: pan-x pinch-zoom !important;
     overscroll-behavior: contain;
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav::-webkit-scrollbar { display: none; }
