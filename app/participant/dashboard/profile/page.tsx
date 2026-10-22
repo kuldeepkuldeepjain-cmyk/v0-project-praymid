@@ -308,7 +308,7 @@ export default function ProfilePage() {
       const uploaded = { ...kycForm }
       for (const [field, type] of imageFields) {
         const image = uploaded[field]
-        if (!image) throw new Error("Please provide all required identity images")
+        if (!image) throw new Error(`${field === "document_front_url" ? "Front document" : field === "document_back_url" ? "Back document" : "Selfie"} is missing. Please add it before submitting.`)
         if (image.startsWith("data:")) {
           const uploadController = new AbortController()
           const uploadTimeout = window.setTimeout(() => uploadController.abort(), 30_000)
@@ -323,7 +323,10 @@ export default function ProfilePage() {
             window.clearTimeout(uploadTimeout)
           }
           const uploadJson = await uploadResponse.json().catch(() => ({}))
-          if (!uploadResponse.ok || !uploadJson.url) throw new Error(uploadJson.error || "Unable to save identity image")
+          if (!uploadResponse.ok || !uploadJson.url) {
+            const label = field === "document_front_url" ? "front document" : field === "document_back_url" ? "back document" : "selfie"
+            throw new Error(`${label[0].toUpperCase()}${label.slice(1)} upload failed. Please retake or reselect the image and try again.`)
+          }
           uploaded[field] = uploadJson.url
         }
       }
