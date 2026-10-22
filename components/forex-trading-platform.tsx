@@ -4796,8 +4796,8 @@ const maxLeverage = 100
           <div
             className="relative flex max-h-full flex-col rounded-2xl overflow-y-auto overflow-x-hidden"
             style={{
-              width: "min(360px, calc(100vw - 24px))",
-              maxHeight: "calc(100% - 24px)",
+              width: "min(340px, calc(100vw - 20px))",
+              maxHeight: "calc(100% - 16px)",
               background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
               border: "1px solid rgba(255,255,255,0.07)",
               boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,
@@ -4805,7 +4805,7 @@ const maxLeverage = 100
           >
             {/* Header */}
             <div
-              className="flex items-center justify-between px-4 py-3"
+              className="flex items-center justify-between px-3 py-2"
               style={{
                 background: tradeConfirm.direction === "BUY"
                   ? "linear-gradient(90deg, rgba(16,185,129,0.15) 0%, transparent 100%)"
@@ -4847,6 +4847,8 @@ const maxLeverage = 100
                 </div>
               </div>
               <button
+                type="button"
+                aria-label="Close trade confirmation"
                 onClick={() => { if (!confirmLoading) setTradeConfirm(null) }}
                 className="flex items-center justify-center w-7 h-7 rounded-lg transition-all hover:bg-white/10"
                 style={{ color: "rgba(148,163,184,0.6)" }}
@@ -4889,7 +4891,7 @@ const maxLeverage = 100
                   <p className="mt-1 text-[9px] text-slate-400">Choose leverage before placing the order.</p>
                 </div>
                 <select id="confirm-leverage" value={tradeConfirm.leverage} onChange={(event) => updateConfirmLeverage(event.target.value)} disabled={confirmLoading} className="h-8 rounded-lg border border-amber-500/40 bg-slate-950 px-3 text-center font-mono text-sm font-bold text-amber-200 outline-none focus:border-amber-300 focus:ring-2 focus:ring-amber-300/30 disabled:opacity-40" aria-label="Trade leverage">
-                  {(isFundedAccount ? [1] : [1, 10, 25, 50, 75, 100]).map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
+                  {[1, 5, 10, 20, 50, 100].map(value => <option key={value} value={value} style={{ background: "#080c14", color: "#fbbf24" }}>1:{value}</option>)}
                 </select>
               </div>
             </div>
@@ -4991,7 +4993,7 @@ const maxLeverage = 100
             )}
 
             {/* Action buttons */}
-            <div className="px-5 pb-5 flex gap-3">
+            <div className="px-4 pb-4 flex gap-2">
               <button
                 onClick={() => { if (!confirmLoading) setTradeConfirm(null) }}
                 disabled={confirmLoading}
