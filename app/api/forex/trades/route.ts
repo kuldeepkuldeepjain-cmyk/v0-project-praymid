@@ -216,7 +216,7 @@ export async function POST(req: NextRequest) {
          RETURNING id`,
         [
           trade.id, participantId, participant_email, trade.pair, trade.direction,
-          trade.lotSize, trade.leverage, trade.targetPrice, trade.sl, trade.tp,
+          trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
           trade.orderType, trade.targetPrice, trade.expiry,
           trade.createdTime, Date.now(),
         ]

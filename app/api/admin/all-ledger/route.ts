@@ -41,6 +41,19 @@ export async function GET(request: NextRequest) {
       const rows = await dbQuery(`SELECT id,participant_email,amount,status,created_at,crypto_pair,prediction_type,profit_loss,result FROM predictions`).catch(() => [])
       rows.forEach((pred: any) => entries.push({ id:`pred-${pred.id}`, participantEmail:pred.participant_email||"", participantName:resolveName(pred.participant_email||""), participantMobile:resolveMobile(pred.participant_email||""), participantSerial:resolveSerial(pred.participant_email||""), type:"prediction", subType:"prediction", amount:Number(pred.profit_loss??pred.amount)||0, status:pred.status||"pending", date:pred.created_at, description:`${pred.prediction_type||"Binary"} on ${pred.crypto_pair||"crypto"}`+(pred.result?` — ${pred.result}`:"") }))
     }
+    if (filterType === "all" || filterType === "forex_trade") {
+      const rows = await dbQuery(`SELECT id, participant_id, participant_email, pair, direction, lot_size, leverage, open_price, close_price, margin, final_pnl, final_pips, final_swap, close_reason, status, open_time, close_time FROM forex_trades WHERE status = 'closed' ORDER BY COALESCE(close_time, open_time) DESC LIMIT 1000`).catch(() => [])
+      rows.forEach((trade: any) => {
+        const pnl = Number(trade.final_pnl) || 0
+        entries.push({
+          id: `forex-${trade.id}`, participantEmail: trade.participant_email || "", participantName: resolveName(trade.participant_email || ""), participantMobile: resolveMobile(trade.participant_email || ""), participantSerial: resolveSerial(trade.participant_email || ""),
+          type: "forex_trade", subType: pnl >= 0 ? "profit" : "loss", amount: pnl, status: "completed", date: trade.close_time || trade.open_time,
+          description: `${trade.direction} ${trade.pair} ${pnl >= 0 ? "profit" : "loss"} — ${pnl >= 0 ? "+" : ""}$${pnl.toFixed(2)}`,
+          balanceBefore: null, balanceAfter: null,
+          trade: { pair: trade.pair, direction: trade.direction, lotSize: Number(trade.lot_size) || 0, leverage: Number(trade.leverage) || 0, margin: Number(trade.margin) || 0, openPrice: Number(trade.open_price) || 0, closePrice: Number(trade.close_price) || 0, pips: Number(trade.final_pips) || 0, swap: Number(trade.final_swap) || 0, closeReason: trade.close_reason },
+        })
+      })
+    }
     if (filterType === "all" || filterType === "topup") {
       const rows = await dbQuery(`SELECT id,participant_email,amount,status,created_at,payment_method,transaction_id FROM topup_requests`).catch(() => [])
       rows.forEach((t: any) => entries.push({ id:`topup-${t.id}`, participantEmail:t.participant_email||"", participantName:resolveName(t.participant_email||""), participantMobile:resolveMobile(t.participant_email||""), participantSerial:resolveSerial(t.participant_email||""), type:"topup", subType:"topup", amount:Number(t.amount)||0, status:t.status||"pending", date:t.created_at, description:t.transaction_id?`Top-up via ${t.payment_method||"crypto"} — TxID: ${t.transaction_id}`:`Top-up via ${t.payment_method||"crypto"}` }))

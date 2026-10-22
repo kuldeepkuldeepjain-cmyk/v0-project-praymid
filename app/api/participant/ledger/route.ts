@@ -88,6 +88,7 @@ export async function GET(request: NextRequest) {
           balanceBefore: null, balanceAfter: null,
           trade: {
             pair: trade.pair, direction: trade.direction, lotSize: Number(trade.lot_size) || 0,
+            leverage: Number(trade.leverage) || 0, margin: Number(trade.margin) || 0,
             openPrice: Number(trade.open_price) || 0, closePrice: Number(trade.close_price) || 0,
             pips: Number(trade.final_pips) || 0, swap: Number(trade.final_swap) || 0,
             closeReason: trade.close_reason,
