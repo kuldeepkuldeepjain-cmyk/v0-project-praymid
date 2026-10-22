@@ -380,7 +380,7 @@ export function TradingChart({
         rightBarStaysOnScroll: true,
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-      handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true },
+      handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     })
@@ -981,7 +981,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ───────────────────────────���────────────────────────────── */}
-  <div ref={containerRef} className="apple-trading-chart-canvas relative flex-1 min-h-0 w-full" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
+  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}
 
