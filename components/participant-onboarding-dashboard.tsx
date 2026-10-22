@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Gauge, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react"
+import { ArrowRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Eye, FileCheck2, Gauge, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -16,9 +16,9 @@ interface ParticipantOnboardingDashboardProps {
 }
 
 const steps = [
-  { title: "Verify", description: "Protect your account.", icon: ShieldCheck },
-  { title: "Explore", description: "Try the terminal before funding.", icon: BarChart3 },
-  { title: "Understand", description: "Review risks, fees, and payouts.", icon: Gauge },
+  { title: "Verify", description: "Protect your identity and account.", icon: ShieldCheck },
+  { title: "Explore", description: "Use the terminal before funding.", icon: BarChart3 },
+  { title: "Understand", description: "Review risk, fees, and payouts.", icon: Gauge },
 ]
 
 export function ParticipantOnboardingDashboard({ displayName, isVerified, onExploreTerminal, onAddFunds, onHelp }: ParticipantOnboardingDashboardProps) {
@@ -33,7 +33,12 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, onExpl
           <div className="max-w-2xl">
             <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200"><Sparkles className="h-3.5 w-3.5" /> EliteFund</div>
             <h1 className="text-balance text-2xl font-black tracking-tight md:text-4xl">Welcome, {displayName}.</h1>
-            <p className="mt-1 max-w-xl text-sm leading-5 text-slate-400">Explore first. Fund when ready.</p>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-400">A calm, transparent starting point for your account. Explore the terminal, understand the controls, and only fund when every step is clear.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+              <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Secure session</span>
+              <span className="inline-flex items-center gap-1.5"><FileCheck2 className="h-3.5 w-3.5 text-amber-300" /> Clear records</span>
+              <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-sky-300" /> Full visibility</span>
+            </div>
             </div>
           <div className="flex flex-wrap gap-2">
             <Button onClick={onExploreTerminal} className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300"><PlayCircle className="mr-2 h-4 w-4" /> Explore terminal</Button>
@@ -53,7 +58,7 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, onExpl
         <Card className="border-white/10 bg-slate-900/70 text-slate-100"><CardContent className="p-5"><div className="flex items-center gap-3"><LockKeyhole className="h-5 w-5 text-amber-300" /><h2 className="font-bold">Trade with context</h2></div><p className="mt-3 text-xs leading-5 text-slate-400">Markets move quickly. Use the demo terminal first, set a clear risk limit, and never fund more than you understand.</p><button onClick={onHelp} className="mt-4 inline-flex items-center text-xs font-bold text-amber-300">Get help <CircleHelp className="ml-1 h-3.5 w-3.5" /></button></CardContent></Card>
       </div>
 
-      <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3"><h2 className="text-sm font-bold text-amber-100">How it works</h2><p className="mt-1 text-xs leading-5 text-slate-300">Choose a market, set your size, review risk, then place a trade. Try demo mode first.</p></section>
+      <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3"><h2 className="text-sm font-bold text-amber-100">How it works</h2><p className="mt-1 text-xs leading-5 text-slate-300">Choose a market, set your size, review risk, then place a trade. Try demo mode first.</p><div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-amber-200/10 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400"><span>Capital at risk</span><span>•</span><span>Review before confirming</span><span>•</span><span>Support is available</span></div></section>
     </div>
   )
 }
