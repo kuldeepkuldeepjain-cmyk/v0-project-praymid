@@ -226,8 +226,13 @@ export default function ProfilePage() {
     canvas.width = video.videoWidth || 720
     canvas.height = video.videoHeight || 720
     canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height)
-    setKycForm(current => ({ ...current, selfie_url: canvas.toDataURL("image/jpeg", 0.86) }))
-    setSelfieMessage("Live selfie captured successfully.")
+    const selfieData = canvas.toDataURL("image/jpeg", 0.78)
+    if (selfieData.length > 7_500_000) {
+      setSelfieMessage("Selfie is too large. Please retake it in better light.")
+      return
+    }
+    setKycForm(current => ({ ...current, selfie_url: selfieData }))
+    setSelfieMessage("Live selfie captured successfully. It is ready to submit.")
     stopSelfieCamera()
   }
 
@@ -271,7 +276,22 @@ export default function ProfilePage() {
       return
     }
     const reader = new FileReader()
-    reader.onload = () => setKycForm(current => ({ ...current, [field]: String(reader.result || "") }))
+    reader.onload = () => {
+      const source = String(reader.result || "")
+      const image = new Image()
+      image.onload = () => {
+        const maxDimension = 1600
+        const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+        const context = canvas.getContext("2d")
+        if (!context) return setKycForm(current => ({ ...current, [field]: source }))
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        setKycForm(current => ({ ...current, [field]: canvas.toDataURL("image/jpeg", 0.82) }))
+      }
+      image.src = source
+    }
     reader.readAsDataURL(file)
   }
 
@@ -288,14 +308,25 @@ export default function ProfilePage() {
       const uploaded = { ...kycForm }
       for (const [field, type] of imageFields) {
         const image = uploaded[field]
-        if (!image) throw new Error("Please provide all required identity images")
+        if (!image) throw new Error(`${field === "document_front_url" ? "Front document" : field === "document_back_url" ? "Back document" : "Selfie"} is missing. Please add it before submitting.`)
         if (image.startsWith("data:")) {
-          const uploadResponse = await participantFetch("/api/participant/upload-image", {
-            method: "POST",
-            body: JSON.stringify({ image, type }),
-          })
+          const uploadController = new AbortController()
+          const uploadTimeout = window.setTimeout(() => uploadController.abort(), 30_000)
+          let uploadResponse: Response
+          try {
+            uploadResponse = await participantFetch("/api/participant/upload-image", {
+              method: "POST",
+              body: JSON.stringify({ image, type }),
+              signal: uploadController.signal,
+            })
+          } finally {
+            window.clearTimeout(uploadTimeout)
+          }
           const uploadJson = await uploadResponse.json().catch(() => ({}))
-          if (!uploadResponse.ok || !uploadJson.url) throw new Error(uploadJson.error || "Unable to save identity image")
+          if (!uploadResponse.ok || !uploadJson.url) {
+            const label = field === "document_front_url" ? "front document" : field === "document_back_url" ? "back document" : "selfie"
+            throw new Error(`${label[0].toUpperCase()}${label.slice(1)} upload failed. Please retake or reselect the image and try again.`)
+          }
           uploaded[field] = uploadJson.url
         }
       }
@@ -309,7 +340,16 @@ export default function ProfilePage() {
       setKycForm(uploaded)
       toast({ title: "KYC submitted", description: "Your documents are now securely awaiting verification." })
     } catch (error) {
-      toast({ title: "KYC submission failed", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" })
+      const message = error instanceof DOMException && error.name === "AbortError"
+        ? "Image upload timed out. Check your connection and try again."
+        : error instanceof Error && error.message
+          ? error.message
+          : "We could not complete your verification right now. Check that all three images are ready, then try again."
+      toast({
+        title: "KYC was not submitted",
+        description: `${message} Your information has not been submitted. Please review the images and press Submit KYC again.`,
+        variant: "destructive",
+      })
     } finally {
       setKycSubmitting(false)
     }
