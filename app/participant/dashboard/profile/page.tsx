@@ -325,7 +325,8 @@ export default function ProfilePage() {
           const uploadJson = await uploadResponse.json().catch(() => ({}))
           if (!uploadResponse.ok || !uploadJson.url) {
             const label = field === "document_front_url" ? "front document" : field === "document_back_url" ? "back document" : "selfie"
-            throw new Error(`${label[0].toUpperCase()}${label.slice(1)} upload failed. Please retake or reselect the image and try again.`)
+            const serverMessage = typeof uploadJson.error === "string" ? ` ${uploadJson.error}` : ""
+            throw new Error(`${label[0].toUpperCase()}${label.slice(1)} upload failed.${serverMessage} Please retake or reselect the image and try again.`)
           }
           uploaded[field] = uploadJson.url
         }
