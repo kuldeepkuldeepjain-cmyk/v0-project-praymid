@@ -6410,10 +6410,35 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     overflow: visible !important;
     padding-bottom: calc(78px + env(safe-area-inset-bottom)) !important;
     border-top: 0 !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    scroll-behavior: smooth;
     border-radius: 0 !important;
     background: var(--mobile-terminal-bg) !important;
     color: var(--mobile-terminal-ink) !important;
   }
+  .reference-terminal button,
+  .reference-terminal [role="button"],
+  .reference-terminal select {
+    min-height: 42px;
+  }
+  .reference-terminal .terminal-timeframe button,
+  .reference-terminal .chart-timeframe-toolbar button,
+  .reference-terminal .chart-timeframe-toolbar select {
+    min-height: 36px;
+  }
+  .reference-terminal .terminal-watch-strip,
+  .reference-terminal .chart-timeframe-toolbar,
+  .reference-terminal .terminal-rate-details,
+  .reference-terminal .apple-terminal-mobile-tabs {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .reference-terminal .terminal-watch-strip::-webkit-scrollbar,
+  .reference-terminal .chart-timeframe-toolbar::-webkit-scrollbar,
+  .reference-terminal .terminal-rate-details::-webkit-scrollbar,
+  .reference-terminal .apple-terminal-mobile-tabs::-webkit-scrollbar { display: none; }
 
   .reference-desktop-header { display: none !important; }
   .mobile-terminal-header {
