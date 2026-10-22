@@ -27,6 +27,9 @@ export async function uploadToR2(
   fileName: string,
   contentType: string
 ): Promise<string> {
+  if (!ACCOUNT_ID || !ACCESS_KEY_ID || !SECRET_ACCESS_KEY || !BUCKET_NAME || !PUBLIC_URL) {
+    throw new Error("Secure image storage is not configured")
+  }
   try {
     await s3Client.send(
       new PutObjectCommand({
@@ -40,7 +43,8 @@ export async function uploadToR2(
     return `${PUBLIC_URL.replace(/\/$/, "")}/${fileName}`
   } catch (error) {
     console.error("[R2] Upload error:", error)
-    throw new Error("Failed to upload image")
+    const message = error instanceof Error ? error.message : "Unknown storage error"
+    throw new Error(`R2 upload failed: ${message}`)
   }
 }
 

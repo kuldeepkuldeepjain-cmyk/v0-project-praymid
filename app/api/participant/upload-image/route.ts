@@ -3,6 +3,8 @@ import { requireParticipantSession } from "@/lib/auth-middleware"
 import { uploadToR2, base64ToBuffer, getMimeTypeFromBase64 } from "@/lib/r2-storage"
 import { getPool } from "@/lib/db"
 
+export const runtime = "nodejs"
+
 export async function POST(request: NextRequest) {
   try {
     const session = await requireParticipantSession()
@@ -49,9 +51,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
     const message = error instanceof Error ? error.message : "Unable to save image"
-    const safeMessage = /R2 public URL|configured|credentials|bucket|upload/i.test(message)
-      ? "Secure image storage is temporarily unavailable. Please try again."
-      : message
+    const safeMessage = /not configured/i.test(message)
+      ? "Secure image storage is not configured. Please contact support."
+      : /R2 upload failed/i.test(message)
+        ? "Secure image storage rejected the image. Please try again with a clear JPG or PNG under 6 MB."
+        : "Unable to save this image right now. Please try again."
     return NextResponse.json({ error: safeMessage }, { status: 500 })
   }
 }
