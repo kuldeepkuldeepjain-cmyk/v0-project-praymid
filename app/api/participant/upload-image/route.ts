@@ -16,7 +16,16 @@ export async function POST(request: NextRequest) {
     }
 
     const mimeType = getMimeTypeFromBase64(image)
+    if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+      return NextResponse.json({ error: "Only JPG, PNG, or WEBP images are supported" }, { status: 400 })
+    }
     const buffer = base64ToBuffer(image)
+    if (!buffer.length || buffer.length > 6 * 1024 * 1024) {
+      return NextResponse.json({ error: "Image must be under 6 MB" }, { status: 400 })
+    }
+    if (!type || !/^[a-z0-9-]+$/i.test(type)) {
+      return NextResponse.json({ error: "Invalid upload type" }, { status: 400 })
+    }
 
     // Generate unique filename with type
     const ext = mimeType.split("/")[1] || "jpg"
@@ -39,6 +48,10 @@ export async function POST(request: NextRequest) {
     if (error.status === 401) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 })
+    const message = error instanceof Error ? error.message : "Unable to save image"
+    const safeMessage = /R2 public URL|configured|credentials|bucket|upload/i.test(message)
+      ? "Secure image storage is temporarily unavailable. Please try again."
+      : message
+    return NextResponse.json({ error: safeMessage }, { status: 500 })
   }
 }

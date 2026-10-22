@@ -271,7 +271,22 @@ export default function ProfilePage() {
       return
     }
     const reader = new FileReader()
-    reader.onload = () => setKycForm(current => ({ ...current, [field]: String(reader.result || "") }))
+    reader.onload = () => {
+      const source = String(reader.result || "")
+      const image = new Image()
+      image.onload = () => {
+        const maxDimension = 1600
+        const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
+        const canvas = document.createElement("canvas")
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+        const context = canvas.getContext("2d")
+        if (!context) return setKycForm(current => ({ ...current, [field]: source }))
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        setKycForm(current => ({ ...current, [field]: canvas.toDataURL("image/jpeg", 0.82) }))
+      }
+      image.src = source
+    }
     reader.readAsDataURL(file)
   }
 
