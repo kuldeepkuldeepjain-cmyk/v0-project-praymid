@@ -48,6 +48,20 @@ export default function DashboardLayout({
 
   const [bouncingIndex, setBouncingIndex] = useState<number | null>(null)
 
+  useEffect(() => {
+    let cancelled = false
+    const sendHeartbeat = () => {
+      if (cancelled || document.visibilityState !== "visible") return
+      void fetch("/api/participant/update-last-seen", { method: "POST", cache: "no-store", credentials: "include" }).catch(() => {})
+    }
+    sendHeartbeat()
+    const interval = window.setInterval(sendHeartbeat, 30_000)
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [])
+
   const handleNavClick = (index: number) => {
     setBouncingIndex(index)
     if (navigator.vibrate) {
