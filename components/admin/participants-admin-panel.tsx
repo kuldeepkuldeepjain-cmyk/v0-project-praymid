@@ -26,6 +26,7 @@ interface Participant {
   total_referrals: number
   last_ip_address?: string | null
   last_seen_at?: string | null
+  total_active_seconds?: number
   last_user_agent?: string | null
   country?: string | null
   state?: string | null
@@ -41,6 +42,13 @@ function formatDateTime(value?: string | null) {
 
 function formatLocation(participant: Participant) {
   return [participant.country, participant.state, participant.pin_code].filter(Boolean).join(", ") || "Not available"
+}
+
+function formatActiveDuration(seconds?: number | null) {
+  const totalMinutes = Math.max(0, Math.floor(Number(seconds || 0) / 60))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  return hours ? `${hours}h ${minutes}m` : `${minutes}m`
 }
 
 export function ParticipantsAdminPanel() {
@@ -207,7 +215,7 @@ export function ParticipantsAdminPanel() {
           <thead>
             <tr className="border-b border-slate-700 bg-slate-950/90">
               <th colSpan={7} className="border-r border-slate-800 px-4 pb-2 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">Participant & account</th>
-              <th colSpan={5} className="border-r border-slate-800 px-4 pb-2 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300">Access & activity</th>
+              <th colSpan={6} className="border-r border-slate-800 px-4 pb-2 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300">Access & activity</th>
               <th className="px-4 pb-2 pt-3 text-right text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Manage</th>
             </tr>
             <tr className="border-b border-slate-700 bg-slate-900/70">
@@ -220,7 +228,8 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Location</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Last login</th>
-              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Active time</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Last active</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Time spent</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
               <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
@@ -261,6 +270,7 @@ export function ParticipantsAdminPanel() {
                 <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatLocation(participant)}</td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatDateTime(participant.last_login)}</td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatDateTime(participant.active_in_at || participant.last_seen_at)}</td>
+                <td className="whitespace-nowrap py-3 px-4 text-emerald-300 text-xs font-medium">{formatActiveDuration(participant.total_active_seconds)}</td>
                 <td className="whitespace-nowrap py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-400 text-xs">{formatDateTime(participant.created_at)}</td>
                 <td className="py-3 px-4 text-right">
