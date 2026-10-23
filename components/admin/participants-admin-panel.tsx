@@ -65,7 +65,7 @@ export function ParticipantsAdminPanel() {
   const fetchParticipantsData = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/admin/all-participants-data")
+      const response = await fetch("/api/admin/all-participants-data", { cache: "no-store" })
       const payload = await response.json().catch(() => null)
       if (!response.ok || !payload?.success || !payload.data) {
         throw new Error(payload?.error || `Unable to load participants (${response.status})`)
@@ -268,8 +268,8 @@ export function ParticipantsAdminPanel() {
                   </Badge>
                 </td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatLocation(participant)}</td>
-                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatDateTime(participant.last_login)}</td>
-                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatDateTime(participant.active_in_at || participant.last_seen_at)}</td>
+                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs"><span className="font-medium text-white">{formatDateTime(participant.last_login)}</span></td>
+                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs"><span className="font-medium text-amber-200">{formatDateTime(participant.active_in_at || participant.last_seen_at)}</span></td>
                 <td className="whitespace-nowrap py-3 px-4 text-emerald-300 text-xs font-medium">{formatActiveDuration(participant.total_active_seconds)}</td>
                 <td className="whitespace-nowrap py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-400 text-xs">{formatDateTime(participant.created_at)}</td>
