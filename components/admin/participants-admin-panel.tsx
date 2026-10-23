@@ -174,7 +174,7 @@ export function ParticipantsAdminPanel() {
           </Card>
           <Card className="border-slate-700/80 bg-slate-900/75 shadow-lg shadow-black/10">
             <CardContent className="flex items-center justify-between p-4">
-              <div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Visible now</p><p className="mt-2 text-2xl font-semibold text-white">{filteredParticipants.length}</p><p className="mt-1 text-xs text-slate-500">Matches current search</p></div>
+              <div><p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500">Visible now</p><p className="mt-2 text-2xl font-semibold text-white">{filteredParticipants.length}</p><p className="mt-1 text-xs text-slate-500">Live database records</p></div>
               <ShieldCheck className="size-5 text-amber-300" />
             </CardContent>
           </Card>

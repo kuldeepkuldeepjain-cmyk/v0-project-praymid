@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     // Audit, last-login, security profiling, and breach recovery are independent
     // maintenance tasks. They should not hold the login response open.
     void Promise.all([
-      execute("UPDATE participants SET last_login = NOW(), last_seen = NOW(), ip_address = $2, updated_at = NOW() WHERE id = $1", [participant.id, context.ipAddress]).catch(() => {}),
+      execute("UPDATE participants SET last_login = NOW(), last_seen = NOW(), updated_at = NOW() WHERE id = $1", [participant.id]).catch(() => {}),
       updateParticipantSecurityProfile(participant.email, request, 0)
         .then((securityProfile) => recordSecurityEvent({
           eventType: "participant_login_success",
