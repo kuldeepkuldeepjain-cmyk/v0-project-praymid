@@ -17,20 +17,11 @@ export async function GET() {
         p.account_balance,
         p.is_active,
         p.created_at,
-        activity.last_login,
-        activity.last_active,
-        activity.last_ip_address,
-        activity.total_active_seconds
+        p.last_login,
+        p.last_seen,
+        0::bigint AS total_active_seconds
        FROM participants p
-       LEFT JOIN LATERAL (
-         SELECT
-           MAX(ps.created_at) AS last_login,
-           MAX(ps.last_activity) AS last_active,
-           (ARRAY_AGG(ps.ip_address ORDER BY ps.last_activity DESC NULLS LAST))[1] AS last_ip_address,
-           COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(ps.last_activity, ps.created_at) - ps.created_at))), 0)::bigint AS total_active_seconds
-         FROM participant_sessions ps
-         WHERE ps.participant_id = p.id
-       ) activity ON TRUE
+       WHERE p.is_deleted IS NOT TRUE
        ORDER BY p.created_at DESC
        LIMIT 1000`
     )
@@ -44,9 +35,9 @@ export async function GET() {
           participants: participants.map((p: any) => ({
             ...p,
             last_login: p.last_login || null,
-            last_seen_at: p.last_active || null,
-            active_in_at: p.last_active || null,
-            last_ip_address: p.last_ip_address || null,
+            last_seen_at: p.last_seen || null,
+            active_in_at: p.last_seen || null,
+            last_ip_address: null,
             total_active_seconds: Number(p.total_active_seconds || 0),
             account_balance: parseFloat(p.account_balance || 0),
           })),
