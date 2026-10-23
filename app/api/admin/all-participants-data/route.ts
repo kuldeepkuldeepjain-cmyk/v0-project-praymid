@@ -9,37 +9,20 @@ export async function GET() {
   try {
     // Get all participants with their balances and activity
     const participants = await query(
-      `SELECT 
+      `SELECT
         id,
         full_name,
         username,
         email,
         account_balance,
-        account_type,
-        status,
         is_active,
-        created_at,
-        last_login,
-        mobile_number,
-        country,
-        state,
-        pin_code,
-        full_address,
-        referral_code,
-        COALESCE(total_referrals, 0) as total_referrals,
-        (SELECT ps.ip_address::text FROM participant_sessions ps WHERE ps.participant_id = participants.id AND ps.ip_address IS NOT NULL ORDER BY ps.last_activity DESC NULLS LAST LIMIT 1) AS last_ip_address,
-        (SELECT ps.last_activity FROM participant_sessions ps WHERE ps.participant_id = participants.id ORDER BY ps.last_activity DESC NULLS LAST LIMIT 1) AS last_seen_at,
-        (SELECT ps.last_activity FROM participant_sessions ps WHERE ps.participant_id = participants.id AND ps.is_active = TRUE ORDER BY ps.last_activity DESC NULLS LAST LIMIT 1) AS active_in_at,
-        (SELECT ps.user_agent FROM participant_sessions ps WHERE ps.participant_id = participants.id ORDER BY ps.last_activity DESC NULLS LAST LIMIT 1) AS last_user_agent
+        created_at
        FROM participants
        ORDER BY created_at DESC
        LIMIT 1000`
     )
 
-    const [statusStats, stats] = await Promise.all([
-      query(`SELECT status, COUNT(*) as count FROM participants GROUP BY status`),
-      query(`SELECT COUNT(*) as total_participants, SUM(account_balance) as total_balance, COUNT(*) FILTER (WHERE is_active = true) as active_participants FROM participants`),
-    ])
+    const stats = await query(`SELECT COUNT(*) as total_participants, COALESCE(SUM(account_balance), 0) as total_balance, COUNT(*) FILTER (WHERE is_active = true) as active_participants FROM participants`)
 
     return NextResponse.json(
       {
@@ -49,7 +32,7 @@ export async function GET() {
             ...p,
             account_balance: parseFloat(p.account_balance || 0),
           })),
-          statusStats,
+          statusStats: [],
           stats: stats[0] ? {
             total_participants: parseInt(stats[0].total_participants),
             total_balance: parseFloat(stats[0].total_balance || 0),
