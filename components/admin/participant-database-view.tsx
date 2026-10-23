@@ -48,6 +48,22 @@ import {
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { UserRankBadge } from "@/components/user-rank-badge"
+function safeDateTime(value?: string | null) {
+  if (!value) return "Not available"
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? "Not available" : date.toLocaleString()
+}
+
+function formatActiveDuration(seconds?: number | null) {
+  const totalMinutes = Math.max(0, Math.floor(Number(seconds || 0) / 60))
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+  if (days) return `${days}d ${hours}h ${minutes}m`
+  if (hours) return `${hours}h ${minutes}m`
+  return `${minutes}m`
+}
+
 export function ParticipantDatabaseView() {
   const { toast } = useToast()
   const [participants, setParticipants] = useState<ParticipantUser[]>([])
@@ -968,13 +984,25 @@ export function ParticipantDatabaseView() {
                 <div>
                   <p className="text-slate-500">Registered</p>
                   <p className="font-semibold text-slate-900">
-                    {new Date(selectedParticipant.created_at).toLocaleString()}
+                    {safeDateTime(selectedParticipant.created_at)}
                   </p>
                 </div>
                 <div>
                   <p className="text-slate-500">Last Active</p>
                   <p className="font-semibold text-slate-900">
-                    {new Date(selectedParticipant.last_active).toLocaleString()}
+                    {safeDateTime(selectedParticipant.last_active || selectedParticipant.last_seen)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Total active time</p>
+                  <p className="font-semibold text-slate-900">
+                    {formatActiveDuration(selectedParticipant.total_active_seconds)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">IP address</p>
+                  <p className="font-mono font-semibold text-slate-900 break-all">
+                    {selectedParticipant.ip_address || "Not available"}
                   </p>
                 </div>
               </div>

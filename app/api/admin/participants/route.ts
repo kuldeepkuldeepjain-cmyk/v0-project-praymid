@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
               serial_number, mobile_number, country_code, country, state, pin_code, full_address,
               bep20_address, total_earnings, bonus_balance, referral_count, referral_earnings,
   is_deleted, deleted_at, last_login, total_referrals, activation_date, activation_deadline,
-  account_frozen, is_frozen
+              account_frozen, is_frozen,
+              COALESCE((SELECT MAX(ps.last_activity) FROM participant_sessions ps WHERE ps.participant_id = participants.id), last_login, updated_at) AS resolved_last_active,
+              COALESCE((SELECT MAX(ps.ip_address) FROM participant_sessions ps WHERE ps.participant_id = participants.id AND ps.ip_address IS NOT NULL), ip_address) AS resolved_ip_address,
+              COALESCE((SELECT SUM(EXTRACT(EPOCH FROM (GREATEST(ps.last_activity, ps.created_at) - ps.created_at))::bigint) FROM participant_sessions ps WHERE ps.participant_id = participants.id), 0) AS total_active_seconds
   FROM participants WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC`
     )
 
@@ -40,6 +43,10 @@ export async function GET(request: NextRequest) {
       created_at: p.created_at,
       updated_at: p.updated_at,
       last_login: p.last_login,
+      last_active: p.resolved_last_active || null,
+      last_seen: p.resolved_last_active || null,
+      ip_address: p.resolved_ip_address || null,
+      total_active_seconds: Number(p.total_active_seconds) || 0,
       account_type: p.account_type || "normal",
       funded_amount: Number(p.funded_amount) || 0,
       funded_initial_balance: Number(p.funded_initial_balance) || 0,

@@ -183,6 +183,7 @@ export type ParticipantUser = {
   location?: string
   otp_verified?: boolean
   last_seen?: string | null
+  total_active_seconds?: number
   updated_at?: string
   current_rank?: UserRank
   is_active?: boolean
