@@ -149,11 +149,16 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main id="main-content">
-      <section id="platform" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-8 pt-10 sm:pb-12 sm:pt-16 lg:pb-16 lg:pt-24">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="platform" className="landing-hero relative overflow-hidden bg-slate-950 pb-8 pt-10 sm:pb-12 sm:pt-16 lg:min-h-[720px] lg:pb-16 lg:pt-24">
+        <div className="landing-hero-art absolute inset-0" aria-hidden="true">
+          <div className="landing-hero-grid absolute inset-0" />
+          <div className="landing-hero-glow absolute inset-0" />
+          <img src="/elitefund-trading-hero.png" alt="" className="landing-hero-image absolute inset-0 h-full w-full object-cover object-center" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-6 sm:space-y-8">
+            <div className="landing-hero-copy space-y-6 sm:space-y-8">
               {/* Badge */}
                 <div className="inline-flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-[0.18em]">
                   <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
@@ -176,7 +181,7 @@ export default function LandingPage() {
 
               {/* Key Features */}
               <div className="flex flex-wrap gap-2 sm:gap-3">
-                <div className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-3 rounded-lg bg-slate-800/60 border border-slate-700 hover:border-cyan-500/50 transition-colors">
+                <div className="landing-glass-pill inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-3">
                   <BarChart2 className="w-4 h-4 text-cyan-400" />
                   <span className="font-bold text-white text-sm">Forex + Crypto + Metals</span>
                 </div>
@@ -211,13 +216,13 @@ export default function LandingPage() {
             </div>
 
             {/* Right Content - Live Market Data */}
-            <div className="relative hidden lg:flex flex-col gap-4">
+            <div className="landing-hero-market relative hidden lg:flex flex-col gap-4">
               {/* Market Ticker */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-black tracking-[0.15em] uppercase text-slate-400">Indicative market view</h3><span className="text-[10px] uppercase tracking-wider text-slate-500">Illustrative</span></div>
                 <div className="grid gap-2">
                   {marketPairs.slice(0, 3).map((pair) => (
-                    <div key={pair.symbol} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/60 border border-slate-700 hover:border-cyan-500/50 transition-colors">
+                    <div key={pair.symbol} className="landing-glass-pill flex items-center justify-between p-3">
                       <div>
                         <p className="font-bold text-white text-sm">{pair.symbol}</p>
                         <p className="text-xs text-slate-400">BID: {pair.bid}</p>
@@ -235,11 +240,11 @@ export default function LandingPage() {
 
               {/* Stats Cards */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+                <div className="landing-glass-pill p-3">
                   <p className="text-xs text-slate-400 uppercase tracking-wider">Avg Spread</p>
                   <p className="text-lg font-bold text-cyan-400 mt-1">Variable</p>
                 </div>
-                <div className="p-3 rounded-lg bg-slate-800/60 border border-slate-700">
+                <div className="landing-glass-pill p-3">
                   <p className="text-xs text-slate-400 uppercase tracking-wider">Max Leverage</p>
                   <p className="text-lg font-bold text-cyan-400 mt-1">Account-based</p>
                 </div>
@@ -272,7 +277,7 @@ export default function LandingPage() {
             {features.map((feature, i) => {
               const Icon = feature.icon
               return (
-                <div key={i} className="p-6 rounded-lg bg-slate-800/40 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-800/60 transition-all duration-300 group">
+                <div key={i} className="landing-glass-tile group p-6">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center mb-4 group-hover:from-cyan-500/30 group-hover:to-blue-500/30 transition-colors">
                     <Icon className="w-6 h-6 text-cyan-400" />
                   </div>
@@ -304,7 +309,7 @@ export default function LandingPage() {
             ].map((plan) => {
               const Icon = plan.icon
               return (
-                <div key={plan.name} className={`relative rounded-2xl border p-5 ${plan.featured ? "border-cyan-400/70 bg-slate-800/80 shadow-lg shadow-cyan-500/10" : "border-slate-700 bg-slate-950/60"}`}>
+                <div key={plan.name} className={`landing-glass-tile relative p-5 ${plan.featured ? "landing-glass-tile-featured" : ""}`}>
                   {plan.featured && <span className="absolute -top-3 right-4 rounded-full bg-cyan-400 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-950">Most selected</span>}
                   <div className={`flex size-11 items-center justify-center rounded-xl bg-gradient-to-br ${plan.tone}`}>
                     <Icon className="h-5 w-5 text-cyan-300" aria-hidden="true" />
@@ -342,7 +347,7 @@ export default function LandingPage() {
               ["02", "Control", "Use position sizing, stop-loss and take-profit levels to keep the plan visible while you trade."],
               ["03", "Review", "Track open and closed positions with clear records so every decision can be evaluated."],
             ].map(([number, title, description]) => (
-              <div key={number} className="rounded-xl border border-slate-700 bg-slate-950/50 p-6">
+              <div key={number} className="landing-glass-tile p-6">
                 <span className="font-mono text-xs text-cyan-400">{number}</span>
                 <h3 className="mt-8 text-xl font-bold text-white">{title}</h3>
                 <p className="mt-3 text-sm leading-6 text-slate-400">{description}</p>
@@ -377,7 +382,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="p-6 rounded-lg bg-slate-800/40 border border-slate-700">
+              <div className="landing-glass-tile p-6">
                 <Shield className="w-16 h-16 text-cyan-400 mb-4 opacity-60" />
                 <h3 className="text-xl font-bold text-white mb-2">Clarity is part of security</h3>
                 <p className="text-slate-400 mb-4">We show the important account, order, and risk information in the workflow so you can make informed decisions.</p>

@@ -1,5 +1,114 @@
 @import "tailwindcss";
 
+.landing-hero-art { pointer-events: none; }
+
+/* Landing tiles: translucent glass surfaces with a quiet market-data glow. */
+.landing-glass-tile {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 192, 226, 0.2);
+  border-radius: 1.25rem;
+  background: linear-gradient(145deg, rgba(20, 42, 66, 0.62), rgba(7, 18, 34, 0.44));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 16px 40px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(18px) saturate(135%);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  transition: transform 260ms cubic-bezier(.2,.8,.2,1), border-color 260ms ease, background 260ms ease, box-shadow 260ms ease;
+}
+.landing-glass-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, rgba(255,255,255,0.12), transparent 28%, transparent 72%, rgba(56,189,248,0.08));
+  opacity: 0.6;
+}
+.landing-glass-tile::after {
+  content: "";
+  position: absolute;
+  left: 1.25rem;
+  right: 1.25rem;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(125,211,252,0.7), transparent);
+  opacity: 0.65;
+}
+.landing-glass-tile:hover {
+  transform: translateY(-6px);
+  border-color: rgba(103, 232, 249, 0.52);
+  background: linear-gradient(145deg, rgba(28, 61, 91, 0.7), rgba(8, 24, 43, 0.58));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 22px 50px rgba(4, 45, 74, 0.28), 0 0 24px rgba(34,211,238,0.08);
+}
+.landing-glass-tile > * { position: relative; z-index: 1; }
+.landing-glass-tile-featured {
+  border-color: rgba(103, 232, 249, 0.62);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), 0 18px 48px rgba(8, 145, 178, 0.16), 0 0 30px rgba(34,211,238,0.08);
+}
+.landing-glass-pill {
+  border: 1px solid rgba(148, 192, 226, 0.24);
+  border-radius: 999px;
+  background: rgba(14, 34, 56, 0.56);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 20px rgba(0,0,0,0.16);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+.landing-glass-pill:hover { transform: translateY(-3px); border-color: rgba(103,232,249,0.56); background: rgba(17, 57, 82, 0.68); }
+@keyframes landing-tile-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.landing-glass-tile:nth-child(3n + 1) { animation: landing-tile-float 7s ease-in-out infinite; }
+.landing-glass-tile:nth-child(3n + 2) { animation: landing-tile-float 8.5s 900ms ease-in-out infinite; }
+.landing-glass-tile:nth-child(3n) { animation: landing-tile-float 9.5s 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .landing-glass-tile { animation: none !important; transition: none; }
+}
+
+/* The supplied artwork already contains the hero headline and supporting copy. */
+.landing-hero-copy,
+.landing-hero-market { display: none !important; }
+.landing-hero { min-height: clamp(520px, 56vw, 820px); }
+.landing-hero-image { left: 0 !important; width: 100% !important; object-position: center center; }
+.landing-hero-glow { background: linear-gradient(180deg, rgba(2, 8, 23, 0.02), rgba(2, 8, 23, 0.2)); }
+@media (max-width: 1023px) {
+  .landing-hero-image { left: 0 !important; width: 100% !important; object-position: center center; opacity: 0.92; }
+}
+
+.landing-hero-image {
+  left: 0 !important;
+  width: 100% !important;
+  object-position: center center;
+  opacity: 0.92;
+  filter: saturate(1.08) contrast(1.04);
+  animation: hero-image-drift 18s ease-in-out infinite alternate;
+  transform: scale(1.025);
+}
+.landing-hero-market { opacity: 0.82; }
+.landing-hero-copy { position: relative; z-index: 2; max-width: 640px; }
+.landing-hero-glow {
+  background:
+    radial-gradient(circle at 76% 43%, rgba(14, 165, 233, 0.16), transparent 28%),
+    linear-gradient(90deg, rgba(2, 8, 23, 0.98) 0%, rgba(2, 8, 23, 0.78) 34%, rgba(2, 8, 23, 0.16) 70%, rgba(2, 8, 23, 0.34) 100%),
+    linear-gradient(180deg, rgba(2, 8, 23, 0.08) 0%, rgba(2, 8, 23, 0.38) 100%);
+}
+.landing-hero-grid {
+  opacity: 0.16;
+  background-image: linear-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.12) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(90deg, transparent, black 42%, transparent 100%);
+  animation: hero-grid-shift 24s linear infinite;
+}
+.landing-hero-copy { animation: hero-copy-rise 700ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes hero-image-drift { from { transform: scale(1.025) translate3d(-0.5%, 0, 0); } to { transform: scale(1.07) translate3d(0.5%, -0.7%, 0); } }
+@keyframes hero-grid-shift { from { background-position: 0 0; } to { background-position: 54px 54px; } }
+@keyframes hero-copy-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1023px) {
+  .landing-hero-image { left: 20% !important; width: 80% !important; object-position: right center; opacity: 0.38; }
+  .landing-hero-copy { max-width: 100%; }
+  .landing-hero-market { display: none !important; }
+  .landing-hero-glow { background: linear-gradient(90deg, rgba(2, 8, 23, 0.98) 0%, rgba(2, 8, 23, 0.78) 56%, rgba(2, 8, 23, 0.48) 100%), linear-gradient(180deg, rgba(2, 8, 23, 0.2), rgba(2, 8, 23, 0.8)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-image, .landing-hero-grid, .landing-hero-copy { animation: none; }
+}
+
 /* tw-animate-css removed — animation utilities defined below */
 
 @custom-variant dark (&:is(.dark *));
