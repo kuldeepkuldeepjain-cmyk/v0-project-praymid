@@ -2,6 +2,22 @@
 
 .landing-hero-art { pointer-events: none; }
 
+/* KYC controls stay usable on narrow participant screens. */
+.participant-kyc-form button[type="submit"] {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.participant-kyc-form label {
+  min-height: 44px;
+}
+.participant-kyc-form input[type="file"] + span { min-height: 44px; }
+@media (min-width: 640px) {
+  .participant-kyc-form button[type="submit"] { width: auto; min-width: 220px; justify-self: end; }
+}
+
 /* Landing tiles: translucent glass surfaces with a quiet market-data glow. */
 .landing-glass-tile {
   position: relative;

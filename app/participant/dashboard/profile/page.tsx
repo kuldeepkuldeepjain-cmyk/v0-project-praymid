@@ -227,12 +227,15 @@ export default function ProfilePage() {
     const video = selfieVideoRef.current
     const canvas = selfieCanvasRef.current
     if (!video || !canvas || selfieLiveness !== "ready") return
-    canvas.width = video.videoWidth || 720
-    canvas.height = video.videoHeight || 720
+    const sourceWidth = video.videoWidth || 720
+    const sourceHeight = video.videoHeight || 720
+    const scale = Math.min(1, 1280 / Math.max(sourceWidth, sourceHeight))
+    canvas.width = Math.max(1, Math.round(sourceWidth * scale))
+    canvas.height = Math.max(1, Math.round(sourceHeight * scale))
     canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const selfieData = canvas.toDataURL("image/jpeg", 0.78)
-    if (selfieData.length > 7_500_000) {
-      setSelfieMessage("Selfie is too large. Please retake it in better light.")
+    const selfieData = canvas.toDataURL("image/jpeg", 0.74)
+    if (selfieData.length > 3_000_000) {
+      setSelfieMessage("Selfie could not be compressed enough. Please retake it in better light.")
       return
     }
     setKycForm(current => ({ ...current, selfie_url: selfieData }))
@@ -275,8 +278,8 @@ export default function ProfilePage() {
   useEffect(() => () => selfieStreamRef.current?.getTracks().forEach(track => track.stop()), [])
 
   const readKycImage = (file: File, field: "document_front_url" | "document_back_url" | "selfie_url") => {
-    if (!file.type.match(/^image\/(jpeg|png|webp)$/) || file.size > 6 * 1024 * 1024) {
-      toast({ title: "Invalid image", description: "Use a JPG, PNG, or WEBP image under 6 MB.", variant: "destructive" })
+    if (!file.type.match(/^image\/(jpeg|png|webp)$/)) {
+      toast({ title: "Invalid image", description: "Use a JPG, PNG, or WEBP image.", variant: "destructive" })
       return
     }
     const reader = new FileReader()
@@ -284,7 +287,7 @@ export default function ProfilePage() {
       const source = String(reader.result || "")
       const image = new Image()
       image.onload = () => {
-        const maxDimension = 1600
+        const maxDimension = 1280
         const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
         const canvas = document.createElement("canvas")
         canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
@@ -292,7 +295,12 @@ export default function ProfilePage() {
         const context = canvas.getContext("2d")
         if (!context) return setKycForm(current => ({ ...current, [field]: source }))
         context.drawImage(image, 0, 0, canvas.width, canvas.height)
-        setKycForm(current => ({ ...current, [field]: canvas.toDataURL("image/jpeg", 0.82) }))
+        const compressed = canvas.toDataURL("image/jpeg", 0.74)
+        if (compressed.length > 3_000_000) {
+          toast({ title: "Image is still too large", description: "Please retake the photo in good light or choose a clearer image.", variant: "destructive" })
+          return
+        }
+        setKycForm(current => ({ ...current, [field]: compressed }))
       }
       image.src = source
     }
@@ -675,7 +683,7 @@ export default function ProfilePage() {
   ) : null}
   {kyc?.status === "rejected" ? <div className="mb-4 space-y-2 rounded-xl border border-red-400/30 bg-red-500/5 p-4"><p className="font-semibold text-red-200">KYC resubmission required</p><p className="text-xs leading-5 text-slate-400">{kyc.rejection_reason || "Please correct your information and submit the required documents again."}</p><p className="text-xs text-amber-200">Replace your documents and selfie below, then submit again.</p></div> : null}
   {!kyc || kyc.status === "rejected" ? (
-              <form onSubmit={submitKyc} className="grid gap-3 sm:grid-cols-2">
+              <form onSubmit={submitKyc} className="participant-kyc-form grid gap-3 sm:grid-cols-2">
                 <input ref={selfieFileInputRef} type="file" accept="image/*" capture="user" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) readKycImage(file, "selfie_url"); event.currentTarget.value = "" }} />
                 <div><Label className="text-xs text-slate-300">Legal name</Label><Input required value={kycForm.legal_name} onChange={(e) => setKycForm({ ...kycForm, legal_name: e.target.value })} placeholder="As shown on your ID" className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
                 <div><Label className="text-xs text-slate-300">Country</Label><Input required value={kycForm.country} onChange={(e) => setKycForm({ ...kycForm, country: e.target.value })} placeholder="Country of residence" className="mt-1 border-slate-600 bg-slate-900 text-white" /></div>
