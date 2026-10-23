@@ -19,10 +19,18 @@ interface Participant {
   status: string
   is_active: boolean
   created_at: string
+  last_login?: string | null
+  last_seen?: string | null
+  active_in_at?: string | null
   referral_code: string
   total_referrals: number
   last_ip_address?: string | null
   last_seen_at?: string | null
+  last_user_agent?: string | null
+  country?: string | null
+  state?: string | null
+  pin_code?: string | null
+  full_address?: string | null
   }
 
 export function ParticipantsAdminPanel() {
@@ -183,6 +191,8 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Referrals</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Location</th>
+  <th className="text-left py-3 px-4 text-slate-400 font-medium">Last login</th>
+  <th className="text-left py-3 px-4 text-slate-400 font-medium">Active in</th>
   <th className="text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
   <th className="text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
               <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
@@ -220,7 +230,8 @@ export function ParticipantsAdminPanel() {
                     {participant.status}
                   </Badge>
                 </td>
-<td className="py-3 px-4 text-slate-400 text-xs">Not captured</td>
+<td className="py-3 px-4 text-slate-300 text-xs whitespace-nowrap">{participant.last_login ? new Date(participant.last_login).toLocaleString() : "Not available"}</td>
+  <td className="py-3 px-4 text-slate-300 text-xs whitespace-nowrap">{participant.active_in_at || participant.last_seen_at ? new Date((participant.active_in_at || participant.last_seen_at) as string).toLocaleString() : "Not active"}</td>
   <td className="py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
   <td className="py-3 px-4 text-slate-400 text-xs">
   {new Date(participant.created_at).toLocaleDateString()}
