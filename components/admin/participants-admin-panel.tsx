@@ -58,12 +58,12 @@ export function ParticipantsAdminPanel() {
     setLoading(true)
     try {
       const response = await fetch("/api/admin/all-participants-data")
-      if (response.ok) {
-        const { data } = await response.json()
-        setParticipants(data.participants)
-        setStats(data.stats)
-        toast({ title: "Success", description: "Participants data loaded" })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.success || !payload.data) {
+        throw new Error(payload?.error || `Unable to load participants (${response.status})`)
       }
+      setParticipants(payload.data.participants ?? [])
+      setStats(payload.data.stats ?? null)
     } catch (error) {
       console.error("Error fetching participants data:", error)
       toast({ title: "Error", description: "Failed to load participants data", variant: "destructive" })
@@ -110,9 +110,15 @@ export function ParticipantsAdminPanel() {
   )
 
   if (loading) {
+    return <div className="flex items-center justify-center p-8"><Loader2 className="size-8 animate-spin text-cyan-300" /></div>
+  }
+
+  if (!participants.length && !stats) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+      <div className="rounded-2xl border border-rose-400/30 bg-rose-950/20 p-8 text-center">
+        <p className="font-semibold text-rose-200">Participant data could not be loaded.</p>
+        <p className="mt-2 text-sm text-rose-100/70">Check the database connection or try again.</p>
+        <Button onClick={fetchParticipantsData} className="mt-4">Retry</Button>
       </div>
     )
   }
