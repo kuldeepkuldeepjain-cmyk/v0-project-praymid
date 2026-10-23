@@ -164,14 +164,14 @@ export function ParticipantDatabaseView() {
     try {
       setLoading(true)
       const res = await adminFetch("/api/admin/participants")
-      const data = await res.json()
-      if (data.participants) {
-        setParticipants(data.participants)
-      } else {
-        toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !Array.isArray(data?.participants)) {
+        throw new Error(data?.error || `Request failed (${res.status})`)
       }
+      setParticipants(data.participants)
     } catch (err) {
-      toast({ title: "Error", description: "Failed to load participants", variant: "destructive" })
+      console.error("[v0] Failed to load admin participants:", err)
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to load participants", variant: "destructive" })
     } finally {
       setLoading(false)
     }
