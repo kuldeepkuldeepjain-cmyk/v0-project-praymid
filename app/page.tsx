@@ -149,11 +149,16 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <main id="main-content">
-      <section id="platform" className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 pb-8 pt-10 sm:pb-12 sm:pt-16 lg:pb-16 lg:pt-24">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="platform" className="landing-hero relative overflow-hidden bg-slate-950 pb-8 pt-10 sm:pb-12 sm:pt-16 lg:min-h-[720px] lg:pb-16 lg:pt-24">
+        <div className="landing-hero-art absolute inset-0" aria-hidden="true">
+          <div className="landing-hero-grid absolute inset-0" />
+          <div className="landing-hero-glow absolute inset-0" />
+          <img src="/elitefund-trading-hero.png" alt="" className="landing-hero-image absolute inset-0 h-full w-full object-cover object-center" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             {/* Left Content */}
-            <div className="space-y-6 sm:space-y-8">
+            <div className="landing-hero-copy space-y-6 sm:space-y-8">
               {/* Badge */}
                 <div className="inline-flex items-center gap-2 text-cyan-300 font-bold text-xs uppercase tracking-[0.18em]">
                   <div className="h-2 w-2 rounded-full bg-emerald-400"></div>
@@ -211,7 +216,7 @@ export default function LandingPage() {
             </div>
 
             {/* Right Content - Live Market Data */}
-            <div className="relative hidden lg:flex flex-col gap-4">
+            <div className="landing-hero-market relative hidden lg:flex flex-col gap-4">
               {/* Market Ticker */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-black tracking-[0.15em] uppercase text-slate-400">Indicative market view</h3><span className="text-[10px] uppercase tracking-wider text-slate-500">Illustrative</span></div>

@@ -1,5 +1,44 @@
 @import "tailwindcss";
 
+.landing-hero-art { pointer-events: none; }
+.landing-hero-image {
+  left: 34% !important;
+  width: 66% !important;
+  object-position: right center;
+  opacity: 0.9;
+  filter: saturate(1.08) contrast(1.04);
+  animation: hero-image-drift 18s ease-in-out infinite alternate;
+  transform: scale(1.025);
+}
+.landing-hero-market { opacity: 0.82; }
+.landing-hero-copy { position: relative; z-index: 2; max-width: 640px; }
+.landing-hero-glow {
+  background:
+    radial-gradient(circle at 76% 43%, rgba(14, 165, 233, 0.16), transparent 28%),
+    linear-gradient(90deg, rgba(2, 8, 23, 0.98) 0%, rgba(2, 8, 23, 0.78) 34%, rgba(2, 8, 23, 0.16) 70%, rgba(2, 8, 23, 0.34) 100%),
+    linear-gradient(180deg, rgba(2, 8, 23, 0.08) 0%, rgba(2, 8, 23, 0.38) 100%);
+}
+.landing-hero-grid {
+  opacity: 0.16;
+  background-image: linear-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px), linear-gradient(90deg, rgba(56, 189, 248, 0.12) 1px, transparent 1px);
+  background-size: 54px 54px;
+  mask-image: linear-gradient(90deg, transparent, black 42%, transparent 100%);
+  animation: hero-grid-shift 24s linear infinite;
+}
+.landing-hero-copy { animation: hero-copy-rise 700ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes hero-image-drift { from { transform: scale(1.025) translate3d(-0.5%, 0, 0); } to { transform: scale(1.07) translate3d(0.5%, -0.7%, 0); } }
+@keyframes hero-grid-shift { from { background-position: 0 0; } to { background-position: 54px 54px; } }
+@keyframes hero-copy-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 1023px) {
+  .landing-hero-image { left: 20% !important; width: 80% !important; object-position: right center; opacity: 0.38; }
+  .landing-hero-copy { max-width: 100%; }
+  .landing-hero-market { display: none !important; }
+  .landing-hero-glow { background: linear-gradient(90deg, rgba(2, 8, 23, 0.98) 0%, rgba(2, 8, 23, 0.78) 56%, rgba(2, 8, 23, 0.48) 100%), linear-gradient(180deg, rgba(2, 8, 23, 0.2), rgba(2, 8, 23, 0.8)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero-image, .landing-hero-grid, .landing-hero-copy { animation: none; }
+}
+
 /* tw-animate-css removed — animation utilities defined below */
 
 @custom-variant dark (&:is(.dark *));
