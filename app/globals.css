@@ -1,11 +1,21 @@
 @import "tailwindcss";
 
 .landing-hero-art { pointer-events: none; }
+/* The supplied artwork already contains the hero headline and supporting copy. */
+.landing-hero-copy,
+.landing-hero-market { display: none !important; }
+.landing-hero { min-height: clamp(520px, 56vw, 820px); }
+.landing-hero-image { left: 0 !important; width: 100% !important; object-position: center center; }
+.landing-hero-glow { background: linear-gradient(180deg, rgba(2, 8, 23, 0.02), rgba(2, 8, 23, 0.2)); }
+@media (max-width: 1023px) {
+  .landing-hero-image { left: 0 !important; width: 100% !important; object-position: center center; opacity: 0.92; }
+}
+
 .landing-hero-image {
-  left: 34% !important;
-  width: 66% !important;
-  object-position: right center;
-  opacity: 0.9;
+  left: 0 !important;
+  width: 100% !important;
+  object-position: center center;
+  opacity: 0.92;
   filter: saturate(1.08) contrast(1.04);
   animation: hero-image-drift 18s ease-in-out infinite alternate;
   transform: scale(1.025);
