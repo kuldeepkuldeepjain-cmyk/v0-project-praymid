@@ -10,6 +10,12 @@ export async function POST(request: NextRequest) {
     // The signed participant session is the source of truth; do not trust a
     // client-supplied email for activity ownership.
     await execute("UPDATE participants SET last_seen = NOW(), updated_at = NOW() WHERE LOWER(email) = LOWER($1)", [auth.email])
+    await execute(
+      `UPDATE participant_sessions
+       SET last_activity = NOW(), is_active = TRUE
+       WHERE participant_id = $1 AND is_active = TRUE`,
+      [auth.participantId],
+    )
 
     return NextResponse.json({ success: true, message: "Activity updated" })
   } catch (error: any) {
