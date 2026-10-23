@@ -229,12 +229,12 @@ export default function ProfilePage() {
     if (!video || !canvas || selfieLiveness !== "ready") return
     const sourceWidth = video.videoWidth || 720
     const sourceHeight = video.videoHeight || 720
-    const scale = Math.min(1, 1024 / Math.max(sourceWidth, sourceHeight))
+    const scale = Math.min(1, 720 / Math.max(sourceWidth, sourceHeight))
     canvas.width = Math.max(1, Math.round(sourceWidth * scale))
     canvas.height = Math.max(1, Math.round(sourceHeight * scale))
     canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const selfieData = canvas.toDataURL("image/jpeg", 0.64)
-    if (selfieData.length > 2_000_000) {
+    const selfieData = canvas.toDataURL("image/jpeg", 0.5)
+    if (selfieData.length > 1_200_000) {
       setSelfieMessage("Selfie could not be compressed enough. Please retake it in better light.")
       return
     }
@@ -287,7 +287,7 @@ export default function ProfilePage() {
       const source = String(reader.result || "")
       const image = new Image()
       image.onload = () => {
-        const maxDimension = 1280
+        const maxDimension = 900
         const scale = Math.min(1, maxDimension / Math.max(image.naturalWidth, image.naturalHeight))
         const canvas = document.createElement("canvas")
         canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
@@ -295,8 +295,8 @@ export default function ProfilePage() {
         const context = canvas.getContext("2d")
         if (!context) return setKycForm(current => ({ ...current, [field]: source }))
         context.drawImage(image, 0, 0, canvas.width, canvas.height)
-        const compressed = canvas.toDataURL("image/jpeg", 0.74)
-        if (compressed.length > 3_000_000) {
+        const compressed = canvas.toDataURL("image/jpeg", 0.52)
+        if (compressed.length > 1_500_000) {
           toast({ title: "Image is still too large", description: "Please retake the photo in good light or choose a clearer image.", variant: "destructive" })
           return
         }

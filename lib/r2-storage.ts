@@ -39,6 +39,7 @@ export async function uploadToR2(
         Bucket: BUCKET_NAME,
         Key: fileName,
         Body: fileBuffer,
+        ContentLength: fileBuffer.byteLength,
         ContentType: contentType,
       })
     )
@@ -75,9 +76,11 @@ export async function deleteFromR2(fileUrl: string): Promise<void> {
  * Convert base64 to Buffer for R2 upload
  */
 export function base64ToBuffer(base64: string): Buffer {
-  const matches = base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)
-  if (!matches) throw new Error("Invalid base64 format")
-  return Buffer.from(matches[2], "base64")
+  const commaIndex = base64.indexOf(",")
+  if (!base64.startsWith("data:") || commaIndex < 0) throw new Error("Invalid base64 format")
+  const payload = base64.slice(commaIndex + 1).replace(/\s/g, "")
+  if (!payload) throw new Error("Empty image data")
+  return Buffer.from(payload, "base64")
 }
 
 /**
