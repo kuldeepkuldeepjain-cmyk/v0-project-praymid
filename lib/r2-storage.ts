@@ -13,6 +13,9 @@ const s3Client = new S3Client({
     secretAccessKey: SECRET_ACCESS_KEY || "",
   },
   endpoint: ACCOUNT_ID ? `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined,
+  // Cloudflare R2 rejects optional AWS flexible checksum headers on PutObject.
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
 })
 
 /**

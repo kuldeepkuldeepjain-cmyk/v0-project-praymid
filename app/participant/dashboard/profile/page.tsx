@@ -229,12 +229,12 @@ export default function ProfilePage() {
     if (!video || !canvas || selfieLiveness !== "ready") return
     const sourceWidth = video.videoWidth || 720
     const sourceHeight = video.videoHeight || 720
-    const scale = Math.min(1, 1280 / Math.max(sourceWidth, sourceHeight))
+    const scale = Math.min(1, 1024 / Math.max(sourceWidth, sourceHeight))
     canvas.width = Math.max(1, Math.round(sourceWidth * scale))
     canvas.height = Math.max(1, Math.round(sourceHeight * scale))
     canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height)
-    const selfieData = canvas.toDataURL("image/jpeg", 0.74)
-    if (selfieData.length > 3_000_000) {
+    const selfieData = canvas.toDataURL("image/jpeg", 0.64)
+    if (selfieData.length > 2_000_000) {
       setSelfieMessage("Selfie could not be compressed enough. Please retake it in better light.")
       return
     }
@@ -328,6 +328,7 @@ export default function ProfilePage() {
           try {
             uploadResponse = await participantFetch("/api/participant/upload-image", {
               method: "POST",
+              headers: { "content-type": "application/json" },
               body: JSON.stringify({ image, type }),
               signal: uploadController.signal,
             })
