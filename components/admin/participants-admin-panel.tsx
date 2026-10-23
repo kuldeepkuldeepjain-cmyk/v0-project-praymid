@@ -31,7 +31,17 @@ interface Participant {
   state?: string | null
   pin_code?: string | null
   full_address?: string | null
-  }
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "Not available"
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? "Not available" : date.toLocaleString()
+}
+
+function formatLocation(participant: Participant) {
+  return [participant.country, participant.state, participant.pin_code].filter(Boolean).join(", ") || "Not available"
+}
 
 export function ParticipantsAdminPanel() {
   const { toast } = useToast()
@@ -179,8 +189,16 @@ export function ParticipantsAdminPanel() {
       </div>
 
       {/* Participants Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+      <div className="rounded-xl border border-slate-800 bg-slate-950/40 shadow-xl">
+        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+          <div>
+            <h3 className="font-semibold text-white">Participant activity</h3>
+            <p className="text-xs text-slate-500">Login time, current activity, network address, and profile location</p>
+          </div>
+          <span className="text-xs text-slate-500">{filteredParticipants.length} shown</span>
+        </div>
+        <div className="overflow-x-auto">
+        <table className="min-w-[1500px] w-full text-sm">
           <thead>
             <tr className="border-b border-slate-700">
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Name</th>
@@ -190,11 +208,11 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Account Type</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Referrals</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
-              <th className="text-left py-3 px-4 text-slate-400 font-medium">Location</th>
-  <th className="text-left py-3 px-4 text-slate-400 font-medium">Last login</th>
-  <th className="text-left py-3 px-4 text-slate-400 font-medium">Active in</th>
-  <th className="text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
-  <th className="text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Location</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Last login</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Active time</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
               <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
             </tr>
           </thead>
@@ -230,12 +248,11 @@ export function ParticipantsAdminPanel() {
                     {participant.status}
                   </Badge>
                 </td>
-<td className="py-3 px-4 text-slate-300 text-xs whitespace-nowrap">{participant.last_login ? new Date(participant.last_login).toLocaleString() : "Not available"}</td>
-  <td className="py-3 px-4 text-slate-300 text-xs whitespace-nowrap">{participant.active_in_at || participant.last_seen_at ? new Date((participant.active_in_at || participant.last_seen_at) as string).toLocaleString() : "Not active"}</td>
-  <td className="py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
-  <td className="py-3 px-4 text-slate-400 text-xs">
-  {new Date(participant.created_at).toLocaleDateString()}
-  </td>
+                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatLocation(participant)}</td>
+                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatDateTime(participant.last_login)}</td>
+                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatDateTime(participant.active_in_at || participant.last_seen_at)}</td>
+                <td className="whitespace-nowrap py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
+                <td className="whitespace-nowrap py-3 px-4 text-slate-400 text-xs">{formatDateTime(participant.created_at)}</td>
                 <td className="py-3 px-4 text-right">
                   <Button type="button" variant="outline" size="sm" onClick={() => handleDeleteParticipant(participant)} className="border-red-500/30 text-red-300 hover:bg-red-500/15 hover:text-red-200">
                     <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
@@ -245,6 +262,7 @@ export function ParticipantsAdminPanel() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       {filteredParticipants.length === 0 && (
