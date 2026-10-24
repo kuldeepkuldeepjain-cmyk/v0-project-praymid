@@ -175,9 +175,9 @@ export async function getActiveRestriction(email: string, type: "login" | "tradi
   if (!db) return null
   const result = await db.query(
     `SELECT reason_code, restriction_type FROM account_restrictions
-     WHERE LOWER(participant_email) = LOWER($1)
+     WHERE LOWER(participant_email::text) = LOWER($1::text)
        AND status = 'active'
-       AND (restriction_type = $2 OR restriction_type = 'full_account')
+       AND (restriction_type::text = $2::text OR restriction_type::text = 'full_account')
        AND (effective_until IS NULL OR effective_until > NOW())
      ORDER BY created_at DESC LIMIT 1`,
     [email, type],
