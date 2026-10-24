@@ -180,6 +180,8 @@ export function ParticipantDatabaseView() {
 
   useEffect(() => {
     fetchParticipants()
+    const refreshInterval = window.setInterval(fetchParticipants, 30_000)
+    return () => window.clearInterval(refreshInterval)
   }, [])
 
   const verifyOtp = async () => {
@@ -307,7 +309,7 @@ export function ParticipantDatabaseView() {
       p.referral_code || "",
       p.heard_from || "",
       new Date(p.created_at).toLocaleString(),
-      new Date(p.last_active).toLocaleString(),
+      p.last_active ? new Date(p.last_active).toLocaleString() : "Not available",
     ])
 
     const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`
