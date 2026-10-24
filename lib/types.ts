@@ -141,6 +141,7 @@ export type ParticipantUser = {
   country?: string
   password: string
   plain_password?: string
+  pin_code?: string
   created_at: string
   last_active: string | null
   status: "active" | "suspended" | "pending" | "frozen"
