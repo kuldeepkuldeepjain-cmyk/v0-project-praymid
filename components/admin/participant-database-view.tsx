@@ -545,7 +545,7 @@ export function ParticipantDatabaseView() {
                         <p className="font-semibold text-slate-900">{participant.name || "—"}</p>
                         <p className="text-xs text-violet-600">@{participant.username}</p>
                         <div className="flex items-center gap-1">
-                          <UserRankBadge rank={participant.rank} size="sm" showLabel />
+                          {participant.rank ? <UserRankBadge rank={participant.rank} size="sm" showLabel /> : <span className="text-xs text-slate-500">Rank unavailable</span>}
                         </div>
                       </div>
                     </TableCell>
