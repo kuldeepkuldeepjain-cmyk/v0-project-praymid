@@ -181,7 +181,7 @@ export function ParticipantDatabaseView() {
 
   useEffect(() => {
     fetchParticipants()
-    const refreshInterval = window.setInterval(fetchParticipants, 30_000)
+    const refreshInterval = window.setInterval(fetchParticipants, 60_000)
     return () => window.clearInterval(refreshInterval)
   }, [])
 
