@@ -142,7 +142,7 @@ export type ParticipantUser = {
   password: string
   plain_password?: string
   created_at: string
-  last_active: string
+  last_active: string | null
   status: "active" | "suspended" | "pending" | "frozen"
   account_type?: string
   funded_amount?: number

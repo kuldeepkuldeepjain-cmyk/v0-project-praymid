@@ -68,8 +68,8 @@ export async function GET(request: NextRequest) {
     )
 
     const participants = rows.map((p: any) => {
-      const lastLoginTime = p.last_session_login || p.last_login || p.created_at
-      const lastActiveTime = p.last_session_activity || p.last_seen || p.last_login || p.created_at
+      const lastLoginTime = p.last_session_login || p.last_login || null
+      const lastActiveTime = p.last_session_activity || p.last_seen || null
 
       return {
         id: p.id,
