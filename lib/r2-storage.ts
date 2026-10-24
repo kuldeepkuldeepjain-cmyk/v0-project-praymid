@@ -8,6 +8,8 @@ const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL
 
 const s3Client = new S3Client({
   region: "auto",
+  forcePathStyle: true,
+  maxAttempts: 3,
   credentials: {
     accessKeyId: ACCESS_KEY_ID || "",
     secretAccessKey: SECRET_ACCESS_KEY || "",
@@ -48,7 +50,8 @@ export async function uploadToR2(
   } catch (error) {
     console.error("[R2] Upload error:", error)
     const message = error instanceof Error ? error.message : "Unknown storage error"
-    throw new Error(`R2 upload failed: ${message}`)
+    const code = typeof error === "object" && error && "Code" in error ? String(error.Code) : ""
+    throw new Error(`R2 upload failed${code ? ` (${code})` : ""}: ${message}`)
   }
 }
 
