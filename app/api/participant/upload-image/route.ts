@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const safeMessage = /not configured/i.test(message)
       ? "Secure image storage is not configured. Please contact support."
       : /R2 upload failed/i.test(message)
-        ? "Secure image storage rejected the image. Please try again with a clear JPG or PNG under 6 MB."
+        ? "Secure image storage could not save this image. The image was compressed below 6 MB; please try again."
         : "Unable to save this image right now. Please try again."
     return NextResponse.json({ error: safeMessage }, { status: 500 })
   }
