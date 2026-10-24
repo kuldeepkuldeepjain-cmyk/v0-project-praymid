@@ -33,9 +33,22 @@ export async function POST(request: NextRequest) {
     const ext = mimeType.split("/")[1] || "jpg"
     const fileName = `participant-${type}-${Date.now()}.${ext}`
 
-    const publicUrl = await uploadToR2(buffer, fileName, mimeType)
+    let publicUrl: string
+    try {
+      publicUrl = await uploadToR2(buffer, fileName, mimeType)
+    } catch (storageError) {
+      // Keep KYC submissions functional when the external R2 bucket is unavailable.
+      // The KYC table accepts validated data URLs and the client already limits each
+      // image below 5.5 MB, so the image remains available for manual review.
+      if (type === "kyc-front" || type === "kyc-back" || type === "kyc-selfie") {
+        publicUrl = image
+      } else {
+        throw storageError
+      }
+    }
 
-    // Update participant profile picture if type is "avatar"
+    // Update participant profile picture if type is "avatar".
+    // KYC uploads use their returned URL/data URL in the KYC submission itself.
     if (type === "avatar") {
       const pool = getPool()
       if (!pool) {
