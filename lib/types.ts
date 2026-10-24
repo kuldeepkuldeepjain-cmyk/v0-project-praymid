@@ -141,24 +141,25 @@ export type ParticipantUser = {
   country?: string
   password: string
   plain_password?: string
+  pin_code?: string
   created_at: string
   last_active: string | null
   status: "active" | "suspended" | "pending" | "frozen"
-  account_type?: string
-  funded_amount?: number
-  funded_initial_balance?: number
-  funded_breach_status?: "clear" | "breached"
+  account_type?: string | null
+  funded_amount?: number | null
+  funded_initial_balance?: number | null
+  funded_breach_status?: "clear" | "breached" | null
   funded_breach_at?: string | null
   funded_breach_balance?: number
   funded_breach_equity?: number
   account_frozen?: boolean
   is_frozen?: boolean
   role: "participant"
-  rank: UserRank
+  rank: UserRank | null
   participation_count: number
   risk_score: number
   risk_flags?: RiskFlag[]
-  ip_address?: string
+  ip_address?: string | null
   activation_fee_paid: boolean
   activation_fee_paid_at?: string
   activation_fee_amount: number

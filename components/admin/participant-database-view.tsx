@@ -84,6 +84,7 @@ export function ParticipantDatabaseView() {
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false)
   const [activatingId, setActivatingId] = useState<string | null>(null)
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set())
+  const [visiblePins, setVisiblePins] = useState<Set<string>>(new Set())
   const [showReactivationModal, setShowReactivationModal] = useState(false)
   const [reactivationParticipant, setReactivationParticipant] = useState<ParticipantUser | null>(null)
   const [reactivationAmount, setReactivationAmount] = useState("")
@@ -510,7 +511,7 @@ export function ParticipantDatabaseView() {
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">#</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Serial No</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">User Info</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Password</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Password / PIN</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Contact</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Location</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Personal</TableHead>
@@ -544,7 +545,7 @@ export function ParticipantDatabaseView() {
                         <p className="font-semibold text-slate-900">{participant.name || "—"}</p>
                         <p className="text-xs text-violet-600">@{participant.username}</p>
                         <div className="flex items-center gap-1">
-                          <UserRankBadge rank={participant.rank} size="sm" showLabel />
+                          {participant.rank ? <UserRankBadge rank={participant.rank} size="sm" showLabel /> : <span className="text-xs text-slate-500">Rank unavailable</span>}
                         </div>
                       </div>
                     </TableCell>
@@ -591,8 +592,45 @@ export function ParticipantDatabaseView() {
                                   description: "Password copied to clipboard",
                                 })
                               }}
+                              title="Copy password"
                             >
                               <Copy className="h-3 w-3 text-red-600" />
+                            </Button>
+                          </>
+                        )}
+                        <span className="text-slate-300">/</span>
+                        <code className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-200 font-mono">
+                          {visiblePins.has(participant.id) ? participant.pin_code || "—" : participant.pin_code ? "••••" : "—"}
+                        </code>
+                        {participant.pin_code && (
+                          <>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-amber-100"
+                              onClick={() => {
+                                setVisiblePins((prev) => {
+                                  const newSet = new Set(prev)
+                                  if (newSet.has(participant.id)) newSet.delete(participant.id)
+                                  else newSet.add(participant.id)
+                                  return newSet
+                                })
+                              }}
+                              title={visiblePins.has(participant.id) ? "Hide PIN" : "Show PIN"}
+                            >
+                              <Eye className="h-3 w-3 text-amber-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0 hover:bg-amber-100"
+                              onClick={() => {
+                                navigator.clipboard.writeText(participant.pin_code || "")
+                                toast({ title: "PIN Copied", description: "Participant PIN copied to clipboard" })
+                              }}
+                              title="Copy PIN"
+                            >
+                              <Copy className="h-3 w-3 text-amber-600" />
                             </Button>
                           </>
                         )}
