@@ -22,8 +22,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Only JPG, PNG, or WEBP images are supported" }, { status: 400 })
     }
     const buffer = base64ToBuffer(image)
-    if (!buffer.length || buffer.length > 6 * 1024 * 1024) {
-      return NextResponse.json({ error: "Image must be under 6 MB" }, { status: 400 })
+    if (!buffer.length || buffer.length > 5.5 * 1024 * 1024) {
+      return NextResponse.json({ error: "Image must be under 6 MB after compression" }, { status: 400 })
     }
     if (!type || !/^[a-z0-9-]+$/i.test(type)) {
       return NextResponse.json({ error: "Invalid upload type" }, { status: 400 })
