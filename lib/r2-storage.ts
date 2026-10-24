@@ -8,16 +8,12 @@ const PUBLIC_URL = process.env.CLOUDFLARE_R2_PUBLIC_URL
 
 const s3Client = new S3Client({
   region: "auto",
-  forcePathStyle: true,
   maxAttempts: 3,
   credentials: {
     accessKeyId: ACCESS_KEY_ID || "",
     secretAccessKey: SECRET_ACCESS_KEY || "",
   },
   endpoint: ACCOUNT_ID ? `https://${ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined,
-  // Cloudflare R2 rejects optional AWS flexible checksum headers on PutObject.
-  requestChecksumCalculation: "WHEN_REQUIRED",
-  responseChecksumValidation: "WHEN_REQUIRED",
 })
 
 /**
