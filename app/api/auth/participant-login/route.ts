@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
                 account_type,
                 pin_hash,
                 country, state, pin_code, full_address, details_completed, bep20_address
-         FROM participants WHERE email = $1 LIMIT 1`,
+         FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1`,
         [emailKey]
       )
     } else if (mobileKey) {
@@ -75,8 +75,12 @@ export async function POST(request: NextRequest) {
     const isBcrypt = hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$")
 
     if (isBcrypt) {
-      // Properly hashed password — use bcrypt compare
+      // Prefer the hash, but support accounts whose stored hash was rotated while
+      // their legacy password field still contains the password they use.
       passwordValid = await bcrypt.compare(password, hash)
+      if (!passwordValid && participant.plain_password) {
+        passwordValid = participant.plain_password === password
+      }
     } else {
       // Legacy plain-text stored password
       passwordValid = hash === password || (participant.plain_password && participant.plain_password === password)
@@ -88,9 +92,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Opportunistically re-hash plain text passwords to bcrypt on successful login
-    if (!isBcrypt) {
-      // Password migration is maintenance work and must not delay the login redirect.
-      void bcrypt.hash(password, 12)
+    if (!isBcrypt || participant.plain_password === password) {
+      // Keep the canonical hash aligned with the password that successfully authenticated.
+      await bcrypt.hash(password, 12)
         .then((newHash) => execute("UPDATE participants SET password_hash = $1, plain_password = $2 WHERE id = $3", [newHash, password, participant.id]))
         .catch(() => {})
     }
