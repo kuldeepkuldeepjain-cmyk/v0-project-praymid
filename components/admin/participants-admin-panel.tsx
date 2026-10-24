@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { adminFetch } from "@/lib/auth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -65,7 +66,7 @@ export function ParticipantsAdminPanel() {
   const fetchParticipantsData = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/admin/all-participants-data", { cache: "no-store" })
+      const response = await adminFetch("/api/admin/all-participants-data")
       const payload = await response.json().catch(() => null)
       if (!response.ok || !payload?.success || !payload.data) {
         throw new Error(payload?.error || `Unable to load participants (${response.status})`)
@@ -83,7 +84,7 @@ export function ParticipantsAdminPanel() {
   const handleDeleteParticipant = async (participant: Participant) => {
     if (!window.confirm(`Permanently delete ${participant.full_name || participant.email} and all related database records? This cannot be undone.`)) return
     try {
-      const response = await fetch("/api/admin/delete-participant", {
+      const response = await adminFetch("/api/admin/delete-participant", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ participantId: participant.id }),

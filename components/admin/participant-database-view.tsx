@@ -44,6 +44,7 @@ import {
   MessageCircle,
   DollarSign,
   RotateCcw,
+  Activity,
 } from "lucide-react"
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
@@ -710,25 +711,56 @@ export function ParticipantDatabaseView() {
 
                     {/* Activity */}
                     <TableCell>
-                      <div className="space-y-0.5 text-xs">
-                        <p className="text-slate-700">
-                          <span className="font-semibold text-violet-600">{participant.participation_count}</span>{" "}
-                          participations
-                        </p>
-                        <p className="text-emerald-600 font-semibold">${participant.totalContributed || 0}</p>
-                        <p className="text-amber-600">{participant.totalPoints || 0} pts</p>
-                        <div className="space-y-0.5 text-[10px] text-slate-500 border-t pt-1 mt-1">
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          {participant.last_seen && (Date.now() - new Date(participant.last_seen).getTime() < 5 * 60 * 1000) ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                              </span>
+                              Online
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                              <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                              Offline
+                            </span>
+                          )}
+                          <span className="font-semibold text-violet-600">{participant.participation_count}</span>
+                          <span className="text-[10px] text-slate-500">participations</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="text-emerald-600 font-semibold">${participant.totalContributed || 0}</span>
+                          <span className="text-amber-600 text-[11px] font-medium">{participant.totalPoints || 0} pts</span>
+                        </div>
+
+                        <div className="space-y-0.5 text-[10px] text-slate-500 border-t border-slate-100 pt-1 mt-1">
+                          {participant.last_login && (
+                            <p className="font-medium text-slate-800">
+                              Login: <span className="text-blue-600">{safeDateTime(participant.last_login)}</span>
+                            </p>
+                          )}
                           {participant.last_seen && (
-                            <p>Seen: {new Date(participant.last_seen).toLocaleString()}</p>
+                            <p>
+                              Active: <span className="text-emerald-700 font-medium">{safeDateTime(participant.last_seen)}</span>
+                            </p>
+                          )}
+                          {participant.total_active_seconds !== undefined && participant.total_active_seconds > 0 && (
+                            <p className="font-semibold text-purple-700">
+                              Time: {formatActiveDuration(participant.total_active_seconds)}
+                            </p>
+                          )}
+                          {participant.ip_address && (
+                            <p className="font-mono text-[9px] text-slate-500">
+                              IP: {participant.ip_address}
+                            </p>
                           )}
                           {participant.created_at && (
-                            <p>Joined: {new Date(participant.created_at).toLocaleString()}</p>
-                          )}
-                          {participant.updated_at && (
-                            <p>Updated: {new Date(participant.updated_at).toLocaleString()}</p>
-                          )}
-                          {participant.last_active && (
-                            <p>Active: {new Date(participant.last_active).toLocaleString()}</p>
+                            <p className="text-slate-400">
+                              Joined: {new Date(participant.created_at).toLocaleDateString()}
+                            </p>
                           )}
                         </div>
                       </div>
@@ -977,32 +1009,52 @@ export function ParticipantDatabaseView() {
               </div>
             </div>
 
-            {/* Timestamps */}
-            <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
-              <h3 className="font-bold text-slate-600 mb-3">Timestamps</h3>
+            {/* Access & Activity Details */}
+            <div className="bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-xl p-4 border border-indigo-200/60">
+              <h3 className="font-bold text-indigo-700 mb-3 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Access & Activity
+                </span>
+                {selectedParticipant.last_seen && (Date.now() - new Date(selectedParticipant.last_seen).getTime() < 5 * 60 * 1000) ? (
+                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300">
+                    Online Now
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-slate-500 border-slate-300">
+                    Offline
+                  </Badge>
+                )}
+              </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-500">Registered</p>
+                  <p className="text-slate-500">Last Login</p>
                   <p className="font-semibold text-slate-900">
-                    {safeDateTime(selectedParticipant.created_at)}
+                    {safeDateTime(selectedParticipant.last_login)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Last Active</p>
-                  <p className="font-semibold text-slate-900">
-                    {safeDateTime(selectedParticipant.last_active || selectedParticipant.last_seen)}
+                  <p className="text-slate-500">Last Active / Heartbeat</p>
+                  <p className="font-semibold text-emerald-700">
+                    {safeDateTime(selectedParticipant.last_seen || selectedParticipant.last_active)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Total active time</p>
-                  <p className="font-semibold text-slate-900">
+                  <p className="text-slate-500">Total Active Duration</p>
+                  <p className="font-semibold text-purple-700">
                     {formatActiveDuration(selectedParticipant.total_active_seconds)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">IP address</p>
+                  <p className="text-slate-500">IP Address</p>
                   <p className="font-mono font-semibold text-slate-900 break-all">
                     {selectedParticipant.ip_address || "Not available"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-slate-500">Registration Date</p>
+                  <p className="font-semibold text-slate-900">
+                    {safeDateTime(selectedParticipant.created_at)}
                   </p>
                 </div>
               </div>
