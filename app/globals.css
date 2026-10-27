@@ -8675,6 +8675,99 @@ body:has(.elite-terminal-shell) {
   box-shadow: none !important;
 }
 
+/* Lower order dock: market, limit, stop, and quote actions carry their meaning visually. */
+.reference-terminal .apple-order-type-tabs {
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 13px !important;
+  background: rgb(8 18 30 / 0.78) !important;
+}
+
+.reference-terminal .apple-order-type-tabs button {
+  min-height: 42px;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  background: rgb(17 34 52 / 0.72) !important;
+  color: #91a4b8 !important;
+}
+
+.reference-terminal .apple-order-type-tabs button:nth-child(1)[aria-pressed="true"] {
+  background: rgb(39 143 155 / 0.26) !important;
+  border-color: rgb(57 191 167 / 0.66) !important;
+  color: #a8ddd1 !important;
+}
+
+.reference-terminal .apple-order-type-tabs button:nth-child(2)[aria-pressed="true"] {
+  background: rgb(180 132 55 / 0.24) !important;
+  border-color: rgb(233 183 90 / 0.64) !important;
+  color: #f0c97e !important;
+}
+
+.reference-terminal .apple-order-type-tabs button:nth-child(3)[aria-pressed="true"] {
+  background: rgb(177 69 84 / 0.24) !important;
+  border-color: rgb(240 120 131 / 0.64) !important;
+  color: #f0a0a9 !important;
+}
+
+.reference-terminal .mobile-order-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 6px;
+}
+
+.reference-terminal .mobile-order-actions > button {
+  min-height: 48px;
+  border: 1px solid transparent !important;
+  border-radius: 11px !important;
+  padding: 8px 10px;
+  background: rgb(17 34 52 / 0.9) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal .mobile-order-actions > button:first-child {
+  background: linear-gradient(145deg, rgb(190 78 91 / 0.9), rgb(123 43 57 / 0.94)) !important;
+  border-color: rgb(241 126 137 / 0.65) !important;
+  color: #ffe1e5 !important;
+}
+
+.reference-terminal .mobile-order-actions > button:last-child {
+  background: linear-gradient(145deg, rgb(42 169 128 / 0.9), rgb(18 105 82 / 0.94)) !important;
+  border-color: rgb(70 211 165 / 0.65) !important;
+  color: #d8fff1 !important;
+}
+
+.reference-terminal .mobile-order-actions > button:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.reference-terminal .mobile-order-spread {
+  display: flex;
+  min-width: 56px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid var(--terminal-graphite-border);
+  border-radius: 9px;
+  background: rgb(17 34 52 / 0.92);
+  color: var(--terminal-graphite-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal .mobile-order-spread small {
+  color: #71889e;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.reference-terminal .mobile-order-spread strong {
+  color: #c0ceda;
+  font-size: 11px;
+}
+
 .reference-terminal .mobile-order-side-toggle button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell) {
   background: var(--terminal-graphite-surface-2) !important;
   border: 1px solid var(--terminal-graphite-border) !important;
