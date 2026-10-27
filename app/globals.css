@@ -8643,6 +8643,38 @@ body:has(.elite-terminal-shell) {
   color: #fff7f8 !important;
 }
 
+/* Execution semantics: green for BUY, red for SELL, neutral glass everywhere else. */
+.reference-terminal :where(.btn-3d-execute-buy, .reference-quick-trade-buy) {
+  background: linear-gradient(145deg, rgb(42 169 128 / 0.96), rgb(18 105 82 / 0.98)) !important;
+  border-color: rgb(70 211 165 / 0.72) !important;
+  color: #d8fff1 !important;
+  box-shadow: inset 0 1px 0 rgb(193 255 229 / 0.16), 0 7px 20px rgb(28 147 111 / 0.26) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-sell, .reference-quick-trade-sell) {
+  background: linear-gradient(145deg, rgb(190 78 91 / 0.96), rgb(123 43 57 / 0.98)) !important;
+  border-color: rgb(241 126 137 / 0.72) !important;
+  color: #ffe1e5 !important;
+  box-shadow: inset 0 1px 0 rgb(255 222 226 / 0.16), 0 7px 20px rgb(173 54 72 / 0.25) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-buy, .reference-quick-trade-buy):hover:not(:disabled) {
+  background: linear-gradient(145deg, rgb(52 194 148 / 0.98), rgb(22 126 97 / 0.98)) !important;
+  border-color: rgb(102 231 190 / 0.88) !important;
+  box-shadow: inset 0 1px 0 rgb(220 255 241 / 0.2), 0 10px 24px rgb(28 147 111 / 0.34) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-sell, .reference-quick-trade-sell):hover:not(:disabled) {
+  background: linear-gradient(145deg, rgb(213 94 108 / 0.98), rgb(143 47 64 / 0.98)) !important;
+  border-color: rgb(255 157 165 / 0.88) !important;
+  box-shadow: inset 0 1px 0 rgb(255 231 234 / 0.2), 0 10px 24px rgb(173 54 72 / 0.33) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-buy, .btn-3d-execute-sell, .reference-quick-trade-buy, .reference-quick-trade-sell):disabled {
+  filter: saturate(0.45) brightness(0.7) !important;
+  box-shadow: none !important;
+}
+
 .reference-terminal .mobile-order-side-toggle button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell) {
   background: var(--terminal-graphite-surface-2) !important;
   border: 1px solid var(--terminal-graphite-border) !important;
