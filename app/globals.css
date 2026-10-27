@@ -8654,3 +8654,50 @@ body:has(.elite-terminal-shell) {
   color: var(--terminal-graphite-text) !important;
   border-color: color-mix(in srgb, var(--terminal-graphite-teal) 48%, var(--terminal-graphite-border)) !important;
 }
+
+/* One button language across the terminal: glass surface, compact pill geometry,
+   and semantic color reserved for selected or execution states. */
+.reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade) {
+  min-height: 32px;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 9px !important;
+  background: linear-gradient(145deg, rgb(24 43 62 / 0.86), rgb(10 22 35 / 0.92)) !important;
+  color: var(--terminal-graphite-muted) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 3px 12px rgb(0 0 0 / 0.14) !important;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 100ms ease;
+}
+
+.reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 55%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(31 59 78 / 0.96), rgb(12 31 46 / 0.96)) !important;
+  color: var(--terminal-graphite-text) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.075), 0 6px 16px rgb(0 0 0 / 0.22) !important;
+  transform: translateY(-1px);
+}
+
+.reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.24) !important;
+}
+
+.reference-terminal button[aria-pressed="true"],
+.reference-terminal button[data-state="active"],
+.reference-terminal button.is-active {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 70%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(35 91 100 / 0.92), rgb(14 48 59 / 0.96)) !important;
+  color: var(--terminal-graphite-text) !important;
+  box-shadow: inset 0 1px 0 rgb(135 242 215 / 0.1), 0 0 0 1px rgb(57 191 167 / 0.1), 0 5px 15px rgb(0 0 0 / 0.18) !important;
+}
+
+.reference-terminal button:focus-visible {
+  outline: 2px solid var(--terminal-graphite-teal) !important;
+  outline-offset: 2px;
+}
+
+.reference-terminal button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  filter: saturate(0.65);
+}
