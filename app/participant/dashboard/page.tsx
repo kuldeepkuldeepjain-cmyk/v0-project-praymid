@@ -2375,8 +2375,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           </aside>
 
           {isTerminalSettingsOpen && (
-            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="terminal-settings-title">
-              <div className="flex max-h-[min(720px,calc(100vh-2rem))] w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-700 bg-[#0a111b] text-slate-200 shadow-2xl shadow-black/50">
+            <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="terminal-settings-title">
+              <div className="flex max-h-[min(720px,calc(100dvh-2rem))] w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-700 bg-[#0a111b] text-slate-200 shadow-2xl shadow-black/50">
                 <aside className="hidden w-56 shrink-0 border-r border-slate-800 bg-[#070d15] p-3 sm:block">
                   <div className="mb-4 flex items-center justify-between px-2">
                     <div>

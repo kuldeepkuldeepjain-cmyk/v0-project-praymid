@@ -1043,8 +1043,8 @@ function ModifyTradeModal({
   const rrRatio = slPipsCalc > 0 ? (tpPipsCalc / slPipsCalc).toFixed(2) : null
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-      <div className="rounded-2xl p-5 w-[340px] max-w-full" style={{ background: "#0d1625", border: "1px solid #1e3a5f", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}>
+    <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center p-3" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+      <div className="max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl p-5 w-[340px] max-w-full" style={{ background: "#0d1625", border: "1px solid #1e3a5f", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Edit3 className="h-4 w-4 text-cyan-400" />
@@ -4775,8 +4775,8 @@ const maxLeverage = 100
   )}
 
   {tradeRestrictionNotice && (
-    <div className="absolute inset-0 z-[75] flex items-center justify-center bg-[#02060f]/80 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="trade-restriction-title">
-      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-amber-400/35 bg-[#0a1422] shadow-2xl shadow-black/60">
+    <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center bg-[#02060f]/80 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="trade-restriction-title">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-amber-400/35 bg-[#0a1422] shadow-2xl shadow-black/60">
         <div className="h-1 bg-amber-400" />
         <div className="p-5 text-center">
           <div className="mx-auto flex size-11 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10"><LockKeyhole className="size-5 text-amber-300" /></div>
@@ -4791,7 +4791,7 @@ const maxLeverage = 100
 
   {tradeConfirm && (
   <div
-  className="absolute inset-0 z-50 flex items-center justify-center"
+  className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center p-2"
           style={{ background: "rgba(2,6,15,0.82)", backdropFilter: "blur(6px)" }}
           onClick={(e) => { if (e.target === e.currentTarget && !confirmLoading) setTradeConfirm(null) }}
         >
@@ -4799,7 +4799,7 @@ const maxLeverage = 100
             className="relative flex max-h-full flex-col rounded-2xl overflow-y-auto overflow-x-hidden"
             style={{
               width: "min(340px, calc(100vw - 20px))",
-              maxHeight: "calc(100% - 16px)",
+              maxHeight: "calc(100dvh - 16px)",
               background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
               border: "1px solid rgba(255,255,255,0.07)",
               boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,

@@ -507,8 +507,10 @@ export function TradingChart({
 
       frameId = requestAnimationFrame(() => {
         frameId = null
-        const width = Math.round(entry.contentRect.width)
-        const height = Math.round(entry.contentRect.height)
+        const container = containerRef.current
+        if (!container) return
+        const width = container.clientWidth
+        const height = container.clientHeight
         if (!chartRef.current || width <= 0 || height <= 0) return
         if (width === lastWidth && height === lastHeight) return
 
@@ -845,6 +847,7 @@ export function TradingChart({
           <button
             key={key}
             onClick={() => toggle(key)}
+            aria-pressed={indicators[key]}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
             style={indicators[key]
               ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
@@ -939,6 +942,7 @@ export function TradingChart({
           }}
           className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 transition-all hover:opacity-90 active:scale-95"
           style={{ background: "#0a1524", border: "1px solid rgba(255,255,255,0.07)", color: "#4a6580" }}
+          aria-label="Reset zoom and fit selected instrument"
           title="Reset zoom and fit selected instrument"
         >
           <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
