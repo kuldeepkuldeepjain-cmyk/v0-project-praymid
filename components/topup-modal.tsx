@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import QRCode from "qrcode"
-import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight, QrCode as QrCodeIcon } from "lucide-react"
+import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight, QrCode as QrCodeIcon, TicketPercent } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [amount, setAmount] = useState("")
   const [txHash, setTxHash] = useState("")
   const [note, setNote] = useState("")
+  const [promoCode, setPromoCode] = useState("")
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
@@ -57,6 +58,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setAmount("")
     setTxHash("")
     setNote("")
+    setPromoCode("")
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
@@ -225,7 +227,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           transactionHash: txHash.trim(),
           network,
           fundingMode: showFundingOptions && fundingMode === "funded" ? "funded" : "actual",
-          note: `[Payment method: ${network}]${note.trim() ? ` ${note.trim()}` : ""}`,
+          note: `[Payment method: ${network}]${promoCode.trim() ? ` [Promo code: ${promoCode.trim().toUpperCase()}]` : ""}${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })
 
@@ -420,8 +422,24 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">{paymentMethod === "inr" ? "USD" : "USDT"}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1" aria-label="Quick funding amounts">{(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <button key={quickAmount} type="button" onClick={() => setAmount(String(quickAmount))} disabled={step === "submitting"} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 disabled:opacity-50">${quickAmount}</button>)}</div>
-                {amount && !isAmountValid && <p className="text-[10px] text-red-500">{fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
-                {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
+              {amount && !isAmountValid && <p className="text-[10px] text-red-500">{fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
+              {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
+
+              <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+                    <TicketPercent className="size-4" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <Label htmlFor="topup-promo-code" className="text-xs font-bold text-violet-950">Promo code <span className="font-normal text-violet-700">(optional)</span></Label>
+                    <p className="mt-0.5 text-[10px] leading-4 text-violet-700">Have a promotional code? Include it with your funding request for review.</p>
+                    <div className="mt-2 flex gap-2">
+                      <Input id="topup-promo-code" value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder="ENTER CODE" autoComplete="off" maxLength={32} className="h-9 min-w-0 flex-1 border-violet-200 bg-white text-sm font-semibold uppercase tracking-wide focus:border-violet-500" disabled={step === "submitting"} />
+                      <span className="inline-flex h-9 shrink-0 items-center rounded-lg border border-violet-200 bg-white px-2.5 text-[10px] font-bold text-violet-700">Optional</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               </div>
 
               {/* Network selector */}
