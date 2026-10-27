@@ -7483,9 +7483,10 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 .reference-terminal .text-red-400 { color: var(--institutional-red) !important; }
 .reference-terminal .terminal-chart-toolbar button[aria-pressed="true"],
 .reference-terminal .terminal-chart-toolbar button.is-active {
-  background: var(--institutional-blue) !important;
-  color: #fff !important;
-  border-color: var(--institutional-blue) !important;
+  background: color-mix(in srgb, var(--terminal-graphite-teal) 16%, var(--terminal-graphite-surface-2)) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 58%, var(--terminal-graphite-border)) !important;
+  box-shadow: none !important;
 }
 .reference-terminal .apple-terminal-blotter-tabs button[aria-current="page"] {
   color: #7db8ed !important;
