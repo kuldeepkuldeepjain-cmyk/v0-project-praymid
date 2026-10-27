@@ -8701,3 +8701,46 @@ body:has(.elite-terminal-shell) {
   cursor: not-allowed;
   filter: saturate(0.65);
 }
+
+/* Typography pass: darker, calmer labels across every terminal control. */
+.reference-terminal button {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.025em;
+  text-shadow: none !important;
+}
+
+.reference-terminal button:not(.reference-quick-trade):not([aria-pressed="true"]):not([data-state="active"]):not(.is-active) {
+  color: #9aabba !important;
+}
+
+.reference-terminal button:not(.reference-quick-trade):hover:not(:disabled),
+.reference-terminal button:not(.reference-quick-trade):focus-visible {
+  color: #b8c7d4 !important;
+}
+
+.reference-terminal button[aria-pressed="true"],
+.reference-terminal button[data-state="active"],
+.reference-terminal button.is-active {
+  color: #a8ddd1 !important;
+  text-shadow: none !important;
+}
+
+.reference-terminal .reference-watch-card,
+.reference-terminal .reference-watch-add,
+.reference-terminal .reference-watch-theme {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.reference-terminal .reference-watch-copy strong,
+.reference-terminal .reference-watch-copy span,
+.reference-terminal .reference-watch-card [class*="price"],
+.reference-terminal .terminal-stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal .reference-quick-trade {
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
