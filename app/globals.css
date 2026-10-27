@@ -1546,7 +1546,8 @@ button, a, [role="button"] {
    allowing only the individual panels to scroll. */
 @media (min-width: 1200px) {
   .apple-trading-terminal {
-    min-height: min(900px, calc(100dvh - 32px));
+    height: min(900px, calc(100dvh - 32px)) !important;
+    min-height: min(900px, calc(100dvh - 32px)) !important;
     border-radius: 8px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, .28), 0 0 0 1px rgba(94, 149, 194, .12);
   }
