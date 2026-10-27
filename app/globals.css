@@ -6,15 +6,8 @@
 .participant-kyc-form {
   min-width: 0;
   overflow: hidden;
-}
-.participant-kyc-form > div:last-child {
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr);
-}
+  }
+
 .participant-kyc-form > div:last-child > * { min-width: 0; max-width: 100%; }
 .participant-kyc-form button[type="submit"] { box-sizing: border-box !important; flex: 1 1 auto !important; }
 .participant-kyc-form button[type="submit"] {
@@ -8491,4 +8484,66 @@ body:has(.elite-terminal-shell) {
   .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
     padding-block: 8px 9px;
   }
+}
+
+/* Production terminal controls: quiet graphite surfaces, clear state, and keyboard-visible focus. */
+.reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button {
+  border-radius: 7px !important;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 100ms ease;
+}
+
+.reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--terminal-graphite-teal) 10%, var(--terminal-graphite-surface-2)) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 48%, var(--terminal-graphite-border)) !important;
+  color: var(--terminal-graphite-text) !important;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.18);
+}
+
+.reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button:focus-visible,
+.reference-terminal :where(.reference-quick-trade, .mobile-order-side-toggle button, .mobile-order-quote button):focus-visible {
+  outline: 2px solid var(--terminal-graphite-teal) !important;
+  outline-offset: 2px;
+}
+
+.reference-terminal .reference-quick-trade {
+  min-height: 50px;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  box-shadow: 0 5px 16px rgb(0 0 0 / 0.22) !important;
+  transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease !important;
+}
+
+.reference-terminal .reference-quick-trade:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.07) saturate(1.03);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.28) !important;
+}
+
+.reference-terminal .reference-quick-trade:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.24) !important;
+}
+
+.reference-terminal .reference-quick-trade-buy {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-graphite-positive) 88%, white), var(--terminal-graphite-positive)) !important;
+  color: #f4fffb !important;
+}
+
+.reference-terminal .reference-quick-trade-sell {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-graphite-negative) 88%, white), var(--terminal-graphite-negative)) !important;
+  color: #fff7f8 !important;
+}
+
+.reference-terminal .mobile-order-side-toggle button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell) {
+  background: var(--terminal-graphite-surface-2) !important;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  color: var(--terminal-graphite-muted) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035) !important;
+}
+
+.reference-terminal .mobile-order-side-toggle button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell):hover:not(:disabled) {
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 48%, var(--terminal-graphite-border)) !important;
 }
