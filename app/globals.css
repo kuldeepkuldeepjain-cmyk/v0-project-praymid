@@ -8260,3 +8260,42 @@ body:has(.elite-terminal-shell) {
     letter-spacing: 0;
   }
 }
+
+/* Phase 2: compact desktop composition. Keep every existing control visible while
+   giving the chart workspace a more useful share of the fixed terminal height. */
+@media (min-width: 1200px) {
+  .apple-trading-terminal.reference-terminal > .terminal-account-bar {
+    gap: 8px;
+    padding-block: 5px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-stat {
+    padding-inline: 14px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-stat-value {
+    font-size: 13px;
+  }
+  .apple-trading-terminal.reference-terminal > .terminal-watch-strip {
+    gap: 6px !important;
+    padding-block: 5px !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-watch-strip .reference-watch-card {
+    height: 42px !important;
+    min-width: 132px !important;
+    padding-block: 5px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header {
+    padding: 9px 12px 8px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header > .grid {
+    padding-block: 5px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header > .flex.overflow-x-auto {
+    padding-block: 4px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header .chart-timeframe-toolbar {
+    min-height: 30px;
+  }
+  .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
+    padding-block: 8px 9px;
+  }
+}
