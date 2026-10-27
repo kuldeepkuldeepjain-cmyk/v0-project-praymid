@@ -8486,6 +8486,113 @@ body:has(.elite-terminal-shell) {
   }
 }
 
+/* Production instrument controls: compact dark-glass pills with clear asset marks. */
+.reference-terminal .reference-watch-card {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 9px;
+  min-width: 164px !important;
+  height: 54px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, rgb(24 43 62 / 0.92), rgb(10 22 35 / 0.9)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 5px 18px rgb(0 0 0 / 0.16);
+  color: var(--terminal-graphite-text);
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, transform 100ms ease;
+}
+
+.reference-terminal .reference-watch-card:hover {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 58%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(29 55 75 / 0.98), rgb(11 27 42 / 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 8px 22px rgb(0 0 0 / 0.24);
+  transform: translateY(-1px);
+}
+
+.reference-terminal .reference-watch-card.is-selected {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 72%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(26 71 83 / 0.96), rgb(11 33 46 / 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgb(135 242 215 / 0.1), 0 0 0 1px rgb(57 191 167 / 0.12), 0 8px 24px rgb(0 0 0 / 0.22);
+}
+
+.reference-terminal .reference-watch-icon,
+.reference-terminal .mw-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 29px !important;
+  height: 29px !important;
+  border: 1px solid color-mix(in srgb, var(--terminal-graphite-teal) 36%, var(--terminal-graphite-border)) !important;
+  border-radius: 10px !important;
+  background: linear-gradient(145deg, rgb(28 56 78 / 0.95), rgb(12 27 43 / 0.95)) !important;
+  color: var(--terminal-graphite-text) !important;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.reference-terminal .reference-watch-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.reference-terminal .reference-watch-copy strong {
+  color: var(--terminal-graphite-text) !important;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.reference-terminal .reference-watch-copy span {
+  color: var(--terminal-graphite-muted) !important;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal :where(.reference-watch-up, .reference-watch-down) {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 4px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.reference-terminal .reference-watch-up {
+  background: rgb(50 201 154 / 0.12);
+  color: var(--terminal-graphite-positive) !important;
+}
+
+.reference-terminal .reference-watch-down {
+  background: rgb(240 120 131 / 0.12);
+  color: var(--terminal-graphite-negative) !important;
+}
+
+.reference-terminal .reference-watch-add,
+.reference-terminal .reference-watch-theme {
+  width: 44px !important;
+  height: 44px !important;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 13px !important;
+  background: rgb(17 34 52 / 0.86) !important;
+  color: var(--terminal-graphite-muted) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 5px 16px rgb(0 0 0 / 0.16);
+}
+
+.reference-terminal .reference-watch-add:hover,
+.reference-terminal .reference-watch-theme:hover {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 55%, var(--terminal-graphite-border)) !important;
+  color: var(--terminal-graphite-teal) !important;
+  background: rgb(20 49 65 / 0.92) !important;
+}
+
 /* Production terminal controls: quiet graphite surfaces, clear state, and keyboard-visible focus. */
 .reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button {
   border-radius: 7px !important;
