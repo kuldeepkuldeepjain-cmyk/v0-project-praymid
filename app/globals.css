@@ -8784,11 +8784,11 @@ body:has(.elite-terminal-shell) {
    and semantic color reserved for selected or execution states. */
 .reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade) {
   min-height: 32px;
-  border: 1px solid var(--terminal-graphite-border) !important;
-  border-radius: 9px !important;
-  background: linear-gradient(145deg, rgb(24 43 62 / 0.86), rgb(10 22 35 / 0.92)) !important;
-  color: var(--terminal-graphite-muted) !important;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 3px 12px rgb(0 0 0 / 0.14) !important;
+  border: 1px solid var(--terminal-graphite-border);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgb(24 43 62 / 0.86), rgb(10 22 35 / 0.92));
+  color: var(--terminal-graphite-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 3px 12px rgb(0 0 0 / 0.14);
   font-weight: 800;
   letter-spacing: 0.035em;
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 100ms ease;
@@ -8868,4 +8868,123 @@ body:has(.elite-terminal-shell) {
 .reference-terminal .reference-quick-trade {
   font-weight: 850;
   letter-spacing: 0.04em;
+}
+
+/* Final semantic palette: every high-value control gets a deliberate color cue. */
+.reference-terminal .terminal-action-primary {
+  background: linear-gradient(145deg, rgb(144 101 34 / 0.9), rgb(86 56 18 / 0.96)) !important;
+  border-color: rgb(235 183 86 / 0.68) !important;
+  color: #f5d58c !important;
+}
+
+.reference-terminal .terminal-action-accent {
+  background: linear-gradient(145deg, rgb(20 101 111 / 0.9), rgb(12 57 70 / 0.96)) !important;
+  border-color: rgb(61 205 193 / 0.65) !important;
+  color: #9be8df !important;
+}
+
+.reference-terminal .terminal-account-actions .terminal-action:not(.terminal-action-primary):not(.terminal-action-accent) {
+  background: linear-gradient(145deg, rgb(30 65 91 / 0.9), rgb(15 34 55 / 0.96)) !important;
+  border-color: rgb(79 143 190 / 0.6) !important;
+  color: #a9cbe2 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(1) {
+  border-color: rgb(57 191 167 / 0.68) !important;
+  background: linear-gradient(145deg, rgb(30 103 103 / 0.9), rgb(14 52 61 / 0.96)) !important;
+  color: #a8ddd1 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(2) {
+  border-color: rgb(66 133 190 / 0.62) !important;
+  background: linear-gradient(145deg, rgb(29 70 105 / 0.9), rgb(13 35 58 / 0.96)) !important;
+  color: #a9cbe2 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(3) {
+  border-color: rgb(233 183 90 / 0.62) !important;
+  background: linear-gradient(145deg, rgb(110 80 30 / 0.9), rgb(53 38 17 / 0.96)) !important;
+  color: #f0c97e !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(5) {
+  border-color: rgb(127 118 196 / 0.58) !important;
+  background: linear-gradient(145deg, rgb(59 57 100 / 0.88), rgb(27 30 55 / 0.96)) !important;
+  color: #c4c1f4 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(6) {
+  border-color: rgb(102 153 180 / 0.6) !important;
+  background: linear-gradient(145deg, rgb(34 73 91 / 0.9), rgb(16 37 53 / 0.96)) !important;
+  color: #b0d3df !important;
+}
+
+.reference-terminal .terminal-icon-button,
+.reference-terminal .terminal-account-button,
+.reference-terminal .terminal-time-switch {
+  border-color: rgb(58 102 135 / 0.62) !important;
+  background: linear-gradient(145deg, rgb(22 52 75 / 0.9), rgb(10 26 43 / 0.96)) !important;
+  color: #a8c5d7 !important;
+}
+
+.reference-terminal .terminal-icon-button:hover,
+.reference-terminal .terminal-account-button:hover,
+.reference-terminal .terminal-time-switch:hover {
+  border-color: rgb(76 207 192 / 0.72) !important;
+  background: linear-gradient(145deg, rgb(26 76 91 / 0.94), rgb(12 39 52 / 0.98)) !important;
+  color: #b9eee5 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button.is-active {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 0 0 1px rgb(57 191 167 / 0.14), 0 7px 18px rgb(0 0 0 / 0.22) !important;
+}
+
+/* Explicit property overrides prevent the legacy background shorthand from flattening semantic colors. */
+.reference-terminal button.terminal-action-primary {
+  background-color: rgb(92 63 20 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(144 101 34 / 0.9), rgb(86 56 18 / 0.96)) !important;
+  border-color: rgb(235 183 86 / 0.68) !important;
+  color: #f5d58c !important;
+}
+
+.reference-terminal button.terminal-action-accent {
+  background-color: rgb(12 57 70 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(20 101 111 / 0.9), rgb(12 57 70 / 0.96)) !important;
+  border-color: rgb(61 205 193 / 0.65) !important;
+  color: #9be8df !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(1) {
+  background-color: rgb(14 52 61 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(30 103 103 / 0.9), rgb(14 52 61 / 0.96)) !important;
+  border-color: rgb(57 191 167 / 0.68) !important;
+  color: #a8ddd1 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(2) {
+  background-color: rgb(13 35 58 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(29 70 105 / 0.9), rgb(13 35 58 / 0.96)) !important;
+  border-color: rgb(66 133 190 / 0.62) !important;
+  color: #a9cbe2 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(3) {
+  background-color: rgb(53 38 17 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(110 80 30 / 0.9), rgb(53 38 17 / 0.96)) !important;
+  border-color: rgb(233 183 90 / 0.62) !important;
+  color: #f0c97e !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(5) {
+  background-color: rgb(27 30 55 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(59 57 100 / 0.88), rgb(27 30 55 / 0.96)) !important;
+  border-color: rgb(127 118 196 / 0.58) !important;
+  color: #c4c1f4 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(6) {
+  background-color: rgb(16 37 53 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(34 73 91 / 0.9), rgb(16 37 53 / 0.96)) !important;
+  border-color: rgb(102 153 180 / 0.6) !important;
+  color: #b0d3df !important;
 }
