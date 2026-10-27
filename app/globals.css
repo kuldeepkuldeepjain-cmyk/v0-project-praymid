@@ -8418,6 +8418,41 @@ body:has(.elite-terminal-shell) {
   background-color: var(--terminal-graphite-negative) !important;
 }
 
+/* Active states: earlier rules (solid institutional blue, near-black label, bright blue order tab)
+   out-rank the zero-specificity :where() layer above, so restate them at equal specificity. */
+.apple-trading-terminal.reference-terminal .terminal-chart-toolbar button[aria-pressed="true"],
+.apple-trading-terminal.reference-terminal .terminal-chart-toolbar button.is-active,
+.apple-trading-terminal.reference-terminal .chart-header button[aria-pressed="true"],
+.apple-trading-terminal.reference-terminal .apple-order-type-tabs button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--terminal-graphite-teal) 16%, var(--terminal-graphite-surface-2)) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 58%, var(--terminal-graphite-border)) !important;
+  box-shadow: none !important;
+}
+
+.apple-trading-terminal.reference-terminal .chart-header button[aria-pressed="false"] {
+  color: var(--terminal-graphite-muted) !important;
+}
+
+.reference-terminal :where(.terminal-stat-value, .reference-watch-copy strong, .reference-watch-card, .font-mono, input, table, [class*="tabular"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal :where(button, [role="button"]):active:not(:disabled) {
+  transform: translateY(0.5px);
+  box-shadow: none;
+}
+
+.reference-terminal :where(input, select, textarea):disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--terminal-graphite-surface) 90%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-action-primary, .terminal-action-accent, .buy-button, .buy-btn, .sell-button, .sell-btn):hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
 /* Phase 2: compact desktop composition. Keep every existing control visible while
    giving the chart workspace a more useful share of the fixed terminal height. */
 @media (min-width: 1200px) {

@@ -3854,12 +3854,10 @@ const maxLeverage = 100
                       aria-label={d === "BUY" ? "Buy because you expect the price to rise" : "Sell because you expect the price to fall"}
                       className={`flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
                       style={direction !== d ? {
-                        background: "#080c14",
-                        border: "1px solid #1a2640",
-                        borderBottom: "2px solid #050810",
+                        background: "#0d1724",
+                        border: "1px solid #263b4f",
                         borderRadius: 8,
-                        color: "#64748b",
-                        boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
+                        color: "#91a4b8",
                       } : {}}>
                       <span className="relative z-10 flex items-center gap-1.5 text-sm font-black">
                         {d === "BUY" ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
@@ -3879,11 +3877,11 @@ const maxLeverage = 100
                     <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
                   </div>
   <div className="relative grid grid-cols-2 gap-2 p-2" style={{ background: "#07101b" }}>
-  <button type="button" onClick={() => setOrderDirection("SELL")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-left transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.28), rgba(190,24,93,0.38))", border: "1px solid rgba(251,113,133,0.45)" }}>
+  <button type="button" onClick={() => setOrderDirection("SELL")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-left transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "rgba(240,120,131,0.14)", border: "1px solid rgba(240,120,131,0.38)" }}>
   <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-rose-100">Sell · Bid</span>
   <span className="price-mono text-base font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
   </button>
-  <button type="button" onClick={() => setOrderDirection("BUY")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-right transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.30), rgba(20,184,166,0.34))", border: "1px solid rgba(52,211,153,0.45)" }}>
+  <button type="button" onClick={() => setOrderDirection("BUY")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-right transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "rgba(50,201,154,0.14)", border: "1px solid rgba(50,201,154,0.38)" }}>
   <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-100">Buy · Ask</span>
   <span className="price-mono text-base font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
   </button>
