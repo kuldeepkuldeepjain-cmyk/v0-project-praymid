@@ -27,6 +27,7 @@ import {
   ChevronRight,
   ArrowUpRight,
   CreditCard,
+  TicketPercent,
 } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
@@ -35,6 +36,7 @@ import { ParticipantsAdminPanel } from "@/components/admin/participants-admin-pa
 import { AdminControlRoom } from "@/components/admin/admin-control-room"
 import { SupportTicketsPanel } from "@/components/support-tickets-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
+import { PromoCodesPanel } from "@/components/admin/promo-codes-panel"
 
 interface ApprovedWallet {
   id: string
@@ -62,7 +64,7 @@ export default function AdminDashboard() {
   const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "8770459735@ybl", usdt_inr_rate: "104" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "overview" | "terminal" | "participants" | "wallets" | "topups" | "support" | "payments" | "settings"
+    "overview" | "terminal" | "participants" | "wallets" | "topups" | "promos" | "support" | "payments" | "settings"
   >("overview")
   const [openTicketCount, setOpenTicketCount] = useState(0)
 
@@ -283,6 +285,7 @@ export default function AdminDashboard() {
               { id: "participants", label: "Participants", icon: Users },
               { id: "wallets", label: "Approved Wallets", icon: Wallet },
               { id: "topups", label: "Top Up Requests", icon: ArrowUpRight },
+              { id: "promos", label: "Promo Codes", icon: TicketPercent },
               { id: "support", label: "Support Tickets", icon: MessageSquare, badge: openTicketCount },
               { id: "payments", label: "UPI / Bank Details", icon: CreditCard },
               { id: "settings", label: "Settings & Security", icon: SlidersHorizontal },
@@ -427,6 +430,8 @@ export default function AdminDashboard() {
         )}
 
   {activeTab === "topups" && <TopUpRequestsPanel />}
+
+  {activeTab === "promos" && <PromoCodesPanel />}
 
   {activeTab === "wallets" && (
   <Card className="bg-white/10 backdrop-blur-sm border-cyan-500/30">

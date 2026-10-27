@@ -227,6 +227,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
           transactionHash: txHash.trim(),
           network,
           fundingMode: showFundingOptions && fundingMode === "funded" ? "funded" : "actual",
+          promoCode: promoCode.trim(),
           note: `[Payment method: ${network}]${promoCode.trim() ? ` [Promo code: ${promoCode.trim().toUpperCase()}]` : ""}${note.trim() ? ` ${note.trim()}` : ""}`,
         }),
       })

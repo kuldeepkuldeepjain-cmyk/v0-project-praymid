@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
   if (!auth.ok) return auth.response
   try {
-    const { amount, transactionHash, screenshotBase64, note, network, fundingMode } = await request.json()
+    const { amount, transactionHash, screenshotBase64, note, network, fundingMode, promoCode } = await request.json()
     const authenticatedEmail = auth.email.toLowerCase().trim()
 
     if (!amount || !transactionHash) {
@@ -60,6 +60,20 @@ export async function POST(request: NextRequest) {
     }
     const participant = participants[0]
     const requestedFundingMode = String(fundingMode || "actual").toLowerCase()
+    const normalizedPromoCode = String(promoCode || "").trim().toUpperCase().replace(/\s+/g, "")
+    let promoDiscountPercent = 0
+    if (normalizedPromoCode) {
+      const promoRows = await query(
+        `SELECT discount_percent, expires_at, max_uses, used_count FROM promo_codes
+         WHERE code = $1 AND active = TRUE
+           AND (expires_at IS NULL OR expires_at > NOW())
+           AND (max_uses IS NULL OR used_count < max_uses) LIMIT 1`,
+        [normalizedPromoCode],
+      ) as any[]
+      if (!promoRows.length) return NextResponse.json({ success: false, message: "Promo code is invalid, expired, or no longer available." }, { status: 400 })
+      promoDiscountPercent = Number(promoRows[0].discount_percent)
+    }
+    const promoBonusAmount = Number((parsedAmount * promoDiscountPercent / 100).toFixed(2))
 
     if (requestedFundingMode === "funded") {
       const priorFundingRequests = await query(
@@ -92,12 +106,12 @@ export async function POST(request: NextRequest) {
     }
 
     const paymentMethod = requestedFundingMode === "funded" ? "funded_tier" : network === "INR" ? "inr_bank" : "crypto"
-    const insertValues = [participant.id, participant.email, parsedAmount, normalizedTransactionHash, paymentMethod, screenshotUrl]
+    const insertValues = [participant.id, participant.email, parsedAmount, normalizedTransactionHash, paymentMethod, screenshotUrl, normalizedPromoCode || null, promoDiscountPercent || null, promoBonusAmount]
 
     try {
       await execute(
-        `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url)
-         VALUES ($1, $2, $3, $4, $5, 'pending', $6)`,
+        `INSERT INTO topup_requests (participant_id, participant_email, amount, transaction_id, payment_method, status, screenshot_url, promo_code, promo_discount_percent, promo_bonus_amount)
+         VALUES ($1, $2, $3, $4, $5, 'pending', $6, $7, $8, $9)`,
         insertValues,
       )
     } catch (insertError: any) {
@@ -117,7 +131,7 @@ export async function POST(request: NextRequest) {
       [participant.id, participant.email, "topup_requested", "wallet", `Submitted $${parsedAmount} top-up (tx: ${normalizedTransactionHash.slice(0, 12)}...)`]
     ).catch(() => {})
 
-    return NextResponse.json({ success: true, message: "Top-up request submitted successfully" })
+    return NextResponse.json({ success: true, message: promoBonusAmount > 0 ? `Top-up submitted. ${normalizedPromoCode} will add a $${promoBonusAmount.toFixed(2)} bonus when approved.` : "Top-up request submitted successfully", promoCode: normalizedPromoCode || null, promoBonusAmount })
   } catch (error) {
     console.error("Top-up submit error:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
