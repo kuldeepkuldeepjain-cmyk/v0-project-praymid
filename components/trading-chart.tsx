@@ -53,21 +53,21 @@ type PriceAlert = {
 
 // TradingView-accurate palette: flat background, muted grid, #26a69a/#ef5350 candles
 const T = {
-  bg:          "#070b13",
-  bgSurface:   "#0d1625",
-  bgHover:     "#142238",
-  border:      "#1e2d45",
-  borderMuted: "#15243a",
-  textMuted:   "#7890ad",
-  textDim:     "#a7bad1",
-  textBase:    "#e5eef9",
-  green:       "#10b981",
-  greenBright: "#34d399",
-  red:         "#ef4444",
-  redBright:   "#f87171",
-  cyan:        "#22d3ee",
-  amber:       "#fbbf24",
-  blue:        "#60a5fa",
+  bg:          "#080e17",
+  bgSurface:   "#0d1724",
+  bgHover:     "#172b3d",
+  border:      "#263b4f",
+  borderMuted: "#122234",
+  textMuted:   "#91a4b8",
+  textDim:     "#b7c7d8",
+  textBase:    "#e5edf5",
+  green:       "#32c99a",
+  greenBright: "#5cddb5",
+  red:         "#f07883",
+  redBright:   "#ff9aa2",
+  cyan:        "#39bfa7",
+  amber:       "#e9b75a",
+  blue:        "#62a9e8",
   pink:        "#f472b6",
   purple:      "#a78bfa",
   orange:      "#fb923c",
@@ -75,11 +75,11 @@ const T = {
 }
 
 const DARK_T = {
-  bg: "#131722", bgSurface: "#131722", bgHover: "#1e222d",
-  border: "#2a2e39", borderMuted: "#1e222d",
-  textMuted: "#787b86", textDim: "#b2b5be", textBase: "#d1d4dc",
-  green: "#089981", greenBright: "#26a69a", red: "#f23645", redBright: "#ef5350",
-  cyan: "#2962ff", amber: "#fbbf24", blue: "#60a5fa", pink: "#f472b6",
+  bg: "#080e17", bgSurface: "#0d1724", bgHover: "#172b3d",
+  border: "#263b4f", borderMuted: "#122234",
+  textMuted: "#91a4b8", textDim: "#b7c7d8", textBase: "#e5edf5",
+  green: "#238f74", greenBright: "#32c99a", red: "#b84f5b", redBright: "#f07883",
+  cyan: "#4b8fc8", amber: "#e9b75a", blue: "#62a9e8", pink: "#d58aa9",
   purple: "#a78bfa", orange: "#fb923c", emerald: "#26a69a",
 }
 

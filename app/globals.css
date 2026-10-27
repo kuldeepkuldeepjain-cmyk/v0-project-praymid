@@ -8261,6 +8261,163 @@ body:has(.elite-terminal-shell) {
   }
 }
 
+/* Phase 3: institutional graphite visual system. Presentation only; layout and behavior remain unchanged. */
+.reference-terminal {
+  --terminal-graphite-bg: #080e17;
+  --terminal-graphite-surface: #0d1724;
+  --terminal-graphite-surface-2: #122234;
+  --terminal-graphite-elevated: #172b3d;
+  --terminal-graphite-border: #263b4f;
+  --terminal-graphite-text: #e5edf5;
+  --terminal-graphite-muted: #91a4b8;
+  --terminal-graphite-teal: #39bfa7;
+  --terminal-graphite-blue: #62a9e8;
+  --terminal-graphite-positive: #32c99a;
+  --terminal-graphite-negative: #f07883;
+  --terminal-graphite-warning: #e9b75a;
+  background: var(--terminal-graphite-bg) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-top-color: var(--terminal-graphite-border) !important;
+}
+
+.reference-terminal :where(.terminal-account-bar, .reference-watchlist, .apple-terminal-market, .apple-terminal-order, .terminal-chart-workspace, .apple-terminal-blotter, .reference-mobile-nav) {
+  background: var(--terminal-graphite-surface) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 72%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-account-bar, .reference-watchlist, .apple-terminal-market, .apple-terminal-order, .apple-terminal-blotter) {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+}
+
+.reference-terminal :where(.terminal-stat, .reference-watch-card, .terminal-panel, .terminal-panel-raised, .terminal-native-chart-panel, .terminal-tradingview-panel) {
+  background: var(--terminal-graphite-surface-2) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 78%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal :where(.terminal-stat-featured, .reference-watch-card.is-selected) {
+  background: var(--terminal-graphite-elevated) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 52%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.terminal-stat-label, .reference-watch-copy span, .terminal-muted, .text-slate-400, .text-slate-500, .text-slate-600) {
+  color: var(--terminal-graphite-muted) !important;
+}
+
+.reference-terminal :where(.terminal-stat-value, .reference-watch-copy strong, .terminal-account-bar strong, .text-slate-100, .text-slate-200, .text-white) {
+  color: var(--terminal-graphite-text) !important;
+}
+
+.reference-terminal :where(.reference-watch-up, .terminal-positive, .text-emerald-300, .text-emerald-400, .text-green-300, .text-green-400) {
+  color: var(--terminal-graphite-positive) !important;
+}
+
+.reference-terminal :where(.reference-watch-down, .terminal-negative, .text-red-300, .text-red-400, .text-rose-300, .text-rose-400) {
+  color: var(--terminal-graphite-negative) !important;
+}
+
+.reference-terminal :where(.text-cyan-200, .text-cyan-300, .text-cyan-400, .text-cyan-500, .text-blue-300, .text-blue-400, .text-blue-500) {
+  color: var(--terminal-graphite-blue) !important;
+}
+
+.reference-terminal :where(.text-amber-200, .text-amber-300, .text-amber-400, .text-yellow-300, .text-yellow-400) {
+  color: var(--terminal-graphite-warning) !important;
+}
+
+.reference-terminal :where(button, [role="button"], input, select, textarea) {
+  font-family: inherit;
+}
+
+.reference-terminal :where(button, [role="button"]) {
+  border-radius: 7px;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 82%, transparent);
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.reference-terminal :where(button, [role="button"]):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--terminal-graphite-blue) 48%, var(--terminal-graphite-border));
+  box-shadow: 0 1px 8px rgb(0 0 0 / 0.18);
+}
+
+.reference-terminal :where(button, [role="button"]):focus-visible,
+.reference-terminal :where(input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--terminal-graphite-teal) 74%, transparent);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgb(57 191 167 / 0.12);
+}
+
+.reference-terminal :where(button, [role="button"]):disabled {
+  color: color-mix(in srgb, var(--terminal-graphite-muted) 58%, transparent) !important;
+  background: color-mix(in srgb, var(--terminal-graphite-surface) 84%, transparent) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 45%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal :where(input, select, textarea) {
+  background: var(--terminal-graphite-bg) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: var(--terminal-graphite-border) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+}
+
+.reference-terminal :where(input, select, textarea)::placeholder {
+  color: color-mix(in srgb, var(--terminal-graphite-muted) 72%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-action, .terminal-icon-button, .terminal-toolbar-button, .terminal-timeframe-button, .terminal-indicator-button, .terminal-filter-button) {
+  background: var(--terminal-graphite-surface-2) !important;
+  color: var(--terminal-graphite-muted) !important;
+  border-color: var(--terminal-graphite-border) !important;
+}
+
+.reference-terminal :where(.terminal-action:hover, .terminal-icon-button:hover, .terminal-toolbar-button:hover, .terminal-timeframe-button:hover, .terminal-indicator-button:hover, .terminal-filter-button:hover) {
+  background: var(--terminal-graphite-elevated) !important;
+  color: var(--terminal-graphite-text) !important;
+}
+
+.reference-terminal :where(.terminal-action-primary, .buy-button, .buy-btn, [data-side="buy"]) {
+  background: color-mix(in srgb, var(--terminal-graphite-positive) 72%, var(--terminal-graphite-surface)) !important;
+  color: #f4fffb !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-positive) 72%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.terminal-action-accent, .sell-button, .sell-btn, [data-side="sell"]) {
+  background: color-mix(in srgb, var(--terminal-graphite-negative) 72%, var(--terminal-graphite-surface)) !important;
+  color: #fff7f8 !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-negative) 72%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.is-active, [aria-selected="true"], [aria-pressed="true"], .active) {
+  background: var(--terminal-graphite-elevated) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 64%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.reference-watch-card.is-selected, .terminal-action-primary, .terminal-action-accent, .buy-button, .buy-btn, .sell-button, .sell-btn) {
+  box-shadow: 0 1px 10px rgb(0 0 0 / 0.2) !important;
+}
+
+.reference-terminal :where(.chart-header, .chart-timeframe-toolbar, .terminal-chart-toolbar, .terminal-chart-activity-tabs) {
+  background: var(--terminal-graphite-surface) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 72%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-margin-bar, .terminal-risk-bar) {
+  background: var(--terminal-graphite-bg) !important;
+}
+
+.reference-terminal :where(.terminal-margin-bar span, .terminal-risk-bar span) {
+  background: var(--terminal-graphite-warning) !important;
+}
+
+.reference-terminal :where(.rounded-full.bg-emerald-500, .bg-emerald-500, .bg-green-500) {
+  background-color: var(--terminal-graphite-positive) !important;
+}
+
+.reference-terminal :where(.rounded-full.bg-red-500, .bg-red-500) {
+  background-color: var(--terminal-graphite-negative) !important;
+}
+
 /* Phase 2: compact desktop composition. Keep every existing control visible while
    giving the chart workspace a more useful share of the fixed terminal height. */
 @media (min-width: 1200px) {
