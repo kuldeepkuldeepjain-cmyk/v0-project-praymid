@@ -8988,3 +8988,106 @@ body:has(.elite-terminal-shell) {
   border-color: rgb(102 153 180 / 0.6) !important;
   color: #b0d3df !important;
 }
+
+/* Terminal workspace performance and scroll contract. */
+.reference-terminal,
+.reference-terminal * {
+  box-sizing: border-box;
+}
+
+.reference-terminal {
+  overscroll-behavior: contain;
+  isolation: isolate;
+}
+
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .terminal-dock-group,
+.reference-terminal .terminal-dock-panel,
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter {
+  min-width: 0;
+  min-height: 0;
+}
+
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter,
+.reference-terminal #market-watch-instruments {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reference-terminal .apple-terminal-grid {
+  overflow: auto;
+}
+
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter {
+  overflow: auto;
+}
+
+.reference-terminal .terminal-scroll,
+.reference-terminal .chart-timeframe-toolbar,
+.reference-terminal .reference-watchlist,
+.reference-terminal .apple-terminal-blotter-tabs,
+.reference-terminal .terminal-rate-details {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+}
+
+.reference-terminal .reference-mobile-nav button,
+.reference-terminal .apple-terminal-mobile-tabs button,
+.reference-terminal .apple-terminal-blotter-tabs button,
+.reference-terminal .chart-timeframe-toolbar button,
+.reference-terminal .reference-watch-card,
+.reference-terminal .apple-terminal-order button,
+.reference-terminal .apple-terminal-market button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.reference-terminal .apple-trading-chart,
+.reference-terminal .apple-trading-chart-canvas,
+.reference-terminal .mobile-terminal-chart-wrap {
+  min-width: 0;
+  min-height: 0;
+}
+
+.reference-terminal .mobile-terminal-chart-wrap {
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+}
+
+.reference-terminal .apple-terminal-blotter table {
+  contain: layout paint;
+}
+
+@media (max-width: 1023px) {
+  .reference-terminal {
+    height: 100dvh !important;
+    min-height: 0 !important;
+  }
+
+  .reference-terminal .apple-terminal-grid {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reference-terminal,
+  .reference-terminal * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -2913,22 +2913,23 @@ const maxLeverage = 100
   // Search always scans the complete catalog, regardless of the selected
   // category tab. This makes the terminal search bar a true instrument finder:
   // typing EURUSD while Crypto is selected still finds EUR/USD.
-  const searchedPairs = pairSearch.trim()
-    ? (() => {
-        const q = pairSearch.trim().toLowerCase().replace(/[\s/_-]/g, "")
-        return pairs.filter(p => {
-          const symbolNoSeparators = p.symbol.toLowerCase().replace(/[\s/_-]/g, "")
-          const name = (FULL_NAMES[p.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
-          return symbolNoSeparators.includes(q) || name.includes(q)
-        })
-      })()
-    : pairs
-  const filteredPairs = pairSearch.trim()
-    ? searchedPairs
-    : searchedPairs.filter(p => {
-        const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)
-        return activeCategory === "All" || cfg?.category === activeCategory
-      })
+  const searchedPairs = useMemo(() => {
+    const query = pairSearch.trim().toLowerCase().replace(/[\s/_-]/g, "")
+    if (!query) return pairs
+    return pairs.filter((pair) => {
+      const symbol = pair.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+      const name = (FULL_NAMES[pair.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+      return symbol.includes(query) || name.includes(query)
+    })
+  }, [pairSearch, pairs])
+
+  const filteredPairs = useMemo(() => {
+    if (pairSearch.trim()) return searchedPairs
+    return searchedPairs.filter((pair) => {
+      const config = PAIRS_CONFIG.find((item) => item.symbol === pair.symbol)
+      return activeCategory === "All" || config?.category === activeCategory
+    })
+  }, [activeCategory, pairSearch, searchedPairs])
   const visibleInstrumentCount = pairSearch.trim() ? filteredPairs.length : pairs.length
   const hasInstrumentSearch = pairSearch.trim().length > 0
   const searchNoResults = hasInstrumentSearch && filteredPairs.length === 0
