@@ -7643,24 +7643,26 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 }
 .terminal-page a:not([class*="text-"]):hover { color: #8fc7f4; }
 
-/* Single-provider chart workspace: one clear chart at a time with a stable readable frame. */
+/* Single-provider chart workspace: edge-to-screen chart canvas with zero wasted margins. */
 .reference-terminal .terminal-single-chart-stack {
   display: flex;
   min-height: 0;
   height: 100%;
-  padding: 8px;
-  background: #07111f;
+  width: 100%;
+  padding: 0;
+  background: transparent;
 }
 .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
 .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel {
   display: flex;
   flex: 1;
   min-height: 360px;
+  width: 100%;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #294662;
-  border-radius: 6px;
-  background: #0b1728;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel > .apple-trading-chart,
 .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel > section {
@@ -7670,12 +7672,12 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   border-radius: 0 !important;
 }
 .reference-terminal .terminal-single-chart-stack .terminal-chart-panel-label {
-  flex: 0 0 30px;
+  display: none !important;
 }
 @media (max-width: 767px) {
-  .reference-terminal .terminal-single-chart-stack { padding: 5px; }
+  .reference-terminal .terminal-single-chart-stack { padding: 0; }
   .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
-  .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel { min-height: 330px; }
+  .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel { min-height: 300px; }
 }
 
 /* Desktop workspace: allow the full terminal to scroll without clipping chart activity. */
