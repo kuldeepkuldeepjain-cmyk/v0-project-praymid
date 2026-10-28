@@ -3548,15 +3548,19 @@ button, a, [role="button"] {
   cursor: default;
 }
 .elite-terminal-sidebar-account {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: block;
   margin: 18px 2px 20px;
   padding: 10px;
   border: 1px solid #1d3044;
   border-radius: 10px;
   background: linear-gradient(135deg, rgba(27,52,73,.72), rgba(14,27,42,.8));
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .16s ease, background .16s ease;
 }
+.elite-terminal-sidebar-account:hover { border-color: rgba(101,181,243,.55); background: linear-gradient(135deg, rgba(32,62,86,.82), rgba(14,27,42,.9)); }
+.elite-terminal-sidebar-account:focus-visible { outline: 2px solid #65b5f3; outline-offset: 2px; }
+.elite-terminal-sidebar-account-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .elite-terminal-sidebar-avatar {
   width: 34px;
   height: 34px;
@@ -3572,11 +3576,18 @@ button, a, [role="button"] {
 }
 .elite-terminal-sidebar-account-copy { min-width: 0; display: grid; gap: 4px; }
 .elite-terminal-sidebar-account-copy strong { overflow: hidden; color: #edf5fc; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.elite-terminal-sidebar-account-copy span { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; }
-  .elite-terminal-account-funded { color: #f4c95d; }
-  .elite-terminal-account-normal { color: #8298ad; }
-  .elite-terminal-sidebar-account-copy i { width: 6px; height: 6px; border-radius: 50%; background: #35c995; box-shadow: 0 0 8px rgba(53,201,149,.8); }
-.elite-terminal-sidebar-account-arrow { width: 14px; height: 14px; margin-left: auto; color: #688198; }
+.elite-terminal-sidebar-account-email { display: block !important; overflow: hidden; color: #8298ad; font-size: 10px; font-weight: 500 !important; text-overflow: ellipsis; white-space: nowrap; }
+.elite-terminal-sidebar-account-arrow { width: 14px; height: 14px; margin-left: auto; color: #688198; flex: 0 0 auto; }
+.elite-terminal-sidebar-account-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.elite-terminal-account-detail { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 7px 8px; border: 1px solid #203246; border-radius: 7px; background: rgba(4,11,19,.46); }
+.elite-terminal-account-detail span { color: #688198; font-size: 8px; font-weight: 800; letter-spacing: .08em; line-height: 1.2; text-transform: uppercase; }
+.elite-terminal-account-detail strong { overflow: hidden; color: #c7d5e2; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.elite-terminal-kyc-status.is-verified { border-color: rgba(53,201,149,.26); }
+.elite-terminal-kyc-status.is-verified strong { color: #5bd6a8; }
+.elite-terminal-kyc-status.is-pending { border-color: rgba(244,201,93,.28); }
+.elite-terminal-kyc-status.is-pending strong { color: #f4c95d; }
+.elite-terminal-kyc-status.is-needed { border-color: rgba(239,141,141,.28); }
+.elite-terminal-kyc-status.is-needed strong { color: #ef8d8d; }
 .elite-terminal-section-label { padding: 0 10px 8px; color: #5f7890; font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .elite-terminal-brand {
   height: 74px;
@@ -7870,6 +7881,236 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .reference-terminal .mobile-terminal-account small { max-width: 82px; }
 }
 
+/* Account is a peer terminal page, not a sidebar destination. */
+.reference-terminal.is-account-active > .terminal-account-bar,
+.reference-terminal.is-account-active > .reference-watchlist,
+.reference-terminal.is-account-active > .apple-terminal-grid {
+  display: none !important;
+}
+.reference-terminal .mobile-account-page {
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  width: 100%;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 16px 14px calc(78px + env(safe-area-inset-bottom, 0px));
+  background: #07111f;
+  color: #e7eef7;
+  -webkit-overflow-scrolling: touch;
+}
+.reference-terminal .mobile-account-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.reference-terminal .mobile-account-eyebrow,
+.reference-terminal .mobile-account-profile-label,
+.reference-terminal .mobile-account-detail > span {
+  color: #8fa6bb;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+.reference-terminal .mobile-account-page-header h1 {
+  margin: 3px 0 0;
+  color: #e7eef7;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.2;
+}
+.reference-terminal .mobile-account-kyc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(47,128,201,.45);
+  border-radius: 999px;
+  color: #e7eef7;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.reference-terminal .mobile-account-kyc-badge > span {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #2f80c9;
+}
+.reference-terminal .mobile-account-profile,
+.reference-terminal .mobile-account-detail,
+.reference-terminal .mobile-account-action,
+.reference-terminal .mobile-account-settings,
+.reference-terminal .mobile-account-logout {
+  border: 1px solid #20344e;
+  border-radius: 10px;
+  background: #0b1728;
+  color: #e7eef7;
+}
+.reference-terminal .mobile-account-profile {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+  padding: 12px;
+}
+.reference-terminal .mobile-account-avatar {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  place-items: center;
+  border: 1px solid rgba(47,128,201,.5);
+  border-radius: 50%;
+  background: rgba(47,128,201,.18);
+  color: #e7eef7;
+  font-size: 17px;
+  font-weight: 800;
+}
+.reference-terminal .mobile-account-profile-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+}
+.reference-terminal .mobile-account-profile-copy strong {
+  overflow: hidden;
+  color: #e7eef7;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reference-terminal .mobile-account-profile-email {
+  overflow: hidden;
+  color: #8fa6bb;
+  font-size: 10px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reference-terminal .mobile-account-profile-edit,
+.reference-terminal .mobile-account-settings-icon,
+.reference-terminal .mobile-account-action-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #2f80c9;
+}
+.reference-terminal .mobile-account-profile-edit {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #20344e;
+  border-radius: 8px;
+  background: #07111f;
+}
+.reference-terminal .mobile-account-profile-edit svg { width: 16px; height: 16px; }
+.reference-terminal .mobile-account-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.reference-terminal .mobile-account-detail {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  padding: 11px 12px;
+}
+.reference-terminal .mobile-account-detail strong {
+  overflow: hidden;
+  color: #e7eef7;
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reference-terminal .mobile-account-detail.mobile-account-balance { grid-column: 1 / -1; }
+.reference-terminal .mobile-account-detail.is-verified strong,
+.reference-terminal .mobile-account-kyc-badge.is-verified { color: #e7eef7; }
+.reference-terminal .mobile-account-detail.is-pending strong,
+.reference-terminal .mobile-account-detail.is-needed strong { color: #8fa6bb; }
+.reference-terminal .mobile-account-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.reference-terminal .mobile-account-action {
+  display: flex;
+  min-width: 0;
+  min-height: 76px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  text-align: left;
+}
+.reference-terminal .mobile-account-action.is-primary {
+  border-color: rgba(47,128,201,.55);
+  background: rgba(47,128,201,.16);
+}
+.reference-terminal .mobile-account-action-icon { width: 28px; height: 28px; }
+.reference-terminal .mobile-account-action-icon svg { width: 17px; height: 17px; }
+.reference-terminal .mobile-account-action-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+}
+.reference-terminal .mobile-account-action-copy strong {
+  color: #e7eef7;
+  font-size: 11px;
+  font-weight: 800;
+}
+.reference-terminal .mobile-account-action-copy small {
+  color: #8fa6bb;
+  font-size: 9px;
+  line-height: 1.4;
+}
+.reference-terminal .mobile-account-action > svg { width: 13px; height: 13px; flex: 0 0 auto; color: #8fa6bb; }
+.reference-terminal .mobile-account-settings {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  text-align: left;
+}
+.reference-terminal .mobile-account-settings-icon { width: 28px; height: 28px; }
+.reference-terminal .mobile-account-settings-icon svg { width: 17px; height: 17px; }
+.reference-terminal .mobile-account-settings > span:nth-child(2) {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+.reference-terminal .mobile-account-settings strong { color: #e7eef7; font-size: 11px; font-weight: 800; }
+.reference-terminal .mobile-account-settings small { color: #8fa6bb; font-size: 9px; line-height: 1.4; }
+.reference-terminal .mobile-account-settings > svg { width: 15px; height: 15px; color: #8fa6bb; }
+.reference-terminal .mobile-account-logout {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 11px;
+  font-weight: 800;
+}
+.reference-terminal .mobile-account-logout svg { width: 16px; height: 16px; color: #8fa6bb; }
+.reference-terminal .mobile-account-action:focus-visible,
+.reference-terminal .mobile-account-settings:focus-visible,
+.reference-terminal .mobile-account-profile-edit:focus-visible,
+.reference-terminal .mobile-account-logout:focus-visible {
+  outline: 2px solid #2f80c9;
+  outline-offset: 2px;
+}
+
 /* Dual chart workspace: preserve a readable native chart and a distinct TradingView reference panel. */
 .reference-terminal .terminal-dual-chart-stack {
   display: grid;
@@ -9543,4 +9784,137 @@ body:has(.elite-terminal-shell) {
   .reference-terminal.is-portfolio-active .apple-terminal-blotter {
     display: none !important;
   }
+}
+
+/* The dock follows the supplied reference: one continuous bar with a teal active action. */
+@media (max-width: 767px) {
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav {
+    position: fixed !important;
+    z-index: 100 !important;
+    inset: auto 0 0;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100% !important;
+    height: calc(70px + env(safe-area-inset-bottom, 0px));
+    min-height: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 0;
+    padding: 0 8px env(safe-area-inset-bottom, 0px);
+    overflow: hidden;
+    border: 0 !important;
+    border-top: 1px solid rgba(75, 101, 126, .42) !important;
+    border-radius: 0 !important;
+    background: rgba(4, 14, 25, .98) !important;
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, .18) !important;
+    transform: none !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button {
+    display: flex !important;
+    width: 100% !important;
+    height: 100%;
+    min-width: 0 !important;
+    min-height: 64px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    padding: 3px 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #8fa5bd !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: .04em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button svg {
+    width: 23px !important;
+    height: 23px !important;
+    flex: 0 0 auto;
+    color: currentColor;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:hover {
+    border: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active,
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active:hover {
+    border: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #39bfa7 !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active svg {
+    color: #39bfa7 !important;
+    filter: drop-shadow(0 0 7px rgba(57, 191, 167, .3));
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:focus-visible {
+    outline: 2px solid #39bfa7 !important;
+    outline-offset: -4px;
+    border-radius: 6px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group .mobile-terminal-brand {
+    flex: 0 1 auto !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--institutional-line);
+    border-radius: 9px;
+    background: var(--institutional-panel);
+    color: var(--mobile-terminal-muted);
+    text-decoration: none;
+    transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home:hover {
+    border-color: var(--institutional-blue);
+    background: rgba(47, 128, 201, 0.12);
+    color: var(--mobile-terminal-ink);
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home:focus-visible {
+    outline: 2px solid var(--institutional-blue);
+    outline-offset: 2px;
+  }
+
+}
+
+@media (max-width: 380px) {
+  .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group { gap: 6px; }
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home { width: 30px; height: 30px; }
 }
