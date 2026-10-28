@@ -53,12 +53,14 @@ function normalizePayload(payload: BiquotePayload): BiquoteTick | null {
   }
 }
 
-export function createBiquoteConnection(symbols: string[], onTick: (tick: BiquoteTick) => void, onStatus: (status: string) => void) {
+export function createBiquoteConnection(
+  symbols: string[],
+  onTick: (tick: BiquoteTick) => void,
+  onStatus: (status: string) => void,
+) {
   const hubUrl = process.env.BIQUOTE_TICK_HUB_URL || DEFAULT_HUB_URL
   const connection: HubConnection = new HubConnectionBuilder()
-    .withUrl(hubUrl, {
-      accessTokenFactory: () => process.env.BIQUOTE_API_KEY || "",
-    })
+    .withUrl(hubUrl, { accessTokenFactory: () => process.env.BIQUOTE_API_KEY || "" })
     .withAutomaticReconnect([0, 2_000, 5_000, 10_000])
     .configureLogging(LogLevel.Error)
     .build()
