@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { decimals as instrumentDecimals } from "@/lib/forex-instruments"
+import { AssetLogo } from "@/components/asset-logo"
 import {
   createChart,
   CandlestickSeries,
@@ -773,6 +774,7 @@ export function TradingChart({
         className="flex items-center gap-3 px-3 shrink-0 overflow-x-auto"
         style={{ height: 36, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", minWidth: 0 }}
       >
+        <AssetLogo symbol={symbol} size={18} className="shrink-0" />
         {displayOhlcv ? (
           <>
             {/* Change chip */}

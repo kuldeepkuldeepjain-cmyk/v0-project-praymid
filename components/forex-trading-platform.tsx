@@ -31,6 +31,7 @@ import {
   MiniChartGrid, ConnectionStatus,
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
+import { AssetLogo } from "@/components/asset-logo"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
@@ -3251,7 +3252,7 @@ const maxLeverage = 100
               >
                 <X className="h-2.5 w-2.5" />
               </span>
-              <span className="reference-watch-icon">{ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}</span>
+              <span className="reference-watch-icon"><AssetLogo symbol={pair.symbol} size={18} className="shrink-0" /></span>
               <span className="reference-watch-copy">
                 <strong>{pair.symbol.replace("/", "")}</strong>
                 <span>{fmt(pair.bid, pair.symbol)}</span>
@@ -3308,16 +3309,14 @@ const maxLeverage = 100
                 {addInstrumentResults.map(cfg => {
                   const isPinned = watchlistSymbols.includes(cfg.symbol)
                   return (
-                    <button
-                      key={cfg.symbol}
-                      type="button"
-                      onClick={() => toggleWatchlistSymbol(cfg.symbol)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-white/5"
-                    >
-                      <span className="flex items-center justify-center w-5 h-5 rounded text-[9px] font-black shrink-0" style={{ background: CATEGORY_COLOR[cfg.category].bg, color: CATEGORY_COLOR[cfg.category].text }}>
-                        {ASSET_ICON[cfg.symbol] ?? cfg.symbol.slice(0, 2)}
-                      </span>
-                      <span className="flex flex-col items-start flex-1 min-w-0 text-left">
+	                    <button
+	                      key={cfg.symbol}
+	                      type="button"
+	                      onClick={() => toggleWatchlistSymbol(cfg.symbol)}
+	                      className="w-full flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-white/5"
+	                    >
+	                      <AssetLogo symbol={cfg.symbol} size={18} className="shrink-0" />
+	                      <span className="flex flex-col items-start flex-1 min-w-0 text-left">
                         <span className="price-mono text-[11px] font-bold text-white">{cfg.symbol}</span>
                         <span className="text-[9px] truncate" style={{ color: "#3d5a80" }}>{FULL_NAMES[cfg.symbol] ?? cfg.symbol}</span>
                       </span>
@@ -3459,12 +3458,11 @@ const maxLeverage = 100
                               padding: "7px 12px 7px 10px",
                             }}>
                             <div className="grid items-center" style={{ gridTemplateColumns: "1fr 72px 52px", gap: 0 }}>
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="mw-badge w-7 h-7 rounded flex items-center justify-center shrink-0 text-[10px] font-black relative"
-                                  style={{ background: isSelected ? pCc.bg : "rgba(255,255,255,0.03)", border: `1px solid ${isSelected ? pCc.border : "#131d2e"}`, color: pCc.text }}>
-                                  {icon ?? base.slice(0, 2)}
-                                  {hasTrade && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-                                </div>
+	                              <div className="flex items-center gap-2 min-w-0">
+	                                <div className="mw-badge flex items-center justify-center shrink-0 relative">
+	                                  <AssetLogo symbol={p.symbol} size={22} className="shrink-0" />
+	                                  {hasTrade && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+	                                </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1">
                                     <span className="text-[11px] font-black leading-none" style={{ color: isSelected ? "#ffffff" : "#c8d4e4" }}>{base}</span>
@@ -3534,9 +3532,9 @@ const maxLeverage = 100
               <div className="flex flex-wrap items-center justify-between gap-2">
                 {/* Symbol & Price Group */}
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
-                    {ASSET_ICON[selectedPair.symbol] && <span>{ASSET_ICON[selectedPair.symbol]}</span>}
-                    <span>{selectedPair.symbol}</span>
+	                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1.5 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
+	                    <AssetLogo symbol={selectedPair.symbol} size={20} className="shrink-0" />
+	                    <span>{selectedPair.symbol}</span>
                     <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   </button>
                   {(() => {
@@ -4231,10 +4229,11 @@ const maxLeverage = 100
 
 	                    return (
 	                      <div key={trade.id} className="rounded-lg price-mono text-[11px] overflow-hidden bg-[#0d1625] border border-[#1a2a42]">
-	                        {/* Card header */}
-	                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
-	                          <div className="flex items-center gap-2 flex-wrap min-w-0">
-	                            <span className="font-black text-white text-xs">{trade.pair}</span>
+		                        {/* Card header */}
+		                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
+		                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+		                            <AssetLogo symbol={trade.pair} size={18} className="shrink-0" />
+		                            <span className="font-black text-white text-xs">{trade.pair}</span>
 	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isBuy ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-300 border border-rose-500/30"}`}>
 	                              {trade.direction}
 	                            </span>
@@ -4331,9 +4330,10 @@ const maxLeverage = 100
 	                    const isBuy = o.direction === "BUY"
 	                    return (
 	                      <div key={o.id} className="rounded-lg price-mono text-[11px] overflow-hidden bg-[#0d1625] border border-[#1a2a42]">
-	                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
-	                          <div className="flex items-center gap-2 flex-wrap">
-	                            <span className="font-black text-white text-xs">{o.pair}</span>
+		                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
+		                          <div className="flex items-center gap-2 flex-wrap">
+		                            <AssetLogo symbol={o.pair} size={18} className="shrink-0" />
+		                            <span className="font-black text-white text-xs">{o.pair}</span>
 	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isBuy ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
 	                              {o.direction}
 	                            </span>
