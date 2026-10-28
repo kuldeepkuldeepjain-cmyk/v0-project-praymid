@@ -2547,8 +2547,8 @@ button, a, [role="button"] {
       left: 0 !important;
       right: 0 !important;
       z-index: 100 !important;
-      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-      min-height: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+      grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+      min-height: calc(62px + env(safe-area-inset-bottom, 0px)) !important;
       background: rgba(4, 9, 18, 0.97) !important;
       backdrop-filter: blur(18px) !important;
       -webkit-backdrop-filter: blur(18px) !important;
@@ -6834,8 +6834,8 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     bottom: 0;
     left: 0;
     display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    min-height: calc(62px + env(safe-area-inset-bottom, 0px));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    min-height: calc(68px + env(safe-area-inset-bottom, 0px));
     align-items: center;
     gap: 3px;
     padding: 4px 5px calc(6px + env(safe-area-inset-bottom, 0px));
@@ -6870,18 +6870,6 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     background: rgba(14, 139, 255, .16);
     color: var(--mobile-terminal-blue) !important;
   }
-  .reference-terminal .reference-mobile-nav .mobile-nav-direction {
-    width: 100%;
-    height: 46px;
-    min-height: 46px;
-    justify-self: stretch;
-    border: 1px solid rgba(243, 247, 252, .22);
-    border-radius: 9px;
-    background: var(--mobile-terminal-blue);
-    color: var(--mobile-terminal-ink) !important;
-    box-shadow: 0 3px 12px rgba(14, 139, 255, .28);
-  }
-  .reference-terminal .reference-mobile-nav .mobile-nav-direction svg { width: 20px; height: 20px; }
   .reference-terminal .reference-statusbar { display: none !important; }
 
   .reference-terminal .apple-terminal-grid {
@@ -7414,7 +7402,6 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .reference-terminal .terminal-stat:nth-child(2) { border-right: 0; }
   .reference-terminal .terminal-stat:nth-child(n + 3) { border-top: 1px solid var(--mobile-terminal-border); }
   .reference-terminal .reference-mobile-nav button { font-size: 8px; }
-  .reference-terminal .reference-mobile-nav .mobile-nav-direction { width: 46px; height: 46px; min-height: 46px; }
   .reference-terminal .mobile-order-actions button,
   .reference-terminal .mobile-order-actions button strong { font-size: 12px; }
 }
@@ -8119,11 +8106,11 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     touch-action: pan-x !important;
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav {
-    display: flex !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     width: 100%;
     min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
   }
   .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap {
     min-height: clamp(300px, 56dvh, 520px) !important;
@@ -8278,7 +8265,6 @@ body:has(.elite-terminal-shell) {
   .mt5-terminal.reference-terminal .mobile-order-ticket button { min-height: 44px; }
   .mt5-terminal.reference-terminal .apple-terminal-order > div:first-child { display: flex !important; flex-wrap: wrap; }
   .mt5-terminal.reference-terminal .mobile-trailing-field { display: block !important; }
-  .mt5-terminal.reference-terminal .reference-mobile-nav .mobile-nav-direction { justify-self: center; width: 54px; }
 }
 
 
@@ -8306,14 +8292,34 @@ body:has(.elite-terminal-shell) {
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav {
     display: grid !important;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    min-height: calc(72px + env(safe-area-inset-bottom, 0px));
+    padding: 7px 10px calc(9px + env(safe-area-inset-bottom, 0px));
     overflow: hidden;
+    border-top: 1px solid rgba(109, 153, 190, .22);
+    background: rgba(5, 13, 24, .96);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, .32);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav > button {
     min-width: 0;
     width: 100%;
-    font-size: 10px;
-    letter-spacing: 0;
+    min-height: 48px;
+    border-radius: 11px;
+    font-size: 9px;
+    letter-spacing: .02em;
+    transition: color 140ms ease, background-color 140ms ease, border-color 140ms ease;
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active {
+    border-color: rgba(86, 174, 231, .32);
+    background: linear-gradient(180deg, rgba(29, 83, 120, .44), rgba(15, 49, 76, .34));
+    box-shadow: inset 0 1px 0 rgba(194, 229, 255, .08), 0 3px 12px rgba(4, 16, 29, .22);
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:focus-visible {
+    outline: 2px solid var(--mobile-terminal-blue);
+    outline-offset: 1px;
   }
 }
 

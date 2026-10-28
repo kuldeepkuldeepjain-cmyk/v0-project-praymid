@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ─────────────────────────────────────────────────────����──────
+// ─── Position Sizer ──────────────────────────��──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3306,9 +3306,6 @@ const maxLeverage = 100
         </button>
         <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions") }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
           <Zap aria-hidden="true" /><span>Order</span>
-        </button>
-        <button type="button" className="mobile-nav-direction" onClick={() => { setDirection(value => value === "BUY" ? "SELL" : "BUY"); setMobileTab("chart") }} aria-label={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`} title={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`}>
-          <ArrowUpDown aria-hidden="true" />
         </button>
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
           <Wallet aria-hidden="true" /><span>Portfolio</span>
