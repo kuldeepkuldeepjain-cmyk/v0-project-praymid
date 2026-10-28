@@ -1559,6 +1559,28 @@ button, a, [role="button"] {
   .apple-trading-terminal { max-width: 1920px; margin-inline: auto; }
 }
 
+/* Mobile indicator controls use a compact frosted-glass treatment. */
+.reference-terminal .terminal-indicator-toolbar {
+  background: rgba(13, 23, 36, 0.72) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.reference-terminal .terminal-indicator-toolbar > button,
+.reference-terminal .terminal-indicator-toolbar > span {
+  border-radius: 999px !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 640px) {
+  .reference-terminal .terminal-indicator-toolbar > button {
+    min-height: 30px;
+    padding-inline: 10px;
+  }
+}
+
 /* EliteFund terminal refresh: layered workspace chrome without changing behavior. */
 .apple-trading-terminal {
   --terminal-blue: #39b7d8;
