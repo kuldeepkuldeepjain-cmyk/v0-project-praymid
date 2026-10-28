@@ -833,8 +833,8 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-1 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar"
-        style={{ minHeight: 40, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", flexShrink: 0 }}
+        className="flex items-center gap-1.5 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar text-[9px] font-bold"
+        style={{ minHeight: 34, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
         {([
@@ -848,22 +848,22 @@ export function TradingChart({
             key={key}
             onClick={() => toggle(key)}
             aria-pressed={indicators[key]}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
+            className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
             style={indicators[key]
-              ? { background: `${color}18`, border: `1px solid ${color}45`, color }
-              : { background: "transparent", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }
+              ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+              : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
             }
           >
             <span className="text-[9px] font-black tracking-wide">{label}</span>
           </button>
         ))}
 
-        <div className="w-px h-4 self-center mx-1 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
+        <div className="w-px h-3.5 self-center mx-1 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
 
         {/* Sub-pane oscillators */}
         {([
-          { id: "rsi" as const,  label: "RSI(14)", color: palette.emerald },
-          { id: "macd" as const, label: "MACD",    color: palette.orange  },
+          { id: "rsi" as const,  label: "RSI",  color: palette.emerald },
+          { id: "macd" as const, label: "MACD", color: palette.orange  },
         ]).map(({ id, label, color }) => {
           const isActive = chartPane === id && indicators[id]
           return (
@@ -878,10 +878,10 @@ export function TradingChart({
                   setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
                 }
               }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
+              className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
               style={isActive
-                ? { background: `${color}18`, border: `1px solid ${color}45`, color }
-                : { background: "transparent", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }
+                ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+                : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
               }
             >
               <span className="text-[9px] font-black tracking-wide">{label}</span>
@@ -892,7 +892,7 @@ export function TradingChart({
         {/* Sub-pane active pill */}
         {subPaneLabel && (
           <span
-            className="ml-0.5 px-2 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
+            className="ml-0.5 px-1.5 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
             style={{
               background: `${subPaneColor}15`,
               color: subPaneColor,
@@ -908,10 +908,10 @@ export function TradingChart({
         {/* Price Alert toggle */}
         <button
           onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
+          className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
           style={alertMode
             ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
-            : { background: "transparent", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }
+            : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
           }
           title="Click on chart to set a price alert"
         >
@@ -940,12 +940,12 @@ export function TradingChart({
             const from = Math.max(0, candleData.length - 90)
             chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
           }}
-          className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 transition-all hover:opacity-90 active:scale-95"
+          className="flex items-center justify-center w-6 h-6 rounded shrink-0 transition-all hover:opacity-90 active:scale-95"
           style={{ background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }}
           aria-label="Reset zoom and fit selected instrument"
           title="Reset zoom and fit selected instrument"
         >
-          <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3"/>
           </svg>

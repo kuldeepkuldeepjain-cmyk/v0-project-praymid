@@ -3543,79 +3543,40 @@ const maxLeverage = 100
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab === "chart" || mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className={`chart-header shrink-0 flex flex-col px-3 py-2 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
-              <div className="chart-header-market flex min-w-0 items-center gap-3">
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live API</span>
-              <div className="flex items-baseline gap-2">
-                <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch text-sm font-black text-white tracking-wider" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
-                  {ASSET_ICON[selectedPair.symbol] && <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>}
-                  {selectedPair.symbol}
-                  <ChevronDown className="chart-symbol-chevron" aria-hidden="true" />
-                </button>
-                {(() => {
-                  const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
-                  if (!cat || cat === "Forex") return null
-                  const cc = CATEGORY_COLOR[cat]
-                  return <span className="text-[8px] font-black px-1 py-0.5 uppercase tracking-wider" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, borderRadius: 3 }}>{cat}</span>
-                })()}
-              </div>
-              <span className="bid-ask-price" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-  <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
-  <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded} aria-label={rateBarExpanded ? "Collapse market details" : "Expand market details"}>{rateBarExpanded ? "⌃" : "⌄"}</button>
-  <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
-              </div>
-              <div className="terminal-rate-details flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
-                <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
-                <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
-                <span className="text-slate-500 shrink-0">SPR <span className="text-cyan-400 font-bold">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span></span>
-                <span className="text-slate-500 shrink-0">H <span className="text-emerald-400 font-bold">{fmt(selectedPair.high, selectedPair.symbol)}</span></span>
-                <span className="text-slate-500 shrink-0">L <span className="text-red-400 font-bold">{fmt(selectedPair.low, selectedPair.symbol)}</span></span>
-                {lastCandle && <>
-                  <span className="text-slate-700 mx-0.5">|</span>
-                  <span className="text-slate-500 shrink-0">O<span className="text-slate-400 ml-0.5">{fmt(lastCandle.open, selectedPair.symbol)}</span></span>
-                  <span className="text-emerald-600 shrink-0">H<span className="text-emerald-400 ml-0.5">{fmt(lastCandle.high, selectedPair.symbol)}</span></span>
-                  <span className="text-red-600 shrink-0">L<span className="text-red-400 ml-0.5">{fmt(lastCandle.low, selectedPair.symbol)}</span></span>
-                  <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
-                </>}
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 border-t border-[#1e2d45] bg-[#060a12] px-3 py-2 sm:grid-cols-4" aria-label="Advanced market intelligence">
-                {[
-                  { label: "Session range", value: `${fmt(selectedPair.high - selectedPair.low, selectedPair.symbol)} · ${(Math.abs(selectedPair.change ?? 0) * 100).toFixed(0)}% bias`, tone: (selectedPair.change ?? 0) >= 0 ? "#34d399" : "#f87171" },
-                  { label: "Spread quality", value: `${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`, tone: "#22d3ee" },
-                  { label: "Execution", value: online ? "Live · low latency" : "Reconnecting", tone: online ? "#34d399" : "#fbbf24" },
-                  { label: "Risk state", value: isFrozen ? "Trading locked" : `${openTrades.length} open · ${(totalMargin / Math.max(equity, 1) * 100).toFixed(1)}% margin`, tone: isFrozen ? "#f87171" : "#fbbf24" },
-                ].map(item => (
-                  <div key={item.label} className="min-w-0 rounded border border-[#15243a] bg-[#0a1120] px-2 py-1.5">
-                    <p className="truncate text-[7px] font-black uppercase tracking-[0.14em] text-slate-600">{item.label}</p>
-                    <p className="mt-0.5 truncate font-mono text-[10px] font-bold" style={{ color: item.tone }}>{item.value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto border-t border-[#15243a] bg-[#080d17] px-3 py-1.5 terminal-scroll" aria-label="Advanced terminal tools">
-                <span className="mr-1 shrink-0 text-[7px] font-black uppercase tracking-[0.16em] text-slate-600">Workspace</span>
-                {[{ label: "L2 Book", panel: "dom" as const, icon: BarChart2 }, { label: "Risk", panel: "risk" as const, icon: ShieldAlert }, { label: "Alerts", panel: "alerts" as const, icon: Bell }, { label: "AI Guide", panel: "ai-coach" as const, icon: BrainCircuit }].map(({ label, panel, icon: Icon }) => (
-                  <button key={panel} type="button" onClick={() => setActivePanel(panel)} className="inline-flex shrink-0 items-center gap-1 rounded border border-[#243752] bg-[#0d1625] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-cyan-300">
-                    <Icon className="size-3" />{label}
+            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
+              {/* Primary Market Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {/* Symbol & Price Group */}
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
+                    {ASSET_ICON[selectedPair.symbol] && <span>{ASSET_ICON[selectedPair.symbol]}</span>}
+                    <span>{selectedPair.symbol}</span>
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   </button>
-                ))}
-                <span className="ml-auto shrink-0 font-mono text-[8px] text-slate-600">{tickCount.toLocaleString()} ticks · {online ? "FEED OK" : "FEED DEGRADED"}</span>
-              </div>
-              <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
+                  {(() => {
+                    const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
+                    if (!cat || cat === "Forex") return null
+                    const cc = CATEGORY_COLOR[cat]
+                    return <span className="text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{cat}</span>
+                  })()}
+                  <span className="price-mono text-sm font-black" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: isUp ? "#10b981" : "#ef4444", background: isUp ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
+                </div>
 
-                <div className="flex min-w-0 items-center gap-2"><span className="size-1.5 shrink-0 rounded-full bg-cyan-400" /><span className="chart-timeframe-label truncate">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span><select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="ml-1 hidden rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select></div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="shrink-0 rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select>
-                  <select value={timeframe} onChange={e => setTimeframe(e.target.value as TimeFrame)} aria-label="Select chart timeframe" className="rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black text-slate-200 outline-none sm:hidden"><option value="1M">1M</option><option value="5M">5M</option><option value="15M">15M</option><option value="30M">30M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option></select>
-                  <div
-                    className="hidden items-center gap-0.5 p-0.5 sm:flex"
-                    style={{
-                      borderRadius: 8,
-                      background: "linear-gradient(180deg, #0a0f1a 0%, #060a12 100%)",
-                      border: "1px solid #1e2d45",
-                      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
-                    }}
-                  >
-                    {(["1M","5M","15M","30M","1H","4H","1D","1W"] as TimeFrame[]).map(tf => {
+                {/* Key Quote Metrics (Compact & Non-duplicated) */}
+                <div className="hidden lg:flex items-center gap-3 text-[10px] price-mono font-semibold">
+                  <span className="text-slate-400">BID <strong className="text-red-400">{fmt(selectedPair.bid, selectedPair.symbol)}</strong></span>
+                  <span className="text-slate-400">ASK <strong className="text-emerald-400">{fmt(selectedPair.ask, selectedPair.symbol)}</strong></span>
+                  <span className="text-slate-400">SPR <strong className="text-cyan-400">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</strong></span>
+                  <span className="text-slate-400">H <strong className="text-emerald-400">{fmt(selectedPair.high, selectedPair.symbol)}</strong></span>
+                  <span className="text-slate-400">L <strong className="text-red-400">{fmt(selectedPair.low, selectedPair.symbol)}</strong></span>
+                </div>
+
+                {/* Chart Controls & Tools Group */}
+                <div className="flex items-center gap-1.5 ml-auto">
+                  {/* Essential Timeframe Selector */}
+                  <div className="flex items-center gap-0.5 rounded-lg border border-[#1e2d45] bg-[#060a12] p-0.5">
+                    {(["1M", "5M", "15M", "1H", "1D"] as TimeFrame[]).map(tf => {
                       const active = timeframe === tf
                       return (
                         <button
@@ -3623,43 +3584,70 @@ const maxLeverage = 100
                           type="button"
                           onClick={() => setTimeframe(tf)}
                           aria-pressed={active}
-                          className="relative px-2.5 py-1 text-[10px] font-black tracking-wider transition-all duration-150"
+                          className="px-2 py-0.5 text-[9px] font-black tracking-wide rounded transition-all"
                           style={{
-                            borderRadius: 6,
-                            background: active
-                              ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)"
-                              : "transparent",
-                            color: active ? "#031015" : "#b9c9d6",
-                            boxShadow: active
-                              ? "0 2px 6px rgba(34,211,238,0.4), inset 0 1px 0 rgba(255,255,255,0.3)"
-                              : "none",
+                            background: active ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)" : "transparent",
+                            color: active ? "#031015" : "#8ba3be",
                           }}
-                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#f3fbff" }}
-                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#8296ab" }}
                         >
                           {tf}
                         </button>
                       )
                     })}
+                    {/* More Timeframes Dropdown */}
+                    <select
+                      value={(["30M", "4H", "1W"].includes(timeframe)) ? timeframe : "more"}
+                      onChange={e => { if (e.target.value !== "more") setTimeframe(e.target.value as TimeFrame) }}
+                      className="bg-transparent text-[9px] font-black text-slate-400 outline-none cursor-pointer px-1"
+                      aria-label="More timeframes"
+                    >
+                      <option value="more" disabled>MORE ▾</option>
+                      <option value="30M" className="bg-[#0b1625] text-white">30M</option>
+                      <option value="4H" className="bg-[#0b1625] text-white">4H</option>
+                      <option value="1W" className="bg-[#0b1625] text-white">1W</option>
+                    </select>
                   </div>
-                  <div className="w-px h-5" style={{ background: "#1e2d45" }} />
+
+                  <div className="w-px h-4 bg-[#1e2d45]" />
+
+                  {/* Provider & Layout Toggles */}
+                  <button
+                    type="button"
+                    onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
+                    className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
+                    style={{
+                      color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
+                      background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
+                      borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
+                    }}
+                  >
+                    {chartProvider === "tradingview" ? "TV Live" : "Native"}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
-                    aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
-                    title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
-                    className="p-1.5 transition-all duration-150"
-                    style={{
-                      borderRadius: 6,
-                      background: chartLayout === "grid" ? "linear-gradient(180deg, rgba(168,85,247,0.25), rgba(168,85,247,0.1))" : "transparent",
-                      border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.4)" : "1px solid transparent",
-                      boxShadow: chartLayout === "grid" ? "0 0 8px rgba(168,85,247,0.25)" : "none",
-                    }}
+                    aria-label={chartLayout === "single" ? "Switch to grid layout" : "Switch to single layout"}
+                    className="p-1 rounded border border-[#1e2d45] bg-[#0b1625] text-purple-300 hover:border-purple-500/40"
                   >
-                    {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
+                    {chartLayout === "single" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
                   </button>
-                  <button type="button" onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")} className="rounded px-2 py-1 text-[9px] font-bold uppercase tracking-wide transition-colors" style={{ color: chartProvider === "tradingview" ? "#7dd3fc" : "#94a3b8", background: chartProvider === "tradingview" ? "rgba(14,165,233,.16)" : "transparent", border: `1px solid ${chartProvider === "tradingview" ? "rgba(14,165,233,.4)" : "transparent"}` }} aria-label="Toggle TradingView live chart">{chartProvider === "tradingview" ? "TradingView Live" : "Native Chart"}</button>
-                  {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+
+                  {/* Tools Dropdown */}
+                  <select
+                    onChange={e => { if (e.target.value) { setActivePanel(e.target.value as any); e.target.value = "" } }}
+                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
+                    defaultValue=""
+                    aria-label="Workspace tools menu"
+                  >
+                    <option value="" disabled>TOOLS ▾</option>
+                    <option value="dom" className="bg-[#0b1625] text-white">L2 Order Book</option>
+                    <option value="risk" className="bg-[#0b1625] text-white">Risk Analytics</option>
+                    <option value="alerts" className="bg-[#0b1625] text-white">Price Alerts</option>
+                    <option value="ai-coach" className="bg-[#0b1625] text-white">AI Guide</option>
+                  </select>
+
+                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
                 </div>
               </div>
             </div>
