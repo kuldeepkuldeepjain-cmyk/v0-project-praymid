@@ -6864,9 +6864,17 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     max-height: none !important;
     flex: none !important;
     overflow: auto !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     border: 1px solid var(--mobile-terminal-border) !important;
     border-radius: 14px;
     background: var(--mobile-terminal-panel) !important;
+  }
+
+  .reference-terminal .apple-terminal-market:not(.hidden)::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
   }
 
   .reference-terminal .apple-terminal-chart-column:not(.hidden) {
