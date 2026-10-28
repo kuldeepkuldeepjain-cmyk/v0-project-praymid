@@ -6954,7 +6954,30 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     height: 100% !important;
     visibility: visible !important;
   }
-  .reference-terminal .reference-chart-trade-dock { display: none !important; }
+  .reference-terminal .reference-chart-trade-dock {
+    display: block !important;
+    order: 2;
+    width: 100%;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--mobile-terminal-border);
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .reference-chart-trade-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .reference-terminal .reference-chart-trade-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .reference-terminal .reference-make-order {
+    min-height: 42px;
+    margin-top: 8px;
+  }
 
   .reference-terminal .apple-terminal-order:not(.hidden) {
     display: flex !important;
