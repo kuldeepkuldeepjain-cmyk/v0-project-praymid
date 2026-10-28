@@ -88,10 +88,10 @@
   .landing-glass-tile { animation: none !important; transition: none; }
 }
 
-/* The supplied artwork already contains the hero headline and supporting copy. */
-.landing-hero-copy,
-.landing-hero-market { display: none !important; }
+/* Responsive hero treatment for generated artwork with live page copy. */
 .landing-hero { min-height: clamp(520px, 56vw, 820px); }
+.landing-hero-copy { display: block !important; }
+.landing-hero-market { display: none; }
 .landing-hero-image { left: 0 !important; width: 100% !important; object-position: center center; }
 .landing-hero-glow { background: linear-gradient(180deg, rgba(2, 8, 23, 0.02), rgba(2, 8, 23, 0.2)); }
 @media (max-width: 1023px) {

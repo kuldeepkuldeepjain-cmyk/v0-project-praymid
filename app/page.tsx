@@ -153,7 +153,7 @@ export default function LandingPage() {
         <div className="landing-hero-art absolute inset-0" aria-hidden="true">
           <div className="landing-hero-grid absolute inset-0" />
           <div className="landing-hero-glow absolute inset-0" />
-          <img src="/elitefund-trading-hero.png" alt="" className="landing-hero-image absolute inset-0 h-full w-full object-cover object-center" />
+          <img src="/elitefund-trading-hero-new.png" alt="" className="landing-hero-image absolute inset-0 h-full w-full object-cover object-center" />
         </div>
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
