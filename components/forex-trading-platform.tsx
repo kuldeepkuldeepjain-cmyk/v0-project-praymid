@@ -3784,327 +3784,249 @@ const maxLeverage = 100
             </button>
           </div>
 
-          {/* Order panel */}
-          {rightPanelTab === "order" && selectedPair ? (
-            <div className="flex-1 overflow-y-auto terminal-scroll">
-              <div className="mobile-order-ticket flex flex-col gap-0 p-2">
-                <div className="mobile-order-builder-banner sticky top-0 z-20 mb-2 flex items-center justify-between rounded-lg border border-cyan-400/30 bg-[#071221]/95 px-2.5 py-2 shadow-lg shadow-cyan-950/20 backdrop-blur">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">1. Build your trade</p>
-                    <p className="mt-0.5 text-[10px] text-slate-300">{selectedPair.symbol} · {orderType === "market" ? "Buy or sell at the live price" : `${orderType.toUpperCase()} order`}</p>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`rounded border px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-amber-400/20 bg-amber-400/10 text-amber-300"}`}>
-                      {balanceLoaded ? "Ready" : "Loading"}
-                    </span>
-                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
-                  </div>
-                </div>
+	          {/* Order panel */}
+	          {rightPanelTab === "order" && selectedPair ? (
+	            <div className="flex-1 overflow-y-auto terminal-scroll">
+	              <div className="mobile-order-ticket flex flex-col gap-2 p-2">
+	                {/* Header banner */}
+	                <div className="flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
+	                  <div className="flex items-center gap-2">
+	                    <span className="text-xs font-black uppercase tracking-wider text-cyan-300">{selectedPair.symbol}</span>
+	                    <span className="text-[9px] font-bold text-slate-400">1:{effectiveLeverage}</span>
+	                  </div>
+	                  <div className="flex items-center gap-1.5">
+	                    <span className={`rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "bg-amber-400/10 text-amber-300 border border-amber-400/20"}`}>
+	                      {balanceLoaded ? "Ready" : "Loading"}
+	                    </span>
+	                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
+	                  </div>
+	                </div>
 
-                {/* Order type tabs */}
-                <div className="apple-order-type-tabs mb-2 grid grid-cols-3 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
-                  {(["market","limit","stop"] as typeof orderType[]).map(ot => (
-                    <button key={ot} type="button" onClick={() => {
-                      setOrderType(ot)
-                      if (ot === "market") {
-                        setPendingPrice("")
-                      } else if (selectedPair) {
-                        const quote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-                        const offset = pip(selectedPair.symbol) * 10
-                        const suggested = ot === "limit"
-                          ? (direction === "BUY" ? quote - offset : quote + offset)
-                          : (direction === "BUY" ? quote + offset : quote - offset)
-                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
-                      }
-                    }}
-                      aria-pressed={orderType === ot}
-                      className="flex flex-col items-center gap-0.5 py-2 text-[9px] font-black uppercase tracking-wider transition-all"
-                      style={orderType === ot
-                        ? { background: "rgba(34,211,238,0.1)", color: "#22d3ee", borderBottom: "2px solid #22d3ee" }
-                        : { color: "#374151" }}>
-                      <span>{ot}</span>
-                      <span className="text-[7px] font-medium normal-case tracking-normal opacity-70">{ot === "market" ? "Now" : ot === "limit" ? "Better price" : "Breakout"}</span>
-                    </button>
-                  ))}
-                </div>
+	                {/* Order type tabs */}
+	                <div className="grid grid-cols-3 rounded-lg border border-[#1a2640] bg-[#070a10] p-0.5">
+	                  {(["market","limit","stop"] as typeof orderType[]).map(ot => (
+	                    <button key={ot} type="button" onClick={() => {
+	                      setOrderType(ot)
+	                      if (ot === "market") {
+	                        setPendingPrice("")
+	                      } else if (selectedPair) {
+	                        const quote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+	                        const offset = pip(selectedPair.symbol) * 10
+	                        const suggested = ot === "limit"
+	                          ? (direction === "BUY" ? quote - offset : quote + offset)
+	                          : (direction === "BUY" ? quote + offset : quote - offset)
+	                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
+	                      }
+	                    }}
+	                      aria-pressed={orderType === ot}
+	                      className={`py-1.5 text-[9px] font-black uppercase tracking-wider rounded transition-all ${
+	                        orderType === ot
+	                          ? "bg-cyan-400/15 text-cyan-300 border border-cyan-400/30 shadow-sm"
+	                          : "text-slate-400 hover:text-slate-200"
+	                      }`}>
+	                      {ot}
+	                    </button>
+	                  ))}
+	                </div>
 
-                {/* BUY/SELL toggle — keep the direction choice explicit for beginners */}
-                <div className="mobile-order-side-toggle mb-2 grid grid-cols-2 gap-1.5">
-                  {(["BUY","SELL"] as TradeDirection[]).map(d => (
-                    <button key={d} type="button" onClick={() => setOrderDirection(d)}
-                      aria-label={d === "BUY" ? "Buy because you expect the price to rise" : "Sell because you expect the price to fall"}
-                      className={`flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
-                      style={direction !== d ? {
-                        background: "#0d1724",
-                        border: "1px solid #263b4f",
-                        borderRadius: 8,
-                        color: "#91a4b8",
-                      } : {}}>
-                      <span className="relative z-10 flex items-center gap-1.5 text-sm font-black">
-                        {d === "BUY" ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                        {d}
-                      </span>
-                      <span className="relative z-10 text-[8px] font-bold normal-case tracking-normal opacity-80">
-                        {d === "BUY" ? "Expect price to rise" : "Expect price to fall"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+	                {/* Single Executable Quote / Direction Selector */}
+	                <div className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
+	                  <button type="button" onClick={() => setOrderDirection("SELL")}
+	                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
+	                    className={`rounded-lg px-2.5 py-2 text-left transition-all ${
+	                      direction === "SELL"
+	                        ? "bg-rose-500/20 border-2 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.2)]"
+	                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
+	                    }`}>
+	                    <span className="block text-[8px] font-black tracking-wider uppercase text-rose-300">Sell · Bid</span>
+	                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+	                  </button>
+	                  <button type="button" onClick={() => setOrderDirection("BUY")}
+	                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
+	                    className={`rounded-lg px-2.5 py-2 text-right transition-all ${
+	                      direction === "BUY"
+	                        ? "bg-emerald-500/20 border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
+	                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
+	                    }`}>
+	                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
+	                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+	                  </button>
+	                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center shadow-md">
+	                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
+	                  </div>
+	                </div>
 
-                {/* Executable quote snapshot */}
-                <div className="mobile-order-quote mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
-                  <div className="flex items-center justify-between px-2 py-1.5" style={{ borderBottom: "1px solid #1a2640" }}>
-                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
-                    <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
-                  </div>
-  <div className="relative grid grid-cols-2 gap-2 p-2" style={{ background: "#07101b" }}>
-  <button type="button" onClick={() => setOrderDirection("SELL")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-left transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "rgba(240,120,131,0.14)", border: "1px solid rgba(240,120,131,0.38)" }}>
-  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-rose-100">Sell · Bid</span>
-  <span className="price-mono text-base font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-  </button>
-  <button type="button" onClick={() => setOrderDirection("BUY")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-right transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "rgba(50,201,154,0.14)", border: "1px solid rgba(50,201,154,0.38)" }}>
-  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-100">Buy · Ask</span>
-  <span className="price-mono text-base font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-  </button>
-  <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-lg border border-slate-200/90 bg-slate-100 px-2.5 py-1 shadow-lg shadow-black/25" aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
-  <span className="text-[7px] font-black uppercase tracking-wider text-slate-500">Spread</span>
-  <span className="price-mono whitespace-nowrap text-[11px] font-black text-slate-800">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
-  </div>
-  </div>
-                </div>
+	                {/* Pending price (limit/stop) */}
+	                {orderType !== "market" && (
+	                  <div className="rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
+	                    <label className="text-[8px] font-bold tracking-widest uppercase text-cyan-300">
+	                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
+	                    </label>
+	                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
+	                      placeholder={fmt(midPrice, selectedPair.symbol)}
+	                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded bg-[#070a10] border border-cyan-400/30" />
+	                    <div className="flex gap-1">
+	                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+	                        <button key={e} onClick={() => setPendingExpiry(e)}
+	                          className="flex-1 py-1 text-[8px] font-black tracking-wider uppercase rounded transition-all"
+	                          style={pendingExpiry === e
+	                            ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+	                            : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
+	                          {e}
+	                        </button>
+	                      ))}
+	                    </div>
+	                  </div>
+	                )}
 
-                {/* Live Market Sentiment Bar */}
-                {selectedPair && (
-                  <div className="mobile-order-sentiment mb-2 p-2 rounded-lg" style={{ background: "#060b13", border: "1px solid #142032" }}>
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider mb-1">
-                      <span className="text-emerald-400">Buyers {Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
-                      <span className="text-slate-400 font-bold">Order Flow</span>
-                      <span className="text-rose-400">Sellers {Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full overflow-hidden flex" style={{ background: "rgba(255,255,255,0.06)" }}>
-                      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
-                      <div className="h-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
-                    </div>
-                  </div>
-                )}
+	                {/* Volume (lots) */}
+	                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
+	                  <div className="flex items-center justify-between">
+	                    <label className="text-[8px] font-black tracking-wider uppercase text-purple-300">
+	                      Trade size (lots)
+	                    </label>
+	                    <div className="flex items-center gap-1 text-[8px] text-slate-400">
+	                      <span>Leverage:</span>
+	                      <select value={leverage} onChange={e => setLeverage(e.target.value)}
+	                        aria-label="Select leverage"
+	                        className={`bg-[#080c14] price-mono font-bold focus:outline-none px-1 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
+	                        {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value}>1:{value}</option>)}
+	                      </select>
+	                    </div>
+	                  </div>
+	                  <input type="number" value={lotSize} onChange={e => {
+	                    const next = Number.parseFloat(e.target.value)
+	                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+	                  }}
+	                  onBlur={() => {
+	                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+	                  }}
+	                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
+	                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
+	                  placeholder="0.01"
+	                  />
+	                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
+	                  <div className="flex gap-1">
+	                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
+	                      <button key={l} onClick={() => setLotSize(l)}
+	                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-all ${
+	                          lotSize === l
+	                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+	                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
+	                        }`}>
+	                        {l}
+	                      </button>
+	                    ))}
+	                  </div>
+	                </div>
 
-                {/* Quick order actions */}
-                <div className="mobile-order-presets mb-2 rounded-lg border border-cyan-400/20 bg-[#07101b] p-2" aria-label="Quick order actions">
-                  <div className="mb-1.5 flex items-center justify-between"><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Quick order setup</span><span className="text-[8px] text-slate-600">One tap applies risk levels</span></div>
-                  <div className="grid grid-cols-4 gap-1">
-                    {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
-                      <button key={preset.label} type="button" onClick={() => {
-                        if (preset.slPips === 0) { setSl(""); setTp(""); return }
-                        const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-                        const unit = pip(selectedPair.symbol)
-                        const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
-                        const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
-                        setSl(stop.toFixed(decimals(selectedPair.symbol)))
-                        setTp(target.toFixed(decimals(selectedPair.symbol)))
-                      }} className="rounded border border-[#243752] bg-[#0b1625] px-1 py-1.5 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/50 hover:bg-cyan-400/10 hover:text-cyan-200 active:scale-95">{preset.label}</button>
-                    ))}
-                  </div>
-                  <div className="mt-1.5 grid grid-cols-2 gap-1">
-                    <button type="button" onClick={() => setOrderDirection("BUY")} className="rounded border border-emerald-400/25 bg-emerald-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-400/20">Buy at ask</button>
-                    <button type="button" onClick={() => setOrderDirection("SELL")} className="rounded border border-rose-400/25 bg-rose-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-rose-300 transition hover:bg-rose-400/20">Sell at bid</button>
-                  </div>
-                </div>
+	                {/* Risk controls (SL / TP / Trailing) */}
+	                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
+	                  <div className="flex items-center justify-between">
+	                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Risk Management</span>
+	                    <div className="flex gap-1">
+	                      {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
+	                        <button key={preset.label} type="button" onClick={() => {
+	                          if (preset.slPips === 0) { setSl(""); setTp(""); return }
+	                          const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+	                          const unit = pip(selectedPair.symbol)
+	                          const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
+	                          const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
+	                          setSl(stop.toFixed(decimals(selectedPair.symbol)))
+	                          setTp(target.toFixed(decimals(selectedPair.symbol)))
+	                        }} className="rounded border border-[#243752] bg-[#0b1625] px-1.5 py-0.5 text-[8px] font-bold text-slate-400 hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
+	                      ))}
+	                    </div>
+	                  </div>
 
-                {/* Pending price (only for limit/stop) */}
-                {orderType !== "market" && (
-                  <div className="mobile-pending-order mb-1.5">
-                    <p className="mb-1 text-[8px] leading-relaxed text-slate-500">{orderType === "limit" ? (direction === "BUY" ? "Buy below the current ask" : "Sell above the current bid") : (direction === "BUY" ? "Buy above the current ask" : "Sell below the current bid")}. The order activates automatically when price reaches your level.</p>
-                    <label className="text-[9px] font-bold tracking-widest uppercase block mb-1" style={{ color: "#22d3ee" }}>
-                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
-                    </label>
-                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
-                      placeholder={fmt(midPrice, selectedPair.symbol)}
-                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5"
-                      style={{ background: "#070a10", border: "1px solid rgba(34,211,238,0.3)", borderRadius: 4 }} />
-                    <div className="flex gap-1 mt-1">
-                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                        <button key={e} onClick={() => setPendingExpiry(e)}
-                          className="flex-1 py-1 text-[8px] font-black tracking-wider uppercase rounded transition-all"
-                          style={pendingExpiry === e
-                            ? { background: "rgba(34,211,238,0.1)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.25)" }
-                            : { background: "#070a10", color: "#374151", border: "1px solid #1a2640" }}>
-                          {e}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+	                  <div className="grid grid-cols-2 gap-2">
+	                    {/* SL */}
+	                    <div>
+	                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-rose-400">
+	                        <span className="flex items-center gap-1"><ShieldAlert className="h-2.5 w-2.5" /> SL</span>
+	                        {slVal !== null && <span className="text-[8px] font-bold text-slate-400">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+	                      </label>
+	                      <input type="number" value={sl} onChange={e => setSl(e.target.value)}
+	                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#0d0204] border border-rose-500/30"
+	                        placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+	                      />
+	                    </div>
 
-                {/* Volume (3D input) */}
-                <div className="mobile-lot-field mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#a855f7" }}>
-                    Trade size (lots)
-                    <span className="ml-1.5 normal-case tracking-normal font-medium text-slate-500">How much you trade</span>
-                  </label>
-  <input type="number" value={lotSize} onChange={e => {
-    const next = Number.parseFloat(e.target.value)
-    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
-  }}
-  onBlur={() => {
-    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
-  }}
-  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
-                    className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
-  placeholder="0.01"
-  />
-  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Auto minimum for {selectedPair?.symbol ?? "instrument"}: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-  <div className="flex gap-1 mt-1.5">
-                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-                      <button key={l} onClick={() => setLotSize(l)}
-                        className="flex-1 py-1 text-[7px] font-black tracking-wide rounded-md transition-all active:scale-95"
-                        style={lotSize === l
-                          ? { background: "rgba(168,85,247,0.18)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.4)", boxShadow: "0 0 8px rgba(168,85,247,0.2)" }
-                          : { background: "#0a1020", color: "#9fb4c8", border: "1px solid #1a2640" }}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+	                    {/* TP */}
+	                    <div>
+	                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-emerald-400">
+	                        <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> TP</span>
+	                        {tpVal !== null && <span className="text-[8px] font-bold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+	                      </label>
+	                      <input type="number" value={tp} onChange={e => setTp(e.target.value)}
+	                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#010d06] border border-emerald-500/30"
+	                        placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+	                      />
+	                    </div>
+	                  </div>
 
-                <div className="mobile-leverage-field mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
-                    Leverage {isFundedAccount ? "(max 100x)" : ""}
-                  </label>
-                  <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                    aria-label="Select leverage"
-                    className={`input-3d w-full price-mono text-sm font-black focus:outline-none px-2.5 py-2 appearance-none cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
-                    {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value} style={{ background: "#080c14", color: isFundedAccount ? "#fbbf24" : "#22d3ee" }}>1:{value}</option>)}
-                  </select>
-                </div>
+	                  {/* Trailing Stop */}
+	                  <div className="flex items-center justify-between gap-2">
+	                    <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
+	                      <ArrowUpDown className="h-2.5 w-2.5" /> Trailing (pips)
+	                    </label>
+	                    <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
+	                      className="w-28 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded bg-[#07030f] border border-purple-500/30 text-right"
+	                      placeholder="0"
+	                    />
+	                  </div>
+	                </div>
 
-                {/* Risk controls */}
-                <div className="mobile-risk-controls mb-2 grid grid-cols-2 gap-2">
-                {/* SL */}
-                <div>
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#ef4444" }}>
-                    <ShieldAlert className="h-3 w-3" /> Stop Loss
-                    {slVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
-                  </label>
-                  <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
-                    style={{ background: "linear-gradient(175deg,#1a0505 0%,#0d0204 100%)", border: "1px solid rgba(239,68,68,0.35)", borderBottom: "2px solid rgba(239,68,68,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 0 rgba(239,68,68,0.0)", outline: "none" }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
-                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(239,68,68,0.2), 0 0 12px rgba(239,68,68,0.12)" }}
-                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
-                  />
-                </div>
+	                {/* Order Metrics summary */}
+	                <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Margin</p>
+	                    <p className="price-mono text-[10px] font-black text-amber-300">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toFixed(2)}</p>
+	                  </div>
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Pip Value</p>
+	                    <p className="price-mono text-[10px] font-black text-cyan-300">${pipVal.toFixed(4)}</p>
+	                  </div>
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Risk / Reward</p>
+	                    <p className="price-mono text-[10px] font-black text-purple-300">
+	                      {slVal !== null ? `-$${maxLoss.toFixed(2)}` : "—"} / {tpVal !== null ? `+$${maxGain.toFixed(2)}` : "—"} {rrRatio ? `(1:${rrRatio})` : ""}
+	                    </p>
+	                  </div>
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Notional</p>
+	                    <p className="price-mono text-[10px] font-black text-slate-200">
+	                      ${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}
+	                    </p>
+	                  </div>
+	                </div>
 
-                {/* TP */}
-                <div>
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#10b981" }}>
-                    <Target className="h-3 w-3" /> Take Profit
-                    {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p �� +${maxGain.toFixed(2)}</span>}
-                  </label>
-                  <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
-                    style={{ background: "linear-gradient(175deg,#021a0d 0%,#010d06 100%)", border: "1px solid rgba(16,185,129,0.35)", borderBottom: "2px solid rgba(16,185,129,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
-                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(16,185,129,0.2), 0 0 12px rgba(16,185,129,0.12)" }}
-                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
-                  />
-                </div>
-                </div>
+	                {/* Balance warning */}
+	                {balanceLoaded && estimatedMargin > walletBalance && (
+	                  <div className="flex items-center gap-1.5 px-2 py-1.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px] font-bold">
+	                    <AlertTriangle className="h-3 w-3 shrink-0" />
+	                    Insufficient margin: Need ${estimatedMargin.toFixed(2)} (Have ${walletBalance.toFixed(2)})
+	                  </div>
+	                )}
 
-                {/* Trailing Stop */}
-                <div className="mobile-trailing-field mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#a78bfa" }}>
-                    <ArrowUpDown className="h-3 w-3" /> Trailing Stop (pips)
-                  </label>
-                  <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
-                    style={{ background: "linear-gradient(175deg,#0e0617 0%,#07030f 100%)", border: "1px solid rgba(167,139,250,0.3)", borderBottom: "2px solid rgba(167,139,250,0.12)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
-                    placeholder="0 = disabled"
-                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(167,139,250,0.2), 0 0 12px rgba(167,139,250,0.12)" }}
-                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
-                  />
-                </div>
-
-                {/* Metrics grid */}
-                <div className="mobile-order-metrics grid grid-cols-2 gap-1 mb-2">
-                  {[
-                    { label: "Margin",    value: `$${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}`, color: "#f59e0b" },
-                    { label: "Pip Value", value: `$${pipVal.toFixed(4)}`, color: "#22d3ee" },
-                    { label: "Notional",  value: `$${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}`, color: "#a78bfa" },
-                    { label: "Leverage", value: `×${effectiveLeverage}`, color: isFundedAccount ? "#fbbf24" : "#fb923c" },
-                  ].map(item => (
-                    <div key={item.label} className="px-2 py-1.5" style={{ background: "#070a10", border: "1px solid #1a2640", borderRadius: 3 }}>
-                      <p className="text-[8px] text-slate-700 mb-0.5 tracking-wider uppercase">{item.label}</p>
-                      <p className="price-mono text-[10px] font-black" style={{ color: item.color }}>{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Live execution summary */}
-                <div className="mobile-execution-preview mb-2 overflow-hidden rounded-lg border border-cyan-400/20 bg-[#07101b] shadow-[0_0_24px_rgba(34,211,238,0.06)]">
-                  <div className="flex items-center justify-between border-b border-cyan-400/10 px-2.5 py-1.5">
-                    <div className="flex items-center gap-1.5"><Activity className="h-3 w-3 text-cyan-300" /><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Execution preview</span></div>
-                    <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />Live calc</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-px bg-cyan-400/10">
-                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Equity</p><p className="price-mono mt-1 text-[11px] font-black text-white">${accountEquity.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p></div>
-                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Risk / margin</p><p className={`price-mono mt-1 text-[11px] font-black ${estimatedMargin > walletBalance ? "text-red-300" : "text-amber-300"}`}>{walletBalance > 0 ? ((estimatedMargin / walletBalance) * 100).toFixed(2) : "0.00"}%</p></div>
-                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Spread cost</p><p className="price-mono mt-1 text-[11px] font-black text-cyan-300">${(pipVal * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)).toFixed(2)}</p></div>
-                  </div>
-                </div>
-
-                {/* R:R display */}
-                {rrRatio !== null && (
-                  <div className="mobile-order-reward mb-2 px-2 py-1.5 text-[10px]" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 3 }}>
-                    {slVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Loss</span><span className="price-mono font-black text-red-400">-${maxLoss.toFixed(2)} ({slPips.toFixed(1)}p)</span></div>}
-                    {tpVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Gain</span><span className="price-mono font-black text-emerald-400">+${maxGain.toFixed(2)} ({tpPips.toFixed(1)}p)</span></div>}
-                    <div className="flex justify-between"><span className="text-slate-500">R:R</span><span className="price-mono font-black text-cyan-400">1:{rrRatio}</span></div>
-                  </div>
-                )}
-
-                {/* Balance warning */}
-                {balanceLoaded && estimatedMargin > walletBalance && (
-                  <div className="mobile-margin-warning flex items-center gap-1.5 px-2 py-1.5 mb-2 text-[10px] font-bold"
-                    style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 3 }}>
-                    <AlertTriangle className="h-3 w-3 shrink-0" />
-                    Need ${estimatedMargin.toFixed(2)}
-                  </div>
-                )}
-
-                {/* Execute (3D) */}
-                <div className="mobile-execute-label mb-1 flex items-center justify-between px-0.5">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-500">Ready to place</span>
-                  <span className={`text-[9px] font-black uppercase ${direction === "BUY" ? "text-emerald-300" : "text-red-300"}`}>{direction} {selectedPair.symbol}</span>
-                </div>
-                <button
-                  className={`mobile-desktop-execute w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
-                  onClick={() => executeTrade()}
-                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
-                >
-                  <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
-                  <span className="relative z-10" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
-                    {orderType === "market"
-                      ? `${direction} ${selectedPair.symbol}`
-                      : `Place ${direction} ${orderType.toUpperCase()}`}
-                  </span>
-                </button>
-                <div className="mobile-order-actions" aria-label="Buy or sell at live market price">
-                  <button type="button" onClick={() => executeTrade("SELL")} disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance} aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}>
-                    <span>Sell</span><strong>{fmt(selectedPair.bid, selectedPair.symbol)}</strong>
-                  </button>
-                  <span className="mobile-order-spread"><small>Spread</small><strong>{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}</strong></span>
-                  <button type="button" onClick={() => executeTrade("BUY")} disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance} aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}>
-                    <span>Buy</span><strong>{fmt(selectedPair.ask, selectedPair.symbol)}</strong>
-                  </button>
-                </div>
-                <div className="mobile-order-risk-summary">
-                  <span>Margin: ${estimatedMargin.toFixed(2)}</span>
-                  <span>Risk: <strong>-${maxLoss.toFixed(2)}</strong></span>
-                  <span>Reward: <strong>+${maxGain.toFixed(2)}</strong></span>
-                </div>
-
-              </div>
-            </div>
-          ) : rightPanelTab === "order" ? (
+	                {/* Execute button */}
+	                <button
+	                  className={`w-full py-2.5 rounded-lg font-black text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
+	                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
+	                  }`}
+	                  onClick={() => executeTrade()}
+	                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
+	                >
+	                  <Zap className="h-3.5 w-3.5 relative z-10" />
+	                  <span className="relative z-10 uppercase">
+	                    {orderType === "market"
+	                      ? `Execute ${direction} ${selectedPair.symbol} (${lotSize} Lots)`
+	                      : `Place ${direction} ${orderType.toUpperCase()} @ ${pendingPrice || "—"}`}
+	                  </span>
+	                </button>
+	              </div>
+	            </div>
+	          ) : rightPanelTab === "order" ? (
             <div className="flex flex-col items-center justify-center flex-1 p-4 gap-2">
               <Activity className="h-8 w-8 text-slate-800" />
               <p className="text-[10px] text-slate-700 text-center">Select an instrument to place an order</p>
