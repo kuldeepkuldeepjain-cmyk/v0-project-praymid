@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────────────��──────────────────────────����──────
+// ─── Position Sizer ──────────────────────────���──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3341,6 +3341,29 @@ const maxLeverage = 100
                 </div>
               </div>
             </div>
+            <div role="search" className="mb-2 flex items-center gap-2 rounded-md px-2.5" style={{ height: 44, border: "1px solid #1a2640", background: "rgba(4,12,22,0.72)" }}>
+              <Search className="size-3.5 shrink-0" style={{ color: "#6f8aa3" }} aria-hidden="true" />
+              <input
+                ref={pairSearchRef}
+                type="text"
+                aria-label="Search instruments"
+                placeholder="Search symbol or name..."
+                value={pairSearch}
+                onChange={(event) => setPairSearch(event.currentTarget.value)}
+                className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-500"
+              />
+              {pairSearch && (
+                <button
+                  type="button"
+                  aria-label="Clear instrument search"
+                  onClick={() => setPairSearch("")}
+                  className="flex size-10 shrink-0 items-center justify-center rounded"
+                  style={{ minHeight: 42, color: "#8ba0b5" }}
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </button>
+              )}
+            </div>
             <div className="flex gap-1">
               {categoryTabs.map(cat => {
                 const isActive = activeCategory === cat
@@ -3365,7 +3388,7 @@ const maxLeverage = 100
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#6f8aa3" }}>Chg%</span>
           </div>
 
-          <div id="market-watch-instruments" className="flex-1 overflow-y-auto terminal-scroll">
+          <div id="market-watch-instruments" className="min-h-0 flex-1 overflow-y-auto terminal-scroll">
             {loading ? (
               <div className="p-2 flex flex-col gap-1">
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -4246,12 +4269,16 @@ const maxLeverage = 100
         )}
         </DockGroup>
         </div>
-        <div className={`mobile-portfolio-view ${mobileTab === "portfolio" ? "flex" : "hidden"} flex-1 min-h-0 flex-col overflow-y-auto lg:hidden`}>
+        {mobileTab === "portfolio" && (
+        <div className="mobile-portfolio-view flex flex-1 min-h-0 flex-col overflow-y-auto lg:hidden">
           <PortfolioActivityView
             openTrades={openTrades}
             pendingOrders={pendingOrders}
             closedTrades={closedTrades}
             totalPnl={totalPnl}
+            walletBalance={walletBalance}
+            equity={equity}
+            freeMargin={freeMargin}
             totalMargin={totalMargin}
             totalLots={openTrades.reduce((sum, trade) => sum + trade.lotSize, 0)}
             formatPrice={fmt}
@@ -4259,6 +4286,7 @@ const maxLeverage = 100
             onCancelOrder={cancelPending}
           />
         </div>
+        )}
       </div>
 
       {/* BOTTOM BLOTTER */}

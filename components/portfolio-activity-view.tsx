@@ -8,6 +8,9 @@ type PortfolioActivityViewProps = {
   pendingOrders: PendingOrder[]
   closedTrades: ClosedTrade[]
   totalPnl: number
+  walletBalance: number
+  equity: number
+  freeMargin: number
   totalMargin: number
   totalLots: number
   formatPrice: (price: number, pair: string) => string
@@ -48,12 +51,18 @@ export function PortfolioActivityView({
   pendingOrders,
   closedTrades,
   totalPnl,
+  walletBalance,
+  equity,
+  freeMargin,
   totalMargin,
   totalLots,
   formatPrice,
   onCloseTrade,
   onCancelOrder,
 }: PortfolioActivityViewProps) {
+  const formatCurrency = (amount: number) =>
+    `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-3 p-3 pb-6 text-slate-100">
       <header className="flex items-center justify-between gap-3 px-1 py-1">
@@ -71,6 +80,27 @@ export function PortfolioActivityView({
           <p className="text-[9px] uppercase tracking-wider text-slate-500">Live P&amp;L</p>
         </div>
       </header>
+
+      <section className="overflow-hidden rounded-xl border border-[#22364d] bg-gradient-to-br from-[#0c1b2b] to-[#081321] shadow-lg shadow-black/20" aria-labelledby="wallet-overview-heading">
+        <div className="flex items-center justify-between border-b border-[#1b2b3d] px-3 py-2.5">
+          <h2 id="wallet-overview-heading" className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300">Wallet overview</h2>
+          <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-cyan-300">USD</span>
+        </div>
+        <dl className="grid grid-cols-3 divide-x divide-[#1b2b3d] px-1 py-3">
+          <div className="min-w-0 px-2">
+            <dt className="truncate text-[9px] font-bold uppercase tracking-wider text-slate-500">Balance</dt>
+            <dd className="mt-1 truncate font-mono text-xs font-black text-slate-100">{formatCurrency(walletBalance)}</dd>
+          </div>
+          <div className="min-w-0 px-2">
+            <dt className="truncate text-[9px] font-bold uppercase tracking-wider text-slate-500">Equity</dt>
+            <dd className="mt-1 truncate font-mono text-xs font-black text-slate-100">{formatCurrency(equity)}</dd>
+          </div>
+          <div className="min-w-0 px-2">
+            <dt className="truncate text-[9px] font-bold uppercase tracking-wider text-slate-500">Free margin</dt>
+            <dd className={`mt-1 truncate font-mono text-xs font-black ${freeMargin >= 0 ? "text-cyan-200" : "text-rose-300"}`}>{formatCurrency(freeMargin)}</dd>
+          </div>
+        </dl>
+      </section>
 
       <section className="overflow-hidden rounded-xl border border-[#22364d] bg-[#081321] shadow-lg shadow-black/20" aria-labelledby="portfolio-positions-heading">
         <div id="portfolio-positions-heading">
