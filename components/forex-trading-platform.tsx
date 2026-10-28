@@ -3219,22 +3219,16 @@ const maxLeverage = 100
 
       <header className="terminal-account-bar" aria-label="Account overview">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
-          {(isCompactViewport ? [
-            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-            { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
-            { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, tone: totalPnl >= 0 ? "green" : "red" },
-          ] : [
-            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
-            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-            { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold", bar: true },
-            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-            { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-          ]).map(item => (
-            <div key={item.label} className={`terminal-stat tone-${item.tone}${"featured" in item && item.featured ? " terminal-stat-featured" : ""}`}>
+          {[
+            { label: "Balance / Equity", value: `$${walletBalance.toFixed(2)} / $${equity.toFixed(2)}`, tone: "neutral" },
+            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral", bar: totalMargin > 0 },
+            { label: "Net P&L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+            { label: "Drawdown Risk", value: `${dailyDrawdownPct.toFixed(2)}% / 2.00%`, tone: dailyDrawdownPct >= 2 ? "red" : dailyDrawdownPct >= 1.5 ? "gold" : "green" },
+          ].map(item => (
+            <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
               <span className="terminal-stat-label">{item.label}</span>
               <strong className="terminal-stat-value">{item.value}</strong>
-              {"bar" in item && item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+              {item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
             </div>
           ))}
         </div>

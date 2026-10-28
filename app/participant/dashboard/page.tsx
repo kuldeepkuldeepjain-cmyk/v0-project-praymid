@@ -1777,18 +1777,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               {fundedDrawdownSnapshot.status}
             </span>
           </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Initial Balance</span><strong className="price-mono text-cyan-200">${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Max Drawdown</span><strong className="price-mono text-white">{fundedDrawdownSnapshot.maxDrawdownPercent}%</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Max Loss Allowed</span><strong className="price-mono text-white">${fundedDrawdownSnapshot.maxLossAllowed.toFixed(2)}</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach Equity</span><strong className="price-mono text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Current Equity</span><strong className="price-mono text-white">${fundedDrawdownSnapshot.currentEquity.toFixed(2)}</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining Drawdown</span><strong className="price-mono text-[#d6b66b]">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
-            <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Drawdown Used</span><strong className="price-mono text-amber-300">{fundedDrawdownSnapshot.drawdownUsedPercent.toFixed(1)}%</strong></div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            <div><span className="block text-[9px] uppercase tracking-wider text-slate-500">Equity / Base</span><strong className="price-mono text-xs font-bold text-white">${fundedDrawdownSnapshot.currentEquity.toFixed(2)} <span className="text-[10px] text-slate-500">($${fundedDrawdownSnapshot.initialBalance.toFixed(2)})</span></strong></div>
+            <div><span className="block text-[9px] uppercase tracking-wider text-slate-500">Breach Floor</span><strong className="price-mono text-xs font-bold text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)} <span className="text-[10px] text-slate-500">({fundedDrawdownSnapshot.maxDrawdownPercent}%)</span></strong></div>
+            <div><span className="block text-[9px] uppercase tracking-wider text-slate-500">Remaining Buffer</span><strong className="price-mono text-xs font-bold text-[#d6b66b]">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)} <span className="text-[10px] text-amber-300/80">({fundedDrawdownSnapshot.drawdownUsedPercent.toFixed(1)}% used)</span></strong></div>
             <div>
-              <span className="block text-[10px] uppercase tracking-wider text-slate-500">Warning Level</span>
+              <span className="block text-[9px] uppercase tracking-wider text-slate-500">Risk Status</span>
               <strong
-                className="uppercase"
+                className="text-xs font-bold uppercase"
                 style={{
                   color: fundedDrawdownSnapshot.warningLevel === "breached" || fundedDrawdownSnapshot.warningLevel === "critical" ? "#fca5a5"
                     : fundedDrawdownSnapshot.warningLevel === "warning" ? "#fbbf24" : "#6ee7b7",
@@ -2284,7 +2280,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       {/* ── FULLSCREEN TRADING TERMINAL ─────────────────────────────────────
           Rendered outside <main> so it escapes all padding/overflow constraints.
           Uses fixed inset-0 z-[60] so it sits above the header but below modals.
-      ──────────────────────────────────────────────────────────────────────── */}
+      ──────────────────��───────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
         <div className="elite-terminal-shell">
           {isTerminalMenuOpen && (
