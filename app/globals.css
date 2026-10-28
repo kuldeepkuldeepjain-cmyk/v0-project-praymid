@@ -1433,54 +1433,64 @@ button, a, [role="button"] {
 }
 
   .mobile-terminal-chart-wrap {
-  height: clamp(360px, 54dvh, 560px);
-  min-height: 360px;
-  max-height: 560px;
-  flex: 1 1 auto;
+    height: clamp(440px, 60dvh, 620px);
+    min-height: 440px;
+    max-height: 620px;
+    flex: 1 1 auto;
+    touch-action: pan-y;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart {
-  height: 100%;
-  min-height: 360px;
-  min-width: 0;
-  min-inline-size: 0;
+    height: 100%;
+    min-height: 440px;
+    min-width: 0;
+    min-inline-size: 0;
+    touch-action: pan-y;
   }
 
   .mobile-terminal-chart-wrap .apple-trading-chart-canvas {
-  height: 0;
-  min-height: 280px;
-  flex: 1 1 0;
-  min-width: 0;
-  min-inline-size: 0;
+    height: 0;
+    min-height: 340px;
+    flex: 1 1 0;
+    min-width: 0;
+    min-inline-size: 0;
+    touch-action: pan-y;
+  }
+
+  .native-chart-gesture-surface {
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   .terminal-chart-toolbar {
-  scrollbar-width: none;
-  overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+    overscroll-behavior-inline: contain;
   }
   .terminal-chart-toolbar::-webkit-scrollbar { display: none; }
   .terminal-chart-toolbar > button,
   .terminal-chart-toolbar > label {
-  min-height: 30px;
+    min-height: 28px;
   }
   @media (max-width: 640px) {
-  .terminal-chart-toolbar { padding-inline: 8px; }
-  .terminal-chart-toolbar > button,
-  .terminal-chart-toolbar > label { min-height: 32px; }
+    .terminal-chart-toolbar { padding-inline: 8px; }
+    .terminal-chart-toolbar > button,
+    .terminal-chart-toolbar > label { min-height: 30px; }
   }
 
   @media (max-width: 640px) {
-  .mobile-terminal-chart-wrap {
-  height: clamp(360px, 54dvh, 560px);
-  min-height: 360px;
-  max-height: 560px;
-  flex: 1 1 auto;
-  }
+    .mobile-terminal-chart-wrap {
+      height: clamp(440px, 60dvh, 620px);
+      min-height: 440px;
+      max-height: 620px;
+      flex: 1 1 auto;
+      touch-action: pan-y;
+    }
 
-  .mobile-terminal-chart-wrap .apple-trading-chart {
-  height: 100%;
-  min-height: 360px;
-  }
+    .mobile-terminal-chart-wrap .apple-trading-chart {
+      height: 100%;
+      min-height: 440px;
+      touch-action: pan-y;
+    }
   }
 
   @media (min-width: 641px) {
@@ -2226,7 +2236,7 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-market,
   .apple-trading-terminal .apple-terminal-order,
   .apple-trading-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
-  .apple-trading-terminal .apple-terminal-chart-column { flex: 1 1 auto; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-chart-column { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
   .apple-trading-terminal .apple-terminal-chart-column > div { min-width: 0; }
   .apple-trading-terminal .apple-terminal-chart-column .apple-trading-chart { min-height: 270px; }
   .apple-trading-terminal .apple-terminal-order,
@@ -2504,8 +2514,22 @@ button, a, [role="button"] {
 }
 
   @media (max-width: 1023px) {
-  .reference-mobile-nav { display: flex !important; position: relative; z-index: 20; min-height: 46px; }
-  .reference-mobile-nav button { min-height: 38px; }
+    .reference-mobile-nav {
+      display: grid !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 100 !important;
+      grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+      min-height: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+      background: rgba(4, 9, 18, 0.97) !important;
+      backdrop-filter: blur(18px) !important;
+      -webkit-backdrop-filter: blur(18px) !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+      padding: 4px 5px calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+    .reference-mobile-nav button { min-height: 42px; }
   .reference-terminal {
 
     height: min(100dvh, 900px) !important;
@@ -6719,13 +6743,7 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
 
   .reference-terminal .terminal-account-bar {
-    display: block !important;
-    margin: 0 8px 8px !important;
-    padding: 0 !important;
-    overflow: hidden;
-    border: 1px solid var(--mobile-terminal-border) !important;
-    border-radius: 14px !important;
-    background: var(--mobile-terminal-panel) !important;
+    display: none !important;
   }
   .reference-terminal .terminal-account-stats {
     display: flex !important;
@@ -6960,9 +6978,9 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
   .reference-terminal .reference-chart-trade-dock {
     display: block !important;
-    order: 2;
+    order: unset !important;
     width: 100%;
-    padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 12px 14px;
     border-top: 1px solid var(--mobile-terminal-border);
     background: var(--mobile-terminal-panel) !important;
   }
