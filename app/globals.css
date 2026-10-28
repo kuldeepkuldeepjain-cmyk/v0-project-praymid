@@ -270,7 +270,95 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Terminal controls: high-contrast, tactile, and consistent across panels. */
+.terminal-page button:focus-visible,
+.terminal-page [role="button"]:focus-visible,
+.terminal-page [role="tab"]:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.terminal-page button:not([role="switch"]):not(.terminal-icon-button):not(.terminal-rate-toggle):not(.btn-3d-buy):not(.btn-3d-sell):not(.btn-3d-execute-buy):not(.btn-3d-execute-sell) {
+  min-height: 30px;
+}
+
+.terminal-page button:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.55);
+}
+
+.terminal-page .terminal-icon-button,
+.terminal-page .terminal-rate-toggle {
+  border: 1px solid #2b4968;
+  background: #102238;
+  color: #b7d7ed;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.terminal-page .terminal-icon-button:hover,
+.terminal-page .terminal-icon-button:focus-visible,
+.terminal-page .terminal-rate-toggle:hover,
+.terminal-page .terminal-rate-toggle:focus-visible {
+  border-color: #38bdf8;
+  background: #153450;
+  color: #e0f7ff;
+  transform: translateY(-1px);
+}
+
+.terminal-page .terminal-menu-item,
+.terminal-page [role="tab"] {
+  border: 1px solid transparent;
+  color: #a8bdd1;
+}
+
+.terminal-page .terminal-menu-item:hover,
+.terminal-page .terminal-menu-item:focus-visible,
+.terminal-page [role="tab"]:hover {
+  border-color: #285273;
+  background: rgba(14, 116, 144, 0.16);
+  color: #e0f7ff;
+}
+
+.terminal-page .btn-3d-buy,
+.terminal-page .btn-3d-sell,
+.terminal-page .btn-3d-execute-buy,
+.terminal-page .btn-3d-execute-sell {
+  min-height: 42px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.16) inset;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+}
+
+.terminal-page .btn-3d-buy:hover,
+.terminal-page .btn-3d-execute-buy:hover {
+  box-shadow: 0 6px 18px rgba(16,185,129,0.28), 0 1px 0 rgba(255,255,255,0.18) inset;
+  transform: translateY(-1px);
+}
+
+.terminal-page .btn-3d-sell:hover,
+.terminal-page .btn-3d-execute-sell:hover {
+  box-shadow: 0 6px 18px rgba(239,68,68,0.28), 0 1px 0 rgba(255,255,255,0.18) inset;
+  transform: translateY(-1px);
+}
+
+.terminal-page .btn-3d-buy:focus-visible,
+.terminal-page .btn-3d-execute-buy:focus-visible {
+  box-shadow: 0 0 0 3px rgba(52,211,153,0.22), 0 4px 14px rgba(16,185,129,0.28);
+}
+
+.terminal-page .btn-3d-sell:focus-visible,
+.terminal-page .btn-3d-execute-sell:focus-visible {
+  box-shadow: 0 0 0 3px rgba(248,113,113,0.22), 0 4px 14px rgba(239,68,68,0.28);
+}
+
+@media (max-width: 640px) {
+  .terminal-page .btn-3d-buy,
+  .terminal-page .btn-3d-sell,
+  .terminal-page .btn-3d-execute-buy,
+  .terminal-page .btn-3d-execute-sell {
+    min-height: 44px;
   }
 }
 
