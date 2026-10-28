@@ -41,6 +41,9 @@ interface TopupRequest {
   status: "pending" | "completed" | "rejected"
   created_at: string
   bep20_address: string | null
+  promo_code: string | null
+  promo_discount_percent: number | null
+  promo_bonus_amount: number | null
 }
 
 const STATUS_CONFIG = {
@@ -197,7 +200,7 @@ export function TopUpRequestsPanel() {
       const data = await res.json()
       if (!data.success) throw new Error(data.message)
 
-      toast({ title: "Approved", description: `$${selectedRequest.amount} credited to ${selectedRequest.participant_email}` })
+      toast({ title: "Approved", description: `$${(selectedRequest.amount + Number(selectedRequest.promo_bonus_amount || 0)).toFixed(2)} credited to ${selectedRequest.participant_email}` })
       setSelectedRequest(null)
       setAdminNoteInput("")
       fetchRequests(true)
@@ -459,6 +462,7 @@ export function TopUpRequestsPanel() {
                     {STATUS_CONFIG[selectedRequest.status].label}
                   </Badge>
                   <span className="text-2xl font-black text-green-400">${selectedRequest.amount.toFixed(2)} USDT</span>
+                  {selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 && <p className="mt-1 text-xs font-semibold text-violet-300">{selectedRequest.promo_code} · +${Number(selectedRequest.promo_bonus_amount).toFixed(2)} bonus</p>}
                 </div>
 
                 {/* Request details */}

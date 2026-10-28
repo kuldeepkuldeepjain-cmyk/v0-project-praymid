@@ -31,6 +31,7 @@ import {
   MiniChartGrid, ConnectionStatus,
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
+import { AssetLogo } from "@/components/asset-logo"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
@@ -1043,8 +1044,8 @@ function ModifyTradeModal({
   const rrRatio = slPipsCalc > 0 ? (tpPipsCalc / slPipsCalc).toFixed(2) : null
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-      <div className="rounded-2xl p-5 w-[340px] max-w-full" style={{ background: "#0d1625", border: "1px solid #1e3a5f", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}>
+    <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center p-3" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+      <div className="max-h-[calc(100dvh-1.5rem)] overflow-y-auto rounded-2xl p-5 w-[340px] max-w-full" style={{ background: "#0d1625", border: "1px solid #1e3a5f", boxShadow: "0 24px 80px rgba(0,0,0,0.6)" }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Edit3 className="h-4 w-4 text-cyan-400" />
@@ -1154,7 +1155,7 @@ function ModifyTradeModal({
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
   return (
-    <div className="fixed top-12 right-3 z-[70] flex flex-col gap-1.5 pointer-events-none" style={{ maxWidth: 320 }}>
+    <div className="fixed top-14 right-3 left-3 sm:left-auto sm:w-[320px] max-w-[calc(100vw-24px)] z-[150] flex flex-col gap-1.5 pointer-events-none">
       {toasts.map(t => (
         <div
           key={t.id}
@@ -1164,11 +1165,11 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
               : t.type === "error" ? "rgba(69,10,10,0.95)"
               : t.type === "warning" ? "rgba(78,37,10,0.95)"
               : "rgba(8,18,38,0.95)",
-            border: `1px solid ${t.type === "success" ? "rgba(16,185,129,0.3)"
-              : t.type === "error" ? "rgba(239,68,68,0.3)"
-              : t.type === "warning" ? "rgba(245,158,11,0.3)"
-              : "rgba(34,211,238,0.3)"}`,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            border: `1px solid ${t.type === "success" ? "rgba(16,185,129,0.35)"
+              : t.type === "error" ? "rgba(239,68,68,0.35)"
+              : t.type === "warning" ? "rgba(245,158,11,0.35)"
+              : "rgba(34,211,238,0.35)"}`,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
             backdropFilter: "blur(12px)",
           }}
         >
@@ -1183,7 +1184,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
               : "#a5f3fc" }}>
             {t.text}
           </span>
-          <button onClick={() => onDismiss(t.id)} className="shrink-0 text-slate-500 hover:text-slate-400 transition-colors ml-1">
+          <button onClick={() => onDismiss(t.id)} className="shrink-0 text-slate-500 hover:text-slate-400 transition-colors ml-1" aria-label="Dismiss notification">
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -1225,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ────────────────────────────────────────────────────────────
+// ─── Position Sizer ─────────────────────────────────────────────────────��──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1422,45 +1423,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const marketPanelWidth = 256
   const orderPanelWidth = 320
 
-  useEffect(() => {
-    const isMobile = () => window.matchMedia("(max-width: 767px)").matches
-    let startX = 0
-    let lastY = 0
-    let tracking = false
-
-    const onTouchStart = (event: TouchEvent) => {
-      if (!isMobile() || event.touches.length !== 1) return
-      startX = event.touches[0].clientX
-      lastY = event.touches[0].clientY
-      tracking = true
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      if (!tracking || !isMobile() || event.touches.length !== 1) return
-      const touch = event.touches[0]
-      const deltaX = touch.clientX - startX
-      const deltaY = lastY - touch.clientY
-      if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        tracking = false
-        return
-      }
-      if (Math.abs(deltaY) < 1) return
-      const scrollTarget = document.scrollingElement ?? document.documentElement
-      scrollTarget.scrollTop += deltaY
-      lastY = touch.clientY
-      event.preventDefault()
-    }
-    const onTouchEnd = () => { tracking = false }
-
-    document.addEventListener("touchstart", onTouchStart, { passive: true })
-    document.addEventListener("touchmove", onTouchMove, { passive: false })
-    document.addEventListener("touchend", onTouchEnd, { passive: true })
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart)
-      document.removeEventListener("touchmove", onTouchMove)
-      document.removeEventListener("touchend", onTouchEnd)
-    }
-  }, [])
-
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
@@ -1491,6 +1453,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
   const [pendingExpiry, setPendingExpiry] = useState<"GTC" | "TODAY">("GTC")
+  const [showAdvancedOrderControls, setShowAdvancedOrderControls] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<"order" | "sizer">("order")
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
@@ -1708,10 +1671,13 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   }, [externalBalance])
 
   // ── Toast helpers ──────────────────────────────────────────────────────────
-  const showToast = useCallback((type: ToastItem["type"], text: string, duration = 5000) => {
-    const id = ++toastIdRef.current
-    setToasts(prev => [...prev.slice(-4), { id, type, text }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
+  const showToast = useCallback((type: ToastItem["type"], text: string, duration = 4500) => {
+    setToasts(prev => {
+      if (prev.some(t => t.text === text)) return prev
+      const id = ++toastIdRef.current
+      setTimeout(() => setToasts(current => current.filter(t => t.id !== id)), duration)
+      return [...prev.slice(-2), { id, type, text }]
+    })
   }, [])
 
   const dismissToast = useCallback((id: number) => {
@@ -2515,17 +2481,16 @@ const maxLeverage = 100
         createdTimestamp: Date.now(),
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
-      setPendingOrders(prev => [order, ...prev])
-      showToast("info", `${order.orderType.replace("_"," ")} placed: ${pairSymbol} @ ${fmt(order.targetPrice, pairSymbol)}`)
-      setActivePanel("pending")
+	      setPendingOrders(prev => [order, ...prev])
+	      setActivePanel("pending")
 
-      const pendingSaved = await persistPendingOrder(order)
-      if (!pendingSaved) {
-        setPendingOrders(prev => prev.filter(item => item.id !== order.id))
-        showToast("error", `${order.orderType.replace("_", " ")} was rejected by the trading engine.`)
-      } else {
-        showToast("success", `${order.orderType.replace("_", " ")} accepted by the trading engine.`)
-      }
+	      const pendingSaved = await persistPendingOrder(order)
+	      if (!pendingSaved) {
+	        setPendingOrders(prev => prev.filter(item => item.id !== order.id))
+	        showToast("error", `${order.orderType.replace("_", " ")} was rejected by the trading engine.`)
+	      } else {
+	        showToast("success", `${order.orderType.replace("_", " ")} accepted by the trading engine: ${pairSymbol} @ ${fmt(order.targetPrice, pairSymbol)}`)
+	      }
       confirmInFlight.current = false
       setConfirmLoading(false)
     } else {
@@ -2548,26 +2513,23 @@ const maxLeverage = 100
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
-      setWalletBalance(prev => prev - margin)
-      showToast("success",
-        `${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)} | Margin: $${margin.toFixed(2)}`
-      )
-      setSl(""); setTp(""); setTrailingPips("")
-      setActivePanel("positions")
+	      setWalletBalance(prev => prev - margin)
+	      setSl(""); setTp(""); setTrailingPips("")
+	      setActivePanel("positions")
 
-      // The API locks margin, records the trade, and writes the ledger entry in
-      // one transaction. Never deduct or restore margin in a second request.
-      const saved = await persistOpenTrade(trade)
-      if (!saved) {
-        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
-        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
-        setWalletBalance(prev => prev + margin)
-        showToast("error", `${pairSymbol} order was rejected by the trading engine. Margin was released.`)
-        confirmInFlight.current = false
-        setConfirmLoading(false)
-        return
-      }
-      showToast("success", `${dir} ${pairSymbol} execution confirmed by the trading engine.`)
+	      // The API locks margin, records the trade, and writes the ledger entry in
+	      // one transaction. Never deduct or restore margin in a second request.
+	      const saved = await persistOpenTrade(trade)
+	      if (!saved) {
+	        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
+	        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
+	        setWalletBalance(prev => prev + margin)
+	        showToast("error", `${pairSymbol} order was rejected by the trading engine. Margin was released.`)
+	        confirmInFlight.current = false
+	        setConfirmLoading(false)
+	        return
+	      }
+	      showToast("success", `${dir} ${lot}L ${pairSymbol} execution confirmed @ ${fmt(price, pairSymbol)}`)
       if (typeof saved.newBalance === "number") {
         suppressExternalSync.current = true
         setWalletBalance(saved.newBalance)
@@ -2913,22 +2875,23 @@ const maxLeverage = 100
   // Search always scans the complete catalog, regardless of the selected
   // category tab. This makes the terminal search bar a true instrument finder:
   // typing EURUSD while Crypto is selected still finds EUR/USD.
-  const searchedPairs = pairSearch.trim()
-    ? (() => {
-        const q = pairSearch.trim().toLowerCase().replace(/[\s/_-]/g, "")
-        return pairs.filter(p => {
-          const symbolNoSeparators = p.symbol.toLowerCase().replace(/[\s/_-]/g, "")
-          const name = (FULL_NAMES[p.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
-          return symbolNoSeparators.includes(q) || name.includes(q)
-        })
-      })()
-    : pairs
-  const filteredPairs = pairSearch.trim()
-    ? searchedPairs
-    : searchedPairs.filter(p => {
-        const cfg = PAIRS_CONFIG.find(c => c.symbol === p.symbol)
-        return activeCategory === "All" || cfg?.category === activeCategory
-      })
+  const searchedPairs = useMemo(() => {
+    const query = pairSearch.trim().toLowerCase().replace(/[\s/_-]/g, "")
+    if (!query) return pairs
+    return pairs.filter((pair) => {
+      const symbol = pair.symbol.toLowerCase().replace(/[\s/_-]/g, "")
+      const name = (FULL_NAMES[pair.symbol] ?? "").toLowerCase().replace(/[\s/_-]/g, "")
+      return symbol.includes(query) || name.includes(query)
+    })
+  }, [pairSearch, pairs])
+
+  const filteredPairs = useMemo(() => {
+    if (pairSearch.trim()) return searchedPairs
+    return searchedPairs.filter((pair) => {
+      const config = PAIRS_CONFIG.find((item) => item.symbol === pair.symbol)
+      return activeCategory === "All" || config?.category === activeCategory
+    })
+  }, [activeCategory, pairSearch, searchedPairs])
   const visibleInstrumentCount = pairSearch.trim() ? filteredPairs.length : pairs.length
   const hasInstrumentSearch = pairSearch.trim().length > 0
   const searchNoResults = hasInstrumentSearch && filteredPairs.length === 0
@@ -3063,7 +3026,7 @@ const maxLeverage = 100
   ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} text-slate-900`} style={{ minHeight: "100dvh", height: "auto", width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3120,82 +3083,67 @@ const maxLeverage = 100
           else if (panel === "calendar") { setActivePanel("news") }
           else if (panel === "news") { setActivePanel("news") }
           else if (panel === "performance") { setActivePanel("performance") }
-          else if (panel === "history") { setActivePanel("history") }
-          else if (panel === "journal") { setActivePanel("journal") }
-          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
-          else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
-  else { setActivePanel(panel as typeof activePanel) }
-        }}
-        onToggleFullscreen={() => {
-          if (document.fullscreenElement) document.exitFullscreen()
-          else document.documentElement.requestFullscreen()
-        }}
-        isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
-  onToggleLock={() => {
-    setTerminalLocked((locked) => {
-      const nextLocked = !locked
-      showToast(nextLocked ? "warning" : "info", nextLocked ? "Trading locked — no new orders will be accepted" : "Trading unlocked")
-      return nextLocked
-    })
-  }}
-  isLocked={isFrozen || terminalLocked}
-        onToggleSound={() => setSoundEnabled(!soundEnabled)}
-        soundEnabled={soundEnabled}
-        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
-        theme={isDarkTheme ? "dark" : "light"}
-  onToggleWatchlist={() => setMobileTab("market")}
-        onOpenSidebar={onOpenSidebar}
-        onOpenTransfer={() => showToast("info", "Transfer flow opened")}
-  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
-        onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
-  onLogout={async () => {
-    clearParticipantAuth()
-    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
-    window.location.assign("/participant/login")
-  }}
-        onSearch={(q) => { setPairSearch(q); setShowPairSearch(Boolean(q)) }}
-        onSelectInstrument={(symbol) => {
-          const match = pairs.find(pair => pair.symbol === symbol)
-          if (match) {
-            setSelectedPair(match)
-            setPairSearch("")
-            setShowPairSearch(false)
-            setMobileTab("chart")
-            fetchCandles(match.symbol, timeframe)
-          }
-        }}
-        instruments={pairs.map(pair => ({
-          symbol: pair.symbol,
-          name: FULL_NAMES[pair.symbol] ?? pair.symbol,
-          category: PAIRS_CONFIG.find(config => config.symbol === pair.symbol)?.category ?? "Forex",
-          bid: pair.bid,
-          ask: pair.ask,
-          change: pair.change,
-        }))}
-        notifications={[
-          ...adminNotifications,
-          ...toasts.slice(0, 5).map(t => ({
-            id: `toast-${t.id}`,
-            type: t.type,
-            title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
-            message: t.text,
-            time: "just now",
-            read: false,
-          })),
-        ]}
-        onMarkNotificationRead={(id) => {
-          if (id.startsWith("toast-")) {
-            setToasts(ts => ts.filter(t => `toast-${t.id}` !== id))
-          } else {
-            markAdminNotificationRead(id)
-          }
-        }}
-        onClearNotifications={() => { setToasts([]); clearAdminNotifications() }}
-        activeLanguage="en"
-        onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
-        activeLayout={chartLayout === "grid" ? "pro" : "default"}
-        onChangeLayout={(layout) => { setChartLayout(layout === "pro" ? "grid" : "single"); showToast("info", `Layout: ${layout}`) }}
-        serverTime="UTC"
+	          else if (panel === "history") { setActivePanel("history") }
+	          else if (panel === "journal") { setActivePanel("journal") }
+	          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
+	          else { setActivePanel(panel as typeof activePanel) }
+	        }}
+	        onToggleFullscreen={() => {
+	          if (document.fullscreenElement) document.exitFullscreen()
+	          else document.documentElement.requestFullscreen()
+	        }}
+	        isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
+	  onToggleLock={() => {
+	    setTerminalLocked((locked) => {
+	      const nextLocked = !locked
+	      showToast(nextLocked ? "warning" : "info", nextLocked ? "Trading locked — no new orders will be accepted" : "Trading unlocked")
+	      return nextLocked
+	    })
+	  }}
+	  isLocked={isFrozen || terminalLocked}
+	        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+	        soundEnabled={soundEnabled}
+	        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
+	        theme={isDarkTheme ? "dark" : "light"}
+	  onToggleWatchlist={() => setMobileTab("market")}
+	        onOpenSidebar={onOpenSidebar}
+	        onOpenTransfer={() => {}}
+	  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
+	        onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
+	  onLogout={async () => {
+	    clearParticipantAuth()
+	    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
+	    window.location.assign("/participant/login")
+	  }}
+	        onSearch={(q) => { setPairSearch(q); setShowPairSearch(Boolean(q)) }}
+	        onSelectInstrument={(symbol) => {
+	          const match = pairs.find(pair => pair.symbol === symbol)
+	          if (match) {
+	            setSelectedPair(match)
+	            setPairSearch("")
+	            setShowPairSearch(false)
+	            setMobileTab("chart")
+	            fetchCandles(match.symbol, timeframe)
+	          }
+	        }}
+	        instruments={pairs.map(pair => ({
+	          symbol: pair.symbol,
+	          name: FULL_NAMES[pair.symbol] ?? pair.symbol,
+	          category: PAIRS_CONFIG.find(config => config.symbol === pair.symbol)?.category ?? "Forex",
+	          bid: pair.bid,
+	          ask: pair.ask,
+	          change: pair.change,
+	        }))}
+	        notifications={adminNotifications}
+	        onMarkNotificationRead={(id) => {
+	          markAdminNotificationRead(id)
+	        }}
+	        onClearNotifications={clearAdminNotifications}
+	        activeLanguage="en"
+	        onChangeLanguage={() => {}}
+	        activeLayout={chartLayout === "grid" ? "pro" : "default"}
+	        onChangeLayout={(layout) => setChartLayout(layout === "pro" ? "grid" : "single")}
+	        serverTime="UTC"
         marketStatus={online ? "open" : "closed"}
       />
 </div>
@@ -3203,12 +3151,12 @@ const maxLeverage = 100
       <header className="mobile-terminal-header">
         <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
           <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
-          <span><strong>ELITE FUND</strong><small>TRADE BEYOND LIMITS</small></span>
+          <span><strong>ELITE FUND</strong></span>
         </a>
-        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label={`${isFundedAccount ? "Funded" : "Live"} account balance and account menu`}>
-          <Award aria-hidden="true" />
-          <span><small>{isFundedAccount ? "Funded Account · Balance" : "Live Account · Balance"}</small><strong>${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-          <ChevronDown aria-hidden="true" />
+        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label="Account menu">
+          <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+          <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+          <ChevronDown className="h-3 w-3 text-slate-400" aria-hidden="true" />
         </button>
         <button type="button" className="mobile-terminal-notifications" onClick={() => { setMobileTab("chart"); setActivePanel("alerts"); setFooterOpen(true) }} aria-label="Open trading alerts">
           <Bell aria-hidden="true" />
@@ -3218,22 +3166,16 @@ const maxLeverage = 100
 
       <header className="terminal-account-bar" aria-label="Account overview">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
-          {(isCompactViewport ? [
-            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral", featured: true },
-            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-            { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
-            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-          ] : [
-            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
-            { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-            { label: "Margin Used", value: `$${totalMargin.toFixed(2)}`, tone: "gold", bar: true },
-            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
-            { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-          ]).map(item => (
-            <div key={item.label} className={`terminal-stat tone-${item.tone}${"featured" in item && item.featured ? " terminal-stat-featured" : ""}`}>
+          {[
+            { label: "Balance / Equity", value: `$${walletBalance.toFixed(2)} / $${equity.toFixed(2)}`, tone: "neutral" },
+            { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral", bar: totalMargin > 0 },
+            { label: "Net P&L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
+            { label: "Drawdown Risk", value: `${dailyDrawdownPct.toFixed(2)}% / 2.00%`, tone: dailyDrawdownPct >= 2 ? "red" : dailyDrawdownPct >= 1.5 ? "gold" : "green" },
+          ].map(item => (
+            <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
               <span className="terminal-stat-label">{item.label}</span>
               <strong className="terminal-stat-value">{item.value}</strong>
-              {"bar" in item && item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
+              {item.bar && <div className="terminal-margin-bar"><span style={{ width: `${Math.min(100, marginLevel ? (totalMargin / Math.max(equity, 1)) * 100 : 0)}%` }} /></div>}
             </div>
           ))}
         </div>
@@ -3271,7 +3213,7 @@ const maxLeverage = 100
               >
                 <X className="h-2.5 w-2.5" />
               </span>
-              <span className="reference-watch-icon">{ASSET_ICON[pair.symbol] ?? pair.symbol.slice(0, 2)}</span>
+              <span className="reference-watch-icon"><AssetLogo symbol={pair.symbol} size={18} className="shrink-0" /></span>
               <span className="reference-watch-copy">
                 <strong>{pair.symbol.replace("/", "")}</strong>
                 <span>{fmt(pair.bid, pair.symbol)}</span>
@@ -3302,8 +3244,9 @@ const maxLeverage = 100
               id="add-instrument-popover"
               className="fixed flex flex-col overflow-hidden"
               style={{
-                top: addInstrumentPos.top, left: addInstrumentPos.left,
-                width: 280, maxHeight: 360, zIndex: 200,
+                top: addInstrumentPos.top,
+                left: Math.max(8, Math.min(addInstrumentPos.left, typeof window !== "undefined" ? window.innerWidth - 290 : addInstrumentPos.left)),
+                width: 280, maxWidth: "calc(100vw - 24px)", maxHeight: 360, zIndex: 200,
                 background: "#0b111d", border: "1px solid #1e2d45", borderRadius: 10,
                 boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
               }}
@@ -3327,16 +3270,14 @@ const maxLeverage = 100
                 {addInstrumentResults.map(cfg => {
                   const isPinned = watchlistSymbols.includes(cfg.symbol)
                   return (
-                    <button
-                      key={cfg.symbol}
-                      type="button"
-                      onClick={() => toggleWatchlistSymbol(cfg.symbol)}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-white/5"
-                    >
-                      <span className="flex items-center justify-center w-5 h-5 rounded text-[9px] font-black shrink-0" style={{ background: CATEGORY_COLOR[cfg.category].bg, color: CATEGORY_COLOR[cfg.category].text }}>
-                        {ASSET_ICON[cfg.symbol] ?? cfg.symbol.slice(0, 2)}
-                      </span>
-                      <span className="flex flex-col items-start flex-1 min-w-0 text-left">
+	                    <button
+	                      key={cfg.symbol}
+	                      type="button"
+	                      onClick={() => toggleWatchlistSymbol(cfg.symbol)}
+	                      className="w-full flex items-center gap-2.5 px-3 py-2 transition-colors hover:bg-white/5"
+	                    >
+	                      <AssetLogo symbol={cfg.symbol} size={18} className="shrink-0" />
+	                      <span className="flex flex-col items-start flex-1 min-w-0 text-left">
                         <span className="price-mono text-[11px] font-bold text-white">{cfg.symbol}</span>
                         <span className="text-[9px] truncate" style={{ color: "#3d5a80" }}>{FULL_NAMES[cfg.symbol] ?? cfg.symbol}</span>
                       </span>
@@ -3375,14 +3316,14 @@ const maxLeverage = 100
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═══════��═════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
         <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
-        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+	        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3478,12 +3419,11 @@ const maxLeverage = 100
                               padding: "7px 12px 7px 10px",
                             }}>
                             <div className="grid items-center" style={{ gridTemplateColumns: "1fr 72px 52px", gap: 0 }}>
-                              <div className="flex items-center gap-2 min-w-0">
-                                <div className="mw-badge w-7 h-7 rounded flex items-center justify-center shrink-0 text-[10px] font-black relative"
-                                  style={{ background: isSelected ? pCc.bg : "rgba(255,255,255,0.03)", border: `1px solid ${isSelected ? pCc.border : "#131d2e"}`, color: pCc.text }}>
-                                  {icon ?? base.slice(0, 2)}
-                                  {hasTrade && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />}
-                                </div>
+	                              <div className="flex items-center gap-2 min-w-0">
+	                                <div className="mw-badge flex items-center justify-center shrink-0 relative">
+	                                  <AssetLogo symbol={p.symbol} size={22} className="shrink-0" />
+	                                  {hasTrade && <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+	                                </div>
                                 <div className="min-w-0">
                                   <div className="flex items-center gap-1">
                                     <span className="text-[11px] font-black leading-none" style={{ color: isSelected ? "#ffffff" : "#c8d4e4" }}>{base}</span>
@@ -3545,82 +3485,43 @@ const maxLeverage = 100
         )}
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
         <DockPanel enabled={dockEnabled} id="chart" order={2} defaultSize={57} minSize={34}>
-        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab === "chart" || mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className={`chart-header shrink-0 flex flex-col px-3 py-2 ${rateBarExpanded ? "rate-bar-expanded" : "rate-bar-collapsed"}`} style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 8px 24px rgba(0,0,0,.16)" }}>
-              <div className="chart-header-market flex min-w-0 items-center gap-3">
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" /> Live API</span>
-              <div className="flex items-baseline gap-2">
-                <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch text-sm font-black text-white tracking-wider" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
-                  {ASSET_ICON[selectedPair.symbol] && <span className="mr-1">{ASSET_ICON[selectedPair.symbol]}</span>}
-                  {selectedPair.symbol}
-                  <ChevronDown className="chart-symbol-chevron" aria-hidden="true" />
-                </button>
-                {(() => {
-                  const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
-                  if (!cat || cat === "Forex") return null
-                  const cc = CATEGORY_COLOR[cat]
-                  return <span className="text-[8px] font-black px-1 py-0.5 uppercase tracking-wider" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}`, borderRadius: 3 }}>{cat}</span>
-                })()}
-              </div>
-              <span className="bid-ask-price" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-  <span className="price-mono text-sm font-bold" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
-  <button type="button" className="terminal-rate-toggle" onClick={() => setRateBarExpanded(value => !value)} aria-expanded={rateBarExpanded} aria-label={rateBarExpanded ? "Collapse market details" : "Expand market details"}>{rateBarExpanded ? "⌃" : "⌄"}</button>
-  <div className="w-px h-6 mx-1" style={{ background: "#1e2d45" }} />
-              </div>
-              <div className="terminal-rate-details flex items-center gap-3 text-[10px] price-mono overflow-x-auto terminal-scroll">
-                <span className="text-slate-500 shrink-0">BID <span className="text-red-400 font-black">{fmt(selectedPair.bid, selectedPair.symbol)}</span></span>
-                <span className="text-slate-500 shrink-0">ASK <span className="text-emerald-400 font-black">{fmt(selectedPair.ask, selectedPair.symbol)}</span></span>
-                <span className="text-slate-500 shrink-0">SPR <span className="text-cyan-400 font-bold">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span></span>
-                <span className="text-slate-500 shrink-0">H <span className="text-emerald-400 font-bold">{fmt(selectedPair.high, selectedPair.symbol)}</span></span>
-                <span className="text-slate-500 shrink-0">L <span className="text-red-400 font-bold">{fmt(selectedPair.low, selectedPair.symbol)}</span></span>
-                {lastCandle && <>
-                  <span className="text-slate-700 mx-0.5">|</span>
-                  <span className="text-slate-500 shrink-0">O<span className="text-slate-400 ml-0.5">{fmt(lastCandle.open, selectedPair.symbol)}</span></span>
-                  <span className="text-emerald-600 shrink-0">H<span className="text-emerald-400 ml-0.5">{fmt(lastCandle.high, selectedPair.symbol)}</span></span>
-                  <span className="text-red-600 shrink-0">L<span className="text-red-400 ml-0.5">{fmt(lastCandle.low, selectedPair.symbol)}</span></span>
-                  <span className="shrink-0" style={{ color: lastCandle.close >= lastCandle.open ? "#10b981" : "#ef4444" }}>C<span className="ml-0.5">{fmt(lastCandle.close, selectedPair.symbol)}</span></span>
-                </>}
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 border-t border-[#1e2d45] bg-[#060a12] px-3 py-2 sm:grid-cols-4" aria-label="Advanced market intelligence">
-                {[
-                  { label: "Session range", value: `${fmt(selectedPair.high - selectedPair.low, selectedPair.symbol)} · ${(Math.abs(selectedPair.change ?? 0) * 100).toFixed(0)}% bias`, tone: (selectedPair.change ?? 0) >= 0 ? "#34d399" : "#f87171" },
-                  { label: "Spread quality", value: `${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`, tone: "#22d3ee" },
-                  { label: "Execution", value: online ? "Live · low latency" : "Reconnecting", tone: online ? "#34d399" : "#fbbf24" },
-                  { label: "Risk state", value: isFrozen ? "Trading locked" : `${openTrades.length} open · ${(totalMargin / Math.max(equity, 1) * 100).toFixed(1)}% margin`, tone: isFrozen ? "#f87171" : "#fbbf24" },
-                ].map(item => (
-                  <div key={item.label} className="min-w-0 rounded border border-[#15243a] bg-[#0a1120] px-2 py-1.5">
-                    <p className="truncate text-[7px] font-black uppercase tracking-[0.14em] text-slate-600">{item.label}</p>
-                    <p className="mt-0.5 truncate font-mono text-[10px] font-bold" style={{ color: item.tone }}>{item.value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto border-t border-[#15243a] bg-[#080d17] px-3 py-1.5 terminal-scroll" aria-label="Advanced terminal tools">
-                <span className="mr-1 shrink-0 text-[7px] font-black uppercase tracking-[0.16em] text-slate-600">Workspace</span>
-                {[{ label: "L2 Book", panel: "dom" as const, icon: BarChart2 }, { label: "Risk", panel: "risk" as const, icon: ShieldAlert }, { label: "Alerts", panel: "alerts" as const, icon: Bell }, { label: "AI Guide", panel: "ai-coach" as const, icon: BrainCircuit }].map(({ label, panel, icon: Icon }) => (
-                  <button key={panel} type="button" onClick={() => setActivePanel(panel)} className="inline-flex shrink-0 items-center gap-1 rounded border border-[#243752] bg-[#0d1625] px-2 py-1 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/40 hover:bg-cyan-400/10 hover:text-cyan-300">
-                    <Icon className="size-3" />{label}
+            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
+              {/* Primary Market Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {/* Symbol & Price Group */}
+                <div className="flex items-center gap-2.5 min-w-0">
+	                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1.5 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
+	                    <AssetLogo symbol={selectedPair.symbol} size={20} className="shrink-0" />
+	                    <span>{selectedPair.symbol}</span>
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
                   </button>
-                ))}
-                <span className="ml-auto shrink-0 font-mono text-[8px] text-slate-600">{tickCount.toLocaleString()} ticks · {online ? "FEED OK" : "FEED DEGRADED"}</span>
-              </div>
-              <div className="chart-timeframe-toolbar flex items-center justify-between gap-2">
+                  {(() => {
+                    const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
+                    if (!cat || cat === "Forex") return null
+                    const cc = CATEGORY_COLOR[cat]
+                    return <span className="text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{cat}</span>
+                  })()}
+                  <span className="price-mono text-sm font-black" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <span className="price-mono text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: isUp ? "#10b981" : "#ef4444", background: isUp ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
+                </div>
 
-                <div className="flex min-w-0 items-center gap-2"><span className="size-1.5 shrink-0 rounded-full bg-cyan-400" /><span className="chart-timeframe-label truncate">Price chart</span><span className="hidden text-[9px] font-medium text-slate-600 sm:inline">Live candles · shared execution feed</span><select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="ml-1 hidden rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select></div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <select value={chartProvider} onChange={e => setChartProvider(e.target.value as "native" | "tradingview")} aria-label="Select chart provider" className="shrink-0 rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black uppercase tracking-wide text-cyan-200 outline-none sm:hidden"><option value="native">Native</option><option value="tradingview">TradingView</option></select>
-                  <select value={timeframe} onChange={e => setTimeframe(e.target.value as TimeFrame)} aria-label="Select chart timeframe" className="rounded border border-[#29415e] bg-[#0b1625] px-1.5 py-1 text-[9px] font-black text-slate-200 outline-none sm:hidden"><option value="1M">1M</option><option value="5M">5M</option><option value="15M">15M</option><option value="30M">30M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option></select>
-                  <div
-                    className="hidden items-center gap-0.5 p-0.5 sm:flex"
-                    style={{
-                      borderRadius: 8,
-                      background: "linear-gradient(180deg, #0a0f1a 0%, #060a12 100%)",
-                      border: "1px solid #1e2d45",
-                      boxShadow: "inset 0 1px 2px rgba(0,0,0,0.4)",
-                    }}
-                  >
-                    {(["1M","5M","15M","30M","1H","4H","1D","1W"] as TimeFrame[]).map(tf => {
+                {/* Key Quote Metrics (Compact & Non-duplicated) */}
+                <div className="hidden lg:flex items-center gap-3 text-[10px] price-mono font-semibold">
+                  <span className="text-slate-400">BID <strong className="text-red-400">{fmt(selectedPair.bid, selectedPair.symbol)}</strong></span>
+                  <span className="text-slate-400">ASK <strong className="text-emerald-400">{fmt(selectedPair.ask, selectedPair.symbol)}</strong></span>
+                  <span className="text-slate-400">SPR <strong className="text-cyan-400">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</strong></span>
+                  <span className="text-slate-400">H <strong className="text-emerald-400">{fmt(selectedPair.high, selectedPair.symbol)}</strong></span>
+                  <span className="text-slate-400">L <strong className="text-red-400">{fmt(selectedPair.low, selectedPair.symbol)}</strong></span>
+                </div>
+
+                {/* Chart Controls & Tools Group */}
+                <div className="flex items-center gap-1.5 ml-auto">
+                  {/* Essential Timeframe Selector */}
+                  <div className="flex items-center gap-0.5 rounded-lg border border-[#1e2d45] bg-[#060a12] p-0.5">
+                    {(["1M", "5M", "15M", "1H", "1D"] as TimeFrame[]).map(tf => {
                       const active = timeframe === tf
                       return (
                         <button
@@ -3628,43 +3529,70 @@ const maxLeverage = 100
                           type="button"
                           onClick={() => setTimeframe(tf)}
                           aria-pressed={active}
-                          className="relative px-2.5 py-1 text-[10px] font-black tracking-wider transition-all duration-150"
+                          className="px-2 py-0.5 text-[9px] font-black tracking-wide rounded transition-all"
                           style={{
-                            borderRadius: 6,
-                            background: active
-                              ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)"
-                              : "transparent",
-                            color: active ? "#031015" : "#b9c9d6",
-                            boxShadow: active
-                              ? "0 2px 6px rgba(34,211,238,0.4), inset 0 1px 0 rgba(255,255,255,0.3)"
-                              : "none",
+                            background: active ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)" : "transparent",
+                            color: active ? "#031015" : "#8ba3be",
                           }}
-                          onMouseEnter={e => { if (!active) e.currentTarget.style.color = "#f3fbff" }}
-                          onMouseLeave={e => { if (!active) e.currentTarget.style.color = "#8296ab" }}
                         >
                           {tf}
                         </button>
                       )
                     })}
+                    {/* More Timeframes Dropdown */}
+                    <select
+                      value={(["30M", "4H", "1W"].includes(timeframe)) ? timeframe : "more"}
+                      onChange={e => { if (e.target.value !== "more") setTimeframe(e.target.value as TimeFrame) }}
+                      className="bg-transparent text-[9px] font-black text-slate-400 outline-none cursor-pointer px-1"
+                      aria-label="More timeframes"
+                    >
+                      <option value="more" disabled>MORE ▾</option>
+                      <option value="30M" className="bg-[#0b1625] text-white">30M</option>
+                      <option value="4H" className="bg-[#0b1625] text-white">4H</option>
+                      <option value="1W" className="bg-[#0b1625] text-white">1W</option>
+                    </select>
                   </div>
-                  <div className="w-px h-5" style={{ background: "#1e2d45" }} />
+
+                  <div className="w-px h-4 bg-[#1e2d45]" />
+
+                  {/* Provider & Layout Toggles */}
+                  <button
+                    type="button"
+                    onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
+                    className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
+                    style={{
+                      color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
+                      background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
+                      borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
+                    }}
+                  >
+                    {chartProvider === "tradingview" ? "TV Live" : "Native"}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
-                    aria-label={chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart"}
-                    title={chartLayout === "single" ? "Multi-chart grid" : "Single chart"}
-                    className="p-1.5 transition-all duration-150"
-                    style={{
-                      borderRadius: 6,
-                      background: chartLayout === "grid" ? "linear-gradient(180deg, rgba(168,85,247,0.25), rgba(168,85,247,0.1))" : "transparent",
-                      border: chartLayout === "grid" ? "1px solid rgba(168,85,247,0.4)" : "1px solid transparent",
-                      boxShadow: chartLayout === "grid" ? "0 0 8px rgba(168,85,247,0.25)" : "none",
-                    }}
+                    aria-label={chartLayout === "single" ? "Switch to grid layout" : "Switch to single layout"}
+                    className="p-1 rounded border border-[#1e2d45] bg-[#0b1625] text-purple-300 hover:border-purple-500/40"
                   >
-                    {chartLayout === "single" ? <Grid3x3 className="h-3 w-3 text-purple-300" /> : <Square className="h-3 w-3 text-purple-300" />}
+                    {chartLayout === "single" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
                   </button>
-                  <button type="button" onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")} className="rounded px-2 py-1 text-[9px] font-bold uppercase tracking-wide transition-colors" style={{ color: chartProvider === "tradingview" ? "#7dd3fc" : "#94a3b8", background: chartProvider === "tradingview" ? "rgba(14,165,233,.16)" : "transparent", border: `1px solid ${chartProvider === "tradingview" ? "rgba(14,165,233,.4)" : "transparent"}` }} aria-label="Toggle TradingView live chart">{chartProvider === "tradingview" ? "TradingView Live" : "Native Chart"}</button>
-                  {candleLoading && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />}
+
+                  {/* Tools Dropdown */}
+                  <select
+                    onChange={e => { if (e.target.value) { setActivePanel(e.target.value as any); e.target.value = "" } }}
+                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
+                    defaultValue=""
+                    aria-label="Workspace tools menu"
+                  >
+                    <option value="" disabled>TOOLS ▾</option>
+                    <option value="dom" className="bg-[#0b1625] text-white">L2 Order Book</option>
+                    <option value="risk" className="bg-[#0b1625] text-white">Risk Analytics</option>
+                    <option value="alerts" className="bg-[#0b1625] text-white">Price Alerts</option>
+                    <option value="ai-coach" className="bg-[#0b1625] text-white">AI Guide</option>
+                  </select>
+
+                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
                 </div>
               </div>
             </div>
@@ -3683,33 +3611,31 @@ const maxLeverage = 100
     {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
   </div>
   }>
-<div className="terminal-single-chart-stack">
-  {chartProvider === "native" ? (
-    <div className="terminal-native-chart-panel">
-      <div className="terminal-chart-panel-label"><span className="terminal-chart-status-dot" /> Native Candlestick Chart <span>{selectedPair.symbol}</span></div>
-      <TradingChart
-        key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
-        candles={selectedPair.candles}
-        sym={selectedPair.symbol}
-        tf={timeframe}
-        openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-        onExpand={() => setChartExpanded(e => !e)}
-        isExpanded={chartExpanded}
-        onQuickTrade={quickTrade}
-        buyPrice={selectedPair.ask}
-        sellPrice={selectedPair.bid}
-        darkTheme={isDarkTheme}
-        marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-      />
-    </div>
-  ) : (
-    <div className="terminal-tradingview-panel is-active">
-      <div className="terminal-chart-panel-label"><span className="terminal-chart-status-dot" /> TradingView Live <span>{selectedPair.symbol}</span></div>
-      <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
-    </div>
-  )}
-</div>
-  <div className="terminal-chart-activity-tabs" role="tablist" aria-label="Chart activity panels">
+	<div className="terminal-single-chart-stack h-full w-full flex-1 min-h-0">
+	  {chartProvider === "native" ? (
+	    <div className="terminal-native-chart-panel h-full w-full flex-1 min-h-0">
+	      <TradingChart
+	        key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
+	        candles={selectedPair.candles}
+	        sym={selectedPair.symbol}
+	        tf={timeframe}
+	        openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+	        onExpand={() => setChartExpanded(e => !e)}
+	        isExpanded={chartExpanded}
+	        onQuickTrade={quickTrade}
+	        buyPrice={selectedPair.ask}
+	        sellPrice={selectedPair.bid}
+	        darkTheme={isDarkTheme}
+	        marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+	      />
+	    </div>
+	  ) : (
+	    <div className="terminal-tradingview-panel is-active h-full w-full flex-1 min-h-0">
+	      <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
+	    </div>
+	  )}
+	</div>
+	  <div className="terminal-chart-activity-tabs hidden lg:flex" role="tablist" aria-label="Chart activity panels">
     <button type="button" role="tab" aria-selected={activePanel === "positions"} className={activePanel === "positions" ? "is-active" : ""} onClick={() => { setActivePanel("positions"); setFooterOpen(true) }}><Layers className="h-3.5 w-3.5" /> Positions <span>{openTrades.length}</span></button>
     <button type="button" role="tab" aria-selected={activePanel === "pending"} className={activePanel === "pending" ? "is-active" : ""} onClick={() => { setActivePanel("pending"); setFooterOpen(true) }}><Clock className="h-3.5 w-3.5" /> Orders <span>{pendingOrders.length}</span></button>
     <button type="button" role="tab" aria-selected={activePanel === "history"} className={activePanel === "history" ? "is-active" : ""} onClick={() => { setActivePanel("history"); setFooterOpen(true) }}><History className="h-3.5 w-3.5" /> History <span>{closedTrades.length}</span></button>
@@ -3751,11 +3677,15 @@ const maxLeverage = 100
   <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
   </button>
     </div>
-  </div>
-        </div>
-        </div>
-        {/* ── RIGHT: Order Ticket ───────────��────────��───────────────────────── */}
-        </DockPanel>
+    <button type="button" onClick={() => setMobileTab("order")} disabled={!selectedPair || isFrozen} className="reference-make-order">
+      <Zap className="h-3.5 w-3.5" /> MAKE ORDER
+      <span>Open full order ticket</span>
+    </button>
+	        </div>
+	        </div>
+	        </div>
+	        {/* RIGHT: Order Ticket */}
+	        </DockPanel>
         {dockEnabled && chartExpanded ? null : rightPanelHidden ? (
           <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
@@ -3772,22 +3702,22 @@ const maxLeverage = 100
         <>
         <DockHandle enabled={dockEnabled} />
         <DockPanel enabled={dockEnabled} id="order" order={3} defaultSize={24} minSize={19} maxSize={36}>
-        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab === "order" || mobileTab === "chart" && isCompactViewport ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
-          <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+          <div className="flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
             <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.32)", boxShadow: "0 0 14px rgba(168,85,247,0.14)" }}><Zap className="h-3.5 w-3.5 text-purple-300" /></div>
-              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-white">Order Panel</div><div className="truncate text-[8px] uppercase tracking-wider text-slate-500">Fast execution</div></div>
+              <Zap className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white">Order Panel</div></div>
             </div>
             {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setRightPanelTab(id as typeof rightPanelTab)}
-                className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2.5 text-[9px] font-black tracking-wider uppercase transition-all"
+                className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2 text-[9px] font-black tracking-wider uppercase transition-colors"
                 style={{
-                  color: rightPanelTab === id ? "#22d3ee" : "#374151",
+                  color: rightPanelTab === id ? "#22d3ee" : "#64748b",
                   borderBottom: rightPanelTab === id ? "2px solid #22d3ee" : "2px solid transparent",
-                  background: rightPanelTab === id ? "rgba(34,211,238,0.04)" : "transparent",
+                  background: rightPanelTab === id ? "rgba(34,211,238,0.05)" : "transparent",
                 }}>
                 <Icon className="h-3 w-3" />{label}
               </button>
@@ -3803,329 +3733,295 @@ const maxLeverage = 100
             </button>
           </div>
 
-          {/* Order panel */}
-          {rightPanelTab === "order" && selectedPair ? (
-            <div className="flex-1 overflow-y-auto terminal-scroll">
-              <div className="mobile-order-ticket flex flex-col gap-0 p-2">
-                <div className="mobile-order-builder-banner sticky top-0 z-20 mb-2 flex items-center justify-between rounded-lg border border-cyan-400/30 bg-[#071221]/95 px-2.5 py-2 shadow-lg shadow-cyan-950/20 backdrop-blur">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.18em] text-cyan-300">1. Build your trade</p>
-                    <p className="mt-0.5 text-[10px] text-slate-300">{selectedPair.symbol} · {orderType === "market" ? "Buy or sell at the live price" : `${orderType.toUpperCase()} order`}</p>
+		          {/* Order panel */}
+		          {rightPanelTab === "order" && selectedPair ? (
+		            <div className="flex-1 overflow-y-auto terminal-scroll">
+		              <div className="mobile-order-ticket flex flex-col gap-2 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-2">
+	                {/* Header banner */}
+	                <div className="flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
+	                  <div className="flex items-center gap-2">
+	                    <span className="text-xs font-black uppercase tracking-wider text-cyan-300">{selectedPair.symbol}</span>
+	                    <span className="text-[9px] font-bold text-slate-400">1:{effectiveLeverage}</span>
+	                  </div>
+	                  <div className="flex items-center gap-1.5">
+	                    <span className={`rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "bg-amber-400/10 text-amber-300 border border-amber-400/20"}`}>
+	                      {balanceLoaded ? "Ready" : "Loading"}
+	                    </span>
+	                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
+	                  </div>
+	                </div>
+
+	                {/* Order type tabs */}
+	                <div className="grid grid-cols-3 rounded-lg border border-[#1a2640] bg-[#070a10] p-0.5">
+	                  {(["market","limit","stop"] as typeof orderType[]).map(ot => (
+	                    <button key={ot} type="button" onClick={() => {
+	                      setOrderType(ot)
+	                      if (ot === "market") {
+	                        setPendingPrice("")
+	                      } else if (selectedPair) {
+	                        const quote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+	                        const offset = pip(selectedPair.symbol) * 10
+	                        const suggested = ot === "limit"
+	                          ? (direction === "BUY" ? quote - offset : quote + offset)
+	                          : (direction === "BUY" ? quote + offset : quote - offset)
+	                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
+	                      }
+	                    }}
+	                      aria-pressed={orderType === ot}
+	                      className={`py-1.5 text-[9px] font-black uppercase tracking-wider rounded transition-all ${
+	                        orderType === ot
+	                          ? "bg-cyan-400/15 text-cyan-300 border border-cyan-400/30 shadow-sm"
+	                          : "text-slate-400 hover:text-slate-200"
+	                      }`}>
+	                      {ot}
+	                    </button>
+	                  ))}
+	                </div>
+
+		                {/* Single Executable Quote / Direction Selector */}
+		                <div className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
+		                  <button type="button" onClick={() => setOrderDirection("SELL")}
+		                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
+		                    className={`rounded-lg px-2.5 py-2 text-left transition-colors ${
+		                      direction === "SELL"
+		                        ? "bg-rose-500/20 border border-rose-500"
+		                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
+		                    }`}>
+		                    <span className="block text-[8px] font-black tracking-wider uppercase text-rose-300">Sell · Bid</span>
+		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+		                  </button>
+		                  <button type="button" onClick={() => setOrderDirection("BUY")}
+		                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
+		                    className={`rounded-lg px-2.5 py-2 text-right transition-colors ${
+		                      direction === "BUY"
+		                        ? "bg-emerald-500/20 border border-emerald-500"
+		                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
+		                    }`}>
+		                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
+		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+		                  </button>
+			                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
+			                  </div>
+			                </div>
+
+		                {/* Pending price (limit/stop) */}
+	                {orderType !== "market" && (
+	                  <div className="rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
+	                    <label className="text-[8px] font-bold tracking-widest uppercase text-cyan-300">
+	                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
+	                    </label>
+	                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
+	                      placeholder={fmt(midPrice, selectedPair.symbol)}
+	                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded bg-[#070a10] border border-cyan-400/30" />
+	                    <div className="flex gap-1">
+	                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+	                        <button key={e} onClick={() => setPendingExpiry(e)}
+	                          className="flex-1 py-1 text-[8px] font-black tracking-wider uppercase rounded transition-all"
+	                          style={pendingExpiry === e
+	                            ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+	                            : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
+	                          {e}
+	                        </button>
+	                      ))}
+	                    </div>
+	                  </div>
+	                )}
+
+			                {/* Volume (lots) */}
+			                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
+			                  <div className="flex items-center justify-between">
+			                    <label className="text-[8px] font-black tracking-wider uppercase text-cyan-300">
+			                      Trade size (lots)
+			                    </label>
+			                    <span className="text-[8px] font-bold text-slate-400">Leverage: 1:{effectiveLeverage}</span>
+			                  </div>
+			                  <input type="number" value={lotSize} onChange={e => {
+			                    const next = Number.parseFloat(e.target.value)
+			                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+			                  }}
+			                  onBlur={() => {
+			                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+			                  }}
+			                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
+			                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
+			                  placeholder="0.01"
+			                  />
+			                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
+				                  <div className="flex gap-1">
+				                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
+				                      <button key={l} type="button" onClick={() => setLotSize(l)}
+				                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-colors ${
+				                          lotSize === l
+				                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+				                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
+				                        }`}>
+				                        {l}
+				                      </button>
+				                    ))}
+				                  </div>
+	                </div>
+
+                {/* Essential Risk controls (SL / TP) */}
+                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Stop Loss & Take Profit</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`rounded border px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-300" : "border-amber-400/20 bg-amber-400/10 text-amber-300"}`}>
-                      {balanceLoaded ? "Ready" : "Loading"}
-                    </span>
-                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
-                  </div>
-                </div>
 
-                {/* Order type tabs */}
-                <div className="apple-order-type-tabs mb-2 grid grid-cols-3 overflow-hidden" style={{ borderRadius: 12, border: "1px solid rgba(29,42,58,0.10)", background: "rgba(255,255,255,0.58)" }}>
-                  {(["market","limit","stop"] as typeof orderType[]).map(ot => (
-                    <button key={ot} type="button" onClick={() => {
-                      setOrderType(ot)
-                      if (ot === "market") {
-                        setPendingPrice("")
-                      } else if (selectedPair) {
-                        const quote = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-                        const offset = pip(selectedPair.symbol) * 10
-                        const suggested = ot === "limit"
-                          ? (direction === "BUY" ? quote - offset : quote + offset)
-                          : (direction === "BUY" ? quote + offset : quote - offset)
-                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
-                      }
-                    }}
-                      aria-pressed={orderType === ot}
-                      className="flex flex-col items-center gap-0.5 py-2 text-[9px] font-black uppercase tracking-wider transition-all"
-                      style={orderType === ot
-                        ? { background: "rgba(34,211,238,0.1)", color: "#22d3ee", borderBottom: "2px solid #22d3ee" }
-                        : { color: "#374151" }}>
-                      <span>{ot}</span>
-                      <span className="text-[7px] font-medium normal-case tracking-normal opacity-70">{ot === "market" ? "Now" : ot === "limit" ? "Better price" : "Breakout"}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* BUY/SELL toggle — keep the direction choice explicit for beginners */}
-                <div className="mobile-order-side-toggle mb-2 grid grid-cols-2 gap-1.5">
-                  {(["BUY","SELL"] as TradeDirection[]).map(d => (
-                    <button key={d} type="button" onClick={() => setOrderDirection(d)}
-                      aria-label={d === "BUY" ? "Buy because you expect the price to rise" : "Sell because you expect the price to fall"}
-                      className={`flex flex-col items-center justify-center gap-0.5 py-2.5 transition-all relative overflow-hidden ${direction === d ? (d === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell") : ""}`}
-                      style={direction !== d ? {
-                        background: "#080c14",
-                        border: "1px solid #1a2640",
-                        borderBottom: "2px solid #050810",
-                        borderRadius: 8,
-                        color: "#64748b",
-                        boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4)",
-                      } : {}}>
-                      <span className="relative z-10 flex items-center gap-1.5 text-sm font-black">
-                        {d === "BUY" ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
-                        {d}
-                      </span>
-                      <span className="relative z-10 text-[8px] font-bold normal-case tracking-normal opacity-80">
-                        {d === "BUY" ? "Expect price to rise" : "Expect price to fall"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Executable quote snapshot */}
-                <div className="mobile-order-quote mb-2 rounded-lg overflow-hidden" style={{ border: "1px solid #1a2640", background: "#070a10" }}>
-                  <div className="flex items-center justify-between px-2 py-1.5" style={{ borderBottom: "1px solid #1a2640" }}>
-                    <span className="text-[9px] font-black tracking-[0.16em] uppercase text-slate-400">{selectedPair.symbol} �� MARKET</span>
-                    <span className="text-[8px] font-bold tracking-wider uppercase" style={{ color: online ? "#10b981" : "#ef4444" }}>{online ? "Executable" : "Stale feed"}</span>
-                  </div>
-  <div className="relative grid grid-cols-2 gap-2 p-2" style={{ background: "#07101b" }}>
-  <button type="button" onClick={() => setOrderDirection("SELL")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-left transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg, rgba(239,68,68,0.28), rgba(190,24,93,0.38))", border: "1px solid rgba(251,113,133,0.45)" }}>
-  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-rose-100">Sell · Bid</span>
-  <span className="price-mono text-base font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-  </button>
-  <button type="button" onClick={() => setOrderDirection("BUY")} className="min-h-[58px] rounded-xl px-2.5 py-2 text-right transition-all hover:brightness-110 active:scale-[0.99]" style={{ background: "linear-gradient(135deg, rgba(16,185,129,0.30), rgba(20,184,166,0.34))", border: "1px solid rgba(52,211,153,0.45)" }}>
-  <span className="block text-[8px] font-black tracking-[0.16em] uppercase text-emerald-100">Buy · Ask</span>
-  <span className="price-mono text-base font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-  </button>
-  <div className="pointer-events-none absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center rounded-lg border border-slate-200/90 bg-slate-100 px-2.5 py-1 shadow-lg shadow-black/25" aria-label={`Spread ${((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips`}>
-  <span className="text-[7px] font-black uppercase tracking-wider text-slate-500">Spread</span>
-  <span className="price-mono whitespace-nowrap text-[11px] font-black text-slate-800">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
-  </div>
-  </div>
-                </div>
-
-                {/* Live Market Sentiment Bar */}
-                {selectedPair && (
-                  <div className="mobile-order-sentiment mb-2 p-2 rounded-lg" style={{ background: "#060b13", border: "1px solid #142032" }}>
-                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider mb-1">
-                      <span className="text-emerald-400">Buyers {Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
-                      <span className="text-slate-400 font-bold">Order Flow</span>
-                      <span className="text-rose-400">Sellers {Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* SL */}
+                    <div>
+                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-rose-400">
+                        <span className="flex items-center gap-1"><ShieldAlert className="h-2.5 w-2.5" /> SL</span>
+                        {slVal !== null && <span className="text-[8px] font-bold text-slate-400">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+                      </label>
+                      <input type="number" value={sl} onChange={e => setSl(e.target.value)}
+                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#0d0204] border border-rose-500/30"
+                        placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+                      />
                     </div>
-                    <div className="h-1.5 w-full rounded-full overflow-hidden flex" style={{ background: "rgba(255,255,255,0.06)" }}>
-                      <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.round(50 + (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
-                      <div className="h-full bg-rose-500 transition-all duration-500" style={{ width: `${Math.round(50 - (selectedPair.change > 0 ? Math.min(selectedPair.change * 15, 38) : Math.max(selectedPair.change * 15, -38)))}%` }} />
+
+                    {/* TP */}
+                    <div>
+                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-emerald-400">
+                        <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> TP</span>
+                        {tpVal !== null && <span className="text-[8px] font-bold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                      </label>
+                      <input type="number" value={tp} onChange={e => setTp(e.target.value)}
+                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#010d06] border border-emerald-500/30"
+                        placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+                      />
                     </div>
                   </div>
-                )}
-
-                {/* Quick order actions */}
-                <div className="mobile-order-presets mb-2 rounded-lg border border-cyan-400/20 bg-[#07101b] p-2" aria-label="Quick order actions">
-                  <div className="mb-1.5 flex items-center justify-between"><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Quick order setup</span><span className="text-[8px] text-slate-600">One tap applies risk levels</span></div>
-                  <div className="grid grid-cols-4 gap-1">
-                    {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
-                      <button key={preset.label} type="button" onClick={() => {
-                        if (preset.slPips === 0) { setSl(""); setTp(""); return }
-                        const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-                        const unit = pip(selectedPair.symbol)
-                        const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
-                        const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
-                        setSl(stop.toFixed(decimals(selectedPair.symbol)))
-                        setTp(target.toFixed(decimals(selectedPair.symbol)))
-                      }} className="rounded border border-[#243752] bg-[#0b1625] px-1 py-1.5 text-[8px] font-black uppercase tracking-wider text-slate-400 transition hover:border-cyan-400/50 hover:bg-cyan-400/10 hover:text-cyan-200 active:scale-95">{preset.label}</button>
-                    ))}
-                  </div>
-                  <div className="mt-1.5 grid grid-cols-2 gap-1">
-                    <button type="button" onClick={() => setOrderDirection("BUY")} className="rounded border border-emerald-400/25 bg-emerald-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-400/20">Buy at ask</button>
-                    <button type="button" onClick={() => setOrderDirection("SELL")} className="rounded border border-rose-400/25 bg-rose-400/10 py-1.5 text-[8px] font-black uppercase tracking-wider text-rose-300 transition hover:bg-rose-400/20">Sell at bid</button>
-                  </div>
                 </div>
 
-                {/* Pending price (only for limit/stop) */}
-                {orderType !== "market" && (
-                  <div className="mobile-pending-order mb-1.5">
-                    <p className="mb-1 text-[8px] leading-relaxed text-slate-500">{orderType === "limit" ? (direction === "BUY" ? "Buy below the current ask" : "Sell above the current bid") : (direction === "BUY" ? "Buy above the current ask" : "Sell below the current bid")}. The order activates automatically when price reaches your level.</p>
-                    <label className="text-[9px] font-bold tracking-widest uppercase block mb-1" style={{ color: "#22d3ee" }}>
-                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
-                    </label>
-                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
-                      placeholder={fmt(midPrice, selectedPair.symbol)}
-                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5"
-                      style={{ background: "#070a10", border: "1px solid rgba(34,211,238,0.3)", borderRadius: 4 }} />
-                    <div className="flex gap-1 mt-1">
-                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                        <button key={e} onClick={() => setPendingExpiry(e)}
-                          className="flex-1 py-1 text-[8px] font-black tracking-wider uppercase rounded transition-all"
-                          style={pendingExpiry === e
-                            ? { background: "rgba(34,211,238,0.1)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.25)" }
-                            : { background: "#070a10", color: "#374151", border: "1px solid #1a2640" }}>
-                          {e}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Volume (3D input) */}
-                <div className="mobile-lot-field mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: "#a855f7" }}>
-                    Trade size (lots)
-                    <span className="ml-1.5 normal-case tracking-normal font-medium text-slate-500">How much you trade</span>
-                  </label>
-  <input type="number" value={lotSize} onChange={e => {
-    const next = Number.parseFloat(e.target.value)
-    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
-  }}
-  onBlur={() => {
-    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
-  }}
-  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
-                    className="input-3d w-full price-mono text-base font-black focus:outline-none px-2.5 py-2"
-  placeholder="0.01"
-  />
-  {isFundedAccount && <p id="lot-size-help" className="mt-1 text-[10px] font-semibold text-cyan-300">Auto minimum for {selectedPair?.symbol ?? "instrument"}: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-  <div className="flex gap-1 mt-1.5">
-                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-                      <button key={l} onClick={() => setLotSize(l)}
-                        className="flex-1 py-1 text-[7px] font-black tracking-wide rounded-md transition-all active:scale-95"
-                        style={lotSize === l
-                          ? { background: "rgba(168,85,247,0.18)", color: "#c084fc", border: "1px solid rgba(168,85,247,0.4)", boxShadow: "0 0 8px rgba(168,85,247,0.2)" }
-                          : { background: "#0a1020", color: "#9fb4c8", border: "1px solid #1a2640" }}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mobile-leverage-field mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase block mb-1.5" style={{ color: isFundedAccount ? "#f59e0b" : "#38bdf8" }}>
-                    Leverage {isFundedAccount ? "(max 100x)" : ""}
-                  </label>
-                  <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                    aria-label="Select leverage"
-                    className={`input-3d w-full price-mono text-sm font-black focus:outline-none px-2.5 py-2 appearance-none cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
-                    {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value} style={{ background: "#080c14", color: isFundedAccount ? "#fbbf24" : "#22d3ee" }}>1:{value}</option>)}
-                  </select>
-                </div>
-
-                {/* Risk controls */}
-                <div className="mobile-risk-controls mb-2 grid grid-cols-2 gap-2">
-                {/* SL */}
-                <div>
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#ef4444" }}>
-                    <ShieldAlert className="h-3 w-3" /> Stop Loss
-                    {slVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
-                  </label>
-                  <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
-                    style={{ background: "linear-gradient(175deg,#1a0505 0%,#0d0204 100%)", border: "1px solid rgba(239,68,68,0.35)", borderBottom: "2px solid rgba(239,68,68,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 0 rgba(239,68,68,0.0)", outline: "none" }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
-                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(239,68,68,0.2), 0 0 12px rgba(239,68,68,0.12)" }}
-                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
-                  />
-                </div>
-
-                {/* TP */}
-                <div>
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#10b981" }}>
-                    <Target className="h-3 w-3" /> Take Profit
-                    {tpVal !== null && <span className="ml-auto text-[8px] font-bold normal-case tracking-normal" style={{ color: "#64748b" }}>{tpPips.toFixed(1)}p �� +${maxGain.toFixed(2)}</span>}
-                  </label>
-                  <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
-                    style={{ background: "linear-gradient(175deg,#021a0d 0%,#010d06 100%)", border: "1px solid rgba(16,185,129,0.35)", borderBottom: "2px solid rgba(16,185,129,0.15)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
-                    placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
-                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(16,185,129,0.2), 0 0 12px rgba(16,185,129,0.12)" }}
-                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
-                  />
-                </div>
-                </div>
-
-                {/* Trailing Stop */}
-                <div className="mobile-trailing-field mb-2">
-                  <label className="text-[8px] font-black tracking-[0.15em] uppercase mb-1.5 flex items-center gap-1.5" style={{ color: "#a78bfa" }}>
-                    <ArrowUpDown className="h-3 w-3" /> Trailing Stop (pips)
-                  </label>
-                  <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-                    className="w-full price-mono text-sm text-white focus:outline-none px-2.5 py-2"
-                    style={{ background: "linear-gradient(175deg,#0e0617 0%,#07030f 100%)", border: "1px solid rgba(167,139,250,0.3)", borderBottom: "2px solid rgba(167,139,250,0.12)", borderRadius: 8, boxShadow: "inset 0 2px 8px rgba(0,0,0,0.5)", outline: "none" }}
-                    placeholder="0 = disabled"
-                    onFocus={e => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5), 0 0 0 2px rgba(167,139,250,0.2), 0 0 12px rgba(167,139,250,0.12)" }}
-                    onBlur={e  => { e.currentTarget.style.boxShadow = "inset 0 2px 8px rgba(0,0,0,0.5)" }}
-                  />
-                </div>
-
-                {/* Metrics grid */}
-                <div className="mobile-order-metrics grid grid-cols-2 gap-1 mb-2">
-                  {[
-                    { label: "Margin",    value: `$${isNaN(estimatedMargin) ? "—" : estimatedMargin.toLocaleString("en-US", { maximumFractionDigits: 2 })}`, color: "#f59e0b" },
-                    { label: "Pip Value", value: `$${pipVal.toFixed(4)}`, color: "#22d3ee" },
-                    { label: "Notional",  value: `$${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}`, color: "#a78bfa" },
-                    { label: "Leverage", value: `×${effectiveLeverage}`, color: isFundedAccount ? "#fbbf24" : "#fb923c" },
-                  ].map(item => (
-                    <div key={item.label} className="px-2 py-1.5" style={{ background: "#070a10", border: "1px solid #1a2640", borderRadius: 3 }}>
-                      <p className="text-[8px] text-slate-700 mb-0.5 tracking-wider uppercase">{item.label}</p>
-                      <p className="price-mono text-[10px] font-black" style={{ color: item.color }}>{item.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Live execution summary */}
-                <div className="mobile-execution-preview mb-2 overflow-hidden rounded-lg border border-cyan-400/20 bg-[#07101b] shadow-[0_0_24px_rgba(34,211,238,0.06)]">
-                  <div className="flex items-center justify-between border-b border-cyan-400/10 px-2.5 py-1.5">
-                    <div className="flex items-center gap-1.5"><Activity className="h-3 w-3 text-cyan-300" /><span className="text-[8px] font-black uppercase tracking-[0.16em] text-cyan-200">Execution preview</span></div>
-                    <span className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300"><span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />Live calc</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-px bg-cyan-400/10">
-                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Equity</p><p className="price-mono mt-1 text-[11px] font-black text-white">${accountEquity.toLocaleString("en-US", { maximumFractionDigits: 2 })}</p></div>
-                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Risk / margin</p><p className={`price-mono mt-1 text-[11px] font-black ${estimatedMargin > walletBalance ? "text-red-300" : "text-amber-300"}`}>{walletBalance > 0 ? ((estimatedMargin / walletBalance) * 100).toFixed(2) : "0.00"}%</p></div>
-                    <div className="bg-[#090f19] px-2 py-2"><p className="text-[8px] uppercase tracking-wider text-slate-500">Spread cost</p><p className="price-mono mt-1 text-[11px] font-black text-cyan-300">${(pipVal * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)).toFixed(2)}</p></div>
-                  </div>
-                </div>
-
-                {/* R:R display */}
-                {rrRatio !== null && (
-                  <div className="mobile-order-reward mb-2 px-2 py-1.5 text-[10px]" style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.18)", borderRadius: 3 }}>
-                    {slVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Loss</span><span className="price-mono font-black text-red-400">-${maxLoss.toFixed(2)} ({slPips.toFixed(1)}p)</span></div>}
-                    {tpVal !== null && <div className="flex justify-between"><span className="text-slate-500">Max Gain</span><span className="price-mono font-black text-emerald-400">+${maxGain.toFixed(2)} ({tpPips.toFixed(1)}p)</span></div>}
-                    <div className="flex justify-between"><span className="text-slate-500">R:R</span><span className="price-mono font-black text-cyan-400">1:{rrRatio}</span></div>
-                  </div>
-                )}
-
-                {/* Balance warning */}
-                {balanceLoaded && estimatedMargin > walletBalance && (
-                  <div className="mobile-margin-warning flex items-center gap-1.5 px-2 py-1.5 mb-2 text-[10px] font-bold"
-                    style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444", borderRadius: 3 }}>
-                    <AlertTriangle className="h-3 w-3 shrink-0" />
-                    Need ${estimatedMargin.toFixed(2)}
-                  </div>
-                )}
-
-                {/* Execute (3D) */}
-                <div className="mobile-execute-label mb-1 flex items-center justify-between px-0.5">
-                  <span className="text-[8px] font-bold uppercase tracking-[0.16em] text-slate-500">Ready to place</span>
-                  <span className={`text-[9px] font-black uppercase ${direction === "BUY" ? "text-emerald-300" : "text-red-300"}`}>{direction} {selectedPair.symbol}</span>
-                </div>
+                {/* Collapsible Advanced Section Toggle */}
                 <button
-                  className={`mobile-desktop-execute w-full py-3 font-black text-sm tracking-[0.15em] flex items-center justify-center gap-2 ${direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"}`}
-                  onClick={() => executeTrade()}
-                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
+                  type="button"
+                  onClick={() => setShowAdvancedOrderControls(!showAdvancedOrderControls)}
+                  aria-expanded={showAdvancedOrderControls}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[#1a2640] bg-[#07101b] hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider"
                 >
-                  <Zap className="h-4 w-4 relative z-10" style={{ filter: "drop-shadow(0 0 4px currentColor)" }} />
-                  <span className="relative z-10" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.6)" }}>
-                    {orderType === "market"
-                      ? `${direction} ${selectedPair.symbol}`
-                      : `Place ${direction} ${orderType.toUpperCase()}`}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <Wrench className="h-3 w-3 text-cyan-400" />
+                    <span>Advanced Options</span>
+                    {(Boolean(trailingPips && parseFloat(trailingPips) > 0) || pendingExpiry !== "GTC" || leverage !== "100") && (
+                      <span className="rounded bg-cyan-400/20 px-1 py-0.2 text-[7px] font-bold text-cyan-300">Active</span>
+                    )}
+                  </div>
+                  {showAdvancedOrderControls ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />}
                 </button>
-                <div className="mobile-order-actions" aria-label="Buy or sell at live market price">
-                  <button type="button" onClick={() => executeTrade("SELL")} disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance} aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}>
-                    <span>Sell</span><strong>{fmt(selectedPair.bid, selectedPair.symbol)}</strong>
-                  </button>
-                  <span className="mobile-order-spread"><small>Spread</small><strong>{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}</strong></span>
-                  <button type="button" onClick={() => executeTrade("BUY")} disabled={isFrozen || !balanceLoaded || estimatedMargin > walletBalance} aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}>
-                    <span>Buy</span><strong>{fmt(selectedPair.ask, selectedPair.symbol)}</strong>
-                  </button>
-                </div>
-                <div className="mobile-order-risk-summary">
-                  <span>Margin: ${estimatedMargin.toFixed(2)}</span>
-                  <span>Risk: <strong>-${maxLoss.toFixed(2)}</strong></span>
-                  <span>Reward: <strong>+${maxGain.toFixed(2)}</strong></span>
-                </div>
 
-              </div>
-            </div>
-          ) : rightPanelTab === "order" ? (
+                {/* Advanced Options Body */}
+                {showAdvancedOrderControls && (
+                  <div className="flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
+                    {/* Trailing Stop */}
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
+                        <ArrowUpDown className="h-2.5 w-2.5" /> Trailing Stop (pips)
+                      </label>
+                      <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
+                        className="w-28 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded bg-[#07030f] border border-purple-500/30 text-right"
+                        placeholder="0 (disabled)"
+                      />
+                    </div>
+
+                    {/* Pending Order Expiry */}
+                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
+                      <span className="text-[8px] font-black tracking-wider uppercase text-slate-400">Order Expiry</span>
+                      <div className="flex gap-1">
+                        {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+                          <button key={e} type="button" onClick={() => setPendingExpiry(e)}
+                            className="px-2 py-0.5 text-[8px] font-black tracking-wider uppercase rounded transition-all"
+                            style={pendingExpiry === e
+                              ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+                              : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Leverage Selection */}
+                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
+                      <span className="text-[8px] font-black tracking-wider uppercase text-amber-300">Account Leverage</span>
+                      <select value={leverage} onChange={e => setLeverage(e.target.value)}
+                        aria-label="Select leverage"
+                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
+                        {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value}>1:{value}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Quick Risk Presets */}
+                    <div className="border-t border-[#142032] pt-1.5">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 block mb-1">Risk Presets</span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
+                          <button key={preset.label} type="button" onClick={() => {
+                            if (preset.slPips === 0) { setSl(""); setTp(""); return }
+                            const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                            const unit = pip(selectedPair.symbol)
+                            const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
+                            const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
+                            setSl(stop.toFixed(decimals(selectedPair.symbol)))
+                            setTp(target.toFixed(decimals(selectedPair.symbol)))
+                          }} className="rounded border border-[#243752] bg-[#0b1625] px-1.5 py-0.5 text-[8px] font-bold text-slate-400 hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+	                {/* Order Metrics summary */}
+	                <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Margin</p>
+	                    <p className="price-mono text-[10px] font-black text-amber-300">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toFixed(2)}</p>
+	                  </div>
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Pip Value</p>
+	                    <p className="price-mono text-[10px] font-black text-cyan-300">${pipVal.toFixed(4)}</p>
+	                  </div>
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Risk / Reward</p>
+	                    <p className="price-mono text-[10px] font-black text-purple-300">
+	                      {slVal !== null ? `-$${maxLoss.toFixed(2)}` : "—"} / {tpVal !== null ? `+$${maxGain.toFixed(2)}` : "—"} {rrRatio ? `(1:${rrRatio})` : ""}
+	                    </p>
+	                  </div>
+	                  <div className="px-2 py-1 bg-[#090f19] rounded">
+	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Notional</p>
+	                    <p className="price-mono text-[10px] font-black text-slate-200">
+	                      ${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}
+	                    </p>
+	                  </div>
+	                </div>
+
+	                {/* Balance warning */}
+	                {balanceLoaded && estimatedMargin > walletBalance && (
+	                  <div className="flex items-center gap-1.5 px-2 py-1.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px] font-bold">
+	                    <AlertTriangle className="h-3 w-3 shrink-0" />
+	                    Insufficient margin: Need ${estimatedMargin.toFixed(2)} (Have ${walletBalance.toFixed(2)})
+	                  </div>
+	                )}
+
+	                {/* Execute button */}
+	                <button
+	                  className={`w-full py-2.5 rounded-lg font-black text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
+	                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
+	                  }`}
+	                  onClick={() => executeTrade()}
+	                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
+	                >
+	                  <Zap className="h-3.5 w-3.5 relative z-10" />
+	                  <span className="relative z-10 uppercase">
+	                    {orderType === "market"
+	                      ? `Execute ${direction} ${selectedPair.symbol} (${lotSize} Lots)`
+	                      : `Place ${direction} ${orderType.toUpperCase()} @ ${pendingPrice || "—"}`}
+	                  </span>
+	                </button>
+	              </div>
+	            </div>
+	          ) : rightPanelTab === "order" ? (
             <div className="flex flex-col items-center justify-center flex-1 p-4 gap-2">
               <Activity className="h-8 w-8 text-slate-800" />
               <p className="text-[10px] text-slate-700 text-center">Select an instrument to place an order</p>
@@ -4156,7 +4052,7 @@ const maxLeverage = 100
       </DockGroup>
       </div>
 
-      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
+      {/* BOTTOM BLOTTER */}
       <section
         ref={blotterRef}
         className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
@@ -4220,7 +4116,7 @@ const maxLeverage = 100
               data-dragging={draggedTab === id ? "true" : undefined}
               title={dockEnabled ? `${label} · drag to reorder` : undefined}
               data-panel={id}
-              onClick={() => { setActivePanel(id); if (!isCompactViewport && id === "positions") setPositionsPopupOpen(true); if (!isCompactViewport && id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
+              onClick={() => { setActivePanel(id); setFooterOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
               style={activePanel === id
                 ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
@@ -4236,340 +4132,287 @@ const maxLeverage = 100
         </div>
 
         {/* Blotter content */}
-        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll" hidden={!footerOpen}>
+        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-0" hidden={!footerOpen}>
 
-          {/* ── Open Positions ── */}
-          {activePanel === "positions" && (
-            openTrades.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
-                <BarChart2 className="h-8 w-8 opacity-20" />
-                <span className="text-[11px] tracking-wider font-bold uppercase">No open positions</span>
-                <span className="text-[9px] tracking-wider text-slate-800">Place a BUY or SELL to get started</span>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
-              {/* Positions live summary bar */}
-              <div className="mobile-position-summary flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto" style={{ background: "linear-gradient(180deg,#060a13,#04070d)", borderBottom: "1px solid #1a2640" }}>
-                {[
-                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.09)" : "rgba(248,113,113,0.09)" },
-                  { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-                  { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
-                  { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
-                  { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
-                  { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
-                ].map((item, i) => (
-                  <div key={i} className="mobile-position-metric flex items-center gap-1.5 px-2.5 h-8 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#4d6a95" }}>{item.label}</span>
-                    <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
-                  </div>
-                ))}
-                {/* 1-Click Mass Position Actions */}
-                <div className="mobile-position-mass-actions ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={applyBreakEvenSL}
-                    title="Set Stop Loss to entry price for all winning trades"
-                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
-                    style={{ background: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.25)" }}>
-                    <ShieldAlert className="h-2.5 w-2.5" /> Break-Even SL
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeWinningPositions}
-                    title="Close all positions currently in profit"
-                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
-                    style={{ background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
-                    <CheckCircle2 className="h-2.5 w-2.5" /> Close Winners
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Close all ${openTrades.length} open positions`}
-                    onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
-                    className="mobile-close-all px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
-                    style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
-                    <X className="h-2.5 w-2.5" /> Close All
-                  </button>
-                </div>
-              </div>
-              <div className="mobile-position-list flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
-                {openTrades.map(trade => {
-                  const isBuy    = trade.direction === "BUY"
-                  const pnlPos   = trade.pnl >= 0
-                  const pnlClr   = pnlPos ? "#10b981" : "#ef4444"
-                  const notional = parseFloat((trade.lotSize * contractSize(trade.pair) * trade.currentPrice).toFixed(2))
-                  const liqPrice = calcLiquidationPrice(trade.pair, trade)
-                  const duration = formatDuration(trade.openTimestamp)
-                  const base     = trade.pair.split("/")[0]
-                  const isCr     = isCrypto(trade.pair)
-                  const isGd     = isGold(trade.pair)
+	          {/* ── Open Positions ── */}
+	          {activePanel === "positions" && (
+	            openTrades.length === 0 ? (
+	              <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-slate-500">
+	                <Layers className="h-6 w-6 opacity-30" />
+	                <span className="text-xs font-bold uppercase tracking-wider">No open positions</span>
+	                <span className="text-[10px] text-slate-600">Place a BUY or SELL order to begin</span>
+	              </div>
+	            ) : (
+	              <div className="flex flex-col h-full">
+	                {/* Summary bar */}
+	                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto bg-[#04070d] border-b border-[#1a2640]">
+	                  {[
+	                    { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+	                    { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "transparent" },
+	                    { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
+	                    { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
+	                  ].map((item, i) => (
+	                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-8 shrink-0 border-r border-[#0f1c2e]" style={{ background: item.bg }}>
+	                      <span className="text-[7px] font-bold tracking-wider uppercase text-slate-400">{item.label}</span>
+	                      <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
+	                    </div>
+	                  ))}
+	                  {/* Mass Actions */}
+	                  <div className="ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
+	                    <button
+	                      type="button"
+	                      onClick={applyBreakEvenSL}
+	                      title="Set Stop Loss to entry price for all winning trades"
+	                      className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20">
+	                      <ShieldAlert className="h-2.5 w-2.5" /> Break-Even SL
+	                    </button>
+	                    <button
+	                      type="button"
+	                      onClick={closeWinningPositions}
+	                      title="Close all positions currently in profit"
+	                      className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20">
+	                      <CheckCircle2 className="h-2.5 w-2.5" /> Close Winners
+	                    </button>
+	                    <button
+	                      type="button"
+	                      aria-label={`Close all ${openTrades.length} open positions`}
+	                      onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
+	                      className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20">
+	                      <X className="h-2.5 w-2.5" /> Close All
+	                    </button>
+	                  </div>
+	                </div>
 
-                  return (
-                    <div key={trade.id} className={`mobile-position-card rounded-xl price-mono text-[11px] overflow-hidden transition-shadow duration-300 ${Date.now() - trade.openTimestamp < 4000 ? "animate-pulse" : ""}`}
-                      style={{ background: "#0d1625", border: `1px solid ${pnlPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, boxShadow: `0 0 0 1px rgba(0,0,0,0.2), 0 4px 16px -4px ${pnlPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
-                      {/* Direction accent strip */}
-                      <div className="h-[3px] w-full" style={{ background: isBuy ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
-                      {/* Card header */}
-                      <div className="mobile-position-card-header flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42", background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="relative flex items-center justify-center w-9 h-9 rounded-full font-black text-[11px] shrink-0"
-                            style={{ background: isGd ? "linear-gradient(135deg,#d97706,#b45309)" : isCr ? "linear-gradient(135deg,#3b82f6,#1d4ed8)" : "linear-gradient(135deg,#1976c9,#0f4c81)", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                            {ASSET_ICON[trade.pair] ?? base.slice(0, 2)}
-                            {isBuy ? (
-                              <ArrowUpRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#10b981", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
-                            ) : (
-                              <ArrowDownRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#ef4444", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-black text-white text-[13px]">{trade.pair}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
-                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444", border: `1px solid ${isBuy ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                                {trade.direction}
-                              </span>
-                              <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)" }}>×{trade.leverage}</span>
-                            </div>
-                            <span className="text-[9px] text-slate-500 flex items-center gap-1">
-                              <span className="font-bold text-slate-400">{trade.lotSize} Lot</span> · <Clock className="h-2.5 w-2.5" /> {duration}
-                            </span>
-                          </div>
-                        </div>
-                        {/* PnL big display */}
-                        <div className="text-right shrink-0 pl-2">
-                          <p className="text-[22px] font-black leading-none tracking-tight" style={{ color: pnlClr, textShadow: `0 0 16px ${pnlClr}33` }}>
-                            {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
-                          </p>
-                          <p className="text-[9px] font-bold mt-0.5" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
-                          <p className="text-[9px] text-slate-500">ROE <span className="font-bold" style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
-                        </div>
-                      </div>
+	                {/* Positions list */}
+	                <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
+	                  {openTrades.map(trade => {
+	                    const isBuy    = trade.direction === "BUY"
+	                    const pnlPos   = trade.pnl >= 0
+	                    const pnlClr   = pnlPos ? "#10b981" : "#ef4444"
+	                    const liqPrice = calcLiquidationPrice(trade.pair, trade)
+	                    const duration = formatDuration(trade.openTimestamp)
 
-                      {/* Price levels row */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Entry</p><p className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Current Price</p><p className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Liq.</p><p className="font-bold text-orange-400">{fmt(liqPrice, trade.pair)}</p></div>
-                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${trade.margin.toFixed(2)}</p></div>
-                      </div>
+	                    return (
+	                      <div key={trade.id} className="rounded-lg price-mono text-[11px] overflow-hidden bg-[#0d1625] border border-[#1a2a42]">
+		                        {/* Card header */}
+		                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
+		                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+		                            <AssetLogo symbol={trade.pair} size={18} className="shrink-0" />
+		                            <span className="font-black text-white text-xs">{trade.pair}</span>
+	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isBuy ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-300 border border-rose-500/30"}`}>
+	                              {trade.direction}
+	                            </span>
+	                            <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-400/10 text-amber-300">×{trade.leverage}</span>
+	                            <span className="text-[9px] font-bold text-slate-400">{trade.lotSize} Lot</span>
+	                            <span className="text-[9px] text-slate-500 flex items-center gap-1">
+	                              <Clock className="h-2.5 w-2.5" /> {duration}
+	                            </span>
+	                          </div>
 
-                      {/* SL/TP/Trailing/Swap row */}
-                      <div className="mobile-position-protection grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div>
-                          <p className="text-[8px] text-slate-500 mb-0.5">SL</p>
-                          <p className="font-bold text-red-400 text-[11px]">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8px] text-slate-500 mb-0.5">TP</p>
-                          <p className="font-bold text-emerald-400 text-[11px]">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8px] text-slate-500 mb-0.5">Trail</p>
-                          <p className="font-bold text-violet-400 text-[11px]">
-                            {trade.trailingStopPips ? `${trade.trailingStopPips}p` : "—"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[8px] text-slate-500 mb-0.5">Swap</p>
-                          <p className="font-bold text-[11px]" style={{ color: trade.swap >= 0 ? "#10b981" : "#ef4444" }}>
-                            {trade.swap >= 0 ? "+" : ""}{trade.swap.toFixed(4)}
-                          </p>
-                        </div>
-                      </div>
+	                          {/* P&L Display */}
+	                          <div className="text-right shrink-0">
+	                            <span className="text-base font-black leading-none" style={{ color: pnlClr }}>
+	                              {pnlPos ? "+" : ""}${trade.pnl.toFixed(2)}
+	                            </span>
+	                            <span className="text-[9px] font-bold ml-2" style={{ color: pnlClr }}>
+	                              ({trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)}p · {trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(1)}% ROE)
+	                            </span>
+	                          </div>
+	                        </div>
 
-                      {/* Partial close row */}
-                      <div className="mobile-position-partial flex gap-1.5 px-3 pb-1.5 items-center">
-                        <span className="text-[8px] font-black uppercase tracking-wider shrink-0" style={{ color: "#3d5a80" }}>Partial</span>
-                        <input
-                          type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
-                          value={partialCloseMap[trade.id] ?? ""}
-                          onChange={e => setPartialCloseMap(prev => ({ ...prev, [trade.id]: e.target.value }))}
-                          placeholder={`${(trade.lotSize / 2).toFixed(2)} lots`}
-                          className="flex-1 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded-lg"
-                          style={{ background: "#070a10", border: "1px solid #1e2d45", minWidth: 0 }}
-                        />
-                        <button
-                          onClick={() => {
-                            const l = parseFloat(partialCloseMap[trade.id] ?? "")
-                            if (!isNaN(l) && l > 0 && window.confirm(`Close ${l.toFixed(2)} lots of ${trade.pair}?`)) partialCloseTrade(trade.id, l)
-                          }}
-                          className="px-2 py-1 rounded-lg font-black text-[10px] transition-all active:scale-95 shrink-0"
-                          style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
-                          Close Partial
-                        </button>
-                      </div>
+	                        {/* Price & Risk metrics grid */}
+	                        <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-1.5 gap-2 border-b border-[#1a2a42] text-[10px]">
+	                          <div><span className="text-[8px] text-slate-500 block">Entry / Current</span><span className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</span> / <span className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</span></div>
+	                          <div><span className="text-[8px] text-slate-500 block">SL / TP</span><span className="font-bold text-rose-400">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</span> / <span className="font-bold text-emerald-400">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</span></div>
+	                          <div><span className="text-[8px] text-slate-500 block">Liq / Margin</span><span className="font-bold text-amber-400">{fmt(liqPrice, trade.pair)}</span> / <span className="font-bold text-slate-300">${trade.margin.toFixed(2)}</span></div>
+	                          <div className="text-right"><span className="text-[8px] text-slate-500 block">Trail / Swap</span><span className="font-bold text-violet-400">{trade.trailingStopPips ? `${trade.trailingStopPips}p` : "—"}</span> / <span className="font-bold" style={{ color: trade.swap >= 0 ? "#10b981" : "#ef4444" }}>{trade.swap >= 0 ? "+" : ""}${trade.swap.toFixed(2)}</span></div>
+	                        </div>
 
-                      {/* Action buttons */}
-                      <div className="mobile-position-actions flex gap-1.5 px-3 py-2">
-                        <button
-                          onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
-                          className="mobile-position-modify flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
-                          style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
-                          <Edit3 className="h-3 w-3" /> Modify SL/TP
-                        </button>
-                        <button
-                          aria-label={`Close ${trade.pair} position`}
-                          onClick={() => closeTrade(trade.id)}
-                          className="mobile-position-close flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
-                          style={{
-                            background: trade.pnl >= 0 ? "linear-gradient(135deg,#065f46,#059669)" : "linear-gradient(135deg,#7f1d1d,#dc2626)",
-                            color: "#fff",
-                            border: `1px solid ${trade.pnl >= 0 ? "#059669" : "#dc2626"}`,
-                          }}>
-                          <X className="h-3 w-3" /> CLOSE {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              </div>
-            )
-          )}
+	                        {/* Action controls row */}
+	                        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-[#08101d]">
+	                          {/* Partial close */}
+	                          <div className="flex items-center gap-1.5">
+	                            <span className="text-[8px] font-black uppercase text-slate-400">Partial:</span>
+	                            <input
+	                              type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
+	                              value={partialCloseMap[trade.id] ?? ""}
+	                              onChange={e => setPartialCloseMap(prev => ({ ...prev, [trade.id]: e.target.value }))}
+	                              placeholder={`${(trade.lotSize / 2).toFixed(2)}`}
+	                              className="w-16 price-mono text-[10px] text-white focus:outline-none px-1.5 py-0.5 rounded bg-[#070a10] border border-[#1e2d45]"
+	                            />
+	                            <button
+	                              type="button"
+	                              onClick={() => {
+	                                const l = parseFloat(partialCloseMap[trade.id] ?? "")
+	                                if (!isNaN(l) && l > 0 && window.confirm(`Close ${l.toFixed(2)} lots of ${trade.pair}?`)) partialCloseTrade(trade.id, l)
+	                              }}
+	                              className="px-2 py-0.5 rounded font-black text-[9px] bg-amber-400/10 text-amber-300 border border-amber-400/20 hover:bg-amber-400/20">
+	                              Close Lot
+	                            </button>
+	                          </div>
 
-          {/* ─��� Pending Orders ── */}
-          {activePanel === "pending" && (
-            pendingOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
-                <Clock className="h-8 w-8 opacity-20" />
-                <span className="text-[11px] tracking-wider font-bold uppercase">No pending orders</span>
-              </div>
-            ) : (
-              <div className="order-panel flex flex-col h-full">
-                <div className="order-panel-header flex items-center justify-between shrink-0">
-                  <div>
-                    <p className="order-panel-kicker">Order Management</p>
-                    <h3 className="order-panel-title">Pending Orders</h3>
-                  </div>
-                  <span className="order-panel-count">{pendingOrders.length} active</span>
-                </div>
-                <div className="order-panel-list p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll">
-                {pendingOrders.map(o => {
-                  const isBuy = o.direction === "BUY"
-                  return (
-                    <div key={o.id} className="order-card rounded-xl price-mono text-[11px]"
-                      style={{ background: "#0d1625", border: "1px solid #1a2a42" }}>
-                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="font-black text-white text-[13px]">{o.pair}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase"
-                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444" }}>
-                                {o.direction}
-                              </span>
-                              <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{ background: "rgba(34,211,238,0.1)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
-                                {o.orderType.replace("_"," ")}
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-slate-500">{o.lotSize} Lot · ×{o.leverage} · {o.expiry} · {o.createdTime}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-slate-500 mb-0.5">Target</p>
-                          <p className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</p>
-                        </div>
-                      </div>
-                      <div className="order-card-details grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">SL</p><p className="font-bold text-red-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">TP</p><p className="font-bold text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p></div>
-                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Status</p><p className="font-bold text-cyan-400">Queued</p></div>
-                      </div>
-                      <div className="px-3 py-2">
-                        <button onClick={() => cancelPending(o.id)}
-                          className="w-full py-2 rounded-lg font-black text-[10px] tracking-wide uppercase transition-all active:scale-95 flex items-center justify-center gap-1"
-                          style={{ background: "rgba(239,68,68,0.08)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
-                          <X className="h-3 w-3" /> Cancel Order
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-                </div>
-              </div>
-            )
-          )}
+	                          {/* Main Actions */}
+	                          <div className="flex items-center gap-1.5 ml-auto">
+	                            <button
+	                              type="button"
+	                              onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
+	                              className="px-2.5 py-1 rounded font-black text-[9px] flex items-center gap-1 bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20">
+	                              <Edit3 className="h-2.5 w-2.5" /> Modify SL/TP
+	                            </button>
+	                            <button
+	                              type="button"
+	                              aria-label={`Close ${trade.pair} position`}
+	                              onClick={() => closeTrade(trade.id)}
+	                              className={`px-3 py-1 rounded font-black text-[9px] flex items-center gap-1 text-white ${
+	                                trade.pnl >= 0 ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"
+	                              }`}>
+	                              <X className="h-2.5 w-2.5" /> CLOSE ({trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)})
+	                            </button>
+	                          </div>
+	                        </div>
+	                      </div>
+	                    )
+	                  })}
+	                </div>
+	              </div>
+	            )
+	          )}
 
-          {/* ── Trade History ── */}
-          {activePanel === "history" && (() => {
-            const totalHistPnl   = closedTrades.reduce((s, t) => s + t.finalPnl, 0)
-            const totalHistPips  = closedTrades.reduce((s, t) => s + t.finalPips, 0)
-            const totalHistSwap  = closedTrades.reduce((s, t) => s + t.finalSwap, 0)
-            const wins           = closedTrades.filter(t => t.finalPnl > 0).length
-            const winRate        = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) : "0"
-            const pnlColor       = totalHistPnl >= 0 ? "#34d399" : "#f87171"
-            return closedTrades.length === 0 ? (
-              <div className="flex items-center justify-center h-full gap-2 text-slate-700">
-                <History className="h-5 w-5 opacity-30" />
-                <span className="text-[11px] tracking-wider">No closed trades yet</span>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
-                {/* Summary strip */}
-                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
-                  {[
-                    { label: "TOTAL P&L",  value: `${totalHistPnl >= 0 ? "+" : ""}$${totalHistPnl.toFixed(2)}`, color: pnlColor, bg: totalHistPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
-                    { label: "TOTAL PIPS", value: `${totalHistPips >= 0 ? "+" : ""}${totalHistPips.toFixed(1)}p`, color: pnlColor, bg: "transparent" },
-                    { label: "TOTAL SWAP", value: `${totalHistSwap >= 0 ? "+" : ""}$${totalHistSwap.toFixed(2)}`, color: totalHistSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
-                    { label: "TRADES",     value: String(closedTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-                    { label: "WIN RATE",   value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? "#34d399" : "#f87171", bg: "transparent" },
-                    { label: "WINS",       value: String(wins), color: "#34d399", bg: "transparent" },
-                    { label: "LOSSES",     value: String(closedTrades.length - wins), color: "#f87171", bg: "transparent" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-                      <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-                      <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => void loadTrades()} aria-label="Refresh trade history" title="Refresh trade history" className="ml-auto mr-2 rounded p-1 text-slate-500 transition-colors hover:bg-cyan-400/10 hover:text-cyan-300">
-                    <RefreshCw className="h-3 w-3" />
-                  </button>
-                </div>
-                {/* Table */}
-                <div className="flex-1 overflow-y-auto terminal-scroll">
-                  <table className="w-full text-[10px] price-mono">
-                    <thead>
-                      <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-                        {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
-                          <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap sticky top-0" style={{ background: "#070a10" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {closedTrades.slice(0, 100).map(trade => {
-                        const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
-                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa", stop_out: "#f97316" }
-                        return (
-                          <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
-                            <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
-                            <td className="px-2 py-1.5">
-                              <span className="px-1.5 py-0.5 font-black text-[8px] uppercase rounded"
-                                style={{ background: trade.direction === "BUY" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: trade.direction === "BUY" ? "#10b981" : "#ef4444" }}>
-                                {trade.direction}
-                              </span>
-                            </td>
-                            <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
-                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.openPrice, trade.pair)}</td>
-                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.closePrice, trade.pair)}</td>
-                            <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
-                            <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
-                            <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
-                            <td className="px-2 py-1.5 text-slate-500 whitespace-nowrap">{trade.closeDuration}</td>
-                            <td className="px-2 py-1.5">
-                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
-                                style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
-                                {trade.closeReason.replace("_"," ")}
-                              </span>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          })()}
+	          {/* ── Pending Orders ── */}
+	          {activePanel === "pending" && (
+	            pendingOrders.length === 0 ? (
+	              <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-slate-500">
+	                <Clock className="h-6 w-6 opacity-30" />
+	                <span className="text-xs font-bold uppercase tracking-wider">No pending orders</span>
+	              </div>
+	            ) : (
+	              <div className="flex flex-col h-full">
+	                <div className="flex items-center justify-between shrink-0 px-3 py-1.5 bg-[#04070d] border-b border-[#1a2640] text-[10px] font-bold text-slate-400 price-mono">
+	                  <span className="uppercase text-cyan-300">Pending Orders ({pendingOrders.length})</span>
+	                </div>
+	                <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
+	                  {pendingOrders.map(o => {
+	                    const isBuy = o.direction === "BUY"
+	                    return (
+	                      <div key={o.id} className="rounded-lg price-mono text-[11px] overflow-hidden bg-[#0d1625] border border-[#1a2a42]">
+		                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
+		                          <div className="flex items-center gap-2 flex-wrap">
+		                            <AssetLogo symbol={o.pair} size={18} className="shrink-0" />
+		                            <span className="font-black text-white text-xs">{o.pair}</span>
+	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isBuy ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
+	                              {o.direction}
+	                            </span>
+	                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 uppercase">
+	                              {o.orderType.replace("_"," ")}
+	                            </span>
+	                            <span className="text-[9px] font-bold text-slate-400">{o.lotSize} Lot · ×{o.leverage}</span>
+	                            <span className="text-[9px] text-slate-500">{o.expiry} · {o.createdTime}</span>
+	                          </div>
+	                          <div className="text-right">
+	                            <span className="text-[8px] text-slate-500 block">Target Price</span>
+	                            <span className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</span>
+	                          </div>
+	                        </div>
+	                        <div className="flex items-center justify-between px-3 py-1.5 bg-[#08101d] text-[10px]">
+	                          <div className="flex items-center gap-3 text-slate-400">
+	                            <span>SL: <strong className="text-rose-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</strong></span>
+	                            <span>TP: <strong className="text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</strong></span>
+	                            <span>Margin: <strong className="text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</strong></span>
+	                          </div>
+	                          <button
+	                            type="button"
+	                            onClick={() => cancelPending(o.id)}
+	                            className="px-2.5 py-1 rounded font-black text-[9px] uppercase tracking-wide bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20">
+	                            Cancel Order
+	                          </button>
+	                        </div>
+	                      </div>
+	                    )
+	                  })}
+	                </div>
+	              </div>
+	            )
+	          )}
+
+	          {/* ── Trade History ── */}
+	          {activePanel === "history" && (() => {
+	            const totalHistPnl   = closedTrades.reduce((s, t) => s + t.finalPnl, 0)
+	            const totalHistPips  = closedTrades.reduce((s, t) => s + t.finalPips, 0)
+	            const totalHistSwap  = closedTrades.reduce((s, t) => s + t.finalSwap, 0)
+	            const wins           = closedTrades.filter(t => t.finalPnl > 0).length
+	            const winRate        = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) : "0"
+	            const pnlColor       = totalHistPnl >= 0 ? "#34d399" : "#f87171"
+	            return closedTrades.length === 0 ? (
+	              <div className="flex items-center justify-center h-full gap-2 p-6 text-slate-500">
+	                <History className="h-5 w-5 opacity-30" />
+	                <span className="text-xs font-bold uppercase tracking-wider">No trade history</span>
+	              </div>
+	            ) : (
+	              <div className="flex flex-col h-full">
+	                {/* Summary strip */}
+	                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto bg-[#04070d] border-b border-[#1a2640]">
+	                  {[
+	                    { label: "TOTAL P&L",  value: `${totalHistPnl >= 0 ? "+" : ""}$${totalHistPnl.toFixed(2)}`, color: pnlColor, bg: totalHistPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+	                    { label: "TOTAL PIPS", value: `${totalHistPips >= 0 ? "+" : ""}${totalHistPips.toFixed(1)}p`, color: pnlColor, bg: "transparent" },
+	                    { label: "TOTAL SWAP", value: `${totalHistSwap >= 0 ? "+" : ""}$${totalHistSwap.toFixed(2)}`, color: totalHistSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+	                    { label: "TRADES",     value: String(closedTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+	                    { label: "WIN RATE",   value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? "#34d399" : "#f87171", bg: "transparent" },
+	                    { label: "WINS",       value: String(wins), color: "#34d399", bg: "transparent" },
+	                    { label: "LOSSES",     value: String(closedTrades.length - wins), color: "#f87171", bg: "transparent" },
+	                  ].map((item, i) => (
+	                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0 border-r border-[#0f1c2e]" style={{ background: item.bg }}>
+	                      <span className="text-[7px] font-bold tracking-wider uppercase text-slate-400">{item.label}</span>
+	                      <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+	                    </div>
+	                  ))}
+	                  <button type="button" onClick={() => void loadTrades()} aria-label="Refresh trade history" title="Refresh trade history" className="ml-auto mr-2 rounded p-1 text-slate-500 transition-colors hover:bg-cyan-400/10 hover:text-cyan-300">
+	                    <RefreshCw className="h-3 w-3" />
+	                  </button>
+	                </div>
+	                {/* Table */}
+	                <div className="flex-1 overflow-x-auto overflow-y-auto terminal-scroll">
+	                  <table className="w-full text-[10px] price-mono min-w-[640px]">
+	                    <thead>
+	                      <tr className="bg-[#070a10] border-b border-[#1a2640]">
+	                        {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
+	                          <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap sticky top-0 bg-[#070a10]">{h}</th>
+	                        ))}
+	                      </tr>
+	                    </thead>
+	                    <tbody>
+	                      {closedTrades.slice(0, 100).map(trade => {
+	                        const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
+	                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa", stop_out: "#f97316" }
+	                        return (
+	                          <tr key={trade.id} className="border-b border-[#0f1a2e] hover:bg-white/[0.015] transition-colors">
+	                            <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
+	                            <td className="px-2 py-1.5">
+	                              <span className={`px-1.5 py-0.5 font-black text-[8px] uppercase rounded ${trade.direction === "BUY" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+	                                {trade.direction}
+	                              </span>
+	                            </td>
+	                            <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
+	                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.openPrice, trade.pair)}</td>
+	                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.closePrice, trade.pair)}</td>
+	                            <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
+	                            <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
+	                            <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}${trade.finalSwap.toFixed(2)}</td>
+	                            <td className="px-2 py-1.5 text-slate-500 whitespace-nowrap">{trade.closeDuration}</td>
+	                            <td className="px-2 py-1.5">
+	                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
+	                                style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
+	                                {trade.closeReason.replace("_"," ")}
+	                              </span>
+	                            </td>
+	                          </tr>
+	                        )
+	                      })}
+	                    </tbody>
+	                  </table>
+	                </div>
+	              </div>
+	            )
+	          })()}
 
           {/* ── Order Depth ── */}
           {activePanel === "depth" && (
@@ -4667,7 +4510,7 @@ const maxLeverage = 100
         <span>{utcClock} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──����───────────────���────────────────────���────── */}
+      {/* ── Trade Confirmation Modal ──����────���──────────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"
@@ -4746,37 +4589,9 @@ const maxLeverage = 100
         </div>
       )}
 
-      {positionsPopupOpen && (
-        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="positions-manager-title">
-          <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#060a12] shadow-2xl shadow-black/60">
-            <div className="flex items-center justify-between border-b border-[#1a2640] bg-[#0d1625] px-4 py-3"><div><p id="positions-manager-title" className="text-sm font-black uppercase tracking-wider text-white">Open Positions Manager</p><p className="mt-1 text-[10px] text-slate-400">Live prices, P&amp;L, and trade controls</p></div><button type="button" onClick={() => setPositionsPopupOpen(false)} aria-label="Close open positions manager" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button></div>
-            <div className="flex items-center gap-3 overflow-x-auto border-b border-[#1a2640] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400"><span className="rounded-md bg-cyan-500/10 px-2 py-1 text-cyan-300">{openTrades.length} Open</span><span className={totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}>Live P&amp;L {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}</span><span>{online ? "Live feed" : "Reconnecting..."}</span></div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">{openTrades.length === 0 ? <div className="flex min-h-40 items-center justify-center text-xs text-slate-500">No open positions</div> : <div className="flex flex-col gap-2">{openTrades.map(trade => { const isBuy = trade.direction === "BUY"; const pnlClr = trade.pnl >= 0 ? "#10b981" : "#ef4444"; return <div key={trade.id} className="rounded-xl border border-[#1a2a42] bg-[#0d1625] p-3"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><span className="text-base font-black text-white">{trade.pair}</span><span className={`rounded px-2 py-1 text-[10px] font-black ${isBuy ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{trade.direction}</span></div><p className="mt-1 text-[10px] text-slate-400">{trade.lotSize} lots</p></div><div className="text-right"><p className="text-lg font-black" style={{ color: pnlClr }}>{trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}</p><p className="text-[10px] text-slate-400">Live P&amp;L</p></div></div><div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-5">{[["Entry", fmt(trade.openPrice, trade.pair)], ["Current", fmt(trade.currentPrice, trade.pair)], ["Lot Size", String(trade.lotSize)], ["SL", trade.sl ? fmt(trade.sl, trade.pair) : "Not set"], ["TP", trade.tp ? fmt(trade.tp, trade.pair) : "Not set"]].map(([label, value]) => <div key={label}><p className="text-[9px] uppercase text-slate-500">{label}</p><p className="font-bold text-slate-200">{value}</p></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => closeTrade(trade.id)} className="min-h-11 rounded-lg bg-red-500/15 px-3 text-xs font-black uppercase tracking-wider text-red-300 hover:bg-red-500/25">Close Position</button><button type="button" onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })} className="min-h-11 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 text-xs font-black uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20">Modify SL/TP</button></div></div> })}</div>}</div>
-          </div>
-        </div>
-      )}
-
-      {historyPopupOpen && (
-  <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="trading-history-title">
-    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#060a12] shadow-2xl shadow-black/60">
-      <div className="flex items-center justify-between border-b border-[#1a2640] bg-[#0b1220] px-3 py-2.5 sm:px-4">
-        <div className="flex items-center gap-2.5"><div className="flex size-7 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10"><History className="size-3.5 text-cyan-300" /></div><div><p id="trading-history-title" className="text-[11px] font-black uppercase tracking-[0.16em] text-white">Change History</p><p className="mt-0.5 text-[9px] text-slate-500">Completed orders · execution ledger</p></div></div>
-        <div className="flex items-center gap-2"><span className="hidden rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300 sm:inline-flex">{online ? "Live" : "Offline"}</span><button type="button" onClick={() => setHistoryPopupOpen(false)} aria-label="Close trading history" className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-white"><X className="size-4" /></button></div>
-      </div>
-      <div className="grid grid-cols-4 border-b border-[#1a2640] bg-[#070d18]">
-        {[{label:"Trades",value:String(closedTrades.length),color:"#c084fc"},{label:"Wins",value:String(closedTrades.filter(t=>t.finalPnl>0).length),color:"#34d399"},{label:"Losses",value:String(closedTrades.filter(t=>t.finalPnl<=0).length),color:"#f87171"},{label:"Net P&L",value:`${closedTrades.reduce((s,t)=>s+t.finalPnl,0)>=0?"+":""}$${closedTrades.reduce((s,t)=>s+t.finalPnl,0).toFixed(2)}`,color:closedTrades.reduce((s,t)=>s+t.finalPnl,0)>=0?"#34d399":"#f87171"}].map(item => <div key={item.label} className="border-r border-[#142238] px-2.5 py-2 last:border-r-0"><p className="text-[7px] font-bold uppercase tracking-[0.14em] text-slate-600">{item.label}</p><p className="price-mono mt-0.5 text-[12px] font-black" style={{color:item.color}}>{item.value}</p></div>)}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
-        {closedTrades.length === 0 ? <div className="flex min-h-40 items-center justify-center text-[10px] uppercase tracking-wider text-slate-600">No completed trades yet</div> : <div className="min-w-[700px] overflow-hidden rounded-lg border border-[#1a2a42] bg-[#070d18]"><div className="grid grid-cols-[1.35fr_.72fr_.65fr_1fr_1fr_.9fr_.9fr] gap-2 border-b border-[#1a2a42] bg-[#0d1625] px-3 py-1.5 text-[7px] font-black uppercase tracking-[0.14em] text-slate-600"><span>Instrument</span><span>Side</span><span>Lots</span><span>Open</span><span>Close</span><span>Result</span><span>Reason</span></div>{closedTrades.map(trade => <div key={trade.id} className="grid grid-cols-[1.35fr_.72fr_.65fr_1fr_1fr_.9fr_.9fr] items-center gap-2 border-b border-[#101b2d] px-3 py-2 text-[9px] text-slate-300 last:border-b-0 hover:bg-cyan-400/[0.03]"><span className="min-w-0 font-black text-slate-100"><span className="block truncate">{trade.pair}</span><small className="mt-0.5 block truncate text-[7px] font-normal text-slate-600">{trade.closeTime}</small></span><span className={trade.direction === "BUY" ? "font-black text-emerald-400" : "font-black text-red-400"}>{trade.direction}</span><span className="price-mono text-slate-400">{trade.lotSize.toFixed(2)}</span><span className="price-mono text-slate-400">{fmt(trade.openPrice, trade.pair)}</span><span className="price-mono text-slate-400">{fmt(trade.closePrice, trade.pair)}</span><span className={trade.finalPnl >= 0 ? "price-mono font-black text-emerald-400" : "price-mono font-black text-red-400"}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}<small className="block text-[7px] font-normal text-slate-500">{trade.finalPips.toFixed(1)} pips</small></span><span className="truncate text-[8px] capitalize text-slate-500">{trade.closeReason.replaceAll("_", " ")}</span></div>)}</div>}
-      </div>
-      <div className="flex items-center justify-between border-t border-[#1a2640] bg-[#080f1b] px-3 py-1.5 text-[8px] text-slate-600 sm:px-4"><span>{closedTrades.length} completed trades</span><button type="button" onClick={() => void loadTrades()} className="flex items-center gap-1 rounded-md px-2 py-1 font-bold uppercase tracking-[0.12em] text-cyan-300 hover:bg-cyan-400/10"><RefreshCw className="size-3" /> Refresh</button></div>
-    </div>
-  </div>
-  )}
-
-  {tradeRestrictionNotice && (
-    <div className="absolute inset-0 z-[75] flex items-center justify-center bg-[#02060f]/80 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="trade-restriction-title">
-      <div className="w-full max-w-sm overflow-hidden rounded-2xl border border-amber-400/35 bg-[#0a1422] shadow-2xl shadow-black/60">
+	      {tradeRestrictionNotice && (
+    <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center bg-[#02060f]/80 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="trade-restriction-title">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-amber-400/35 bg-[#0a1422] shadow-2xl shadow-black/60">
         <div className="h-1 bg-amber-400" />
         <div className="p-5 text-center">
           <div className="mx-auto flex size-11 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10"><LockKeyhole className="size-5 text-amber-300" /></div>
@@ -4791,7 +4606,7 @@ const maxLeverage = 100
 
   {tradeConfirm && (
   <div
-  className="absolute inset-0 z-50 flex items-center justify-center"
+  className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center p-2"
           style={{ background: "rgba(2,6,15,0.82)", backdropFilter: "blur(6px)" }}
           onClick={(e) => { if (e.target === e.currentTarget && !confirmLoading) setTradeConfirm(null) }}
         >
@@ -4799,7 +4614,7 @@ const maxLeverage = 100
             className="relative flex max-h-full flex-col rounded-2xl overflow-y-auto overflow-x-hidden"
             style={{
               width: "min(340px, calc(100vw - 20px))",
-              maxHeight: "calc(100% - 16px)",
+              maxHeight: "calc(100dvh - 16px)",
               background: "linear-gradient(160deg, #07101e 0%, #040c18 100%)",
               border: "1px solid rgba(255,255,255,0.07)",
               boxShadow: `0 0 60px ${tradeConfirm.direction === "BUY" ? "rgba(16,185,129,0.18)" : "rgba(239,68,68,0.18)"}`,

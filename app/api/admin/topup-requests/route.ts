@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   try {
     const rows = await query(
       `SELECT id, participant_email, participant_id, amount, status, created_at,
-              payment_method, transaction_id, admin_notes, screenshot_url, reviewed_at
+              payment_method, transaction_id, admin_notes, screenshot_url, reviewed_at, promo_code, promo_discount_percent, promo_bonus_amount
        FROM topup_requests ORDER BY created_at DESC`
     )
     return NextResponse.json({ success: true, requests: rows })
@@ -87,8 +87,10 @@ export async function POST(req: NextRequest) {
       if (isInitialFundedTopUp && !fundedCredit) {
         return NextResponse.json({ success: false, message: "The first funded top-up must be $50, $100, $250, $500, or $1,000" }, { status: 400 })
       }
+      const promoBonusAmount = Number(topup.promo_bonus_amount || 0)
       const creditedAmount = isInitialFundedTopUp ? fundedCredit : depositAmount
-      const newBalance = Number(participant.account_balance || 0) + creditedAmount
+      const totalCredit = creditedAmount + promoBonusAmount
+      const newBalance = Number(participant.account_balance || 0) + totalCredit
       const fundedBaseAmount = isFundedAccount
         ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
         : 0
@@ -111,6 +113,9 @@ export async function POST(req: NextRequest) {
         "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
         [adminNotes || null, requestId]
       )
+      if (topup.promo_code && promoBonusAmount > 0) {
+        await execute("UPDATE promo_codes SET used_count = used_count + 1 WHERE code = $1 AND active = TRUE AND (max_uses IS NULL OR used_count < max_uses)", [topup.promo_code])
+      }
       await execute(
         "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
         [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up${isFundedAccount ? ` for a $${creditedAmount.toLocaleString()} funded account` : ""}`]
@@ -167,7 +172,8 @@ export async function POST(req: NextRequest) {
           ? `Top-up approved and $${creditedAmount.toLocaleString()} funded balance credited${!remainsBelowLossLimit ? "; account is live again" : ""}`
           : "Top-up approved and wallet credited",
         newBalance,
-        creditedAmount,
+        creditedAmount: totalCredit,
+        promoBonusAmount,
         accountRevived: isFundedAccount && !remainsBelowLossLimit,
       })
     }

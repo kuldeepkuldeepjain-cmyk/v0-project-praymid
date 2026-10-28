@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { decimals as instrumentDecimals } from "@/lib/forex-instruments"
+import { AssetLogo } from "@/components/asset-logo"
 import {
   createChart,
   CandlestickSeries,
@@ -53,21 +54,21 @@ type PriceAlert = {
 
 // TradingView-accurate palette: flat background, muted grid, #26a69a/#ef5350 candles
 const T = {
-  bg:          "#070b13",
-  bgSurface:   "#0d1625",
-  bgHover:     "#142238",
-  border:      "#1e2d45",
-  borderMuted: "#15243a",
-  textMuted:   "#7890ad",
-  textDim:     "#a7bad1",
-  textBase:    "#e5eef9",
-  green:       "#10b981",
-  greenBright: "#34d399",
-  red:         "#ef4444",
-  redBright:   "#f87171",
-  cyan:        "#22d3ee",
-  amber:       "#fbbf24",
-  blue:        "#60a5fa",
+  bg:          "#080e17",
+  bgSurface:   "#0d1724",
+  bgHover:     "#172b3d",
+  border:      "#263b4f",
+  borderMuted: "#122234",
+  textMuted:   "#91a4b8",
+  textDim:     "#b7c7d8",
+  textBase:    "#e5edf5",
+  green:       "#32c99a",
+  greenBright: "#5cddb5",
+  red:         "#f07883",
+  redBright:   "#ff9aa2",
+  cyan:        "#39bfa7",
+  amber:       "#e9b75a",
+  blue:        "#62a9e8",
   pink:        "#f472b6",
   purple:      "#a78bfa",
   orange:      "#fb923c",
@@ -75,11 +76,11 @@ const T = {
 }
 
 const DARK_T = {
-  bg: "#131722", bgSurface: "#131722", bgHover: "#1e222d",
-  border: "#2a2e39", borderMuted: "#1e222d",
-  textMuted: "#787b86", textDim: "#b2b5be", textBase: "#d1d4dc",
-  green: "#089981", greenBright: "#26a69a", red: "#f23645", redBright: "#ef5350",
-  cyan: "#2962ff", amber: "#fbbf24", blue: "#60a5fa", pink: "#f472b6",
+  bg: "#080e17", bgSurface: "#0d1724", bgHover: "#172b3d",
+  border: "#263b4f", borderMuted: "#122234",
+  textMuted: "#91a4b8", textDim: "#b7c7d8", textBase: "#e5edf5",
+  green: "#238f74", greenBright: "#32c99a", red: "#b84f5b", redBright: "#f07883",
+  cyan: "#4b8fc8", amber: "#e9b75a", blue: "#62a9e8", pink: "#d58aa9",
   purple: "#a78bfa", orange: "#fb923c", emerald: "#26a69a",
 }
 
@@ -507,8 +508,10 @@ export function TradingChart({
 
       frameId = requestAnimationFrame(() => {
         frameId = null
-        const width = Math.round(entry.contentRect.width)
-        const height = Math.round(entry.contentRect.height)
+        const container = containerRef.current
+        if (!container) return
+        const width = container.clientWidth
+        const height = container.clientHeight
         if (!chartRef.current || width <= 0 || height <= 0) return
         if (width === lastWidth && height === lastHeight) return
 
@@ -764,47 +767,48 @@ export function TradingChart({
   const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
 
   return (
-    <div className="apple-trading-chart terminal-chart-surface flex flex-col w-full h-full select-none" style={{ background: "#09121e" }}>
+    <div className="apple-trading-chart terminal-chart-surface flex flex-col w-full h-full select-none" style={{ background: "#0d1724" }}>
 
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div
         className="flex items-center gap-3 px-3 shrink-0 overflow-x-auto"
-        style={{ height: 36, borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#04080f", minWidth: 0 }}
+        style={{ height: 36, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", minWidth: 0 }}
       >
+        <AssetLogo symbol={safeSymbol} size={18} className="shrink-0" />
         {displayOhlcv ? (
           <>
             {/* Change chip */}
             <span
               className="text-[10px] font-black tracking-widest uppercase shrink-0 px-1.5 py-0.5 rounded"
               style={{
-                color: displayOhlcv.isUp ? "#26c97e" : "#ff4d4d",
-                background: displayOhlcv.isUp ? "rgba(38,201,126,0.1)" : "rgba(255,77,77,0.1)",
-                border: `1px solid ${displayOhlcv.isUp ? "rgba(38,201,126,0.25)" : "rgba(255,77,77,0.25)"}`,
+                color: displayOhlcv.isUp ? "#32c99a" : "#f07883",
+                background: displayOhlcv.isUp ? "rgba(50,201,154,0.1)" : "rgba(240,120,131,0.1)",
+                border: `1px solid ${displayOhlcv.isUp ? "rgba(50,201,154,0.25)" : "rgba(240,120,131,0.25)"}`,
               }}
             >
               {displayOhlcv.isUp ? "+" : "-"}{Math.abs(displayOhlcv.close - displayOhlcv.open).toFixed(dec)}
             </span>
-            <div className="w-px h-4 shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <div className="w-px h-4 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
             {[
               { label: "O", value: fmtP(displayOhlcv.open),  color: "#8ba3be" },
-              { label: "H", value: fmtP(displayOhlcv.high),  color: "#26c97e" },
-              { label: "L", value: fmtP(displayOhlcv.low),   color: "#ff4d4d" },
-              { label: "C", value: fmtP(displayOhlcv.close), color: displayOhlcv.isUp ? "#26c97e" : "#ff4d4d" },
+              { label: "H", value: fmtP(displayOhlcv.high),  color: "#32c99a" },
+              { label: "L", value: fmtP(displayOhlcv.low),   color: "#f07883" },
+              { label: "C", value: fmtP(displayOhlcv.close), color: displayOhlcv.isUp ? "#32c99a" : "#f07883" },
             ].map(({ label, value, color }) => (
               <span key={label} className="flex items-baseline gap-1 shrink-0">
-                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5573" }}>{label}</span>
+                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>{label}</span>
                 <span className="text-[11px] font-black price-mono" style={{ color }}>{value}</span>
               </span>
             ))}
-            <div className="w-px h-4 shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
+            <div className="w-px h-4 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
             <span className="flex items-baseline gap-1 shrink-0">
-              <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5573" }}>VOL</span>
-              <span className="text-[11px] font-black price-mono" style={{ color: "#5a7a9e" }}>{fmtV(displayOhlcv.volume)}</span>
+              <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>VOL</span>
+              <span className="text-[11px] font-black price-mono" style={{ color: "#91a4b8" }}>{fmtV(displayOhlcv.volume)}</span>
             </span>
             {atr14 !== null && (
               <span className="flex items-baseline gap-1 shrink-0">
-                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#3d5573" }}>ATR</span>
-                <span className="text-[11px] font-black price-mono" style={{ color: "#f59e0b" }}>{fmtP(atr14)}</span>
+                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>ATR</span>
+                <span className="text-[11px] font-black price-mono" style={{ color: "#e9b75a" }}>{fmtP(atr14)}</span>
               </span>
             )}
           </>
@@ -821,9 +825,9 @@ export function TradingChart({
           <span
             aria-hidden="true"
             className={marketStatus === "live" ? "size-2 rounded-full animate-pulse" : "size-2 rounded-full"}
-            style={{ background: marketStatus === "live" ? "#26a69a" : "#fbbf24", boxShadow: marketStatus === "live" ? "0 0 8px rgba(38,166,154,0.7)" : "none" }}
+            style={{ background: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}
           />
-          <span className="text-[9px] font-bold tracking-widest" style={{ color: marketStatus === "live" ? "#26a69a" : "#fbbf24" }}>
+          <span className="text-[9px] font-bold tracking-widest" style={{ color: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}>
             {marketStatus === "live" ? "LIVE" : marketStatus === "reconnecting" ? "RECONNECTING" : "CONNECTING"}
           </span>
         </div>
@@ -831,8 +835,8 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-1 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar"
-        style={{ minHeight: 40, borderBottom: "1px solid rgba(255,255,255,0.08)", background: "#080f1b", flexShrink: 0 }}
+        className="flex items-center gap-1.5 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar text-[9px] font-bold"
+        style={{ minHeight: 34, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
         {([
@@ -845,22 +849,23 @@ export function TradingChart({
           <button
             key={key}
             onClick={() => toggle(key)}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
+            aria-pressed={indicators[key]}
+            className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
             style={indicators[key]
-              ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
-              : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
+              ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+              : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
             }
           >
             <span className="text-[9px] font-black tracking-wide">{label}</span>
           </button>
         ))}
 
-        <div className="w-px h-4 self-center mx-1 shrink-0" style={{ background: "rgba(255,255,255,0.06)" }} />
+        <div className="w-px h-3.5 self-center mx-1 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
 
         {/* Sub-pane oscillators */}
         {([
-          { id: "rsi" as const,  label: "RSI(14)", color: palette.emerald },
-          { id: "macd" as const, label: "MACD",    color: palette.orange  },
+          { id: "rsi" as const,  label: "RSI",  color: palette.emerald },
+          { id: "macd" as const, label: "MACD", color: palette.orange  },
         ]).map(({ id, label, color }) => {
           const isActive = chartPane === id && indicators[id]
           return (
@@ -875,10 +880,10 @@ export function TradingChart({
                   setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
                 }
               }}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
+              className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
               style={isActive
-                ? { background: `${color}18`, border: `1px solid ${color}45`, color, boxShadow: `0 0 6px ${color}20` }
-                : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
+                ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+                : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
               }
             >
               <span className="text-[9px] font-black tracking-wide">{label}</span>
@@ -889,7 +894,7 @@ export function TradingChart({
         {/* Sub-pane active pill */}
         {subPaneLabel && (
           <span
-            className="ml-0.5 px-2 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
+            className="ml-0.5 px-1.5 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
             style={{
               background: `${subPaneColor}15`,
               color: subPaneColor,
@@ -905,10 +910,10 @@ export function TradingChart({
         {/* Price Alert toggle */}
         <button
           onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-md shrink-0 transition-all active:scale-95"
+          className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
           style={alertMode
             ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
-            : { background: "transparent", border: "1px solid rgba(255,255,255,0.05)", color: "#3d5573" }
+            : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
           }
           title="Click on chart to set a price alert"
         >
@@ -937,11 +942,12 @@ export function TradingChart({
             const from = Math.max(0, candleData.length - 90)
             chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
           }}
-          className="flex items-center justify-center w-7 h-7 rounded-md shrink-0 transition-all hover:opacity-90 active:scale-95"
-          style={{ background: "#0a1524", border: "1px solid rgba(255,255,255,0.07)", color: "#4a6580" }}
+          className="flex items-center justify-center w-6 h-6 rounded shrink-0 transition-all hover:opacity-90 active:scale-95"
+          style={{ background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }}
+          aria-label="Reset zoom and fit selected instrument"
           title="Reset zoom and fit selected instrument"
         >
-          <svg width="11" height="11" viewBox="0 0 10 10" fill="none">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
             <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3"/>
           </svg>
@@ -956,8 +962,8 @@ export function TradingChart({
     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md shrink-0 font-black text-[9px] tracking-widest transition-all active:scale-95"
 
             style={isExpanded
-              ? { background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.4)", color: "#22d3ee", boxShadow: "0 0 8px rgba(34,211,238,0.15)" }
-              : { background: "#0a1524", border: "1px solid rgba(255,255,255,0.08)", color: "#4a6580" }
+              ? { background: "rgba(57,191,167,0.12)", border: "1px solid rgba(57,191,167,0.42)", color: "#39bfa7" }
+              : { background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }
             }
             title={isExpanded ? "Collapse chart" : "Expand chart"}
           >
@@ -1036,7 +1042,7 @@ export function TradingChart({
               <button
                 onClick={() => setShowAlertPanel(false)}
                 className="text-[8px] font-bold transition-opacity hover:opacity-60 px-1"
-                style={{ color: "#3d5573" }}
+                style={{ color: "#91a4b8" }}
               >
                 hide
               </button>
@@ -1045,11 +1051,11 @@ export function TradingChart({
               <div key={a.id} className="flex items-center gap-2 px-1.5 py-1 rounded-lg" style={{ background: "rgba(255,255,255,0.02)" }}>
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: a.hit ? "#26c97e" : palette.amber, boxShadow: a.hit ? "0 0 6px #26c97e" : `0 0 4px ${palette.amber}` }}
+                  style={{ background: a.hit ? "#32c99a" : palette.amber, boxShadow: a.hit ? "0 0 6px #26c97e" : `0 0 4px ${palette.amber}` }}
                 />
-                <span className="flex-1 text-[10px] font-black price-mono" style={{ color: a.hit ? "#26c97e" : "#8ba3be" }}>
+                <span className="flex-1 text-[10px] font-black price-mono" style={{ color: a.hit ? "#32c99a" : "#8ba3be" }}>
                   {fmtP(a.price)}
-                  {a.hit && <span className="ml-1.5 text-[8px] font-black tracking-widest" style={{ color: "#26c97e" }}>HIT</span>}
+                  {a.hit && <span className="ml-1.5 text-[8px] font-black tracking-widest" style={{ color: "#32c99a" }}>HIT</span>}
                 </span>
                 <button
                   onClick={() => {
@@ -1125,7 +1131,7 @@ export function TradingChart({
               className="w-6 h-6 rounded-full border-2 animate-spin"
               style={{ borderColor: "rgba(34,211,238,0.15)", borderTopColor: palette.cyan }}
             />
-            <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: "#3d5573" }}>
+            <span className="text-[9px] font-black tracking-[0.25em] uppercase" style={{ color: "#91a4b8" }}>
               Loading chart data
             </span>
           </div>

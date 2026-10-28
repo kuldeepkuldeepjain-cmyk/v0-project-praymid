@@ -6,15 +6,8 @@
 .participant-kyc-form {
   min-width: 0;
   overflow: hidden;
-}
-.participant-kyc-form > div:last-child {
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  display: grid;
-  gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr);
-}
+  }
+
 .participant-kyc-form > div:last-child > * { min-width: 0; max-width: 100%; }
 .participant-kyc-form button[type="submit"] { box-sizing: border-box !important; flex: 1 1 auto !important; }
 .participant-kyc-form button[type="submit"] {
@@ -254,8 +247,13 @@
 .terminal-page .overflow-x-auto {
   scrollbar-width: thin;
   scrollbar-color: var(--terminal-line) transparent;
+  overscroll-behavior: contain;
   overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  touch-action: pan-x pan-y;
 }
+
 
 .terminal-page .terminal-scroll::-webkit-scrollbar,
 .terminal-page .overflow-x-auto::-webkit-scrollbar { height: 5px; width: 5px; }
@@ -272,7 +270,95 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Terminal controls: high-contrast, tactile, and consistent across panels. */
+.terminal-page button:focus-visible,
+.terminal-page [role="button"]:focus-visible,
+.terminal-page [role="tab"]:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+}
+
+.terminal-page button:not([role="switch"]):not(.terminal-icon-button):not(.terminal-rate-toggle):not(.btn-3d-buy):not(.btn-3d-sell):not(.btn-3d-execute-buy):not(.btn-3d-execute-sell) {
+  min-height: 30px;
+}
+
+.terminal-page button:disabled {
+  cursor: not-allowed;
+  filter: saturate(0.55);
+}
+
+.terminal-page .terminal-icon-button,
+.terminal-page .terminal-rate-toggle {
+  border: 1px solid #2b4968;
+  background: #102238;
+  color: #b7d7ed;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.terminal-page .terminal-icon-button:hover,
+.terminal-page .terminal-icon-button:focus-visible,
+.terminal-page .terminal-rate-toggle:hover,
+.terminal-page .terminal-rate-toggle:focus-visible {
+  border-color: #38bdf8;
+  background: #153450;
+  color: #e0f7ff;
+  transform: translateY(-1px);
+}
+
+.terminal-page .terminal-menu-item,
+.terminal-page [role="tab"] {
+  border: 1px solid transparent;
+  color: #a8bdd1;
+}
+
+.terminal-page .terminal-menu-item:hover,
+.terminal-page .terminal-menu-item:focus-visible,
+.terminal-page [role="tab"]:hover {
+  border-color: #285273;
+  background: rgba(14, 116, 144, 0.16);
+  color: #e0f7ff;
+}
+
+.terminal-page .btn-3d-buy,
+.terminal-page .btn-3d-sell,
+.terminal-page .btn-3d-execute-buy,
+.terminal-page .btn-3d-execute-sell {
+  min-height: 42px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28), 0 1px 0 rgba(255,255,255,0.16) inset;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.35);
+}
+
+.terminal-page .btn-3d-buy:hover,
+.terminal-page .btn-3d-execute-buy:hover {
+  box-shadow: 0 6px 18px rgba(16,185,129,0.28), 0 1px 0 rgba(255,255,255,0.18) inset;
+  transform: translateY(-1px);
+}
+
+.terminal-page .btn-3d-sell:hover,
+.terminal-page .btn-3d-execute-sell:hover {
+  box-shadow: 0 6px 18px rgba(239,68,68,0.28), 0 1px 0 rgba(255,255,255,0.18) inset;
+  transform: translateY(-1px);
+}
+
+.terminal-page .btn-3d-buy:focus-visible,
+.terminal-page .btn-3d-execute-buy:focus-visible {
+  box-shadow: 0 0 0 3px rgba(52,211,153,0.22), 0 4px 14px rgba(16,185,129,0.28);
+}
+
+.terminal-page .btn-3d-sell:focus-visible,
+.terminal-page .btn-3d-execute-sell:focus-visible {
+  box-shadow: 0 0 0 3px rgba(248,113,113,0.22), 0 4px 14px rgba(239,68,68,0.28);
+}
+
+@media (max-width: 640px) {
+  .terminal-page .btn-3d-buy,
+  .terminal-page .btn-3d-sell,
+  .terminal-page .btn-3d-execute-buy,
+  .terminal-page .btn-3d-execute-sell {
+    min-height: 44px;
   }
 }
 
@@ -1071,198 +1157,86 @@ button, a, [role="button"] {
   50%     { box-shadow: 0 0 12px 2px rgba(168,85,247,0.18), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.4); }
 }
 
-/* 3D BUY button */
+/* Standardized trading terminal button styles */
 .btn-3d-buy {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #0d7a57 0%, #059669 30%, #047857 65%, #03543f 100%);
+  background: #059669;
   border: 1px solid #10b981;
-  border-bottom: 3px solid #065f46;
-  box-shadow:
-    0 0 0 0 rgba(16,185,129,0.55),
-    0 6px 28px rgba(16,185,129,0.30),
-    0 2px 6px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.20),
-    inset 0 -2px 0 rgba(0,0,0,0.30);
-  transform: translateY(0);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  animation: buy-pulse-ring 2.8s ease-out infinite;
+  border-radius: 6px;
+  color: #ffffff;
+  font-weight: 800;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
 }
-.btn-3d-buy::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-buy::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.07);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-buy:hover::after  { animation: shimmer-slide 0.55s ease forwards; }
-.btn-3d-buy:hover         { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 10px 36px rgba(16,185,129,0.45), 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.30); animation: none; }
-.btn-3d-buy:active        { transform: translateY(2px); box-shadow: 0 2px 10px rgba(16,185,129,0.25), inset 0 2px 4px rgba(0,0,0,0.35); animation: none; }
-.btn-3d-buy:disabled      { filter: saturate(0) brightness(0.4); pointer-events: none; animation: none; }
+.btn-3d-buy:hover { background: #10b981; }
+.btn-3d-buy:active { transform: translateY(1px); }
+.btn-3d-buy:disabled { opacity: 0.4; pointer-events: none; }
 
-/* 3D SELL button */
 .btn-3d-sell {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #c0302a 0%, #dc2626 30%, #b91c1c 65%, #7f1d1d 100%);
+  background: #dc2626;
   border: 1px solid #ef4444;
-  border-bottom: 3px solid #991b1b;
-  box-shadow:
-    0 0 0 0 rgba(239,68,68,0.55),
-    0 6px 28px rgba(239,68,68,0.28),
-    0 2px 6px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    inset 0 -2px 0 rgba(0,0,0,0.30);
-  transform: translateY(0);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  animation: sell-pulse-ring 2.8s ease-out infinite;
-  animation-delay: 1.4s;
-}
-.btn-3d-sell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-sell::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.06);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-sell:hover::after  { animation: shimmer-slide 0.55s ease forwards; }
-.btn-3d-sell:hover         { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 10px 36px rgba(239,68,68,0.42), 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.30); animation: none; }
-.btn-3d-sell:active        { transform: translateY(2px); box-shadow: 0 2px 10px rgba(239,68,68,0.22), inset 0 2px 4px rgba(0,0,0,0.35); animation: none; }
-.btn-3d-sell:disabled      { filter: saturate(0) brightness(0.4); pointer-events: none; animation: none; }
-
-/* Lot size / leverage 3D input */
-.input-3d {
-  background: linear-gradient(175deg, #0b1424 0%, #0d1829 50%, #081020 100%);
-  border: 1px solid #233552;
-  border-bottom: 2px solid #0a1225;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    0 1px 0 rgba(255,255,255,0.04);
-  border-radius: 8px;
+  border-radius: 6px;
   color: #ffffff;
-  font-weight: 900;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  animation: lot-glow-pulse 3s ease-in-out infinite;
+  font-weight: 800;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+}
+.btn-3d-sell:hover { background: #ef4444; }
+.btn-3d-sell:active { transform: translateY(1px); }
+.btn-3d-sell:disabled { opacity: 0.4; pointer-events: none; }
+
+/* Input styling */
+.input-3d {
+  background: #070d18;
+  border: 1px solid #1e2d45;
+  border-radius: 6px;
+  color: #ffffff;
+  font-weight: 700;
+  transition: border-color 0.15s ease;
 }
 .input-3d:focus {
   outline: none;
-  border-color: #a855f7;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.55),
-    0 0 0 2px rgba(168,85,247,0.20),
-    0 0 16px rgba(168,85,247,0.15);
-  animation: none;
+  border-color: #38bdf8;
 }
-.input-3d::placeholder { color: #2d4565; }
+.input-3d::placeholder { color: #475569; }
 
-/* param chip — the LOTS / LEV / MARGIN display cells */
+/* Param chip */
 .param-chip {
-  background: linear-gradient(175deg, #0a1220 0%, #0c1628 100%);
-  border: 1px solid #1e2d45;
-  border-bottom: 2px solid #080f1d;
-  border-radius: 10px;
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.45),
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -1px 0 rgba(0,0,0,0.35);
+  background: #0a1322;
+  border: 1px solid #1a2640;
+  border-radius: 6px;
 }
 
 /* Price tick flash */
 .price-tick { animation: price-tick 0.25s ease-out; }
 
-/* 3D execute/submit button */
+/* Standardized execution buttons */
 .btn-3d-execute-buy {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #34d399 0%, #10b981 30%, #059669 60%, #047857 85%, #03543f 100%);
-  border: 1px solid #6ee7b7;
-  border-bottom: 3px solid #065f46;
-  box-shadow:
-    0 6px 24px rgba(16,185,129,0.45),
-    0 2px 8px rgba(0,0,0,0.5),
-    inset 0 1.5px 0 rgba(255,255,255,0.35),
-    inset 0 -2px 0 rgba(0,0,0,0.3);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  border-radius: 10px;
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  background: #059669;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background-color 0.15s ease, transform 0.08s ease;
 }
-.btn-3d-execute-buy::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-execute-buy::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.12);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-execute-buy:hover::after { animation: shimmer-slide 0.5s ease forwards; }
-.btn-3d-execute-buy:hover { filter: brightness(1.15) saturate(1.1); transform: translateY(-2px); box-shadow: 0 12px 34px rgba(16,185,129,0.55), 0 0 0 1px rgba(110,231,183,0.4), inset 0 1.5px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.3); }
-.btn-3d-execute-buy:active { transform: translateY(2px); box-shadow: 0 1px 8px rgba(16,185,129,0.25), inset 0 2px 5px rgba(0,0,0,0.35); }
-.btn-3d-execute-buy:disabled { filter: saturate(0) brightness(0.4); pointer-events: none; }
+.btn-3d-execute-buy:hover { background: #10b981; }
+.btn-3d-execute-buy:active { transform: translateY(1px); }
+.btn-3d-execute-buy:disabled { opacity: 0.4; pointer-events: none; }
 
 .btn-3d-execute-sell {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #f87171 0%, #ef4444 30%, #dc2626 60%, #b91c1c 85%, #7f1d1d 100%);
-  border: 1px solid #fca5a5;
-  border-bottom: 3px solid #991b1b;
-  box-shadow:
-    0 6px 24px rgba(239,68,68,0.42),
-    0 2px 8px rgba(0,0,0,0.5),
-    inset 0 1.5px 0 rgba(255,255,255,0.3),
-    inset 0 -2px 0 rgba(0,0,0,0.3);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  border-radius: 10px;
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  background: #dc2626;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background-color 0.15s ease, transform 0.08s ease;
 }
-.btn-3d-execute-sell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-execute-sell::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.1);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-execute-sell:hover::after { animation: shimmer-slide 0.5s ease forwards; }
-.btn-3d-execute-sell:hover { filter: brightness(1.15) saturate(1.1); transform: translateY(-2px); box-shadow: 0 12px 34px rgba(239,68,68,0.52), 0 0 0 1px rgba(252,165,165,0.4), inset 0 1.5px 0 rgba(255,255,255,0.35), inset 0 -2px 0 rgba(0,0,0,0.3); }
-.btn-3d-execute-sell:active { transform: translateY(2px); box-shadow: 0 1px 8px rgba(239,68,68,0.22), inset 0 2px 5px rgba(0,0,0,0.35); }
-.btn-3d-execute-sell:disabled { filter: saturate(0) brightness(0.4); pointer-events: none; }
+.btn-3d-execute-sell:hover { background: #ef4444; }
+.btn-3d-execute-sell:active { transform: translateY(1px); }
+.btn-3d-execute-sell:disabled { opacity: 0.4; pointer-events: none; }
 
 /* Positions table row */
 .position-row {
@@ -1546,7 +1520,8 @@ button, a, [role="button"] {
    allowing only the individual panels to scroll. */
 @media (min-width: 1200px) {
   .apple-trading-terminal {
-    min-height: min(900px, calc(100dvh - 32px));
+    height: min(900px, calc(100dvh - 32px)) !important;
+    min-height: min(900px, calc(100dvh - 32px)) !important;
     border-radius: 8px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, .28), 0 0 0 1px rgba(94, 149, 194, .12);
   }
@@ -1720,22 +1695,42 @@ button, a, [role="button"] {
 .reference-quick-trade { min-height: 46px; border-radius: 8px; padding: 7px 10px; }
 .reference-quick-trade span { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
 .reference-quick-trade strong { display: block; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.reference-make-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 8px;
+  border: 1px solid rgba(56, 189, 248, .35);
+  border-radius: 8px;
+  background: rgba(14, 116, 144, .16);
+  color: #b9ecff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.reference-make-order span { color: #6f8ba5; font-size: 8px; font-weight: 700; letter-spacing: .04em; text-transform: none; }
+.reference-make-order:hover:not(:disabled), .reference-make-order:focus-visible { border-color: #22d3ee; background: rgba(34, 211, 238, .24); color: #fff; }
+.reference-make-order:disabled { cursor: not-allowed; opacity: .45; }
 @media (max-width: 1199px) {
   .apple-trading-terminal { min-height: 100dvh; height: auto; overflow: auto; }
 }
 
 @media (max-width: 840px) {
-  .apple-trading-terminal { min-height: 100dvh; overflow: auto; }
-  .apple-terminal-grid { display: flex; flex: 1 1 auto; flex-direction: column; overflow: auto; }
+  .apple-trading-terminal { min-height: 100dvh; overflow: visible; }
+  .apple-terminal-grid { display: flex; flex: 1 1 auto; flex-direction: column; overflow: visible; }
   .apple-terminal-market,
   .apple-terminal-chart-column,
   .apple-terminal-order { min-width: 0; width: 100% !important; }
   .apple-terminal-chart-column { min-height: clamp(360px, 62dvh, 720px); flex: 1 1 auto; }
-  .reference-chart-trade-dock { position: sticky; bottom: 0; z-index: 5; }
+  .reference-chart-trade-dock { position: relative; bottom: auto; z-index: 5; }
 }
 @media (max-width: 520px) {
   .apple-terminal-chart-column { min-height: 440px; }
-  .apple-terminal-market { min-height: 300px; max-height: 68dvh; overflow: auto; }
+  .apple-terminal-market { min-height: 300px; max-height: none; overflow: visible; }
 }
 
 @keyframes terminal-scanline {
@@ -2224,7 +2219,10 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-topbar .terminal-desktop-only { display: none !important; }
   .apple-trading-terminal .apple-terminal-summary { min-height: 42px; height: auto; }
   .apple-trading-terminal .apple-terminal-summary > div { padding-inline: 8px; min-width: max-content; }
-  .apple-trading-terminal .apple-terminal-grid { min-height: 0; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-grid {
+    min-height: 0;
+    overflow: visible;
+  }
   .apple-trading-terminal .apple-terminal-market,
   .apple-trading-terminal .apple-terminal-order,
   .apple-trading-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
@@ -2244,9 +2242,9 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span { white-space: nowrap; }
   .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span:last-child { display: none; }
   .reference-terminal {
-    min-height: min(760px, calc(100dvh - 150px));
-    height: min(760px, calc(100dvh - 150px)) !important;
-    overflow: hidden;
+    min-height: 100dvh;
+    height: auto !important;
+    overflow: visible;
   }
   .reference-terminal .apple-terminal-mobile-tabs {
     position: sticky;
@@ -2686,57 +2684,6 @@ button, a, [role="button"] {
   }
 }
 
-/* Touch-first terminal scrolling: keep one predictable vertical scroll surface on phones. */
-@media (max-width: 840px) {
-  html:has(.apple-trading-terminal) {
-    scroll-behavior: smooth;
-    overscroll-behavior-y: none;
-  }
-  body:has(.apple-trading-terminal) {
-    overscroll-behavior-y: none;
-  }
-  .apple-trading-terminal.reference-terminal {
-    height: auto !important;
-    min-height: 100dvh;
-    overflow: visible !important;
-    overscroll-behavior-y: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-grid {
-    display: flex;
-    flex-direction: column;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    overscroll-behavior-y: none;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-market,
-  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column,
-  .apple-trading-terminal.reference-terminal .apple-terminal-order,
-  .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
-    height: auto !important;
-    max-height: none !important;
-    min-height: 0;
-    overflow: visible !important;
-    overscroll-behavior: none;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
-    min-height: clamp(360px, 62dvh, 620px) !important;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-market > div,
-  .apple-trading-terminal.reference-terminal .apple-terminal-order > div,
-  .apple-trading-terminal.reference-terminal .apple-terminal-blotter > div {
-    overflow: visible !important;
-  }
-  .apple-trading-terminal.reference-terminal .terminal-scroll:not(.chart-timeframe-toolbar):not(.terminal-rate-details) {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
-  .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
-    position: relative;
-    bottom: auto;
-  }
-}
 @media (max-width: 520px) {
   .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
     min-height: clamp(360px, 58dvh, 520px) !important;
@@ -2871,7 +2818,7 @@ button, a, [role="button"] {
   min-height: 0;
   max-width: 100vw;
   max-height: 100dvh;
-  contain: layout paint;
+  contain: none;
 }
 .reference-terminal .apple-terminal-grid,
 .reference-terminal .apple-terminal-chart-column,
@@ -2920,7 +2867,6 @@ button, a, [role="button"] {
     display: flex;
     flex: 1 1 0%;
     min-height: 0;
-    overflow: hidden;
   }
   .reference-terminal .apple-terminal-market,
   .reference-terminal .apple-terminal-order,
@@ -3045,10 +2991,11 @@ button, a, [role="button"] {
   .reference-terminal .tablet-panel-hidden,
   .reference-terminal .apple-terminal-market.hidden,
   .reference-terminal .apple-terminal-order.hidden,
+  .reference-terminal .apple-terminal-chart-column.hidden,
   .reference-terminal .apple-terminal-chart-column.tablet-chart-hidden { display: none !important; }
   .reference-terminal .apple-terminal-market:not(.hidden),
   .reference-terminal .apple-terminal-order:not(.hidden),
-  .reference-terminal .apple-terminal-chart-column:not(.tablet-chart-hidden) { display: flex !important; }
+  .reference-terminal .apple-terminal-chart-column:not(.hidden):not(.tablet-chart-hidden) { display: flex !important; }
   .reference-terminal .apple-terminal-market,
   .reference-terminal .apple-terminal-order,
   .reference-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
@@ -5695,7 +5642,7 @@ button, a, [role="button"] {
   .terminal-stat-value { font-size: 12px; }
 }
 
-/* ── Final institutional terminal system ─────────────────────────────────
+/* ─�� Final institutional terminal system ─────────────────────────────────
    Keep the terminal calm, legible and chart-first at every viewport. These
    scoped rules intentionally sit last so older visual experiments cannot
    reintroduce oversized rails or push the chart below the fold. */
@@ -6781,14 +6728,21 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     background: var(--mobile-terminal-panel) !important;
   }
   .reference-terminal .terminal-account-stats {
-    display: grid !important;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0;
-    overflow: visible !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px !important;
+    padding: 6px 8px !important;
+  }
+  .reference-terminal .terminal-account-stats::-webkit-scrollbar {
+    display: none !important;
   }
   .reference-terminal .terminal-stat {
-    min-width: 0 !important;
-    padding: 9px 7px !important;
+    flex: 0 0 auto !important;
+    min-width: max-content !important;
+    padding: 7px 10px !important;
     border-right: 1px solid var(--mobile-terminal-border);
   }
   .reference-terminal .terminal-stat:last-child { border-right: 0; }
@@ -6799,23 +6753,35 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     font-size: 8px !important;
     letter-spacing: .02em !important;
     white-space: nowrap;
-    text-overflow: ellipsis;
   }
   .reference-terminal .terminal-stat-value {
     display: block;
-    margin-top: 5px;
-    overflow: hidden;
+    margin-top: 3px;
     color: var(--mobile-terminal-ink) !important;
-    font-size: clamp(10px, 3.1vw, 13px) !important;
+    font-size: 12px !important;
     line-height: 1.2;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    white-space: nowrap !important;
   }
   .reference-terminal .terminal-stat.tone-green .terminal-stat-value { color: var(--mobile-terminal-green) !important; }
   .reference-terminal .terminal-stat.tone-red .terminal-stat-value { color: var(--mobile-terminal-red) !important; }
   .reference-terminal .terminal-stat.tone-gold .terminal-stat-value { color: var(--mobile-terminal-blue) !important; }
-  .reference-terminal .terminal-account-actions,
-  .reference-terminal .reference-watchlist { display: none !important; }
+  .reference-terminal .terminal-account-actions { display: none !important; }
+  .reference-terminal .reference-watchlist {
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Hide global dashboard navigation when trading terminal is active */
+  body:has(.reference-terminal) .participant-global-mobile-nav,
+  .terminal-page:has(.reference-terminal) .participant-global-mobile-nav {
+    display: none !important;
+  }
+
+  .reference-terminal .terminal-chart-activity-tabs {
+    display: none !important;
+  }
 
   .reference-terminal .reference-mobile-nav {
     position: fixed;
@@ -6824,11 +6790,11 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     bottom: 0;
     left: 0;
     display: grid !important;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    min-height: calc(66px + env(safe-area-inset-bottom));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    min-height: calc(62px + env(safe-area-inset-bottom, 0px));
     align-items: center;
-    gap: 2px;
-    padding: 5px 8px calc(7px + env(safe-area-inset-bottom));
+    gap: 3px;
+    padding: 4px 5px calc(6px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--mobile-terminal-border);
     background: rgba(3, 8, 18, .97);
     backdrop-filter: blur(18px);
@@ -6836,30 +6802,42 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
   .reference-terminal .reference-mobile-nav button {
     display: flex;
+    width: 100%;
     min-width: 0;
     min-height: 46px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: 9px;
     color: var(--mobile-terminal-muted) !important;
-    font-size: 9px;
-    font-weight: 700;
+    font-size: clamp(7px, 2.25vw, 9px);
+    font-weight: 800;
+    letter-spacing: .045em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
-  .reference-terminal .reference-mobile-nav button svg { width: 20px; height: 20px; }
-  .reference-terminal .reference-mobile-nav button.is-active { color: var(--mobile-terminal-blue) !important; }
+  .reference-terminal .reference-mobile-nav button svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .reference-terminal .reference-mobile-nav button.is-active {
+    border-color: rgba(56, 189, 248, .28);
+    background: rgba(14, 139, 255, .16);
+    color: var(--mobile-terminal-blue) !important;
+  }
   .reference-terminal .reference-mobile-nav .mobile-nav-direction {
-    width: 54px;
-    height: 54px;
-    min-height: 54px;
-    justify-self: center;
+    width: 100%;
+    height: 46px;
+    min-height: 46px;
+    justify-self: stretch;
     border: 1px solid rgba(243, 247, 252, .22);
-    border-radius: 50%;
+    border-radius: 9px;
     background: var(--mobile-terminal-blue);
     color: var(--mobile-terminal-ink) !important;
-    box-shadow: 0 4px 20px rgba(14, 139, 255, .32);
+    box-shadow: 0 3px 12px rgba(14, 139, 255, .28);
   }
-  .reference-terminal .reference-mobile-nav .mobile-nav-direction svg { width: 24px; height: 24px; }
+  .reference-terminal .reference-mobile-nav .mobile-nav-direction svg { width: 20px; height: 20px; }
   .reference-terminal .reference-statusbar { display: none !important; }
 
   .reference-terminal .apple-terminal-grid {
@@ -6875,22 +6853,31 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     border: 0 !important;
     background: transparent !important;
   }
-  .reference-terminal .apple-terminal-market {
+  .reference-terminal .apple-terminal-market.hidden,
+  .reference-terminal .apple-terminal-chart-column.hidden,
+  .reference-terminal .apple-terminal-order.hidden { display: none !important; }
+
+  .reference-terminal .apple-terminal-market:not(.hidden) {
     order: 0 !important;
     width: 100% !important;
     min-height: min(65dvh, 520px) !important;
     max-height: none !important;
     flex: none !important;
     overflow: auto !important;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
     border: 1px solid var(--mobile-terminal-border) !important;
     border-radius: 14px;
     background: var(--mobile-terminal-panel) !important;
   }
-  .reference-terminal .apple-terminal-market.hidden,
-  .reference-terminal .apple-terminal-chart-column.hidden,
-  .reference-terminal .apple-terminal-order.hidden { display: none !important; }
 
-  .reference-terminal .apple-terminal-chart-column {
+  .reference-terminal .apple-terminal-market:not(.hidden)::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  .reference-terminal .apple-terminal-chart-column:not(.hidden) {
     display: flex !important;
     order: 1 !important;
     width: 100% !important;
@@ -6971,9 +6958,32 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     height: 100% !important;
     visibility: visible !important;
   }
-  .reference-terminal .reference-chart-trade-dock { display: none !important; }
+  .reference-terminal .reference-chart-trade-dock {
+    display: block !important;
+    order: 2;
+    width: 100%;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--mobile-terminal-border);
+    background: var(--mobile-terminal-panel) !important;
+  }
+  .reference-terminal .reference-chart-trade-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .reference-terminal .reference-chart-trade-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .reference-terminal .reference-make-order {
+    min-height: 42px;
+    margin-top: 8px;
+  }
 
-  .reference-terminal .apple-terminal-order {
+  .reference-terminal .apple-terminal-order:not(.hidden) {
     display: flex !important;
     order: 2 !important;
     width: 100% !important;
@@ -7482,9 +7492,10 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 .reference-terminal .text-red-400 { color: var(--institutional-red) !important; }
 .reference-terminal .terminal-chart-toolbar button[aria-pressed="true"],
 .reference-terminal .terminal-chart-toolbar button.is-active {
-  background: var(--institutional-blue) !important;
-  color: #fff !important;
-  border-color: var(--institutional-blue) !important;
+  background: color-mix(in srgb, var(--terminal-graphite-teal) 16%, var(--terminal-graphite-surface-2)) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 58%, var(--terminal-graphite-border)) !important;
+  box-shadow: none !important;
 }
 .reference-terminal .apple-terminal-blotter-tabs button[aria-current="page"] {
   color: #7db8ed !important;
@@ -7648,24 +7659,26 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 }
 .terminal-page a:not([class*="text-"]):hover { color: #8fc7f4; }
 
-/* Single-provider chart workspace: one clear chart at a time with a stable readable frame. */
+/* Single-provider chart workspace: edge-to-screen chart canvas with zero wasted margins. */
 .reference-terminal .terminal-single-chart-stack {
   display: flex;
   min-height: 0;
   height: 100%;
-  padding: 8px;
-  background: #07111f;
+  width: 100%;
+  padding: 0;
+  background: transparent;
 }
 .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
 .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel {
   display: flex;
   flex: 1;
   min-height: 360px;
+  width: 100%;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #294662;
-  border-radius: 6px;
-  background: #0b1728;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel > .apple-trading-chart,
 .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel > section {
@@ -7675,12 +7688,12 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   border-radius: 0 !important;
 }
 .reference-terminal .terminal-single-chart-stack .terminal-chart-panel-label {
-  flex: 0 0 30px;
+  display: none !important;
 }
 @media (max-width: 767px) {
-  .reference-terminal .terminal-single-chart-stack { padding: 5px; }
+  .reference-terminal .terminal-single-chart-stack { padding: 0; }
   .reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
-  .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel { min-height: 330px; }
+  .reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel { min-height: 300px; }
 }
 
 /* Desktop workspace: allow the full terminal to scroll without clipping chart activity. */
@@ -8111,5 +8124,988 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .apple-trading-terminal.reference-terminal select,
   .apple-trading-terminal.reference-terminal textarea {
     touch-action: manipulation;
+  }
+}
+
+/* The fixed terminal shell owns page scrolling; bounded data panels keep their own scroll. */
+html:has(.elite-terminal-shell),
+body:has(.elite-terminal-shell) {
+  height: 100% !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+.elite-terminal-shell {
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-padding-block: 16px calc(88px + env(safe-area-inset-bottom, 0px));
+}
+.elite-terminal-shell .elite-terminal-workspace,
+.elite-terminal-shell .elite-terminal-platform {
+  min-width: 0;
+  min-height: 0 !important;
+  height: auto !important;
+  overflow: visible !important;
+}
+.elite-terminal-shell .mt5-terminal.reference-terminal {
+  min-width: 0;
+  max-width: 100%;
+  overflow: visible !important;
+}
+.elite-terminal-sidebar.is-open { overflow-y: auto; overscroll-behavior: contain; }
+
+.elite-terminal-shell .reference-terminal .mobile-terminal-chart-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 400px !important;
+  height: 480px !important;
+  max-height: none !important;
+}
+.elite-terminal-shell .reference-terminal .terminal-single-chart-stack {
+  flex: 1 1 0;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+}
+.elite-terminal-shell .reference-terminal .terminal-single-chart-stack > div {
+  min-width: 0;
+  min-height: 0;
+}
+.elite-terminal-shell .reference-terminal .apple-trading-chart {
+  min-width: 0;
+  min-height: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+.elite-terminal-shell .reference-terminal .apple-trading-chart-canvas {
+  flex: 1 1 0;
+  height: auto !important;
+  min-height: 0 !important;
+}
+.elite-terminal-shell .reference-terminal .terminal-chart-activity-tabs { flex-shrink: 0; }
+.mt5-terminal.reference-terminal .terminal-chart-toolbar { max-width: 100%; scrollbar-width: thin; }
+.mt5-terminal.reference-terminal .terminal-chart-toolbar button,
+.mt5-terminal.reference-terminal .chart-timeframes button {
+  min-width: 36px !important;
+  min-height: 44px !important;
+  font-size: 14px !important;
+}
+.mt5-terminal.reference-terminal .terminal-chart-toolbar button span { font-size: 14px; }
+.mt5-terminal.reference-terminal .chart-timeframe-toolbar { min-width: 0; overflow-x: auto !important; }
+.mt5-terminal.reference-terminal .chart-timeframes { display: flex !important; width: max-content !important; }
+.mt5-terminal.reference-terminal .chart-timeframes button { flex-shrink: 0; width: auto; }
+
+.elite-terminal-shell .reference-terminal .apple-terminal-blotter,
+.elite-terminal-shell .reference-terminal .apple-terminal-blotter > div {
+  min-width: 0;
+  max-width: 100%;
+}
+.elite-terminal-shell .reference-terminal .apple-terminal-blotter > div:last-child { overflow: auto !important; }
+.reference-terminal .mobile-order-ticket :is(input, select) { min-width: 0; max-width: 100%; scroll-margin-block: 24px; }
+.reference-terminal .mobile-order-ticket :is(label, p) { overflow-wrap: anywhere; }
+.terminal-modal-overlay { height: 100dvh; }
+.terminal-modal-overlay > div { overscroll-behavior: contain; }
+
+@media (max-width: 1023px) {
+  .elite-terminal-shell .mt5-terminal.reference-terminal .apple-terminal-chart-column {
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .elite-terminal-shell .reference-terminal .apple-terminal-chart-column > .flex-1 {
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+  .elite-terminal-shell .reference-terminal .mobile-terminal-chart-wrap { flex: none; }
+}
+@media (max-width: 767px) {
+  .mt5-terminal.reference-terminal .mobile-order-ticket { grid-template-columns: minmax(0, 1fr); }
+  .mt5-terminal.reference-terminal .mobile-risk-controls { grid-template-columns: minmax(0, 1fr); }
+  .mt5-terminal.reference-terminal .mobile-lot-field,
+  .mt5-terminal.reference-terminal .mobile-leverage-field { grid-column: 1 / -1 !important; }
+  .mt5-terminal.reference-terminal .mobile-lot-field > div { flex-wrap: wrap; }
+  .mt5-terminal.reference-terminal .mobile-lot-field > div button { flex: 1 0 25%; }
+  .mt5-terminal.reference-terminal .mobile-order-ticket :is(label, p, button, span) { font-size: 14px !important; letter-spacing: normal; }
+  .mt5-terminal.reference-terminal .mobile-order-ticket :is(input, select) { min-height: 44px; font-size: 16px !important; }
+  .mt5-terminal.reference-terminal .mobile-order-ticket button { min-height: 44px; }
+  .mt5-terminal.reference-terminal .apple-terminal-order > div:first-child { display: flex !important; flex-wrap: wrap; }
+  .mt5-terminal.reference-terminal .mobile-trailing-field { display: block !important; }
+  .mt5-terminal.reference-terminal .reference-mobile-nav .mobile-nav-direction { justify-self: center; width: 54px; }
+}
+
+
+@media (max-width: 1023px) {
+  .elite-terminal-shell .mt5-terminal.reference-terminal .apple-terminal-grid {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  .elite-terminal-shell .mt5-terminal.reference-terminal .apple-terminal-order {
+    flex: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .elite-terminal-shell .apple-terminal-order > .flex-1 {
+    flex: none !important;
+    min-height: 0;
+    overflow: visible !important;
+  }
+}
+@media (max-width: 767px) {
+  .elite-terminal-shell .mt5-terminal.reference-terminal {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav {
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    overflow: hidden;
+  }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button {
+    min-width: 0;
+    width: 100%;
+    font-size: 10px;
+    letter-spacing: 0;
+  }
+}
+
+/* Phase 3: institutional graphite visual system. Presentation only; layout and behavior remain unchanged. */
+.reference-terminal {
+  --terminal-graphite-bg: #080e17;
+  --terminal-graphite-surface: #0d1724;
+  --terminal-graphite-surface-2: #122234;
+  --terminal-graphite-elevated: #172b3d;
+  --terminal-graphite-border: #263b4f;
+  --terminal-graphite-text: #e5edf5;
+  --terminal-graphite-muted: #91a4b8;
+  --terminal-graphite-teal: #39bfa7;
+  --terminal-graphite-blue: #62a9e8;
+  --terminal-graphite-positive: #32c99a;
+  --terminal-graphite-negative: #f07883;
+  --terminal-graphite-warning: #e9b75a;
+  background: var(--terminal-graphite-bg) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-top-color: var(--terminal-graphite-border) !important;
+}
+
+.reference-terminal :where(.terminal-account-bar, .reference-watchlist, .apple-terminal-market, .apple-terminal-order, .terminal-chart-workspace, .apple-terminal-blotter, .reference-mobile-nav) {
+  background: var(--terminal-graphite-surface) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 72%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-account-bar, .reference-watchlist, .apple-terminal-market, .apple-terminal-order, .apple-terminal-blotter) {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+}
+
+.reference-terminal :where(.terminal-stat, .reference-watch-card, .terminal-panel, .terminal-panel-raised, .terminal-native-chart-panel, .terminal-tradingview-panel) {
+  background: var(--terminal-graphite-surface-2) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 78%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal :where(.terminal-stat-featured, .reference-watch-card.is-selected) {
+  background: var(--terminal-graphite-elevated) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 52%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.terminal-stat-label, .reference-watch-copy span, .terminal-muted, .text-slate-400, .text-slate-500, .text-slate-600) {
+  color: var(--terminal-graphite-muted) !important;
+}
+
+.reference-terminal :where(.terminal-stat-value, .reference-watch-copy strong, .terminal-account-bar strong, .text-slate-100, .text-slate-200, .text-white) {
+  color: var(--terminal-graphite-text) !important;
+}
+
+.reference-terminal :where(.reference-watch-up, .terminal-positive, .text-emerald-300, .text-emerald-400, .text-green-300, .text-green-400) {
+  color: var(--terminal-graphite-positive) !important;
+}
+
+.reference-terminal :where(.reference-watch-down, .terminal-negative, .text-red-300, .text-red-400, .text-rose-300, .text-rose-400) {
+  color: var(--terminal-graphite-negative) !important;
+}
+
+.reference-terminal :where(.text-cyan-200, .text-cyan-300, .text-cyan-400, .text-cyan-500, .text-blue-300, .text-blue-400, .text-blue-500) {
+  color: var(--terminal-graphite-blue) !important;
+}
+
+.reference-terminal :where(.text-amber-200, .text-amber-300, .text-amber-400, .text-yellow-300, .text-yellow-400) {
+  color: var(--terminal-graphite-warning) !important;
+}
+
+.reference-terminal :where(button, [role="button"], input, select, textarea) {
+  font-family: inherit;
+}
+
+.reference-terminal :where(button, [role="button"]) {
+  border-radius: 7px;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 82%, transparent);
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.reference-terminal :where(button, [role="button"]):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--terminal-graphite-blue) 48%, var(--terminal-graphite-border));
+  box-shadow: 0 1px 8px rgb(0 0 0 / 0.18);
+}
+
+.reference-terminal :where(button, [role="button"]):focus-visible,
+.reference-terminal :where(input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--terminal-graphite-teal) 74%, transparent);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgb(57 191 167 / 0.12);
+}
+
+.reference-terminal :where(button, [role="button"]):disabled {
+  color: color-mix(in srgb, var(--terminal-graphite-muted) 58%, transparent) !important;
+  background: color-mix(in srgb, var(--terminal-graphite-surface) 84%, transparent) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 45%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal :where(input, select, textarea) {
+  background: var(--terminal-graphite-bg) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: var(--terminal-graphite-border) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.025);
+}
+
+.reference-terminal :where(input, select, textarea)::placeholder {
+  color: color-mix(in srgb, var(--terminal-graphite-muted) 72%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-action, .terminal-icon-button, .terminal-toolbar-button, .terminal-timeframe-button, .terminal-indicator-button, .terminal-filter-button) {
+  background: var(--terminal-graphite-surface-2) !important;
+  color: var(--terminal-graphite-muted) !important;
+  border-color: var(--terminal-graphite-border) !important;
+}
+
+.reference-terminal :where(.terminal-action:hover, .terminal-icon-button:hover, .terminal-toolbar-button:hover, .terminal-timeframe-button:hover, .terminal-indicator-button:hover, .terminal-filter-button:hover) {
+  background: var(--terminal-graphite-elevated) !important;
+  color: var(--terminal-graphite-text) !important;
+}
+
+.reference-terminal :where(.terminal-action-primary, .buy-button, .buy-btn, [data-side="buy"]) {
+  background: color-mix(in srgb, var(--terminal-graphite-positive) 72%, var(--terminal-graphite-surface)) !important;
+  color: #f4fffb !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-positive) 72%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.terminal-action-accent, .sell-button, .sell-btn, [data-side="sell"]) {
+  background: color-mix(in srgb, var(--terminal-graphite-negative) 72%, var(--terminal-graphite-surface)) !important;
+  color: #fff7f8 !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-negative) 72%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.is-active, [aria-selected="true"], [aria-pressed="true"], .active) {
+  background: var(--terminal-graphite-elevated) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 64%, var(--terminal-graphite-border)) !important;
+}
+
+.reference-terminal :where(.reference-watch-card.is-selected, .terminal-action-primary, .terminal-action-accent, .buy-button, .buy-btn, .sell-button, .sell-btn) {
+  box-shadow: 0 1px 10px rgb(0 0 0 / 0.2) !important;
+}
+
+.reference-terminal :where(.chart-header, .chart-timeframe-toolbar, .terminal-chart-toolbar, .terminal-chart-activity-tabs) {
+  background: var(--terminal-graphite-surface) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-border) 72%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-margin-bar, .terminal-risk-bar) {
+  background: var(--terminal-graphite-bg) !important;
+}
+
+.reference-terminal :where(.terminal-margin-bar span, .terminal-risk-bar span) {
+  background: var(--terminal-graphite-warning) !important;
+}
+
+.reference-terminal :where(.rounded-full.bg-emerald-500, .bg-emerald-500, .bg-green-500) {
+  background-color: var(--terminal-graphite-positive) !important;
+}
+
+.reference-terminal :where(.rounded-full.bg-red-500, .bg-red-500) {
+  background-color: var(--terminal-graphite-negative) !important;
+}
+
+/* Active states: earlier rules (solid institutional blue, near-black label, bright blue order tab)
+   out-rank the zero-specificity :where() layer above, so restate them at equal specificity. */
+.apple-trading-terminal.reference-terminal .terminal-chart-toolbar button[aria-pressed="true"],
+.apple-trading-terminal.reference-terminal .terminal-chart-toolbar button.is-active,
+.apple-trading-terminal.reference-terminal .chart-header button[aria-pressed="true"],
+.apple-trading-terminal.reference-terminal .apple-order-type-tabs button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--terminal-graphite-teal) 16%, var(--terminal-graphite-surface-2)) !important;
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 58%, var(--terminal-graphite-border)) !important;
+  box-shadow: none !important;
+}
+
+.apple-trading-terminal.reference-terminal .chart-header button[aria-pressed="false"] {
+  color: var(--terminal-graphite-muted) !important;
+}
+
+.reference-terminal :where(.terminal-stat-value, .reference-watch-copy strong, .reference-watch-card, .font-mono, input, table, [class*="tabular"]) {
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal :where(button, [role="button"]):active:not(:disabled) {
+  transform: translateY(0.5px);
+  box-shadow: none;
+}
+
+.reference-terminal :where(input, select, textarea):disabled {
+  opacity: 0.62;
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--terminal-graphite-surface) 90%, transparent) !important;
+}
+
+.reference-terminal :where(.terminal-action-primary, .terminal-action-accent, .buy-button, .buy-btn, .sell-button, .sell-btn):hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* Phase 2: compact desktop composition. Keep every existing control visible while
+   giving the chart workspace a more useful share of the fixed terminal height. */
+@media (min-width: 1200px) {
+  .apple-trading-terminal.reference-terminal > .terminal-account-bar {
+    gap: 8px;
+    padding-block: 5px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-stat {
+    padding-inline: 14px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-stat-value {
+    font-size: 13px;
+  }
+  .apple-trading-terminal.reference-terminal > .terminal-watch-strip {
+    gap: 6px !important;
+    padding-block: 5px !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-watch-strip .reference-watch-card {
+    height: 42px !important;
+    min-width: 132px !important;
+    padding-block: 5px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header {
+    padding: 9px 12px 8px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header > .grid {
+    padding-block: 5px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header > .flex.overflow-x-auto {
+    padding-block: 4px !important;
+  }
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column > .chart-header .chart-timeframe-toolbar {
+    min-height: 30px;
+  }
+  .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
+    padding-block: 8px 9px;
+  }
+}
+
+/* Production instrument controls: compact dark-glass pills with clear asset marks. */
+.reference-terminal .reference-watch-card {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 9px;
+  min-width: 164px !important;
+  height: 54px !important;
+  padding: 0 12px !important;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 13px !important;
+  background: linear-gradient(145deg, rgb(24 43 62 / 0.92), rgb(10 22 35 / 0.9)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 5px 18px rgb(0 0 0 / 0.16);
+  color: var(--terminal-graphite-text);
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease, transform 100ms ease;
+}
+
+.reference-terminal .reference-watch-card:hover {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 58%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(29 55 75 / 0.98), rgb(11 27 42 / 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 8px 22px rgb(0 0 0 / 0.24);
+  transform: translateY(-1px);
+}
+
+.reference-terminal .reference-watch-card.is-selected {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 72%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(26 71 83 / 0.96), rgb(11 33 46 / 0.96)) !important;
+  box-shadow: inset 0 1px 0 rgb(135 242 215 / 0.1), 0 0 0 1px rgb(57 191 167 / 0.12), 0 8px 24px rgb(0 0 0 / 0.22);
+}
+
+.reference-terminal .reference-watch-icon,
+.reference-terminal .mw-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 29px !important;
+  height: 29px !important;
+  border: 1px solid color-mix(in srgb, var(--terminal-graphite-teal) 36%, var(--terminal-graphite-border)) !important;
+  border-radius: 10px !important;
+  background: linear-gradient(145deg, rgb(28 56 78 / 0.95), rgb(12 27 43 / 0.95)) !important;
+  color: var(--terminal-graphite-text) !important;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+}
+
+.reference-terminal .reference-watch-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-start;
+}
+
+.reference-terminal .reference-watch-copy strong {
+  color: var(--terminal-graphite-text) !important;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.reference-terminal .reference-watch-copy span {
+  color: var(--terminal-graphite-muted) !important;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal :where(.reference-watch-up, .reference-watch-down) {
+  margin-left: auto;
+  border-radius: 999px;
+  padding: 4px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.reference-terminal .reference-watch-up {
+  background: rgb(50 201 154 / 0.12);
+  color: var(--terminal-graphite-positive) !important;
+}
+
+.reference-terminal .reference-watch-down {
+  background: rgb(240 120 131 / 0.12);
+  color: var(--terminal-graphite-negative) !important;
+}
+
+.reference-terminal .reference-watch-add,
+.reference-terminal .reference-watch-theme {
+  width: 44px !important;
+  height: 44px !important;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 13px !important;
+  background: rgb(17 34 52 / 0.86) !important;
+  color: var(--terminal-graphite-muted) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 5px 16px rgb(0 0 0 / 0.16);
+}
+
+.reference-terminal .reference-watch-add:hover,
+.reference-terminal .reference-watch-theme:hover {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 55%, var(--terminal-graphite-border)) !important;
+  color: var(--terminal-graphite-teal) !important;
+  background: rgb(20 49 65 / 0.92) !important;
+}
+
+/* Production terminal controls: quiet graphite surfaces, clear state, and keyboard-visible focus. */
+.reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button {
+  border-radius: 7px !important;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 100ms ease;
+}
+
+.reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--terminal-graphite-teal) 10%, var(--terminal-graphite-surface-2)) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 48%, var(--terminal-graphite-border)) !important;
+  color: var(--terminal-graphite-text) !important;
+  box-shadow: 0 3px 12px rgb(0 0 0 / 0.18);
+}
+
+.reference-terminal :where(.terminal-chart-toolbar, .chart-timeframe-toolbar, .apple-order-type-tabs) button:focus-visible,
+.reference-terminal :where(.reference-quick-trade, .mobile-order-side-toggle button, .mobile-order-quote button):focus-visible {
+  outline: 2px solid var(--terminal-graphite-teal) !important;
+  outline-offset: 2px;
+}
+
+.reference-terminal .reference-quick-trade {
+  min-height: 50px;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  box-shadow: 0 5px 16px rgb(0 0 0 / 0.22) !important;
+  transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease !important;
+}
+
+.reference-terminal .reference-quick-trade:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.07) saturate(1.03);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.28) !important;
+}
+
+.reference-terminal .reference-quick-trade:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.24) !important;
+}
+
+.reference-terminal .reference-quick-trade-buy {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-graphite-positive) 88%, white), var(--terminal-graphite-positive)) !important;
+  color: #f4fffb !important;
+}
+
+.reference-terminal .reference-quick-trade-sell {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--terminal-graphite-negative) 88%, white), var(--terminal-graphite-negative)) !important;
+  color: #fff7f8 !important;
+}
+
+/* Execution semantics: green for BUY, red for SELL, neutral glass everywhere else. */
+.reference-terminal :where(.btn-3d-execute-buy, .reference-quick-trade-buy) {
+  background: linear-gradient(145deg, rgb(42 169 128 / 0.96), rgb(18 105 82 / 0.98)) !important;
+  border-color: rgb(70 211 165 / 0.72) !important;
+  color: #d8fff1 !important;
+  box-shadow: inset 0 1px 0 rgb(193 255 229 / 0.16), 0 7px 20px rgb(28 147 111 / 0.26) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-sell, .reference-quick-trade-sell) {
+  background: linear-gradient(145deg, rgb(190 78 91 / 0.96), rgb(123 43 57 / 0.98)) !important;
+  border-color: rgb(241 126 137 / 0.72) !important;
+  color: #ffe1e5 !important;
+  box-shadow: inset 0 1px 0 rgb(255 222 226 / 0.16), 0 7px 20px rgb(173 54 72 / 0.25) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-buy, .reference-quick-trade-buy):hover:not(:disabled) {
+  background: linear-gradient(145deg, rgb(52 194 148 / 0.98), rgb(22 126 97 / 0.98)) !important;
+  border-color: rgb(102 231 190 / 0.88) !important;
+  box-shadow: inset 0 1px 0 rgb(220 255 241 / 0.2), 0 10px 24px rgb(28 147 111 / 0.34) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-sell, .reference-quick-trade-sell):hover:not(:disabled) {
+  background: linear-gradient(145deg, rgb(213 94 108 / 0.98), rgb(143 47 64 / 0.98)) !important;
+  border-color: rgb(255 157 165 / 0.88) !important;
+  box-shadow: inset 0 1px 0 rgb(255 231 234 / 0.2), 0 10px 24px rgb(173 54 72 / 0.33) !important;
+}
+
+.reference-terminal :where(.btn-3d-execute-buy, .btn-3d-execute-sell, .reference-quick-trade-buy, .reference-quick-trade-sell):disabled {
+  filter: saturate(0.45) brightness(0.7) !important;
+  box-shadow: none !important;
+}
+
+/* Lower order dock: market, limit, stop, and quote actions carry their meaning visually. */
+.reference-terminal .apple-order-type-tabs {
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  border-radius: 13px !important;
+  background: rgb(8 18 30 / 0.78) !important;
+}
+
+.reference-terminal .apple-order-type-tabs button {
+  min-height: 42px;
+  border: 1px solid transparent !important;
+  border-radius: 9px !important;
+  background: rgb(17 34 52 / 0.72) !important;
+  color: #91a4b8 !important;
+}
+
+.reference-terminal .apple-order-type-tabs button:nth-child(1)[aria-pressed="true"] {
+  background: rgb(39 143 155 / 0.26) !important;
+  border-color: rgb(57 191 167 / 0.66) !important;
+  color: #a8ddd1 !important;
+}
+
+.reference-terminal .apple-order-type-tabs button:nth-child(2)[aria-pressed="true"] {
+  background: rgb(180 132 55 / 0.24) !important;
+  border-color: rgb(233 183 90 / 0.64) !important;
+  color: #f0c97e !important;
+}
+
+.reference-terminal .apple-order-type-tabs button:nth-child(3)[aria-pressed="true"] {
+  background: rgb(177 69 84 / 0.24) !important;
+  border-color: rgb(240 120 131 / 0.64) !important;
+  color: #f0a0a9 !important;
+}
+
+.reference-terminal .mobile-order-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
+  gap: 6px;
+}
+
+.reference-terminal .mobile-order-actions > button {
+  min-height: 48px;
+  border: 1px solid transparent !important;
+  border-radius: 11px !important;
+  padding: 8px 10px;
+  background: rgb(17 34 52 / 0.9) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal .mobile-order-actions > button:first-child {
+  background: linear-gradient(145deg, rgb(190 78 91 / 0.9), rgb(123 43 57 / 0.94)) !important;
+  border-color: rgb(241 126 137 / 0.65) !important;
+  color: #ffe1e5 !important;
+}
+
+.reference-terminal .mobile-order-actions > button:last-child {
+  background: linear-gradient(145deg, rgb(42 169 128 / 0.9), rgb(18 105 82 / 0.94)) !important;
+  border-color: rgb(70 211 165 / 0.65) !important;
+  color: #d8fff1 !important;
+}
+
+.reference-terminal .mobile-order-actions > button:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.reference-terminal .mobile-order-spread {
+  display: flex;
+  min-width: 56px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 1px solid var(--terminal-graphite-border);
+  border-radius: 9px;
+  background: rgb(17 34 52 / 0.92);
+  color: var(--terminal-graphite-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal .mobile-order-spread small {
+  color: #71889e;
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.reference-terminal .mobile-order-spread strong {
+  color: #c0ceda;
+  font-size: 11px;
+}
+
+.reference-terminal .mobile-order-side-toggle button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell) {
+  background: var(--terminal-graphite-surface-2) !important;
+  border: 1px solid var(--terminal-graphite-border) !important;
+  color: var(--terminal-graphite-muted) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.035) !important;
+}
+
+.reference-terminal .mobile-order-side-toggle button:not(.btn-3d-execute-buy):not(.btn-3d-execute-sell):hover:not(:disabled) {
+  color: var(--terminal-graphite-text) !important;
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 48%, var(--terminal-graphite-border)) !important;
+}
+
+/* One button language across the terminal: glass surface, compact pill geometry,
+   and semantic color reserved for selected or execution states. */
+.reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade) {
+  min-height: 32px;
+  border: 1px solid var(--terminal-graphite-border);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgb(24 43 62 / 0.86), rgb(10 22 35 / 0.92));
+  color: var(--terminal-graphite-muted);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.045), 0 3px 12px rgb(0 0 0 / 0.14);
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 100ms ease;
+}
+
+.reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade):hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 55%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(31 59 78 / 0.96), rgb(12 31 46 / 0.96)) !important;
+  color: var(--terminal-graphite-text) !important;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.075), 0 6px 16px rgb(0 0 0 / 0.22) !important;
+  transform: translateY(-1px);
+}
+
+.reference-terminal button:not(.reference-watch-card):not(.reference-watch-add):not(.reference-watch-theme):not(.reference-quick-trade):active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgb(0 0 0 / 0.24) !important;
+}
+
+.reference-terminal button[aria-pressed="true"],
+.reference-terminal button[data-state="active"],
+.reference-terminal button.is-active {
+  border-color: color-mix(in srgb, var(--terminal-graphite-teal) 70%, var(--terminal-graphite-border)) !important;
+  background: linear-gradient(145deg, rgb(35 91 100 / 0.92), rgb(14 48 59 / 0.96)) !important;
+  color: var(--terminal-graphite-text) !important;
+  box-shadow: inset 0 1px 0 rgb(135 242 215 / 0.1), 0 0 0 1px rgb(57 191 167 / 0.1), 0 5px 15px rgb(0 0 0 / 0.18) !important;
+}
+
+.reference-terminal button:focus-visible {
+  outline: 2px solid var(--terminal-graphite-teal) !important;
+  outline-offset: 2px;
+}
+
+.reference-terminal button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+  filter: saturate(0.65);
+}
+
+/* Typography pass: darker, calmer labels across every terminal control. */
+.reference-terminal button {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.025em;
+  text-shadow: none !important;
+}
+
+.reference-terminal button:not(.reference-quick-trade):not([aria-pressed="true"]):not([data-state="active"]):not(.is-active) {
+  color: #9aabba !important;
+}
+
+.reference-terminal button:not(.reference-quick-trade):hover:not(:disabled),
+.reference-terminal button:not(.reference-quick-trade):focus-visible {
+  color: #b8c7d4 !important;
+}
+
+.reference-terminal button[aria-pressed="true"],
+.reference-terminal button[data-state="active"],
+.reference-terminal button.is-active {
+  color: #a8ddd1 !important;
+  text-shadow: none !important;
+}
+
+.reference-terminal .reference-watch-card,
+.reference-terminal .reference-watch-add,
+.reference-terminal .reference-watch-theme {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.reference-terminal .reference-watch-copy strong,
+.reference-terminal .reference-watch-copy span,
+.reference-terminal .reference-watch-card [class*="price"],
+.reference-terminal .terminal-stat-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.reference-terminal .reference-quick-trade {
+  font-weight: 850;
+  letter-spacing: 0.04em;
+}
+
+/* Final semantic palette: every high-value control gets a deliberate color cue. */
+.reference-terminal .terminal-action-primary {
+  background: linear-gradient(145deg, rgb(144 101 34 / 0.9), rgb(86 56 18 / 0.96)) !important;
+  border-color: rgb(235 183 86 / 0.68) !important;
+  color: #f5d58c !important;
+}
+
+.reference-terminal .terminal-action-accent {
+  background: linear-gradient(145deg, rgb(20 101 111 / 0.9), rgb(12 57 70 / 0.96)) !important;
+  border-color: rgb(61 205 193 / 0.65) !important;
+  color: #9be8df !important;
+}
+
+.reference-terminal .terminal-account-actions .terminal-action:not(.terminal-action-primary):not(.terminal-action-accent) {
+  background: linear-gradient(145deg, rgb(30 65 91 / 0.9), rgb(15 34 55 / 0.96)) !important;
+  border-color: rgb(79 143 190 / 0.6) !important;
+  color: #a9cbe2 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(1) {
+  border-color: rgb(57 191 167 / 0.68) !important;
+  background: linear-gradient(145deg, rgb(30 103 103 / 0.9), rgb(14 52 61 / 0.96)) !important;
+  color: #a8ddd1 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(2) {
+  border-color: rgb(66 133 190 / 0.62) !important;
+  background: linear-gradient(145deg, rgb(29 70 105 / 0.9), rgb(13 35 58 / 0.96)) !important;
+  color: #a9cbe2 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(3) {
+  border-color: rgb(233 183 90 / 0.62) !important;
+  background: linear-gradient(145deg, rgb(110 80 30 / 0.9), rgb(53 38 17 / 0.96)) !important;
+  color: #f0c97e !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(5) {
+  border-color: rgb(127 118 196 / 0.58) !important;
+  background: linear-gradient(145deg, rgb(59 57 100 / 0.88), rgb(27 30 55 / 0.96)) !important;
+  color: #c4c1f4 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(6) {
+  border-color: rgb(102 153 180 / 0.6) !important;
+  background: linear-gradient(145deg, rgb(34 73 91 / 0.9), rgb(16 37 53 / 0.96)) !important;
+  color: #b0d3df !important;
+}
+
+.reference-terminal .terminal-icon-button,
+.reference-terminal .terminal-account-button,
+.reference-terminal .terminal-time-switch {
+  border-color: rgb(58 102 135 / 0.62) !important;
+  background: linear-gradient(145deg, rgb(22 52 75 / 0.9), rgb(10 26 43 / 0.96)) !important;
+  color: #a8c5d7 !important;
+}
+
+.reference-terminal .terminal-icon-button:hover,
+.reference-terminal .terminal-account-button:hover,
+.reference-terminal .terminal-time-switch:hover {
+  border-color: rgb(76 207 192 / 0.72) !important;
+  background: linear-gradient(145deg, rgb(26 76 91 / 0.94), rgb(12 39 52 / 0.98)) !important;
+  color: #b9eee5 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button.is-active {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1), 0 0 0 1px rgb(57 191 167 / 0.14), 0 7px 18px rgb(0 0 0 / 0.22) !important;
+}
+
+/* Explicit property overrides prevent the legacy background shorthand from flattening semantic colors. */
+.reference-terminal button.terminal-action-primary {
+  background-color: rgb(92 63 20 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(144 101 34 / 0.9), rgb(86 56 18 / 0.96)) !important;
+  border-color: rgb(235 183 86 / 0.68) !important;
+  color: #f5d58c !important;
+}
+
+.reference-terminal button.terminal-action-accent {
+  background-color: rgb(12 57 70 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(20 101 111 / 0.9), rgb(12 57 70 / 0.96)) !important;
+  border-color: rgb(61 205 193 / 0.65) !important;
+  color: #9be8df !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(1) {
+  background-color: rgb(14 52 61 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(30 103 103 / 0.9), rgb(14 52 61 / 0.96)) !important;
+  border-color: rgb(57 191 167 / 0.68) !important;
+  color: #a8ddd1 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(2) {
+  background-color: rgb(13 35 58 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(29 70 105 / 0.9), rgb(13 35 58 / 0.96)) !important;
+  border-color: rgb(66 133 190 / 0.62) !important;
+  color: #a9cbe2 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(3) {
+  background-color: rgb(53 38 17 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(110 80 30 / 0.9), rgb(53 38 17 / 0.96)) !important;
+  border-color: rgb(233 183 90 / 0.62) !important;
+  color: #f0c97e !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(5) {
+  background-color: rgb(27 30 55 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(59 57 100 / 0.88), rgb(27 30 55 / 0.96)) !important;
+  border-color: rgb(127 118 196 / 0.58) !important;
+  color: #c4c1f4 !important;
+}
+
+.reference-terminal .reference-mobile-nav > button:nth-child(6) {
+  background-color: rgb(16 37 53 / 0.96) !important;
+  background-image: linear-gradient(145deg, rgb(34 73 91 / 0.9), rgb(16 37 53 / 0.96)) !important;
+  border-color: rgb(102 153 180 / 0.6) !important;
+  color: #b0d3df !important;
+}
+
+/* Terminal workspace performance and scroll contract. */
+.reference-terminal,
+.reference-terminal * {
+  box-sizing: border-box;
+}
+
+.reference-terminal {
+  overscroll-behavior: contain;
+  isolation: isolate;
+}
+
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .terminal-dock-group,
+.reference-terminal .terminal-dock-panel,
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter {
+  min-width: 0;
+  min-height: 0;
+}
+
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter,
+.reference-terminal #market-watch-instruments {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.reference-terminal .apple-terminal-grid {
+  overflow: auto;
+}
+
+.reference-terminal .apple-terminal-market,
+.reference-terminal .apple-terminal-order,
+.reference-terminal .apple-terminal-blotter {
+  overflow: auto;
+}
+
+.reference-terminal .terminal-scroll,
+.reference-terminal .chart-timeframe-toolbar,
+.reference-terminal .reference-watchlist,
+.reference-terminal .apple-terminal-blotter-tabs,
+.reference-terminal .terminal-rate-details {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+  touch-action: pan-x pan-y;
+  scrollbar-width: thin;
+}
+
+.reference-terminal .reference-mobile-nav button,
+.reference-terminal .apple-terminal-mobile-tabs button,
+.reference-terminal .apple-terminal-blotter-tabs button,
+.reference-terminal .chart-timeframe-toolbar button,
+.reference-terminal .reference-watch-card,
+.reference-terminal .apple-terminal-order button,
+.reference-terminal .apple-terminal-market button {
+  min-height: 44px;
+  touch-action: manipulation;
+}
+
+.reference-terminal .apple-trading-chart,
+.reference-terminal .apple-trading-chart-canvas,
+.reference-terminal .mobile-terminal-chart-wrap {
+  min-width: 0;
+  min-height: 0;
+}
+
+.reference-terminal .mobile-terminal-chart-wrap {
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+}
+
+.reference-terminal .apple-terminal-blotter table {
+  contain: layout paint;
+}
+
+@media (max-width: 1023px) {
+  .reference-terminal {
+    height: 100dvh !important;
+    min-height: 0 !important;
+  }
+
+  .reference-terminal .apple-terminal-grid {
+    overflow-y: auto;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reference-terminal,
+  .reference-terminal * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

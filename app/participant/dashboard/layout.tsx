@@ -153,7 +153,7 @@ export default function DashboardLayout({
         {/* Bottom Nav */}
         <nav
           ref={navRef}
-          className="fixed bottom-0 z-50"
+          className="fixed bottom-0 z-50 participant-global-mobile-nav"
           style={{
             left: 0, right: 0,
             background: "linear-gradient(180deg, rgba(3,7,18,0.0) 0%, rgba(3,7,18,0.97) 20%)",
