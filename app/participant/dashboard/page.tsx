@@ -1447,7 +1447,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
   const [isTerminalSettingsOpen, setIsTerminalSettingsOpen] = useState(false)
   const [activeSettingsSection, setActiveSettingsSection] = useState("Account")
-  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">(() => searchParams.get("view") === "terminal" ? "trading" : "dashboard")
 
   useEffect(() => {
     if (terminalView && activeTab !== "trading") setActiveTab("trading")

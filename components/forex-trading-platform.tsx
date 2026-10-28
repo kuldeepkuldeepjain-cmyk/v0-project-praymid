@@ -3298,8 +3298,9 @@ const maxLeverage = 100
               id="add-instrument-popover"
               className="fixed flex flex-col overflow-hidden"
               style={{
-                top: addInstrumentPos.top, left: addInstrumentPos.left,
-                width: 280, maxHeight: 360, zIndex: 200,
+                top: addInstrumentPos.top,
+                left: Math.max(8, Math.min(addInstrumentPos.left, typeof window !== "undefined" ? window.innerWidth - 290 : addInstrumentPos.left)),
+                width: 280, maxWidth: "calc(100vw - 24px)", maxHeight: 360, zIndex: 200,
                 background: "#0b111d", border: "1px solid #1e2d45", borderRadius: 10,
                 boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
               }}
@@ -3378,7 +3379,7 @@ const maxLeverage = 100
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
         <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
-        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded ? "hidden" : ""} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+	        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -3541,7 +3542,7 @@ const maxLeverage = 100
         )}
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
         <DockPanel enabled={dockEnabled} id="chart" order={2} defaultSize={57} minSize={34}>
-        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab === "chart" || mobileTab === "order" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="chart-header shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
@@ -3691,7 +3692,7 @@ const maxLeverage = 100
 	    </div>
 	  )}
 	</div>
-  <div className="terminal-chart-activity-tabs" role="tablist" aria-label="Chart activity panels">
+	  <div className="terminal-chart-activity-tabs hidden lg:flex" role="tablist" aria-label="Chart activity panels">
     <button type="button" role="tab" aria-selected={activePanel === "positions"} className={activePanel === "positions" ? "is-active" : ""} onClick={() => { setActivePanel("positions"); setFooterOpen(true) }}><Layers className="h-3.5 w-3.5" /> Positions <span>{openTrades.length}</span></button>
     <button type="button" role="tab" aria-selected={activePanel === "pending"} className={activePanel === "pending" ? "is-active" : ""} onClick={() => { setActivePanel("pending"); setFooterOpen(true) }}><Clock className="h-3.5 w-3.5" /> Orders <span>{pendingOrders.length}</span></button>
     <button type="button" role="tab" aria-selected={activePanel === "history"} className={activePanel === "history" ? "is-active" : ""} onClick={() => { setActivePanel("history"); setFooterOpen(true) }}><History className="h-3.5 w-3.5" /> History <span>{closedTrades.length}</span></button>
@@ -3754,7 +3755,7 @@ const maxLeverage = 100
         <>
         <DockHandle enabled={dockEnabled} />
         <DockPanel enabled={dockEnabled} id="order" order={3} defaultSize={24} minSize={19} maxSize={36}>
-        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab === "order" || mobileTab === "chart" && isCompactViewport ? "flex" : "hidden lg:flex"} ${chartExpanded && !isCompactViewport ? "hidden" : ""}`}
+        <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
@@ -3785,10 +3786,10 @@ const maxLeverage = 100
             </button>
           </div>
 
-	          {/* Order panel */}
-	          {rightPanelTab === "order" && selectedPair ? (
-	            <div className="flex-1 overflow-y-auto terminal-scroll">
-	              <div className="mobile-order-ticket flex flex-col gap-2 p-2">
+		          {/* Order panel */}
+		          {rightPanelTab === "order" && selectedPair ? (
+		            <div className="flex-1 overflow-y-auto terminal-scroll">
+		              <div className="mobile-order-ticket flex flex-col gap-2 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-2">
 	                {/* Header banner */}
 	                <div className="flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
 	                  <div className="flex items-center gap-2">
@@ -4184,7 +4185,7 @@ const maxLeverage = 100
         </div>
 
         {/* Blotter content */}
-        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll" hidden={!footerOpen}>
+        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-0" hidden={!footerOpen}>
 
 	          {/* ── Open Positions ── */}
 	          {activePanel === "positions" && (
