@@ -32,6 +32,7 @@ import {
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
 import { AssetLogo } from "@/components/asset-logo"
+import { PortfolioActivityView } from "@/components/portfolio-activity-view"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
@@ -1226,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ─────────────────────────────────────────────────────���──────
+// ─── Position Sizer ─────────────────────────────────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1443,7 +1444,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const candleRequestRef = useRef(0)
-  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
+  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order" | "portfolio">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
@@ -3026,7 +3027,7 @@ const maxLeverage = 100
   ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3297,7 +3298,7 @@ const maxLeverage = 100
       </div>
 
       <nav className="reference-mobile-nav" aria-label="Trading navigation">
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab !== "market" && activePanel === "positions" ? "page" : undefined} className={mobileTab !== "market" && activePanel === "positions" ? "is-active" : ""}>
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" && activePanel === "positions" ? "page" : undefined} className={mobileTab === "chart" && activePanel === "positions" ? "is-active" : ""}>
           <CandlestickChart aria-hidden="true" /><span>Trade</span>
         </button>
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
@@ -3309,8 +3310,8 @@ const maxLeverage = 100
         <button type="button" className="mobile-nav-direction" onClick={() => { setDirection(value => value === "BUY" ? "SELL" : "BUY"); setMobileTab("chart") }} aria-label={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`} title={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`}>
           <ArrowUpDown aria-hidden="true" />
         </button>
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("history"); setFooterOpen(true) }} aria-current={activePanel === "history" ? "page" : undefined} className={activePanel === "history" ? "is-active" : ""} aria-label="Open order history">
-          <History aria-hidden="true" /><span>History</span>
+        <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
+          <Wallet aria-hidden="true" /><span>Portfolio</span>
         </button>
         <button type="button" onClick={() => onOpenSidebar?.()}>
           <UserRound aria-hidden="true" /><span>Account</span>
@@ -3319,6 +3320,7 @@ const maxLeverage = 100
 
       {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═══════��═════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <div className={mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
@@ -3739,7 +3741,7 @@ const maxLeverage = 100
 	            )}
 
 	            {/* ── Mobile Activity / Blotter Section ── */}
-	            <div className="shrink-0 mx-3 my-2 mb-20 md:mb-4 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 overflow-hidden shadow-lg">
+	            <div className="hidden shrink-0 mx-3 my-2 mb-20 md:mb-4 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 overflow-hidden shadow-lg">
 	              <div className="flex items-center justify-between px-3 py-2 bg-[#050a12] border-b border-[#162338]">
 	                <div className="flex items-center gap-1.5">
 	                  <Layers className="h-3.5 w-3.5 text-cyan-400" />
@@ -4245,10 +4247,25 @@ const maxLeverage = 100
         </DockPanel>
         </>
         )}
-      </DockGroup>
+        </DockGroup>
+        </div>
+        <div className={`mobile-portfolio-view ${mobileTab === "portfolio" ? "flex" : "hidden"} flex-1 min-h-0 flex-col overflow-y-auto lg:hidden`}>
+          <PortfolioActivityView
+            openTrades={openTrades}
+            pendingOrders={pendingOrders}
+            closedTrades={closedTrades}
+            totalPnl={totalPnl}
+            totalMargin={totalMargin}
+            totalLots={openTrades.reduce((sum, trade) => sum + trade.lotSize, 0)}
+            formatPrice={fmt}
+            onCloseTrade={closeTrade}
+            onCancelOrder={cancelPending}
+          />
+        </div>
       </div>
 
       {/* BOTTOM BLOTTER */}
+      {!isCompactViewport && (
       <section
         ref={blotterRef}
         className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
@@ -4690,10 +4707,11 @@ const maxLeverage = 100
   {activePanel === "news" && <NewsCalendarPanel />}
 
   {/* ── AI Trading Guide ── */}
-  {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
+          {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
 
         </div>
       </section>
+      )}
 
       <div className="reference-statusbar shrink-0">
         <span><i />{online ? "Connected" : "Reconnecting"}</span>

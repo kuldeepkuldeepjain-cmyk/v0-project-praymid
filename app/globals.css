@@ -9401,3 +9401,90 @@ body:has(.elite-terminal-shell) {
   }
 }
 
+@media (max-width: 767px) {
+  .reference-terminal.is-market-watch-active {
+    box-sizing: border-box;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-market-watch-active > .apple-terminal-blotter {
+    display: none !important;
+  }
+
+  .reference-terminal.is-market-watch-active .apple-terminal-grid {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-market-watch-active .apple-terminal-market {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-market-watch-active #market-watch-instruments {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y !important;
+    scrollbar-width: thin;
+    scrollbar-color: #42617e transparent;
+  }
+
+  .reference-terminal.is-market-watch-active #market-watch-instruments::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .reference-terminal.is-market-watch-active #market-watch-instruments::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: #42617e;
+  }
+}
+
+@media (max-width: 1023px) {
+  .reference-terminal.is-portfolio-active {
+    box-sizing: border-box;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-portfolio-active .apple-terminal-grid {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-portfolio-active .mobile-portfolio-view {
+    display: flex !important;
+    flex: 1 1 0%;
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .reference-terminal.is-portfolio-active .apple-terminal-blotter {
+    display: none !important;
+  }
+}
