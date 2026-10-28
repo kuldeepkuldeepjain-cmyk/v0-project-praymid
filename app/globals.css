@@ -1695,6 +1695,26 @@ button, a, [role="button"] {
 .reference-quick-trade { min-height: 46px; border-radius: 8px; padding: 7px 10px; }
 .reference-quick-trade span { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 10px; font-weight: 900; letter-spacing: .12em; }
 .reference-quick-trade strong { display: block; margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.reference-make-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 42px;
+  margin-top: 8px;
+  border: 1px solid rgba(56, 189, 248, .35);
+  border-radius: 8px;
+  background: rgba(14, 116, 144, .16);
+  color: #b9ecff;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.reference-make-order span { color: #6f8ba5; font-size: 8px; font-weight: 700; letter-spacing: .04em; text-transform: none; }
+.reference-make-order:hover:not(:disabled), .reference-make-order:focus-visible { border-color: #22d3ee; background: rgba(34, 211, 238, .24); color: #fff; }
+.reference-make-order:disabled { cursor: not-allowed; opacity: .45; }
 @media (max-width: 1199px) {
   .apple-trading-terminal { min-height: 100dvh; height: auto; overflow: auto; }
 }

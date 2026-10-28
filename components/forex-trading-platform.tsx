@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ────────────────────────────────────────────────────────────
+// ─── Position Sizer ─────────────────────────────────────────────────────��──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3716,6 +3716,10 @@ const maxLeverage = 100
   <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
   </button>
     </div>
+    <button type="button" onClick={() => setMobileTab("order")} disabled={!selectedPair || isFrozen} className="reference-make-order">
+      <Zap className="h-3.5 w-3.5" /> MAKE ORDER
+      <span>Open full order ticket</span>
+    </button>
 	        </div>
 	        </div>
 	        </div>
