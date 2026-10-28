@@ -9544,3 +9544,85 @@ body:has(.elite-terminal-shell) {
     display: none !important;
   }
 }
+
+/* The dock follows the supplied reference: one continuous bar with a teal active action. */
+@media (max-width: 767px) {
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav {
+    position: fixed !important;
+    z-index: 100 !important;
+    inset: auto 0 0;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100% !important;
+    height: calc(70px + env(safe-area-inset-bottom, 0px));
+    min-height: calc(70px + env(safe-area-inset-bottom, 0px)) !important;
+    gap: 0;
+    padding: 0 8px env(safe-area-inset-bottom, 0px);
+    overflow: hidden;
+    border: 0 !important;
+    border-top: 1px solid rgba(75, 101, 126, .42) !important;
+    border-radius: 0 !important;
+    background: rgba(4, 14, 25, .98) !important;
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, .18) !important;
+    transform: none !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button {
+    display: flex !important;
+    width: 100% !important;
+    height: 100%;
+    min-width: 0 !important;
+    min-height: 64px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    padding: 3px 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #8fa5bd !important;
+    font-size: 10px !important;
+    font-weight: 600 !important;
+    letter-spacing: .04em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button svg {
+    width: 23px !important;
+    height: 23px !important;
+    flex: 0 0 auto;
+    color: currentColor;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:hover {
+    border: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active,
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active:hover {
+    border: 0 !important;
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    color: #39bfa7 !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active svg {
+    color: #39bfa7 !important;
+    filter: drop-shadow(0 0 7px rgba(57, 191, 167, .3));
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:focus-visible {
+    outline: 2px solid #39bfa7 !important;
+    outline-offset: -4px;
+    border-radius: 6px !important;
+  }
+}
