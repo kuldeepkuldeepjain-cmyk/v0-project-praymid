@@ -1112,7 +1112,6 @@ button, a, [role="button"] {
   border: 1px solid #1a2640;
   border-radius: 6px;
 }
-}
 
 /* Price tick flash */
 .price-tick { animation: price-tick 0.25s ease-out; }
