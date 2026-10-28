@@ -1154,7 +1154,7 @@ function ModifyTradeModal({
 function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null
   return (
-    <div className="fixed top-12 right-3 z-[70] flex flex-col gap-1.5 pointer-events-none" style={{ maxWidth: 320 }}>
+    <div className="fixed top-14 right-3 left-3 sm:left-auto sm:w-[320px] max-w-[calc(100vw-24px)] z-[150] flex flex-col gap-1.5 pointer-events-none">
       {toasts.map(t => (
         <div
           key={t.id}
@@ -1164,11 +1164,11 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
               : t.type === "error" ? "rgba(69,10,10,0.95)"
               : t.type === "warning" ? "rgba(78,37,10,0.95)"
               : "rgba(8,18,38,0.95)",
-            border: `1px solid ${t.type === "success" ? "rgba(16,185,129,0.3)"
-              : t.type === "error" ? "rgba(239,68,68,0.3)"
-              : t.type === "warning" ? "rgba(245,158,11,0.3)"
-              : "rgba(34,211,238,0.3)"}`,
-            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            border: `1px solid ${t.type === "success" ? "rgba(16,185,129,0.35)"
+              : t.type === "error" ? "rgba(239,68,68,0.35)"
+              : t.type === "warning" ? "rgba(245,158,11,0.35)"
+              : "rgba(34,211,238,0.35)"}`,
+            boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
             backdropFilter: "blur(12px)",
           }}
         >
@@ -1183,7 +1183,7 @@ function ToastStack({ toasts, onDismiss }: { toasts: ToastItem[]; onDismiss: (id
               : "#a5f3fc" }}>
             {t.text}
           </span>
-          <button onClick={() => onDismiss(t.id)} className="shrink-0 text-slate-500 hover:text-slate-400 transition-colors ml-1">
+          <button onClick={() => onDismiss(t.id)} className="shrink-0 text-slate-500 hover:text-slate-400 transition-colors ml-1" aria-label="Dismiss notification">
             <X className="h-3 w-3" />
           </button>
         </div>
@@ -1709,10 +1709,13 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   }, [externalBalance])
 
   // ── Toast helpers ──────────────────────────────────────────────────────────
-  const showToast = useCallback((type: ToastItem["type"], text: string, duration = 5000) => {
-    const id = ++toastIdRef.current
-    setToasts(prev => [...prev.slice(-4), { id, type, text }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), duration)
+  const showToast = useCallback((type: ToastItem["type"], text: string, duration = 4500) => {
+    setToasts(prev => {
+      if (prev.some(t => t.text === text)) return prev
+      const id = ++toastIdRef.current
+      setTimeout(() => setToasts(current => current.filter(t => t.id !== id)), duration)
+      return [...prev.slice(-2), { id, type, text }]
+    })
   }, [])
 
   const dismissToast = useCallback((id: number) => {
@@ -2516,17 +2519,16 @@ const maxLeverage = 100
         createdTimestamp: Date.now(),
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
-      setPendingOrders(prev => [order, ...prev])
-      showToast("info", `${order.orderType.replace("_"," ")} placed: ${pairSymbol} @ ${fmt(order.targetPrice, pairSymbol)}`)
-      setActivePanel("pending")
+	      setPendingOrders(prev => [order, ...prev])
+	      setActivePanel("pending")
 
-      const pendingSaved = await persistPendingOrder(order)
-      if (!pendingSaved) {
-        setPendingOrders(prev => prev.filter(item => item.id !== order.id))
-        showToast("error", `${order.orderType.replace("_", " ")} was rejected by the trading engine.`)
-      } else {
-        showToast("success", `${order.orderType.replace("_", " ")} accepted by the trading engine.`)
-      }
+	      const pendingSaved = await persistPendingOrder(order)
+	      if (!pendingSaved) {
+	        setPendingOrders(prev => prev.filter(item => item.id !== order.id))
+	        showToast("error", `${order.orderType.replace("_", " ")} was rejected by the trading engine.`)
+	      } else {
+	        showToast("success", `${order.orderType.replace("_", " ")} accepted by the trading engine: ${pairSymbol} @ ${fmt(order.targetPrice, pairSymbol)}`)
+	      }
       confirmInFlight.current = false
       setConfirmLoading(false)
     } else {
@@ -2549,26 +2551,23 @@ const maxLeverage = 100
         if (prev.some(t => t.id === tradeId)) return prev
         return [trade, ...prev]
       })
-      setWalletBalance(prev => prev - margin)
-      showToast("success",
-        `${dir} ${lot}L ${pairSymbol} @ ${fmt(price, pairSymbol)} | Margin: $${margin.toFixed(2)}`
-      )
-      setSl(""); setTp(""); setTrailingPips("")
-      setActivePanel("positions")
+	      setWalletBalance(prev => prev - margin)
+	      setSl(""); setTp(""); setTrailingPips("")
+	      setActivePanel("positions")
 
-      // The API locks margin, records the trade, and writes the ledger entry in
-      // one transaction. Never deduct or restore margin in a second request.
-      const saved = await persistOpenTrade(trade)
-      if (!saved) {
-        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
-        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
-        setWalletBalance(prev => prev + margin)
-        showToast("error", `${pairSymbol} order was rejected by the trading engine. Margin was released.`)
-        confirmInFlight.current = false
-        setConfirmLoading(false)
-        return
-      }
-      showToast("success", `${dir} ${pairSymbol} execution confirmed by the trading engine.`)
+	      // The API locks margin, records the trade, and writes the ledger entry in
+	      // one transaction. Never deduct or restore margin in a second request.
+	      const saved = await persistOpenTrade(trade)
+	      if (!saved) {
+	        openTradesRef.current = openTradesRef.current.filter(item => item.id !== trade.id)
+	        setOpenTrades(prev => prev.filter(item => item.id !== trade.id))
+	        setWalletBalance(prev => prev + margin)
+	        showToast("error", `${pairSymbol} order was rejected by the trading engine. Margin was released.`)
+	        confirmInFlight.current = false
+	        setConfirmLoading(false)
+	        return
+	      }
+	      showToast("success", `${dir} ${lot}L ${pairSymbol} execution confirmed @ ${fmt(price, pairSymbol)}`)
       if (typeof saved.newBalance === "number") {
         suppressExternalSync.current = true
         setWalletBalance(saved.newBalance)
@@ -3122,82 +3121,67 @@ const maxLeverage = 100
           else if (panel === "calendar") { setActivePanel("news") }
           else if (panel === "news") { setActivePanel("news") }
           else if (panel === "performance") { setActivePanel("performance") }
-          else if (panel === "history") { setActivePanel("history") }
-          else if (panel === "journal") { setActivePanel("journal") }
-          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
-          else if (panel === "academy") { showToast("info", "Trading Academy coming soon") }
-  else { setActivePanel(panel as typeof activePanel) }
-        }}
-        onToggleFullscreen={() => {
-          if (document.fullscreenElement) document.exitFullscreen()
-          else document.documentElement.requestFullscreen()
-        }}
-        isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
-  onToggleLock={() => {
-    setTerminalLocked((locked) => {
-      const nextLocked = !locked
-      showToast(nextLocked ? "warning" : "info", nextLocked ? "Trading locked — no new orders will be accepted" : "Trading unlocked")
-      return nextLocked
-    })
-  }}
-  isLocked={isFrozen || terminalLocked}
-        onToggleSound={() => setSoundEnabled(!soundEnabled)}
-        soundEnabled={soundEnabled}
-        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
-        theme={isDarkTheme ? "dark" : "light"}
-  onToggleWatchlist={() => setMobileTab("market")}
-        onOpenSidebar={onOpenSidebar}
-        onOpenTransfer={() => showToast("info", "Transfer flow opened")}
-  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
-        onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
-  onLogout={async () => {
-    clearParticipantAuth()
-    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
-    window.location.assign("/participant/login")
-  }}
-        onSearch={(q) => { setPairSearch(q); setShowPairSearch(Boolean(q)) }}
-        onSelectInstrument={(symbol) => {
-          const match = pairs.find(pair => pair.symbol === symbol)
-          if (match) {
-            setSelectedPair(match)
-            setPairSearch("")
-            setShowPairSearch(false)
-            setMobileTab("chart")
-            fetchCandles(match.symbol, timeframe)
-          }
-        }}
-        instruments={pairs.map(pair => ({
-          symbol: pair.symbol,
-          name: FULL_NAMES[pair.symbol] ?? pair.symbol,
-          category: PAIRS_CONFIG.find(config => config.symbol === pair.symbol)?.category ?? "Forex",
-          bid: pair.bid,
-          ask: pair.ask,
-          change: pair.change,
-        }))}
-        notifications={[
-          ...adminNotifications,
-          ...toasts.slice(0, 5).map(t => ({
-            id: `toast-${t.id}`,
-            type: t.type,
-            title: t.type === "success" ? "Success" : t.type === "error" ? "Error" : t.type === "warning" ? "Warning" : "Info",
-            message: t.text,
-            time: "just now",
-            read: false,
-          })),
-        ]}
-        onMarkNotificationRead={(id) => {
-          if (id.startsWith("toast-")) {
-            setToasts(ts => ts.filter(t => `toast-${t.id}` !== id))
-          } else {
-            markAdminNotificationRead(id)
-          }
-        }}
-        onClearNotifications={() => { setToasts([]); clearAdminNotifications() }}
-        activeLanguage="en"
-        onChangeLanguage={(lang) => showToast("info", `Language: ${lang.toUpperCase()}`)}
-        activeLayout={chartLayout === "grid" ? "pro" : "default"}
-        onChangeLayout={(layout) => { setChartLayout(layout === "pro" ? "grid" : "single"); showToast("info", `Layout: ${layout}`) }}
-        serverTime="UTC"
+	          else if (panel === "history") { setActivePanel("history") }
+	          else if (panel === "journal") { setActivePanel("journal") }
+	          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
+	          else { setActivePanel(panel as typeof activePanel) }
+	        }}
+	        onToggleFullscreen={() => {
+	          if (document.fullscreenElement) document.exitFullscreen()
+	          else document.documentElement.requestFullscreen()
+	        }}
+	        isFullscreen={typeof document !== "undefined" && !!document.fullscreenElement}
+	  onToggleLock={() => {
+	    setTerminalLocked((locked) => {
+	      const nextLocked = !locked
+	      showToast(nextLocked ? "warning" : "info", nextLocked ? "Trading locked — no new orders will be accepted" : "Trading unlocked")
+	      return nextLocked
+	    })
+	  }}
+	  isLocked={isFrozen || terminalLocked}
+	        onToggleSound={() => setSoundEnabled(!soundEnabled)}
+	        soundEnabled={soundEnabled}
+	        onToggleTheme={() => setIsDarkTheme(!isDarkTheme)}
+	        theme={isDarkTheme ? "dark" : "light"}
+	  onToggleWatchlist={() => setMobileTab("market")}
+	        onOpenSidebar={onOpenSidebar}
+	        onOpenTransfer={() => {}}
+	  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
+	        onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
+	  onLogout={async () => {
+	    clearParticipantAuth()
+	    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
+	    window.location.assign("/participant/login")
+	  }}
+	        onSearch={(q) => { setPairSearch(q); setShowPairSearch(Boolean(q)) }}
+	        onSelectInstrument={(symbol) => {
+	          const match = pairs.find(pair => pair.symbol === symbol)
+	          if (match) {
+	            setSelectedPair(match)
+	            setPairSearch("")
+	            setShowPairSearch(false)
+	            setMobileTab("chart")
+	            fetchCandles(match.symbol, timeframe)
+	          }
+	        }}
+	        instruments={pairs.map(pair => ({
+	          symbol: pair.symbol,
+	          name: FULL_NAMES[pair.symbol] ?? pair.symbol,
+	          category: PAIRS_CONFIG.find(config => config.symbol === pair.symbol)?.category ?? "Forex",
+	          bid: pair.bid,
+	          ask: pair.ask,
+	          change: pair.change,
+	        }))}
+	        notifications={adminNotifications}
+	        onMarkNotificationRead={(id) => {
+	          markAdminNotificationRead(id)
+	        }}
+	        onClearNotifications={clearAdminNotifications}
+	        activeLanguage="en"
+	        onChangeLanguage={() => {}}
+	        activeLayout={chartLayout === "grid" ? "pro" : "default"}
+	        onChangeLayout={(layout) => setChartLayout(layout === "pro" ? "grid" : "single")}
+	        serverTime="UTC"
         marketStatus={online ? "open" : "closed"}
       />
 </div>
@@ -3372,7 +3356,7 @@ const maxLeverage = 100
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═════════════════ */}
+      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═══════��═════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
