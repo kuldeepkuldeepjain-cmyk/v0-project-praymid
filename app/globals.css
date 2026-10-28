@@ -2199,7 +2199,15 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-topbar .terminal-desktop-only { display: none !important; }
   .apple-trading-terminal .apple-terminal-summary { min-height: 42px; height: auto; }
   .apple-trading-terminal .apple-terminal-summary > div { padding-inline: 8px; min-width: max-content; }
-  .apple-trading-terminal .apple-terminal-grid { min-height: 0; overflow: hidden; }
+  .apple-trading-terminal .apple-terminal-grid {
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
   .apple-trading-terminal .apple-terminal-market,
   .apple-trading-terminal .apple-terminal-order,
   .apple-trading-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
@@ -2221,7 +2229,12 @@ button, a, [role="button"] {
   .reference-terminal {
     min-height: min(760px, calc(100dvh - 150px));
     height: min(760px, calc(100dvh - 150px)) !important;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
   .reference-terminal .apple-terminal-mobile-tabs {
     position: sticky;
@@ -5619,7 +5632,7 @@ button, a, [role="button"] {
   .terminal-stat-value { font-size: 12px; }
 }
 
-/* ── Final institutional terminal system ─────────────────────────────────
+/* ─�� Final institutional terminal system ─────────────────────────────────
    Keep the terminal calm, legible and chart-first at every viewport. These
    scoped rules intentionally sit last so older visual experiments cannot
    reintroduce oversized rails or push the chart below the fold. */
