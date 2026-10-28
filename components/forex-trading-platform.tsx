@@ -3727,7 +3727,7 @@ const maxLeverage = 100
 	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
 	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
 	                    <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
-	                      {selectedPair.category === "Commodities" ? "100 oz" : selectedPair.category === "Crypto" ? "1 Coin" : "100,000 units"}
+	                      {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
 	                    </span>
 	                  </div>
 	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
@@ -3840,7 +3840,7 @@ const maxLeverage = 100
 	                          </div>
 	                          <button
 	                            type="button"
-	                            onClick={() => cancelPendingOrder(order.id)}
+	                            onClick={() => cancelPending(order.id)}
 	                            className="px-2 py-1 rounded text-[9px] font-bold text-slate-400 bg-slate-800/40 border border-slate-700 hover:text-red-400"
 	                          >
 	                            Cancel
