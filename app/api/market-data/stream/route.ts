@@ -107,13 +107,17 @@ export async function GET(request: NextRequest) {
           (status) => send("status", { status, provider: "Biquote Tick Hub", ts: Date.now() }),
         )
         try {
-          await biquoteConnection.start()
+          await Promise.race([
+            biquoteConnection.start(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Biquote connection timeout")), 8_000)),
+          ])
         } catch {
           send("status", { status: "fallback", provider: "REST fallback", ts: Date.now() })
+          void biquoteConnection.connection.stop()
         }
       }
       const token = process.env.TIINGO_API_KEY
-      if (token) {
+      if (token && !biquoteEnabled) {
         tiingoSocket = new WebSocket("wss://api.tiingo.com/fx")
         tiingoSocket.on("open", () => {
           tiingoSocket?.send(JSON.stringify({ eventName: "subscribe", authorization: token, eventData: { thresholdLevel: 5, tickers: TIINGO_SYMBOLS } }))
@@ -146,7 +150,10 @@ export async function GET(request: NextRequest) {
         tiingoCryptoSocket.on("close", () => { if (!closed) send("status", { status: "reconnecting", provider: "Tiingo Crypto WebSocket", ts: Date.now() }) })
         tiingoCryptoSocket.on("error", () => { if (!closed) send("status", { status: "fallback", provider: "Tiingo Crypto REST fallback", ts: Date.now() }) })
       }
-      fallbackTimer = setInterval(() => { if (!tiingoSocket || tiingoSocket.readyState !== WebSocket.OPEN) void refreshFallback() }, 1_000)
+      fallbackTimer = setInterval(() => {
+        const biquoteConnected = biquoteConnection?.connection.state === "Connected"
+        if (!biquoteConnected && (!tiingoSocket || tiingoSocket.readyState !== WebSocket.OPEN)) void refreshFallback()
+      }, 1_000)
     },
     cancel() {
       closed = true
