@@ -8508,6 +8508,127 @@ body:has(.elite-terminal-shell) {
   .mt5-terminal.reference-terminal .mobile-trailing-field { display: block !important; }
 }
 
+.mt5-terminal.reference-terminal .mobile-order-ticket {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px solid var(--mobile-terminal-border) !important;
+  border-radius: 12px !important;
+  background: var(--mobile-terminal-bg) !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.04);
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-side {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 58px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 14px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: var(--mobile-terminal-ink) !important;
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif !important;
+  line-height: 1.2;
+  opacity: 1 !important;
+  transition: background-color 180ms ease, filter 180ms ease;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-sell {
+  align-items: flex-start;
+  border-right: 1px solid var(--mobile-terminal-border) !important;
+  background: color-mix(in srgb, var(--mobile-terminal-red) 17%, var(--mobile-terminal-panel)) !important;
+  text-align: left;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-sell[data-active="true"] {
+  background: color-mix(in srgb, var(--mobile-terminal-red) 42%, var(--mobile-terminal-panel)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mobile-terminal-red) 72%, transparent);
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-buy {
+  align-items: flex-end;
+  background: color-mix(in srgb, var(--mobile-terminal-green) 17%, var(--mobile-terminal-panel)) !important;
+  text-align: right;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-buy[data-active="true"] {
+  background: color-mix(in srgb, var(--mobile-terminal-green) 42%, var(--mobile-terminal-panel)) !important;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mobile-terminal-green) 72%, transparent);
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-side > span:first-child {
+  font-family: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif !important;
+  font-size: 9px !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.12em !important;
+  line-height: 1;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-sell > span:first-child {
+  color: color-mix(in srgb, var(--mobile-terminal-red) 74%, white) !important;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-buy > span:first-child {
+  color: color-mix(in srgb, var(--mobile-terminal-green) 74%, white) !important;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-side > .price-mono {
+  color: var(--mobile-terminal-ink) !important;
+  font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-spread {
+  z-index: 2;
+  min-width: 40px;
+  padding: 3px 5px !important;
+  border: 1px solid var(--mobile-terminal-border) !important;
+  border-radius: 999px !important;
+  background: var(--mobile-terminal-bg) !important;
+  color: var(--mobile-terminal-ink) !important;
+  box-shadow: 0 0 0 3px var(--mobile-terminal-bg);
+  font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace !important;
+}
+
+.mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-spread .price-mono {
+  color: var(--mobile-terminal-ink) !important;
+  font-size: 9px !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes quote-side-select {
+    from { filter: brightness(0.82); }
+    60% { filter: brightness(1.18); }
+    to { filter: brightness(1); }
+  }
+
+  .mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-side[data-active="true"] {
+    animation: quote-side-select 240ms ease-out;
+  }
+
+  .mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-side:hover:not(:disabled) {
+    filter: brightness(1.12);
+  }
+
+  .mt5-terminal.reference-terminal .mobile-quote-switch .mobile-quote-side:active:not(:disabled) {
+    filter: brightness(1.2);
+  }
+}
+
 
 @media (max-width: 1023px) {
   .elite-terminal-shell .mt5-terminal.reference-terminal .apple-terminal-grid {

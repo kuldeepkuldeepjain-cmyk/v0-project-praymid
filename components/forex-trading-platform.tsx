@@ -4089,10 +4089,11 @@ const maxLeverage = 100
 	                </div>
 
 		                {/* Single Executable Quote / Direction Selector */}
-		                <div className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
+		                <div className="mobile-quote-switch relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
 		                  <button type="button" onClick={() => setOrderDirection("SELL")}
-		                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
-		                    className={`rounded-lg px-2.5 py-2 text-left transition-colors ${
+                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
+	                    data-active={direction === "SELL"}
+	                    className={`mobile-quote-side mobile-quote-sell rounded-lg px-2.5 py-2 text-left transition-colors ${
 		                      direction === "SELL"
 		                        ? "bg-rose-500/20 border border-rose-500"
 		                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
@@ -4101,8 +4102,9 @@ const maxLeverage = 100
 		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
 		                  </button>
 		                  <button type="button" onClick={() => setOrderDirection("BUY")}
-		                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
-		                    className={`rounded-lg px-2.5 py-2 text-right transition-colors ${
+                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
+	                    data-active={direction === "BUY"}
+	                    className={`mobile-quote-side mobile-quote-buy rounded-lg px-2.5 py-2 text-right transition-colors ${
 		                      direction === "BUY"
 		                        ? "bg-emerald-500/20 border border-emerald-500"
 		                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
@@ -4110,7 +4112,7 @@ const maxLeverage = 100
 		                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
 		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
 		                  </button>
-			                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+			                  <div className="mobile-quote-spread pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
 			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
 			                  </div>
 			                </div>
