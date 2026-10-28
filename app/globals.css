@@ -9544,3 +9544,172 @@ body:has(.elite-terminal-shell) {
     display: none !important;
   }
 }
+
+/* Mobile trading layout: keep the chart, execution controls, and instrument facts in one readable flow. */
+@media (max-width: 767px) {
+  .apple-trading-terminal.reference-terminal {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav {
+    position: fixed !important;
+    right: auto !important;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    left: 50% !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: min(calc(100% - 24px), 420px) !important;
+    min-height: 62px !important;
+    height: 62px;
+    gap: 4px;
+    padding: 5px;
+    transform: translateX(-50%);
+    overflow: hidden;
+    border: 1px solid var(--terminal-graphite-border) !important;
+    border-radius: 12px;
+    background: rgba(10, 22, 35, .97) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .04) !important;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    min-height: 48px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 3px 1px;
+    border: 1px solid transparent !important;
+    border-radius: 8px;
+    background: transparent !important;
+    color: var(--terminal-graphite-muted) !important;
+    font-size: clamp(7px, 2vw, 9px);
+    font-weight: 800;
+    letter-spacing: .035em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:nth-child(1) { --dock-accent: var(--terminal-graphite-positive); }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:nth-child(2) { --dock-accent: var(--terminal-graphite-blue); }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:nth-child(3) { --dock-accent: var(--terminal-graphite-warning); }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:nth-child(4) { --dock-accent: var(--terminal-graphite-muted); }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button:nth-child(5) { --dock-accent: var(--terminal-graphite-blue); }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button svg { color: var(--dock-accent); }
+  .apple-trading-terminal.reference-terminal .reference-mobile-nav > button.is-active {
+    border-color: color-mix(in srgb, var(--dock-accent) 48%, transparent) !important;
+    background: color-mix(in srgb, var(--dock-accent) 14%, var(--terminal-graphite-surface)) !important;
+    color: var(--dock-accent) !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column:not(.hidden) {
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column:not(.hidden) > .flex-1 {
+    flex: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap {
+    display: flex !important;
+    flex: none !important;
+    width: 100% !important;
+    height: clamp(170px, 22dvh, 200px) !important;
+    min-height: clamp(170px, 22dvh, 200px) !important;
+    max-height: 200px !important;
+    overflow: hidden !important;
+    border: 1px solid var(--terminal-graphite-border);
+    border-radius: 6px;
+    background: var(--terminal-graphite-bg) !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .terminal-single-chart-stack,
+  .apple-trading-terminal.reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel,
+  .apple-trading-terminal.reference-terminal .terminal-single-chart-stack .terminal-tradingview-panel {
+    flex: 1 1 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .terminal-single-chart-stack .terminal-native-chart-panel > .apple-trading-chart {
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .chart-header {
+    gap: 4px !important;
+    padding: 7px 9px 6px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .terminal-indicator-toolbar button {
+    min-height: 27px !important;
+    padding: 3px 7px !important;
+    font-size: 8px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
+    padding: 8px 10px 9px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-chart-trade-heading {
+    margin-bottom: 5px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-chart-trade-actions {
+    gap: 6px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-chart-trade-actions .reference-quick-trade {
+    min-height: 40px !important;
+    padding: 5px 8px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-make-order {
+    min-height: 34px !important;
+    margin-top: 6px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-instrument-overview {
+    margin: 8px 10px 12px !important;
+    padding: 10px !important;
+    border-color: var(--terminal-graphite-border) !important;
+    border-radius: 9px !important;
+    background: var(--terminal-graphite-surface) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035) !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-instrument-overview > div:first-child {
+    margin-bottom: 7px !important;
+    padding-bottom: 7px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-instrument-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .reference-instrument-metrics > div {
+    min-width: 0;
+    min-height: 38px;
+    padding: 6px 8px !important;
+    border-color: var(--terminal-graphite-border) !important;
+    border-radius: 6px !important;
+    background: var(--terminal-graphite-bg) !important;
+  }
+}

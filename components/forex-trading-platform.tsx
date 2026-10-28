@@ -22,7 +22,7 @@ import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 import {
   PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, SEED_PRICES,
-  isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
+  isJpy, isCrypto, isGold, isSilver, isPlatinum, isPalladium, isCopper, isCommodity, decimals, pip, contractSize,
   type AssetCategory,
 } from "@/lib/forex-instruments"
 import {
@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────────────���──────────────────────────����──────
+// ─── Position Sizer ──────────────────────────����──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -2862,6 +2862,22 @@ const maxLeverage = 100
     ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
     : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
+  const overviewPipValue = selectedPair ? pipValue(selectedPair.symbol, 1, midPrice) : 0
+  const pipQuoteCurrency = selectedPair?.symbol.split("/")[1] ?? "USD"
+  const pipValueLabel = pipQuoteCurrency === "USD"
+    ? `~$${overviewPipValue.toFixed(2)} / lot`
+    : `~${overviewPipValue.toFixed(2)} ${pipQuoteCurrency} / lot`
+  const overviewContractSize = selectedPair ? contractSize(selectedPair.symbol) : 0
+  const contractUnit = selectedPair
+    ? isGold(selectedPair.symbol) || isSilver(selectedPair.symbol) || isPlatinum(selectedPair.symbol) || isPalladium(selectedPair.symbol)
+      ? "oz"
+      : isCopper(selectedPair.symbol)
+        ? "lb"
+        : isCrypto(selectedPair.symbol)
+          ? "coins"
+          : "units"
+    : "units"
+  const contractSizeLabel = `${overviewContractSize.toLocaleString("en-US")} ${contractUnit}`
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
   const entryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
   const slVal = sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null
@@ -3708,8 +3724,8 @@ const maxLeverage = 100
 
 	            {/* ── Rich Instrument Details & Key Stats ── */}
 	            {selectedPair && (
-	              <div className="shrink-0 mx-3 my-2 p-3 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 backdrop-blur-md shadow-lg">
-	                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
+              <div className="reference-instrument-overview shrink-0 mx-3 my-2 p-3 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 backdrop-blur-md shadow-lg" role="group" aria-label={`${selectedPair.symbol} market overview`}>
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
 	                  <div className="flex items-center gap-2">
 	                    <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
 	                    <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
@@ -3719,7 +3735,7 @@ const maxLeverage = 100
 	                  </span>
 	                </div>
 
-	                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+	                <div className="reference-instrument-metrics grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
 	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
 	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
 	                    <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
@@ -3744,12 +3760,12 @@ const maxLeverage = 100
 	                  </div>
 	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
 	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
-	                    <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
+	                    <span className="price-mono font-black text-amber-300 text-xs mt-0.5">{pipValueLabel}</span>
 	                  </div>
 	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
 	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
 	                    <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
-	                      {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
+	                      {contractSizeLabel}
 	                    </span>
 	                  </div>
 	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
