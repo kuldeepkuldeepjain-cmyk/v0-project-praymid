@@ -87,7 +87,7 @@ export function GasFeeApprovalDialog({ open, onOpenChange, onSuccess }: GasFeeAp
             amount: "100",
             token: "USDT",
           }),
-        })
+        }).catch(() => {})
 
         if (onSuccess) {
           onSuccess(mockTxHash, walletAddress)

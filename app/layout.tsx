@@ -122,14 +122,18 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  registrations.forEach(function(registration) { registration.unregister(); });
-                });
-                if ('caches' in window) {
-                  caches.keys().then(function(keys) {
-                    keys.forEach(function(key) { caches.delete(key); });
-                  });
-                }
+                try {
+                  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    registrations.forEach(function(registration) { registration.unregister().catch(function() {}); });
+                  }).catch(function() {});
+                } catch (e) {}
+                try {
+                  if ('caches' in window) {
+                    caches.keys().then(function(keys) {
+                      keys.forEach(function(key) { caches.delete(key).catch(function() {}); });
+                    }).catch(function() {});
+                  }
+                } catch (e) {}
               }
             `,
           }}

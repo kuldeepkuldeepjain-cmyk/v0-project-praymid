@@ -37,6 +37,23 @@ export function GlobalErrorListener() {
 
     const handleRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason
+      // Suppress non-critical background promise rejections (e.g. AbortError, ServiceWorker / Cache SecurityError, network cancels)
+      if (
+        reason === "Canceled" ||
+        reason?.name === "AbortError" ||
+        reason?.name === "SecurityError" ||
+        (typeof reason?.message === "string" && (
+          reason.message.includes("ServiceWorker") ||
+          reason.message.includes("Cache") ||
+          reason.message.includes("canceled") ||
+          reason.message.includes("aborted") ||
+          reason.message.includes("Failed to fetch")
+        ))
+      ) {
+        event.preventDefault()
+        return
+      }
+
       console.error("[v0] Unhandled promise rejection:", reason)
       Sentry.captureException(reason instanceof Error ? reason : new Error(String(reason)))
       notify("A background request failed. Please try again.")
