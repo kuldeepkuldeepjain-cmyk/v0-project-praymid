@@ -2498,6 +2498,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             <div className="elite-terminal-platform">
   <ForexTradingPlatform
   participantEmail={participantData?.email ?? ""}
+  participantName={displayName}
+  kycStatus={rawKycStatus}
+  kycVerified={isKycVerified}
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
   fundedAmount={fundedBaseAmount}

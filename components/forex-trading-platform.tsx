@@ -11,7 +11,7 @@ import {
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
-  HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
+  HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard, Settings, LogOut,
   ArrowUpRight, ArrowDownRight, Home,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ────────────────────────��─����──────────────────────────����──────
+// ─── Position Sizer ────────────────────────���─����──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1357,6 +1357,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   export function ForexTradingPlatform({
   participantEmail,
+  participantName,
+  kycStatus = "",
+  kycVerified = false,
   walletBalance: externalBalance = 0,
   isFundedAccount = false,
   fundedAmount,
@@ -1371,6 +1374,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onStatsUpdate,
   }: {
   participantEmail: string
+  participantName?: string
+  kycStatus?: string
+  kycVerified?: boolean
   walletBalance?: number
   isFundedAccount?: boolean
   fundedAmount?: number
@@ -1384,6 +1390,12 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
 }) {
+  const accountDisplayName = participantName?.trim() || participantEmail?.split("@")[0] || "Trader"
+  const normalizedKycStatus = kycStatus.trim().toLowerCase()
+  const isAccountKycVerified = kycVerified || ["approved", "verified", "complete", "completed"].includes(normalizedKycStatus)
+  const isAccountKycPending = ["pending", "submitted", "in_review", "under_review"].includes(normalizedKycStatus)
+  const accountKycLabel = isAccountKycVerified ? "Verified" : isAccountKycPending ? "In review" : normalizedKycStatus === "rejected" ? "Action needed" : "Not submitted"
+  const accountKycTone = isAccountKycVerified ? "is-verified" : isAccountKycPending ? "is-pending" : "is-needed"
   // ── State ─────────────��─────────────────────────────��─�������──────────────�����������������������������───
   const [pairs, setPairs]             = useState<ForexPair[]>([])
   const [selectedPair, setSelectedPair] = useState<ForexPair | null>(null)
@@ -1446,7 +1458,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const candleRequestRef = useRef(0)
-  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order" | "portfolio">("chart")
+  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order" | "portfolio" | "account">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
@@ -3029,7 +3041,7 @@ const maxLeverage = 100
   ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3204,7 +3216,7 @@ const maxLeverage = 100
         </nav>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════������═���═��══������ */}
+      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════��������═���═��══������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3317,12 +3329,85 @@ const maxLeverage = 100
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
           <Wallet aria-hidden="true" /><span>Portfolio</span>
         </button>
-        <button type="button" onClick={() => onOpenSidebar?.()} aria-label="Open account menu" aria-expanded={onOpenSidebar ? accountMenuOpen : undefined} aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
+        <button type="button" onClick={() => setMobileTab("account")} aria-label="Open account page" aria-current={mobileTab === "account" ? "page" : undefined} className={mobileTab === "account" ? "is-active" : ""}>
           <UserRound aria-hidden="true" /><span>Account</span>
         </button>
       </nav>
 
-      {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═══════��═════════ */}
+      {mobileTab === "account" && (
+        <main id="mobile-account-page" className="mobile-account-page" aria-labelledby="mobile-account-heading">
+          <div className="mobile-account-page-header">
+            <div>
+              <p className="mobile-account-eyebrow">Personal workspace</p>
+              <h1 id="mobile-account-heading">Account</h1>
+            </div>
+            <span className={`mobile-account-kyc-badge ${accountKycTone}`}>
+              <span aria-hidden="true" />{accountKycLabel}
+            </span>
+          </div>
+
+          <section className="mobile-account-profile" aria-label="User profile">
+            <div className="mobile-account-avatar" aria-hidden="true">{accountDisplayName.charAt(0).toUpperCase()}</div>
+            <div className="mobile-account-profile-copy">
+              <span className="mobile-account-profile-label">Account holder</span>
+              <strong>{accountDisplayName}</strong>
+              <span className="mobile-account-profile-email">{participantEmail || "Email unavailable"}</span>
+            </div>
+            <button type="button" className="mobile-account-profile-edit" onClick={() => window.location.assign("/participant/dashboard/profile")} aria-label="Edit profile">
+              <ArrowUpRight aria-hidden="true" />
+            </button>
+          </section>
+
+          <section className="mobile-account-details" aria-label="Account details">
+            <div className="mobile-account-detail">
+              <span>Account type</span>
+              <strong>{isFundedAccount ? "Funded account" : "Live account"}</strong>
+            </div>
+            <div className={`mobile-account-detail ${accountKycTone}`}>
+              <span>KYC status</span>
+              <strong>{accountKycLabel}</strong>
+            </div>
+            <div className="mobile-account-detail mobile-account-balance">
+              <span>Wallet balance</span>
+              <strong>${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+            </div>
+          </section>
+
+          <section className="mobile-account-actions" aria-label="Funding and payout">
+            <button type="button" className="mobile-account-action is-primary" onClick={() => onAddFunds ? onAddFunds() : window.location.assign("/participant/dashboard/contribute")}>
+              <span className="mobile-account-action-icon"><Plus aria-hidden="true" /></span>
+              <span className="mobile-account-action-copy"><strong>Add funds</strong><small>Deposit into your account</small></span>
+              <ArrowUpRight aria-hidden="true" />
+            </button>
+            <button type="button" className="mobile-account-action" onClick={() => window.location.assign("/participant/dashboard/payout")}>
+              <span className="mobile-account-action-icon"><ArrowUpDown aria-hidden="true" /></span>
+              <span className="mobile-account-action-copy"><strong>Payout</strong><small>Withdraw available funds</small></span>
+              <ArrowUpRight aria-hidden="true" />
+            </button>
+          </section>
+
+          <button type="button" className="mobile-account-settings" onClick={() => window.location.assign("/participant/dashboard/settings/security")}>
+            <span className="mobile-account-settings-icon"><Settings aria-hidden="true" /></span>
+            <span><strong>Settings</strong><small>Security and account preferences</small></span>
+            <ChevronRight aria-hidden="true" />
+          </button>
+
+          <button
+            type="button"
+            className="mobile-account-logout"
+            onClick={async () => {
+              clearParticipantAuth()
+              await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
+              window.location.assign("/participant/login")
+            }}
+          >
+            <LogOut aria-hidden="true" />
+            <span>Log out</span>
+          </button>
+        </main>
+      )}
+
+      {/* ══ MAIN 3-COLUMN GRID ═══════════��════════════�������══════���═��═════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <div className={mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
