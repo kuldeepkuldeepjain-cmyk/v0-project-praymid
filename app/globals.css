@@ -2675,7 +2675,6 @@ button, a, [role="button"] {
     min-height: 100dvh;
     overflow: visible !important;
     overscroll-behavior-y: none;
-    -webkit-overflow-scrolling: touch;
   }
   .apple-trading-terminal.reference-terminal .apple-terminal-grid {
     display: flex;
@@ -2704,7 +2703,6 @@ button, a, [role="button"] {
     overflow: visible !important;
   }
   .apple-trading-terminal.reference-terminal .terminal-scroll:not(.chart-timeframe-toolbar):not(.terminal-rate-details) {
-    -webkit-overflow-scrolling: touch;
     overscroll-behavior-y: contain;
   }
   .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
@@ -2895,7 +2893,6 @@ button, a, [role="button"] {
     display: flex;
     flex: 1 1 0%;
     min-height: 0;
-    overflow: hidden;
   }
   .reference-terminal .apple-terminal-market,
   .reference-terminal .apple-terminal-order,
