@@ -2221,11 +2221,7 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-summary > div { padding-inline: 8px; min-width: max-content; }
   .apple-trading-terminal .apple-terminal-grid {
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    overflow: visible;
   }
   .apple-trading-terminal .apple-terminal-market,
   .apple-trading-terminal .apple-terminal-order,
@@ -2246,9 +2242,9 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span { white-space: nowrap; }
   .apple-trading-terminal .apple-terminal-topbar .reference-terminal-brand span:last-child { display: none; }
   .reference-terminal {
-    min-height: min(760px, calc(100dvh - 150px));
-    height: min(760px, calc(100dvh - 150px)) !important;
-    overflow: hidden;
+    min-height: 100dvh;
+    height: auto !important;
+    overflow: visible;
   }
   .reference-terminal .apple-terminal-mobile-tabs {
     position: sticky;
