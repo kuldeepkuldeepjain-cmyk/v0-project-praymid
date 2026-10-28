@@ -1491,6 +1491,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
   const [pendingExpiry, setPendingExpiry] = useState<"GTC" | "TODAY">("GTC")
+  const [showAdvancedOrderControls, setShowAdvancedOrderControls] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<"order" | "sizer">("order")
   const [showPairSearch, setShowPairSearch] = useState(false)
   const [pairSearch, setPairSearch]   = useState("")
@@ -3879,103 +3880,149 @@ const maxLeverage = 100
 	                  </div>
 	                )}
 
-	                {/* Volume (lots) */}
-	                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
-	                  <div className="flex items-center justify-between">
-	                    <label className="text-[8px] font-black tracking-wider uppercase text-purple-300">
-	                      Trade size (lots)
-	                    </label>
-	                    <div className="flex items-center gap-1 text-[8px] text-slate-400">
-	                      <span>Leverage:</span>
-	                      <select value={leverage} onChange={e => setLeverage(e.target.value)}
-	                        aria-label="Select leverage"
-	                        className={`bg-[#080c14] price-mono font-bold focus:outline-none px-1 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
-	                        {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value}>1:{value}</option>)}
-	                      </select>
-	                    </div>
-	                  </div>
-	                  <input type="number" value={lotSize} onChange={e => {
-	                    const next = Number.parseFloat(e.target.value)
-	                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
-	                  }}
-	                  onBlur={() => {
-	                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
-	                  }}
-	                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
-	                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
-	                  placeholder="0.01"
-	                  />
-	                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-	                  <div className="flex gap-1">
-	                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-	                      <button key={l} onClick={() => setLotSize(l)}
-	                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-all ${
-	                          lotSize === l
-	                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-	                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
-	                        }`}>
-	                        {l}
-	                      </button>
-	                    ))}
-	                  </div>
-	                </div>
+		                {/* Volume (lots) */}
+		                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
+		                  <div className="flex items-center justify-between">
+		                    <label className="text-[8px] font-black tracking-wider uppercase text-purple-300">
+		                      Trade size (lots)
+		                    </label>
+		                    <span className="text-[8px] font-bold text-slate-400">Leverage: 1:{effectiveLeverage}</span>
+		                  </div>
+		                  <input type="number" value={lotSize} onChange={e => {
+		                    const next = Number.parseFloat(e.target.value)
+		                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+		                  }}
+		                  onBlur={() => {
+		                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+		                  }}
+		                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
+		                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
+		                  placeholder="0.01"
+		                  />
+		                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
+		                  <div className="flex gap-1">
+		                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
+		                      <button key={l} onClick={() => setLotSize(l)}
+		                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-all ${
+		                          lotSize === l
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
+                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
+                        }`}>
+                        {l}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-	                {/* Risk controls (SL / TP / Trailing) */}
-	                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
-	                  <div className="flex items-center justify-between">
-	                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Risk Management</span>
-	                    <div className="flex gap-1">
-	                      {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
-	                        <button key={preset.label} type="button" onClick={() => {
-	                          if (preset.slPips === 0) { setSl(""); setTp(""); return }
-	                          const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
-	                          const unit = pip(selectedPair.symbol)
-	                          const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
-	                          const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
-	                          setSl(stop.toFixed(decimals(selectedPair.symbol)))
-	                          setTp(target.toFixed(decimals(selectedPair.symbol)))
-	                        }} className="rounded border border-[#243752] bg-[#0b1625] px-1.5 py-0.5 text-[8px] font-bold text-slate-400 hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
-	                      ))}
-	                    </div>
-	                  </div>
+                {/* Essential Risk controls (SL / TP) */}
+                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Stop Loss & Take Profit</span>
+                  </div>
 
-	                  <div className="grid grid-cols-2 gap-2">
-	                    {/* SL */}
-	                    <div>
-	                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-rose-400">
-	                        <span className="flex items-center gap-1"><ShieldAlert className="h-2.5 w-2.5" /> SL</span>
-	                        {slVal !== null && <span className="text-[8px] font-bold text-slate-400">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
-	                      </label>
-	                      <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-	                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#0d0204] border border-rose-500/30"
-	                        placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
-	                      />
-	                    </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* SL */}
+                    <div>
+                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-rose-400">
+                        <span className="flex items-center gap-1"><ShieldAlert className="h-2.5 w-2.5" /> SL</span>
+                        {slVal !== null && <span className="text-[8px] font-bold text-slate-400">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+                      </label>
+                      <input type="number" value={sl} onChange={e => setSl(e.target.value)}
+                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#0d0204] border border-rose-500/30"
+                        placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+                      />
+                    </div>
 
-	                    {/* TP */}
-	                    <div>
-	                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-emerald-400">
-	                        <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> TP</span>
-	                        {tpVal !== null && <span className="text-[8px] font-bold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
-	                      </label>
-	                      <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-	                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#010d06] border border-emerald-500/30"
-	                        placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
-	                      />
-	                    </div>
-	                  </div>
+                    {/* TP */}
+                    <div>
+                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-emerald-400">
+                        <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> TP</span>
+                        {tpVal !== null && <span className="text-[8px] font-bold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                      </label>
+                      <input type="number" value={tp} onChange={e => setTp(e.target.value)}
+                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#010d06] border border-emerald-500/30"
+                        placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+                      />
+                    </div>
+                  </div>
+                </div>
 
-	                  {/* Trailing Stop */}
-	                  <div className="flex items-center justify-between gap-2">
-	                    <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
-	                      <ArrowUpDown className="h-2.5 w-2.5" /> Trailing (pips)
-	                    </label>
-	                    <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-	                      className="w-28 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded bg-[#07030f] border border-purple-500/30 text-right"
-	                      placeholder="0"
-	                    />
-	                  </div>
-	                </div>
+                {/* Collapsible Advanced Section Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedOrderControls(!showAdvancedOrderControls)}
+                  aria-expanded={showAdvancedOrderControls}
+                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[#1a2640] bg-[#07101b] hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <Wrench className="h-3 w-3 text-cyan-400" />
+                    <span>Advanced Options</span>
+                    {(Boolean(trailingPips && parseFloat(trailingPips) > 0) || pendingExpiry !== "GTC" || leverage !== "100") && (
+                      <span className="rounded bg-cyan-400/20 px-1 py-0.2 text-[7px] font-bold text-cyan-300">Active</span>
+                    )}
+                  </div>
+                  {showAdvancedOrderControls ? <ChevronUp className="h-3 w-3 text-slate-400" /> : <ChevronDown className="h-3 w-3 text-slate-400" />}
+                </button>
+
+                {/* Advanced Options Body */}
+                {showAdvancedOrderControls && (
+                  <div className="flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
+                    {/* Trailing Stop */}
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
+                        <ArrowUpDown className="h-2.5 w-2.5" /> Trailing Stop (pips)
+                      </label>
+                      <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
+                        className="w-28 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded bg-[#07030f] border border-purple-500/30 text-right"
+                        placeholder="0 (disabled)"
+                      />
+                    </div>
+
+                    {/* Pending Order Expiry */}
+                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
+                      <span className="text-[8px] font-black tracking-wider uppercase text-slate-400">Order Expiry</span>
+                      <div className="flex gap-1">
+                        {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+                          <button key={e} type="button" onClick={() => setPendingExpiry(e)}
+                            className="px-2 py-0.5 text-[8px] font-black tracking-wider uppercase rounded transition-all"
+                            style={pendingExpiry === e
+                              ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+                              : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
+                            {e}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Leverage Selection */}
+                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
+                      <span className="text-[8px] font-black tracking-wider uppercase text-amber-300">Account Leverage</span>
+                      <select value={leverage} onChange={e => setLeverage(e.target.value)}
+                        aria-label="Select leverage"
+                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
+                        {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value}>1:{value}</option>)}
+                      </select>
+                    </div>
+
+                    {/* Quick Risk Presets */}
+                    <div className="border-t border-[#142032] pt-1.5">
+                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 block mb-1">Risk Presets</span>
+                      <div className="grid grid-cols-4 gap-1">
+                        {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
+                          <button key={preset.label} type="button" onClick={() => {
+                            if (preset.slPips === 0) { setSl(""); setTp(""); return }
+                            const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                            const unit = pip(selectedPair.symbol)
+                            const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
+                            const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
+                            setSl(stop.toFixed(decimals(selectedPair.symbol)))
+                            setTp(target.toFixed(decimals(selectedPair.symbol)))
+                          }} className="rounded border border-[#243752] bg-[#0b1625] px-1.5 py-0.5 text-[8px] font-bold text-slate-400 hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
 	                {/* Order Metrics summary */}
 	                <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
