@@ -247,8 +247,45 @@
 .terminal-page .overflow-x-auto {
   scrollbar-width: thin;
   scrollbar-color: var(--terminal-line) transparent;
+  overscroll-behavior: contain;
   overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  touch-action: pan-x pan-y;
 }
+
+@media (max-width: 640px) {
+  .reference-terminal {
+    min-height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  .reference-terminal .apple-terminal-grid,
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-order {
+    min-height: 0;
+  }
+
+  .reference-terminal .reference-watchlist,
+  .reference-terminal .terminal-account-stats,
+  .reference-terminal .terminal-chart-toolbar {
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reference-terminal .terminal-scroll {
+    scrollbar-width: none;
+  }
+
+  .reference-terminal .terminal-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 
 .terminal-page .terminal-scroll::-webkit-scrollbar,
 .terminal-page .overflow-x-auto::-webkit-scrollbar { height: 5px; width: 5px; }
