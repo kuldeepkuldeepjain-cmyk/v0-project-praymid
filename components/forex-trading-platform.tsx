@@ -4105,7 +4105,7 @@ const maxLeverage = 100
       </DockGroup>
       </div>
 
-      {/* ══ BOTTOM BLOTTER ══════�����═════════════════════��═����═══�����════��═════���════ */}
+      {/* BOTTOM BLOTTER */}
       <section
         ref={blotterRef}
         className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
