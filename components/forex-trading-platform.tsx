@@ -3733,11 +3733,11 @@ const maxLeverage = 100
   <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
   </button>
     </div>
-  </div>
-        </div>
-        </div>
-        {/* ── RIGHT: Order Ticket ───────────��────────��───────────────────────── */}
-        </DockPanel>
+	        </div>
+	        </div>
+	        </div>
+	        {/* RIGHT: Order Ticket */}
+	        </DockPanel>
         {dockEnabled && chartExpanded ? null : rightPanelHidden ? (
           <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
             <button
@@ -3852,13 +3852,12 @@ const maxLeverage = 100
 		                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
 		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
 		                  </button>
-		                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
-		                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
-		                  </div>
-		                </div>
-	                </div>
+			                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
+			                  </div>
+			                </div>
 
-	                {/* Pending price (limit/stop) */}
+		                {/* Pending price (limit/stop) */}
 	                {orderType !== "market" && (
 	                  <div className="rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
 	                    <label className="text-[8px] font-bold tracking-widest uppercase text-cyan-300">
@@ -4561,7 +4560,7 @@ const maxLeverage = 100
         <span>{utcClock} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──����───────────────���────────────────────���────── */}
+      {/* ── Trade Confirmation Modal ──����────���──────────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"
