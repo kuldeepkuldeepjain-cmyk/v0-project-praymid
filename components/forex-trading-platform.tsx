@@ -32,6 +32,7 @@ import {
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
 import { AssetLogo } from "@/components/asset-logo"
+import { PortfolioActivityView } from "@/components/portfolio-activity-view"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
@@ -1226,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ─────────────────────────────────────────────────────��──────
+// ─── Position Sizer ──────────────────────────��──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1443,7 +1444,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const candleRequestRef = useRef(0)
-  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order">("chart")
+  const [mobileTab, setMobileTab]     = useState<"market" | "chart" | "order" | "portfolio">("chart")
   const [isCompactViewport, setIsCompactViewport] = useState(false)
   const [modifyTarget, setModifyTarget] = useState<ModifyTarget>(null)
   const [tradeConfirm, setTradeConfirm] = useState<TradeConfirm>(null)
@@ -3026,7 +3027,7 @@ const maxLeverage = 100
   ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
+    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3164,7 +3165,8 @@ const maxLeverage = 100
         </button>
       </header>
 
-      <header className="terminal-account-bar" aria-label="Account overview">
+      {/* ── DESKTOP ACCOUNT BAR (Hidden on mobile to match sleek terminal header) ── */}
+      <header className="terminal-account-bar hidden lg:flex" aria-label="Account overview">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
           {[
             { label: "Balance / Equity", value: `$${walletBalance.toFixed(2)} / $${equity.toFixed(2)}`, tone: "neutral" },
@@ -3296,7 +3298,7 @@ const maxLeverage = 100
       </div>
 
       <nav className="reference-mobile-nav" aria-label="Trading navigation">
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab !== "market" && activePanel === "positions" ? "page" : undefined} className={mobileTab !== "market" && activePanel === "positions" ? "is-active" : ""}>
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" && activePanel === "positions" ? "page" : undefined} className={mobileTab === "chart" && activePanel === "positions" ? "is-active" : ""}>
           <CandlestickChart aria-hidden="true" /><span>Trade</span>
         </button>
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
@@ -3305,11 +3307,8 @@ const maxLeverage = 100
         <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions") }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
           <Zap aria-hidden="true" /><span>Order</span>
         </button>
-        <button type="button" className="mobile-nav-direction" onClick={() => { setDirection(value => value === "BUY" ? "SELL" : "BUY"); setMobileTab("chart") }} aria-label={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`} title={`Switch order side to ${direction === "BUY" ? "sell" : "buy"}`}>
-          <ArrowUpDown aria-hidden="true" />
-        </button>
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("history"); setFooterOpen(true) }} aria-current={activePanel === "history" ? "page" : undefined} className={activePanel === "history" ? "is-active" : ""} aria-label="Open order history">
-          <History aria-hidden="true" /><span>History</span>
+        <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
+          <Wallet aria-hidden="true" /><span>Portfolio</span>
         </button>
         <button type="button" onClick={() => onOpenSidebar?.()}>
           <UserRound aria-hidden="true" /><span>Account</span>
@@ -3318,6 +3317,7 @@ const maxLeverage = 100
 
       {/* ══ MAIN 3-COLUMN GRID ═��══════════���═════════�����══════��������═══════��═════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <div className={mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
@@ -3508,181 +3508,376 @@ const maxLeverage = 100
                   <span className="price-mono text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: isUp ? "#10b981" : "#ef4444", background: isUp ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
                 </div>
 
-                {/* Key Quote Metrics (Compact & Non-duplicated) */}
-                <div className="hidden lg:flex items-center gap-3 text-[10px] price-mono font-semibold">
-                  <span className="text-slate-400">BID <strong className="text-red-400">{fmt(selectedPair.bid, selectedPair.symbol)}</strong></span>
-                  <span className="text-slate-400">ASK <strong className="text-emerald-400">{fmt(selectedPair.ask, selectedPair.symbol)}</strong></span>
-                  <span className="text-slate-400">SPR <strong className="text-cyan-400">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</strong></span>
-                  <span className="text-slate-400">H <strong className="text-emerald-400">{fmt(selectedPair.high, selectedPair.symbol)}</strong></span>
-                  <span className="text-slate-400">L <strong className="text-red-400">{fmt(selectedPair.low, selectedPair.symbol)}</strong></span>
-                </div>
+	                {/* Key Quote Metrics (Compact & Non-duplicated) */}
+	                <div className="hidden lg:flex items-center gap-3 text-[10px] price-mono font-semibold">
+	                  <span className="text-slate-400">BID <strong className="text-red-400">{fmt(selectedPair.bid, selectedPair.symbol)}</strong></span>
+	                  <span className="text-slate-400">ASK <strong className="text-emerald-400">{fmt(selectedPair.ask, selectedPair.symbol)}</strong></span>
+	                  <span className="text-slate-400">SPR <strong className="text-cyan-400">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</strong></span>
+	                  <span className="text-slate-400">H <strong className="text-emerald-400">{fmt(selectedPair.high, selectedPair.symbol)}</strong></span>
+	                  <span className="text-slate-400">L <strong className="text-red-400">{fmt(selectedPair.low, selectedPair.symbol)}</strong></span>
+	                </div>
 
-                {/* Chart Controls & Tools Group */}
-                <div className="flex items-center gap-1.5 ml-auto">
-                  {/* Essential Timeframe Selector */}
-                  <div className="flex items-center gap-0.5 rounded-lg border border-[#1e2d45] bg-[#060a12] p-0.5">
-                    {(["1M", "5M", "15M", "1H", "1D"] as TimeFrame[]).map(tf => {
-                      const active = timeframe === tf
-                      return (
-                        <button
-                          key={tf}
-                          type="button"
-                          onClick={() => setTimeframe(tf)}
-                          aria-pressed={active}
-                          className="px-2 py-0.5 text-[9px] font-black tracking-wide rounded transition-all"
-                          style={{
-                            background: active ? "linear-gradient(180deg, #22d3ee 0%, #0891b2 100%)" : "transparent",
-                            color: active ? "#031015" : "#8ba3be",
-                          }}
-                        >
-                          {tf}
-                        </button>
-                      )
-                    })}
-                    {/* More Timeframes Dropdown */}
-                    <select
-                      value={(["30M", "4H", "1W"].includes(timeframe)) ? timeframe : "more"}
-                      onChange={e => { if (e.target.value !== "more") setTimeframe(e.target.value as TimeFrame) }}
-                      className="bg-transparent text-[9px] font-black text-slate-400 outline-none cursor-pointer px-1"
-                      aria-label="More timeframes"
-                    >
-                      <option value="more" disabled>MORE ▾</option>
-                      <option value="30M" className="bg-[#0b1625] text-white">30M</option>
-                      <option value="4H" className="bg-[#0b1625] text-white">4H</option>
-                      <option value="1W" className="bg-[#0b1625] text-white">1W</option>
-                    </select>
-                  </div>
+	                {/* Chart Controls & Tools Group */}
+	                <div className="flex items-center gap-1.5 ml-auto">
+	                  {/* Provider & Layout Toggles */}
+	                  <button
+	                    type="button"
+	                    onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
+	                    className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
+	                    style={{
+	                      color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
+	                      background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
+	                      borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
+	                    }}
+	                  >
+	                    {chartProvider === "tradingview" ? "TV Live" : "Native"}
+	                  </button>
 
-                  <div className="w-px h-4 bg-[#1e2d45]" />
+	                  <button
+	                    type="button"
+	                    onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
+	                    aria-label={chartLayout === "single" ? "Switch to grid layout" : "Switch to single layout"}
+	                    className="p-1 rounded border border-[#1e2d45] bg-[#0b1625] text-purple-300 hover:border-purple-500/40"
+	                  >
+	                    {chartLayout === "single" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
+	                  </button>
 
-                  {/* Provider & Layout Toggles */}
-                  <button
-                    type="button"
-                    onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
-                    className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
-                    style={{
-                      color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
-                      background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
-                      borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
-                    }}
-                  >
-                    {chartProvider === "tradingview" ? "TV Live" : "Native"}
-                  </button>
+	                  {/* Tools Dropdown */}
+	                  <select
+	                    onChange={e => { if (e.target.value) { setActivePanel(e.target.value as any); e.target.value = "" } }}
+	                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
+	                    defaultValue=""
+	                    aria-label="Workspace tools menu"
+	                  >
+	                    <option value="" disabled>TOOLS ▾</option>
+	                    <option value="dom" className="bg-[#0b1625] text-white">L2 Order Book</option>
+	                    <option value="risk" className="bg-[#0b1625] text-white">Risk Analytics</option>
+	                    <option value="alerts" className="bg-[#0b1625] text-white">Price Alerts</option>
+	                    <option value="ai-coach" className="bg-[#0b1625] text-white">AI Guide</option>
+	                  </select>
 
-                  <button
-                    type="button"
-                    onClick={() => setChartLayout(v => v === "single" ? "grid" : "single")}
-                    aria-label={chartLayout === "single" ? "Switch to grid layout" : "Switch to single layout"}
-                    className="p-1 rounded border border-[#1e2d45] bg-[#0b1625] text-purple-300 hover:border-purple-500/40"
-                  >
-                    {chartLayout === "single" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
-                  </button>
+	                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
+	                </div>
+	              </div>
+	            </div>
+	          ) : (
+	            <div className="shrink-0 flex items-center px-3 py-2 text-[11px] text-slate-700" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
+	              Select an instrument to begin trading
+	            </div>
+	          )}
 
-                  {/* Tools Dropdown */}
-                  <select
-                    onChange={e => { if (e.target.value) { setActivePanel(e.target.value as any); e.target.value = "" } }}
-                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
-                    defaultValue=""
-                    aria-label="Workspace tools menu"
-                  >
-                    <option value="" disabled>TOOLS ▾</option>
-                    <option value="dom" className="bg-[#0b1625] text-white">L2 Order Book</option>
-                    <option value="risk" className="bg-[#0b1625] text-white">Risk Analytics</option>
-                    <option value="alerts" className="bg-[#0b1625] text-white">Price Alerts</option>
-                    <option value="ai-coach" className="bg-[#0b1625] text-white">AI Guide</option>
-                  </select>
+	          {/* Chart + Timeframe Dock + Quick Trade + Instrument Details + Blotter strip */}
+	          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll" style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}>
+	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
+	              {selectedPair && chartLayout === "single" ? (
+	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
+	                  <div className="chart-silent-error" aria-hidden="true">
+	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
+	                  </div>
+	                }>
+	                  <div className="terminal-single-chart-stack h-full w-full flex-1 min-h-0">
+	                    {chartProvider === "native" ? (
+	                      <div className="terminal-native-chart-panel h-full w-full flex-1 min-h-0">
+	                        <TradingChart
+	                          key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
+	                          candles={selectedPair.candles}
+	                          sym={selectedPair.symbol}
+	                          tf={timeframe}
+	                          openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+	                          onExpand={() => setChartExpanded(e => !e)}
+	                          isExpanded={chartExpanded}
+	                          onQuickTrade={quickTrade}
+	                          buyPrice={selectedPair.ask}
+	                          sellPrice={selectedPair.bid}
+	                          darkTheme={isDarkTheme}
+	                          marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+	                        />
+	                      </div>
+	                    ) : (
+	                      <div className="terminal-tradingview-panel is-active h-full w-full flex-1 min-h-0">
+	                        <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
+	                      </div>
+	                    )}
+	                  </div>
+	                </ErrorBoundary>
+	              ) : selectedPair && chartLayout === "grid" ? (
+	                <MiniChartGrid
+	                  pairs={pairs}
+	                  selectedSymbol={selectedPair.symbol}
+	                  onSelect={(sym) => {
+	                    const p = pairs.find(x => x.symbol === sym)
+	                    if (p) {
+	                      setSelectedPair(p)
+	                      fetchCandles(sym, timeframe)
+	                    }
+	                  }}
+	                  tickCount={tickCount}
+	                />
+	              ) : (
+	                <div className="flex flex-col items-center justify-center h-full gap-3">
+	                  <CandlestickChart className="h-12 w-12 text-slate-800" />
+	                  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
+	                </div>
+	              )}
+	            </div>
 
-                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="shrink-0 flex items-center px-3 py-2 text-[11px] text-slate-700" style={{ background: "#080c14", borderBottom: "1px solid #1e2d45" }}>
-              Select an instrument to begin trading
-            </div>
-          )}
+	            {/* ── Timeframe Selector Bar (Docked at Bottom of Chart) ── */}
+	            <div className="shrink-0 flex items-center justify-between gap-1.5 px-3 py-1.5 bg-[#070e1a] border-t border-b border-[#1a293d] overflow-x-auto terminal-scroll">
+	              <div className="flex items-center gap-1">
+	                {(["1M", "5M", "15M", "30M", "1H", "4H", "1D", "1W"] as TimeFrame[]).map(tf => {
+	                  const active = timeframe === tf
+	                  return (
+	                    <button
+	                      key={tf}
+	                      type="button"
+	                      onClick={() => setTimeframe(tf)}
+	                      aria-pressed={active}
+	                      className={`px-2.5 py-1 text-[10px] font-black tracking-wide rounded-md transition-all shrink-0 ${
+	                        active
+	                          ? "bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-[0_0_10px_rgba(34,211,238,0.25)]"
+	                          : "bg-white/[0.04] text-slate-400 border border-white/[0.08] hover:text-slate-200 hover:bg-white/[0.08]"
+	                      }`}
+	                    >
+	                      {tf}
+	                    </button>
+	                  )
+	                })}
+	              </div>
 
-{/* Chart + BUY/SELL strip */}
-  <div className="flex-1 min-h-0 flex flex-col" style={{ background: "#080c14" }}>
-  <div className="relative flex-1 min-h-[360px] min-w-0 mobile-terminal-chart-wrap chart-surface">
-  {selectedPair && chartLayout === "single" ? (
-<ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
-  <div className="chart-silent-error" aria-hidden="true">
-    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
-  </div>
-  }>
-	<div className="terminal-single-chart-stack h-full w-full flex-1 min-h-0">
-	  {chartProvider === "native" ? (
-	    <div className="terminal-native-chart-panel h-full w-full flex-1 min-h-0">
-	      <TradingChart
-	        key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
-	        candles={selectedPair.candles}
-	        sym={selectedPair.symbol}
-	        tf={timeframe}
-	        openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-	        onExpand={() => setChartExpanded(e => !e)}
-	        isExpanded={chartExpanded}
-	        onQuickTrade={quickTrade}
-	        buyPrice={selectedPair.ask}
-	        sellPrice={selectedPair.bid}
-	        darkTheme={isDarkTheme}
-	        marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-	      />
-	    </div>
-	  ) : (
-	    <div className="terminal-tradingview-panel is-active h-full w-full flex-1 min-h-0">
-	      <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
-	    </div>
-	  )}
-	</div>
-	  <div className="terminal-chart-activity-tabs hidden lg:flex" role="tablist" aria-label="Chart activity panels">
-    <button type="button" role="tab" aria-selected={activePanel === "positions"} className={activePanel === "positions" ? "is-active" : ""} onClick={() => { setActivePanel("positions"); setFooterOpen(true) }}><Layers className="h-3.5 w-3.5" /> Positions <span>{openTrades.length}</span></button>
-    <button type="button" role="tab" aria-selected={activePanel === "pending"} className={activePanel === "pending" ? "is-active" : ""} onClick={() => { setActivePanel("pending"); setFooterOpen(true) }}><Clock className="h-3.5 w-3.5" /> Orders <span>{pendingOrders.length}</span></button>
-    <button type="button" role="tab" aria-selected={activePanel === "history"} className={activePanel === "history" ? "is-active" : ""} onClick={() => { setActivePanel("history"); setFooterOpen(true) }}><History className="h-3.5 w-3.5" /> History <span>{closedTrades.length}</span></button>
-  </div>
-  </ErrorBoundary>
-  ) : selectedPair && chartLayout === "grid" ? (
-  <MiniChartGrid
-  pairs={pairs}
-  selectedSymbol={selectedPair.symbol}
-  onSelect={(sym) => {
-    const p = pairs.find(x => x.symbol === sym)
-    if (p) {
-      setSelectedPair(p)
-      fetchCandles(sym, timeframe)
-    }
-  }}
-  tickCount={tickCount}
-  />
-  ) : (
-  <div className="flex flex-col items-center justify-center h-full gap-3">
-  <CandlestickChart className="h-12 w-12 text-slate-800" />
-  <p className="text-slate-700 text-sm font-bold tracking-wider">SELECT AN INSTRUMENT</p>
-  </div>
-  )}
-  </div>
+	              {/* Provider Quick Toggle */}
+	              <div className="flex items-center gap-1 shrink-0 ml-1">
+	                <button
+	                  type="button"
+	                  onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
+	                  className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
+	                  style={{
+	                    color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
+	                    background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
+	                    borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
+	                  }}
+	                >
+	                  {chartProvider === "tradingview" ? "TV Live" : "Native"}
+	                </button>
+	              </div>
+	            </div>
 
-  <div className="reference-chart-trade-dock shrink-0">
-    <div className="reference-chart-trade-heading">
-      <span>Quick trade</span>
-      <span>{selectedPair ? `${selectedPair.symbol} · market` : "Select an instrument"}</span>
-    </div>
-    <div className="reference-chart-trade-actions">
-  <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
-  <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
-  <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
-  </button>
-  <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
-  <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
-  <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
-  </button>
-    </div>
-    <button type="button" onClick={() => setMobileTab("order")} disabled={!selectedPair || isFrozen} className="reference-make-order">
-      <Zap className="h-3.5 w-3.5" /> MAKE ORDER
-      <span>Open full order ticket</span>
-    </button>
-	        </div>
-	        </div>
+	            {/* ── Quick Trade Dock (Revealed on Scroll) ── */}
+	            <div className="reference-chart-trade-dock shrink-0">
+	              <div className="reference-chart-trade-heading">
+	                <span>Quick trade</span>
+	                <span>{selectedPair ? `${selectedPair.symbol} · Market Execution` : "Select an instrument"}</span>
+	              </div>
+	              <div className="reference-chart-trade-actions">
+	                <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
+	                  <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
+	                  <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
+	                </button>
+	                <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
+	                  <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
+	                  <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
+	                </button>
+	              </div>
+	              <button type="button" onClick={() => setMobileTab("order")} disabled={!selectedPair || isFrozen} className="reference-make-order">
+	                <Zap className="h-3.5 w-3.5" /> MAKE ORDER
+	                <span>Open full order ticket</span>
+	              </button>
+	            </div>
+
+	            {/* ── Rich Instrument Details & Key Stats ── */}
+	            {selectedPair && (
+	              <div className="shrink-0 mx-3 my-2 p-3 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 backdrop-blur-md shadow-lg">
+	                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
+	                  <div className="flex items-center gap-2">
+	                    <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
+	                    <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
+	                  </div>
+	                  <span className="text-[9px] font-bold text-slate-400">
+	                    {online ? "● Market Live" : "○ Market Closed"}
+	                  </span>
+	                </div>
+
+	                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
+	                    <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
+	                    <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
+	                    <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
+	                    <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+	                      {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
+	                    </span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
+	                    <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
+	                    <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
+	                    <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
+	                      {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
+	                    </span>
+	                  </div>
+	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
+	                    <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
+	                  </div>
+	                </div>
+	              </div>
+	            )}
+
+	            {/* ── Mobile Activity / Blotter Section ── */}
+	            <div className="hidden shrink-0 mx-3 my-2 mb-20 md:mb-4 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 overflow-hidden shadow-lg">
+	              <div className="flex items-center justify-between px-3 py-2 bg-[#050a12] border-b border-[#162338]">
+	                <div className="flex items-center gap-1.5">
+	                  <Layers className="h-3.5 w-3.5 text-cyan-400" />
+	                  <span className="text-xs font-black uppercase tracking-wider text-white">Active Blotter</span>
+	                </div>
+	                <div className="flex items-center gap-1">
+	                  <button
+	                    type="button"
+	                    onClick={() => setActivePanel("positions")}
+	                    className={`px-2.5 py-1 text-[9px] font-black rounded-md uppercase transition-all ${
+	                      activePanel === "positions" ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40" : "text-slate-400 hover:text-slate-200"
+	                    }`}
+	                  >
+	                    Positions ({openTrades.length})
+	                  </button>
+	                  <button
+	                    type="button"
+	                    onClick={() => setActivePanel("pending")}
+	                    className={`px-2.5 py-1 text-[9px] font-black rounded-md uppercase transition-all ${
+	                      activePanel === "pending" ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40" : "text-slate-400 hover:text-slate-200"
+	                    }`}
+	                  >
+	                    Orders ({pendingOrders.length})
+	                  </button>
+	                  <button
+	                    type="button"
+	                    onClick={() => setActivePanel("history")}
+	                    className={`px-2.5 py-1 text-[9px] font-black rounded-md uppercase transition-all ${
+	                      activePanel === "history" ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/40" : "text-slate-400 hover:text-slate-200"
+	                    }`}
+	                  >
+	                    History ({closedTrades.length})
+	                  </button>
+	                </div>
+	              </div>
+
+	              <div className="p-3">
+	                {activePanel === "positions" && (
+	                  openTrades.length === 0 ? (
+	                    <div className="flex flex-col items-center justify-center py-6 text-center text-slate-500 gap-1.5">
+	                      <Layers className="h-6 w-6 opacity-30 text-slate-400" />
+	                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">No Open Positions</span>
+	                      <span className="text-[10px] text-slate-500">Place a BUY or SELL order to begin</span>
+	                    </div>
+	                  ) : (
+	                    <div className="flex flex-col gap-2">
+	                      {openTrades.map(trade => (
+	                        <div key={trade.id} className="flex items-center justify-between p-2.5 rounded-lg bg-[#040810] border border-[#162338]">
+	                          <div className="flex items-center gap-2">
+	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${trade.direction === "BUY" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-red-500/20 text-red-400 border border-red-500/30"}`}>
+	                              {trade.direction}
+	                            </span>
+	                            <div className="flex flex-col">
+	                              <span className="text-xs font-black text-white">{trade.pair}</span>
+	                              <span className="text-[9px] text-slate-400">{trade.lotSize.toFixed(2)} lots @ {fmt(trade.openPrice, trade.pair)}</span>
+	                            </div>
+	                          </div>
+	                          <div className="flex items-center gap-2.5">
+	                            <div className="flex flex-col items-end">
+	                              <span className={`text-xs font-black price-mono ${trade.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+	                                {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
+	                              </span>
+	                              <span className="text-[8px] text-slate-500">P&L</span>
+	                            </div>
+	                            <button
+	                              type="button"
+	                              onClick={() => closeTrade(trade.id)}
+	                              className="px-2 py-1 rounded text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/25 hover:bg-red-500/20"
+	                            >
+	                              Close
+	                            </button>
+	                          </div>
+	                        </div>
+	                      ))}
+	                    </div>
+	                  )
+	                )}
+
+	                {activePanel === "pending" && (
+	                  pendingOrders.length === 0 ? (
+	                    <div className="flex flex-col items-center justify-center py-6 text-center text-slate-500 gap-1.5">
+	                      <Clock className="h-6 w-6 opacity-30 text-slate-400" />
+	                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">No Pending Orders</span>
+	                      <span className="text-[10px] text-slate-500">Create Limit or Stop orders from the Order ticket</span>
+	                    </div>
+	                  ) : (
+	                    <div className="flex flex-col gap-2">
+	                      {pendingOrders.map(order => (
+	                        <div key={order.id} className="flex items-center justify-between p-2.5 rounded-lg bg-[#040810] border border-[#162338]">
+	                          <div className="flex items-center gap-2">
+	                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30">
+	                              {order.orderType} {order.direction}
+	                            </span>
+	                            <div className="flex flex-col">
+	                              <span className="text-xs font-black text-white">{order.pair}</span>
+	                              <span className="text-[9px] text-slate-400">{order.lotSize.toFixed(2)} lots @ {fmt(order.targetPrice, order.pair)}</span>
+	                            </div>
+	                          </div>
+	                          <button
+	                            type="button"
+	                            onClick={() => cancelPending(order.id)}
+	                            className="px-2 py-1 rounded text-[9px] font-bold text-slate-400 bg-slate-800/40 border border-slate-700 hover:text-red-400"
+	                          >
+	                            Cancel
+	                          </button>
+	                        </div>
+	                      ))}
+	                    </div>
+	                  )
+	                )}
+
+	                {activePanel === "history" && (
+	                  closedTrades.length === 0 ? (
+	                    <div className="flex flex-col items-center justify-center py-6 text-center text-slate-500 gap-1.5">
+	                      <History className="h-6 w-6 opacity-30 text-slate-400" />
+	                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">No Trade History</span>
+	                      <span className="text-[10px] text-slate-500">Closed positions will be recorded here</span>
+	                    </div>
+	                  ) : (
+	                    <div className="flex flex-col gap-2 max-h-48 overflow-y-auto terminal-scroll">
+	                      {closedTrades.slice(0, 10).map((trade, idx) => (
+	                        <div key={trade.id || idx} className="flex items-center justify-between p-2 rounded-lg bg-[#040810] border border-[#162338]">
+	                          <div className="flex items-center gap-2">
+	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${trade.direction === "BUY" ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}`}>
+	                              {trade.direction}
+	                            </span>
+	                            <span className="text-xs font-bold text-white">{trade.pair}</span>
+	                          </div>
+	                          <span className={`text-xs font-black price-mono ${trade.pnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+	                            {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
+	                          </span>
+	                        </div>
+	                      ))}
+	                    </div>
+	                  )
+	                )}
+	              </div>
+	            </div>
+	          </div>
 	        </div>
 	        {/* RIGHT: Order Ticket */}
 	        </DockPanel>
@@ -4049,10 +4244,25 @@ const maxLeverage = 100
         </DockPanel>
         </>
         )}
-      </DockGroup>
+        </DockGroup>
+        </div>
+        <div className={`mobile-portfolio-view ${mobileTab === "portfolio" ? "flex" : "hidden"} flex-1 min-h-0 flex-col overflow-y-auto lg:hidden`}>
+          <PortfolioActivityView
+            openTrades={openTrades}
+            pendingOrders={pendingOrders}
+            closedTrades={closedTrades}
+            totalPnl={totalPnl}
+            totalMargin={totalMargin}
+            totalLots={openTrades.reduce((sum, trade) => sum + trade.lotSize, 0)}
+            formatPrice={fmt}
+            onCloseTrade={closeTrade}
+            onCancelOrder={cancelPending}
+          />
+        </div>
       </div>
 
       {/* BOTTOM BLOTTER */}
+      {!isCompactViewport && (
       <section
         ref={blotterRef}
         className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
@@ -4494,10 +4704,11 @@ const maxLeverage = 100
   {activePanel === "news" && <NewsCalendarPanel />}
 
   {/* ── AI Trading Guide ── */}
-  {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
+          {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
 
         </div>
       </section>
+      )}
 
       <div className="reference-statusbar shrink-0">
         <span><i />{online ? "Connected" : "Reconnecting"}</span>

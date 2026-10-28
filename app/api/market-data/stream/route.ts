@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server"
 import WebSocket from "ws"
+import { createBiquoteConnection, type BiquoteTick } from "@/lib/biquote"
 
 export const runtime = "nodejs"
 
@@ -12,6 +13,27 @@ type RatesPayload = { rates: Record<string, LiveRate>; sources?: Record<string, 
 function pairForTicker(ticker: string) {
   const normalized = ticker.replace(/[^a-z0-9]/gi, "").toLowerCase()
   return normalized.length === 6 ? `${normalized.slice(0, 3).toUpperCase()}/${normalized.slice(3).toUpperCase()}` : null
+}
+
+function applyBiquoteTick(payload: RatesPayload, tick: BiquoteTick) {
+  const pair = pairForTicker(tick.symbol)
+  if (!pair) return false
+  const previous = payload.rates[pair]
+  const mid = tick.mid
+  payload.rates[pair] = {
+    bid: tick.bid,
+    ask: tick.ask,
+    mid,
+    change: previous?.change ?? 0,
+    high: Math.max(previous?.high ?? mid, mid),
+    low: Math.min(previous?.low ?? mid, mid),
+    open: previous?.open ?? mid,
+  }
+  payload.sources = { ...payload.sources, [pair]: "biquote" }
+  payload.ts = tick.timestamp
+  payload.source = "live-biquote-signalr"
+  payload.provider = "Biquote Tick Hub"
+  return true
 }
 
 function applyTiingoTick(payload: RatesPayload, message: unknown, market: "fx" | "crypto") {
@@ -53,6 +75,7 @@ export async function GET(request: NextRequest) {
   let fallbackTimer: ReturnType<typeof setInterval> | undefined
   let tiingoSocket: WebSocket | undefined
   let tiingoCryptoSocket: WebSocket | undefined
+  let biquoteConnection: ReturnType<typeof createBiquoteConnection> | undefined
   let payload: RatesPayload = { rates: {} }
 
   const stream = new ReadableStream<Uint8Array>({
@@ -74,10 +97,27 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      send("status", { status: "connecting", provider: "Tiingo FX WebSocket", ts: Date.now() })
+      const biquoteEnabled = Boolean(process.env.BIQUOTE_API_KEY || process.env.BIQUOTE_TICK_HUB_URL)
+      send("status", { status: "connecting", provider: biquoteEnabled ? "Biquote Tick Hub" : "Tiingo FX WebSocket", ts: Date.now() })
       await refreshFallback()
+      if (biquoteEnabled) {
+        biquoteConnection = createBiquoteConnection(
+          TIINGO_SYMBOLS,
+          (tick) => { if (applyBiquoteTick(payload, tick)) send("rates", payload) },
+          (status) => send("status", { status, provider: "Biquote Tick Hub", ts: Date.now() }),
+        )
+        try {
+          await Promise.race([
+            biquoteConnection.start(),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Biquote connection timeout")), 8_000)),
+          ])
+        } catch {
+          send("status", { status: "fallback", provider: "REST fallback", ts: Date.now() })
+          void biquoteConnection.connection.stop()
+        }
+      }
       const token = process.env.TIINGO_API_KEY
-      if (token) {
+      if (token && !biquoteEnabled) {
         tiingoSocket = new WebSocket("wss://api.tiingo.com/fx")
         tiingoSocket.on("open", () => {
           tiingoSocket?.send(JSON.stringify({ eventName: "subscribe", authorization: token, eventData: { thresholdLevel: 5, tickers: TIINGO_SYMBOLS } }))
@@ -110,13 +150,17 @@ export async function GET(request: NextRequest) {
         tiingoCryptoSocket.on("close", () => { if (!closed) send("status", { status: "reconnecting", provider: "Tiingo Crypto WebSocket", ts: Date.now() }) })
         tiingoCryptoSocket.on("error", () => { if (!closed) send("status", { status: "fallback", provider: "Tiingo Crypto REST fallback", ts: Date.now() }) })
       }
-      fallbackTimer = setInterval(() => { if (!tiingoSocket || tiingoSocket.readyState !== WebSocket.OPEN) void refreshFallback() }, 1_000)
+      fallbackTimer = setInterval(() => {
+        const biquoteConnected = biquoteConnection?.connection.state === "Connected"
+        if (!biquoteConnected && (!tiingoSocket || tiingoSocket.readyState !== WebSocket.OPEN)) void refreshFallback()
+      }, 1_000)
     },
     cancel() {
       closed = true
       if (fallbackTimer) clearInterval(fallbackTimer)
       tiingoSocket?.close()
       tiingoCryptoSocket?.close()
+      void biquoteConnection?.connection.stop()
     },
   })
 
@@ -124,6 +168,8 @@ export async function GET(request: NextRequest) {
     closed = true
     if (fallbackTimer) clearInterval(fallbackTimer)
     tiingoSocket?.close()
+    tiingoCryptoSocket?.close()
+    void biquoteConnection?.connection.stop()
   })
 
   return new Response(stream, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-store, must-revalidate", Connection: "keep-alive", "X-Accel-Buffering": "no" } })
