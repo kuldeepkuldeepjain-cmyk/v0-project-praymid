@@ -4168,7 +4168,7 @@ const maxLeverage = 100
               data-dragging={draggedTab === id ? "true" : undefined}
               title={dockEnabled ? `${label} · drag to reorder` : undefined}
               data-panel={id}
-              onClick={() => { setActivePanel(id); if (!isCompactViewport && id === "positions") setPositionsPopupOpen(true); if (!isCompactViewport && id === "history") setHistoryPopupOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
+              onClick={() => { setActivePanel(id); setFooterOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
               className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
               style={activePanel === id
                 ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
@@ -4186,338 +4186,283 @@ const maxLeverage = 100
         {/* Blotter content */}
         <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll" hidden={!footerOpen}>
 
-          {/* ── Open Positions ── */}
-          {activePanel === "positions" && (
-            openTrades.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
-                <BarChart2 className="h-8 w-8 opacity-20" />
-                <span className="text-[11px] tracking-wider font-bold uppercase">No open positions</span>
-                <span className="text-[9px] tracking-wider text-slate-800">Place a BUY or SELL to get started</span>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
-              {/* Positions live summary bar */}
-              <div className="mobile-position-summary flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto" style={{ background: "linear-gradient(180deg,#060a13,#04070d)", borderBottom: "1px solid #1a2640" }}>
-                {[
-                  { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.09)" : "rgba(248,113,113,0.09)" },
-                  { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-                  { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
-                  { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
-                  { label: "BUY",         value: String(openTrades.filter(t => t.direction === "BUY").length),  color: "#34d399", bg: "transparent" },
-                  { label: "SELL",        value: String(openTrades.filter(t => t.direction === "SELL").length), color: "#f87171", bg: "transparent" },
-                ].map((item, i) => (
-                  <div key={i} className="mobile-position-metric flex items-center gap-1.5 px-2.5 h-8 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-                    <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#4d6a95" }}>{item.label}</span>
-                    <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
-                  </div>
-                ))}
-                {/* 1-Click Mass Position Actions */}
-                <div className="mobile-position-mass-actions ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={applyBreakEvenSL}
-                    title="Set Stop Loss to entry price for all winning trades"
-                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
-                    style={{ background: "rgba(56,189,248,0.12)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.25)" }}>
-                    <ShieldAlert className="h-2.5 w-2.5" /> Break-Even SL
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeWinningPositions}
-                    title="Close all positions currently in profit"
-                    className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
-                    style={{ background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
-                    <CheckCircle2 className="h-2.5 w-2.5" /> Close Winners
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Close all ${openTrades.length} open positions`}
-                    onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
-                    className="mobile-close-all px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1"
-                    style={{ background: "rgba(239,68,68,0.12)", color: "#f87171", border: "1px solid rgba(239,68,68,0.25)" }}>
-                    <X className="h-2.5 w-2.5" /> Close All
-                  </button>
-                </div>
-              </div>
-              <div className="mobile-position-list flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
-                {openTrades.map(trade => {
-                  const isBuy    = trade.direction === "BUY"
-                  const pnlPos   = trade.pnl >= 0
-                  const pnlClr   = pnlPos ? "#10b981" : "#ef4444"
-                  const notional = parseFloat((trade.lotSize * contractSize(trade.pair) * trade.currentPrice).toFixed(2))
-                  const liqPrice = calcLiquidationPrice(trade.pair, trade)
-                  const duration = formatDuration(trade.openTimestamp)
-                  const base     = trade.pair.split("/")[0]
-                  const isCr     = isCrypto(trade.pair)
-                  const isGd     = isGold(trade.pair)
+	          {/* ── Open Positions ── */}
+	          {activePanel === "positions" && (
+	            openTrades.length === 0 ? (
+	              <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-slate-500">
+	                <Layers className="h-6 w-6 opacity-30" />
+	                <span className="text-xs font-bold uppercase tracking-wider">No open positions</span>
+	                <span className="text-[10px] text-slate-600">Place a BUY or SELL order to begin</span>
+	              </div>
+	            ) : (
+	              <div className="flex flex-col h-full">
+	                {/* Summary bar */}
+	                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto bg-[#04070d] border-b border-[#1a2640]">
+	                  {[
+	                    { label: "LIVE P&L",    value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, color: totalPnl >= 0 ? "#34d399" : "#f87171", bg: totalPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+	                    { label: "POSITIONS",   value: String(openTrades.length), color: "#c084fc", bg: "transparent" },
+	                    { label: "TOTAL LOTS",  value: openTrades.reduce((s,t) => s + t.lotSize, 0).toFixed(2), color: "#38bdf8", bg: "transparent" },
+	                    { label: "MARGIN USED", value: `$${totalMargin.toFixed(2)}`, color: "#fbbf24", bg: "transparent" },
+	                  ].map((item, i) => (
+	                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-8 shrink-0 border-r border-[#0f1c2e]" style={{ background: item.bg }}>
+	                      <span className="text-[7px] font-bold tracking-wider uppercase text-slate-400">{item.label}</span>
+	                      <span className="font-black text-[11px]" style={{ color: item.color }}>{item.value}</span>
+	                    </div>
+	                  ))}
+	                  {/* Mass Actions */}
+	                  <div className="ml-auto mr-2 my-1 flex items-center gap-1 shrink-0">
+	                    <button
+	                      type="button"
+	                      onClick={applyBreakEvenSL}
+	                      title="Set Stop Loss to entry price for all winning trades"
+	                      className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20">
+	                      <ShieldAlert className="h-2.5 w-2.5" /> Break-Even SL
+	                    </button>
+	                    <button
+	                      type="button"
+	                      onClick={closeWinningPositions}
+	                      title="Close all positions currently in profit"
+	                      className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 hover:bg-emerald-500/20">
+	                      <CheckCircle2 className="h-2.5 w-2.5" /> Close Winners
+	                    </button>
+	                    <button
+	                      type="button"
+	                      aria-label={`Close all ${openTrades.length} open positions`}
+	                      onClick={() => { if (window.confirm(`Close all ${openTrades.length} open positions?`)) openTrades.forEach(t => closeTrade(t.id)) }}
+	                      className="px-2 py-1 rounded font-black text-[8px] uppercase tracking-wider transition-all active:scale-95 flex items-center gap-1 bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20">
+	                      <X className="h-2.5 w-2.5" /> Close All
+	                    </button>
+	                  </div>
+	                </div>
 
-                  return (
-                    <div key={trade.id} className={`mobile-position-card rounded-xl price-mono text-[11px] overflow-hidden transition-shadow duration-300 ${Date.now() - trade.openTimestamp < 4000 ? "animate-pulse" : ""}`}
-                      style={{ background: "#0d1625", border: `1px solid ${pnlPos ? "rgba(16,185,129,0.25)" : "rgba(239,68,68,0.25)"}`, boxShadow: `0 0 0 1px rgba(0,0,0,0.2), 0 4px 16px -4px ${pnlPos ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)"}` }}>
-                      {/* Direction accent strip */}
-                      <div className="h-[3px] w-full" style={{ background: isBuy ? "linear-gradient(90deg,#10b981,#34d399)" : "linear-gradient(90deg,#ef4444,#f87171)" }} />
-                      {/* Card header */}
-                      <div className="mobile-position-card-header flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42", background: "linear-gradient(180deg, rgba(255,255,255,0.02), transparent)" }}>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="relative flex items-center justify-center w-9 h-9 rounded-full font-black text-[11px] shrink-0"
-                            style={{ background: isGd ? "linear-gradient(135deg,#d97706,#b45309)" : isCr ? "linear-gradient(135deg,#3b82f6,#1d4ed8)" : "linear-gradient(135deg,#1976c9,#0f4c81)", color: "#fff", boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-                            {ASSET_ICON[trade.pair] ?? base.slice(0, 2)}
-                            {isBuy ? (
-                              <ArrowUpRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#10b981", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
-                            ) : (
-                              <ArrowDownRight className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full p-0.5" style={{ background: "#ef4444", color: "#fff", boxShadow: "0 0 0 2px #0d1625" }} />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-black text-white text-[13px]">{trade.pair}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider"
-                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444", border: `1px solid ${isBuy ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                                {trade.direction}
-                              </span>
-                              <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{ color: "#fbbf24", background: "rgba(251,191,36,0.1)" }}>×{trade.leverage}</span>
-                            </div>
-                            <span className="text-[9px] text-slate-500 flex items-center gap-1">
-                              <span className="font-bold text-slate-400">{trade.lotSize} Lot</span> · <Clock className="h-2.5 w-2.5" /> {duration}
-                            </span>
-                          </div>
-                        </div>
-                        {/* PnL big display */}
-                        <div className="text-right shrink-0 pl-2">
-                          <p className="text-[22px] font-black leading-none tracking-tight" style={{ color: pnlClr, textShadow: `0 0 16px ${pnlClr}33` }}>
-                            {pnlPos ? "+" : ""}{trade.pnl.toFixed(2)}
-                          </p>
-                          <p className="text-[9px] font-bold mt-0.5" style={{ color: pnlClr }}>{trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)} pips</p>
-                          <p className="text-[9px] text-slate-500">ROE <span className="font-bold" style={{ color: pnlClr }}>{trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(2)}%</span></p>
-                        </div>
-                      </div>
+	                {/* Positions list */}
+	                <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
+	                  {openTrades.map(trade => {
+	                    const isBuy    = trade.direction === "BUY"
+	                    const pnlPos   = trade.pnl >= 0
+	                    const pnlClr   = pnlPos ? "#10b981" : "#ef4444"
+	                    const liqPrice = calcLiquidationPrice(trade.pair, trade)
+	                    const duration = formatDuration(trade.openTimestamp)
 
-                      {/* Price levels row */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Entry</p><p className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Current Price</p><p className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Liq.</p><p className="font-bold text-orange-400">{fmt(liqPrice, trade.pair)}</p></div>
-                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${trade.margin.toFixed(2)}</p></div>
-                      </div>
+	                    return (
+	                      <div key={trade.id} className="rounded-lg price-mono text-[11px] overflow-hidden bg-[#0d1625] border border-[#1a2a42]">
+	                        {/* Card header */}
+	                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
+	                          <div className="flex items-center gap-2 flex-wrap min-w-0">
+	                            <span className="font-black text-white text-xs">{trade.pair}</span>
+	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isBuy ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30" : "bg-rose-500/15 text-rose-300 border border-rose-500/30"}`}>
+	                              {trade.direction}
+	                            </span>
+	                            <span className="text-[8px] font-bold px-1 py-0.5 rounded bg-amber-400/10 text-amber-300">×{trade.leverage}</span>
+	                            <span className="text-[9px] font-bold text-slate-400">{trade.lotSize} Lot</span>
+	                            <span className="text-[9px] text-slate-500 flex items-center gap-1">
+	                              <Clock className="h-2.5 w-2.5" /> {duration}
+	                            </span>
+	                          </div>
 
-                      {/* SL/TP/Trailing/Swap row */}
-                      <div className="mobile-position-protection grid grid-cols-2 sm:grid-cols-4 px-3 py-2 gap-x-3 gap-y-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div>
-                          <p className="text-[8px] text-slate-500 mb-0.5">SL</p>
-                          <p className="font-bold text-red-400 text-[11px]">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8px] text-slate-500 mb-0.5">TP</p>
-                          <p className="font-bold text-emerald-400 text-[11px]">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[8px] text-slate-500 mb-0.5">Trail</p>
-                          <p className="font-bold text-violet-400 text-[11px]">
-                            {trade.trailingStopPips ? `${trade.trailingStopPips}p` : "—"}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[8px] text-slate-500 mb-0.5">Swap</p>
-                          <p className="font-bold text-[11px]" style={{ color: trade.swap >= 0 ? "#10b981" : "#ef4444" }}>
-                            {trade.swap >= 0 ? "+" : ""}{trade.swap.toFixed(4)}
-                          </p>
-                        </div>
-                      </div>
+	                          {/* P&L Display */}
+	                          <div className="text-right shrink-0">
+	                            <span className="text-base font-black leading-none" style={{ color: pnlClr }}>
+	                              {pnlPos ? "+" : ""}${trade.pnl.toFixed(2)}
+	                            </span>
+	                            <span className="text-[9px] font-bold ml-2" style={{ color: pnlClr }}>
+	                              ({trade.pips >= 0 ? "+" : ""}{trade.pips.toFixed(1)}p · {trade.returnOnMargin >= 0 ? "+" : ""}{trade.returnOnMargin.toFixed(1)}% ROE)
+	                            </span>
+	                          </div>
+	                        </div>
 
-                      {/* Partial close row */}
-                      <div className="mobile-position-partial flex gap-1.5 px-3 pb-1.5 items-center">
-                        <span className="text-[8px] font-black uppercase tracking-wider shrink-0" style={{ color: "#3d5a80" }}>Partial</span>
-                        <input
-                          type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
-                          value={partialCloseMap[trade.id] ?? ""}
-                          onChange={e => setPartialCloseMap(prev => ({ ...prev, [trade.id]: e.target.value }))}
-                          placeholder={`${(trade.lotSize / 2).toFixed(2)} lots`}
-                          className="flex-1 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded-lg"
-                          style={{ background: "#070a10", border: "1px solid #1e2d45", minWidth: 0 }}
-                        />
-                        <button
-                          onClick={() => {
-                            const l = parseFloat(partialCloseMap[trade.id] ?? "")
-                            if (!isNaN(l) && l > 0 && window.confirm(`Close ${l.toFixed(2)} lots of ${trade.pair}?`)) partialCloseTrade(trade.id, l)
-                          }}
-                          className="px-2 py-1 rounded-lg font-black text-[10px] transition-all active:scale-95 shrink-0"
-                          style={{ background: "rgba(251,191,36,0.1)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.2)" }}>
-                          Close Partial
-                        </button>
-                      </div>
+	                        {/* Price & Risk metrics grid */}
+	                        <div className="grid grid-cols-2 sm:grid-cols-4 px-3 py-1.5 gap-2 border-b border-[#1a2a42] text-[10px]">
+	                          <div><span className="text-[8px] text-slate-500 block">Entry / Current</span><span className="font-bold text-slate-300">{fmt(trade.openPrice, trade.pair)}</span> / <span className="font-black" style={{ color: pnlClr }}>{fmt(trade.currentPrice, trade.pair)}</span></div>
+	                          <div><span className="text-[8px] text-slate-500 block">SL / TP</span><span className="font-bold text-rose-400">{trade.sl ? fmt(trade.sl, trade.pair) : "—"}</span> / <span className="font-bold text-emerald-400">{trade.tp ? fmt(trade.tp, trade.pair) : "—"}</span></div>
+	                          <div><span className="text-[8px] text-slate-500 block">Liq / Margin</span><span className="font-bold text-amber-400">{fmt(liqPrice, trade.pair)}</span> / <span className="font-bold text-slate-300">${trade.margin.toFixed(2)}</span></div>
+	                          <div className="text-right"><span className="text-[8px] text-slate-500 block">Trail / Swap</span><span className="font-bold text-violet-400">{trade.trailingStopPips ? `${trade.trailingStopPips}p` : "—"}</span> / <span className="font-bold" style={{ color: trade.swap >= 0 ? "#10b981" : "#ef4444" }}>{trade.swap >= 0 ? "+" : ""}${trade.swap.toFixed(2)}</span></div>
+	                        </div>
 
-                      {/* Action buttons */}
-                      <div className="mobile-position-actions flex gap-1.5 px-3 py-2">
-                        <button
-                          onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
-                          className="mobile-position-modify flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
-                          style={{ background: "rgba(34,211,238,0.08)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
-                          <Edit3 className="h-3 w-3" /> Modify SL/TP
-                        </button>
-                        <button
-                          aria-label={`Close ${trade.pair} position`}
-                          onClick={() => closeTrade(trade.id)}
-                          className="mobile-position-close flex-1 py-2 rounded-lg font-black text-[11px] transition-all active:scale-95 flex items-center justify-center gap-1"
-                          style={{
-                            background: trade.pnl >= 0 ? "linear-gradient(135deg,#065f46,#059669)" : "linear-gradient(135deg,#7f1d1d,#dc2626)",
-                            color: "#fff",
-                            border: `1px solid ${trade.pnl >= 0 ? "#059669" : "#dc2626"}`,
-                          }}>
-                          <X className="h-3 w-3" /> CLOSE {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-              </div>
-            )
-          )}
+	                        {/* Action controls row */}
+	                        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 bg-[#08101d]">
+	                          {/* Partial close */}
+	                          <div className="flex items-center gap-1.5">
+	                            <span className="text-[8px] font-black uppercase text-slate-400">Partial:</span>
+	                            <input
+	                              type="number" min="0.01" step="0.01" max={trade.lotSize - 0.01}
+	                              value={partialCloseMap[trade.id] ?? ""}
+	                              onChange={e => setPartialCloseMap(prev => ({ ...prev, [trade.id]: e.target.value }))}
+	                              placeholder={`${(trade.lotSize / 2).toFixed(2)}`}
+	                              className="w-16 price-mono text-[10px] text-white focus:outline-none px-1.5 py-0.5 rounded bg-[#070a10] border border-[#1e2d45]"
+	                            />
+	                            <button
+	                              type="button"
+	                              onClick={() => {
+	                                const l = parseFloat(partialCloseMap[trade.id] ?? "")
+	                                if (!isNaN(l) && l > 0 && window.confirm(`Close ${l.toFixed(2)} lots of ${trade.pair}?`)) partialCloseTrade(trade.id, l)
+	                              }}
+	                              className="px-2 py-0.5 rounded font-black text-[9px] bg-amber-400/10 text-amber-300 border border-amber-400/20 hover:bg-amber-400/20">
+	                              Close Lot
+	                            </button>
+	                          </div>
 
-          {/* ─��� Pending Orders ── */}
-          {activePanel === "pending" && (
-            pendingOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-slate-700">
-                <Clock className="h-8 w-8 opacity-20" />
-                <span className="text-[11px] tracking-wider font-bold uppercase">No pending orders</span>
-              </div>
-            ) : (
-              <div className="order-panel flex flex-col h-full">
-                <div className="order-panel-header flex items-center justify-between shrink-0">
-                  <div>
-                    <p className="order-panel-kicker">Order Management</p>
-                    <h3 className="order-panel-title">Pending Orders</h3>
-                  </div>
-                  <span className="order-panel-count">{pendingOrders.length} active</span>
-                </div>
-                <div className="order-panel-list p-2 flex flex-col gap-2 overflow-y-auto terminal-scroll">
-                {pendingOrders.map(o => {
-                  const isBuy = o.direction === "BUY"
-                  return (
-                    <div key={o.id} className="order-card rounded-xl price-mono text-[11px]"
-                      style={{ background: "#0d1625", border: "1px solid #1a2a42" }}>
-                      <div className="flex items-center justify-between px-3 py-2.5" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="font-black text-white text-[13px]">{o.pair}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-black uppercase"
-                                style={{ background: isBuy ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)", color: isBuy ? "#10b981" : "#ef4444" }}>
-                                {o.direction}
-                              </span>
-                              <span className="text-[9px] font-black px-1 py-0.5 rounded" style={{ background: "rgba(34,211,238,0.1)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.2)" }}>
-                                {o.orderType.replace("_"," ")}
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-slate-500">{o.lotSize} Lot · ×{o.leverage} · {o.expiry} · {o.createdTime}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[9px] text-slate-500 mb-0.5">Target</p>
-                          <p className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</p>
-                        </div>
-                      </div>
-                      <div className="order-card-details grid grid-cols-4 px-3 py-2 gap-2" style={{ borderBottom: "1px solid #1a2a42" }}>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">SL</p><p className="font-bold text-red-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">TP</p><p className="font-bold text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</p></div>
-                        <div><p className="text-[8px] text-slate-500 mb-0.5">Margin</p><p className="font-bold text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</p></div>
-                        <div className="text-right"><p className="text-[8px] text-slate-500 mb-0.5">Status</p><p className="font-bold text-cyan-400">Queued</p></div>
-                      </div>
-                      <div className="px-3 py-2">
-                        <button onClick={() => cancelPending(o.id)}
-                          className="w-full py-2 rounded-lg font-black text-[10px] tracking-wide uppercase transition-all active:scale-95 flex items-center justify-center gap-1"
-                          style={{ background: "rgba(239,68,68,0.08)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.2)" }}>
-                          <X className="h-3 w-3" /> Cancel Order
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-                </div>
-              </div>
-            )
-          )}
+	                          {/* Main Actions */}
+	                          <div className="flex items-center gap-1.5 ml-auto">
+	                            <button
+	                              type="button"
+	                              onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })}
+	                              className="px-2.5 py-1 rounded font-black text-[9px] flex items-center gap-1 bg-cyan-500/10 text-cyan-300 border border-cyan-500/20 hover:bg-cyan-500/20">
+	                              <Edit3 className="h-2.5 w-2.5" /> Modify SL/TP
+	                            </button>
+	                            <button
+	                              type="button"
+	                              aria-label={`Close ${trade.pair} position`}
+	                              onClick={() => closeTrade(trade.id)}
+	                              className={`px-3 py-1 rounded font-black text-[9px] flex items-center gap-1 text-white ${
+	                                trade.pnl >= 0 ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"
+	                              }`}>
+	                              <X className="h-2.5 w-2.5" /> CLOSE ({trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)})
+	                            </button>
+	                          </div>
+	                        </div>
+	                      </div>
+	                    )
+	                  })}
+	                </div>
+	              </div>
+	            )
+	          )}
 
-          {/* ── Trade History ── */}
-          {activePanel === "history" && (() => {
-            const totalHistPnl   = closedTrades.reduce((s, t) => s + t.finalPnl, 0)
-            const totalHistPips  = closedTrades.reduce((s, t) => s + t.finalPips, 0)
-            const totalHistSwap  = closedTrades.reduce((s, t) => s + t.finalSwap, 0)
-            const wins           = closedTrades.filter(t => t.finalPnl > 0).length
-            const winRate        = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) : "0"
-            const pnlColor       = totalHistPnl >= 0 ? "#34d399" : "#f87171"
-            return closedTrades.length === 0 ? (
-              <div className="flex items-center justify-center h-full gap-2 text-slate-700">
-                <History className="h-5 w-5 opacity-30" />
-                <span className="text-[11px] tracking-wider">No closed trades yet</span>
-              </div>
-            ) : (
-              <div className="flex flex-col h-full">
-                {/* Summary strip */}
-                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px]" style={{ background: "#04070d", borderBottom: "1px solid #1a2640" }}>
-                  {[
-                    { label: "TOTAL P&L",  value: `${totalHistPnl >= 0 ? "+" : ""}$${totalHistPnl.toFixed(2)}`, color: pnlColor, bg: totalHistPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
-                    { label: "TOTAL PIPS", value: `${totalHistPips >= 0 ? "+" : ""}${totalHistPips.toFixed(1)}p`, color: pnlColor, bg: "transparent" },
-                    { label: "TOTAL SWAP", value: `${totalHistSwap >= 0 ? "+" : ""}$${totalHistSwap.toFixed(2)}`, color: totalHistSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
-                    { label: "TRADES",     value: String(closedTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
-                    { label: "WIN RATE",   value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? "#34d399" : "#f87171", bg: "transparent" },
-                    { label: "WINS",       value: String(wins), color: "#34d399", bg: "transparent" },
-                    { label: "LOSSES",     value: String(closedTrades.length - wins), color: "#f87171", bg: "transparent" },
-                  ].map((item, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0" style={{ borderRight: "1px solid #0f1c2e", background: item.bg }}>
-                      <span className="text-[7px] font-bold tracking-[0.12em] uppercase" style={{ color: "#3d5a80" }}>{item.label}</span>
-                      <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => void loadTrades()} aria-label="Refresh trade history" title="Refresh trade history" className="ml-auto mr-2 rounded p-1 text-slate-500 transition-colors hover:bg-cyan-400/10 hover:text-cyan-300">
-                    <RefreshCw className="h-3 w-3" />
-                  </button>
-                </div>
-                {/* Table */}
-                <div className="flex-1 overflow-y-auto terminal-scroll">
-                  <table className="w-full text-[10px] price-mono">
-                    <thead>
-                      <tr style={{ background: "#070a10", borderBottom: "1px solid #1a2640" }}>
-                        {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
-                          <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-700 uppercase whitespace-nowrap sticky top-0" style={{ background: "#070a10" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {closedTrades.slice(0, 100).map(trade => {
-                        const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
-                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa", stop_out: "#f97316" }
-                        return (
-                          <tr key={trade.id} className="border-b hover:bg-white/[0.015] transition-colors" style={{ borderColor: "#0f1a2e" }}>
-                            <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
-                            <td className="px-2 py-1.5">
-                              <span className="px-1.5 py-0.5 font-black text-[8px] uppercase rounded"
-                                style={{ background: trade.direction === "BUY" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)", color: trade.direction === "BUY" ? "#10b981" : "#ef4444" }}>
-                                {trade.direction}
-                              </span>
-                            </td>
-                            <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
-                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.openPrice, trade.pair)}</td>
-                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.closePrice, trade.pair)}</td>
-                            <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
-                            <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
-                            <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}{trade.finalSwap.toFixed(4)}</td>
-                            <td className="px-2 py-1.5 text-slate-500 whitespace-nowrap">{trade.closeDuration}</td>
-                            <td className="px-2 py-1.5">
-                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
-                                style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
-                                {trade.closeReason.replace("_"," ")}
-                              </span>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          })()}
+	          {/* ── Pending Orders ── */}
+	          {activePanel === "pending" && (
+	            pendingOrders.length === 0 ? (
+	              <div className="flex flex-col items-center justify-center h-full gap-2 p-6 text-slate-500">
+	                <Clock className="h-6 w-6 opacity-30" />
+	                <span className="text-xs font-bold uppercase tracking-wider">No pending orders</span>
+	              </div>
+	            ) : (
+	              <div className="flex flex-col h-full">
+	                <div className="flex items-center justify-between shrink-0 px-3 py-1.5 bg-[#04070d] border-b border-[#1a2640] text-[10px] font-bold text-slate-400 price-mono">
+	                  <span className="uppercase text-cyan-300">Pending Orders ({pendingOrders.length})</span>
+	                </div>
+	                <div className="flex-1 overflow-y-auto terminal-scroll p-2 flex flex-col gap-2">
+	                  {pendingOrders.map(o => {
+	                    const isBuy = o.direction === "BUY"
+	                    return (
+	                      <div key={o.id} className="rounded-lg price-mono text-[11px] overflow-hidden bg-[#0d1625] border border-[#1a2a42]">
+	                        <div className="flex items-center justify-between px-3 py-2 border-b border-[#1a2a42] bg-[#070e1a]">
+	                          <div className="flex items-center gap-2 flex-wrap">
+	                            <span className="font-black text-white text-xs">{o.pair}</span>
+	                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase ${isBuy ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
+	                              {o.direction}
+	                            </span>
+	                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-cyan-400/10 text-cyan-300 border border-cyan-400/20 uppercase">
+	                              {o.orderType.replace("_"," ")}
+	                            </span>
+	                            <span className="text-[9px] font-bold text-slate-400">{o.lotSize} Lot · ×{o.leverage}</span>
+	                            <span className="text-[9px] text-slate-500">{o.expiry} · {o.createdTime}</span>
+	                          </div>
+	                          <div className="text-right">
+	                            <span className="text-[8px] text-slate-500 block">Target Price</span>
+	                            <span className="price-mono font-black text-cyan-400 text-sm">{fmt(o.targetPrice, o.pair)}</span>
+	                          </div>
+	                        </div>
+	                        <div className="flex items-center justify-between px-3 py-1.5 bg-[#08101d] text-[10px]">
+	                          <div className="flex items-center gap-3 text-slate-400">
+	                            <span>SL: <strong className="text-rose-400">{o.sl ? fmt(o.sl, o.pair) : "—"}</strong></span>
+	                            <span>TP: <strong className="text-emerald-400">{o.tp ? fmt(o.tp, o.pair) : "—"}</strong></span>
+	                            <span>Margin: <strong className="text-amber-400">${calcMargin(o.pair, o.lotSize, o.targetPrice, o.leverage).toFixed(2)}</strong></span>
+	                          </div>
+	                          <button
+	                            type="button"
+	                            onClick={() => cancelPending(o.id)}
+	                            className="px-2.5 py-1 rounded font-black text-[9px] uppercase tracking-wide bg-rose-500/10 text-rose-300 border border-rose-500/20 hover:bg-rose-500/20">
+	                            Cancel Order
+	                          </button>
+	                        </div>
+	                      </div>
+	                    )
+	                  })}
+	                </div>
+	              </div>
+	            )
+	          )}
+
+	          {/* ── Trade History ── */}
+	          {activePanel === "history" && (() => {
+	            const totalHistPnl   = closedTrades.reduce((s, t) => s + t.finalPnl, 0)
+	            const totalHistPips  = closedTrades.reduce((s, t) => s + t.finalPips, 0)
+	            const totalHistSwap  = closedTrades.reduce((s, t) => s + t.finalSwap, 0)
+	            const wins           = closedTrades.filter(t => t.finalPnl > 0).length
+	            const winRate        = closedTrades.length > 0 ? (wins / closedTrades.length * 100).toFixed(0) : "0"
+	            const pnlColor       = totalHistPnl >= 0 ? "#34d399" : "#f87171"
+	            return closedTrades.length === 0 ? (
+	              <div className="flex items-center justify-center h-full gap-2 p-6 text-slate-500">
+	                <History className="h-5 w-5 opacity-30" />
+	                <span className="text-xs font-bold uppercase tracking-wider">No trade history</span>
+	              </div>
+	            ) : (
+	              <div className="flex flex-col h-full">
+	                {/* Summary strip */}
+	                <div className="flex items-center gap-0 shrink-0 price-mono text-[10px] overflow-x-auto bg-[#04070d] border-b border-[#1a2640]">
+	                  {[
+	                    { label: "TOTAL P&L",  value: `${totalHistPnl >= 0 ? "+" : ""}$${totalHistPnl.toFixed(2)}`, color: pnlColor, bg: totalHistPnl >= 0 ? "rgba(52,211,153,0.07)" : "rgba(248,113,113,0.07)" },
+	                    { label: "TOTAL PIPS", value: `${totalHistPips >= 0 ? "+" : ""}${totalHistPips.toFixed(1)}p`, color: pnlColor, bg: "transparent" },
+	                    { label: "TOTAL SWAP", value: `${totalHistSwap >= 0 ? "+" : ""}$${totalHistSwap.toFixed(2)}`, color: totalHistSwap >= 0 ? "#34d399" : "#f87171", bg: "transparent" },
+	                    { label: "TRADES",     value: String(closedTrades.length), color: "#c084fc", bg: "rgba(192,132,252,0.05)" },
+	                    { label: "WIN RATE",   value: `${winRate}%`, color: parseFloat(winRate) >= 50 ? "#34d399" : "#f87171", bg: "transparent" },
+	                    { label: "WINS",       value: String(wins), color: "#34d399", bg: "transparent" },
+	                    { label: "LOSSES",     value: String(closedTrades.length - wins), color: "#f87171", bg: "transparent" },
+	                  ].map((item, i) => (
+	                    <div key={i} className="flex items-center gap-1.5 px-2.5 h-7 shrink-0 border-r border-[#0f1c2e]" style={{ background: item.bg }}>
+	                      <span className="text-[7px] font-bold tracking-wider uppercase text-slate-400">{item.label}</span>
+	                      <span className="font-black text-[10px]" style={{ color: item.color }}>{item.value}</span>
+	                    </div>
+	                  ))}
+	                  <button type="button" onClick={() => void loadTrades()} aria-label="Refresh trade history" title="Refresh trade history" className="ml-auto mr-2 rounded p-1 text-slate-500 transition-colors hover:bg-cyan-400/10 hover:text-cyan-300">
+	                    <RefreshCw className="h-3 w-3" />
+	                  </button>
+	                </div>
+	                {/* Table */}
+	                <div className="flex-1 overflow-x-auto overflow-y-auto terminal-scroll">
+	                  <table className="w-full text-[10px] price-mono min-w-[640px]">
+	                    <thead>
+	                      <tr className="bg-[#070a10] border-b border-[#1a2640]">
+	                        {["Symbol","Dir","Lots","Entry","Exit","P&L","Pips","Swap","Duration","Reason"].map(h => (
+	                          <th key={h} className="px-2 py-1.5 text-left text-[8px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap sticky top-0 bg-[#070a10]">{h}</th>
+	                        ))}
+	                      </tr>
+	                    </thead>
+	                    <tbody>
+	                      {closedTrades.slice(0, 100).map(trade => {
+	                        const pc = trade.finalPnl >= 0 ? "#10b981" : "#ef4444"
+	                        const reasonColors: Record<string, string> = { manual: "#94a3b8", sl: "#ef4444", tp: "#10b981", trailing_sl: "#a78bfa", stop_out: "#f97316" }
+	                        return (
+	                          <tr key={trade.id} className="border-b border-[#0f1a2e] hover:bg-white/[0.015] transition-colors">
+	                            <td className="px-2 py-1.5 font-black text-white whitespace-nowrap">{trade.pair}</td>
+	                            <td className="px-2 py-1.5">
+	                              <span className={`px-1.5 py-0.5 font-black text-[8px] uppercase rounded ${trade.direction === "BUY" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}`}>
+	                                {trade.direction}
+	                              </span>
+	                            </td>
+	                            <td className="px-2 py-1.5 text-slate-400">{trade.lotSize}</td>
+	                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.openPrice, trade.pair)}</td>
+	                            <td className="px-2 py-1.5 text-slate-400 whitespace-nowrap">{fmt(trade.closePrice, trade.pair)}</td>
+	                            <td className="px-2 py-1.5 font-black whitespace-nowrap" style={{ color: pc }}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}</td>
+	                            <td className="px-2 py-1.5 font-bold" style={{ color: pc }}>{trade.finalPips >= 0 ? "+" : ""}{trade.finalPips.toFixed(1)}</td>
+	                            <td className="px-2 py-1.5" style={{ color: trade.finalSwap >= 0 ? "#10b981" : "#ef4444" }}>{trade.finalSwap >= 0 ? "+" : ""}${trade.finalSwap.toFixed(2)}</td>
+	                            <td className="px-2 py-1.5 text-slate-500 whitespace-nowrap">{trade.closeDuration}</td>
+	                            <td className="px-2 py-1.5">
+	                              <span className="px-1.5 py-0.5 text-[8px] font-black uppercase rounded whitespace-nowrap"
+	                                style={{ background: `${reasonColors[trade.closeReason]}18`, color: reasonColors[trade.closeReason], border: `1px solid ${reasonColors[trade.closeReason]}30` }}>
+	                                {trade.closeReason.replace("_"," ")}
+	                              </span>
+	                            </td>
+	                          </tr>
+	                        )
+	                      })}
+	                    </tbody>
+	                  </table>
+	                </div>
+	              </div>
+	            )
+	          })()}
 
           {/* ── Order Depth ── */}
           {activePanel === "depth" && (
@@ -4694,35 +4639,7 @@ const maxLeverage = 100
         </div>
       )}
 
-      {positionsPopupOpen && (
-        <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/60 p-2 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="positions-manager-title">
-          <div className="flex max-h-[88vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#060a12] shadow-2xl shadow-black/60">
-            <div className="flex items-center justify-between border-b border-[#1a2640] bg-[#0d1625] px-4 py-3"><div><p id="positions-manager-title" className="text-sm font-black uppercase tracking-wider text-white">Open Positions Manager</p><p className="mt-1 text-[10px] text-slate-400">Live prices, P&amp;L, and trade controls</p></div><button type="button" onClick={() => setPositionsPopupOpen(false)} aria-label="Close open positions manager" className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"><X className="h-4 w-4" /></button></div>
-            <div className="flex items-center gap-3 overflow-x-auto border-b border-[#1a2640] px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400"><span className="rounded-md bg-cyan-500/10 px-2 py-1 text-cyan-300">{openTrades.length} Open</span><span className={totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}>Live P&amp;L {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}</span><span>{online ? "Live feed" : "Reconnecting..."}</span></div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-2 sm:p-3">{openTrades.length === 0 ? <div className="flex min-h-40 items-center justify-center text-xs text-slate-500">No open positions</div> : <div className="flex flex-col gap-2">{openTrades.map(trade => { const isBuy = trade.direction === "BUY"; const pnlClr = trade.pnl >= 0 ? "#10b981" : "#ef4444"; return <div key={trade.id} className="rounded-xl border border-[#1a2a42] bg-[#0d1625] p-3"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><span className="text-base font-black text-white">{trade.pair}</span><span className={`rounded px-2 py-1 text-[10px] font-black ${isBuy ? "bg-emerald-500/15 text-emerald-300" : "bg-red-500/15 text-red-300"}`}>{trade.direction}</span></div><p className="mt-1 text-[10px] text-slate-400">{trade.lotSize} lots</p></div><div className="text-right"><p className="text-lg font-black" style={{ color: pnlClr }}>{trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}</p><p className="text-[10px] text-slate-400">Live P&amp;L</p></div></div><div className="mt-3 grid grid-cols-2 gap-2 text-[11px] sm:grid-cols-5">{[["Entry", fmt(trade.openPrice, trade.pair)], ["Current", fmt(trade.currentPrice, trade.pair)], ["Lot Size", String(trade.lotSize)], ["SL", trade.sl ? fmt(trade.sl, trade.pair) : "Not set"], ["TP", trade.tp ? fmt(trade.tp, trade.pair) : "Not set"]].map(([label, value]) => <div key={label}><p className="text-[9px] uppercase text-slate-500">{label}</p><p className="font-bold text-slate-200">{value}</p></div>)}</div><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => closeTrade(trade.id)} className="min-h-11 rounded-lg bg-red-500/15 px-3 text-xs font-black uppercase tracking-wider text-red-300 hover:bg-red-500/25">Close Position</button><button type="button" onClick={() => setModifyTarget({ tradeId: trade.id, sl: trade.sl?.toString() ?? "", tp: trade.tp?.toString() ?? "", trailingPips: trade.trailingStopPips?.toString() ?? "" })} className="min-h-11 rounded-lg border border-cyan-500/30 bg-cyan-500/10 px-3 text-xs font-black uppercase tracking-wider text-cyan-300 hover:bg-cyan-500/20">Modify SL/TP</button></div></div> })}</div>}</div>
-          </div>
-        </div>
-      )}
-
-      {historyPopupOpen && (
-  <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" aria-labelledby="trading-history-title">
-    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-cyan-500/20 bg-[#060a12] shadow-2xl shadow-black/60">
-      <div className="flex items-center justify-between border-b border-[#1a2640] bg-[#0b1220] px-3 py-2.5 sm:px-4">
-        <div className="flex items-center gap-2.5"><div className="flex size-7 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10"><History className="size-3.5 text-cyan-300" /></div><div><p id="trading-history-title" className="text-[11px] font-black uppercase tracking-[0.16em] text-white">Change History</p><p className="mt-0.5 text-[9px] text-slate-500">Completed orders · execution ledger</p></div></div>
-        <div className="flex items-center gap-2"><span className="hidden rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2 py-1 text-[8px] font-bold uppercase tracking-wider text-emerald-300 sm:inline-flex">{online ? "Live" : "Offline"}</span><button type="button" onClick={() => setHistoryPopupOpen(false)} aria-label="Close trading history" className="rounded-md p-1.5 text-slate-500 hover:bg-white/10 hover:text-white"><X className="size-4" /></button></div>
-      </div>
-      <div className="grid grid-cols-4 border-b border-[#1a2640] bg-[#070d18]">
-        {[{label:"Trades",value:String(closedTrades.length),color:"#c084fc"},{label:"Wins",value:String(closedTrades.filter(t=>t.finalPnl>0).length),color:"#34d399"},{label:"Losses",value:String(closedTrades.filter(t=>t.finalPnl<=0).length),color:"#f87171"},{label:"Net P&L",value:`${closedTrades.reduce((s,t)=>s+t.finalPnl,0)>=0?"+":""}$${closedTrades.reduce((s,t)=>s+t.finalPnl,0).toFixed(2)}`,color:closedTrades.reduce((s,t)=>s+t.finalPnl,0)>=0?"#34d399":"#f87171"}].map(item => <div key={item.label} className="border-r border-[#142238] px-2.5 py-2 last:border-r-0"><p className="text-[7px] font-bold uppercase tracking-[0.14em] text-slate-600">{item.label}</p><p className="price-mono mt-0.5 text-[12px] font-black" style={{color:item.color}}>{item.value}</p></div>)}
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto p-2 sm:p-3">
-        {closedTrades.length === 0 ? <div className="flex min-h-40 items-center justify-center text-[10px] uppercase tracking-wider text-slate-600">No completed trades yet</div> : <div className="min-w-[700px] overflow-hidden rounded-lg border border-[#1a2a42] bg-[#070d18]"><div className="grid grid-cols-[1.35fr_.72fr_.65fr_1fr_1fr_.9fr_.9fr] gap-2 border-b border-[#1a2a42] bg-[#0d1625] px-3 py-1.5 text-[7px] font-black uppercase tracking-[0.14em] text-slate-600"><span>Instrument</span><span>Side</span><span>Lots</span><span>Open</span><span>Close</span><span>Result</span><span>Reason</span></div>{closedTrades.map(trade => <div key={trade.id} className="grid grid-cols-[1.35fr_.72fr_.65fr_1fr_1fr_.9fr_.9fr] items-center gap-2 border-b border-[#101b2d] px-3 py-2 text-[9px] text-slate-300 last:border-b-0 hover:bg-cyan-400/[0.03]"><span className="min-w-0 font-black text-slate-100"><span className="block truncate">{trade.pair}</span><small className="mt-0.5 block truncate text-[7px] font-normal text-slate-600">{trade.closeTime}</small></span><span className={trade.direction === "BUY" ? "font-black text-emerald-400" : "font-black text-red-400"}>{trade.direction}</span><span className="price-mono text-slate-400">{trade.lotSize.toFixed(2)}</span><span className="price-mono text-slate-400">{fmt(trade.openPrice, trade.pair)}</span><span className="price-mono text-slate-400">{fmt(trade.closePrice, trade.pair)}</span><span className={trade.finalPnl >= 0 ? "price-mono font-black text-emerald-400" : "price-mono font-black text-red-400"}>{trade.finalPnl >= 0 ? "+" : ""}${trade.finalPnl.toFixed(2)}<small className="block text-[7px] font-normal text-slate-500">{trade.finalPips.toFixed(1)} pips</small></span><span className="truncate text-[8px] capitalize text-slate-500">{trade.closeReason.replaceAll("_", " ")}</span></div>)}</div>}
-      </div>
-      <div className="flex items-center justify-between border-t border-[#1a2640] bg-[#080f1b] px-3 py-1.5 text-[8px] text-slate-600 sm:px-4"><span>{closedTrades.length} completed trades</span><button type="button" onClick={() => void loadTrades()} className="flex items-center gap-1 rounded-md px-2 py-1 font-bold uppercase tracking-[0.12em] text-cyan-300 hover:bg-cyan-400/10"><RefreshCw className="size-3" /> Refresh</button></div>
-    </div>
-  </div>
-  )}
-
-  {tradeRestrictionNotice && (
+	      {tradeRestrictionNotice && (
     <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center bg-[#02060f]/80 p-4 backdrop-blur-sm" role="alertdialog" aria-modal="true" aria-labelledby="trade-restriction-title">
       <div className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-2xl border border-amber-400/35 bg-[#0a1422] shadow-2xl shadow-black/60">
         <div className="h-1 bg-amber-400" />
