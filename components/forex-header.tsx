@@ -64,15 +64,9 @@ interface ForexHeaderProps {
 }
 
 const menuItems = [
-  { id: "positions", label: "Open positions" },
-  { id: "pending", label: "Pending orders" },
-  { id: "history", label: "Trade history" },
-  { id: "risk", label: "Portfolio risk" },
-  { id: "performance", label: "Performance" },
-  { id: "alerts", label: "Price alerts" },
-  { id: "news", label: "News & calendar" },
   { id: "support", label: "Support center" },
   { id: "sizer", label: "Position calculator" },
+  { id: "news", label: "News & calendar" },
 ]
 
 export function ForexHeader({
@@ -124,9 +118,7 @@ export function ForexHeader({
   const [localTime, setLocalTime] = useState("")
   const [localZone, setLocalZone] = useState("Local")
   const unreadCount = notifications.filter((item) => !item.read).length
-  const pnlUp = totalPnl >= 0
   const marketColor = marketStatus === "open" ? "#34d399" : marketStatus === "pre-market" ? "#fbbf24" : "#f87171"
-  const formatMoney = (value: number) => `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   const formatLocalTime = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })
   const normalizedQuery = query.trim().toLowerCase()
   const filteredInstruments = instruments.filter((instrument) => !normalizedQuery || `${instrument.symbol} ${instrument.name} ${instrument.category}`.toLowerCase().includes(normalizedQuery))
@@ -147,36 +139,36 @@ export function ForexHeader({
 
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
-      <div className="terminal-toolbar-row flex min-h-14 items-center gap-2 px-3 py-2 lg:px-4">
+      <div className="terminal-toolbar-row flex h-12 items-center gap-2.5 px-3 lg:px-4">
         {onOpenSidebar && (
           <button
             type="button"
             onClick={onOpenSidebar}
             aria-label="Open terminal navigation"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
             style={{ borderColor: "#21354d", background: "#0d1a2b" }}
           >
             <Menu className="h-4 w-4" />
           </button>
         )}
+
         <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
           <img
-src="/elite-fund-logo.jpg"
-                onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
+            src="/elite-fund-logo.jpg"
+            onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
             alt="Elite Fund — Trade Higher"
-            className="terminal-brand-logo"
+            className="h-7 w-auto object-contain"
           />
-          <span className="hidden min-w-0 pl-3 leading-none sm:block">
-            <strong className="block truncate text-[11px] font-black uppercase tracking-[0.16em] text-white">Trading Terminal</strong>
-            <span className="mt-1 block text-[8px] font-bold uppercase tracking-[0.14em] text-cyan-300/70">Institutional workspace</span>
+          <span className="hidden pl-2.5 leading-none sm:block">
+            <strong className="block text-[11px] font-black uppercase tracking-[0.14em] text-white">ELITE FUND</strong>
+            <span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.12em] text-cyan-300/70">Trading Terminal</span>
           </span>
-          <span className="sr-only">Elite Fund Trading Terminal</span>
         </div>
 
         <button
           type="button"
           onClick={() => { window.location.assign("/participant/dashboard") }}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[10px] font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300"
           style={{ borderColor: "#21354d", background: "#0d1a2b" }}
           aria-label="Return to participant welcome home"
           title="Return to participant welcome home"
@@ -186,12 +178,20 @@ src="/elite-fund-logo.jpg"
         </button>
 
         <div className="hidden shrink-0 items-center gap-1.5 lg:flex">
-          <span className="flex items-center gap-1 rounded-md border px-2 py-1.5 text-[9px] font-black uppercase tracking-wider" style={{ color: marketColor, borderColor: `${marketColor}55`, background: `${marketColor}12` }}><CircleDot className="h-3 w-3" />{marketStatus}</span>
-          <span className="rounded-md border px-2 py-1.5 text-[9px] font-bold uppercase tracking-wider text-slate-400" style={{ borderColor: "#21354d", background: "#0d1a2b" }}>1:{leverage} · {accountType}</span>
+          <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: marketColor, borderColor: `${marketColor}44`, background: `${marketColor}10` }}>
+            <CircleDot className="h-2.5 w-2.5" />{marketStatus}
+          </span>
+          <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: isConnected ? "#34d399" : "#f87171", borderColor: isConnected ? "#34d39944" : "#f8717144", background: isConnected ? "#34d39910" : "#f8717110" }}>
+            {isConnected ? <Wifi className="h-2.5 w-2.5" /> : <WifiOff className="h-2.5 w-2.5" />}
+            {isConnected ? "Live" : "Offline"}
+          </span>
+          <span className="rounded-md border px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-400" style={{ borderColor: "#21354d", background: "#0d1a2b" }}>
+            1:{leverage} · {accountType}
+          </span>
         </div>
 
-        <div className="terminal-header-search relative min-w-0 flex-1 lg:max-w-sm">
-          <button type="button" onClick={() => { setSearchOpen((value) => !value); setMenuOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={searchOpen} className="flex h-9 w-full items-center gap-2 rounded-lg border px-3 text-left text-[11px] text-slate-400 transition hover:border-slate-600" style={{ background: "#0d1a2b", borderColor: "#21354d" }}>
+        <div className="terminal-header-search relative min-w-0 flex-1 lg:max-w-xs">
+          <button type="button" onClick={() => { setSearchOpen((value) => !value); setMenuOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={searchOpen} className="flex h-8 w-full items-center gap-2 rounded-lg border px-2.5 text-left text-[11px] text-slate-400 transition hover:border-slate-600" style={{ background: "#0d1a2b", borderColor: "#21354d" }}>
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">Search instruments</span>
             <kbd className="ml-auto hidden rounded border px-1.5 py-0.5 text-[9px] text-slate-500 md:block" style={{ borderColor: "#2a405c" }}>⌘K</kbd>
@@ -218,61 +218,46 @@ src="/elite-fund-logo.jpg"
           )}
         </div>
 
-
-        <div className="terminal-header-metrics flex min-w-0 items-center gap-1 overflow-x-auto terminal-scroll">
-          <div className="terminal-toolbar-stat"><span>Balance</span><strong>{formatMoney(walletBalance)}</strong></div>
-          <div className="terminal-toolbar-stat"><span>Equity</span><strong>{formatMoney(equity)}</strong></div>
-          <div className="terminal-toolbar-stat"><span>Open P/L</span><strong style={{ color: pnlUp ? "#34d399" : "#f87171" }}>{pnlUp ? "+" : ""}{formatMoney(totalPnl)}</strong></div>
-        </div>
+        <button
+          type="button"
+          className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2 text-[10px] font-semibold uppercase text-slate-300 transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200"
+          style={{ borderColor: "#21354d", background: "#0d1a2b" }}
+          onClick={() => setUseLocalTime((value) => !value)}
+          aria-pressed={useLocalTime}
+          title={useLocalTime ? `Switch to UTC · ${localZone}` : `Switch to local time · ${localZone}`}
+        >
+          <Clock className="h-3 w-3 text-slate-400" />
+          <span className="hidden sm:inline">{useLocalTime ? localTime : serverTime}</span>
+          <span className="text-[8px] font-bold text-cyan-300/80">{useLocalTime ? "LOC" : "UTC"}</span>
+        </button>
 
         <div className="relative">
-          <button type="button" onClick={() => { setMenuOpen((value) => !value); setSearchOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={menuOpen} className="terminal-icon-button" aria-label={menuOpen ? "Close terminal menu" : "Open terminal menu"} title={menuOpen ? "Close terminal menu" : "Open terminal menu"}><Menu className="h-4 w-4" /></button>
-          {menuOpen && <div className="absolute right-0 top-full z-50 mt-2 max-h-[calc(100vh-5rem)] w-[min(20rem,calc(100vw-1rem))] overflow-y-auto rounded-lg border p-1.5 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}>
-            {menuItems.map((item) => <button key={item.id} type="button" onClick={() => navigateFromMenu(item.id)} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
+          <button type="button" onClick={() => { setMenuOpen((value) => !value); setSearchOpen(false); setAccountOpen(false); setNotificationsOpen(false) }} aria-expanded={menuOpen} className="terminal-icon-button flex h-8 w-8 items-center justify-center rounded-lg border text-slate-300" style={{ borderColor: "#21354d", background: "#0d1a2b" }} aria-label={menuOpen ? "Close terminal menu" : "Open terminal menu"} title={menuOpen ? "Close terminal menu" : "Open terminal menu"}><Menu className="h-4 w-4" /></button>
+          {menuOpen && <div className="absolute right-0 top-full z-50 mt-2 max-h-[calc(100vh-5rem)] w-[min(18rem,calc(100vw-1rem))] overflow-y-auto rounded-lg border p-1.5 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}>
+            {menuItems.map((item) => <button key={item.id} type="button" onClick={() => navigateFromMenu(item.id)} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Layers className="h-3.5 w-3.5 text-cyan-300" />{item.label}</button>)}
             <div className="my-1 border-t" style={{ borderColor: "#1b2b40" }} />
-            <button type="button" onClick={() => { onToggleWatchlist(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Wallet className="h-3.5 w-3.5 text-cyan-300" />Focus watchlist</button>
-            <button type="button" onClick={() => { onOpenTransfer(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Wallet className="h-3.5 w-3.5" />Transfer funds</button>
-            <button type="button" onClick={() => { onToggleFullscreen(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</button>
-            <button type="button" onClick={() => { onToggleLock(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">{isLocked ? "Unlock trading" : "Lock trading"}</button>
-            <button type="button" onClick={() => { onToggleSound(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">Sound {soundEnabled ? "on" : "off"}</button>
-            <button type="button" onClick={() => { onToggleTheme(); setMenuOpen(false) }} className="flex min-h-10 w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">Switch to {theme === "dark" ? "light" : "dark"} mode</button>
+            <button type="button" onClick={() => { onToggleWatchlist(); setMenuOpen(false) }} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Wallet className="h-3.5 w-3.5 text-cyan-300" />Focus watchlist</button>
+            <button type="button" onClick={() => { onOpenTransfer(); setMenuOpen(false) }} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300"><Wallet className="h-3.5 w-3.5" />Transfer funds</button>
+            <button type="button" onClick={() => { onToggleFullscreen(); setMenuOpen(false) }} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">{isFullscreen ? "Exit fullscreen" : "Fullscreen"}</button>
+            <button type="button" onClick={() => { onToggleLock(); setMenuOpen(false) }} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">{isLocked ? "Unlock trading" : "Lock trading"}</button>
+            <button type="button" onClick={() => { onToggleSound(); setMenuOpen(false) }} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">Sound {soundEnabled ? "on" : "off"}</button>
+            <button type="button" onClick={() => { onToggleTheme(); setMenuOpen(false) }} className="flex min-h-9 w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-[11px] text-slate-300 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-300">Switch to {theme === "dark" ? "light" : "dark"} mode</button>
           </div>}
         </div>
 
         <div className="relative">
-          <button type="button" onClick={() => { setNotificationsOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setAccountOpen(false) }} aria-expanded={notificationsOpen} className="terminal-icon-button" aria-label="Notifications"><Bell className="h-4 w-4" />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>}</button>
+          <button type="button" onClick={() => { setNotificationsOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setAccountOpen(false) }} aria-expanded={notificationsOpen} className="terminal-icon-button flex h-8 w-8 items-center justify-center rounded-lg border text-slate-300" style={{ borderColor: "#21354d", background: "#0d1a2b" }} aria-label="Notifications"><Bell className="h-4 w-4" />{unreadCount > 0 && <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[8px] font-bold text-white">{unreadCount > 9 ? "9+" : unreadCount}</span>}</button>
           {notificationsOpen && <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-lg border shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="flex items-center justify-between border-b px-3 py-2" style={{ borderColor: "#1b2b40" }}><span className="text-[11px] font-bold text-white">Notifications</span><button type="button" onClick={onClearNotifications} className="text-[9px] uppercase text-cyan-300">Clear</button></div>{notifications.length === 0 ? <p className="px-3 py-6 text-center text-[11px] text-slate-500">No notifications</p> : notifications.map((item) => <button key={item.id} type="button" onClick={() => onMarkNotificationRead(item.id)} className="block w-full border-b px-3 py-2 text-left hover:bg-white/5" style={{ borderColor: "#1b2b40" }}><span className="block text-[11px] font-semibold text-white">{item.title}</span><span className="block text-[10px] text-slate-400">{item.message}</span></button>)}</div>}
         </div>
 
-
         <div className="relative">
-          <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="terminal-account-button flex items-center gap-2 rounded-lg border px-2 py-1.5 text-left" style={{ borderColor: "#21354d" }}>
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-cyan-400/20 text-[10px] font-black text-cyan-200">{userName.slice(0, 2).toUpperCase()}</span>
-            <span className="hidden max-w-28 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-1 block truncate text-[8px] text-slate-500">{accountId ? `#${accountId.slice(0, 8)}` : accountType} · {isConnected ? "LIVE" : "OFFLINE"}</span></span>
+          <button type="button" onClick={() => { setAccountOpen((value) => !value); setSearchOpen(false); setMenuOpen(false); setNotificationsOpen(false) }} aria-expanded={accountOpen} className="terminal-account-button flex h-8 items-center gap-2 rounded-lg border px-2 text-left" style={{ borderColor: "#21354d", background: "#0d1a2b" }}>
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-cyan-400/20 text-[9px] font-black text-cyan-200">{userName.slice(0, 2).toUpperCase()}</span>
+            <span className="hidden max-w-28 leading-none sm:block"><strong className="block truncate text-[10px] text-white">{userName}</strong><span className="mt-0.5 block truncate text-[8px] text-slate-400">{accountType} · {isConnected ? "Live" : "Offline"}</span></span>
             <ChevronDown className="h-3 w-3 text-slate-500" />
           </button>
-          {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-500">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("support") }} className="terminal-menu-item"><LifeBuoy className="h-3.5 w-3.5 text-cyan-300" />Support Center</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("smart-alerts") }} className="terminal-menu-item"><Bell className="h-3.5 w-3.5 text-amber-300" />Smart Alerts</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
+          {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-400">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("support") }} className="terminal-menu-item"><LifeBuoy className="h-3.5 w-3.5 text-cyan-300" />Support Center</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("smart-alerts") }} className="terminal-menu-item"><Bell className="h-3.5 w-3.5 text-amber-300" />Smart Alerts</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
         </div>
-      </div>
-
-      <div className="flex h-7 items-center gap-3 overflow-x-auto border-t px-3 text-[9px] font-semibold uppercase tracking-wider terminal-scroll" style={{ borderColor: "#122238", color: "#7187a0" }}>
-        <span className="flex items-center gap-1" style={{ color: isConnected ? "#34d399" : "#f87171" }}>{isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}{isConnected ? "Connected" : "Offline"}</span>
-        <span className="flex items-center gap-1" style={{ color: marketColor }}><CircleDot className="h-3 w-3" />Market {marketStatus}</span>
-        <button
-          type="button"
-          className="terminal-time-switch"
-          onClick={() => setUseLocalTime((value) => !value)}
-          aria-pressed={useLocalTime}
-          aria-label={useLocalTime ? `Use UTC time. Current local zone: ${localZone}` : `Use local time. Current zone: ${localZone}`}
-          title={useLocalTime ? `Switch to UTC · ${localZone}` : `Switch to local time · ${localZone}`}
-        >
-          <Clock className="h-3 w-3" />
-          <span>{useLocalTime ? localTime : serverTime}</span>
-          <span className="terminal-time-mode">{useLocalTime ? "LOCAL" : "UTC"}</span>
-        </button>
-        <span className="hidden sm:inline">{activeLayout} layout</span>
-        <span className="hidden sm:inline">{openTradesCount} positions · {pendingOrdersCount} pending</span>
-        <span className="ml-auto hidden items-center gap-1 lg:flex"><Globe className="h-3 w-3" />{activeLanguage.toUpperCase()}</span>
       </div>
     </header>
   )

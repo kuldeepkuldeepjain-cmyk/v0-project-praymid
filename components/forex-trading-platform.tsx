@@ -3204,12 +3204,12 @@ const maxLeverage = 100
       <header className="mobile-terminal-header">
         <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
           <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
-          <span><strong>ELITE FUND</strong><small>TRADE BEYOND LIMITS</small></span>
+          <span><strong>ELITE FUND</strong></span>
         </a>
-        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label={`${isFundedAccount ? "Funded" : "Live"} account balance and account menu`}>
-          <Award aria-hidden="true" />
-          <span><small>{isFundedAccount ? "Funded Account · Balance" : "Live Account · Balance"}</small><strong>${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
-          <ChevronDown aria-hidden="true" />
+        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label="Account menu">
+          <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" />
+          <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
+          <ChevronDown className="h-3 w-3 text-slate-400" aria-hidden="true" />
         </button>
         <button type="button" className="mobile-terminal-notifications" onClick={() => { setMobileTab("chart"); setActivePanel("alerts"); setFooterOpen(true) }} aria-label="Open trading alerts">
           <Bell aria-hidden="true" />
@@ -3220,10 +3220,10 @@ const maxLeverage = 100
       <header className="terminal-account-bar" aria-label="Account overview">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
           {(isCompactViewport ? [
-            { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral", featured: true },
             { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
-            { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
             { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral" },
+            { label: "Today’s P&L", value: `${dailyPnl >= 0 ? "+" : ""}$${dailyPnl.toFixed(2)}`, tone: dailyPnl >= 0 ? "green" : "red" },
+            { label: "Open P/L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}`, tone: totalPnl >= 0 ? "green" : "red" },
           ] : [
             { label: "Balance", value: `$${walletBalance.toFixed(2)}`, tone: "neutral" },
             { label: "Equity", value: `$${equity.toFixed(2)}`, tone: "neutral" },
