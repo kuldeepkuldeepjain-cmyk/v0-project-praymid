@@ -1720,17 +1720,17 @@ button, a, [role="button"] {
 }
 
 @media (max-width: 840px) {
-  .apple-trading-terminal { min-height: 100dvh; overflow: auto; }
-  .apple-terminal-grid { display: flex; flex: 1 1 auto; flex-direction: column; overflow: auto; }
+  .apple-trading-terminal { min-height: 100dvh; overflow: visible; }
+  .apple-terminal-grid { display: flex; flex: 1 1 auto; flex-direction: column; overflow: visible; }
   .apple-terminal-market,
   .apple-terminal-chart-column,
   .apple-terminal-order { min-width: 0; width: 100% !important; }
   .apple-terminal-chart-column { min-height: clamp(360px, 62dvh, 720px); flex: 1 1 auto; }
-  .reference-chart-trade-dock { position: sticky; bottom: 0; z-index: 5; }
+  .reference-chart-trade-dock { position: relative; bottom: auto; z-index: 5; }
 }
 @media (max-width: 520px) {
   .apple-terminal-chart-column { min-height: 440px; }
-  .apple-terminal-market { min-height: 300px; max-height: 68dvh; overflow: auto; }
+  .apple-terminal-market { min-height: 300px; max-height: none; overflow: visible; }
 }
 
 @keyframes terminal-scanline {

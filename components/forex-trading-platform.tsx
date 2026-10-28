@@ -1423,45 +1423,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const marketPanelWidth = 256
   const orderPanelWidth = 320
 
-  useEffect(() => {
-    const isMobile = () => window.matchMedia("(max-width: 767px)").matches
-    let startX = 0
-    let lastY = 0
-    let tracking = false
-
-    const onTouchStart = (event: TouchEvent) => {
-      if (!isMobile() || event.touches.length !== 1) return
-      startX = event.touches[0].clientX
-      lastY = event.touches[0].clientY
-      tracking = true
-    }
-    const onTouchMove = (event: TouchEvent) => {
-      if (!tracking || !isMobile() || event.touches.length !== 1) return
-      const touch = event.touches[0]
-      const deltaX = touch.clientX - startX
-      const deltaY = lastY - touch.clientY
-      if (Math.abs(deltaX) > 12 && Math.abs(deltaX) > Math.abs(deltaY)) {
-        tracking = false
-        return
-      }
-      if (Math.abs(deltaY) < 1) return
-      const scrollTarget = document.scrollingElement ?? document.documentElement
-      scrollTarget.scrollTop += deltaY
-      lastY = touch.clientY
-      event.preventDefault()
-    }
-    const onTouchEnd = () => { tracking = false }
-
-    document.addEventListener("touchstart", onTouchStart, { passive: true })
-    document.addEventListener("touchmove", onTouchMove, { passive: false })
-    document.addEventListener("touchend", onTouchEnd, { passive: true })
-    return () => {
-      document.removeEventListener("touchstart", onTouchStart)
-      document.removeEventListener("touchmove", onTouchMove)
-      document.removeEventListener("touchend", onTouchEnd)
-    }
-  }, [])
-
   // Map of tradeId ��� partial close lot input value
   const [partialCloseMap, setPartialCloseMap] = useState<Record<string, string>>({})
   const [loading, setLoading]         = useState(true)
