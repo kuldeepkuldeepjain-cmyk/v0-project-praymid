@@ -3548,15 +3548,19 @@ button, a, [role="button"] {
   cursor: default;
 }
 .elite-terminal-sidebar-account {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: block;
   margin: 18px 2px 20px;
   padding: 10px;
   border: 1px solid #1d3044;
   border-radius: 10px;
   background: linear-gradient(135deg, rgba(27,52,73,.72), rgba(14,27,42,.8));
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .16s ease, background .16s ease;
 }
+.elite-terminal-sidebar-account:hover { border-color: rgba(101,181,243,.55); background: linear-gradient(135deg, rgba(32,62,86,.82), rgba(14,27,42,.9)); }
+.elite-terminal-sidebar-account:focus-visible { outline: 2px solid #65b5f3; outline-offset: 2px; }
+.elite-terminal-sidebar-account-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .elite-terminal-sidebar-avatar {
   width: 34px;
   height: 34px;
@@ -3572,11 +3576,18 @@ button, a, [role="button"] {
 }
 .elite-terminal-sidebar-account-copy { min-width: 0; display: grid; gap: 4px; }
 .elite-terminal-sidebar-account-copy strong { overflow: hidden; color: #edf5fc; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.elite-terminal-sidebar-account-copy span { display: flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; }
-  .elite-terminal-account-funded { color: #f4c95d; }
-  .elite-terminal-account-normal { color: #8298ad; }
-  .elite-terminal-sidebar-account-copy i { width: 6px; height: 6px; border-radius: 50%; background: #35c995; box-shadow: 0 0 8px rgba(53,201,149,.8); }
-.elite-terminal-sidebar-account-arrow { width: 14px; height: 14px; margin-left: auto; color: #688198; }
+.elite-terminal-sidebar-account-email { display: block !important; overflow: hidden; color: #8298ad; font-size: 10px; font-weight: 500 !important; text-overflow: ellipsis; white-space: nowrap; }
+.elite-terminal-sidebar-account-arrow { width: 14px; height: 14px; margin-left: auto; color: #688198; flex: 0 0 auto; }
+.elite-terminal-sidebar-account-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.elite-terminal-account-detail { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding: 7px 8px; border: 1px solid #203246; border-radius: 7px; background: rgba(4,11,19,.46); }
+.elite-terminal-account-detail span { color: #688198; font-size: 8px; font-weight: 800; letter-spacing: .08em; line-height: 1.2; text-transform: uppercase; }
+.elite-terminal-account-detail strong { overflow: hidden; color: #c7d5e2; font-size: 10px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.elite-terminal-kyc-status.is-verified { border-color: rgba(53,201,149,.26); }
+.elite-terminal-kyc-status.is-verified strong { color: #5bd6a8; }
+.elite-terminal-kyc-status.is-pending { border-color: rgba(244,201,93,.28); }
+.elite-terminal-kyc-status.is-pending strong { color: #f4c95d; }
+.elite-terminal-kyc-status.is-needed { border-color: rgba(239,141,141,.28); }
+.elite-terminal-kyc-status.is-needed strong { color: #ef8d8d; }
 .elite-terminal-section-label { padding: 0 10px 8px; color: #5f7890; font-size: 9px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
 .elite-terminal-brand {
   height: 74px;

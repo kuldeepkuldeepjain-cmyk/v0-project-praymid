@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────────────����──────────────────────────����──────
+// ─── Position Sizer ────────────────────────��─����──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1365,6 +1365,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onAccountFrozen,
   onAddFunds,
   onOpenSidebar,
+  accountMenuOpen = false,
   onAddFundedFunds,
   fundedTopUpAvailable = false,
   onStatsUpdate,
@@ -1378,6 +1379,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   onAccountFrozen?: () => void
   onAddFunds?: () => void
   onOpenSidebar?: () => void
+  accountMenuOpen?: boolean
   onAddFundedFunds?: () => void
   fundedTopUpAvailable?: boolean
   onStatsUpdate?: (stats: { equity: number; openPnl: number; openPnlPct: number }) => void
@@ -3159,7 +3161,7 @@ const maxLeverage = 100
             <Home aria-hidden="true" />
           </a>
         </div>
-        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label="Account menu">
+        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label="Open account menu" aria-expanded={onOpenSidebar ? accountMenuOpen : undefined} aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
           <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" />
           <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
           <ChevronDown className="h-3 w-3 text-slate-400" aria-hidden="true" />
@@ -3315,7 +3317,7 @@ const maxLeverage = 100
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
           <Wallet aria-hidden="true" /><span>Portfolio</span>
         </button>
-        <button type="button" onClick={() => onOpenSidebar?.()}>
+        <button type="button" onClick={() => onOpenSidebar?.()} aria-label="Open account menu" aria-expanded={onOpenSidebar ? accountMenuOpen : undefined} aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
           <UserRound aria-hidden="true" /><span>Account</span>
         </button>
       </nav>
@@ -3693,7 +3695,7 @@ const maxLeverage = 100
 	            <div className="reference-chart-trade-dock shrink-0">
 	              <div className="reference-chart-trade-heading">
 	                <span>Quick trade</span>
-	                <span>{selectedPair ? `${selectedPair.symbol} · Market Execution` : "Select an instrument"}</span>
+	                <span>{selectedPair ? `${selectedPair.symbol} �� Market Execution` : "Select an instrument"}</span>
 	              </div>
 	              <div className="reference-chart-trade-actions">
 	                <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">

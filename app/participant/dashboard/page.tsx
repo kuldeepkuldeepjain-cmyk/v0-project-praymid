@@ -1733,6 +1733,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   }
 
   const displayName = participantData.username || participantData.email?.split("@")[0] || "User"
+  const rawKycStatus = String(participantData.kyc_status ?? participantData.verification_status ?? "").trim().toLowerCase()
+  const isKycVerified = Boolean(participantData.kyc_verified) || rawKycStatus === "approved"
+  const isKycInReview = ["pending", "submitted", "in_review", "under_review"].includes(rawKycStatus)
+  const kycStatusLabel = isKycVerified ? "Verified" : isKycInReview ? "In review" : rawKycStatus === "rejected" ? "Action needed" : "Not submitted"
+  const kycStatusTone = isKycVerified ? "is-verified" : isKycInReview ? "is-pending" : "is-needed"
   const fundedInitialBalance = Number(participantData.funded_initial_balance) || fundedBaseAmount
   const fundedEquity = Number(terminalStats.equity) || walletBalance
   const fundedDrawdownSnapshot = getFundedDrawdownSnapshot(
@@ -2291,7 +2296,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               onClick={() => setIsTerminalMenuOpen(false)}
             />
           )}
-          <aside className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`} aria-label="Trading terminal navigation">
+          <aside id="elite-terminal-sidebar" className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`} aria-hidden={!isTerminalMenuOpen} aria-label="Trading terminal navigation">
             <div className="elite-terminal-brand">
               <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} aria-label="Go to trading dashboard home">
                 <div className="elite-terminal-brand-mark">FC</div>
@@ -2310,16 +2315,31 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </button>
             </div>
 
-            <div className="elite-terminal-sidebar-account">
-              <div className="elite-terminal-sidebar-avatar">{displayName.charAt(0).toUpperCase()}</div>
-              <div className="elite-terminal-sidebar-account-copy">
-                <strong>{displayName}</strong>
-                <span className={isFundedAccount ? "elite-terminal-account-funded" : "elite-terminal-account-normal"}>
-                  <i /> {isFundedAccount ? "Funded Account" : "Normal Account"}
-                </span>
+            <Link
+              href="/participant/dashboard/profile"
+              onClick={() => setIsTerminalMenuOpen(false)}
+              className="elite-terminal-sidebar-account"
+              aria-label={`View ${displayName}'s profile and account status`}
+            >
+              <div className="elite-terminal-sidebar-account-main">
+                <div className="elite-terminal-sidebar-avatar">{displayName.charAt(0).toUpperCase()}</div>
+                <div className="elite-terminal-sidebar-account-copy">
+                  <strong>{displayName}</strong>
+                  <span className="elite-terminal-sidebar-account-email">{participantData.email || "Email unavailable"}</span>
+                </div>
+                <ChevronRight className="elite-terminal-sidebar-account-arrow" aria-hidden="true" />
               </div>
-              <ChevronRight className="elite-terminal-sidebar-account-arrow" />
-            </div>
+              <div className="elite-terminal-sidebar-account-meta">
+                <div className="elite-terminal-account-detail">
+                  <span>Account type</span>
+                  <strong>{isFundedAccount ? "Funded Account" : "Normal Account"}</strong>
+                </div>
+                <div className={`elite-terminal-account-detail elite-terminal-kyc-status ${kycStatusTone}`}>
+                  <span>KYC status</span>
+                  <strong>{kycStatusLabel}</strong>
+                </div>
+              </div>
+            </Link>
 
             <div className="elite-terminal-section-label">Workspace</div>
             <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
@@ -2483,6 +2503,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   fundedAmount={fundedBaseAmount}
   fundedTopUpAvailable={isFundedAccount}
   onOpenSidebar={() => setIsTerminalMenuOpen(true)}
+  accountMenuOpen={isTerminalMenuOpen}
   onAddFunds={() => {
   // The funded plan stays visible until the first funded payment is recorded.
   setTopUpIsFundedAccount(isFundedAccount)
