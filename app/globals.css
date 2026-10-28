@@ -9461,6 +9461,56 @@ body:has(.elite-terminal-shell) {
 }
 
 @media (max-width: 1023px) {
+  .reference-terminal.is-market-watch-active {
+    box-sizing: border-box;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-market-watch-active .apple-terminal-grid {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    flex-direction: column !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-market-watch-active .apple-terminal-grid > div {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .reference-terminal.is-market-watch-active .apple-terminal-market:not(.hidden) {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal.is-market-watch-active #market-watch-instruments {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .reference-terminal.is-market-watch-active .apple-terminal-blotter {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1023px) {
   .reference-terminal.is-portfolio-active {
     box-sizing: border-box;
     height: 100dvh !important;
