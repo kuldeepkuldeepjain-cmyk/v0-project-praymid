@@ -380,7 +380,7 @@ export function TradingChart({
         lockVisibleTimeRangeOnResize: true,
         rightBarStaysOnScroll: true,
       },
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: false, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
@@ -835,7 +835,7 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-1.5 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar text-[9px] font-bold"
+        className="flex items-center gap-1.5 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar terminal-indicator-toolbar text-[9px] font-bold"
         style={{ minHeight: 34, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
