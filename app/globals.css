@@ -6797,8 +6797,8 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     grid-template-columns: repeat(6, minmax(0, 1fr));
     min-height: calc(62px + env(safe-area-inset-bottom, 0px));
     align-items: center;
-    gap: 2px;
-    padding: 4px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 3px;
+    padding: 4px 5px calc(6px + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid var(--mobile-terminal-border);
     background: rgba(3, 8, 18, .97);
     backdrop-filter: blur(18px);
@@ -6806,30 +6806,42 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
   .reference-terminal .reference-mobile-nav button {
     display: flex;
+    width: 100%;
     min-width: 0;
     min-height: 46px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
+    overflow: hidden;
+    border: 1px solid transparent;
+    border-radius: 9px;
     color: var(--mobile-terminal-muted) !important;
-    font-size: 9px;
-    font-weight: 700;
+    font-size: clamp(7px, 2.25vw, 9px);
+    font-weight: 800;
+    letter-spacing: .045em;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
   }
-  .reference-terminal .reference-mobile-nav button svg { width: 20px; height: 20px; }
-  .reference-terminal .reference-mobile-nav button.is-active { color: var(--mobile-terminal-blue) !important; }
+  .reference-terminal .reference-mobile-nav button svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .reference-terminal .reference-mobile-nav button.is-active {
+    border-color: rgba(56, 189, 248, .28);
+    background: rgba(14, 139, 255, .16);
+    color: var(--mobile-terminal-blue) !important;
+  }
   .reference-terminal .reference-mobile-nav .mobile-nav-direction {
-    width: 54px;
-    height: 54px;
-    min-height: 54px;
-    justify-self: center;
+    width: 100%;
+    height: 46px;
+    min-height: 46px;
+    justify-self: stretch;
     border: 1px solid rgba(243, 247, 252, .22);
-    border-radius: 50%;
+    border-radius: 9px;
     background: var(--mobile-terminal-blue);
     color: var(--mobile-terminal-ink) !important;
-    box-shadow: 0 4px 20px rgba(14, 139, 255, .32);
+    box-shadow: 0 3px 12px rgba(14, 139, 255, .28);
   }
-  .reference-terminal .reference-mobile-nav .mobile-nav-direction svg { width: 24px; height: 24px; }
+  .reference-terminal .reference-mobile-nav .mobile-nav-direction svg { width: 20px; height: 20px; }
   .reference-terminal .reference-statusbar { display: none !important; }
 
   .reference-terminal .apple-terminal-grid {
