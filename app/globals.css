@@ -2204,7 +2204,6 @@ button, a, [role="button"] {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
     overscroll-behavior-y: contain;
     touch-action: pan-y;
   }
@@ -2229,12 +2228,7 @@ button, a, [role="button"] {
   .reference-terminal {
     min-height: min(760px, calc(100dvh - 150px));
     height: min(760px, calc(100dvh - 150px)) !important;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    overscroll-behavior-y: contain;
-    touch-action: pan-y;
+    overflow: hidden;
   }
   .reference-terminal .apple-terminal-mobile-tabs {
     position: sticky;
