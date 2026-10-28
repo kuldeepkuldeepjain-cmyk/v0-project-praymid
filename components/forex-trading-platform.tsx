@@ -3758,18 +3758,18 @@ const maxLeverage = 100
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
-          <div className="flex shrink-0 items-stretch" style={{ background: "linear-gradient(180deg, rgba(17,35,55,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+          <div className="flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
             <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
-              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg" style={{ background: "rgba(168,85,247,0.12)", border: "1px solid rgba(168,85,247,0.32)", boxShadow: "0 0 14px rgba(168,85,247,0.14)" }}><Zap className="h-3.5 w-3.5 text-purple-300" /></div>
-              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-white">Order Panel</div><div className="truncate text-[8px] uppercase tracking-wider text-slate-500">Fast execution</div></div>
+              <Zap className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white">Order Panel</div></div>
             </div>
             {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
               <button key={id} onClick={() => setRightPanelTab(id as typeof rightPanelTab)}
-                className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2.5 text-[9px] font-black tracking-wider uppercase transition-all"
+                className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2 text-[9px] font-black tracking-wider uppercase transition-colors"
                 style={{
-                  color: rightPanelTab === id ? "#22d3ee" : "#374151",
+                  color: rightPanelTab === id ? "#22d3ee" : "#64748b",
                   borderBottom: rightPanelTab === id ? "2px solid #22d3ee" : "2px solid transparent",
-                  background: rightPanelTab === id ? "rgba(34,211,238,0.04)" : "transparent",
+                  background: rightPanelTab === id ? "rgba(34,211,238,0.05)" : "transparent",
                 }}>
                 <Icon className="h-3 w-3" />{label}
               </button>
@@ -3830,31 +3830,32 @@ const maxLeverage = 100
 	                  ))}
 	                </div>
 
-	                {/* Single Executable Quote / Direction Selector */}
-	                <div className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
-	                  <button type="button" onClick={() => setOrderDirection("SELL")}
-	                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
-	                    className={`rounded-lg px-2.5 py-2 text-left transition-all ${
-	                      direction === "SELL"
-	                        ? "bg-rose-500/20 border-2 border-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.2)]"
-	                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
-	                    }`}>
-	                    <span className="block text-[8px] font-black tracking-wider uppercase text-rose-300">Sell · Bid</span>
-	                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-	                  </button>
-	                  <button type="button" onClick={() => setOrderDirection("BUY")}
-	                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
-	                    className={`rounded-lg px-2.5 py-2 text-right transition-all ${
-	                      direction === "BUY"
-	                        ? "bg-emerald-500/20 border-2 border-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
-	                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
-	                    }`}>
-	                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
-	                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-	                  </button>
-	                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center shadow-md">
-	                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
-	                  </div>
+		                {/* Single Executable Quote / Direction Selector */}
+		                <div className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
+		                  <button type="button" onClick={() => setOrderDirection("SELL")}
+		                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
+		                    className={`rounded-lg px-2.5 py-2 text-left transition-colors ${
+		                      direction === "SELL"
+		                        ? "bg-rose-500/20 border border-rose-500"
+		                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
+		                    }`}>
+		                    <span className="block text-[8px] font-black tracking-wider uppercase text-rose-300">Sell · Bid</span>
+		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+		                  </button>
+		                  <button type="button" onClick={() => setOrderDirection("BUY")}
+		                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
+		                    className={`rounded-lg px-2.5 py-2 text-right transition-colors ${
+		                      direction === "BUY"
+		                        ? "bg-emerald-500/20 border border-emerald-500"
+		                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
+		                    }`}>
+		                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
+		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+		                  </button>
+		                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+		                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
+		                  </div>
+		                </div>
 	                </div>
 
 	                {/* Pending price (limit/stop) */}
@@ -3880,39 +3881,39 @@ const maxLeverage = 100
 	                  </div>
 	                )}
 
-		                {/* Volume (lots) */}
-		                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
-		                  <div className="flex items-center justify-between">
-		                    <label className="text-[8px] font-black tracking-wider uppercase text-purple-300">
-		                      Trade size (lots)
-		                    </label>
-		                    <span className="text-[8px] font-bold text-slate-400">Leverage: 1:{effectiveLeverage}</span>
-		                  </div>
-		                  <input type="number" value={lotSize} onChange={e => {
-		                    const next = Number.parseFloat(e.target.value)
-		                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
-		                  }}
-		                  onBlur={() => {
-		                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
-		                  }}
-		                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
-		                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
-		                  placeholder="0.01"
-		                  />
-		                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-		                  <div className="flex gap-1">
-		                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-		                      <button key={l} onClick={() => setLotSize(l)}
-		                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-all ${
-		                          lotSize === l
-                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/40"
-                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
-                        }`}>
-                        {l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+			                {/* Volume (lots) */}
+			                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
+			                  <div className="flex items-center justify-between">
+			                    <label className="text-[8px] font-black tracking-wider uppercase text-cyan-300">
+			                      Trade size (lots)
+			                    </label>
+			                    <span className="text-[8px] font-bold text-slate-400">Leverage: 1:{effectiveLeverage}</span>
+			                  </div>
+			                  <input type="number" value={lotSize} onChange={e => {
+			                    const next = Number.parseFloat(e.target.value)
+			                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+			                  }}
+			                  onBlur={() => {
+			                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+			                  }}
+			                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
+			                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
+			                  placeholder="0.01"
+			                  />
+			                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
+				                  <div className="flex gap-1">
+				                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
+				                      <button key={l} type="button" onClick={() => setLotSize(l)}
+				                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-colors ${
+				                          lotSize === l
+				                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
+				                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
+				                        }`}>
+				                        {l}
+				                      </button>
+				                    ))}
+				                  </div>
+	                </div>
 
                 {/* Essential Risk controls (SL / TP) */}
                 <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">

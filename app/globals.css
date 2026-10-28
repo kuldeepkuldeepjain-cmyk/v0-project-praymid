@@ -1064,198 +1064,87 @@ button, a, [role="button"] {
   50%     { box-shadow: 0 0 12px 2px rgba(168,85,247,0.18), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -1px 0 rgba(0,0,0,0.4); }
 }
 
-/* 3D BUY button */
+/* Standardized trading terminal button styles */
 .btn-3d-buy {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #0d7a57 0%, #059669 30%, #047857 65%, #03543f 100%);
+  background: #059669;
   border: 1px solid #10b981;
-  border-bottom: 3px solid #065f46;
-  box-shadow:
-    0 0 0 0 rgba(16,185,129,0.55),
-    0 6px 28px rgba(16,185,129,0.30),
-    0 2px 6px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.20),
-    inset 0 -2px 0 rgba(0,0,0,0.30);
-  transform: translateY(0);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  animation: buy-pulse-ring 2.8s ease-out infinite;
+  border-radius: 6px;
+  color: #ffffff;
+  font-weight: 800;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
 }
-.btn-3d-buy::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-buy::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.07);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-buy:hover::after  { animation: shimmer-slide 0.55s ease forwards; }
-.btn-3d-buy:hover         { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 10px 36px rgba(16,185,129,0.45), 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.25), inset 0 -2px 0 rgba(0,0,0,0.30); animation: none; }
-.btn-3d-buy:active        { transform: translateY(2px); box-shadow: 0 2px 10px rgba(16,185,129,0.25), inset 0 2px 4px rgba(0,0,0,0.35); animation: none; }
-.btn-3d-buy:disabled      { filter: saturate(0) brightness(0.4); pointer-events: none; animation: none; }
+.btn-3d-buy:hover { background: #10b981; }
+.btn-3d-buy:active { transform: translateY(1px); }
+.btn-3d-buy:disabled { opacity: 0.4; pointer-events: none; }
 
-/* 3D SELL button */
 .btn-3d-sell {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #c0302a 0%, #dc2626 30%, #b91c1c 65%, #7f1d1d 100%);
+  background: #dc2626;
   border: 1px solid #ef4444;
-  border-bottom: 3px solid #991b1b;
-  box-shadow:
-    0 0 0 0 rgba(239,68,68,0.55),
-    0 6px 28px rgba(239,68,68,0.28),
-    0 2px 6px rgba(0,0,0,0.5),
-    inset 0 1px 0 rgba(255,255,255,0.18),
-    inset 0 -2px 0 rgba(0,0,0,0.30);
-  transform: translateY(0);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  animation: sell-pulse-ring 2.8s ease-out infinite;
-  animation-delay: 1.4s;
-}
-.btn-3d-sell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-sell::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.06);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-sell:hover::after  { animation: shimmer-slide 0.55s ease forwards; }
-.btn-3d-sell:hover         { filter: brightness(1.12); transform: translateY(-1px); box-shadow: 0 10px 36px rgba(239,68,68,0.42), 0 3px 8px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -2px 0 rgba(0,0,0,0.30); animation: none; }
-.btn-3d-sell:active        { transform: translateY(2px); box-shadow: 0 2px 10px rgba(239,68,68,0.22), inset 0 2px 4px rgba(0,0,0,0.35); animation: none; }
-.btn-3d-sell:disabled      { filter: saturate(0) brightness(0.4); pointer-events: none; animation: none; }
-
-/* Lot size / leverage 3D input */
-.input-3d {
-  background: linear-gradient(175deg, #0b1424 0%, #0d1829 50%, #081020 100%);
-  border: 1px solid #233552;
-  border-bottom: 2px solid #0a1225;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.55),
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    0 1px 0 rgba(255,255,255,0.04);
-  border-radius: 8px;
+  border-radius: 6px;
   color: #ffffff;
-  font-weight: 900;
-  transition: border-color 0.2s, box-shadow 0.2s;
-  animation: lot-glow-pulse 3s ease-in-out infinite;
+  font-weight: 800;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+}
+.btn-3d-sell:hover { background: #ef4444; }
+.btn-3d-sell:active { transform: translateY(1px); }
+.btn-3d-sell:disabled { opacity: 0.4; pointer-events: none; }
+
+/* Input styling */
+.input-3d {
+  background: #070d18;
+  border: 1px solid #1e2d45;
+  border-radius: 6px;
+  color: #ffffff;
+  font-weight: 700;
+  transition: border-color 0.15s ease;
 }
 .input-3d:focus {
   outline: none;
-  border-color: #a855f7;
-  box-shadow:
-    inset 0 2px 8px rgba(0,0,0,0.55),
-    0 0 0 2px rgba(168,85,247,0.20),
-    0 0 16px rgba(168,85,247,0.15);
-  animation: none;
+  border-color: #38bdf8;
 }
-.input-3d::placeholder { color: #2d4565; }
+.input-3d::placeholder { color: #475569; }
 
-/* param chip — the LOTS / LEV / MARGIN display cells */
+/* Param chip */
 .param-chip {
-  background: linear-gradient(175deg, #0a1220 0%, #0c1628 100%);
-  border: 1px solid #1e2d45;
-  border-bottom: 2px solid #080f1d;
-  border-radius: 10px;
-  box-shadow:
-    0 4px 12px rgba(0,0,0,0.45),
-    inset 0 1px 0 rgba(255,255,255,0.06),
-    inset 0 -1px 0 rgba(0,0,0,0.35);
+  background: #0a1322;
+  border: 1px solid #1a2640;
+  border-radius: 6px;
+}
 }
 
 /* Price tick flash */
 .price-tick { animation: price-tick 0.25s ease-out; }
 
-/* 3D execute/submit button */
+/* Standardized execution buttons */
 .btn-3d-execute-buy {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #34d399 0%, #10b981 30%, #059669 60%, #047857 85%, #03543f 100%);
-  border: 1px solid #6ee7b7;
-  border-bottom: 3px solid #065f46;
-  box-shadow:
-    0 6px 24px rgba(16,185,129,0.45),
-    0 2px 8px rgba(0,0,0,0.5),
-    inset 0 1.5px 0 rgba(255,255,255,0.35),
-    inset 0 -2px 0 rgba(0,0,0,0.3);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  border-radius: 10px;
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  background: #059669;
+  border: 1px solid #10b981;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background-color 0.15s ease, transform 0.08s ease;
 }
-.btn-3d-execute-buy::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-execute-buy::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.12);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-execute-buy:hover::after { animation: shimmer-slide 0.5s ease forwards; }
-.btn-3d-execute-buy:hover { filter: brightness(1.15) saturate(1.1); transform: translateY(-2px); box-shadow: 0 12px 34px rgba(16,185,129,0.55), 0 0 0 1px rgba(110,231,183,0.4), inset 0 1.5px 0 rgba(255,255,255,0.4), inset 0 -2px 0 rgba(0,0,0,0.3); }
-.btn-3d-execute-buy:active { transform: translateY(2px); box-shadow: 0 1px 8px rgba(16,185,129,0.25), inset 0 2px 5px rgba(0,0,0,0.35); }
-.btn-3d-execute-buy:disabled { filter: saturate(0) brightness(0.4); pointer-events: none; }
+.btn-3d-execute-buy:hover { background: #10b981; }
+.btn-3d-execute-buy:active { transform: translateY(1px); }
+.btn-3d-execute-buy:disabled { opacity: 0.4; pointer-events: none; }
 
 .btn-3d-execute-sell {
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(175deg, #f87171 0%, #ef4444 30%, #dc2626 60%, #b91c1c 85%, #7f1d1d 100%);
-  border: 1px solid #fca5a5;
-  border-bottom: 3px solid #991b1b;
-  box-shadow:
-    0 6px 24px rgba(239,68,68,0.42),
-    0 2px 8px rgba(0,0,0,0.5),
-    inset 0 1.5px 0 rgba(255,255,255,0.3),
-    inset 0 -2px 0 rgba(0,0,0,0.3);
-  transition: transform 80ms ease, box-shadow 80ms ease, filter 80ms ease;
-  border-radius: 10px;
-  letter-spacing: 0.06em;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
+  background: #dc2626;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transition: background-color 0.15s ease, transform 0.08s ease;
 }
-.btn-3d-execute-sell::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 55%);
-  pointer-events: none;
-}
-.btn-3d-execute-sell::after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0;
-  width: 45%; height: 100%;
-  background: rgba(255,255,255,0.1);
-  transform: translateX(-100%) skewX(-12deg);
-  pointer-events: none;
-}
-.btn-3d-execute-sell:hover::after { animation: shimmer-slide 0.5s ease forwards; }
-.btn-3d-execute-sell:hover { filter: brightness(1.15) saturate(1.1); transform: translateY(-2px); box-shadow: 0 12px 34px rgba(239,68,68,0.52), 0 0 0 1px rgba(252,165,165,0.4), inset 0 1.5px 0 rgba(255,255,255,0.35), inset 0 -2px 0 rgba(0,0,0,0.3); }
-.btn-3d-execute-sell:active { transform: translateY(2px); box-shadow: 0 1px 8px rgba(239,68,68,0.22), inset 0 2px 5px rgba(0,0,0,0.35); }
-.btn-3d-execute-sell:disabled { filter: saturate(0) brightness(0.4); pointer-events: none; }
+.btn-3d-execute-sell:hover { background: #ef4444; }
+.btn-3d-execute-sell:active { transform: translateY(1px); }
+.btn-3d-execute-sell:disabled { opacity: 0.4; pointer-events: none; }
 
 /* Positions table row */
 .position-row {
