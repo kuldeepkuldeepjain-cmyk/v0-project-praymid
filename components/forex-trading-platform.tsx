@@ -12,7 +12,7 @@ import {
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard,
-  ArrowUpRight, ArrowDownRight,
+  ArrowUpRight, ArrowDownRight, Home,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import { TradingViewAdvancedChart } from "@/components/tradingview-advanced-chart"
@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────────────���──────────────────────────����──────
+// ─── Position Sizer ──────────────────────────����──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3150,10 +3150,15 @@ const maxLeverage = 100
 </div>
 
       <header className="mobile-terminal-header">
-        <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
-          <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
-          <span><strong>ELITE FUND</strong></span>
-        </a>
+        <div className="mobile-terminal-brand-group">
+          <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
+            <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
+            <span><strong>ELITE FUND</strong></span>
+          </a>
+          <a className="mobile-terminal-home" href="/participant/dashboard" aria-label="Go to dashboard" title="Go to dashboard">
+            <Home aria-hidden="true" />
+          </a>
+        </div>
         <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label="Account menu">
           <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" />
           <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>

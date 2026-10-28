@@ -9626,3 +9626,54 @@ body:has(.elite-terminal-shell) {
     border-radius: 6px !important;
   }
 }
+
+@media (max-width: 767px) {
+  .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group .mobile-terminal-brand {
+    flex: 0 1 auto !important;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home {
+    display: inline-flex;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--institutional-line);
+    border-radius: 9px;
+    background: var(--institutional-panel);
+    color: var(--mobile-terminal-muted);
+    text-decoration: none;
+    transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home:hover {
+    border-color: var(--institutional-blue);
+    background: rgba(47, 128, 201, 0.12);
+    color: var(--mobile-terminal-ink);
+  }
+
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home:focus-visible {
+    outline: 2px solid var(--institutional-blue);
+    outline-offset: 2px;
+  }
+
+}
+
+@media (max-width: 380px) {
+  .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group { gap: 6px; }
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home { width: 30px; height: 30px; }
+}
