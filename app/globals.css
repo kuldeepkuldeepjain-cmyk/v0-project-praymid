@@ -2238,6 +2238,10 @@ button, a, [role="button"] {
   .apple-trading-terminal .apple-terminal-chart-column { width: 100% !important; min-width: 0 !important; max-width: 100% !important; }
   .apple-trading-terminal .apple-terminal-chart-column { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
   .apple-trading-terminal .apple-terminal-chart-column > div { min-width: 0; }
+  .apple-trading-terminal .apple-terminal-chart-column > .overflow-y-auto {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
   .apple-trading-terminal .apple-terminal-chart-column .apple-trading-chart { min-height: 270px; }
   .apple-trading-terminal .apple-terminal-order,
   .apple-trading-terminal .apple-terminal-market { flex: 1 1 auto; }
