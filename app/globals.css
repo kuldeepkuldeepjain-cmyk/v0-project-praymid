@@ -88,10 +88,10 @@
   .landing-glass-tile { animation: none !important; transition: none; }
 }
 
-/* The supplied artwork already contains the hero headline and supporting copy. */
-.landing-hero-copy,
-.landing-hero-market { display: none !important; }
+/* Responsive hero treatment for generated artwork with live page copy. */
 .landing-hero { min-height: clamp(520px, 56vw, 820px); }
+.landing-hero-copy { display: block !important; }
+.landing-hero-market { display: none; }
 .landing-hero-image { left: 0 !important; width: 100% !important; object-position: center center; }
 .landing-hero-glow { background: linear-gradient(180deg, rgba(2, 8, 23, 0.02), rgba(2, 8, 23, 0.2)); }
 @media (max-width: 1023px) {
@@ -9089,14 +9089,68 @@ body:has(.elite-terminal-shell) {
 
 @media (max-width: 1023px) {
   .reference-terminal {
-    height: 100dvh !important;
-    min-height: 0 !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow: visible !important;
+    background: #07111f;
+    border-top-color: #2dd4bf !important;
   }
 
   .reference-terminal .apple-terminal-grid {
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-behavior: smooth;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: visible !important;
+    background: #0a1625;
+  }
+
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-order,
+  .reference-terminal .apple-terminal-blotter {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .reference-terminal .apple-terminal-market > div,
+  .reference-terminal .apple-terminal-chart-column > div,
+  .reference-terminal .apple-terminal-order > div,
+  .reference-terminal .apple-terminal-blotter > div {
+    min-width: 0;
+  }
+
+  .reference-terminal .mobile-terminal-chart-wrap {
+    min-height: clamp(320px, 52dvh, 560px);
+    touch-action: pan-x pan-y;
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-width: 640px) {
+  .reference-terminal {
+    font-size: 12px;
+  }
+
+  .reference-terminal .apple-terminal-market,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-order,
+  .reference-terminal .apple-terminal-blotter {
+    border-inline: 0 !important;
+    border-bottom: 1px solid #21364e !important;
+  }
+
+  .reference-terminal .mobile-terminal-chart-wrap {
+    min-height: clamp(280px, 48dvh, 440px);
+  }
+
+  .reference-terminal .reference-chart-trade-dock {
+    position: relative;
+    bottom: auto;
+    box-shadow: 0 -8px 24px rgba(2, 8, 23, .24);
   }
 }
 
