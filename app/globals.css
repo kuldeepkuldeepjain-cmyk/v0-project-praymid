@@ -2661,55 +2661,6 @@ button, a, [role="button"] {
   }
 }
 
-/* Touch-first terminal scrolling: keep one predictable vertical scroll surface on phones. */
-@media (max-width: 840px) {
-  html:has(.apple-trading-terminal) {
-    scroll-behavior: smooth;
-    overscroll-behavior-y: none;
-  }
-  body:has(.apple-trading-terminal) {
-    overscroll-behavior-y: none;
-  }
-  .apple-trading-terminal.reference-terminal {
-    height: auto !important;
-    min-height: 100dvh;
-    overflow: visible !important;
-    overscroll-behavior-y: none;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-grid {
-    display: flex;
-    flex-direction: column;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    overscroll-behavior-y: none;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-market,
-  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column,
-  .apple-trading-terminal.reference-terminal .apple-terminal-order,
-  .apple-trading-terminal.reference-terminal .apple-terminal-blotter {
-    height: auto !important;
-    max-height: none !important;
-    min-height: 0;
-    overflow: visible !important;
-    overscroll-behavior: none;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
-    min-height: clamp(360px, 62dvh, 620px) !important;
-  }
-  .apple-trading-terminal.reference-terminal .apple-terminal-market > div,
-  .apple-trading-terminal.reference-terminal .apple-terminal-order > div,
-  .apple-trading-terminal.reference-terminal .apple-terminal-blotter > div {
-    overflow: visible !important;
-  }
-  .apple-trading-terminal.reference-terminal .terminal-scroll:not(.chart-timeframe-toolbar):not(.terminal-rate-details) {
-    overscroll-behavior-y: contain;
-  }
-  .apple-trading-terminal.reference-terminal .reference-chart-trade-dock {
-    position: relative;
-    bottom: auto;
-  }
-}
 @media (max-width: 520px) {
   .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
     min-height: clamp(360px, 58dvh, 520px) !important;
