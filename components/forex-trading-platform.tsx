@@ -1227,7 +1227,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────────────��──────────────────────────����──────
+// ─── Position Sizer ──────────────────────────���──────────────────────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -4252,6 +4252,9 @@ const maxLeverage = 100
             pendingOrders={pendingOrders}
             closedTrades={closedTrades}
             totalPnl={totalPnl}
+            walletBalance={walletBalance}
+            equity={equity}
+            freeMargin={freeMargin}
             totalMargin={totalMargin}
             totalLots={openTrades.reduce((sum, trade) => sum + trade.lotSize, 0)}
             formatPrice={fmt}
