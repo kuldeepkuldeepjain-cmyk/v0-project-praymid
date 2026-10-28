@@ -1759,7 +1759,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {isFundedAccount && fundedDrawdownSnapshot && (
         <div
-          className="mx-4 mt-4 rounded-xl border p-4 text-xs text-slate-300"
+          className="mx-3 mt-3 rounded-2xl border p-3.5 text-xs text-slate-200 shadow-lg shadow-black/20 sm:mx-4 sm:mt-4 sm:p-4"
           style={{
             borderColor: fundedDrawdownSnapshot.warningLevel === "breached" ? "rgba(248,113,113,0.4)"
               : fundedDrawdownSnapshot.warningLevel === "critical" ? "rgba(248,113,113,0.3)"

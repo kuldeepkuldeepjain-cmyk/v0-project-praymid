@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Eye, FileCheck2, Gauge, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface ParticipantOnboardingDashboardProps {
   displayName: string
@@ -26,39 +26,114 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, onExpl
   const completed = isVerified ? 1 : 0
 
   return (
-    <div className="mx-auto max-w-7xl space-y-3 px-3 py-3 text-slate-100 md:px-6 md:py-5">
-      <section className="relative overflow-hidden rounded-2xl border border-amber-400/20 bg-slate-950/80 p-4 shadow-xl shadow-amber-950/20 md:p-6">
-        <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" />
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-amber-200"><Sparkles className="h-3.5 w-3.5" /> EliteFund</div>
-            <h1 className="text-balance text-2xl font-black tracking-tight md:text-4xl">Welcome, {displayName}.</h1>
-            <p className="mt-1 max-w-xl text-sm leading-6 text-slate-400">A calm, transparent starting point for your account. Explore the terminal, understand the controls, and only fund when every step is clear.</p>
-            <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-3 text-slate-100 sm:px-4 md:gap-4 md:px-6 md:py-5">
+      <section className="rounded-2xl border border-amber-300/20 bg-slate-950/85 p-4 shadow-xl shadow-black/20 md:p-6" aria-labelledby="participant-welcome-title">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0 max-w-2xl">
+            <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
+              <Sparkles className="h-3.5 w-3.5" /> EliteFund
+            </div>
+            <h1 id="participant-welcome-title" className="text-balance text-2xl font-black tracking-tight text-white md:text-3xl">Welcome, {displayName}.</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">A clear starting point for your account. Explore the terminal, understand the controls, and only fund when every step is clear.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Secure session</span>
               <span className="inline-flex items-center gap-1.5"><FileCheck2 className="h-3.5 w-3.5 text-amber-300" /> Clear records</span>
-              <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-sky-300" /> Full visibility</span>
+              <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-cyan-300" /> Full visibility</span>
             </div>
-            </div>
+          </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={onExploreTerminal} className="bg-amber-400 font-bold text-slate-950 hover:bg-amber-300"><PlayCircle className="mr-2 h-4 w-4" /> Explore terminal</Button>
-            <Button onClick={onAddFunds} variant="outline" className="border-amber-300/30 bg-amber-300/5 font-bold text-amber-100 hover:bg-amber-300/15"><WalletCards className="mr-2 h-4 w-4" /> Add funds</Button>
+            <Button onClick={onExploreTerminal} className="h-10 rounded-xl bg-amber-400 px-4 font-bold text-slate-950 hover:bg-amber-300">
+              <PlayCircle data-icon="inline-start" /> Explore terminal
+            </Button>
+            <Button onClick={onAddFunds} variant="outline" className="h-10 rounded-xl border-amber-300/25 bg-slate-900/70 px-4 font-bold text-amber-100 hover:bg-amber-300/10">
+              <WalletCards data-icon="inline-start" /> Add funds
+            </Button>
           </div>
         </div>
       </section>
 
-      {showTour ? <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-4 md:p-5" aria-labelledby="guided-tour-title">
-        <div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">Quick start</p><h2 id="guided-tour-title" className="mt-1 text-lg font-bold">Before you trade</h2></div><button onClick={() => setShowTour(false)} className="rounded-lg p-2 text-slate-500 hover:bg-white/5 hover:text-white" aria-label="Dismiss guided tour"><X className="h-4 w-4" /></button></div>
-        <div className="mt-3 grid gap-2 md:grid-cols-3">{steps.map(({ title, description, icon: Icon }, index) => <div key={title} className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-950/60 px-3 py-2.5"><div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${index < completed ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/10 text-amber-300"}`}>{index < completed ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}</div><div><span className="text-xs font-bold">{title}</span><p className="text-[11px] leading-4 text-slate-400">{description}</p></div></div>)}</div>
-      </section> : <button onClick={() => setShowTour(true)} className="text-left text-xs font-bold text-amber-300 hover:text-amber-200">Show guided tour again</button>}
+      {showTour ? (
+        <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-4 md:p-5" aria-labelledby="guided-tour-title">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">Quick start</p>
+              <h2 id="guided-tour-title" className="mt-1 text-lg font-bold text-white">Before you trade</h2>
+            </div>
+            <button type="button" onClick={() => setShowTour(false)} className="flex size-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-white/5 hover:text-white" aria-label="Dismiss guided tour">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {steps.map(({ title, description, icon: Icon }, index) => (
+              <div key={title} className="flex min-h-16 items-center gap-3 rounded-xl border border-white/10 bg-slate-950/65 px-3 py-2.5">
+                <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl border ${index < completed ? "border-emerald-300/20 bg-emerald-400/10 text-emerald-300" : "border-amber-300/15 bg-amber-400/10 text-amber-300"}`}>
+                  {index < completed ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-bold text-slate-100">{title}</span>
+                  <p className="text-xs leading-4 text-slate-400">{description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : (
+        <button type="button" onClick={() => setShowTour(true)} className="flex w-full items-center justify-between rounded-xl border border-amber-300/15 bg-slate-900/60 px-4 py-3 text-left text-sm font-semibold text-amber-200 transition hover:border-amber-300/30 hover:bg-slate-900">
+          Show guided tour again <ArrowRight className="h-4 w-4" />
+        </button>
+      )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card className="border-white/10 bg-slate-900/70 text-slate-100"><CardContent className="p-5"><div className="flex items-center justify-between"><div className="flex items-center gap-3"><ShieldCheck className="h-5 w-5 text-emerald-300" /><h2 className="font-bold">Verification</h2></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${isVerified ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-200"}`}>{isVerified ? "Verified" : "Action needed"}</span></div><p className="mt-3 text-xs leading-5 text-slate-400">Verification protects your account and helps us process funding and payouts safely.</p><Link href="/participant/dashboard/profile" className="mt-4 inline-flex items-center text-xs font-bold text-amber-300">Review status <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></CardContent></Card>
-        <Card className="border-white/10 bg-slate-900/70 text-slate-100"><CardContent className="p-5"><div className="flex items-center gap-3"><CreditCard className="h-5 w-5 text-amber-300" /><h2 className="font-bold">Fees, explained</h2></div><p className="mt-3 text-xs leading-5 text-slate-400">No surprise charges. Review the funding amount, any applicable fees, and the amount you can withdraw before confirming.</p><Link href="/terms" className="mt-4 inline-flex items-center text-xs font-bold text-amber-300">View platform terms <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link></CardContent></Card>
-        <Card className="border-white/10 bg-slate-900/70 text-slate-100"><CardContent className="p-5"><div className="flex items-center gap-3"><LockKeyhole className="h-5 w-5 text-amber-300" /><h2 className="font-bold">Trade with context</h2></div><p className="mt-3 text-xs leading-5 text-slate-400">Markets move quickly. Use the demo terminal first, set a clear risk limit, and never fund more than you understand.</p><button onClick={onHelp} className="mt-4 inline-flex items-center text-xs font-bold text-amber-300">Get help <CircleHelp className="ml-1 h-3.5 w-3.5" /></button></CardContent></Card>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Card className="rounded-xl border-white/10 bg-slate-900/65 text-slate-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 p-4 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-300"><ShieldCheck className="h-4 w-4" /></div>
+              <CardTitle className="text-sm font-bold">Verification</CardTitle>
+            </div>
+            <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${isVerified ? "bg-emerald-400/15 text-emerald-300" : "bg-amber-400/15 text-amber-200"}`}>{isVerified ? "Verified" : "Action needed"}</span>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <CardDescription className="text-xs leading-5 text-slate-400">Verification protects your account and helps us process funding and payouts safely.</CardDescription>
+            <Link href="/participant/dashboard/profile" className="mt-4 inline-flex items-center text-xs font-bold text-amber-300 transition hover:text-amber-200">Review status <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border-white/10 bg-slate-900/65 text-slate-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-3 p-4 pb-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-400/10 text-amber-300"><CreditCard className="h-4 w-4" /></div>
+            <div>
+              <CardTitle className="text-sm font-bold">Fees, explained</CardTitle>
+              <CardDescription className="mt-0.5 text-xs text-slate-400">Funding and withdrawals</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <CardDescription className="text-xs leading-5 text-slate-400">Review the funding amount, any applicable fees, and the amount you can withdraw before confirming.</CardDescription>
+            <Link href="/terms" className="mt-4 inline-flex items-center text-xs font-bold text-amber-300 transition hover:text-amber-200">View platform terms <ArrowRight className="ml-1 h-3.5 w-3.5" /></Link>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-xl border-white/10 bg-slate-900/65 text-slate-100 shadow-sm">
+          <CardHeader className="flex flex-row items-center gap-3 p-4 pb-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-400/10 text-cyan-300"><LockKeyhole className="h-4 w-4" /></div>
+            <div>
+              <CardTitle className="text-sm font-bold">Trade with context</CardTitle>
+              <CardDescription className="mt-0.5 text-xs text-slate-400">Start with a clear risk limit</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="p-4 pt-0">
+            <CardDescription className="text-xs leading-5 text-slate-400">Markets move quickly. Use the demo terminal first and never fund more than you understand.</CardDescription>
+            <button type="button" onClick={onHelp} className="mt-4 inline-flex items-center text-xs font-bold text-amber-300 transition hover:text-amber-200">Get help <CircleHelp className="ml-1 h-3.5 w-3.5" /></button>
+          </CardContent>
+        </Card>
       </div>
 
-      <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3"><h2 className="text-sm font-bold text-amber-100">How it works</h2><p className="mt-1 text-xs leading-5 text-slate-300">Choose a market, set your size, review risk, then place a trade. Try demo mode first.</p><div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 border-t border-amber-200/10 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400"><span>Capital at risk</span><span>•</span><span>Review before confirming</span><span>•</span><span>Support is available</span></div></section>
+      <section className="rounded-xl border border-amber-300/20 bg-amber-300/5 px-4 py-3.5" aria-labelledby="how-it-works-title">
+        <h2 id="how-it-works-title" className="text-sm font-bold text-amber-100">How it works</h2>
+        <p className="mt-1 text-sm leading-5 text-slate-300">Choose a market, set your size, review risk, then place a trade. Try demo mode first.</p>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-amber-200/10 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+          <span>Capital at risk</span><span>Review before confirming</span><span>Support is available</span>
+        </div>
+      </section>
     </div>
   )
 }
