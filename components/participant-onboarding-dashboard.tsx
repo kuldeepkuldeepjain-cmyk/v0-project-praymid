@@ -53,23 +53,7 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, accoun
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7" aria-label="Dashboard quick actions">
-        <button
-          type="button"
-          onClick={onExploreTerminal}
-          className="action-tile flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl p-2 text-center transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 active:scale-95"
-          style={{
-            background: "linear-gradient(145deg, rgba(34,211,238,0.18) 0%, rgba(6,182,212,0.08) 100%)",
-            border: "1px solid rgba(34,211,238,0.35)",
-            boxShadow: "0 0 16px rgba(214,182,107,0.06)",
-          }}
-        >
-          <span className="flex size-8 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,0.18)", boxShadow: "0 0 14px rgba(34,211,238,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
-            <BarChart3 aria-hidden="true" className="size-4" style={{ color: "#22d3ee", filter: "drop-shadow(0 0 4px rgba(34,211,238,0.8))" }} />
-          </span>
-          <span className="text-[10px] font-black text-cyan-300">Trade</span>
-        </button>
-
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6" aria-label="Dashboard quick actions">
         {[
           { href: "/participant/dashboard/refer", icon: Gift, label: "Refer & earn", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
           { href: "/participant/dashboard/profile", icon: UserRound, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
