@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────���───────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────����───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3183,6 +3183,7 @@ const maxLeverage = 100
 
       {/* ── DESKTOP ACCOUNT BAR (Hidden on mobile to match sleek terminal header) ── */}
       <header className="terminal-account-bar hidden lg:flex" aria-label="Account overview">
+        <div className="terminal-account-dock">
         <div className="terminal-account-stats terminal-scroll" aria-label="Account metrics">
           {[
             { label: "Balance / Equity", value: `$${walletBalance.toFixed(2)} / $${equity.toFixed(2)}`, tone: "neutral" },
@@ -3202,7 +3203,7 @@ const maxLeverage = 100
             <Wallet className="h-3.5 w-3.5" />
             <span>Add Funds</span>
           </button>
-          <button type="button" className="terminal-action" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+          <button type="button" className="terminal-action terminal-action-withdraw" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
             <ArrowUpDown className="h-3.5 w-3.5" />
             <span>Withdraw</span>
           </button>
@@ -3211,6 +3212,7 @@ const maxLeverage = 100
             <span>Prediction</span>
           </button>
         </nav>
+        </div>
       </header>
 
       {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════��������═���═��══������ */}

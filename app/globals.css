@@ -9472,6 +9472,111 @@ body:has(.elite-terminal-shell) {
   color: #a9cbe2 !important;
 }
 
+/* Joined account dock: live figures and three distinct account actions share one rail. */
+@media (min-width: 1024px) {
+  .reference-terminal .terminal-account-bar {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 6px 16px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .reference-terminal .terminal-account-dock {
+    display: flex;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    align-items: center;
+    padding: 3px;
+    border: 1px solid #29394c;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #0c1826, #08121e);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .22), inset 0 1px rgba(255, 255, 255, .035);
+  }
+  .reference-terminal .terminal-account-stats {
+    flex: 0 1 auto;
+    gap: 0;
+    overflow: hidden;
+    border-right: 1px solid #29394c;
+  }
+  .reference-terminal .terminal-account-stats .terminal-stat {
+    min-width: 0;
+    padding: 5px 12px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .reference-terminal .terminal-account-stats .terminal-stat + .terminal-stat {
+    border-left: 1px solid #223348 !important;
+  }
+  .reference-terminal .terminal-account-stats .terminal-stat:first-child {
+    padding-left: 10px !important;
+  }
+  .reference-terminal .terminal-stat-label {
+    color: #8ea3b8 !important;
+    font-size: 8px !important;
+    letter-spacing: .11em;
+  }
+  .reference-terminal .terminal-stat-value {
+    margin-top: 3px;
+    font-size: 13px !important;
+  }
+  .reference-terminal .terminal-stat:nth-child(3) {
+    border-color: transparent !important;
+    background: transparent !important;
+  }
+  .reference-terminal .terminal-stat:nth-child(3)::after { content: none !important; }
+  .reference-terminal .terminal-stat.tone-green .terminal-stat-value { color: #6de2aa !important; }
+  .reference-terminal .terminal-stat.tone-red .terminal-stat-value { color: #ff8585 !important; }
+  .reference-terminal .terminal-stat.tone-gold .terminal-stat-value { color: #f4cb72 !important; }
+  .reference-terminal .terminal-account-actions {
+    gap: 0 !important;
+    margin-left: 7px;
+    overflow: hidden;
+    border: 1px solid #29394c;
+    border-radius: 8px;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action {
+    height: 34px;
+    padding: 0 13px;
+    border: 0 !important;
+    border-radius: 0 !important;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: .025em;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: filter .16s ease, box-shadow .16s ease;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action + .terminal-action {
+    border-left: 1px solid rgba(4, 12, 20, .55) !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action-primary {
+    background: linear-gradient(145deg, #a96f1d, #704610) !important;
+    color: #fff0c6 !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action-withdraw {
+    background: linear-gradient(145deg, #2a5c83, #173b5b) !important;
+    border-color: #4c89b6 !important;
+    color: #e2f2ff !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action-accent {
+    background: linear-gradient(145deg, #147b78, #0d4b50) !important;
+    color: #d6fff4 !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action:hover:not(:disabled) {
+    filter: brightness(1.16);
+    box-shadow: inset 0 1px rgba(255,255,255,.12) !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid #d6e8ff;
+    outline-offset: -3px;
+  }
+}
+
 .reference-terminal .reference-mobile-nav > button:nth-child(1) {
   border-color: rgb(57 191 167 / 0.68) !important;
   background: linear-gradient(145deg, rgb(30 103 103 / 0.9), rgb(14 52 61 / 0.96)) !important;
