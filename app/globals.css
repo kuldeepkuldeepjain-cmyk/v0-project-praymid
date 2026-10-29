@@ -2694,8 +2694,34 @@ button, a, [role="button"] {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.reference-terminal .apple-trading-chart,
+.reference-terminal .terminal-chart-surface {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+.reference-terminal .terminal-chart-rate-bar {
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #263b4f transparent;
+}
+.reference-terminal .terminal-chart-rate-bar > * {
+  flex-shrink: 0;
+}
 @media (max-width: 640px) {
   .reference-terminal .chart-header { padding: 6px 8px; }
+  .reference-terminal .terminal-chart-rate-bar {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+  .reference-terminal .terminal-chart-secondary-metric {
+    display: none;
+  }
+  .reference-terminal .terminal-chart-price {
+    letter-spacing: -0.03em;
+  }
   .reference-terminal .chart-header-market { gap: 5px; }
   .reference-terminal .terminal-rate-details { scrollbar-width: none; }
   .reference-terminal .terminal-rate-details::-webkit-scrollbar { display: none; }
