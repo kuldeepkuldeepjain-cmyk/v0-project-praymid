@@ -36,7 +36,7 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, accoun
               <Sparkles className="h-3.5 w-3.5" /> EliteFund · Participant workspace
             </div>
             <p className="participant-welcome-eyebrow mb-3 text-[13px] font-bold uppercase tracking-[0.16em] text-slate-300 md:hidden">WELCOME BACK</p>
-            <h1 id="participant-welcome-title" className="participant-welcome-name text-balance text-[clamp(2.625rem,13vw,3.5rem)] font-black leading-none tracking-tight text-white md:text-3xl md:leading-tight">
+            <h1 id="participant-welcome-title" className="participant-welcome-name text-balance text-[clamp(2.25rem,10.5vw,3rem)] font-bold leading-none tracking-tight text-white md:text-3xl md:leading-tight">
               <span className="md:hidden">{displayName}.</span>
               <span className="hidden md:inline">Welcome back, {displayName}.</span>
             </h1>
