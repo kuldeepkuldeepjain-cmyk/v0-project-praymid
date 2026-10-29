@@ -326,6 +326,7 @@ export default function AdminDashboard() {
               { id: "participants", label: "Users", icon: Users },
               { id: "wallets", label: "Wallets", icon: Wallet },
               { id: "topups", label: "Top Ups", icon: ArrowUpRight },
+              { id: "promos", label: "Promos", icon: TicketPercent },
               { id: "support", label: "Support", icon: MessageSquare, badge: openTicketCount },
               { id: "payments", label: "UPI / Bank", icon: CreditCard },
               { id: "settings", label: "Settings", icon: SlidersHorizontal },
