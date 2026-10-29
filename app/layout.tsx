@@ -10,7 +10,7 @@ import { GlobalErrorListener } from "@/components/global-error-listener"
 import { ErrorBoundary } from "@/components/error-boundary"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const viewport: Viewport = {
   themeColor: "#080c14",
@@ -84,7 +84,7 @@ export default function RootLayout({
         <link rel="icon" href="/elite-fund-logo.jpg" type="image/jpeg" />
         <link rel="apple-touch-icon" href="/elite-fund-logo.jpg" />
       </head>
-      <body className={`${inter.className} antialiased overflow-x-hidden`}>
+      <body className={`${inter.className} ${inter.variable} ${geistMono.variable} antialiased overflow-x-hidden`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

@@ -179,11 +179,13 @@ export function TradingChart({
   sellPrice,
   darkTheme = false,
   marketStatus = "connecting",
+  livePrice,
   }: {
   candles: Candle[] | null | undefined
   sym: string | null | undefined
   tf?: string
   marketStatus?: "live" | "reconnecting" | "connecting"
+  livePrice?: number
   openTrades?: OpenTrade[]
   onExpand?: () => void
   isExpanded?: boolean
@@ -365,6 +367,8 @@ export function TradingChart({
         scaleMargins: { top: 0.08, bottom: 0.18 },
         entireTextOnly: false,
         autoScale: true,
+        alignLabels: true,
+        minimumWidth: Math.min(88, Math.max(54, Math.round(containerRef.current.clientWidth * 0.18))),
         ticksVisible: true,
         borderVisible: true,
       },
@@ -380,7 +384,7 @@ export function TradingChart({
         lockVisibleTimeRangeOnResize: true,
         rightBarStaysOnScroll: true,
       },
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: false, vertTouchDrag: false },
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
@@ -517,6 +521,13 @@ export function TradingChart({
 
         lastWidth = width
         lastHeight = height
+        chartRef.current.applyOptions({
+          width,
+          height,
+          rightPriceScale: {
+            minimumWidth: Math.min(88, Math.max(54, Math.round(width * 0.18))),
+          },
+        })
         chartRef.current.resize(width, height)
       })
     })
@@ -584,7 +595,7 @@ export function TradingChart({
     if (last) setOhlcv({ open: last.open, high: last.high, low: last.low, close: last.close, volume: volData[volData.length - 1]?.value ?? 0, isUp: last.close >= last.open })
   }, [candleData, volData, candles])
 
-  // ── Update EMA ───────────────────────────────��───��───────────────────────────
+  // ── Update EMA ──────���────────────────────────��───��───────────────────────────
   useEffect(() => {
     if (!ema9Ref.current || times.length === 0) return
     ema9Ref.current.setData(indicators.ema9 ? toLineData(ema9d) : [])
@@ -741,11 +752,22 @@ export function TradingChart({
 
   // ── Last candle stats for header ───────────────────────��─────────────────────
   const lastCandle = safeCandles[safeCandles.length - 1]
-  const displayOhlcv = ohlcv ?? (lastCandle ? {
-    open: lastCandle.open, high: lastCandle.high,
-    low: lastCandle.low,   close: lastCandle.close,
-    volume: lastCandle.volume, isUp: lastCandle.close >= lastCandle.open,
-  } : null)
+  const displayOhlcv = (() => {
+    const base = ohlcv ?? (lastCandle ? {
+      open: lastCandle.open, high: lastCandle.high,
+      low: lastCandle.low, close: lastCandle.close,
+      volume: lastCandle.volume, isUp: lastCandle.close >= lastCandle.open,
+    } : null)
+    if (!base || !Number.isFinite(livePrice) || (livePrice ?? 0) <= 0) return base
+    const price = Number(livePrice)
+    return {
+      ...base,
+      high: Math.max(base.high, price),
+      low: Math.min(base.low, price),
+      close: price,
+      isUp: price >= base.open,
+    }
+  })()
 
   const fmtP = (v: number) => v.toFixed(dec)
   const fmtV = (v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toString()
@@ -767,11 +789,11 @@ export function TradingChart({
   const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
 
   return (
-    <div className="apple-trading-chart terminal-chart-surface flex flex-col w-full h-full select-none" style={{ background: "#0d1724" }}>
+    <div className="apple-trading-chart terminal-chart-surface flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
 
       {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-3 px-3 shrink-0 overflow-x-auto"
+        className="terminal-chart-rate-bar flex min-h-9 min-w-0 items-center gap-x-3 gap-y-1 px-3 py-1 shrink-0 overflow-x-auto overflow-y-hidden"
         style={{ height: 36, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", minWidth: 0 }}
       >
         <AssetLogo symbol={safeSymbol} size={18} className="shrink-0" />
@@ -797,16 +819,16 @@ export function TradingChart({
             ].map(({ label, value, color }) => (
               <span key={label} className="flex items-baseline gap-1 shrink-0">
                 <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>{label}</span>
-                <span className="text-[11px] font-black price-mono" style={{ color }}>{value}</span>
+                <span className="terminal-chart-price text-[clamp(9px,1.6vw,11px)] font-black price-mono" style={{ color }}>{value}</span>
               </span>
             ))}
             <div className="w-px h-4 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
-            <span className="flex items-baseline gap-1 shrink-0">
+            <span className="terminal-chart-secondary-metric flex items-baseline gap-1 shrink-0">
               <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>VOL</span>
               <span className="text-[11px] font-black price-mono" style={{ color: "#91a4b8" }}>{fmtV(displayOhlcv.volume)}</span>
             </span>
             {atr14 !== null && (
-              <span className="flex items-baseline gap-1 shrink-0">
+              <span className="terminal-chart-secondary-metric flex items-baseline gap-1 shrink-0">
                 <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>ATR</span>
                 <span className="text-[11px] font-black price-mono" style={{ color: "#e9b75a" }}>{fmtP(atr14)}</span>
               </span>

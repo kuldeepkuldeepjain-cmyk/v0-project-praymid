@@ -15,7 +15,6 @@ import {
   ArrowUpRight, ArrowDownRight, Home,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
-import { TradingViewAdvancedChart } from "@/components/tradingview-advanced-chart"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -1227,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ────────────────────────���─����──────────────────────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────���───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1479,7 +1478,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [themeReady, setThemeReady] = useState(false)
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false)
   const [chartLayout, setChartLayout] = useState<"single" | "grid">("single")
-  const [chartProvider, setChartProvider] = useState<"native" | "tradingview">("native")
   const [chartReloadKey, setChartReloadKey] = useState(0)
   const [rateBarExpanded, setRateBarExpanded] = useState(false)
   const [soundEnabled, setSoundEnabled] = useState(true)
@@ -3018,7 +3016,6 @@ const maxLeverage = 100
     { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
     { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
     { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
-  { id: "tradingview", label: chartProvider === "tradingview" ? "Use native chart" : "Use TradingView live chart", hint: "Switch the chart engine", icon: Activity, action: () => setChartProvider(v => v === "tradingview" ? "native" : "tradingview") },
     { id: "panel-positions", label: "Show open positions", hint: "Switch the bottom blotter to positions", icon: Layers, action: () => setActivePanel("positions") },
     { id: "panel-pending", label: "Show pending orders", hint: "Switch the bottom blotter to pending orders", icon: Clock, action: () => setActivePanel("pending") },
     { id: "panel-history", label: "Show trade history", hint: "Switch the bottom blotter to closed trades", icon: History, action: () => setActivePanel("history") },
@@ -3038,7 +3035,7 @@ const maxLeverage = 100
     { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
     { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isDarkTheme, chartLayout, chartProvider, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
 
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
@@ -3634,19 +3631,7 @@ const maxLeverage = 100
 
 	                {/* Chart Controls & Tools Group */}
 	                <div className="flex items-center gap-1.5 ml-auto">
-	                  {/* Provider & Layout Toggles */}
-	                  <button
-	                    type="button"
-	                    onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
-	                    className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
-	                    style={{
-	                      color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
-	                      background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
-	                      borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
-	                    }}
-	                  >
-	                    {chartProvider === "tradingview" ? "TV Live" : "Native"}
-	                  </button>
+                  {/* Chart layout and live-data tools */}
 
 	                  <button
 	                    type="button"
@@ -3685,35 +3670,30 @@ const maxLeverage = 100
 	          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll" style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}>
 	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
 	              {selectedPair && chartLayout === "single" ? (
-	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartProvider}|${chartReloadKey}`} fallback={
+	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartReloadKey}`} fallback={
 	                  <div className="chart-silent-error" aria-hidden="true">
 	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
 	                  </div>
 	                }>
-	                  <div className="terminal-single-chart-stack h-full w-full flex-1 min-h-0">
-	                    {chartProvider === "native" ? (
-	                      <div className="terminal-native-chart-panel h-full w-full flex-1 min-h-0">
-	                        <TradingChart
-	                          key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
-	                          candles={selectedPair.candles}
-	                          sym={selectedPair.symbol}
-	                          tf={timeframe}
-	                          openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
-	                          onExpand={() => setChartExpanded(e => !e)}
-	                          isExpanded={chartExpanded}
-	                          onQuickTrade={quickTrade}
-	                          buyPrice={selectedPair.ask}
-	                          sellPrice={selectedPair.bid}
-	                          darkTheme={isDarkTheme}
-	                          marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-	                        />
-	                      </div>
-	                    ) : (
-	                      <div className="terminal-tradingview-panel is-active h-full w-full flex-1 min-h-0">
-	                        <TradingViewAdvancedChart symbol={selectedPair.symbol} theme={isDarkTheme ? "dark" : "light"} interval={timeframe === "1M" ? "1" : timeframe === "5M" ? "5" : timeframe === "15M" ? "15" : timeframe === "30M" ? "30" : timeframe === "1H" ? "60" : timeframe === "4H" ? "240" : timeframe === "1D" ? "D" : "W"} height="100%" />
-	                      </div>
-	                    )}
-	                  </div>
+  <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">
+  <div className="terminal-native-chart-panel h-full min-h-0 w-full flex-1">
+  <TradingChart
+  key={`${selectedPair.symbol}|${timeframe}|${isDarkTheme ? "dark" : "light"}`}
+  candles={selectedPair.candles}
+  sym={selectedPair.symbol}
+  tf={timeframe}
+  openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)}
+  onExpand={() => setChartExpanded(e => !e)}
+  isExpanded={chartExpanded}
+  onQuickTrade={quickTrade}
+  buyPrice={selectedPair.ask}
+  sellPrice={selectedPair.bid}
+  darkTheme={isDarkTheme}
+  marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+  livePrice={(selectedPair.bid + selectedPair.ask) / 2}
+  />
+  </div>
+  </div>
 	                </ErrorBoundary>
 	              ) : selectedPair && chartLayout === "grid" ? (
 	                <MiniChartGrid
@@ -3761,18 +3741,7 @@ const maxLeverage = 100
 
 	              {/* Provider Quick Toggle */}
 	              <div className="flex items-center gap-1 shrink-0 ml-1">
-	                <button
-	                  type="button"
-	                  onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
-	                  className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
-	                  style={{
-	                    color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
-	                    background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
-	                    borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
-	                  }}
-	                >
-	                  {chartProvider === "tradingview" ? "TV Live" : "Native"}
-	                </button>
+
 	              </div>
 	            </div>
 
@@ -4089,10 +4058,11 @@ const maxLeverage = 100
 	                </div>
 
 		                {/* Single Executable Quote / Direction Selector */}
-		                <div className="relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
+		                <div className="mobile-quote-switch relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
 		                  <button type="button" onClick={() => setOrderDirection("SELL")}
-		                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
-		                    className={`rounded-lg px-2.5 py-2 text-left transition-colors ${
+                    aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
+	                    data-active={direction === "SELL"}
+	                    className={`mobile-quote-side mobile-quote-sell rounded-lg px-2.5 py-2 text-left transition-colors ${
 		                      direction === "SELL"
 		                        ? "bg-rose-500/20 border border-rose-500"
 		                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
@@ -4101,8 +4071,9 @@ const maxLeverage = 100
 		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
 		                  </button>
 		                  <button type="button" onClick={() => setOrderDirection("BUY")}
-		                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
-		                    className={`rounded-lg px-2.5 py-2 text-right transition-colors ${
+                    aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
+	                    data-active={direction === "BUY"}
+	                    className={`mobile-quote-side mobile-quote-buy rounded-lg px-2.5 py-2 text-right transition-colors ${
 		                      direction === "BUY"
 		                        ? "bg-emerald-500/20 border border-emerald-500"
 		                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
@@ -4110,7 +4081,7 @@ const maxLeverage = 100
 		                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
 		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
 		                  </button>
-			                  <div className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+			                  <div className="mobile-quote-spread pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
 			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
 			                  </div>
 			                </div>
