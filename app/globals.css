@@ -3951,28 +3951,37 @@ button, a, [role="button"] {
   .terminal-page .participant-mobile-dock .participant-header-inner {
     height: 64px;
     min-height: 64px;
-    padding-inline: 12px;
-    border: 1px solid rgba(214,182,107,.22);
+    padding-inline: 8px;
+    border: 1px solid rgba(34,211,238,.18);
     border-radius: 16px;
-    background: rgba(10,18,30,.94);
-    box-shadow: 0 8px 22px rgba(0,0,0,.24), inset 0 1px 0 rgba(255,255,255,.03);
+    background: linear-gradient(110deg, rgba(8,20,35,.98), rgba(4,10,19,.98));
+    box-shadow: 0 8px 22px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.04);
   }
-  .terminal-page .participant-mobile-dock .participant-header-inner > div:first-child {
+  .terminal-page .participant-mobile-dock .participant-header-profile {
     flex: 1 1 0%;
     min-width: 0;
   }
   .terminal-page .participant-mobile-dock .participant-header-account-label { display: none; }
-  .terminal-page .participant-mobile-dock .participant-header-actions { flex: 0 0 auto; gap: 0; }
+  .terminal-page .participant-mobile-dock .participant-header-actions { flex: 0 0 auto; gap: 4px; }
   .terminal-page .participant-mobile-dock .participant-header-actions > a,
   .terminal-page .participant-mobile-dock .participant-header-actions > button { display: none !important; }
   .terminal-page .participant-mobile-dock .participant-header-balance {
-    width: 116px;
-    max-width: 116px;
-    padding: 6px 8px !important;
-    background: rgba(214,182,107,.08) !important;
-    border: 1px solid rgba(214,182,107,.24) !important;
+    width: 124px;
+    max-width: 124px;
+    height: 50px;
+    gap: 6px !important;
+    padding: 5px 6px !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, rgba(214,182,107,.16), rgba(214,182,107,.05)) !important;
+    border: 1px solid rgba(214,182,107,.36) !important;
+    box-shadow: 0 0 18px rgba(214,182,107,.08), inset 0 1px 0 rgba(255,255,255,.05) !important;
   }
-  .terminal-page .participant-mobile-dock .participant-header-balance > svg { display: none; }
+  .terminal-page .participant-mobile-dock .participant-header-wallet-icon {
+    background: rgba(214,182,107,.12);
+    border-color: rgba(214,182,107,.24);
+  }
+  .terminal-page .participant-mobile-dock .participant-header-divider { background: rgba(148,163,184,.3); }
+  .terminal-page .participant-mobile-dock .participant-header-notifications { flex: 0 0 36px; }
   .terminal-page .participant-mobile-dock .participant-header-inner {
     min-width: 0;
     gap: 8px;
@@ -7772,8 +7781,9 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 .terminal-page main::-webkit-scrollbar { width: 8px; }
 .terminal-page main::-webkit-scrollbar-thumb { background: #294662; border-radius: 999px; }
 .terminal-page .participant-header-live { letter-spacing: .08em; text-transform: uppercase; }
-.terminal-page .participant-header-balance { background: #0e2035 !important; border: 1px solid #294662 !important; }
-.terminal-page .participant-header-balance span { color: #f0c86e !important; font-variant-numeric: tabular-nums; }
+.terminal-page .participant-header-balance { background: linear-gradient(135deg, rgba(214,182,107,.16), rgba(214,182,107,.05)) !important; border: 1px solid rgba(214,182,107,.36) !important; }
+.terminal-page .participant-header-balance .participant-header-balance-label { color: #aebccc !important; }
+.terminal-page .participant-header-balance .price-mono { color: #f0c86e !important; font-variant-numeric: tabular-nums; }
 .terminal-page [class*="rounded-3xl"],
 .terminal-page [class*="rounded-2xl"] {
   box-shadow: 0 10px 28px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.025);

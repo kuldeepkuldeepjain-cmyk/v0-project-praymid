@@ -1882,25 +1882,26 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
 
         <div className="participant-header-inner flex h-16 items-center justify-between gap-3 px-3 md:h-14 md:px-4">
-          {/* Left — avatar + greeting */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Link href="/participant/dashboard/profile">
+          {/* Left — avatar + account status */}
+          <div className="participant-header-profile flex items-center gap-2 min-w-0">
+            <Link href="/participant/dashboard/profile" aria-label={`Open ${displayName} profile`}>
               <div className="relative flex-shrink-0">
                 {participantData?.profile_image ? (
-                  <img src={participantData.profile_image} alt="Profile" className="h-9 w-9 rounded-full object-cover" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.6), 0 0 12px rgba(37,99,235,0.3)" }} />
+                  <img src={participantData.profile_image} alt={`${displayName} profile`} className="h-10 w-10 rounded-xl object-cover" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.6), 0 0 18px rgba(37,99,235,0.45)" }} />
                 ) : (
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.5), 0 0 14px rgba(37,99,235,0.3)" }}>
+                  <div className="h-10 w-10 rounded-xl border border-blue-200/30 bg-gradient-to-br from-sky-400 via-blue-500 to-blue-700 flex items-center justify-center" style={{ boxShadow: "0 0 0 2px rgba(37,99,235,0.42), 0 0 18px rgba(37,99,235,0.42)" }}>
                     <span className="text-white text-xs font-black">{displayName.charAt(0).toUpperCase()}</span>
                   </div>
                 )}
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-[#030712]" style={{ boxShadow: "0 0 6px rgba(52,211,153,0.8)" }} />
+                <span aria-hidden="true" className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-cyan-300 rounded-full border-2 border-[#030712]" style={{ boxShadow: "0 0 6px rgba(34,211,238,0.85)" }} />
               </div>
             </Link>
             <div className="min-w-0">
-              <p className="text-white text-xs font-bold leading-none truncate">{displayName}</p>
+              <p className="text-white text-xs font-semibold leading-none truncate">{displayName}</p>
               <div className="mt-1 flex items-center gap-1.5">
-                <p className="participant-header-account-label text-slate-500 text-[10px] leading-none tracking-wide">TRADING ACCOUNT</p>
-                <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200"}`}>
+                <p className="participant-header-account-label hidden text-slate-500 text-[10px] leading-none tracking-wide md:inline">TRADING ACCOUNT</p>
+                <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200"}`}>
+                  {isFundedAccount && <ShieldCheck aria-hidden="true" className="h-2.5 w-2.5" />}
                   {isFundedAccount ? "Funded" : "Normal"}
                 </span>
               </div>
@@ -1916,15 +1917,19 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           {/* Right — balance card and funding actions */}
           <div className="participant-header-actions flex items-center gap-1.5 min-w-0">
             <div
-              className="participant-header-balance flex items-center gap-1.5 rounded-lg px-2 py-1.5"
-              style={{ background: "rgba(214,182,107,0.08)", border: "1px solid rgba(214,182,107,0.24)", boxShadow: "none" }}
-              aria-label={`Current balance $${walletBalance.toFixed(2)}`}
+              className="participant-header-balance flex h-12 min-w-0 items-center gap-1.5 rounded-2xl px-2 py-1.5"
+              style={{ background: "linear-gradient(135deg, rgba(214,182,107,0.16), rgba(214,182,107,0.05))", border: "1px solid rgba(214,182,107,0.36)", boxShadow: "0 0 20px rgba(214,182,107,0.08), inset 0 1px 0 rgba(255,255,255,0.05)" }}
+              role="group"
+              aria-label={`Current balance $${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             >
-              <Wallet className="h-3.5 w-3.5 text-emerald-300" />
-              <div className="leading-none">
-                <span className="block text-[8px] font-bold uppercase tracking-widest text-emerald-300/70">Balance</span>
-                <span className="price-mono block text-[11px] font-black text-emerald-200">${walletBalance.toFixed(2)}</span>
+              <span className="participant-header-wallet-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10" aria-hidden="true">
+                <Wallet className="h-4 w-4 text-amber-200" />
+              </span>
+              <div className="min-w-0 leading-none">
+                <span className="participant-header-balance-label block text-[8px] font-bold uppercase tracking-[0.12em] text-slate-400">Balance</span>
+                <span className="price-mono block truncate text-[10px] font-black text-amber-200">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
+              <ChevronDown aria-hidden="true" className="participant-header-balance-chevron h-3 w-3 shrink-0 text-slate-400" />
             </div>
             {isFundedAccountBreached && (
               <button
@@ -1946,7 +1951,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <span className="hidden md:inline">Payout</span>
               </span>
             </Link>
-            <div className="hidden md:flex"><UserNotificationsBell userEmail={participantData.email ?? ""} /></div>
+            <span className="participant-header-divider mx-1 h-7 w-px shrink-0 rounded-full bg-slate-500/40" aria-hidden="true" />
+            <div className="participant-header-notifications relative flex h-9 w-9 shrink-0">
+              <UserNotificationsBell userEmail={participantData.email ?? ""} />
+            </div>
           </div>
         </div>
       </header>
