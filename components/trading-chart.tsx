@@ -367,6 +367,8 @@ export function TradingChart({
         scaleMargins: { top: 0.08, bottom: 0.18 },
         entireTextOnly: false,
         autoScale: true,
+        alignLabels: true,
+        minimumWidth: Math.min(88, Math.max(54, Math.round(containerRef.current.clientWidth * 0.18))),
         ticksVisible: true,
         borderVisible: true,
       },
@@ -519,6 +521,13 @@ export function TradingChart({
 
         lastWidth = width
         lastHeight = height
+        chartRef.current.applyOptions({
+          width,
+          height,
+          rightPriceScale: {
+            minimumWidth: Math.min(88, Math.max(54, Math.round(width * 0.18))),
+          },
+        })
         chartRef.current.resize(width, height)
       })
     })
