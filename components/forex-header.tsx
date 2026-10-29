@@ -140,6 +140,7 @@ export function ForexHeader({
   return (
     <header className="terminal-toolbar shrink-0 border-b" style={{ background: "#08111e", borderColor: "#1b2b40" }}>
       <div className="terminal-toolbar-row flex h-12 items-center gap-2.5 px-3 lg:px-4">
+        <div className="terminal-header-dock">
         {onOpenSidebar && (
           <button
             type="button"
@@ -153,13 +154,15 @@ export function ForexHeader({
         )}
 
         <div className="terminal-brand-lockup flex shrink-0 items-center border-r pr-3" style={{ borderColor: "#1b2b40" }}>
-          <img
-            src="/elite-fund-logo.jpg"
-            onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
-            alt="Elite Fund — Trade Higher"
-            className="h-7 w-auto object-contain"
-          />
-          <span className="hidden pl-2.5 leading-none sm:block">
+          <span className="terminal-brand-mark" aria-hidden="true">
+            <img
+              src="/elite-fund-logo.jpg"
+              onError={(event) => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }}
+              alt=""
+              className="terminal-brand-logo"
+            />
+          </span>
+          <span className="terminal-brand-copy hidden pl-2.5 leading-none sm:block">
             <strong className="block text-[11px] font-black uppercase tracking-[0.14em] text-white">ELITE FUND</strong>
             <span className="mt-0.5 block text-[8px] font-bold uppercase tracking-[0.12em] text-cyan-300/70">Trading Terminal</span>
           </span>
@@ -177,7 +180,7 @@ export function ForexHeader({
           <span className="hidden sm:inline">Home</span>
         </button>
 
-        <div className="hidden shrink-0 items-center gap-1.5 lg:flex">
+        <div className="terminal-header-status hidden shrink-0 items-center gap-1.5 lg:flex">
           <span className="flex items-center gap-1 rounded-md border px-2 py-1 text-[9px] font-bold uppercase tracking-wider" style={{ color: marketColor, borderColor: `${marketColor}44`, background: `${marketColor}10` }}>
             <CircleDot className="h-2.5 w-2.5" />{marketStatus}
           </span>
@@ -257,6 +260,7 @@ export function ForexHeader({
             <ChevronDown className="h-3 w-3 text-slate-500" />
           </button>
           {accountOpen && <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border p-2 shadow-2xl" style={{ background: "#0d1a2b", borderColor: "#2a405c" }}><div className="border-b px-2 pb-2" style={{ borderColor: "#1b2b40" }}><p className="text-xs font-bold text-white">{userName}</p><p className="mt-1 truncate text-[10px] text-slate-400">{userEmail}</p><p className="mt-1 text-[9px] text-cyan-300">{openTradesCount} open · {pendingOrdersCount} pending · {isConnected ? "Live" : "Offline"}</p></div><button type="button" onClick={() => { setAccountOpen(false); onOpenProfile() }} className="terminal-menu-item"><Shield className="h-3.5 w-3.5" />Profile</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("support") }} className="terminal-menu-item"><LifeBuoy className="h-3.5 w-3.5 text-cyan-300" />Support Center</button><button type="button" onClick={() => { setAccountOpen(false); onNavigate("smart-alerts") }} className="terminal-menu-item"><Bell className="h-3.5 w-3.5 text-amber-300" />Smart Alerts</button><button type="button" onClick={() => { setAccountOpen(false); onOpenSettings() }} className="terminal-menu-item"><Settings className="h-3.5 w-3.5" />Settings</button><button type="button" onClick={() => { setAccountOpen(false); onLogout() }} className="terminal-menu-item text-red-300"><LogOut className="h-3.5 w-3.5" />Sign out</button></div>}
+        </div>
         </div>
       </div>
     </header>

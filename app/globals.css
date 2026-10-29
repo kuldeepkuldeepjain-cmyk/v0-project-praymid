@@ -5876,7 +5876,7 @@ button, a, [role="button"] {
     padding: 6px 8px;
   }
   .apple-trading-terminal.reference-terminal .terminal-brand-lockup { border-right: 0 !important; padding-right: 0 !important; }
-  .apple-trading-terminal.reference-terminal .terminal-brand-lockup span { display: none; }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup .terminal-brand-copy { display: none; }
   .apple-trading-terminal.reference-terminal .terminal-header-search { order: 5; flex: 1 1 100%; max-width: none; }
   .apple-trading-terminal.reference-terminal .terminal-header-search > button { height: 34px; }
   .apple-trading-terminal.reference-terminal .terminal-account-bar { padding: 6px 8px; }
@@ -7905,6 +7905,133 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .reference-terminal .mobile-terminal-brand small { display: none; }
   .reference-terminal .mobile-terminal-account { max-width: 132px; }
   .reference-terminal .mobile-terminal-account small { max-width: 82px; }
+}
+
+/* Desktop toolbar: keep the brand and primary controls inside one connected dock. */
+@media (min-width: 768px) {
+  .apple-trading-terminal.reference-terminal .terminal-toolbar {
+    padding: 6px 16px;
+    border-bottom: 1px solid #1b3047 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-toolbar-row {
+    width: 100%;
+    min-height: 54px;
+    max-width: 1920px;
+    gap: 0 !important;
+    justify-content: flex-start;
+    padding: 0 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock {
+    display: flex;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
+    align-items: center;
+    gap: 0;
+    overflow: hidden;
+    padding: 3px;
+    border: 1px solid #29394c;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #0c1826, #08121e);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .25), inset 0 1px rgba(255, 255, 255, .035);
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > * {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    padding-inline: 8px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > .terminal-header-status { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > .terminal-header-status { display: flex; }
+}
+
+@media (min-width: 768px) {
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > * + * {
+    border-left: 1px solid #223348;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup {
+    width: auto;
+    min-width: 196px;
+    height: 42px;
+    gap: 10px;
+    overflow: visible;
+    padding: 0 14px 0 9px;
+    border-right: 0 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup::after { display: none; }
+  .apple-trading-terminal.reference-terminal .terminal-brand-mark {
+    position: relative;
+    display: block;
+    width: 52px;
+    height: 38px;
+    flex: 0 0 52px;
+    overflow: hidden;
+    border: 1px solid rgba(222, 187, 112, .34);
+    border-radius: 7px;
+    background: #030507;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-logo {
+    position: absolute;
+    top: -17px;
+    left: -28px;
+    width: 100px !important;
+    max-width: none;
+    height: 100px !important;
+    border-radius: 0;
+    object-fit: initial;
+    filter: none;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy {
+    display: block !important;
+    min-width: 0;
+    padding-left: 0;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy strong {
+    color: #f3e4bf;
+    font-size: 12px;
+    letter-spacing: .16em;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy > span {
+    margin-top: 4px;
+    color: #a89770;
+    font-size: 8px;
+    letter-spacing: .15em;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > button,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-icon-button,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button {
+    border: 0 !important;
+    border-radius: 7px !important;
+    background: transparent !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > button:hover,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-icon-button:hover,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button:hover {
+    background: rgba(255, 255, 255, .055) !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-search {
+    width: clamp(190px, 19vw, 360px);
+    max-width: 360px;
+    flex: 0 1 360px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-search > button {
+    height: 34px;
+    border-color: #263a50 !important;
+    border-radius: 7px;
+    background: #0a1624 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button {
+    min-width: 106px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 840px) {
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy { display: none !important; }
+  .apple-trading-terminal.reference-terminal .terminal-header-search { width: 160px; min-width: 140px; }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > * { padding-inline: 5px; }
 }
 
 /* Account is a peer terminal page, not a sidebar destination. */
