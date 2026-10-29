@@ -1,17 +1,25 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Mail, Send, Users, UserRound, UsersRound, Loader2, Search, Check } from "lucide-react"
+import { Mail, Send, Users, UserRound, UsersRound, Loader2, Search, Check, Code2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { useToast } from "@/hooks/use-toast"
 import { adminFetch } from "@/lib/auth"
+import { createBrandedEmailHtml, plainTextToEmailHtml } from "@/lib/admin-email-template"
 
 type RecipientMode = "single" | "multiple" | "all"
 type Recipient = { id: string; name: string; email: string }
+
+const BRANDED_STARTER_HTML = `<h1 style="margin:0 0 18px;color:#10243a;font-size:28px;">Important update</h1>
+<p style="margin:0 0 16px;color:#334155;line-height:1.7;">Hello,</p>
+<p style="margin:0 0 16px;color:#334155;line-height:1.7;">Your update starts here.</p>
+<p style="margin:0;color:#334155;line-height:1.7;">Regards,<br /><strong>Elite Fund Team</strong></p>
+<p style="margin:22px 0 0;"><a href="https://elitefund.sbs" style="display:inline-block;padding:12px 18px;border-radius:8px;background-color:#14b8a6;color:#ffffff;font-weight:700;text-decoration:none;">Visit Elite Fund</a></p>`
 
 export function SendNotificationPanel() {
   const { toast } = useToast()
@@ -22,6 +30,7 @@ export function SendNotificationPanel() {
   const [loadingRecipients, setLoadingRecipients] = useState(false)
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
+  const [htmlBody, setHtmlBody] = useState("")
   const [sending, setSending] = useState(false)
 
   useEffect(() => {
@@ -35,6 +44,10 @@ export function SendNotificationPanel() {
 
   const filteredRecipients = useMemo(() => { const term = recipientSearch.trim().toLowerCase(); return recipients.filter(recipient => !term || `${recipient.name} ${recipient.email}`.toLowerCase().includes(term)) }, [recipientSearch, recipients])
   const selectedRecipientEmails = mode === "single" ? selectedEmails.slice(0, 1) : selectedEmails
+  const previewHtml = useMemo(
+    () => createBrandedEmailHtml(subject, htmlBody.trim() || plainTextToEmailHtml(message)),
+    [htmlBody, message, subject],
+  )
 
   const sendEmail = async () => {
     const parsedEmails = selectedRecipientEmails
@@ -45,11 +58,11 @@ export function SendNotificationPanel() {
     if (!window.confirm(`Send this email to ${mode === "all" ? "all participants" : mode === "single" ? selectedRecipientEmails[0] : `${selectedRecipientEmails.length} recipients`}?`)) return
     setSending(true)
     try {
-      const response = await adminFetch("/api/admin/send-email", { method: "POST", body: JSON.stringify({ mode, email: selectedRecipientEmails[0] || "", emails: parsedEmails, subject, message }) })
+      const response = await adminFetch("/api/admin/send-email", { method: "POST", body: JSON.stringify({ mode, email: selectedRecipientEmails[0] || "", emails: parsedEmails, subject, message, htmlBody }) })
       const data = await response.json()
       if (!response.ok || !data.success) throw new Error(data.error || "Email could not be sent")
       toast({ title: "Email sent", description: `${data.count} recipient${data.count === 1 ? "" : "s"} accepted by Resend.` })
-      setSubject(""); setMessage(""); setSelectedEmails([])
+      setSubject(""); setMessage(""); setHtmlBody(""); setSelectedEmails([])
     } catch (error) {
       toast({ title: "Email failed", description: error instanceof Error ? error.message : "Unable to send email.", variant: "destructive" })
     } finally { setSending(false) }
@@ -73,7 +86,35 @@ export function SendNotificationPanel() {
           <div className="grid gap-3 sm:grid-cols-3">{options.map(option => { const Icon = option.icon; return <button key={option.value} type="button" onClick={() => setMode(option.value)} className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${mode === option.value ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-slate-700 bg-slate-950/40 text-slate-300 hover:border-slate-500"}`}><Icon className="size-4" /><span className="text-sm font-medium">{option.label}</span></button> })}</div>
           {(mode === "single" || mode === "multiple") && <div className="space-y-3"><div className="flex items-center justify-between"><Label className="text-slate-200">Select {mode === "single" ? "a user" : "users"}</Label>{mode === "multiple" && <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedEmails(selectedEmails.length === filteredRecipients.length ? [] : filteredRecipients.map(recipient => recipient.email))}>{selectedEmails.length === filteredRecipients.length ? "Clear all" : "Select all"}</Button>}</div><div className="relative"><Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-slate-500" /><Input value={recipientSearch} onChange={event => setRecipientSearch(event.target.value)} placeholder="Search by name or email" className="pl-9" /></div><div className="max-h-56 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950/50 p-2">{loadingRecipients ? <p className="p-3 text-sm text-slate-400">Loading users...</p> : filteredRecipients.length ? filteredRecipients.map(recipient => { const selected = selectedEmails.includes(recipient.email); return <button key={recipient.id} type="button" onClick={() => setSelectedEmails(mode === "single" ? [recipient.email] : selected ? selectedEmails.filter(value => value !== recipient.email) : [...selectedEmails, recipient.email])} className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left transition ${selected ? "bg-cyan-400/10 text-cyan-200" : "text-slate-300 hover:bg-slate-800"}`}><span className="min-w-0"><span className="block truncate text-sm font-medium">{recipient.name}</span><span className="block truncate text-xs text-slate-500">{recipient.email}</span></span>{selected && <Check className="size-4 shrink-0 text-cyan-300" />}</button> }) : <p className="p-3 text-sm text-slate-400">No users found.</p>}</div><p className="text-xs text-slate-500">{selectedEmails.length} user{selectedEmails.length === 1 ? "" : "s"} selected. No email pasting required.</p></div>}
           <div className="space-y-2"><Label className="text-slate-200">Subject</Label><Input maxLength={180} value={subject} onChange={event => setSubject(event.target.value)} placeholder="Email subject" /></div>
-          <div className="space-y-2"><Label className="text-slate-200">Message</Label><Textarea maxLength={10000} value={message} onChange={event => setMessage(event.target.value)} placeholder="Write your message..." className="min-h-48" /></div>
+          <FieldGroup className="gap-3">
+            <Field className="gap-2">
+              <FieldLabel htmlFor="email-plain-text" className="text-slate-200">Plain-text fallback</FieldLabel>
+              <Textarea id="email-plain-text" maxLength={10000} value={message} onChange={event => setMessage(event.target.value)} placeholder="Write the message for email clients that prefer plain text..." className="min-h-32" />
+              <p className="text-xs leading-5 text-slate-500">This is also used to create a polished HTML email automatically when you leave the HTML body blank.</p>
+            </Field>
+          </FieldGroup>
+          <div className="flex flex-col gap-3 rounded-xl border border-slate-700 bg-slate-950/30 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex flex-col gap-1">
+                <p className="flex items-center gap-2 text-sm font-medium text-slate-200"><Code2 className="size-4" />Custom HTML body</p>
+                <p className="text-xs leading-5 text-slate-500">Optional. Your content is placed inside Elite Fund&apos;s responsive branded email layout.</p>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setHtmlBody(BRANDED_STARTER_HTML)}>Insert branded starter</Button>
+            </div>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <Field className="gap-2">
+                <FieldLabel htmlFor="email-html-body" className="text-slate-200">HTML content</FieldLabel>
+                <Textarea id="email-html-body" maxLength={30000} value={htmlBody} onChange={event => setHtmlBody(event.target.value)} placeholder={'<h1>Important update</h1>\n<p>Your formatted email content goes here.</p>'} className="min-h-64 font-mono text-xs leading-6" />
+                <p className="text-xs leading-5 text-slate-500">Scripts, forms, and unsafe links are removed before sending. Maximum 30,000 characters.</p>
+              </Field>
+              <div className="flex flex-col gap-2">
+                <Label className="text-slate-200">Live email preview</Label>
+                <div className="overflow-hidden rounded-lg border border-slate-700 bg-white">
+                  <iframe title="Live branded email preview" srcDoc={previewHtml} sandbox="" className="h-96 w-full bg-white" />
+                </div>
+              </div>
+            </div>
+          </div>
           <Button type="button" onClick={sendEmail} disabled={sending} className="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400">{sending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}{sending ? "Sending..." : "Send custom email"}</Button>
         </CardContent>
       </Card>
