@@ -1,10 +1,47 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
+import sanitizeHtml from "sanitize-html"
+import { createBrandedEmailHtml, plainTextToEmailHtml } from "@/lib/admin-email-template"
 import { query } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 const FROM = "Elite Fund <verify@elitefund.sbs>"
+const EMAIL_CSS_LENGTH = /^(?:0|\d+(?:\.\d+)?(?:px|pt|em|rem|%))(?:\s+(?:0|\d+(?:\.\d+)?(?:px|pt|em|rem|%))){0,3}$/i
+const EMAIL_CSS_COLOR = /^(?:#[\da-f]{3,8}|rgba?\([\d\s.,%]+\)|transparent|[a-z]{1,20})$/i
+const EMAIL_HTML_OPTIONS = {
+  allowedTags: ["a", "blockquote", "br", "div", "em", "h1", "h2", "h3", "hr", "img", "li", "ol", "p", "span", "strong", "table", "tbody", "td", "th", "thead", "tr", "ul", "u"],
+  allowedAttributes: {
+    "*": ["style"],
+    a: ["href"],
+    img: ["src", "alt", "width", "height"],
+    table: ["role", "width", "cellpadding", "cellspacing", "border"],
+    td: ["align", "valign", "colspan", "rowspan", "width"],
+    th: ["align", "valign", "colspan", "rowspan", "width"],
+  },
+  allowedStyles: {
+    "*": {
+      color: [EMAIL_CSS_COLOR],
+      "background-color": [EMAIL_CSS_COLOR],
+      "font-family": [/^[\w\s,"'-]+$/i],
+      "font-size": [/^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i],
+      "font-weight": [/^(?:normal|bold|[1-9]00)$/i],
+      "line-height": [/^(?:normal|\d+(?:\.\d+)?(?:px|pt|em|rem|%)?)$/i],
+      "text-align": [/^(?:left|right|center|justify)$/i],
+      "text-decoration": [/^(?:none|underline|line-through)$/i],
+      display: [/^(?:block|inline|inline-block|table|table-cell)$/i],
+      width: [/^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i],
+      "max-width": [/^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i],
+      margin: [EMAIL_CSS_LENGTH],
+      padding: [EMAIL_CSS_LENGTH],
+      "border-radius": [/^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i],
+      "letter-spacing": [/^-?\d+(?:\.\d+)?(?:px|pt|em|rem)$/i],
+    },
+  },
+  allowedSchemes: ["http", "https", "mailto"],
+  allowedSchemesByTag: { img: ["https"] },
+  allowProtocolRelative: false,
+}
 
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
@@ -15,8 +52,9 @@ export async function POST(request: NextRequest) {
     const mode = body.mode === "single" ? "single" : body.mode === "multiple" ? "multiple" : "all"
     const subject = typeof body.subject === "string" ? body.subject.trim() : ""
     const message = typeof body.message === "string" ? body.message.trim() : ""
-    if (!subject || subject.length > 180 || !message || message.length > 10000) {
-      return NextResponse.json({ success: false, error: "Subject and message are required. Subject must be 180 characters or fewer and message 10,000 or fewer." }, { status: 400 })
+    const htmlBody = typeof body.htmlBody === "string" ? body.htmlBody.trim() : ""
+    if (!subject || subject.length > 180 || !message || message.length > 10000 || htmlBody.length > 30000) {
+      return NextResponse.json({ success: false, error: "Subject and plain-text fallback are required. Subject must be 180 characters or fewer, the fallback 10,000 or fewer, and HTML 30,000 or fewer." }, { status: 400 })
     }
 
     let recipients: string[] = []
@@ -40,8 +78,12 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) return NextResponse.json({ success: false, error: "Email service is not configured." }, { status: 503 })
     const resend = new Resend(apiKey)
-    const escapedMessage = message.replace(/[&<>\"]/g, (character: string) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" })[character as "&" | "<" | ">" | "\""] || character).replace(/\n/g, "<br />")
-    const result = await resend.emails.send({ from: FROM, to: recipients, subject, text: message, html: `<p>${escapedMessage}</p>` }, { idempotencyKey: `admin-email/${auth.email}/${Date.now()}` })
+    const sanitizedHtmlBody = htmlBody ? sanitizeHtml(htmlBody, EMAIL_HTML_OPTIONS).trim() : ""
+    if (htmlBody && !sanitizedHtmlBody) {
+      return NextResponse.json({ success: false, error: "The HTML body has no supported content. Add text or supported HTML tags and try again." }, { status: 400 })
+    }
+    const emailContent = sanitizedHtmlBody || plainTextToEmailHtml(message)
+    const result = await resend.emails.send({ from: FROM, to: recipients, subject, text: message, html: createBrandedEmailHtml(subject, emailContent) }, { idempotencyKey: `admin-email/${auth.email}/${Date.now()}` })
     if (result.error) return NextResponse.json({ success: false, error: "Resend rejected the email request.", requestId: result.error.name }, { status: 502 })
 
     return NextResponse.json({ success: true, count: recipients.length, requestId: result.data?.id || null })
