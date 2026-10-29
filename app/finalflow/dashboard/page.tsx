@@ -32,6 +32,7 @@ import {
   Wallet,
   ShieldCheck,
   UserCog,
+  TicketPercent,
 } from "lucide-react"
 import { isAdminAuthenticated, getAdminData, clearAdminAuth, adminFetch } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
@@ -46,6 +47,7 @@ import { AllParticipantsLedger } from "@/components/admin/all-participants-ledge
 import { DeleteParticipantsPanel } from "@/components/admin/delete-participants-panel"
 
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
+import { PromoCodesPanel } from "@/components/admin/promo-codes-panel"
 import { OtpApprovalsPanel } from "@/components/admin/otp-approvals-panel"
 import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
   import { AllPayoutsPanel } from "@/components/admin/all-payouts-panel"
@@ -155,6 +157,7 @@ export default function AdminDashboard() {
     { id: "participant-management", label: "Participant Management", icon: UserCog, section: "MANAGEMENT" },
     { id: "database", label: "Database", icon: Database, section: "MANAGEMENT" },
     { id: "topup-requests", label: "TOP UP Requests", icon: Wallet, section: "MANAGEMENT" },
+    { id: "promo-codes", label: "Promo Codes", icon: TicketPercent, section: "MANAGEMENT" },
     { id: "delete-participants", label: "Delete Participants", icon: Trash2, section: "MANAGEMENT" },
     { id: "two-factor-auth", label: "2FA Setup", icon: Shield, section: "SYSTEM" },
     { id: "send-notifications", label: "Send Notifications", icon: Bell, section: "SYSTEM" },
@@ -183,6 +186,8 @@ export default function AdminDashboard() {
         return <ComprehensiveDatabaseView />
       case "topup-requests":
         return <TopUpRequestsPanel />
+      case "promo-codes":
+        return <PromoCodesPanel />
       case "all-payouts":
         return <AllPayoutsPanel />
       case "revenue-tracker":
