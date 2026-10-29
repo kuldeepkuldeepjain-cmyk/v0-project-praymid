@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import Link from "next/link"
 import { ArrowRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Eye, FileCheck2, Gauge, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -10,6 +10,7 @@ interface ParticipantOnboardingDashboardProps {
   displayName: string
   email?: string
   isVerified: boolean
+  accountNotice?: ReactNode
   onExploreTerminal: () => void
   onAddFunds: () => void
   onHelp: () => void
@@ -21,27 +22,27 @@ const steps = [
   { title: "Understand", description: "Review risk, fees, and payouts.", icon: Gauge },
 ]
 
-export function ParticipantOnboardingDashboard({ displayName, isVerified, onExploreTerminal, onAddFunds, onHelp }: ParticipantOnboardingDashboardProps) {
+export function ParticipantOnboardingDashboard({ displayName, isVerified, accountNotice, onExploreTerminal, onAddFunds, onHelp }: ParticipantOnboardingDashboardProps) {
   const [showTour, setShowTour] = useState(true)
   const completed = isVerified ? 1 : 0
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-3 text-slate-100 sm:px-4 md:gap-4 md:px-6 md:py-5">
-      <section className="rounded-2xl border border-amber-300/20 bg-slate-950/85 p-4 shadow-xl shadow-black/20 md:p-6" aria-labelledby="participant-welcome-title">
+      <section className="participant-mobile-welcome rounded-2xl border border-amber-300/20 bg-slate-950/85 p-4 shadow-xl shadow-black/20 md:p-6" aria-labelledby="participant-welcome-title">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 max-w-2xl">
             <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
-              <Sparkles className="h-3.5 w-3.5" /> EliteFund
+              <Sparkles className="h-3.5 w-3.5" /> EliteFund · Participant workspace
             </div>
-            <h1 id="participant-welcome-title" className="text-balance text-2xl font-black tracking-tight text-white md:text-3xl">Welcome, {displayName}.</h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">A clear starting point for your account. Explore the terminal, understand the controls, and only fund when every step is clear.</p>
-            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+            <h1 id="participant-welcome-title" className="text-balance text-2xl font-black tracking-tight text-white md:text-3xl">Welcome back, {displayName}.</h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Your trading workspace is ready. Review your account and activity at a glance.</p>
+            <div className="mt-4 hidden flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 md:flex">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Secure session</span>
               <span className="inline-flex items-center gap-1.5"><FileCheck2 className="h-3.5 w-3.5 text-amber-300" /> Clear records</span>
               <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-cyan-300" /> Full visibility</span>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="hidden flex-wrap gap-2 md:flex">
             <Button onClick={onExploreTerminal} className="h-10 rounded-xl bg-amber-400 px-4 font-bold text-slate-950 hover:bg-amber-300">
               <PlayCircle data-icon="inline-start" /> Explore terminal
             </Button>
@@ -51,6 +52,8 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, onExpl
           </div>
         </div>
       </section>
+
+      {accountNotice}
 
       {showTour ? (
         <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-4 md:p-5" aria-labelledby="guided-tour-title">

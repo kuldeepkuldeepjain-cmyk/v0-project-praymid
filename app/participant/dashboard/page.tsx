@@ -1759,7 +1759,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
       {isFundedAccount && fundedDrawdownSnapshot && (
         <div
-          className="mx-3 mt-3 rounded-2xl border p-3.5 text-xs text-slate-200 shadow-lg shadow-black/20 sm:mx-4 sm:mt-4 sm:p-4"
+          className="mx-3 mt-3 hidden rounded-2xl border p-3.5 text-xs text-slate-200 shadow-lg shadow-black/20 sm:mx-4 sm:mt-4 sm:p-4 md:block"
           style={{
             borderColor: fundedDrawdownSnapshot.warningLevel === "breached" ? "rgba(248,113,113,0.4)"
               : fundedDrawdownSnapshot.warningLevel === "critical" ? "rgba(248,113,113,0.3)"
@@ -1869,7 +1869,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       />
 
       <header
-        className={`participant-header sticky top-0 z-40 ${activeTab === "trading" ? "hidden" : ""}`}
+        className={`participant-header participant-mobile-dock sticky top-0 z-40 ${activeTab === "trading" ? "hidden" : ""}`}
         style={{
           background: "linear-gradient(180deg, rgba(3,7,18,0.98) 0%, rgba(7,11,28,0.95) 100%)",
           backdropFilter: "blur(20px)",
@@ -1881,7 +1881,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         {/* Top accent line */}
         <div className="absolute top-0 left-0 right-0 h-[1px]" style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.7) 30%, rgba(34,211,238,0.5) 70%, transparent)" }} />
 
-        <div className="participant-header-inner px-4 h-14 flex items-center justify-between gap-3">
+        <div className="participant-header-inner flex h-16 items-center justify-between gap-3 px-3 md:h-14 md:px-4">
           {/* Left — avatar + greeting */}
           <div className="flex items-center gap-2.5 min-w-0">
             <Link href="/participant/dashboard/profile">
@@ -1899,7 +1899,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             <div className="min-w-0">
               <p className="text-white text-xs font-bold leading-none truncate">{displayName}</p>
               <div className="mt-1 flex items-center gap-1.5">
-                <p className="text-slate-500 text-[10px] leading-none tracking-wide">TRADING ACCOUNT</p>
+                <p className="participant-header-account-label text-slate-500 text-[10px] leading-none tracking-wide">TRADING ACCOUNT</p>
                 <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200"}`}>
                   {isFundedAccount ? "Funded" : "Normal"}
                 </span>
@@ -1933,20 +1933,20 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                   setTopUpIsFundedAccount(true)
                   setShowTopUpModal(true)
                 }}
-                className="flex h-8 items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-red-200 transition-colors hover:bg-red-500/25 active:scale-95"
+                className="hidden h-8 items-center gap-1 rounded-lg border border-red-400/30 bg-red-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-red-200 transition-colors hover:bg-red-500/25 active:scale-95 md:flex"
                 aria-label="Add funds to reactivate breached account"
               >
                 <Plus className="h-3 w-3" />
                 <span className="hidden md:inline">Reactivate</span>
               </button>
             )}
-            <Link href="/participant/dashboard/payout" aria-label="Open payout">
+            <Link href="/participant/dashboard/payout" aria-label="Open payout" className="hidden md:inline-flex">
               <span className="flex h-8 items-center gap-1 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/25 active:scale-95">
                 <ArrowUpRight className="h-3 w-3" />
                 <span className="hidden md:inline">Payout</span>
               </span>
             </Link>
-            <UserNotificationsBell userEmail={participantData.email ?? ""} />
+            <div className="hidden md:flex"><UserNotificationsBell userEmail={participantData.email ?? ""} /></div>
           </div>
         </div>
       </header>
@@ -1958,6 +1958,20 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               displayName={displayName}
               email={participantData.email}
               isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
+              accountNotice={isFundedAccount && fundedDrawdownSnapshot ? (
+                <section className="rounded-xl border border-amber-300/20 bg-slate-950/75 p-3 text-xs text-slate-200 md:hidden" aria-label="Funded account risk status">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-bold uppercase tracking-wider text-slate-400">Funded account · drawdown</span>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide ${fundedDrawdownSnapshot.status === "BREACHED" ? "bg-red-400/15 text-red-300" : "bg-emerald-400/15 text-emerald-300"}`}>{fundedDrawdownSnapshot.status}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Equity / base</span><strong className="price-mono text-xs">${fundedDrawdownSnapshot.currentEquity.toFixed(2)} / ${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
+                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach floor</span><strong className="price-mono text-xs text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
+                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining buffer</span><strong className="price-mono text-xs text-amber-200">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
+                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Risk status</span><strong className="text-xs font-bold uppercase text-emerald-300">{fundedDrawdownSnapshot.warningLevel}</strong></div>
+                  </div>
+                </section>
+              ) : null}
               onExploreTerminal={() => setActiveTab("trading")}
               onAddFunds={() => {
                 setTopUpIsFundedAccount(false)
@@ -2073,7 +2087,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </div>
 
             {/* ── INSTITUTIONAL WELCOME HERO ───────────────────── */}
-            <section className="relative mx-3 mt-3 overflow-hidden border border-[#8f6f2d]/45 bg-[#101722] shadow-[0_18px_50px_rgba(0,0,0,0.22)] sm:mx-4" aria-labelledby="elitefund-welcome-title">
+            <section className="relative mx-3 mt-3 hidden overflow-hidden border border-[#8f6f2d]/45 bg-[#101722] shadow-[0_18px_50px_rgba(0,0,0,0.22)] sm:mx-4 md:block" aria-labelledby="elitefund-welcome-title">
               <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
                   <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
@@ -2184,7 +2198,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </section>
 
-            {/* ── JOURNEY & OPERATING TERMS ────────────────────── */}
+            {/* ── JOURNEY & OPERATING TERMS ────────���───────────── */}
             <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
               <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d6b66b]">Your next best step</p><h2 className="mt-1 text-base font-semibold text-white">Move at your own pace</h2></div><Sparkles className="h-5 w-5 text-[#d6b66b]" /></div>
