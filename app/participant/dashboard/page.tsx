@@ -9,7 +9,7 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, PlusCircle, MessageCircle, BarChart2, Menu, Search,
+  AlertCircle, Home, Plus, PlusCircle, MessageCircle, Menu, Search,
   ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -2223,45 +2223,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </div>
 
-            {/* ─��� QUICK ACTION TILES ───────────────────────────── */}
-            <div className="px-3 sm:px-4 pt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-              {/* Trade — opens fullscreen terminal */}
-              <button
-                onClick={() => setActiveTab("trading")}
-                className="action-tile flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer transition-all active:scale-95"
-                style={{
-                  background: "linear-gradient(145deg, rgba(34,211,238,0.18) 0%, rgba(6,182,212,0.08) 100%)",
-                  border: "1px solid rgba(34,211,238,0.35)",
-                  boxShadow: "0 0 16px rgba(214,182,107,0.06)",
-                }}
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(34,211,238,0.18)", boxShadow: "0 0 14px rgba(34,211,238,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
-                  <BarChart2 className="h-4 w-4" style={{ color: "#22d3ee", filter: "drop-shadow(0 0 4px rgba(34,211,238,0.8))" }} />
-                </div>
-                <span className="text-[10px] font-black" style={{ color: "#22d3ee" }}>Trade</span>
-              </button>
-              {[
-                { href: "/participant/dashboard/refer", icon: Gift, label: "Refer", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
-                { href: "/participant/dashboard/profile", icon: User, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
-                { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payout", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
-                { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", color: "#10B981", glow: "rgba(16,185,129,0.3)" },
-              ].map(({ href, icon: Icon, label, color, glow }) => (
-                <Link key={href} href={href}>
-                  <div
-                    className="action-tile flex flex-col items-center gap-1.5 rounded-xl p-2.5 cursor-pointer"
-                    style={{
-                      background: `linear-gradient(145deg, ${color}14 0%, ${color}07 100%)`,
-                      border: `1px solid ${color}28`,
-                    }}
-                  >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: `${color}18`, boxShadow: `0 0 14px ${glow}, inset 0 1px 0 rgba(255,255,255,0.08)` }}>
-                      <Icon className="h-4 w-4" style={{ color, filter: `drop-shadow(0 0 4px ${glow})` }} />
-                    </div>
-                    <span className="text-[10px] font-bold" style={{ color: "rgba(148,163,184,0.9)" }}>{label}</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
+
 
 
 
@@ -2299,7 +2261,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       {/* ── FULLSCREEN TRADING TERMINAL ─────────────────────────────────────
           Rendered outside <main> so it escapes all padding/overflow constraints.
           Uses fixed inset-0 z-[60] so it sits above the header but below modals.
-      ──────────────────��───────────────────────────────────────────────────── */}
+      ─────���────────────��───────────────────────────────────────────────────── */}
       {activeTab === "trading" && (
         <div className="elite-terminal-shell">
           {isTerminalMenuOpen && (

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { ArrowRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Eye, FileCheck2, Gauge, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, WalletCards, X } from "lucide-react"
+import { ArrowRight, ArrowUpRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Eye, FileCheck2, Gauge, Gift, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, TrendingUp, UserRound, WalletCards, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -51,6 +51,61 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, accoun
             </Button>
           </div>
         </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-7" aria-label="Dashboard quick actions">
+        <button
+          type="button"
+          onClick={onExploreTerminal}
+          className="action-tile flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl p-2 text-center transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 active:scale-95"
+          style={{
+            background: "linear-gradient(145deg, rgba(34,211,238,0.18) 0%, rgba(6,182,212,0.08) 100%)",
+            border: "1px solid rgba(34,211,238,0.35)",
+            boxShadow: "0 0 16px rgba(214,182,107,0.06)",
+          }}
+        >
+          <span className="flex size-8 items-center justify-center rounded-xl" style={{ background: "rgba(34,211,238,0.18)", boxShadow: "0 0 14px rgba(34,211,238,0.35), inset 0 1px 0 rgba(255,255,255,0.1)" }}>
+            <BarChart3 aria-hidden="true" className="size-4" style={{ color: "#22d3ee", filter: "drop-shadow(0 0 4px rgba(34,211,238,0.8))" }} />
+          </span>
+          <span className="text-[10px] font-black text-cyan-300">Trade</span>
+        </button>
+
+        {[
+          { href: "/participant/dashboard/refer", icon: Gift, label: "Refer & earn", color: "#22c55e", glow: "rgba(34,197,94,0.3)" },
+          { href: "/participant/dashboard/profile", icon: UserRound, label: "Profile", color: "#38bdf8", glow: "rgba(56,189,248,0.3)" },
+          { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payout", color: "#a78bfa", glow: "rgba(167,139,250,0.3)" },
+          { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict", color: "#10B981", glow: "rgba(16,185,129,0.3)" },
+        ].map(({ href, icon: Icon, label, color, glow }) => (
+          <Link
+            key={href}
+            href={href}
+            className="action-tile flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl p-2 text-center transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 active:scale-95"
+            style={{
+              background: `linear-gradient(145deg, ${color}14 0%, ${color}07 100%)`,
+              border: `1px solid ${color}28`,
+            }}
+          >
+            <span className="flex size-8 items-center justify-center rounded-xl" style={{ background: `${color}18`, boxShadow: `0 0 14px ${glow}, inset 0 1px 0 rgba(255,255,255,0.08)` }}>
+              <Icon aria-hidden="true" className="size-4" style={{ color, filter: `drop-shadow(0 0 4px ${glow})` }} />
+            </span>
+            <span className="text-[10px] font-bold text-slate-300">{label}</span>
+          </Link>
+        ))}
+
+        <button
+          type="button"
+          onClick={onAddFunds}
+          className="action-tile col-span-2 flex min-h-16 items-center justify-center gap-2 rounded-xl p-2 text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:scale-[0.99] sm:col-span-3 md:col-span-2"
+          style={{
+            background: "linear-gradient(145deg, rgba(214,182,107,0.18) 0%, rgba(214,182,107,0.08) 100%)",
+            border: "1px solid rgba(214,182,107,0.35)",
+          }}
+        >
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10 text-amber-200" style={{ boxShadow: "0 0 14px rgba(214,182,107,0.24)" }}>
+            <WalletCards aria-hidden="true" className="size-4" />
+          </span>
+          <span className="min-w-0 flex-1 text-xs font-black text-amber-100">Add funds</span>
+        </button>
       </section>
 
       {accountNotice}
