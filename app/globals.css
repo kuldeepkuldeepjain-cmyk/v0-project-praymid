@@ -3939,9 +3939,76 @@ button, a, [role="button"] {
     overflow-x: hidden;
   }
 
-  .participant-header-inner {
+  .terminal-page .participant-mobile-dock {
+    padding: 8px 10px 0;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .terminal-page .participant-mobile-dock > div:first-child { display: none; }
+  .terminal-page .participant-mobile-dock .participant-header-inner {
+    height: 64px;
+    min-height: 64px;
+    padding-inline: 8px;
+    border: 1px solid rgba(34,211,238,.18);
+    border-radius: 16px;
+    background: linear-gradient(110deg, rgba(8,20,35,.98), rgba(4,10,19,.98));
+    box-shadow: 0 8px 22px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  .terminal-page .participant-mobile-dock .participant-header-profile {
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+  .terminal-page .participant-mobile-dock .participant-header-account-label { display: none; }
+  .terminal-page .participant-mobile-dock .participant-header-actions { flex: 0 0 auto; gap: 4px; }
+  .terminal-page .participant-mobile-dock .participant-header-actions > a,
+  .terminal-page .participant-mobile-dock .participant-header-actions > button { display: none !important; }
+  .terminal-page .participant-mobile-dock .participant-header-balance {
+    width: 124px;
+    max-width: 124px;
+    height: 50px;
+    gap: 6px !important;
+    padding: 5px 6px !important;
+    border-radius: 16px !important;
+    background: linear-gradient(135deg, rgba(214,182,107,.16), rgba(214,182,107,.05)) !important;
+    border: 1px solid rgba(214,182,107,.36) !important;
+    box-shadow: 0 0 18px rgba(214,182,107,.08), inset 0 1px 0 rgba(255,255,255,.05) !important;
+  }
+  .terminal-page .participant-mobile-dock .participant-header-wallet-icon {
+    background: rgba(214,182,107,.12);
+    border-color: rgba(214,182,107,.24);
+  }
+  .terminal-page .participant-mobile-dock .participant-header-divider { background: rgba(148,163,184,.3); }
+  .terminal-page .participant-mobile-dock .participant-header-notifications { flex: 0 0 36px; }
+  .terminal-page .participant-mobile-dock .participant-header-inner {
     min-width: 0;
     gap: 8px;
+  }
+  .terminal-page .participant-mobile-welcome {
+    --welcome-surface-high: #071722;
+    --welcome-surface-low: #020d16;
+    --welcome-primary: #f5f7fa;
+    --welcome-muted: #c4cdd6;
+    --welcome-accent: #22d3ee;
+    border-color: rgba(34,211,238,.14);
+    background: linear-gradient(145deg, var(--welcome-surface-high), var(--welcome-surface-low));
+    box-shadow: 0 12px 32px rgba(2,13,22,.3);
+  }
+  .terminal-page .participant-welcome-eyebrow,
+  .terminal-page .participant-welcome-copy { color: var(--welcome-muted); }
+  .terminal-page .participant-welcome-name { color: var(--welcome-primary); }
+  .terminal-page .participant-welcome-accent {
+    background: var(--welcome-accent);
+    box-shadow: 0 0 11px rgba(34,211,238,.46);
+  }
+  .terminal-page .participant-welcome-dot-texture {
+    background-image: radial-gradient(circle, rgba(34,211,238,.48) 1px, transparent 1.6px);
+    background-size: 13px 13px;
+    -webkit-mask-image: radial-gradient(ellipse at 80% 18%, #000 0%, transparent 76%);
+    mask-image: radial-gradient(ellipse at 80% 18%, #000 0%, transparent 76%);
+    opacity: .62;
   }
   .participant-header-inner > div:first-child {
     flex: 1 1 auto;
@@ -5729,7 +5796,7 @@ button, a, [role="button"] {
   .terminal-stat-value { font-size: 12px; }
 }
 
-/* ─�� Final institutional terminal system ─────────────────────────────────
+/* ─�� Final institutional terminal system ─────────────�����───────────────────
    Keep the terminal calm, legible and chart-first at every viewport. These
    scoped rules intentionally sit last so older visual experiments cannot
    reintroduce oversized rails or push the chart below the fold. */
@@ -6854,6 +6921,23 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     -webkit-overflow-scrolling: touch;
   }
 
+  .participant-dock-trade-button {
+    --dock-trade-surface-raised: #1a3449;
+    --dock-trade-surface-deep: #0c1927;
+    --dock-trade-accent: #60cfe7;
+    --dock-trade-label: #f8fafc;
+    color: var(--dock-trade-label);
+    border: 1px solid rgba(96, 207, 231, 0.62);
+    background: linear-gradient(115deg, var(--dock-trade-surface-raised) 0%, var(--dock-trade-surface-deep) 52%, var(--dock-trade-surface-raised) 100%);
+    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.12), 0 8px 24px rgba(2, 6, 23, 0.35);
+  }
+  .participant-dock-trade-button:hover { border-color: var(--dock-trade-accent); }
+  .participant-dock-trade-button:focus-visible { outline: 2px solid var(--dock-trade-accent); outline-offset: 3px; }
+  .participant-dock-trade-icon {
+    color: var(--dock-trade-accent);
+    filter: drop-shadow(0 0 5px rgba(96, 207, 231, 0.58));
+  }
+
   /* Hide global dashboard navigation when trading terminal is active */
   body:has(.reference-terminal) .participant-global-mobile-nav,
   .terminal-page:has(.reference-terminal) .participant-global-mobile-nav {
@@ -7697,8 +7781,9 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 .terminal-page main::-webkit-scrollbar { width: 8px; }
 .terminal-page main::-webkit-scrollbar-thumb { background: #294662; border-radius: 999px; }
 .terminal-page .participant-header-live { letter-spacing: .08em; text-transform: uppercase; }
-.terminal-page .participant-header-balance { background: #0e2035 !important; border: 1px solid #294662 !important; }
-.terminal-page .participant-header-balance span { color: #f0c86e !important; font-variant-numeric: tabular-nums; }
+.terminal-page .participant-header-balance { background: linear-gradient(135deg, rgba(214,182,107,.16), rgba(214,182,107,.05)) !important; border: 1px solid rgba(214,182,107,.36) !important; }
+.terminal-page .participant-header-balance .participant-header-balance-label { color: #aebccc !important; }
+.terminal-page .participant-header-balance .price-mono { color: #f0c86e !important; font-variant-numeric: tabular-nums; }
 .terminal-page [class*="rounded-3xl"],
 .terminal-page [class*="rounded-2xl"] {
   box-shadow: 0 10px 28px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.025);
@@ -10013,13 +10098,132 @@ body:has(.elite-terminal-shell) {
 }
 
 @media (max-width: 640px) {
+  .reference-terminal .terminal-market-dock {
+    position: relative;
+    z-index: 13;
+    overflow: hidden;
+    gap: 0 !important;
+    margin: 6px 0 5px !important;
+    padding: 6px 8px !important;
+    border: 1px solid rgba(104, 162, 191, .3) !important;
+    border-radius: 12px !important;
+    background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05), 0 5px 14px rgba(0, 0, 0, .16) !important;
+  }
+
+  .reference-terminal .terminal-market-dock-primary-row {
+    align-items: center;
+    gap: 0 !important;
+  }
+
+  .reference-terminal .terminal-market-dock-quote {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    gap: 6px !important;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    border-bottom: 1px solid rgba(104, 162, 191, .22);
+    scrollbar-width: none;
+  }
+
+  .reference-terminal .terminal-market-dock-quote::-webkit-scrollbar,
+  .reference-terminal .terminal-market-dock-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reference-terminal .terminal-market-dock-quote > * {
+    flex: 0 0 auto;
+  }
+
+  .reference-terminal .terminal-market-dock-tools {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 5px !important;
+    margin: 0 !important;
+    padding-top: 4px;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-tools button,
+  .mt5-terminal.reference-terminal .terminal-market-dock-tools select {
+    min-height: 30px !important;
+    height: 30px !important;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar {
+    min-height: 32px !important;
+    gap: 4px !important;
+    margin: 4px 0 6px;
+    padding: 3px 4px !important;
+    overflow-x: auto;
+    border: 1px solid rgba(104, 162, 191, .3) !important;
+    border-radius: 10px !important;
+    background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05);
+    scrollbar-width: none;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar button {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 2px 8px !important;
+    font-size: 9px !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05) !important;
+  }
+}
+
+@media (max-width: 640px) {
   .reference-terminal .mobile-terminal-chart-wrap {
     min-height: min(56.25vw, 58dvh) !important;
     height: min(56.25vw, 58dvh) !important;
   }
 
-  .reference-terminal .chart-header {
-    top: 52px;
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column > .chart-header.terminal-market-dock {
+    position: relative !important;
+    top: 0 !important;
+    z-index: 13;
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+    gap: 0 !important;
+    margin: 0 0 4px !important;
+    padding: 0 8px !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-quote {
+    gap: 4px !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-quote .chart-symbol-switch {
+    gap: 4px !important;
+    padding-inline: 6px !important;
+    font-size: 12px !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-quote > span:not(.price-mono) {
+    padding-inline: 4px !important;
+    font-size: 7px !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-quote > .price-mono.text-sm {
+    font-size: 12px !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-quote > .price-mono.text-xs {
+    padding-inline: 4px !important;
+    font-size: 9px !important;
   }
 
   .reference-terminal .chart-header .chart-timeframe-toolbar button,

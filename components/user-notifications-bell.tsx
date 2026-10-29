@@ -168,13 +168,13 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
           variant="ghost"
           size="icon"
           onClick={() => setIsOpen(!isOpen)}
-          className="relative h-9 rounded-full hover:bg-slate-100 w-3.5"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+          aria-expanded={isOpen}
+          className="relative h-9 w-9 rounded-xl text-slate-200 transition-colors hover:bg-white/5"
         >
-          <Bell className="h-5 text-slate-600 w-5 mx-0" />
+          <Bell aria-hidden="true" className="h-5 w-5 text-slate-200" />
           {unreadCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs rounded-full">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </Badge>
+            <Badge aria-hidden="true" className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border-2 border-[#07111f] bg-cyan-300 p-0 shadow-[0_0_8px_rgba(34,211,238,0.7)]" />
           )}
         </Button>
       </div>
@@ -189,7 +189,7 @@ export function UserNotificationsBell({ userEmail }: { userEmail: string }) {
           />
 
           {/* Dropdown Panel */}
-          <Card className="absolute right-0 top-12 w-96 max-h-[500px] z-50 shadow-xl border-2">
+          <Card className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-96 max-h-[500px] z-50 shadow-xl border-2">
             <div className="p-4 border-b flex items-center justify-between bg-gradient-to-r from-orange-50 to-rose-50">
               <div>
                 <h3 className="font-semibold text-slate-800">Notifications</h3>
