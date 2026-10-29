@@ -7929,7 +7929,8 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     flex: 1 1 auto;
     align-items: center;
     gap: 0;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
     padding: 3px;
     border: 1px solid #3b3067;
     border-radius: 12px;
