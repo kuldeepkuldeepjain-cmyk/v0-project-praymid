@@ -354,6 +354,19 @@ export default function AdminDashboard() {
         </div>
 
         <main className="min-w-0 flex-1 space-y-8 pb-20 lg:pb-8">
+          <div className="flex flex-col gap-3 rounded-2xl border border-violet-400/35 bg-violet-500/10 p-4 shadow-lg shadow-violet-950/20 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="rounded-xl bg-violet-400/20 p-2.5 text-violet-200"><TicketPercent className="h-5 w-5" /></div>
+              <div>
+                <p className="text-sm font-bold text-white">Promo Codes</p>
+                <p className="text-xs text-violet-100/75">Create discounts like DIWALI 5% for Add Funds payments.</p>
+              </div>
+            </div>
+            <Button type="button" onClick={() => setActiveTab("promos")} className="w-full bg-violet-500 text-white hover:bg-violet-400 sm:w-auto">
+              <TicketPercent className="mr-2 h-4 w-4" />
+              Create Promo Code
+            </Button>
+          </div>
         {activeTab === "overview" && (
           <>
             {/* Platform Revenue Tracker */}
