@@ -1,7 +1,7 @@
 "use client"
 // layout — staking section removed
 import type React from "react"
-import { Suspense, useState, useEffect, useRef } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Home, User, TrendingUp, Wallet, Gift, Settings, PlusCircle } from "lucide-react"
@@ -12,8 +12,6 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 })
-  const navRef = useRef<HTMLDivElement>(null)
 
   const navItems = [
     { href: "/participant/dashboard", icon: Home, label: "Overview", shortLabel: "Home", color: "#d6b66b", gradient: "from-amber-300 to-amber-500", glow: "shadow-amber-500/20" },
@@ -31,20 +29,6 @@ export default function DashboardLayout({
     }
     return pathname.startsWith(href)
   }
-
-  useEffect(() => {
-    const index = navItems.findIndex((item) => isActive(item.href))
-    const activeIndex = index >= 0 ? index : 2
-
-    if (navRef.current) {
-      const navWidth = navRef.current.offsetWidth
-      const itemWidth = navWidth / navItems.length
-      setIndicatorStyle({
-        left: activeIndex * itemWidth + itemWidth / 2 - 24,
-        width: 48,
-      })
-    }
-  }, [pathname])
 
   const [bouncingIndex, setBouncingIndex] = useState<number | null>(null)
 
@@ -150,37 +134,28 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        {/* Bottom Nav */}
+        {/* Mobile trade dock */}
         <nav
-          ref={navRef}
-          className="fixed bottom-0 z-50 participant-global-mobile-nav"
+          aria-label="Dashboard trade action"
+          className="fixed inset-x-0 bottom-0 z-50 participant-global-mobile-nav px-5 pt-3"
           style={{
-            left: 0, right: 0,
-            background: "linear-gradient(180deg, rgba(3,7,18,0.0) 0%, rgba(3,7,18,0.97) 20%)",
+            background: "linear-gradient(180deg, rgba(3,7,18,0) 0%, rgba(3,7,18,0.94) 38%, rgba(3,7,18,0.98) 100%)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            boxShadow: "0 -8px 32px rgba(0,0,0,0.6)",
-            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            borderTop: "1px solid rgba(214,182,107,0.14)",
+            boxShadow: "0 -8px 32px rgba(0,0,0,0.45)",
+            paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
           }}
         >
-          {/* Active indicator line */}
-          <div className="absolute top-0 h-[2px] rounded-b-full transition-all duration-500 ease-out"
-            style={{
-              left: indicatorStyle.left,
-              width: indicatorStyle.width,
-              background: (() => {
-                const activeIndex = navItems.findIndex((item) => isActive(item.href))
-                const color = activeIndex >= 0 ? navItems[activeIndex].color : "#3b82f6"
-                return `linear-gradient(90deg, ${color}, ${color}88)`
-              })(),
-            }}
-          />
-          <div className="flex items-center justify-around h-[62px] px-1">
-            {navItems.map((item, index) => (
-              <NavItem key={item.href} item={item} index={index} />
-            ))}
-          </div>
+          <Link
+            href="/participant/dashboard?view=terminal"
+            aria-label="Open trading terminal"
+            className="mx-auto flex h-14 w-full max-w-56 items-center justify-center gap-3 rounded-2xl border border-amber-100/60 px-8 text-sm font-black tracking-wide text-slate-950 shadow-[0_10px_30px_rgba(214,182,107,0.24)] transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-100 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+            style={{ background: "linear-gradient(135deg, #f4d17d 0%, #d6b66b 58%, #bd913d 100%)" }}
+          >
+            <TrendingUp className="size-5" strokeWidth={2.5} aria-hidden="true" />
+            <span>Trade</span>
+          </Link>
         </nav>
       </div>
     </div>
