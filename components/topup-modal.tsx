@@ -32,6 +32,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const [txHash, setTxHash] = useState("")
   const [note, setNote] = useState("")
   const [promoCode, setPromoCode] = useState("")
+  const [promoDiscountPercent, setPromoDiscountPercent] = useState<number | null>(null)
+  const [promoMessage, setPromoMessage] = useState("")
+  const [applyingPromo, setApplyingPromo] = useState(false)
   const [copiedAddress, setCopiedAddress] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [walletAddresses, setWalletAddresses] = useState<{ TRC20: string | null; BEP20: string | null; ERC20: string | null }>({ TRC20: null, BEP20: null, ERC20: null })
@@ -59,6 +62,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     setTxHash("")
     setNote("")
     setPromoCode("")
+    setPromoDiscountPercent(null)
+    setPromoMessage("")
+    setApplyingPromo(false)
     setCopiedAddress(false)
     setErrorMessage("")
     setNetwork("ALL")
@@ -144,13 +150,15 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
       return
     }
     const expiresAt = Date.now() + 5 * 60 * 1000
-    const inrAmount = Number(amount) * 104
+    const rawAmount = Number(amount)
+    const discountedAmount = promoDiscountPercent === null ? rawAmount : Number((rawAmount * (1 - promoDiscountPercent / 100)).toFixed(2))
+    const inrAmount = discountedAmount * 104
     setInrQrExpiresAt(expiresAt)
     setInrSecondsRemaining(5 * 60)
     QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${inrAmount.toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
       .then(setInrQrDataUrl)
       .catch(() => setInrQrDataUrl(null))
-  }, [paymentMethod, inrDetails.upiId, inrDetails.holderName, amount])
+  }, [paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, promoDiscountPercent])
 
   useEffect(() => {
     if (!inrQrExpiresAt) return
@@ -191,6 +199,9 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   }, [selectedWalletAddress])
 
   const parsedAmount = parseFloat(amount)
+  const payableAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 && promoDiscountPercent !== null
+    ? Number((parsedAmount * (1 - promoDiscountPercent / 100)).toFixed(2))
+    : parsedAmount
   const fundedTiers = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
@@ -198,6 +209,29 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
   const canUseFundedTier = fundedTierAvailable ?? fundedTierEligibility === true
   const isFundedAmountValid = !showFundingOptions || fundingMode !== "funded" || parsedAmount in fundedTiers
   const isAmountValid = !isNaN(parsedAmount) && parsedAmount >= 5 && isFundedAmountValid
+
+  const applyPromoCode = async () => {
+    const normalizedCode = promoCode.trim().toUpperCase().replace(/\s+/g, "")
+    setPromoMessage("")
+    setPromoDiscountPercent(null)
+    if (!normalizedCode) {
+      setPromoMessage("Enter a promo code first.")
+      return
+    }
+    setApplyingPromo(true)
+    try {
+      const response = await participantFetch(`/api/participant/promo-codes?code=${encodeURIComponent(normalizedCode)}`, { cache: "no-store" })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.success) throw new Error(data.message || "Promo code could not be applied.")
+      setPromoCode(data.code)
+      setPromoDiscountPercent(Number(data.discountPercent))
+      setPromoMessage(`${data.code} applied — ${Number(data.discountPercent)}% off your payment.`)
+    } catch (error) {
+      setPromoMessage(error instanceof Error ? error.message : "Promo code could not be applied.")
+    } finally {
+      setApplyingPromo(false)
+    }
+  }
 
   const handleSubmit = async () => {
     setErrorMessage("")
@@ -209,6 +243,10 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     }
     if (!isAmountValid) {
       setErrorMessage(fundingMode === "funded" ? "The first funded top-up must be $50, $100, $250, $500, or $1,000" : "Please enter a valid amount (minimum $5)")
+      return
+    }
+    if (promoCode.trim() && promoDiscountPercent === null) {
+      setErrorMessage("Apply the promo code before submitting payment.")
       return
     }
     if (!txHash.trim()) {
@@ -223,7 +261,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
         body: JSON.stringify({
           userId,
           userEmail: userEmail || userId,
-          amount: parsedAmount,
+          amount: payableAmount,
           transactionHash: txHash.trim(),
           network,
           fundingMode: showFundingOptions && fundingMode === "funded" ? "funded" : "actual",
@@ -424,7 +462,7 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1" aria-label="Quick funding amounts">{(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <button key={quickAmount} type="button" onClick={() => setAmount(String(quickAmount))} disabled={step === "submitting"} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 disabled:opacity-50">${quickAmount}</button>)}</div>
               {amount && !isAmountValid && <p className="text-[10px] text-red-500">{fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
-              {paymentMethod === "inr" && Number(amount) > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(Number(amount) * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1</p>}
+              {paymentMethod === "inr" && Number.isFinite(payableAmount) && payableAmount > 0 && <p className="text-[10px] font-semibold text-orange-700">UPI payment: ₹{(payableAmount * 104).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹104 per $1{promoDiscountPercent !== null ? ` · ${promoDiscountPercent}% promo applied` : ""}</p>}
 
               <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-3">
                 <div className="flex items-start gap-2.5">
@@ -433,11 +471,13 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
                   </div>
                   <div className="min-w-0 flex-1">
                     <Label htmlFor="topup-promo-code" className="text-xs font-bold text-violet-950">Promo code <span className="font-normal text-violet-700">(optional)</span></Label>
-                    <p className="mt-0.5 text-[10px] leading-4 text-violet-700">Have a promotional code? Include it with your funding request for review.</p>
-                    <div className="mt-2 flex gap-2">
-                      <Input id="topup-promo-code" value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder="ENTER CODE" autoComplete="off" maxLength={32} className="h-9 min-w-0 flex-1 border-violet-200 bg-white text-sm font-semibold uppercase tracking-wide focus:border-violet-500" disabled={step === "submitting"} />
-                      <span className="inline-flex h-9 shrink-0 items-center rounded-lg border border-violet-200 bg-white px-2.5 text-[10px] font-bold text-violet-700">Optional</span>
+                    <p className="mt-0.5 text-[10px] leading-4 text-violet-700">Apply a valid promo code before payment to reduce the amount you send.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Input id="topup-promo-code" value={promoCode} onChange={(event) => { setPromoCode(event.target.value.toUpperCase()); setPromoDiscountPercent(null); setPromoMessage("") }} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); applyPromoCode() } }} placeholder="ENTER CODE" autoComplete="off" maxLength={32} className="h-9 min-w-[150px] flex-1 border-violet-200 bg-white text-sm font-semibold uppercase tracking-wide focus:border-violet-500" disabled={step === "submitting" || applyingPromo} />
+                      <Button type="button" onClick={applyPromoCode} disabled={step === "submitting" || applyingPromo || !promoCode.trim()} variant="outline" className="h-9 border-violet-300 px-3 text-[10px] font-bold text-violet-700 hover:bg-violet-100">{applyingPromo ? <Loader2 className="size-3.5 animate-spin" /> : "Apply promo code"}</Button>
                     </div>
+                    {promoMessage && <p className={`mt-2 text-[10px] font-semibold ${promoDiscountPercent !== null ? "text-emerald-700" : "text-red-600"}`}>{promoMessage}</p>}
+                    {promoDiscountPercent !== null && Number.isFinite(parsedAmount) && parsedAmount > 0 && <div className="mt-2 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px]"><span className="font-semibold text-emerald-800">Payment after discount</span><span className="font-black text-emerald-900">${payableAmount.toFixed(2)} <span className="font-normal">({promoDiscountPercent}% off)</span></span></div>}
                   </div>
                 </div>
               </div>
