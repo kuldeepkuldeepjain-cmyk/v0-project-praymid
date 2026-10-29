@@ -7910,29 +7910,30 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
 /* Desktop toolbar: keep the brand and primary controls inside one connected dock. */
 @media (min-width: 768px) {
   .apple-trading-terminal.reference-terminal .terminal-toolbar {
-    padding: 6px 16px;
-    border-bottom: 1px solid #1b3047 !important;
+    padding: 6px 8px;
+    border-bottom: 1px solid #30265d !important;
   }
   .apple-trading-terminal.reference-terminal .terminal-toolbar-row {
     width: 100%;
     min-height: 54px;
-    max-width: 1920px;
+    max-width: none;
     gap: 0 !important;
     justify-content: flex-start;
     padding: 0 !important;
   }
   .apple-trading-terminal.reference-terminal .terminal-header-dock {
     display: flex;
-    width: max-content;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
+    flex: 1 1 auto;
     align-items: center;
     gap: 0;
     overflow: hidden;
     padding: 3px;
-    border: 1px solid #29394c;
+    border: 1px solid #3b3067;
     border-radius: 12px;
-    background: linear-gradient(180deg, #0c1826, #08121e);
+    background: linear-gradient(180deg, #11182c, #0c1424);
     box-shadow: 0 5px 18px rgba(0, 0, 0, .25), inset 0 1px rgba(255, 255, 255, .035);
   }
   .apple-trading-terminal.reference-terminal .terminal-header-dock > * {
@@ -8013,15 +8014,15 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     background: rgba(255, 255, 255, .055) !important;
   }
   .apple-trading-terminal.reference-terminal .terminal-header-search {
-    width: clamp(190px, 19vw, 360px);
-    max-width: 360px;
-    flex: 0 1 360px;
+    width: auto;
+    max-width: none;
+    flex: 1 1 280px;
   }
   .apple-trading-terminal.reference-terminal .terminal-header-search > button {
     height: 34px;
-    border-color: #263a50 !important;
+    border-color: #3b3067 !important;
     border-radius: 7px;
-    background: #0a1624 !important;
+    background: #111a32 !important;
   }
   .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button {
     min-width: 106px;
@@ -9477,35 +9478,40 @@ body:has(.elite-terminal-shell) {
   .reference-terminal .terminal-account-bar {
     justify-content: flex-start;
     width: 100%;
-    padding: 6px 16px !important;
+    padding: 6px 8px !important;
     border: 0 !important;
     background: transparent !important;
   }
   .reference-terminal .terminal-account-dock {
     display: flex;
-    width: max-content;
+    width: 100%;
     max-width: 100%;
     min-width: 0;
     align-items: center;
     padding: 3px;
-    border: 1px solid #29394c;
+    border: 1px solid #3b3067;
     border-radius: 12px;
-    background: linear-gradient(180deg, #0c1826, #08121e);
+    background: linear-gradient(180deg, #11182c, #0c1424);
     box-shadow: 0 5px 18px rgba(0, 0, 0, .22), inset 0 1px rgba(255, 255, 255, .035);
   }
   .reference-terminal .terminal-account-stats {
-    flex: 0 1 auto;
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
     gap: 0;
     overflow: hidden;
-    border-right: 1px solid #29394c;
+    border-right: 1px solid #3b3067;
   }
   .reference-terminal .terminal-account-stats .terminal-stat {
     min-width: 0;
+    flex: 1 1 0;
+    align-items: center;
     padding: 5px 12px !important;
     border: 0 !important;
     border-radius: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
+    text-align: center;
   }
   .reference-terminal .terminal-account-stats .terminal-stat + .terminal-stat {
     border-left: 1px solid #223348 !important;
@@ -9553,17 +9559,17 @@ body:has(.elite-terminal-shell) {
     border-left: 1px solid rgba(4, 12, 20, .55) !important;
   }
   .reference-terminal .terminal-account-actions .terminal-action-primary {
-    background: linear-gradient(145deg, #a96f1d, #704610) !important;
-    color: #fff0c6 !important;
+    background: linear-gradient(145deg, #6846ff, #4a2be8) !important;
+    color: #ffffff !important;
   }
   .reference-terminal .terminal-account-actions .terminal-action-withdraw {
-    background: linear-gradient(145deg, #2a5c83, #173b5b) !important;
-    border-color: #4c89b6 !important;
-    color: #e2f2ff !important;
+    background: linear-gradient(145deg, #152544, #101a30) !important;
+    border-color: #343d60 !important;
+    color: #dce5ff !important;
   }
   .reference-terminal .terminal-account-actions .terminal-action-accent {
-    background: linear-gradient(145deg, #147b78, #0d4b50) !important;
-    color: #d6fff4 !important;
+    background: linear-gradient(145deg, #40368f, #2d2868) !important;
+    color: #f0edff !important;
   }
   .reference-terminal .terminal-account-actions .terminal-action:hover:not(:disabled) {
     filter: brightness(1.16);
