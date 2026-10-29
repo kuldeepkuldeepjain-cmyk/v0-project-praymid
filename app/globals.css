@@ -5876,7 +5876,7 @@ button, a, [role="button"] {
     padding: 6px 8px;
   }
   .apple-trading-terminal.reference-terminal .terminal-brand-lockup { border-right: 0 !important; padding-right: 0 !important; }
-  .apple-trading-terminal.reference-terminal .terminal-brand-lockup span { display: none; }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup .terminal-brand-copy { display: none; }
   .apple-trading-terminal.reference-terminal .terminal-header-search { order: 5; flex: 1 1 100%; max-width: none; }
   .apple-trading-terminal.reference-terminal .terminal-header-search > button { height: 34px; }
   .apple-trading-terminal.reference-terminal .terminal-account-bar { padding: 6px 8px; }
@@ -7907,6 +7907,134 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   .reference-terminal .mobile-terminal-account small { max-width: 82px; }
 }
 
+/* Desktop toolbar: keep the brand and primary controls inside one connected dock. */
+@media (min-width: 768px) {
+  .apple-trading-terminal.reference-terminal .terminal-toolbar {
+    padding: 6px 8px;
+    border-bottom: 1px solid #30265d !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-toolbar-row {
+    width: 100%;
+    min-height: 54px;
+    max-width: none;
+    gap: 0 !important;
+    justify-content: flex-start;
+    padding: 0 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0;
+    overflow: hidden;
+    padding: 3px;
+    border: 1px solid #3b3067;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #11182c, #0c1424);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .25), inset 0 1px rgba(255, 255, 255, .035);
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > * {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    padding-inline: 8px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > .terminal-header-status { display: none; }
+}
+
+@media (min-width: 1024px) {
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > .terminal-header-status { display: flex; }
+}
+
+@media (min-width: 768px) {
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > * + * {
+    border-left: 1px solid #223348;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup {
+    width: auto;
+    min-width: 196px;
+    height: 42px;
+    gap: 10px;
+    overflow: visible;
+    padding: 0 14px 0 9px;
+    border-right: 0 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-lockup::after { display: none; }
+  .apple-trading-terminal.reference-terminal .terminal-brand-mark {
+    position: relative;
+    display: block;
+    width: 52px;
+    height: 38px;
+    flex: 0 0 52px;
+    overflow: hidden;
+    border: 1px solid rgba(222, 187, 112, .34);
+    border-radius: 7px;
+    background: #030507;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-logo {
+    position: absolute;
+    top: -17px;
+    left: -28px;
+    width: 100px !important;
+    max-width: none;
+    height: 100px !important;
+    border-radius: 0;
+    object-fit: initial;
+    filter: none;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy {
+    display: block !important;
+    min-width: 0;
+    padding-left: 0;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy strong {
+    color: #f3e4bf;
+    font-size: 12px;
+    letter-spacing: .16em;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy > span {
+    margin-top: 4px;
+    color: #a89770;
+    font-size: 8px;
+    letter-spacing: .15em;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > button,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-icon-button,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button {
+    border: 0 !important;
+    border-radius: 7px !important;
+    background: transparent !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > button:hover,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-icon-button:hover,
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button:hover {
+    background: rgba(255, 255, 255, .055) !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-search {
+    width: auto;
+    max-width: none;
+    flex: 1 1 280px;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-search > button {
+    height: 34px;
+    border-color: #3b3067 !important;
+    border-radius: 7px;
+    background: #111a32 !important;
+  }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock .terminal-account-button {
+    min-width: 106px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 840px) {
+  .apple-trading-terminal.reference-terminal .terminal-brand-copy { display: none !important; }
+  .apple-trading-terminal.reference-terminal .terminal-header-search { width: 160px; min-width: 140px; }
+  .apple-trading-terminal.reference-terminal .terminal-header-dock > * { padding-inline: 5px; }
+}
+
 /* Account is a peer terminal page, not a sidebar destination. */
 .reference-terminal.is-account-active > .terminal-account-bar,
 .reference-terminal.is-account-active > .reference-watchlist,
@@ -9343,6 +9471,116 @@ body:has(.elite-terminal-shell) {
   background: linear-gradient(145deg, rgb(30 65 91 / 0.9), rgb(15 34 55 / 0.96)) !important;
   border-color: rgb(79 143 190 / 0.6) !important;
   color: #a9cbe2 !important;
+}
+
+/* Joined account dock: live figures and three distinct account actions share one rail. */
+@media (min-width: 1024px) {
+  .reference-terminal .terminal-account-bar {
+    justify-content: flex-start;
+    width: 100%;
+    padding: 6px 8px !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+  .reference-terminal .terminal-account-dock {
+    display: flex;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    align-items: center;
+    padding: 3px;
+    border: 1px solid #3b3067;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #11182c, #0c1424);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, .22), inset 0 1px rgba(255, 255, 255, .035);
+  }
+  .reference-terminal .terminal-account-stats {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0;
+    overflow: hidden;
+    border-right: 1px solid #3b3067;
+  }
+  .reference-terminal .terminal-account-stats .terminal-stat {
+    min-width: 0;
+    flex: 1 1 0;
+    align-items: center;
+    padding: 5px 12px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-align: center;
+  }
+  .reference-terminal .terminal-account-stats .terminal-stat + .terminal-stat {
+    border-left: 1px solid #223348 !important;
+  }
+  .reference-terminal .terminal-account-stats .terminal-stat:first-child {
+    padding-left: 10px !important;
+  }
+  .reference-terminal .terminal-stat-label {
+    color: #8ea3b8 !important;
+    font-size: 8px !important;
+    letter-spacing: .11em;
+  }
+  .reference-terminal .terminal-stat-value {
+    margin-top: 3px;
+    font-size: 13px !important;
+  }
+  .reference-terminal .terminal-stat:nth-child(3) {
+    border-color: transparent !important;
+    background: transparent !important;
+  }
+  .reference-terminal .terminal-stat:nth-child(3)::after { content: none !important; }
+  .reference-terminal .terminal-stat.tone-green .terminal-stat-value { color: #6de2aa !important; }
+  .reference-terminal .terminal-stat.tone-red .terminal-stat-value { color: #ff8585 !important; }
+  .reference-terminal .terminal-stat.tone-gold .terminal-stat-value { color: #f4cb72 !important; }
+  .reference-terminal .terminal-account-actions {
+    gap: 0 !important;
+    margin-left: 7px;
+    overflow: hidden;
+    border: 1px solid #29394c;
+    border-radius: 8px;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action {
+    height: 34px;
+    padding: 0 13px;
+    border: 0 !important;
+    border-radius: 0 !important;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: .025em;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: filter .16s ease, box-shadow .16s ease;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action + .terminal-action {
+    border-left: 1px solid rgba(4, 12, 20, .55) !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action-primary {
+    background: linear-gradient(145deg, #6846ff, #4a2be8) !important;
+    color: #ffffff !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action-withdraw {
+    background: linear-gradient(145deg, #152544, #101a30) !important;
+    border-color: #343d60 !important;
+    color: #dce5ff !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action-accent {
+    background: linear-gradient(145deg, #40368f, #2d2868) !important;
+    color: #f0edff !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action:hover:not(:disabled) {
+    filter: brightness(1.16);
+    box-shadow: inset 0 1px rgba(255,255,255,.12) !important;
+  }
+  .reference-terminal .terminal-account-actions .terminal-action:focus-visible {
+    position: relative;
+    z-index: 1;
+    outline: 2px solid #d6e8ff;
+    outline-offset: -3px;
+  }
 }
 
 .reference-terminal .reference-mobile-nav > button:nth-child(1) {
