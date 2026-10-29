@@ -3978,8 +3978,28 @@ button, a, [role="button"] {
     gap: 8px;
   }
   .terminal-page .participant-mobile-welcome {
-    border-color: rgba(214,182,107,.24);
-    background: linear-gradient(145deg, rgba(13,25,40,.98), rgba(8,15,25,.98));
+    --welcome-surface-high: #071722;
+    --welcome-surface-low: #020d16;
+    --welcome-primary: #f5f7fa;
+    --welcome-muted: #c4cdd6;
+    --welcome-accent: #22d3ee;
+    border-color: rgba(34,211,238,.14);
+    background: linear-gradient(145deg, var(--welcome-surface-high), var(--welcome-surface-low));
+    box-shadow: 0 12px 32px rgba(2,13,22,.3);
+  }
+  .terminal-page .participant-welcome-eyebrow,
+  .terminal-page .participant-welcome-copy { color: var(--welcome-muted); }
+  .terminal-page .participant-welcome-name { color: var(--welcome-primary); }
+  .terminal-page .participant-welcome-accent {
+    background: var(--welcome-accent);
+    box-shadow: 0 0 11px rgba(34,211,238,.46);
+  }
+  .terminal-page .participant-welcome-dot-texture {
+    background-image: radial-gradient(circle, rgba(34,211,238,.48) 1px, transparent 1.6px);
+    background-size: 13px 13px;
+    -webkit-mask-image: radial-gradient(ellipse at 80% 18%, #000 0%, transparent 76%);
+    mask-image: radial-gradient(ellipse at 80% 18%, #000 0%, transparent 76%);
+    opacity: .62;
   }
   .participant-header-inner > div:first-child {
     flex: 1 1 auto;
@@ -5767,7 +5787,7 @@ button, a, [role="button"] {
   .terminal-stat-value { font-size: 12px; }
 }
 
-/* ─�� Final institutional terminal system ─────────────���───────────────────
+/* ─�� Final institutional terminal system ─────────────�����───────────────────
    Keep the terminal calm, legible and chart-first at every viewport. These
    scoped rules intentionally sit last so older visual experiments cannot
    reintroduce oversized rails or push the chart below the fold. */

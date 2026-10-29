@@ -28,14 +28,23 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, accoun
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-3 text-slate-100 sm:px-4 md:gap-4 md:px-6 md:py-5">
-      <section className="participant-mobile-welcome rounded-2xl border border-amber-300/20 bg-slate-950/85 p-4 shadow-xl shadow-black/20 md:p-6" aria-labelledby="participant-welcome-title">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+      <section className="participant-mobile-welcome relative isolate overflow-hidden rounded-2xl border border-amber-300/20 bg-slate-950/85 p-4 shadow-xl shadow-black/20 md:p-6" aria-labelledby="participant-welcome-title">
+        <div className="participant-welcome-dot-texture pointer-events-none absolute right-0 top-0 z-0 h-36 w-36 md:hidden" aria-hidden="true" />
+        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 max-w-2xl">
-            <div className="mb-2 inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300">
+            <div className="mb-2 hidden items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-amber-300 md:inline-flex">
               <Sparkles className="h-3.5 w-3.5" /> EliteFund · Participant workspace
             </div>
-            <h1 id="participant-welcome-title" className="text-balance text-2xl font-black tracking-tight text-white md:text-3xl">Welcome back, {displayName}.</h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Your trading workspace is ready. Review your account and activity at a glance.</p>
+            <p className="participant-welcome-eyebrow mb-3 text-[13px] font-bold uppercase tracking-[0.16em] text-slate-300 md:hidden">WELCOME BACK</p>
+            <h1 id="participant-welcome-title" className="participant-welcome-name text-balance text-[clamp(2.625rem,13vw,3.5rem)] font-black leading-none tracking-tight text-white md:text-3xl md:leading-tight">
+              <span className="md:hidden">{displayName}.</span>
+              <span className="hidden md:inline">Welcome back, {displayName}.</span>
+            </h1>
+            <span className="participant-welcome-accent mt-5 block h-1 w-14 rounded-full bg-cyan-400 md:hidden" aria-hidden="true" />
+            <p className="participant-welcome-copy mt-6 max-w-xl text-[15px] leading-8 text-slate-300 md:mt-2 md:text-sm md:leading-6">
+              <span className="block">Your trading workspace is ready.</span>
+              <span className="block">Everything you need is right here.</span>
+            </p>
             <div className="mt-4 hidden flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 md:flex">
               <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Secure session</span>
               <span className="inline-flex items-center gap-1.5"><FileCheck2 className="h-3.5 w-3.5 text-amber-300" /> Clear records</span>
