@@ -7929,7 +7929,8 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     flex: 1 1 auto;
     align-items: center;
     gap: 0;
-    overflow: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
     padding: 3px;
     border: 1px solid #3b3067;
     border-radius: 12px;
@@ -8525,18 +8526,18 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
   .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart-canvas,
   .apple-trading-terminal.reference-terminal .native-chart-gesture-surface {
-    touch-action: pan-x pinch-zoom !important;
+    touch-action: pan-y !important;
     overscroll-behavior: contain;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
   .apple-trading-terminal.reference-terminal .native-chart-gesture-surface canvas {
-    touch-action: pan-x pinch-zoom !important;
+    touch-action: pan-y !important;
   }
   .native-chart-gesture-surface,
   .native-chart-gesture-surface canvas {
-    touch-action: pan-x pinch-zoom !important;
+    touch-action: pan-y !important;
     overscroll-behavior: contain;
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav::-webkit-scrollbar { display: none; }
@@ -9934,7 +9935,7 @@ body:has(.elite-terminal-shell) {
     max-height: none !important;
     flex: none !important;
     overflow: visible !important;
-    touch-action: pan-y pinch-zoom !important;
+    touch-action: pan-y !important;
     overscroll-behavior: contain;
     background: #07111f !important;
   }
@@ -9942,7 +9943,7 @@ body:has(.elite-terminal-shell) {
   .reference-terminal .apple-trading-chart,
   .reference-terminal .native-chart-gesture-surface,
   .reference-terminal .apple-trading-chart-canvas {
-    touch-action: pan-y pinch-zoom !important;
+    touch-action: pan-y !important;
   }
 
   .reference-terminal .reference-chart-trade-dock {
@@ -10302,4 +10303,153 @@ body:has(.elite-terminal-shell) {
 @media (max-width: 380px) {
   .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group { gap: 6px; }
   .apple-trading-terminal.reference-terminal .mobile-terminal-home { width: 30px; height: 30px; }
+}
+
+/* Continuous order docks keep the ticket controls connected at every breakpoint. */
+.reference-terminal .terminal-order-panel-header {
+  min-height: 48px;
+  padding-inline: 8px;
+  background: linear-gradient(180deg, #102337 0%, #0a1421 100%) !important;
+}
+
+.reference-terminal .terminal-order-view-dock {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  overflow: hidden;
+  margin-block: 5px;
+  border: 1px solid #243145;
+  border-radius: 9px;
+  background: rgba(7, 16, 27, .42);
+}
+
+.reference-terminal .terminal-order-view-dock button {
+  min-width: 68px;
+  min-height: 36px !important;
+  padding-inline: 12px;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #9aabba !important;
+  white-space: nowrap;
+}
+
+.reference-terminal .terminal-order-view-dock button + button {
+  border-left: 1px solid #243145 !important;
+}
+
+.reference-terminal .terminal-order-view-dock button[aria-pressed="true"] {
+  background: rgba(111, 94, 170, .18) !important;
+  color: #ddd7f2 !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal .terminal-order-view-dock button:focus-visible,
+.reference-terminal .terminal-order-type-dock button:focus-visible,
+.reference-terminal .terminal-order-quote-dock button:focus-visible,
+.reference-terminal .terminal-order-expiry-dock button:focus-visible,
+.reference-terminal .terminal-order-size-dock button:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: 2px solid #d6e8ff !important;
+  outline-offset: -3px;
+}
+
+.reference-terminal .terminal-order-type-dock,
+.reference-terminal .terminal-order-size-dock,
+.reference-terminal .terminal-order-expiry-dock {
+  width: 100%;
+  min-width: 0;
+  border-color: #243145 !important;
+  background: rgba(7, 16, 27, .42) !important;
+}
+
+.reference-terminal .terminal-order-type-dock button {
+  min-width: 0;
+  min-height: 42px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #a6b4c6 !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal .terminal-order-type-dock button + button,
+.reference-terminal .terminal-order-size-dock button + button,
+.reference-terminal .terminal-order-expiry-dock button + button {
+  border-left: 1px solid #243145 !important;
+}
+
+.reference-terminal .terminal-order-type-dock button[aria-pressed="true"],
+.reference-terminal .terminal-order-size-dock button[aria-pressed="true"],
+.reference-terminal .terminal-order-expiry-dock button[aria-pressed="true"] {
+  background: rgba(111, 94, 170, .18) !important;
+  color: #ddd7f2 !important;
+}
+
+.reference-terminal .terminal-order-type-dock button:hover:not(:disabled),
+.reference-terminal .terminal-order-size-dock button:hover:not(:disabled),
+.reference-terminal .terminal-order-expiry-dock button:hover:not(:disabled) {
+  background-color: rgba(111, 94, 170, .1) !important;
+  color: #d5cfee !important;
+}
+
+.reference-terminal .terminal-order-quote-dock {
+  min-height: 58px;
+  border-color: #243145 !important;
+  background: rgba(7, 16, 27, .42) !important;
+}
+
+.reference-terminal .terminal-order-quote-dock button {
+  min-width: 0;
+  min-height: 56px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.reference-terminal .terminal-order-quote-dock button + button {
+  border-left: 1px solid #243145 !important;
+}
+
+.reference-terminal .terminal-order-quote-dock .mobile-quote-sell[data-active="true"] {
+  background: linear-gradient(180deg, rgba(127, 29, 29, .2), rgba(69, 10, 10, .32)) !important;
+}
+
+.reference-terminal .terminal-order-quote-dock .mobile-quote-buy[data-active="true"] {
+  background: linear-gradient(180deg, rgba(20, 83, 45, .2), rgba(5, 46, 22, .32)) !important;
+}
+
+.reference-terminal .terminal-order-quote-dock .mobile-quote-sell[data-active="false"],
+.reference-terminal .terminal-order-quote-dock .mobile-quote-buy[data-active="false"] {
+  background: transparent !important;
+}
+
+.reference-terminal .terminal-order-size-dock button,
+.reference-terminal .terminal-order-expiry-dock button {
+  min-width: 0;
+  min-height: 40px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #a6b4c6 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  .reference-terminal .terminal-order-panel-header {
+    padding-inline: 6px;
+  }
+
+  .reference-terminal .terminal-order-view-dock button {
+    min-width: 62px;
+    padding-inline: 8px;
+  }
+
+  .reference-terminal .terminal-order-size-dock button {
+    padding-inline: 2px;
+    font-size: 8px !important;
+  }
 }

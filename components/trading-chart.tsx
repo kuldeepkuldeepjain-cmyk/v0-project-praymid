@@ -198,6 +198,7 @@ export function TradingChart({
   const safeCandles = Array.isArray(candles) ? candles : []
   const palette = darkTheme ? DARK_T : T
   const containerRef = useRef<HTMLDivElement>(null)
+  const gestureLayerRef = useRef<HTMLDivElement>(null)
   const chartRef     = useRef<IChartApi | null>(null)
 
   // Series refs
@@ -556,6 +557,53 @@ export function TradingChart({
       macdHistRef.current  = null
     }
   }, [darkTheme]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const layer = gestureLayerRef.current
+    const chartContainer = containerRef.current
+    if (!layer || !chartContainer) return
+
+    let touchTarget: HTMLCanvasElement | null = null
+
+    const forwardTouchEvent = (event: TouchEvent) => {
+      if (!touchTarget && event.touches.length > 0) {
+        const firstTouch = event.touches[0]
+        const chartRoot = chartContainer.querySelector(".tv-lightweight-charts")
+        const hitCanvas = document.elementsFromPoint(firstTouch.clientX, firstTouch.clientY).find(
+          (element): element is HTMLCanvasElement =>
+            element instanceof HTMLCanvasElement && Boolean(chartRoot?.contains(element)),
+        )
+        touchTarget = hitCanvas ?? chartRoot?.querySelector("canvas") ?? null
+      }
+
+      if (touchTarget && typeof TouchEvent !== "undefined") {
+        const forwardedEvent = new TouchEvent(event.type, {
+          bubbles: true,
+          cancelable: true,
+          touches: Array.from(event.touches),
+          targetTouches: Array.from(event.targetTouches),
+          changedTouches: Array.from(event.changedTouches),
+          altKey: event.altKey,
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+        })
+        touchTarget.dispatchEvent(forwardedEvent)
+      }
+
+      if (event.touches.length > 1 && event.cancelable) event.preventDefault()
+      if (event.type === "touchcancel" || (event.type === "touchend" && event.touches.length === 0)) {
+        touchTarget = null
+      }
+    }
+
+    const touchEventTypes = ["touchstart", "touchmove", "touchend", "touchcancel"] as const
+    touchEventTypes.forEach((type) => layer.addEventListener(type, forwardTouchEvent, { passive: false }))
+
+    return () => {
+      touchEventTypes.forEach((type) => layer.removeEventListener(type, forwardTouchEvent))
+    }
+  }, [darkTheme])
 
   // ── Update candle + volume data ──────────────────────────────────────────────
   useEffect(() => {
@@ -1169,6 +1217,12 @@ export function TradingChart({
             <span className="text-[8px] font-black tracking-widest" style={{ color: "#4a6580" }}>CROSSHAIR</span>
           </div>
         )}
+        <div
+          ref={gestureLayerRef}
+          aria-hidden="true"
+          className="mobile-chart-scroll-layer absolute inset-0 md:hidden"
+          style={{ zIndex: 5, background: "transparent", touchAction: "pan-y" }}
+        />
       </div>
     </div>
   )

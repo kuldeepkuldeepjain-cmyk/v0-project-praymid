@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────����───────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────�����───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3987,22 +3987,25 @@ const maxLeverage = 100
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
-          <div className="flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
+          <div className="terminal-order-panel-header flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
             <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
               <Zap className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
               <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white">Order Panel</div></div>
             </div>
-            {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
-              <button key={id} onClick={() => setRightPanelTab(id as typeof rightPanelTab)}
-                className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2 text-[9px] font-black tracking-wider uppercase transition-colors"
-                style={{
-                  color: rightPanelTab === id ? "#22d3ee" : "#64748b",
-                  borderBottom: rightPanelTab === id ? "2px solid #22d3ee" : "2px solid transparent",
-                  background: rightPanelTab === id ? "rgba(34,211,238,0.05)" : "transparent",
-                }}>
-                <Icon className="h-3 w-3" />{label}
-              </button>
-            ))}
+            <div className="terminal-order-view-dock" role="group" aria-label="Order panel view">
+              {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
+                <button key={id} type="button" onClick={() => setRightPanelTab(id as typeof rightPanelTab)}
+                  aria-pressed={rightPanelTab === id}
+                  className="flex min-w-[48px] flex-1 items-center justify-center gap-1 px-1 py-2 text-[9px] font-black tracking-wider uppercase transition-colors"
+                  style={{
+                    color: rightPanelTab === id ? "#22d3ee" : "#64748b",
+                    borderBottom: rightPanelTab === id ? "2px solid #22d3ee" : "2px solid transparent",
+                    background: rightPanelTab === id ? "rgba(34,211,238,0.05)" : "transparent",
+                  }}>
+                  <Icon className="h-3 w-3" />{label}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
               onClick={() => setRightPanelHidden(true)}
@@ -4033,9 +4036,9 @@ const maxLeverage = 100
 	                </div>
 
 	                {/* Order type tabs */}
-	                <div className="grid grid-cols-3 rounded-lg border border-[#1a2640] bg-[#070a10] p-0.5">
-	                  {(["market","limit","stop"] as typeof orderType[]).map(ot => (
-	                    <button key={ot} type="button" onClick={() => {
+                <div className="terminal-order-type-dock flex items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]">
+                  {(["market","limit","stop"] as typeof orderType[]).map(ot => (
+                    <button key={ot} type="button" onClick={() => {
 	                      setOrderType(ot)
 	                      if (ot === "market") {
 	                        setPendingPrice("")
@@ -4048,41 +4051,31 @@ const maxLeverage = 100
 	                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
 	                      }
 	                    }}
-	                      aria-pressed={orderType === ot}
-	                      className={`py-1.5 text-[9px] font-black uppercase tracking-wider rounded transition-all ${
-	                        orderType === ot
-	                          ? "bg-cyan-400/15 text-cyan-300 border border-cyan-400/30 shadow-sm"
-	                          : "text-slate-400 hover:text-slate-200"
-	                      }`}>
-	                      {ot}
+                      aria-pressed={orderType === ot}
+                      className="flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-[9px] font-black uppercase tracking-wider transition-colors">
+                      {ot}
 	                    </button>
 	                  ))}
 	                </div>
 
 		                {/* Single Executable Quote / Direction Selector */}
-		                <div className="mobile-quote-switch relative grid grid-cols-2 gap-2 rounded-lg border border-[#1a2640] bg-[#07101b] p-2">
-		                  <button type="button" onClick={() => setOrderDirection("SELL")}
+                <div className="terminal-order-quote-dock mobile-quote-switch relative flex items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#07101b]">
+                  <button type="button" onClick={() => setOrderDirection("SELL")}
                     aria-label={`Sell ${selectedPair.symbol} at ${fmt(selectedPair.bid, selectedPair.symbol)}`}
-	                    data-active={direction === "SELL"}
-	                    className={`mobile-quote-side mobile-quote-sell rounded-lg px-2.5 py-2 text-left transition-colors ${
-		                      direction === "SELL"
-		                        ? "bg-rose-500/20 border border-rose-500"
-		                        : "bg-rose-500/5 border border-rose-500/20 hover:bg-rose-500/10 opacity-70"
-		                    }`}>
-		                    <span className="block text-[8px] font-black tracking-wider uppercase text-rose-300">Sell · Bid</span>
-		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-		                  </button>
-		                  <button type="button" onClick={() => setOrderDirection("BUY")}
+                    aria-pressed={direction === "SELL"}
+                    data-active={direction === "SELL"}
+                    className="mobile-quote-side mobile-quote-sell flex min-w-0 flex-1 flex-col items-start justify-center px-2.5 py-2 text-left transition-colors">
+                    <span className="block text-[8px] font-black tracking-wider uppercase text-rose-300">Sell · Bid</span>
+                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  </button>
+                  <button type="button" onClick={() => setOrderDirection("BUY")}
                     aria-label={`Buy ${selectedPair.symbol} at ${fmt(selectedPair.ask, selectedPair.symbol)}`}
-	                    data-active={direction === "BUY"}
-	                    className={`mobile-quote-side mobile-quote-buy rounded-lg px-2.5 py-2 text-right transition-colors ${
-		                      direction === "BUY"
-		                        ? "bg-emerald-500/20 border border-emerald-500"
-		                        : "bg-emerald-500/5 border border-emerald-500/20 hover:bg-emerald-500/10 opacity-70"
-		                    }`}>
-		                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
-		                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
-		                  </button>
+                    aria-pressed={direction === "BUY"}
+                    data-active={direction === "BUY"}
+                    className="mobile-quote-side mobile-quote-buy flex min-w-0 flex-1 flex-col items-end justify-center px-2.5 py-2 text-right transition-colors">
+                    <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
+                    <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
+                  </button>
 			                  <div className="mobile-quote-spread pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
 			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
 			                  </div>
@@ -4097,14 +4090,14 @@ const maxLeverage = 100
 	                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
 	                      placeholder={fmt(midPrice, selectedPair.symbol)}
 	                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded bg-[#070a10] border border-cyan-400/30" />
-	                    <div className="flex gap-1">
-	                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-	                        <button key={e} onClick={() => setPendingExpiry(e)}
-	                          className="flex-1 py-1 text-[8px] font-black tracking-wider uppercase rounded transition-all"
-	                          style={pendingExpiry === e
-	                            ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
-	                            : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
-	                          {e}
+                    <div className="terminal-order-expiry-dock flex items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
+                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+                        <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
+                          className="min-w-0 flex-1 px-2 py-1 text-[8px] font-black tracking-wider uppercase transition-colors"
+                          style={pendingExpiry === e
+                            ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+                            : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
+                          {e}
 	                        </button>
 	                      ))}
 	                    </div>
@@ -4131,15 +4124,11 @@ const maxLeverage = 100
 			                  placeholder="0.01"
 			                  />
 			                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-				                  <div className="flex gap-1">
-				                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-				                      <button key={l} type="button" onClick={() => setLotSize(l)}
-				                        className={`flex-1 py-1 text-[7px] font-black tracking-wide rounded transition-colors ${
-				                          lotSize === l
-				                            ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/40"
-				                            : "bg-[#0a1020] text-slate-400 border border-[#1a2640] hover:text-slate-200"
-				                        }`}>
-				                        {l}
+                  <div className="terminal-order-size-dock flex items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
+                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
+                      <button key={l} type="button" onClick={() => setLotSize(l)} aria-pressed={lotSize === l}
+                        className="min-w-0 flex-1 px-1 py-1 text-[7px] font-black tracking-wide transition-colors">
+                        {l}
 				                      </button>
 				                    ))}
 				                  </div>
@@ -4212,10 +4201,10 @@ const maxLeverage = 100
                     {/* Pending Order Expiry */}
                     <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
                       <span className="text-[8px] font-black tracking-wider uppercase text-slate-400">Order Expiry</span>
-                      <div className="flex gap-1">
+                      <div className="terminal-order-expiry-dock flex flex-1 items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
                         {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                          <button key={e} type="button" onClick={() => setPendingExpiry(e)}
-                            className="px-2 py-0.5 text-[8px] font-black tracking-wider uppercase rounded transition-all"
+                          <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
+                            className="min-w-0 flex-1 px-2 py-0.5 text-[8px] font-black tracking-wider uppercase transition-colors"
                             style={pendingExpiry === e
                               ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
                               : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
