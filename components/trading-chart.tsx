@@ -179,11 +179,13 @@ export function TradingChart({
   sellPrice,
   darkTheme = false,
   marketStatus = "connecting",
+  livePrice,
   }: {
   candles: Candle[] | null | undefined
   sym: string | null | undefined
   tf?: string
   marketStatus?: "live" | "reconnecting" | "connecting"
+  livePrice?: number
   openTrades?: OpenTrade[]
   onExpand?: () => void
   isExpanded?: boolean
@@ -741,11 +743,22 @@ export function TradingChart({
 
   // ── Last candle stats for header ───────────────────────��─────────────────────
   const lastCandle = safeCandles[safeCandles.length - 1]
-  const displayOhlcv = ohlcv ?? (lastCandle ? {
-    open: lastCandle.open, high: lastCandle.high,
-    low: lastCandle.low,   close: lastCandle.close,
-    volume: lastCandle.volume, isUp: lastCandle.close >= lastCandle.open,
-  } : null)
+  const displayOhlcv = (() => {
+    const base = ohlcv ?? (lastCandle ? {
+      open: lastCandle.open, high: lastCandle.high,
+      low: lastCandle.low, close: lastCandle.close,
+      volume: lastCandle.volume, isUp: lastCandle.close >= lastCandle.open,
+    } : null)
+    if (!base || !Number.isFinite(livePrice) || (livePrice ?? 0) <= 0) return base
+    const price = Number(livePrice)
+    return {
+      ...base,
+      high: Math.max(base.high, price),
+      low: Math.min(base.low, price),
+      close: price,
+      isUp: price >= base.open,
+    }
+  })()
 
   const fmtP = (v: number) => v.toFixed(dec)
   const fmtV = (v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toString()

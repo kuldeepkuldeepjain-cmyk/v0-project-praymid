@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────��───────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────���───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3690,6 +3690,7 @@ const maxLeverage = 100
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
+  livePrice={(selectedPair.bid + selectedPair.ask) / 2}
   />
   </div>
   </div>
