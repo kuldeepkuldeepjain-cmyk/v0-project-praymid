@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────�����───────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────������───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3602,11 +3602,11 @@ const maxLeverage = 100
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
-            <div className="chart-header shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
+            <div className="chart-header terminal-market-dock shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
               {/* Primary Market Bar */}
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="terminal-market-dock-primary-row flex flex-wrap items-center justify-between gap-2">
                 {/* Symbol & Price Group */}
-                <div className="flex items-center gap-2.5 min-w-0">
+                <div className="terminal-market-dock-quote flex items-center gap-2.5 min-w-0">
 	                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1.5 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
 	                    <AssetLogo symbol={selectedPair.symbol} size={20} className="shrink-0" />
 	                    <span>{selectedPair.symbol}</span>
@@ -3632,7 +3632,7 @@ const maxLeverage = 100
 	                </div>
 
 	                {/* Chart Controls & Tools Group */}
-	                <div className="flex items-center gap-1.5 ml-auto">
+	                <div className="terminal-market-dock-tools flex items-center gap-1.5 ml-auto">
                   {/* Chart layout and live-data tools */}
 
 	                  <button

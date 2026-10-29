@@ -905,8 +905,8 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-1.5 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar terminal-indicator-toolbar text-[9px] font-bold"
-        style={{ minHeight: 34, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", flexShrink: 0 }}
+        className="flex items-center gap-1 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar terminal-indicator-toolbar text-[9px] font-bold"
+        style={{ minHeight: 34, background: "#0d1724", flexShrink: 0 }}
       >
         {/* Overlay indicators */}
         {([
@@ -1056,7 +1056,7 @@ export function TradingChart({
         )}
       </div>
 
-      {/* ── Chart canvas ───────────────────────────���────────────────────────────── */}
+      {/* ── Chart canvas ───────────────────────────���──���─────────────────────────── */}
   <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}

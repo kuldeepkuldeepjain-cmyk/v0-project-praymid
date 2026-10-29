@@ -10013,6 +10013,85 @@ body:has(.elite-terminal-shell) {
 }
 
 @media (max-width: 640px) {
+  .reference-terminal .terminal-market-dock {
+    position: relative;
+    z-index: 13;
+    overflow: hidden;
+    gap: 0 !important;
+    margin: 6px 0 5px !important;
+    padding: 6px 8px !important;
+    border: 1px solid rgba(104, 162, 191, .3) !important;
+    border-radius: 12px !important;
+    background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05), 0 5px 14px rgba(0, 0, 0, .16) !important;
+  }
+
+  .reference-terminal .terminal-market-dock-primary-row {
+    align-items: center;
+    gap: 0 !important;
+  }
+
+  .reference-terminal .terminal-market-dock-quote {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    gap: 6px !important;
+    padding-bottom: 4px;
+    overflow-x: auto;
+    border-bottom: 1px solid rgba(104, 162, 191, .22);
+    scrollbar-width: none;
+  }
+
+  .reference-terminal .terminal-market-dock-quote::-webkit-scrollbar,
+  .reference-terminal .terminal-market-dock-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reference-terminal .terminal-market-dock-quote > * {
+    flex: 0 0 auto;
+  }
+
+  .reference-terminal .terminal-market-dock-tools {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    gap: 5px !important;
+    margin: 0 !important;
+    padding-top: 4px;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-market-dock-tools button,
+  .mt5-terminal.reference-terminal .terminal-market-dock-tools select {
+    min-height: 30px !important;
+    height: 30px !important;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar {
+    min-height: 32px !important;
+    gap: 4px !important;
+    margin: 4px 0 6px;
+    padding: 3px 4px !important;
+    overflow-x: auto;
+    border: 1px solid rgba(104, 162, 191, .3) !important;
+    border-radius: 10px !important;
+    background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05);
+    scrollbar-width: none;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar button {
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 2px 8px !important;
+    font-size: 9px !important;
+    box-shadow: inset 0 1px rgba(255, 255, 255, .05) !important;
+  }
+}
+
+@media (max-width: 640px) {
   .reference-terminal .mobile-terminal-chart-wrap {
     min-height: min(56.25vw, 58dvh) !important;
     height: min(56.25vw, 58dvh) !important;
