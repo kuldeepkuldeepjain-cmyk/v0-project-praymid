@@ -30,7 +30,7 @@ interface TopupRequest {
   id: string
   participant_id: string
   participant_email: string
-  amount: number
+  amount: number | string
   transaction_id: string
   screenshot_url: string | null
   admin_notes: string | null
@@ -43,7 +43,7 @@ interface TopupRequest {
   bep20_address: string | null
   promo_code: string | null
   promo_discount_percent: number | null
-  promo_bonus_amount: number | null
+  promo_bonus_amount: number | string | null
 }
 
 const STATUS_CONFIG = {
@@ -200,7 +200,8 @@ export function TopUpRequestsPanel() {
       const data = await res.json()
       if (!data.success) throw new Error(data.message)
 
-      toast({ title: "Approved", description: `$${(selectedRequest.amount + Number(selectedRequest.promo_bonus_amount || 0)).toFixed(2)} credited to ${selectedRequest.participant_email}` })
+      const creditedAmount = Number(data.creditedAmount ?? (Number(selectedRequest.amount) + Number(selectedRequest.promo_bonus_amount || 0)))
+      toast({ title: "Approved", description: `$${creditedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} credited to ${selectedRequest.participant_email}` })
       setSelectedRequest(null)
       setAdminNoteInput("")
       fetchRequests(true)
@@ -255,8 +256,8 @@ export function TopUpRequestsPanel() {
   const pendingCount = requests.filter((r) => r.status === "pending").length
 
   // Summary stats
-  const totalApproved = requests.filter((r) => r.status === "completed").reduce((s, r) => s + r.amount, 0)
-  const totalPending = requests.filter((r) => r.status === "pending").reduce((s, r) => s + r.amount, 0)
+  const totalApproved = requests.filter((r) => r.status === "completed").reduce((sum, request) => sum + Number(request.amount), 0)
+  const totalPending = requests.filter((r) => r.status === "pending").reduce((sum, request) => sum + Number(request.amount), 0)
 
   return (
     <div className="space-y-6">
@@ -404,7 +405,7 @@ export function TopUpRequestsPanel() {
 
                     <div className="flex items-center gap-4 flex-shrink-0">
                       <div className="text-right hidden sm:block">
-                        <p className="text-base font-bold text-green-400">${req.amount.toFixed(2)}</p>
+                        <p className="text-base font-bold text-green-400">${Number(req.amount).toFixed(2)}</p>
                         <p className="text-xs text-slate-500">
                           {new Date(req.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </p>
@@ -457,21 +458,28 @@ export function TopUpRequestsPanel() {
 
               <div className="px-5 py-4 space-y-4 max-h-[70vh] overflow-y-auto">
                 {/* Status badge */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <Badge className={`${STATUS_CONFIG[selectedRequest.status].bg} ${STATUS_CONFIG[selectedRequest.status].text} border ${STATUS_CONFIG[selectedRequest.status].border} text-sm px-3 py-1`}>
                     {STATUS_CONFIG[selectedRequest.status].label}
                   </Badge>
-                  <span className="text-2xl font-black text-green-400">${selectedRequest.amount.toFixed(2)} USDT</span>
-                  {selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 && <p className="mt-1 text-xs font-semibold text-violet-300">{selectedRequest.promo_code} · +${Number(selectedRequest.promo_bonus_amount).toFixed(2)} bonus</p>}
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-green-400">${Number(selectedRequest.amount).toFixed(2)} {selectedRequest.payment_method === "inr_bank" ? "USD" : "USDT"}</span>
+                    {selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 && <p className="mt-1 text-xs font-semibold text-violet-300">{selectedRequest.promo_code} · ${Number(selectedRequest.promo_bonus_amount).toFixed(2)} savings</p>}
+                  </div>
                 </div>
 
                 {/* Request details */}
                 <div className="rounded-xl bg-slate-800 border border-slate-700 divide-y divide-slate-700">
                   {[
                     { label: "Participant", value: selectedRequest.participant_email },
-                    { label: "Amount", value: `$${selectedRequest.amount.toFixed(2)} USDT` },
+                    { label: "Payment amount", value: `$${Number(selectedRequest.amount).toFixed(2)} ${selectedRequest.payment_method === "inr_bank" ? "USD (UPI)" : "USDT"}` },
+                    ...(selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 ? [
+                      { label: "Promo code", value: selectedRequest.promo_code },
+                      { label: "Promo savings", value: `$${Number(selectedRequest.promo_bonus_amount).toFixed(2)}` },
+                      { label: "Funding requested", value: `$${(Number(selectedRequest.amount) + Number(selectedRequest.promo_bonus_amount)).toFixed(2)}` },
+                    ] : []),
                     { label: "Submitted", value: new Date(selectedRequest.created_at).toLocaleString() },
-                    { label: "Payment Method", value: "Crypto (BEP20 USDT)" },
+                    { label: "Payment Method", value: selectedRequest.payment_method === "inr_bank" ? "INR / UPI" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
                     ...(selectedRequest.reviewed_at ? [
                       { label: "Reviewed At", value: new Date(selectedRequest.reviewed_at).toLocaleString() },
                       { label: "Reviewed By", value: selectedRequest.reviewed_by_email || "—" },

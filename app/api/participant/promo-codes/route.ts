@@ -11,19 +11,23 @@ export async function GET(request: NextRequest) {
 
   try {
     const rows = await query(
-      `SELECT code, discount_percent
+      `SELECT code, discount_type, discount_value
        FROM promo_codes
        WHERE code = $1 AND active = TRUE
          AND (expires_at IS NULL OR expires_at > NOW())
          AND (max_uses IS NULL OR used_count < max_uses)
        LIMIT 1`,
       [code],
-    ) as Array<{ code: string; discount_percent: number }>
+    ) as Array<{ code: string; discount_type: "percent" | "fiat" | "inr"; discount_value: number }>
 
     if (!rows.length) return NextResponse.json({ success: false, message: "Promo code is invalid, expired, or no longer available." }, { status: 400 })
 
-    const discountPercent = Number(rows[0].discount_percent)
-    return NextResponse.json({ success: true, code: rows[0].code, discountPercent })
+    return NextResponse.json({
+      success: true,
+      code: rows[0].code,
+      discountType: rows[0].discount_type,
+      discountValue: Number(rows[0].discount_value),
+    })
   } catch (error) {
     console.error("Promo validation error:", error)
     return NextResponse.json({ success: false, message: "Unable to validate this promo code." }, { status: 500 })

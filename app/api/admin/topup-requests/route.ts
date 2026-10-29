@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { query, execute } from "@/lib/db"
+import { query, execute, withTransaction } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
 
@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
 
       const participant = pRows[0] as any
       const depositAmount = Number(topup.amount)
+      const promoBonusAmount = Number(topup.promo_bonus_amount || 0)
+      const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))
       const fundedSizes: Record<number, number> = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
       const isFundedAccount = participant.account_type === "funded"
       // A funded account's first activation is tier-based regardless of active/frozen status.
@@ -83,13 +85,12 @@ export async function POST(req: NextRequest) {
         && topup.payment_method === "funded_tier"
         && !Number(participant.funded_initial_balance || 0)
         && Number(participant.account_balance || 0) <= 0
-      const fundedCredit = fundedSizes[depositAmount]
+      const fundedCredit = fundedSizes[requestedFundingAmount]
       if (isInitialFundedTopUp && !fundedCredit) {
         return NextResponse.json({ success: false, message: "The first funded top-up must be $50, $100, $250, $500, or $1,000" }, { status: 400 })
       }
-      const promoBonusAmount = Number(topup.promo_bonus_amount || 0)
-      const creditedAmount = isInitialFundedTopUp ? fundedCredit : depositAmount
-      const totalCredit = creditedAmount + promoBonusAmount
+      const creditedAmount = isInitialFundedTopUp ? fundedCredit : requestedFundingAmount
+      const totalCredit = creditedAmount
       const newBalance = Number(participant.account_balance || 0) + totalCredit
       const fundedBaseAmount = isFundedAccount
         ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
@@ -98,24 +99,31 @@ export async function POST(req: NextRequest) {
       const revivalSql = isFundedAccount
         ? `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
         : "account_frozen = account_frozen, is_frozen = is_frozen, status = status"
-      await execute(
-        isFundedAccount
-          ? `UPDATE participants
-             SET account_balance = $1,
-                 funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
-                 funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
-                 ${revivalSql}, updated_at = NOW()
-             WHERE id = $2`
-          : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-        [newBalance, topup.participant_id, isInitialFundedTopUp, fundedBaseAmount]
-      )
-      await execute(
-        "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
-        [adminNotes || null, requestId]
-      )
-      if (topup.promo_code && promoBonusAmount > 0) {
-        await execute("UPDATE promo_codes SET used_count = used_count + 1 WHERE code = $1 AND active = TRUE AND (max_uses IS NULL OR used_count < max_uses)", [topup.promo_code])
-      }
+      await withTransaction(async (client) => {
+        const claimed = await client.query(
+          `UPDATE topup_requests SET status = 'processing'
+           WHERE id = $1 AND LOWER(status) IN ('pending', 'pending_collection')
+           RETURNING id`,
+          [requestId],
+        )
+        if (!claimed.rowCount) throw new Error("TOPUP_ALREADY_PROCESSED")
+
+        await client.query(
+          isFundedAccount
+            ? `UPDATE participants
+               SET account_balance = $1,
+                   funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
+                   funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
+                   ${revivalSql}, updated_at = NOW()
+               WHERE id = $2`
+            : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
+          [newBalance, topup.participant_id, isInitialFundedTopUp, fundedBaseAmount],
+        )
+        await client.query(
+          "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
+          [adminNotes || null, requestId],
+        )
+      })
       await execute(
         "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
         [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up${isFundedAccount ? ` for a $${creditedAmount.toLocaleString()} funded account` : ""}`]
@@ -123,7 +131,7 @@ export async function POST(req: NextRequest) {
 
       // Credit $5 only after a qualifying funded event: $50+ for normal accounts,
       // or a funded-account tier whose credited funded amount is $50+.
-      const qualifyingFundAmount = isFundedAccount ? creditedAmount : depositAmount
+      const qualifyingFundAmount = creditedAmount
       const meetsReferralFundingThreshold = qualifyingFundAmount >= 50
       const referrerRows = meetsReferralFundingThreshold ? await query(
         `SELECT id, email, account_balance, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
@@ -178,10 +186,22 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    await execute(
-      "UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
-      [adminNotes || null, requestId]
-    )
+    await withTransaction(async (client) => {
+      const rejected = await client.query(
+        `UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), admin_notes = $1
+         WHERE id = $2 AND LOWER(status) IN ('pending', 'pending_collection')
+         RETURNING promo_code`,
+        [adminNotes || null, requestId],
+      )
+      if (!rejected.rowCount) throw new Error("TOPUP_ALREADY_PROCESSED")
+      const reservedPromoCode = rejected.rows[0]?.promo_code
+      if (reservedPromoCode) {
+        await client.query(
+          "UPDATE promo_codes SET used_count = GREATEST(used_count - 1, 0) WHERE code = $1",
+          [reservedPromoCode],
+        )
+      }
+    })
     await execute(
       "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
       [topup.participant_id, topup.participant_email, "topup_rejected", "wallet", `Admin ${adminEmail} rejected $${topup.amount} top-up`]
@@ -189,6 +209,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Top-up rejected" })
   } catch (error) {
+    if (error instanceof Error && error.message === "TOPUP_ALREADY_PROCESSED") {
+      return NextResponse.json({ success: false, message: "Request already processed" }, { status: 409 })
+    }
     console.error("[topup-requests] POST error:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
