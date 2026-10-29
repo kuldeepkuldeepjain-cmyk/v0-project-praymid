@@ -5767,7 +5767,7 @@ button, a, [role="button"] {
   .terminal-stat-value { font-size: 12px; }
 }
 
-/* ─�� Final institutional terminal system ─────────────────────────────────
+/* ─�� Final institutional terminal system ─────────────���───────────────────
    Keep the terminal calm, legible and chart-first at every viewport. These
    scoped rules intentionally sit last so older visual experiments cannot
    reintroduce oversized rails or push the chart below the fold. */
@@ -6890,6 +6890,23 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     overflow-x: auto !important;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
+  }
+
+  .participant-dock-trade-button {
+    --dock-trade-surface-raised: #1a3449;
+    --dock-trade-surface-deep: #0c1927;
+    --dock-trade-accent: #60cfe7;
+    --dock-trade-label: #f8fafc;
+    color: var(--dock-trade-label);
+    border: 1px solid rgba(96, 207, 231, 0.62);
+    background: linear-gradient(115deg, var(--dock-trade-surface-raised) 0%, var(--dock-trade-surface-deep) 52%, var(--dock-trade-surface-raised) 100%);
+    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.12), 0 8px 24px rgba(2, 6, 23, 0.35);
+  }
+  .participant-dock-trade-button:hover { border-color: var(--dock-trade-accent); }
+  .participant-dock-trade-button:focus-visible { outline: 2px solid var(--dock-trade-accent); outline-offset: 3px; }
+  .participant-dock-trade-icon {
+    color: var(--dock-trade-accent);
+    filter: drop-shadow(0 0 5px rgba(96, 207, 231, 0.58));
   }
 
   /* Hide global dashboard navigation when trading terminal is active */

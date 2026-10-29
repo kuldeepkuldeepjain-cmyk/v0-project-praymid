@@ -2,7 +2,7 @@
 import type { ReactNode } from "react"
 import { Suspense } from "react"
 import Link from "next/link"
-import { TrendingUp } from "lucide-react"
+import { BarChart3, ChevronRight } from "lucide-react"
 import { DashboardHeartbeat, DesktopDashboardNavigation } from "@/components/participant-dashboard-interactions"
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -49,11 +49,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link
             href="/participant/dashboard?view=terminal"
             aria-label="Open trading terminal"
-            className="mx-auto flex h-14 w-full max-w-56 items-center justify-center gap-3 rounded-2xl border border-amber-100/60 px-8 text-sm font-black tracking-wide text-slate-950 shadow-[0_10px_30px_rgba(214,182,107,0.24)] transition-transform active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-100 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-            style={{ background: "linear-gradient(135deg, #f4d17d 0%, #d6b66b 58%, #bd913d 100%)" }}
+            className="participant-dock-trade-button mx-auto grid h-16 w-full grid-cols-[1fr_auto_1fr] items-center rounded-[18px] px-5 text-[18px] font-semibold tracking-wide transition-transform active:scale-[0.99] focus-visible:outline-none motion-reduce:transition-none"
           >
-            <TrendingUp className="size-5" strokeWidth={2.5} aria-hidden="true" />
-            <span>Trade</span>
+            <span aria-hidden="true" />
+            <span className="flex items-center justify-center gap-3">
+              <BarChart3 className="participant-dock-trade-icon size-6" strokeWidth={2.6} aria-hidden="true" />
+              <span>Trade</span>
+            </span>
+            <ChevronRight className="size-6 justify-self-end" strokeWidth={2} aria-hidden="true" />
           </Link>
         </nav>
       </div>
