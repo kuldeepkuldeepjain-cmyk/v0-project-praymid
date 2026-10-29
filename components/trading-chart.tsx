@@ -333,7 +333,6 @@ export function TradingChart({
   useEffect(() => {
     if (!containerRef.current) return
 
-    const mobileViewport = window.matchMedia("(max-width: 767px)")
     const chart = createChart(containerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: palette.bg },
@@ -386,17 +385,13 @@ export function TradingChart({
         lockVisibleTimeRangeOnResize: true,
         rightBarStaysOnScroll: true,
       },
-      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: !mobileViewport.matches, vertTouchDrag: false },
+      handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
       width:  containerRef.current.clientWidth,
       height: containerRef.current.clientHeight,
     })
 
     chartRef.current = chart
-    const syncMobileChartGestures = () => chart.applyOptions({
-      handleScroll: { horzTouchDrag: !mobileViewport.matches, vertTouchDrag: false },
-    })
-    mobileViewport.addEventListener("change", syncMobileChartGestures)
     chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
       if (range && !autoFitRequestedRef.current) userAdjustedViewRef.current = true
       autoFitRequestedRef.current = false
@@ -540,7 +535,6 @@ export function TradingChart({
     ro.observe(containerRef.current)
 
     return () => {
-      mobileViewport.removeEventListener("change", syncMobileChartGestures)
       ro.disconnect()
       if (frameId !== null) cancelAnimationFrame(frameId)
       chart.remove()
