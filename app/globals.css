@@ -10303,3 +10303,152 @@ body:has(.elite-terminal-shell) {
   .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group { gap: 6px; }
   .apple-trading-terminal.reference-terminal .mobile-terminal-home { width: 30px; height: 30px; }
 }
+
+/* Continuous order docks keep the ticket controls connected at every breakpoint. */
+.reference-terminal .terminal-order-panel-header {
+  min-height: 48px;
+  padding-inline: 8px;
+  background: linear-gradient(180deg, #102337 0%, #0a1421 100%) !important;
+}
+
+.reference-terminal .terminal-order-view-dock {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: stretch;
+  overflow: hidden;
+  margin-block: 5px;
+  border: 1px solid #3b3067;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #151a30, #0c1424);
+}
+
+.reference-terminal .terminal-order-view-dock button {
+  min-width: 68px;
+  min-height: 36px !important;
+  padding-inline: 12px;
+  border: 0 !important;
+  border-bottom: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #9aabba !important;
+  white-space: nowrap;
+}
+
+.reference-terminal .terminal-order-view-dock button + button {
+  border-left: 1px solid #3b3067 !important;
+}
+
+.reference-terminal .terminal-order-view-dock button[aria-pressed="true"] {
+  background: linear-gradient(145deg, #6846ff, #4a2be8) !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .14) !important;
+}
+
+.reference-terminal .terminal-order-view-dock button:focus-visible,
+.reference-terminal .terminal-order-type-dock button:focus-visible,
+.reference-terminal .terminal-order-quote-dock button:focus-visible,
+.reference-terminal .terminal-order-expiry-dock button:focus-visible,
+.reference-terminal .terminal-order-size-dock button:focus-visible {
+  position: relative;
+  z-index: 2;
+  outline: 2px solid #d6e8ff !important;
+  outline-offset: -3px;
+}
+
+.reference-terminal .terminal-order-type-dock,
+.reference-terminal .terminal-order-size-dock,
+.reference-terminal .terminal-order-expiry-dock {
+  width: 100%;
+  min-width: 0;
+  border-color: #303851 !important;
+  background: linear-gradient(180deg, #11182a, #0b1220) !important;
+}
+
+.reference-terminal .terminal-order-type-dock button {
+  min-width: 0;
+  min-height: 42px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #a6b4c6 !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal .terminal-order-type-dock button + button,
+.reference-terminal .terminal-order-size-dock button + button,
+.reference-terminal .terminal-order-expiry-dock button + button {
+  border-left: 1px solid #303851 !important;
+}
+
+.reference-terminal .terminal-order-type-dock button[aria-pressed="true"],
+.reference-terminal .terminal-order-size-dock button[aria-pressed="true"],
+.reference-terminal .terminal-order-expiry-dock button[aria-pressed="true"] {
+  background: linear-gradient(145deg, #6846ff, #4a2be8) !important;
+  color: #ffffff !important;
+}
+
+.reference-terminal .terminal-order-type-dock button:hover:not(:disabled),
+.reference-terminal .terminal-order-size-dock button:hover:not(:disabled),
+.reference-terminal .terminal-order-expiry-dock button:hover:not(:disabled) {
+  background-color: rgba(104, 70, 255, .18) !important;
+  color: #ede9fe !important;
+}
+
+.reference-terminal .terminal-order-quote-dock {
+  min-height: 58px;
+  border-color: #303851 !important;
+  background: linear-gradient(180deg, #11182a, #0b1220) !important;
+}
+
+.reference-terminal .terminal-order-quote-dock button {
+  min-width: 0;
+  min-height: 56px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  opacity: 1 !important;
+}
+
+.reference-terminal .terminal-order-quote-dock button + button {
+  border-left: 1px solid #303851 !important;
+}
+
+.reference-terminal .terminal-order-quote-dock .mobile-quote-sell[data-active="true"] {
+  background: linear-gradient(180deg, rgba(127, 29, 29, .34), rgba(69, 10, 10, .48)) !important;
+}
+
+.reference-terminal .terminal-order-quote-dock .mobile-quote-buy[data-active="true"] {
+  background: linear-gradient(180deg, rgba(20, 83, 45, .34), rgba(5, 46, 22, .48)) !important;
+}
+
+.reference-terminal .terminal-order-quote-dock .mobile-quote-sell[data-active="false"],
+.reference-terminal .terminal-order-quote-dock .mobile-quote-buy[data-active="false"] {
+  background: transparent !important;
+}
+
+.reference-terminal .terminal-order-size-dock button,
+.reference-terminal .terminal-order-expiry-dock button {
+  min-width: 0;
+  min-height: 40px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  color: #a6b4c6 !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 640px) {
+  .reference-terminal .terminal-order-panel-header {
+    padding-inline: 6px;
+  }
+
+  .reference-terminal .terminal-order-view-dock button {
+    min-width: 62px;
+    padding-inline: 8px;
+  }
+
+  .reference-terminal .terminal-order-size-dock button {
+    padding-inline: 2px;
+    font-size: 8px !important;
+  }
+}
