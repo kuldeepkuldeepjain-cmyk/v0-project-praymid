@@ -8525,18 +8525,18 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
   .apple-trading-terminal.reference-terminal .mobile-terminal-chart-wrap .apple-trading-chart-canvas,
   .apple-trading-terminal.reference-terminal .native-chart-gesture-surface {
-    touch-action: pan-x pinch-zoom !important;
+    touch-action: pan-y !important;
     overscroll-behavior: contain;
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
   .apple-trading-terminal.reference-terminal .native-chart-gesture-surface canvas {
-    touch-action: pan-x pinch-zoom !important;
+    touch-action: pan-y !important;
   }
   .native-chart-gesture-surface,
   .native-chart-gesture-surface canvas {
-    touch-action: pan-x pinch-zoom !important;
+    touch-action: pan-y !important;
     overscroll-behavior: contain;
   }
   .apple-trading-terminal.reference-terminal .reference-mobile-nav::-webkit-scrollbar { display: none; }
@@ -9934,7 +9934,7 @@ body:has(.elite-terminal-shell) {
     max-height: none !important;
     flex: none !important;
     overflow: visible !important;
-    touch-action: pan-y pinch-zoom !important;
+    touch-action: pan-y !important;
     overscroll-behavior: contain;
     background: #07111f !important;
   }
@@ -9942,7 +9942,7 @@ body:has(.elite-terminal-shell) {
   .reference-terminal .apple-trading-chart,
   .reference-terminal .native-chart-gesture-surface,
   .reference-terminal .apple-trading-chart-canvas {
-    touch-action: pan-y pinch-zoom !important;
+    touch-action: pan-y !important;
   }
 
   .reference-terminal .reference-chart-trade-dock {
