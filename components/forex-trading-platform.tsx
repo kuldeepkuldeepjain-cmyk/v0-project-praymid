@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────────────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────��───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -3631,19 +3631,7 @@ const maxLeverage = 100
 
 	                {/* Chart Controls & Tools Group */}
 	                <div className="flex items-center gap-1.5 ml-auto">
-	                  {/* Provider & Layout Toggles */}
-	                  <button
-	                    type="button"
-	                    onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
-	                    className="px-2 py-1 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
-	                    style={{
-	                      color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
-	                      background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
-	                      borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
-	                    }}
-	                  >
-	                    {chartProvider === "tradingview" ? "TV Live" : "Native"}
-	                  </button>
+                  {/* Chart layout and live-data tools */}
 
 	                  <button
 	                    type="button"
@@ -3752,18 +3740,7 @@ const maxLeverage = 100
 
 	              {/* Provider Quick Toggle */}
 	              <div className="flex items-center gap-1 shrink-0 ml-1">
-	                <button
-	                  type="button"
-	                  onClick={() => setChartProvider(v => v === "tradingview" ? "native" : "tradingview")}
-	                  className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-colors border"
-	                  style={{
-	                    color: chartProvider === "tradingview" ? "#38bdf8" : "#94a3b8",
-	                    background: chartProvider === "tradingview" ? "rgba(56,189,248,0.12)" : "#0b1625",
-	                    borderColor: chartProvider === "tradingview" ? "rgba(56,189,248,0.35)" : "#1e2d45",
-	                  }}
-	                >
-	                  {chartProvider === "tradingview" ? "TV Live" : "Native"}
-	                </button>
+
 	              </div>
 	            </div>
 
