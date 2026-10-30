@@ -10228,14 +10228,16 @@ body:has(.elite-terminal-shell) {
   }
 
   .reference-terminal .terminal-indicator-toolbar {
-    min-height: 30px !important;
-    height: 30px !important;
-    flex-wrap: nowrap !important;
-    justify-content: flex-start !important;
-    gap: 6px !important;
+    min-height: 0 !important;
+    height: auto !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-content: normal !important;
+    gap: 5px 8px !important;
     margin: 4px 0 6px;
-    padding: 2px 4px !important;
-    overflow-x: auto;
+    padding: 5px 6px !important;
+    overflow: visible !important;
     border: 1px solid rgba(104, 162, 191, .3) !important;
     border-radius: 10px !important;
     background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
@@ -10250,6 +10252,29 @@ body:has(.elite-terminal-shell) {
   .reference-terminal .terminal-indicator-toolbar > div {
     flex: 0 0 auto;
     flex-wrap: nowrap !important;
+    min-width: 0;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls {
+    grid-column: 1 / -1;
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-pane-controls {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-action-controls {
+    grid-column: 2;
+    justify-self: end;
+    margin-left: 0 !important;
   }
 
   .mt5-terminal.reference-terminal .terminal-indicator-toolbar button,
