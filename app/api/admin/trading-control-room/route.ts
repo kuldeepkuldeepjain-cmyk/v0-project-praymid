@@ -5,141 +5,165 @@ import { requireAdminSession } from "@/lib/auth-middleware"
 export const dynamic = "force-dynamic"
 export const runtime = "nodejs"
 
-export async function GET() {
+const SUMMARY_SQL = `
+  SELECT
+    (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE) AS participant_count,
+    (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE AND LOWER(REGEXP_REPLACE(COALESCE(account_type, ''), '[ _-]', '', 'g')) IN ('funded', 'fundedaccount', 'fundedtier')) AS funded_accounts,
+    (SELECT COALESCE(SUM(funded_initial_balance), 0) FROM participants WHERE is_deleted IS NOT TRUE AND funded_initial_balance > 0) AS funded_capital,
+    (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE AND (is_frozen IS TRUE OR account_frozen IS TRUE)) AS frozen_accounts,
+    (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE AND funded_initial_balance > 0 AND (funded_breach_status = 'breached' OR account_balance <= funded_initial_balance * 0.98)) AS breached_accounts,
+    (SELECT COUNT(*)::int FROM forex_trades WHERE status = 'open') AS open_positions,
+    (SELECT COUNT(*)::int FROM forex_trades WHERE status = 'pending') AS pending_orders,
+    (SELECT COALESCE(SUM(margin), 0) FROM forex_trades WHERE status = 'open') AS used_margin,
+    (SELECT COUNT(*)::int FROM trade_risk_flags WHERE status = 'open') AS open_risk_flags,
+    (SELECT COUNT(*)::int FROM payout_requests WHERE status IN ('pending', 'matched', 'approved')) AS pending_payouts,
+    (SELECT COUNT(*)::int FROM participant_kyc_verifications WHERE status IN ('pending', 'under_review')) AS pending_kyc
+`
+
+const ACCOUNTS_SQL = `
+  SELECT p.id::text AS id, p.email, COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), p.email) AS trader,
+         p.serial_number, COALESCE(p.account_type, 'unassigned') AS account_type,
+         COALESCE(p.account_balance, 0) AS account_balance, COALESCE(p.funded_initial_balance, 0) AS funded_initial_balance,
+         COALESCE(p.is_active, false) AS is_active,
+         (COALESCE(p.is_frozen, false) OR COALESCE(p.account_frozen, false)) AS frozen,
+         COALESCE(p.funded_breach_status, 'clear') AS funded_breach_status,
+         COALESCE(t.open_positions, 0)::int AS open_positions,
+         COALESCE(t.pending_orders, 0)::int AS pending_orders,
+         COALESCE(t.trade_count, 0)::int AS trade_count
+  FROM participants p
+  LEFT JOIN (
+    SELECT LOWER(participant_email) AS email,
+           COUNT(*) FILTER (WHERE status = 'open')::int AS open_positions,
+           COUNT(*) FILTER (WHERE status = 'pending')::int AS pending_orders,
+           COUNT(*)::int AS trade_count
+    FROM forex_trades GROUP BY LOWER(participant_email)
+  ) t ON t.email = LOWER(p.email)
+  WHERE p.is_deleted IS NOT TRUE AND (
+    LOWER(REGEXP_REPLACE(COALESCE(p.account_type, ''), '[ _-]', '', 'g')) IN ('funded', 'fundedaccount', 'fundedtier') OR COALESCE(t.trade_count, 0) > 0
+  )
+  ORDER BY COALESCE(t.open_positions, 0) DESC, p.created_at DESC LIMIT 250
+`
+
+const positionsSql = (limit: number) => `
+  SELECT t.id, t.participant_email, COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), t.participant_email) AS trader,
+         t.pair, t.direction, t.status, t.lot_size, t.leverage, t.open_price, t.target_price, t.sl, t.tp, t.margin, t.swap,
+         t.open_time, t.created_at, t.updated_at
+  FROM forex_trades t
+  LEFT JOIN participants p ON LOWER(p.email) = LOWER(t.participant_email)
+  WHERE t.status IN ('open', 'pending')
+  ORDER BY COALESCE(t.updated_at, t.created_at) DESC LIMIT ${limit}
+`
+
+const PERFORMANCE_SQL = `
+  SELECT COUNT(*)::int AS trades,
+         COUNT(*) FILTER (WHERE final_pnl > 0)::int AS wins,
+         COUNT(*) FILTER (WHERE final_pnl < 0)::int AS losses,
+         COALESCE(SUM(final_pnl) FILTER (WHERE final_pnl > 0), 0) AS gross_profit,
+         COALESCE(SUM(ABS(final_pnl)) FILTER (WHERE final_pnl < 0), 0) AS gross_loss,
+         COALESCE(SUM(final_pnl), 0) AS net_pnl,
+         COALESCE(AVG(final_pnl), 0) AS average_pnl,
+         COALESCE(AVG(final_pnl) FILTER (WHERE final_pnl > 0), 0) AS average_win,
+         COALESCE(AVG(final_pnl) FILTER (WHERE final_pnl < 0), 0) AS average_loss
+  FROM forex_trades
+  WHERE status = 'closed' AND COALESCE(updated_at, created_at) >= NOW() - INTERVAL '30 days'
+`
+
+const HISTORY_SQL = `
+  SELECT id, participant_email, pair, direction, lot_size, open_price, close_price, final_pnl, close_reason,
+         close_time, COALESCE(updated_at, created_at) AS recorded_at
+  FROM forex_trades WHERE status = 'closed'
+  ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 100
+`
+
+const RISK_SQL = `
+  SELECT id::text AS id, trade_id, participant_email, flag_type, severity, evidence, status, created_at
+  FROM trade_risk_flags WHERE status = 'open' ORDER BY created_at DESC LIMIT 100
+`
+
+const PAYOUTS_SQL = `
+  SELECT pr.id::text AS id, pr.participant_email, COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), pr.participant_email) AS trader,
+         pr.amount, pr.payout_method, pr.status, pr.created_at
+  FROM payout_requests pr LEFT JOIN participants p ON p.id = pr.participant_id
+  ORDER BY pr.created_at DESC LIMIT 100
+`
+
+const PAYMENTS_SQL = `
+  SELECT id::text AS id, participant_email, amount, payment_method, transaction_id, status, rejection_reason, created_at
+  FROM payment_submissions ORDER BY created_at DESC LIMIT 100
+`
+
+const KYC_SQL = `
+  SELECT id::text AS id, participant_email, legal_name, country, document_type, document_number, document_front_url, document_back_url, selfie_url, status, rejection_reason, submitted_at, reviewed_at, reviewed_by
+  FROM participant_kyc_verifications ORDER BY submitted_at DESC LIMIT 100
+`
+
+const AUDIT_SQL = `
+  SELECT id::text AS id, actor_email, action, target_type, target_id, details, created_at
+  FROM activity_logs ORDER BY created_at DESC LIMIT 100
+`
+
+export async function GET(request: NextRequest) {
   const auth = await requireAdminSession()
   if (!auth.ok) return auth.response
 
+  const section = request.nextUrl.searchParams.get("section") ?? "overview"
+  const generatedAt = new Date().toISOString()
+
   try {
-    const [summaryRows, accounts, positions, performanceRows, riskFlags, payouts, payments, kyc, users, auditLogs, accountTypes, history] = await Promise.all([
-      query(`
-        SELECT
-          (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE) AS participant_count,
-          (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE AND LOWER(REGEXP_REPLACE(COALESCE(account_type, ''), '[ _-]', '', 'g')) IN ('funded', 'fundedaccount', 'fundedtier')) AS funded_accounts,
-          (SELECT COALESCE(SUM(funded_initial_balance), 0) FROM participants WHERE is_deleted IS NOT TRUE AND funded_initial_balance > 0) AS funded_capital,
-          (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE AND (is_frozen IS TRUE OR account_frozen IS TRUE)) AS frozen_accounts,
-          (SELECT COUNT(*)::int FROM participants WHERE is_deleted IS NOT TRUE AND funded_initial_balance > 0 AND (funded_breach_status = 'breached' OR account_balance <= funded_initial_balance * 0.98)) AS breached_accounts,
-          (SELECT COUNT(*)::int FROM forex_trades WHERE status = 'open') AS open_positions,
-          (SELECT COUNT(*)::int FROM forex_trades WHERE status = 'pending') AS pending_orders,
-          (SELECT COALESCE(SUM(margin), 0) FROM forex_trades WHERE status = 'open') AS used_margin,
-          (SELECT COUNT(*)::int FROM trade_risk_flags WHERE status = 'open') AS open_risk_flags,
-          (SELECT COUNT(*)::int FROM payout_requests WHERE status IN ('pending', 'matched', 'approved')) AS pending_payouts,
-          (SELECT COUNT(*)::int FROM participant_kyc_verifications WHERE status IN ('pending', 'under_review')) AS pending_kyc
-      `),
-      query(`
-        SELECT p.id::text AS id, p.email, COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), p.email) AS trader,
-               p.serial_number, COALESCE(p.account_type, 'unassigned') AS account_type,
-               COALESCE(p.account_balance, 0) AS account_balance, COALESCE(p.funded_initial_balance, 0) AS funded_initial_balance,
-               COALESCE(p.is_active, false) AS is_active,
-               (COALESCE(p.is_frozen, false) OR COALESCE(p.account_frozen, false)) AS frozen,
-               COALESCE(p.funded_breach_status, 'clear') AS funded_breach_status,
-               COALESCE(t.open_positions, 0)::int AS open_positions,
-               COALESCE(t.pending_orders, 0)::int AS pending_orders,
-               COALESCE(t.trade_count, 0)::int AS trade_count
-        FROM participants p
-        LEFT JOIN (
-          SELECT LOWER(participant_email) AS email,
-                 COUNT(*) FILTER (WHERE status = 'open')::int AS open_positions,
-                 COUNT(*) FILTER (WHERE status = 'pending')::int AS pending_orders,
-                 COUNT(*)::int AS trade_count
-          FROM forex_trades GROUP BY LOWER(participant_email)
-        ) t ON t.email = LOWER(p.email)
-        WHERE p.is_deleted IS NOT TRUE AND (
-          LOWER(REGEXP_REPLACE(COALESCE(p.account_type, ''), '[ _-]', '', 'g')) IN ('funded', 'fundedaccount', 'fundedtier') OR COALESCE(t.trade_count, 0) > 0
-        )
-        ORDER BY COALESCE(t.open_positions, 0) DESC, p.created_at DESC LIMIT 250
-      `),
-      query(`
-        SELECT t.id, t.participant_email, COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), t.participant_email) AS trader,
-               t.pair, t.direction, t.status, t.lot_size, t.leverage, t.open_price, t.target_price, t.sl, t.tp, t.margin, t.swap,
-               t.open_time, t.created_at, t.updated_at
-        FROM forex_trades t
-        LEFT JOIN participants p ON LOWER(p.email) = LOWER(t.participant_email)
-        WHERE t.status IN ('open', 'pending')
-        ORDER BY COALESCE(t.updated_at, t.created_at) DESC LIMIT 250
-      `),
-      query(`
-        SELECT COUNT(*)::int AS trades,
-               COUNT(*) FILTER (WHERE final_pnl > 0)::int AS wins,
-               COUNT(*) FILTER (WHERE final_pnl < 0)::int AS losses,
-               COALESCE(SUM(final_pnl) FILTER (WHERE final_pnl > 0), 0) AS gross_profit,
-               COALESCE(SUM(ABS(final_pnl)) FILTER (WHERE final_pnl < 0), 0) AS gross_loss,
-               COALESCE(SUM(final_pnl), 0) AS net_pnl,
-               COALESCE(AVG(final_pnl), 0) AS average_pnl,
-               COALESCE(AVG(final_pnl) FILTER (WHERE final_pnl > 0), 0) AS average_win,
-               COALESCE(AVG(final_pnl) FILTER (WHERE final_pnl < 0), 0) AS average_loss
-        FROM forex_trades
-        WHERE status = 'closed' AND COALESCE(updated_at, created_at) >= NOW() - INTERVAL '30 days'
-      `),
-      query(`
-        SELECT id::text AS id, trade_id, participant_email, flag_type, severity, evidence, status, created_at
-        FROM trade_risk_flags WHERE status = 'open' ORDER BY created_at DESC LIMIT 100
-      `),
-      query(`
-        SELECT pr.id::text AS id, pr.participant_email, COALESCE(NULLIF(p.full_name, ''), NULLIF(p.username, ''), pr.participant_email) AS trader,
-               pr.amount, pr.payout_method, pr.status, pr.created_at
-        FROM payout_requests pr LEFT JOIN participants p ON p.id = pr.participant_id
-        ORDER BY pr.created_at DESC LIMIT 100
-      `),
-      query(`
-  SELECT id::text AS id, participant_email, amount, payment_method, transaction_id, status, rejection_reason, created_at
-  FROM payment_submissions ORDER BY created_at DESC LIMIT 100
-      `),
-      query(`
-        SELECT id::text AS id, participant_email, legal_name, country, document_type, document_number, document_front_url, document_back_url, selfie_url, status, rejection_reason, submitted_at, reviewed_at, reviewed_by
-        FROM participant_kyc_verifications ORDER BY submitted_at DESC LIMIT 100
-      `),
-      query(`
-        SELECT id::text AS id, email, COALESCE(NULLIF(full_name, ''), NULLIF(username, ''), email) AS trader,
-               account_type, account_balance, is_active, is_frozen, account_frozen, created_at, last_seen
-        FROM participants WHERE is_deleted IS NOT TRUE ORDER BY created_at DESC LIMIT 250
-      `),
-      query(`
-        SELECT id::text AS id, actor_email, action, target_type, target_id, details, created_at
-        FROM activity_logs ORDER BY created_at DESC LIMIT 100
-      `),
-      query(`
-        SELECT COALESCE(NULLIF(account_type, ''), 'unassigned') AS account_type,
-               COUNT(*)::int AS accounts,
-               COALESCE(SUM(account_balance), 0) AS account_balance,
-               COALESCE(SUM(funded_initial_balance) FILTER (WHERE funded_initial_balance > 0), 0) AS funded_capital
-        FROM participants WHERE is_deleted IS NOT TRUE GROUP BY COALESCE(NULLIF(account_type, ''), 'unassigned')
-        ORDER BY accounts DESC
-      `),
-      query(`
-        SELECT id, participant_email, pair, direction, lot_size, open_price, close_price, final_pnl, close_reason,
-               close_time, COALESCE(updated_at, created_at) AS recorded_at
-        FROM forex_trades WHERE status = 'closed'
-        ORDER BY COALESCE(updated_at, created_at) DESC LIMIT 100
-      `),
-    ])
+    if (section === "overview") {
+      const [summaryRows, positions] = await Promise.all([query(SUMMARY_SQL), query(positionsSql(8))])
+      return NextResponse.json({ success: true, generatedAt, summary: summaryRows[0] ?? {}, positions })
+    }
 
-    const performance = performanceRows[0] ?? {}
-    const totalTrades = Number(performance.trades ?? 0)
-    const grossProfit = Number(performance.gross_profit ?? 0)
-    const grossLoss = Number(performance.gross_loss ?? 0)
+    if (section === "accounts") {
+      return NextResponse.json({ success: true, generatedAt, accounts: await query(ACCOUNTS_SQL) })
+    }
 
-    return NextResponse.json({
-      success: true,
-      generatedAt: new Date().toISOString(),
-      summary: summaryRows[0] ?? {},
-      accounts,
-      positions,
-      performance: {
-        ...performance,
-        win_rate: totalTrades ? (Number(performance.wins ?? 0) / totalTrades) * 100 : 0,
-        profit_factor: grossLoss ? grossProfit / grossLoss : grossProfit ? null : 0,
-      },
-      riskFlags,
-      payouts,
-      payments,
-      kyc,
-      users,
-      auditLogs,
-      accountTypes,
-      history,
-    })
+    if (section === "risk") {
+      return NextResponse.json({ success: true, generatedAt, riskFlags: await query(RISK_SQL) })
+    }
+
+    if (section === "positions") {
+      return NextResponse.json({ success: true, generatedAt, positions: await query(positionsSql(250)) })
+    }
+
+    if (section === "performance") {
+      const [performanceRows, history] = await Promise.all([query(PERFORMANCE_SQL), query(HISTORY_SQL)])
+      const performance = performanceRows[0] ?? {}
+      const totalTrades = Number(performance.trades ?? 0)
+      const grossProfit = Number(performance.gross_profit ?? 0)
+      const grossLoss = Number(performance.gross_loss ?? 0)
+      return NextResponse.json({
+        success: true,
+        generatedAt,
+        performance: {
+          ...performance,
+          win_rate: totalTrades ? (Number(performance.wins ?? 0) / totalTrades) * 100 : 0,
+          profit_factor: grossLoss ? grossProfit / grossLoss : grossProfit ? null : 0,
+        },
+        history,
+      })
+    }
+
+    if (section === "payouts") {
+      return NextResponse.json({ success: true, generatedAt, payouts: await query(PAYOUTS_SQL) })
+    }
+
+    if (section === "payments") {
+      return NextResponse.json({ success: true, generatedAt, payments: await query(PAYMENTS_SQL) })
+    }
+
+    if (section === "kyc") {
+      return NextResponse.json({ success: true, generatedAt, kyc: await query(KYC_SQL) })
+    }
+
+    if (section === "audit") {
+      return NextResponse.json({ success: true, generatedAt, auditLogs: await query(AUDIT_SQL) })
+    }
+
+    return NextResponse.json({ success: false, error: "Unknown control-room section." }, { status: 400 })
   } catch (error) {
-    console.error("[admin/trading-control-room] failed to load live trading data", error)
+    console.error("[admin/trading-control-room] failed to load section", section, error)
     return NextResponse.json({ success: false, error: "Live trading data is currently unavailable." }, { status: 500 })
   }
 }
