@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, ShieldCheck, Wallet } from "lucide-react"
+import { ArrowLeft, ChevronRight, QrCode, ShieldCheck, Wallet } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageLoader } from "@/components/ui/page-loader"
@@ -130,6 +130,21 @@ export default function AddFundPage() {
                 <Wallet className="mr-2 h-5 w-5" />
                 {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}
               </Button>
+
+              <Link
+                href="/participant/dashboard/upi"
+                className="flex items-center gap-3 rounded-xl border border-[#d6b66b]/30 bg-[#d6b66b]/5 px-4 py-3 transition hover:border-[#d6b66b]/60 hover:bg-[#d6b66b]/10"
+              >
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#d6b66b]/15 text-[#d6b66b]">
+                  <QrCode className="size-4" aria-hidden="true" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-slate-900">EliteFund UPI Gateway</span>
+                  <span className="block text-xs text-slate-500">Pay in INR with any UPI app and confirm the reference</span>
+                </span>
+                <ChevronRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
+              </Link>
+
               {isFundedAccount && (
                 <div className="space-y-2">
                   <Button

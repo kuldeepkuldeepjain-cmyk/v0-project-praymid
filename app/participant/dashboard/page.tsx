@@ -10,7 +10,7 @@ import {
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
   AlertCircle, Home, Plus, PlusCircle, MessageCircle, Menu, Search,
-  ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal,
+  ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal, QrCode,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
@@ -2338,6 +2338,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item elite-terminal-add-fund">
                 <PlusCircle />
                 <span>Add Fund</span>
+              </Link>
+              <Link href="/participant/dashboard/upi" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <QrCode />
+                <span>UPI Gateway</span>
               </Link>
               <Link href="/participant/dashboard/payout" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
                 <ArrowUpRight />
