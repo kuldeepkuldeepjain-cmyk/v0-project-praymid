@@ -833,8 +833,8 @@ export function TradingChart({
   }, [candles])
 
   // Sub-pane config helpers
-  const subPaneColor  = chartPane === "rsi" ? palette.emerald : palette.orange
-  const subPaneLabel  = chartPane !== "none" ? chartPane.toUpperCase() : null
+  const subPaneColor = chartPane === "rsi" ? palette.emerald : palette.orange
+  const subPaneLabel = chartPane !== "none" && indicators[chartPane] ? chartPane.toUpperCase() : null
 
   return (
     <div className="apple-trading-chart terminal-chart-surface flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
@@ -905,105 +905,115 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
       <div
-        className="flex items-center gap-1 px-2 py-1 shrink-0 overflow-x-auto terminal-chart-toolbar terminal-indicator-toolbar text-[9px] font-bold"
-        style={{ minHeight: 34, background: "#0d1724", flexShrink: 0 }}
+        className="terminal-chart-toolbar terminal-indicator-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 shrink-0 text-[9px] font-bold"
+        style={{ minHeight: 38, background: "#0d1724", flexShrink: 0 }}
       >
-        {/* Overlay indicators */}
-        {([
-          { key: "ema9"    as IndicatorKey, label: "EMA9",  color: palette.amber  },
-          { key: "ema21"   as IndicatorKey, label: "EMA21", color: palette.blue   },
-          { key: "ema50"   as IndicatorKey, label: "EMA50", color: palette.pink   },
-          { key: "bb"      as IndicatorKey, label: "BB20",  color: palette.purple },
-          { key: "volume"  as IndicatorKey, label: "VOL",   color: palette.cyan   },
-        ]).map(({ key, label, color }) => (
+        <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Chart overlays">
+          <span className="shrink-0 text-[8px] font-black tracking-[0.16em]" style={{ color: "#8296ab" }}>OVERLAYS</span>
+          <span aria-hidden="true" className="h-3 w-px shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
+          {([
+            { key: "ema9" as IndicatorKey, label: "EMA 9", title: "9-period exponential moving average", color: palette.amber },
+            { key: "ema21" as IndicatorKey, label: "EMA 21", title: "21-period exponential moving average", color: palette.blue },
+            { key: "ema50" as IndicatorKey, label: "EMA 50", title: "50-period exponential moving average", color: palette.pink },
+            { key: "bb" as IndicatorKey, label: "BB 20", title: "20-period Bollinger Bands", color: palette.purple },
+            { key: "volume" as IndicatorKey, label: "VOL", title: "Volume bars", color: palette.cyan },
+          ]).map(({ key, label, title, color }) => {
+            const isActive = indicators[key]
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggle(key)}
+                aria-pressed={isActive}
+                title={title}
+                className="flex items-center gap-1.5 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
+                style={isActive
+                  ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+                  : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-0.5 w-2.5 rounded-full"
+                  style={{ background: color, opacity: isActive ? 1 : 0.45, boxShadow: isActive ? `0 0 5px ${color}` : "none" }}
+                />
+                <span className="text-[9px] font-black tracking-wide">{label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Chart studies">
+          <span className="text-[8px] font-black tracking-[0.16em]" style={{ color: "#8296ab" }}>PANE</span>
+          <span aria-hidden="true" className="h-3 w-px shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
+          {([
+            { id: "rsi" as const, label: "RSI", title: "Relative Strength Index", color: palette.emerald },
+            { id: "macd" as const, label: "MACD", title: "Moving Average Convergence Divergence", color: palette.orange },
+          ]).map(({ id, label, title, color }) => {
+            const isActive = chartPane === id && indicators[id]
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => {
+                  if (isActive) {
+                    setChartPane("none")
+                    setIndicators((p) => ({ ...p, [id]: false }))
+                  } else {
+                    setChartPane(id)
+                    setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
+                  }
+                }}
+                aria-pressed={isActive}
+                title={title}
+                className="flex items-center gap-1.5 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
+                style={isActive
+                  ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+                  : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
+                }
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-0.5 w-2.5 rounded-full"
+                  style={{ background: color, opacity: isActive ? 1 : 0.45, boxShadow: isActive ? `0 0 5px ${color}` : "none" }}
+                />
+                <span className="text-[9px] font-black tracking-wide">{label}</span>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="ml-auto flex shrink-0 items-center gap-1.5" role="group" aria-label="Chart actions">
+          {/* Price Alert toggle */}
           <button
-            key={key}
-            onClick={() => toggle(key)}
-            aria-pressed={indicators[key]}
+            type="button"
+            onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
+            aria-pressed={alertMode}
             className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
-            style={indicators[key]
-              ? { background: `${color}20`, border: `1px solid ${color}50`, color }
+            style={alertMode
+              ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
               : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
             }
+            title="Click on chart to set a price alert"
           >
-            <span className="text-[9px] font-black tracking-wide">{label}</span>
+            <svg aria-hidden="true" width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
+            </svg>
+            <span className="text-[9px] font-black tracking-wide">ALERT</span>
+            {alerts.length > 0 && (
+              <span
+                className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black ml-0.5"
+                style={{ background: palette.amber, color: "#000" }}
+              >
+                {alerts.length}
+              </span>
+            )}
           </button>
-        ))}
-
-        <div className="w-px h-3.5 self-center mx-1 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
-
-        {/* Sub-pane oscillators */}
-        {([
-          { id: "rsi" as const,  label: "RSI",  color: palette.emerald },
-          { id: "macd" as const, label: "MACD", color: palette.orange  },
-        ]).map(({ id, label, color }) => {
-          const isActive = chartPane === id && indicators[id]
-          return (
-            <button
-              key={id}
-              onClick={() => {
-                if (isActive) {
-                  setChartPane("none")
-                  setIndicators((p) => ({ ...p, [id]: false }))
-                } else {
-                  setChartPane(id)
-                  setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
-                }
-              }}
-              className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
-              style={isActive
-                ? { background: `${color}20`, border: `1px solid ${color}50`, color }
-                : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
-              }
-            >
-              <span className="text-[9px] font-black tracking-wide">{label}</span>
-            </button>
-          )
-        })}
-
-        {/* Sub-pane active pill */}
-        {subPaneLabel && (
-          <span
-            className="ml-0.5 px-1.5 py-0.5 rounded text-[8px] font-black shrink-0 tracking-widest"
-            style={{
-              background: `${subPaneColor}15`,
-              color: subPaneColor,
-              border: `1px solid ${subPaneColor}35`,
-            }}
-          >
-            {subPaneLabel}
-          </span>
-        )}
-
-        <div className="flex-1" />
-
-        {/* Price Alert toggle */}
-        <button
-          onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
-          className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
-          style={alertMode
-            ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
-            : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
-          }
-          title="Click on chart to set a price alert"
-        >
-          <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-            <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
-          </svg>
-          <span className="text-[9px] font-black tracking-wide">ALERT</span>
-          {alerts.length > 0 && (
-            <span
-              className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black ml-0.5"
-              style={{ background: palette.amber, color: "#000" }}
-            >
-              {alerts.length}
-            </span>
-          )}
-        </button>
 
         {/* Reset zoom */}
         <button
+          type="button"
           onClick={() => {
             if (!chartRef.current || candleData.length === 0) return
             userAdjustedViewRef.current = false
@@ -1054,9 +1064,10 @@ export function TradingChart({
             )}
           </button>
         )}
+        </div>
       </div>
 
-      {/* ── Chart canvas ───────────────────────────���──���─────────────────────────── */}
+      {/* ── Chart canvas ───────────────────────────���──���──────────────���──────────── */}
   <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}
