@@ -4,6 +4,7 @@ import { createHash } from "node:crypto"
 import { Ratelimit } from "@upstash/ratelimit"
 import { Redis } from "@upstash/redis"
 import { getPool } from "@/lib/db"
+import type { PoolClient } from "pg"
 import type { NextRequest } from "next/server"
 
 const redisUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
@@ -69,10 +70,29 @@ export async function recordSecurityEvent(input: {
   if (!db) return
 
   const context = input.request ? getSecurityContext(input.request) : null
-  const client = await db.connect()
+  let client: PoolClient
+  try {
+    client = await db.connect()
+  } catch {
+    // A saturated pool must never block the request that triggered the audit write.
+    return
+  }
   try {
     await client.query("BEGIN")
-    await client.query("SELECT pg_advisory_xact_lock(hashtext('security_events_chain'))")
+    await client.query("SET LOCAL statement_timeout = '3s'")
+    // Bounded lock acquisition. An unbounded advisory lock lets one stalled chain
+    // writer block every admin request until the pool times out, which surfaces
+    // in the UI as a section that never finishes loading.
+    let locked = false
+    for (let attempt = 0; attempt < 5 && !locked; attempt += 1) {
+      const result = await client.query<{ locked: boolean }>("SELECT pg_try_advisory_xact_lock(hashtext('security_events_chain')) AS locked")
+      locked = Boolean(result.rows[0]?.locked)
+      if (!locked) await new Promise((resolve) => setTimeout(resolve, 50 * (attempt + 1)))
+    }
+    if (!locked) {
+      await client.query("ROLLBACK")
+      return
+    }
     const previous = await client.query("SELECT event_hash FROM security_events ORDER BY created_at DESC, id DESC LIMIT 1")
     const previousHash = previous.rows[0]?.event_hash || "GENESIS"
     const payload = {
