@@ -908,7 +908,40 @@ export function TradingChart({
         className="terminal-chart-toolbar terminal-indicator-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 shrink-0 text-[9px] font-bold"
         style={{ minHeight: 38, background: "#0d1724", flexShrink: 0 }}
       >
-        <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Chart overlays">
+        <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Chart indicators">
+          <button
+            type="button"
+            aria-label="Toggle chart indicators"
+            aria-pressed={(["ema9", "ema21", "ema50", "bb", "volume"] as IndicatorKey[]).some((key) => indicators[key])}
+            title="Toggle all chart indicators"
+            onClick={() => {
+              const overlayKeys = ["ema9", "ema21", "ema50", "bb", "volume"] as IndicatorKey[]
+              const shouldEnable = !overlayKeys.some((key) => indicators[key])
+              setIndicators((previous) => ({
+                ...previous,
+                ...Object.fromEntries(overlayKeys.map((key) => [key, shouldEnable])),
+              }))
+            }}
+            className="indicator-master-button group flex h-7 items-center gap-1.5 rounded-md px-2.5 shrink-0 transition-all active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, rgba(45,212,191,.2), rgba(39,116,150,.18))",
+              border: "1px solid rgba(94,234,212,.5)",
+              color: "#b9fff0",
+              boxShadow: "inset 0 1px rgba(255,255,255,.1), 0 4px 14px rgba(45,212,191,.12)",
+            }}
+          >
+            <svg aria-hidden="true" width="13" height="13" viewBox="0 0 16 16" fill="none">
+              <path d="M2.5 12.5 6 8.8l2.3 2.1L13.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M2.5 13.5h11" stroke="currentColor" strokeOpacity=".45" strokeWidth="1" strokeLinecap="round" />
+              <circle cx="6" cy="8.8" r="1" fill="currentColor" />
+              <circle cx="8.3" cy="10.9" r="1" fill="currentColor" />
+              <circle cx="13.5" cy="4.5" r="1" fill="currentColor" />
+            </svg>
+            <span className="text-[9px] font-black tracking-[0.12em]">INDICATORS</span>
+            <span className="rounded-full bg-black/20 px-1.5 py-0.5 text-[8px] font-black leading-none text-[#b9fff0]">
+              {["ema9", "ema21", "ema50", "bb", "volume"].filter((key) => indicators[key as IndicatorKey]).length}
+            </span>
+          </button>
           <span className="shrink-0 text-[8px] font-black tracking-[0.16em]" style={{ color: "#8296ab" }}>OVERLAYS</span>
           <span aria-hidden="true" className="h-3 w-px shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
           {([
