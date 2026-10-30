@@ -463,7 +463,7 @@ export function TopUpRequestsPanel() {
                     {STATUS_CONFIG[selectedRequest.status].label}
                   </Badge>
                   <div className="text-right">
-                    <span className="text-2xl font-black text-green-400">${Number(selectedRequest.amount).toFixed(2)} {selectedRequest.payment_method === "inr_bank" ? "USD" : "USDT"}</span>
+                    <span className="text-2xl font-black text-green-400">${Number(selectedRequest.amount).toFixed(2)} {["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "USD" : "USDT"}</span>
                     {selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 && <p className="mt-1 text-xs font-semibold text-violet-300">{selectedRequest.promo_code} · ${Number(selectedRequest.promo_bonus_amount).toFixed(2)} savings</p>}
                   </div>
                 </div>
@@ -472,14 +472,14 @@ export function TopUpRequestsPanel() {
                 <div className="rounded-xl bg-slate-800 border border-slate-700 divide-y divide-slate-700">
                   {[
                     { label: "Participant", value: selectedRequest.participant_email },
-                    { label: "Payment amount", value: `$${Number(selectedRequest.amount).toFixed(2)} ${selectedRequest.payment_method === "inr_bank" ? "USD (UPI)" : "USDT"}` },
+                    { label: "Payment amount", value: `$${Number(selectedRequest.amount).toFixed(2)} ${["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "USD (UPI)" : "USDT"}` },
                     ...(selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 ? [
                       { label: "Promo code", value: selectedRequest.promo_code },
                       { label: "Promo savings", value: `$${Number(selectedRequest.promo_bonus_amount).toFixed(2)}` },
                       { label: "Funding requested", value: `$${(Number(selectedRequest.amount) + Number(selectedRequest.promo_bonus_amount)).toFixed(2)}` },
                     ] : []),
                     { label: "Submitted", value: new Date(selectedRequest.created_at).toLocaleString() },
-                    { label: "Payment Method", value: selectedRequest.payment_method === "inr_bank" ? "INR / UPI" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
+                    { label: "Payment Method", value: ["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "EliteFund UPI" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
                     ...(selectedRequest.reviewed_at ? [
                       { label: "Reviewed At", value: new Date(selectedRequest.reviewed_at).toLocaleString() },
                       { label: "Reviewed By", value: selectedRequest.reviewed_by_email || "—" },
