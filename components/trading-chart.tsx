@@ -908,7 +908,7 @@ export function TradingChart({
         className="terminal-chart-toolbar terminal-indicator-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 shrink-0 text-[9px] font-bold"
         style={{ minHeight: 38, background: "#0d1724", flexShrink: 0 }}
       >
-        <div className="flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Chart indicators">
+        <div className="indicator-overlay-controls flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Chart indicators">
           <button
             type="button"
             aria-label="Toggle chart indicators"
@@ -976,7 +976,7 @@ export function TradingChart({
           })}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Chart studies">
+        <div className="indicator-pane-controls flex shrink-0 items-center gap-2" role="group" aria-label="Chart studies">
           <span className="text-[8px] font-black tracking-[0.16em]" style={{ color: "#8296ab" }}>PANE</span>
           <span aria-hidden="true" className="h-3 w-px shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
           {([
@@ -1016,7 +1016,7 @@ export function TradingChart({
           })}
         </div>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1.5" role="group" aria-label="Chart actions">
+        <div className="indicator-action-controls ml-auto flex shrink-0 items-center gap-1.5" role="group" aria-label="Chart actions">
           {/* Price Alert toggle */}
           <button
             type="button"
