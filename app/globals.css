@@ -8988,6 +8988,15 @@ body:has(.elite-terminal-shell) {
   color: var(--terminal-graphite-warning) !important;
 }
 
+@media (max-width: 767px) {
+  .elite-terminal-shell:has(.reference-terminal) {
+    overflow-y: auto !important;
+    overscroll-behavior-y: auto !important;
+    touch-action: pan-y !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
 .reference-terminal :where(button, [role="button"], input, select, textarea) {
   font-family: inherit;
 }
