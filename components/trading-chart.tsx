@@ -564,6 +564,9 @@ export function TradingChart({
     if (!layer || !chartContainer) return
 
     let touchTarget: HTMLCanvasElement | null = null
+    let startX = 0
+    let startY = 0
+    let gesture: "undecided" | "vertical" | "horizontal" = "undecided"
 
     const forwardTouchEvent = (event: TouchEvent) => {
       if (!touchTarget && event.touches.length > 0) {
@@ -600,8 +603,62 @@ export function TradingChart({
     const touchEventTypes = ["touchstart", "touchmove", "touchend", "touchcancel"] as const
     touchEventTypes.forEach((type) => layer.addEventListener(type, forwardTouchEvent, { passive: false }))
 
+    // The chart engine preventDefaults every touchmove it sees, which freezes page
+    // scrolling on Android. Vertical swipes are kept away from it so the page scrolls.
+    const gateVerticalSwipe = (event: TouchEvent) => {
+      if (event.touches.length > 1) {
+        gesture = "horizontal"
+        return
+      }
+
+      if (event.type === "touchstart") {
+        gesture = "undecided"
+        const touch = event.touches[0]
+        if (touch) {
+          startX = touch.clientX
+          startY = touch.clientY
+        }
+        return
+      }
+
+      if (event.type === "touchcancel") {
+        gesture = "undecided"
+        touchTarget = null
+        return
+      }
+
+      if (event.type === "touchend") {
+        if (gesture === "vertical") {
+          event.stopPropagation()
+          touchTarget = null
+        }
+        gesture = "undecided"
+        return
+      }
+
+      const touch = event.touches[0]
+      if (!touch) return
+
+      if (gesture === "undecided") {
+        const dx = Math.abs(touch.clientX - startX)
+        const dy = Math.abs(touch.clientY - startY)
+        if (dx < 6 && dy < 6) return
+        gesture = dy > dx ? "vertical" : "horizontal"
+      }
+
+      if (gesture === "vertical") event.stopPropagation()
+    }
+
+    const gateEventTypes = ["touchstart", "touchmove", "touchend", "touchcancel"] as const
+    gateEventTypes.forEach((type) =>
+      chartContainer.addEventListener(type, gateVerticalSwipe, { capture: true, passive: true }),
+    )
+
     return () => {
       touchEventTypes.forEach((type) => layer.removeEventListener(type, forwardTouchEvent))
+      gateEventTypes.forEach((type) =>
+        chartContainer.removeEventListener(type, gateVerticalSwipe, { capture: true }),
+      )
     }
   }, [darkTheme])
 
