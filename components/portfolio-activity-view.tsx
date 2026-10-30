@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import { Clock, History, Layers, Wallet } from "lucide-react"
 import type { ClosedTrade, OpenTrade, PendingOrder } from "@/components/forex-trading-platform"
+import { TradeDetailsDialog } from "@/components/trade-details-dialog"
 
 type PortfolioActivityViewProps = {
   openTrades: OpenTrade[]
@@ -60,6 +62,7 @@ export function PortfolioActivityView({
   onCloseTrade,
   onCancelOrder,
 }: PortfolioActivityViewProps) {
+  const [selectedTrade, setSelectedTrade] = useState<ClosedTrade | OpenTrade | PendingOrder | null>(null)
   const formatCurrency = (amount: number) =>
     `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
@@ -115,7 +118,7 @@ export function PortfolioActivityView({
         ) : (
           <div className="divide-y divide-[#16263a]">
             {openTrades.map(trade => (
-              <article key={trade.id} className="flex items-center justify-between gap-3 px-3 py-3">
+              <article key={trade.id} role="button" tabIndex={0} onClick={() => setSelectedTrade(trade)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedTrade(trade) } }} className="flex cursor-pointer items-center justify-between gap-3 px-3 py-3 transition-colors hover:bg-cyan-300/[0.04] focus-visible:bg-cyan-300/[0.06] focus-visible:outline-none">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`shrink-0 rounded border px-1.5 py-1 text-[8px] font-black uppercase ${trade.direction === "BUY" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-rose-400/30 bg-rose-400/10 text-rose-300"}`}>
                     {trade.direction}
@@ -133,7 +136,7 @@ export function PortfolioActivityView({
                   </span>
                   <button
                     type="button"
-                    onClick={() => onCloseTrade(trade.id)}
+                    onClick={(event) => { event.stopPropagation(); onCloseTrade(trade.id) }}
                     aria-label={`Close ${trade.pair} ${trade.direction} position`}
                     className="rounded border border-rose-400/25 bg-rose-400/10 px-2 py-1.5 text-[9px] font-bold text-rose-300 transition-colors hover:bg-rose-400/20"
                   >
@@ -155,7 +158,7 @@ export function PortfolioActivityView({
         ) : (
           <div className="divide-y divide-[#16263a]">
             {pendingOrders.map(order => (
-              <article key={order.id} className="flex items-center justify-between gap-3 px-3 py-3">
+              <article key={order.id} role="button" tabIndex={0} onClick={() => setSelectedTrade(order)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedTrade(order) } }} className="flex cursor-pointer items-center justify-between gap-3 px-3 py-3 transition-colors hover:bg-cyan-300/[0.04] focus-visible:bg-cyan-300/[0.06] focus-visible:outline-none">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className="shrink-0 rounded border border-cyan-400/25 bg-cyan-400/10 px-1.5 py-1 text-[8px] font-black uppercase text-cyan-200">
                     {order.orderType.replace("_", " ")}
@@ -169,7 +172,7 @@ export function PortfolioActivityView({
                 </div>
                 <button
                   type="button"
-                  onClick={() => onCancelOrder(order.id)}
+                  onClick={(event) => { event.stopPropagation(); onCancelOrder(order.id) }}
                   aria-label={`Cancel ${order.pair} ${order.orderType.replace("_", " ")} order`}
                   className="shrink-0 rounded border border-[#34465b] px-2 py-1.5 text-[9px] font-bold text-slate-300 transition-colors hover:border-rose-400/40 hover:text-rose-300"
                 >
@@ -190,7 +193,7 @@ export function PortfolioActivityView({
         ) : (
           <div className="divide-y divide-[#16263a]">
             {closedTrades.map(trade => (
-              <article key={trade.id} className="flex items-center justify-between gap-3 px-3 py-3">
+              <article key={trade.id} role="button" tabIndex={0} onClick={() => setSelectedTrade(trade)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedTrade(trade) } }} className="flex cursor-pointer items-center justify-between gap-3 px-3 py-3 transition-colors hover:bg-cyan-300/[0.04] focus-visible:bg-cyan-300/[0.06] focus-visible:outline-none">
                 <div className="flex min-w-0 items-center gap-2">
                   <span className={`shrink-0 rounded border px-1.5 py-1 text-[8px] font-black uppercase ${trade.direction === "BUY" ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-rose-400/30 bg-rose-400/10 text-rose-300"}`}>
                     {trade.direction}
@@ -210,6 +213,8 @@ export function PortfolioActivityView({
           </div>
         )}
       </section>
+
+      <TradeDetailsDialog trade={selectedTrade} formatPrice={formatPrice} onClose={() => setSelectedTrade(null)} />
     </main>
   )
 }
