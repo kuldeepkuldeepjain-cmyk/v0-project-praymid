@@ -8989,11 +8989,30 @@ body:has(.elite-terminal-shell) {
 }
 
 @media (max-width: 767px) {
-  .elite-terminal-shell:has(.reference-terminal) {
+  html:has(.elite-terminal-shell .reference-terminal) {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-x: hidden !important;
     overflow-y: auto !important;
-    overscroll-behavior-y: auto !important;
     touch-action: pan-y !important;
-    -webkit-overflow-scrolling: touch;
+  }
+
+  body:has(.elite-terminal-shell .reference-terminal) {
+    height: auto !important;
+    min-height: 100dvh !important;
+    overflow-x: clip !important;
+    overflow-y: visible !important;
+    touch-action: pan-y !important;
+  }
+
+  .elite-terminal-shell:has(.reference-terminal) {
+    position: relative !important;
+    inset: auto !important;
+    height: auto !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    overflow: visible !important;
+    touch-action: pan-y !important;
   }
 }
 
