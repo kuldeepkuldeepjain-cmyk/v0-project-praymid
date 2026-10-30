@@ -61,7 +61,7 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [walletsError, setWalletsError] = useState<string | null>(null)
   const [settingsError, setSettingsError] = useState<string | null>(null)
-  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "8770459735@ybl", usdt_inr_rate: "104" })
+  const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "elitefun@slc", usdt_inr_rate: "104" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
     "overview" | "terminal" | "participants" | "wallets" | "topups" | "promos" | "support" | "payments" | "settings"

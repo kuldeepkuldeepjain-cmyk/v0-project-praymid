@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 
-const DEFAULT_VPA = "8770459735@ybl"
+const DEFAULT_VPA = "elitefun@slc"
 const DEFAULT_RATE = 104
 const MIN_USD = 5
 const MAX_USD = 100000
