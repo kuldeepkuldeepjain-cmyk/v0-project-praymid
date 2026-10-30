@@ -7685,6 +7685,38 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   letter-spacing: .01em;
 }
 
+/* One-finger scrolling: the document owns vertical movement across the entire terminal, including the chart surface. */
+.reference-terminal,
+.reference-terminal .apple-terminal-grid,
+.reference-terminal .apple-terminal-chart-column,
+.reference-terminal .terminal-single-chart-stack,
+.reference-terminal .terminal-chart-panel,
+.reference-terminal .apple-trading-chart,
+.reference-terminal .chart-surface {
+  touch-action: pan-y !important;
+}
+@media (max-width: 767px) {
+  html:has(.reference-terminal),
+  body:has(.reference-terminal),
+  .terminal-page:has(.reference-terminal),
+  .elite-terminal-workspace:has(.reference-terminal),
+  .elite-terminal-platform:has(.reference-terminal),
+  .reference-terminal {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  .reference-terminal .apple-terminal-grid,
+  .reference-terminal .apple-terminal-chart-column,
+  .reference-terminal .apple-terminal-chart-column > .flex-1,
+  .reference-terminal .mobile-terminal-chart-wrap,
+  .reference-terminal .chart-surface,
+  .reference-terminal .apple-trading-chart {
+    overflow: visible !important;
+  }
+}
+
 /* Pro workstation polish: compact hierarchy, precise separators, and high-signal controls. */
 .reference-terminal .apple-terminal-topbar {
   min-height: 42px;
