@@ -2537,11 +2537,28 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
 
     setDirection(tradeDirection)
-    const price  = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
-    const slNum  = sl ? parseFloat(sl) : null
-    const tpNum  = tp ? parseFloat(tp) : null
-    const trailN = trailingPips ? parseFloat(trailingPips) : null
-    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (trailN === null || trailN < 0 || !Number.isFinite(trailN)))) {
+    const quotePrice = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
+    let price = quotePrice
+    if (orderType !== "market") {
+      const pendingEntryPrice = Number.parseFloat(pendingPrice)
+      if (!Number.isFinite(pendingEntryPrice) || pendingEntryPrice <= 0) {
+        showToast("error", "Enter a valid pending order price")
+        return
+      }
+      const isInvalidLevel = orderType === "limit"
+        ? (tradeDirection === "BUY" ? pendingEntryPrice >= selectedPair.ask : pendingEntryPrice <= selectedPair.bid)
+        : (tradeDirection === "BUY" ? pendingEntryPrice <= selectedPair.ask : pendingEntryPrice >= selectedPair.bid)
+      if (isInvalidLevel) {
+        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${tradeDirection === "BUY" ? "ask" : "bid"}`)
+        return
+      }
+      price = pendingEntryPrice
+    }
+
+    const slNum = sl.trim() ? Number.parseFloat(sl) : null
+    const tpNum = tp.trim() ? Number.parseFloat(tp) : null
+    const trailN = trailingPips.trim() ? Number.parseFloat(trailingPips) : null
+    if ((slNum !== null && (!Number.isFinite(slNum) || slNum <= 0)) || (tpNum !== null && (!Number.isFinite(tpNum) || tpNum <= 0)) || (trailN !== null && (!Number.isFinite(trailN) || trailN < 0))) {
       showToast("error", "Use valid numbers for Stop Loss, Take Profit, and Trailing Stop")
       return
     }
@@ -2557,21 +2574,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
 
     if (orderType !== "market") {
-      const pPrice = parseFloat(pendingPrice)
-      if (isNaN(pPrice) || pPrice <= 0) { showToast("error", "Enter a valid pending order price"); return }
-      const currentQuote = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
-      const isInvalidLevel = orderType === "limit"
-        ? (tradeDirection === "BUY" ? pPrice >= currentQuote : pPrice <= currentQuote)
-        : (tradeDirection === "BUY" ? pPrice <= currentQuote : pPrice >= currentQuote)
-      if (isInvalidLevel) {
-        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${tradeDirection === "BUY" ? "ask" : "bid"}`)
-        return
-      }
       const oType: PendingOrder["orderType"] =
         orderType === "limit"
           ? tradeDirection === "BUY" ? "BUY_LIMIT" : "SELL_LIMIT"
           : tradeDirection === "BUY" ? "BUY_STOP" : "SELL_STOP"
-      requestConfirm(tradeDirection, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price: pPrice, expiry: pendingExpiry })
+      requestConfirm(tradeDirection, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price, expiry: pendingExpiry })
       return
     }
 
@@ -3038,26 +3045,98 @@ const maxLeverage = 100
     if (!isFundedAccount || !selectedPair || !Number.isFinite(minimumFundedLots)) return
     setLotSize(current => Math.max(Number.parseFloat(current) || 0.01, minimumFundedLots).toFixed(2))
   }, [isFundedAccount, selectedPair?.symbol, midPrice, effectiveLeverage, minimumFundedLots])
+  const marketEntryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
+  const parsedPendingPrice = Number.parseFloat(pendingPrice)
+  const hasPendingEntryPrice = orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0
+  const entryPrice = hasPendingEntryPrice ? parsedPendingPrice : marketEntryPrice
+  const parsedLotSize = Number.parseFloat(lotSize)
+  const estimateLotSize = Number.isFinite(parsedLotSize) && parsedLotSize > 0 ? parsedLotSize : 0.01
   const estimatedMargin = selectedPair
-    ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
+    ? calcMargin(selectedPair.symbol, estimateLotSize, entryPrice, effectiveLeverage)
     : 0
   const estimatedFees: number | null = null
   const estimatedSpreadCost = selectedPair
-    ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
+    ? pipValue(selectedPair.symbol, estimateLotSize, marketEntryPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
     : 0
   const pipVal = selectedPair
-    ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
+    ? pipValue(selectedPair.symbol, estimateLotSize, entryPrice)
     : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
-  const entryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
-  const slVal = sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null
-  const tpVal = tp && !isNaN(parseFloat(tp)) ? parseFloat(tp) : null
-  const slPips = slVal !== null && selectedPair ? Math.abs((slVal - entryPrice) / pip(selectedPair.symbol)) : 0
-  const tpPips = tpVal !== null && selectedPair ? Math.abs((tpVal - entryPrice) / pip(selectedPair.symbol)) : 0
+  const slVal = sl.trim() ? Number.parseFloat(sl) : null
+  const tpVal = tp.trim() ? Number.parseFloat(tp) : null
+  const slPips = slVal !== null && Number.isFinite(slVal) && selectedPair ? Math.abs((slVal - entryPrice) / pip(selectedPair.symbol)) : 0
+  const tpPips = tpVal !== null && Number.isFinite(tpVal) && selectedPair ? Math.abs((tpVal - entryPrice) / pip(selectedPair.symbol)) : 0
   const maxLoss = slPips * pipVal
   const maxGain = tpPips * pipVal
   const rrRatio = slPips > 0 ? (tpPips / slPips).toFixed(2) : null
+  const lotSizeError = !Number.isFinite(parsedLotSize) || parsedLotSize < 0.01 || parsedLotSize > 100
+    ? "Trade size must be between 0.01 and 100 lots."
+    : isFundedAccount && estimatedMargin < 3000
+      ? "Funded accounts require at least $3,000 in margin."
+      : null
+  const pendingPriceWrongSide = Boolean(
+    selectedPair && orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0 && (
+      orderType === "limit"
+        ? (direction === "BUY" ? parsedPendingPrice >= selectedPair.ask : parsedPendingPrice <= selectedPair.bid)
+        : (direction === "BUY" ? parsedPendingPrice <= selectedPair.ask : parsedPendingPrice >= selectedPair.bid)
+    ),
+  )
+  const pendingPriceError = orderType === "market"
+    ? null
+    : !Number.isFinite(parsedPendingPrice) || parsedPendingPrice <= 0
+      ? "Enter a pending price above zero."
+      : pendingPriceWrongSide
+        ? orderType === "limit"
+          ? (direction === "BUY" ? "A buy limit must be below the current ask." : "A sell limit must be above the current bid.")
+          : (direction === "BUY" ? "A buy stop must be above the current ask." : "A sell stop must be below the current bid.")
+        : null
+  const stopLossError = sl.trim() === ""
+    ? null
+    : slVal === null || !Number.isFinite(slVal) || slVal <= 0
+      ? "Enter a valid stop price above zero."
+      : direction === "BUY" && slVal >= entryPrice
+        ? "For a buy, the stop loss must be below entry."
+        : direction === "SELL" && slVal <= entryPrice
+          ? "For a sell, the stop loss must be above entry."
+          : null
+  const takeProfitError = tp.trim() === ""
+    ? null
+    : tpVal === null || !Number.isFinite(tpVal) || tpVal <= 0
+      ? "Enter a valid target price above zero."
+      : direction === "BUY" && tpVal <= entryPrice
+        ? "For a buy, take profit must be above entry."
+        : direction === "SELL" && tpVal >= entryPrice
+          ? "For a sell, take profit must be below entry."
+          : null
+  const trailingStopValue = trailingPips.trim() ? Number.parseFloat(trailingPips) : null
+  const trailingStopError = trailingStopValue !== null && (!Number.isFinite(trailingStopValue) || trailingStopValue < 0)
+    ? "Enter a trailing stop of zero or more pips."
+    : null
+  const riskPercent = walletBalance > 0 && slVal !== null && Number.isFinite(slVal) && !stopLossError
+    ? (maxLoss / walletBalance) * 100
+    : 0
+  const pendingDistancePips = selectedPair && orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0
+    ? Math.abs(parsedPendingPrice - marketEntryPrice) / pip(selectedPair.symbol)
+    : null
+  const validationError = lotSizeError ?? pendingPriceError ?? stopLossError ?? takeProfitError ?? trailingStopError
+  const marginError = orderType === "market" && estimatedMargin > walletBalance
+    ? `Insufficient balance — need $${estimatedMargin.toFixed(2)}, have $${walletBalance.toFixed(2)}.`
+    : null
+  const orderFormIssue = tradingLocked
+    ? "Trading is disabled for this account."
+    : !balanceLoaded
+      ? "Loading your available balance."
+      : !online
+        ? "Waiting for a fresh live quote."
+        : validationError ?? marginError
+  const nudgeLotSize = (adjustment: -1 | 1) => {
+    const minimumLots = isFundedAccount ? minimumFundedLots : 0.01
+    const currentLots = Number.isFinite(parsedLotSize) && parsedLotSize > 0 ? parsedLotSize : minimumLots
+    const step = currentLots < 0.1 ? 0.01 : currentLots < 1 ? 0.1 : 0.5
+    const nextLots = Math.max(minimumLots, Math.min(100, currentLots + adjustment * step))
+    setLotSize(nextLots.toFixed(2))
+  }
 
   const categoryTabs: (AssetCategory | "All")[] = ["All", "Forex", "Commodities", "Crypto"]
   // Search always scans the complete catalog, regardless of the selected
@@ -3643,7 +3722,7 @@ const maxLeverage = 100
         </main>
       )}
 
-      {/* ══ MAIN TRADING WORKSPACE ═══════════════════════════════════════════ */}
+      {/* ══ MAIN TRADING WORKSPACE ═════════════════════════════════════════��═ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
       <nav
         aria-label="Trading activity shortcuts"
@@ -4240,21 +4319,26 @@ const maxLeverage = 100
 		            <div className="flex-1 overflow-y-auto terminal-scroll">
 		              <div className="mobile-order-ticket flex flex-col gap-2 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-2">
 	                {/* Header banner */}
-	                <div className="mobile-order-ticket-banner flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
-	                  <div className="flex items-center gap-2">
-	                    <span className="text-xs font-black uppercase tracking-wider text-cyan-300">{selectedPair.symbol}</span>
-	                    <span className="text-[9px] font-bold text-slate-400">1:{effectiveLeverage}</span>
-	                  </div>
-	                  <div className="flex items-center gap-1.5">
-	                    <span className={`rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "bg-amber-400/10 text-amber-300 border border-amber-400/20"}`}>
-	                      {balanceLoaded ? "Ready" : "Loading"}
-	                    </span>
-	                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
-	                  </div>
-	                </div>
+<div className="mobile-order-ticket-banner flex items-center justify-between gap-3 rounded-xl border border-[#1e2d45] bg-[#071221] px-3 py-2.5 shadow-sm">
+		                  <div className="min-w-0">
+		                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">New order</p>
+		                    <div className="mt-1 flex flex-wrap items-center gap-2">
+		                      <span className="text-base font-black tracking-tight text-cyan-200">{selectedPair.symbol}</span>
+		                      <span className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[10px] font-bold text-cyan-200">
+		                        {orderType === "market" ? "Market" : orderType === "limit" ? "Limit" : "Stop"} · 1:{effectiveLeverage}
+		                      </span>
+		                    </div>
+		                  </div>
+		                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+		                    <span className={`rounded-md border px-2 py-1 text-[10px] font-bold ${tradingLocked ? "border-rose-400/25 bg-rose-400/10 text-rose-200" : balanceLoaded ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200" : "border-amber-400/20 bg-amber-400/10 text-amber-200"}`}>
+		                      {tradingLocked ? "Trading locked" : balanceLoaded ? "Balance ready" : "Loading balance"}
+		                    </span>
+		                    <span className={`text-[10px] font-semibold ${online ? "text-emerald-300" : "text-amber-300"}`}>{online ? "Live quote" : "Waiting for quote"}</span>
+		                  </div>
+		                </div>
 
 	                {/* Order type tabs */}
-                <div className="terminal-order-type-dock flex items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]">
+                <div className="terminal-order-type-dock flex items-stretch overflow-hidden rounded-xl border border-[#1a2640] bg-[#070a10]" role="group" aria-label="Order type">
                   {(["market","limit","stop"] as typeof orderType[]).map(ot => (
                     <button key={ot} type="button" onClick={() => {
 	                      setOrderType(ot)
@@ -4270,7 +4354,8 @@ const maxLeverage = 100
 	                      }
 	                    }}
                       aria-pressed={orderType === ot}
-                      className="flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-[9px] font-black uppercase tracking-wider transition-colors">
+                      aria-label={ot === "market" ? "Market order at the current quote" : `${ot === "limit" ? "Limit" : "Stop"} pending order`}
+                      className="flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors">
                       {ot}
 	                    </button>
 	                  ))}
@@ -4299,88 +4384,159 @@ const maxLeverage = 100
 			                  </div>
 			                </div>
 
-		                {/* Pending price (limit/stop) */}
-	                {orderType !== "market" && (
-	                  <div className="mobile-order-pending rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
-	                    <label className="text-[8px] font-bold tracking-widest uppercase text-cyan-300">
-	                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
-	                    </label>
-	                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
-	                      placeholder={fmt(midPrice, selectedPair.symbol)}
-	                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded bg-[#070a10] border border-cyan-400/30" />
-                    <div className="terminal-order-expiry-dock flex items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
-                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                        <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
-                          className="min-w-0 flex-1 px-2 py-1 text-[8px] font-black tracking-wider uppercase transition-colors"
-                          style={pendingExpiry === e
-                            ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
-                            : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
-                          {e}
-	                        </button>
-	                      ))}
-	                    </div>
-	                  </div>
-	                )}
+                {/* Pending price (limit/stop) */}
+		                {orderType !== "market" && (
+		                  <div className="mobile-order-pending rounded-xl border border-cyan-400/20 bg-[#07101b] p-3 flex flex-col gap-2.5">
+		                    <div className="flex items-start justify-between gap-3">
+		                      <div className="min-w-0">
+		                        <label htmlFor="pending-order-price" className="text-[11px] font-bold tracking-wide text-cyan-200">
+		                          {orderType === "limit" ? "Limit price" : "Stop price"}
+		                        </label>
+		                        <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
+		                          {orderType === "limit"
+		                            ? direction === "BUY" ? "Buy limit below ask" : "Sell limit above bid"
+		                            : direction === "BUY" ? "Buy stop above ask" : "Sell stop below bid"}
+		                        </p>
+		                      </div>
+		                      <span className="shrink-0 rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">
+		                        {direction === "BUY" ? "Ask" : "Bid"} {fmt(direction === "BUY" ? selectedPair.ask : selectedPair.bid, selectedPair.symbol)}
+		                      </span>
+		                    </div>
+		                    <input id="pending-order-price" type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
+		                      min="0" step={Math.pow(10, -decimals(selectedPair.symbol))}
+		                      aria-invalid={Boolean(pendingPriceError)}
+		                      aria-describedby={pendingPriceError ? "pending-order-price-help pending-order-price-error" : "pending-order-price-help"}
+		                      placeholder={fmt(midPrice, selectedPair.symbol)}
+		                      className="w-full rounded-lg border border-cyan-400/30 bg-[#070a10] px-3 py-2.5 price-mono text-base font-bold text-white focus:outline-none" />
+		                    <p id="pending-order-price-help" className="text-[10px] leading-relaxed text-slate-400">
+		                      {pendingPriceError
+		                        ? "Choose a price on the correct side of the live quote."
+		                        : pendingDistancePips !== null
+		                          ? `${pendingDistancePips.toLocaleString("en-US", { maximumFractionDigits: 1 })} pips from the current quote.`
+		                          : "Your pending order waits for price to reach this level."}
+		                    </p>
+		                    {pendingPriceError && <p id="pending-order-price-error" className="text-[10px] font-semibold text-rose-300" role="alert">{pendingPriceError}</p>}
+		                    <div className="flex items-center justify-between gap-3 border-t border-[#142032] pt-2">
+		                      <div className="shrink-0">
+		                        <p className="text-[11px] font-semibold text-slate-200">Time in force</p>
+		                        <p className="mt-0.5 text-[10px] text-slate-400">How long it stays active</p>
+		                      </div>
+		                      <div className="terminal-order-expiry-dock flex min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]" role="group" aria-label="Pending order expiry">
+		                        {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+		                          <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
+		                            aria-label={e === "GTC" ? "Good until canceled" : "Expires today"}
+		                            className="min-w-0 flex-1 px-3 py-2 text-[11px] font-bold tracking-wide transition-colors"
+		                            style={pendingExpiry === e
+		                              ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+		                              : { background: "#070a10", color: "#94a3b8", border: "1px solid #1a2640" }}>
+		                            {e === "GTC" ? "GTC" : "Today"}
+		                          </button>
+		                        ))}
+		                      </div>
+		                    </div>
+		                  </div>
+		                )}
 
-			                {/* Volume (lots) */}
-			                <div className="mobile-order-volume rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
-			                  <div className="flex items-center justify-between">
-			                    <label className="text-[8px] font-black tracking-wider uppercase text-cyan-300">
-			                      Trade size (lots)
-			                    </label>
-			                    <span className="text-[8px] font-bold text-slate-400">Leverage: 1:{effectiveLeverage}</span>
-			                  </div>
-			                  <input type="number" value={lotSize} onChange={e => {
-			                    const next = Number.parseFloat(e.target.value)
-			                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
-			                  }}
-			                  onBlur={() => {
-			                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
-			                  }}
-			                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
-			                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
-			                  placeholder="0.01"
-			                  />
-			                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-                  <div className="terminal-order-size-dock flex items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
-                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-                      <button key={l} type="button" onClick={() => setLotSize(l)} aria-pressed={lotSize === l}
-                        className="min-w-0 flex-1 px-1 py-1 text-[7px] font-black tracking-wide transition-colors">
-                        {l}
-				                      </button>
-				                    ))}
-				                  </div>
-	                </div>
+		                {/* Trade size and leverage */}
+		                <div className="mobile-order-volume rounded-xl border border-[#1a2640] bg-[#07101b] p-3 flex flex-col gap-3">
+		                  <div className="flex items-center justify-between gap-3">
+		                    <div className="min-w-0">
+		                      <label htmlFor="order-lot-size" className="text-[12px] font-bold text-slate-100">Trade size</label>
+		                      <p className="mt-0.5 text-[10px] text-slate-400">Position volume in lots</p>
+		                    </div>
+		                    <label htmlFor="order-leverage" className="flex shrink-0 flex-col items-end gap-1">
+		                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Leverage</span>
+		                      <select id="order-leverage" value={leverage} onChange={e => setLeverage(e.target.value)}
+		                        aria-label="Select leverage"
+		                        className={`min-h-9 rounded-md border border-[#263b4f] bg-[#080c14] px-2 price-mono text-[11px] font-bold focus:outline-none cursor-pointer ${isFundedAccount || isChallengeAccount ? "text-amber-300" : "text-cyan-300"}`}>
+		                        {["1", "5", "10", "20", "30", "50", "100"].filter(value => !isChallengeAccount || Number(value) <= 30).map(value => <option key={value} value={value}>1:{value}</option>)}
+		                      </select>
+		                    </label>
+		                  </div>
+		                  <div className="flex items-stretch gap-2">
+		                    <button type="button" onClick={() => nudgeLotSize(-1)}
+		                      disabled={Number.isFinite(parsedLotSize) && parsedLotSize <= (isFundedAccount ? minimumFundedLots : 0.01)}
+		                      aria-label="Decrease trade size" title="Decrease trade size"
+		                      className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-[#243752] bg-[#0d1726] text-slate-300 transition-colors hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">
+		                      <ChevronDown className="size-4" />
+		                    </button>
+		                    <input id="order-lot-size" type="number" value={lotSize} onChange={e => {
+		                      const next = Number.parseFloat(e.target.value)
+		                      setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+		                    }}
+		                    onBlur={() => {
+		                      if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+		                    }}
+		                    step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100"
+		                    aria-label="Trade size in lots"
+		                    aria-invalid={Boolean(lotSizeError)}
+		                    aria-describedby={lotSizeError ? "order-lot-size-help order-lot-size-error" : "order-lot-size-help"}
+		                    className="min-w-0 flex-1 rounded-lg border border-[#243752] bg-[#070a10] px-3 price-mono text-center text-lg font-bold text-white focus:outline-none"
+		                    placeholder="0.01"
+		                    />
+		                    <button type="button" onClick={() => nudgeLotSize(1)}
+		                      aria-label="Increase trade size" title="Increase trade size"
+		                      className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-[#243752] bg-[#0d1726] text-slate-300 transition-colors hover:border-cyan-400/40 hover:text-cyan-200">
+		                      <ChevronUp className="size-4" />
+		                    </button>
+		                  </div>
+		                  <p id="order-lot-size-help" className="text-[10px] leading-relaxed text-slate-400">
+		                    {isFundedAccount ? `Minimum ${minimumFundedLots.toFixed(2)} lots keeps margin at $3,000.` : "Choose a size from 0.01 to 100 lots."}
+		                  </p>
+		                  {lotSizeError && <p id="order-lot-size-error" className="text-[10px] font-semibold text-rose-300" role="alert">{lotSizeError}</p>}
+		                  <div className="terminal-order-size-dock flex items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]" role="group" aria-label="Quick trade sizes">
+		                    {["0.01","0.10","0.50","1.00","5.00","10.00"].map(l => (
+		                      <button key={l} type="button" onClick={() => {
+		                        const requestedLots = Number.parseFloat(l)
+		                        setLotSize(Math.max(requestedLots, isFundedAccount ? minimumFundedLots : 0.01).toFixed(2))
+		                      }} aria-pressed={Number.isFinite(parsedLotSize) && Math.abs(parsedLotSize - Number.parseFloat(l)) < 0.001}
+		                        aria-label={`Set trade size to ${l} lots`}
+		                        className="min-w-0 flex-1 px-1 py-2 text-[10px] font-bold tracking-wide transition-colors">
+		                        {l}
+		                      </button>
+		                    ))}
+		                  </div>
+		                </div>
 
-                {/* Essential Risk controls (SL / TP) */}
-                <div className="mobile-order-risk rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Stop Loss & Take Profit</span>
+                {/* Essential risk controls */}
+                <div className="mobile-order-risk rounded-xl border border-[#1a2640] bg-[#07101b] p-3 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[12px] font-bold text-slate-100">Risk protection</p>
+                      <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">Optional exits, checked against your entry price.</p>
+                    </div>
+                    <span className="rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">Optional</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* SL */}
-                    <div>
-                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-rose-400">
-                        <span className="flex items-center gap-1"><ShieldAlert className="h-2.5 w-2.5" /> SL</span>
-                        {slVal !== null && <span className="text-[8px] font-bold text-slate-400">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="min-w-0">
+                      <label htmlFor="order-stop-loss" className="mb-1.5 flex min-h-5 items-center justify-between gap-1 text-[10px] font-bold text-rose-300">
+                        <span className="flex items-center gap-1"><ShieldAlert className="size-3.5" /> Stop loss</span>
+                        {slVal !== null && Number.isFinite(slVal) && !stopLossError && <span className="truncate text-[9px] font-semibold text-slate-400">{slPips.toFixed(1)}p · −${maxLoss.toFixed(2)}</span>}
                       </label>
-                      <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#0d0204] border border-rose-500/30"
-                        placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+                      <input id="order-stop-loss" type="number" min="0" step={Math.pow(10, -decimals(selectedPair.symbol))} value={sl} onChange={e => setSl(e.target.value)}
+                        aria-label="Stop loss price"
+                        aria-invalid={Boolean(stopLossError)}
+                        aria-describedby={stopLossError ? "order-stop-loss-error" : undefined}
+                        className="w-full rounded-lg border border-rose-500/30 bg-[#0d0204] px-2.5 py-2 price-mono text-sm font-bold text-white focus:outline-none"
+                        placeholder={fmt(entryPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
                       />
+                      {stopLossError && <p id="order-stop-loss-error" className="mt-1.5 text-[10px] font-semibold leading-relaxed text-rose-300" role="alert">{stopLossError}</p>}
                     </div>
 
-                    {/* TP */}
-                    <div>
-                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-emerald-400">
-                        <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> TP</span>
-                        {tpVal !== null && <span className="text-[8px] font-bold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                    <div className="min-w-0">
+                      <label htmlFor="order-take-profit" className="mb-1.5 flex min-h-5 items-center justify-between gap-1 text-[10px] font-bold text-emerald-300">
+                        <span className="flex items-center gap-1"><Target className="size-3.5" /> Take profit</span>
+                        {tpVal !== null && Number.isFinite(tpVal) && !takeProfitError && <span className="truncate text-[9px] font-semibold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
                       </label>
-                      <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#010d06] border border-emerald-500/30"
-                        placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+                      <input id="order-take-profit" type="number" min="0" step={Math.pow(10, -decimals(selectedPair.symbol))} value={tp} onChange={e => setTp(e.target.value)}
+                        aria-label="Take profit price"
+                        aria-invalid={Boolean(takeProfitError)}
+                        aria-describedby={takeProfitError ? "order-take-profit-error" : undefined}
+                        className="w-full rounded-lg border border-emerald-500/30 bg-[#010d06] px-2.5 py-2 price-mono text-sm font-bold text-white focus:outline-none"
+                        placeholder={fmt(entryPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
                       />
+                      {takeProfitError && <p id="order-take-profit-error" className="mt-1.5 text-[10px] font-semibold leading-relaxed text-rose-300" role="alert">{takeProfitError}</p>}
                     </div>
                   </div>
                 </div>
@@ -4394,8 +4550,8 @@ const maxLeverage = 100
                 >
                   <div className="flex items-center gap-1.5">
                     <Wrench className="h-3 w-3 text-cyan-400" />
-                    <span>Advanced Options</span>
-                    {(Boolean(trailingPips && parseFloat(trailingPips) > 0) || pendingExpiry !== "GTC" || leverage !== "100") && (
+                    <span>Advanced settings</span>
+                    {Boolean(trailingPips && parseFloat(trailingPips) > 0) && (
                       <span className="rounded bg-cyan-400/20 px-1 py-0.2 text-[7px] font-bold text-cyan-300">Active</span>
                     )}
                   </div>
@@ -4405,110 +4561,120 @@ const maxLeverage = 100
                 {/* Advanced Options Body */}
                 {showAdvancedOrderControls && (
                   <div className="mobile-order-advanced-options flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
-                    {/* Trailing Stop */}
-                    <div className="flex items-center justify-between gap-2">
-                      <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
-                        <ArrowUpDown className="h-2.5 w-2.5" /> Trailing Stop (pips)
-                      </label>
-                      <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-                        className="w-28 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded bg-[#07030f] border border-purple-500/30 text-right"
-                        placeholder="0 (disabled)"
-                      />
-                    </div>
-
-                    {/* Pending Order Expiry */}
-                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
-                      <span className="text-[8px] font-black tracking-wider uppercase text-slate-400">Order Expiry</span>
-                      <div className="terminal-order-expiry-dock flex flex-1 items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
-                        {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                          <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
-                            className="min-w-0 flex-1 px-2 py-0.5 text-[8px] font-black tracking-wider uppercase transition-colors"
-                            style={pendingExpiry === e
-                              ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
-                              : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
-                            {e}
-                          </button>
-                        ))}
+                    {/* Trailing stop */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <label htmlFor="order-trailing-stop" className="flex items-center gap-1.5 text-[11px] font-semibold text-cyan-200">
+                          <ArrowUpDown className="size-3.5" /> Trailing stop
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input id="order-trailing-stop" type="number" min="0" step="any" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
+                            aria-label="Trailing stop distance in pips"
+                            aria-invalid={Boolean(trailingStopError)}
+                            aria-describedby={trailingStopError ? "order-trailing-stop-error" : "order-trailing-stop-help"}
+                            className="w-24 rounded-lg border border-cyan-400/30 bg-[#07030f] px-2.5 py-2 price-mono text-sm text-white focus:outline-none text-right"
+                            placeholder="Off"
+                          />
+                          <span className="text-[10px] text-slate-400">pips</span>
+                        </div>
                       </div>
+                      <p id="order-trailing-stop-help" className="text-[10px] leading-relaxed text-slate-400">Leave blank to keep this setting off.</p>
+                      {trailingStopError && <p id="order-trailing-stop-error" className="text-[10px] font-semibold text-rose-300" role="alert">{trailingStopError}</p>}
                     </div>
 
-                    {/* Leverage Selection */}
-                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
-                      <span className="text-[8px] font-black tracking-wider uppercase text-amber-300">Account Leverage</span>
-                      <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                        aria-label="Select leverage"
-                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount || isChallengeAccount ? "text-amber-300" : "text-cyan-300"}`}>
-                        {["1", "5", "10", "20", "30", "50", "100"].filter(value => !isChallengeAccount || Number(value) <= 30).map(value => <option key={value} value={value}>1:{value}</option>)}
-                      </select>
-                    </div>
-
-                    {/* Quick Risk Presets */}
-                    <div className="border-t border-[#142032] pt-1.5">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 block mb-1">Risk Presets</span>
-                      <div className="grid grid-cols-4 gap-1">
+                    {/* Quick risk presets */}
+                    <div className="border-t border-[#142032] pt-2">
+                      <span className="mb-2 block text-[11px] font-semibold text-slate-300">Quick risk profile</span>
+                      <div className="grid grid-cols-4 gap-1.5">
                         {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
                           <button key={preset.label} type="button" onClick={() => {
                             if (preset.slPips === 0) { setSl(""); setTp(""); return }
-                            const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                            const point = entryPrice
                             const unit = pip(selectedPair.symbol)
                             const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
                             const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
                             setSl(stop.toFixed(decimals(selectedPair.symbol)))
                             setTp(target.toFixed(decimals(selectedPair.symbol)))
-                          }} className="rounded border border-[#243752] bg-[#0b1625] px-1.5 py-0.5 text-[8px] font-bold text-slate-400 hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
+                          }} className="min-h-9 rounded-lg border border-[#243752] bg-[#0b1625] px-2 py-2 text-[10px] font-semibold text-slate-300 transition-colors hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
                         ))}
                       </div>
                     </div>
                   </div>
                 )}
 
-	                {/* Order Metrics summary */}
-	                <div className="mobile-order-metrics grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Margin</p>
-	                    <p className="price-mono text-[10px] font-black text-amber-300">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toFixed(2)}</p>
-	                  </div>
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Pip Value</p>
-	                    <p className="price-mono text-[10px] font-black text-cyan-300">${pipVal.toFixed(4)}</p>
-	                  </div>
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Risk / Reward</p>
-	                    <p className="price-mono text-[10px] font-black text-purple-300">
-	                      {slVal !== null ? `-$${maxLoss.toFixed(2)}` : "—"} / {tpVal !== null ? `+$${maxGain.toFixed(2)}` : "—"} {rrRatio ? `(1:${rrRatio})` : ""}
-	                    </p>
-	                  </div>
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Notional</p>
-	                    <p className="price-mono text-[10px] font-black text-slate-200">
-	                      ${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}
-	                    </p>
-	                  </div>
-	                </div>
+		                {/* Order estimate */}
+		                <div className="mobile-order-metrics grid grid-cols-2 gap-2.5 rounded-xl border border-[#1a2640] bg-[#070a10] p-3" role="group" aria-label="Order estimate">
+		                  <div className="col-span-2 flex items-start justify-between gap-3 border-b border-[#1a2640] pb-2">
+		                    <div>
+		                      <p className="text-[12px] font-bold text-slate-100">Order preview</p>
+		                      <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">Estimates exclude slippage and fees.</p>
+		                    </div>
+		                    <span className="rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">
+		                      {orderType === "market" ? "At market" : "At target price"}
+		                    </span>
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Margin required</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-amber-200">${Number.isFinite(estimatedMargin) ? estimatedMargin.toFixed(2) : "—"}</p>
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Balance after fill</p>
+		                    <p className={`mt-1 price-mono text-[13px] font-bold ${walletBalance - estimatedMargin < 0 ? "text-rose-300" : "text-slate-100"}`}>
+		                      ${(walletBalance - estimatedMargin).toFixed(2)}
+		                    </p>
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Risk at stop</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-rose-200">
+		                      {slVal !== null && Number.isFinite(slVal) && !stopLossError ? `−$${maxLoss.toFixed(2)}` : "Add a stop loss"}
+		                    </p>
+		                    {slVal !== null && Number.isFinite(slVal) && !stopLossError && <p className="mt-0.5 text-[10px] text-slate-400">{riskPercent.toFixed(2)}% of balance</p>}
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">At take profit</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-emerald-200">
+		                      {tpVal !== null && Number.isFinite(tpVal) && !takeProfitError ? `+$${maxGain.toFixed(2)}` : "No target set"}
+		                    </p>
+		                    {rrRatio && !stopLossError && !takeProfitError && <p className="mt-0.5 text-[10px] text-slate-400">Risk / reward 1:{rrRatio}</p>}
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Pip value</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-cyan-200">${pipVal.toFixed(4)} / pip</p>
+		                    <p className="mt-0.5 text-[10px] text-slate-400">Est. spread ${estimatedSpreadCost.toFixed(2)}</p>
+		                  </div>
+		                </div>
 
-	                {/* Balance warning */}
-	                {balanceLoaded && estimatedMargin > walletBalance && (
-	                  <div className="mobile-order-warning flex items-center gap-1.5 px-2 py-1.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px] font-bold">
-	                    <AlertTriangle className="h-3 w-3 shrink-0" />
-	                    Insufficient margin: Need ${estimatedMargin.toFixed(2)} (Have ${walletBalance.toFixed(2)})
-	                  </div>
-	                )}
+		                {orderType !== "market" && balanceLoaded && estimatedMargin > walletBalance && (
+		                  <div className="mobile-order-warning flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-[11px] leading-relaxed text-amber-100" role="note">
+		                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+		                    <span>Available balance is ${(estimatedMargin - walletBalance).toFixed(2)} short of estimated margin. This pending order may be canceled if funds are still short when it is triggered.</span>
+		                  </div>
+		                )}
 
-	                {/* Execute button */}
-	                <button
-	                  className={`mobile-order-execute w-full py-2.5 rounded-lg font-black text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
-	                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
-	                  }`}
-	                  onClick={() => executeTrade()}
-	                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
-	                >
-	                  <Zap className="h-3.5 w-3.5 relative z-10" />
-	                  <span className="relative z-10 uppercase">
-	                    {orderType === "market"
-	                      ? `Execute ${direction} ${selectedPair.symbol} (${lotSize} Lots)`
-	                      : `Place ${direction} ${orderType.toUpperCase()} @ ${pendingPrice || "—"}`}
-	                  </span>
-	                </button>
+		                {orderFormIssue && (
+		                  <div id="order-submit-message" className="mobile-order-warning flex items-start gap-2 rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2.5 text-[11px] leading-relaxed text-rose-200" role="alert" aria-live="polite">
+		                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+		                    <span>{orderFormIssue}</span>
+		                  </div>
+		                )}
+
+		                {/* Place order */}
+		                <button
+		                  className={`mobile-order-execute sticky bottom-0 z-10 w-full rounded-xl border border-[#243752] py-3 font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+		                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
+		                  }`}
+		                  onClick={() => executeTrade()}
+		                  disabled={Boolean(orderFormIssue)}
+		                  aria-describedby={orderFormIssue ? "order-submit-message" : undefined}
+		                  title={orderFormIssue ?? undefined}
+		                >
+		                  <Zap className="relative z-10 size-4" />
+		                  <span className="relative z-10">
+		                    {orderType === "market"
+		                      ? `${direction === "BUY" ? "Buy" : "Sell"} ${selectedPair.symbol} · ${Number.isFinite(parsedLotSize) ? parsedLotSize.toFixed(2) : "—"} lots`
+		                      : `Place ${direction === "BUY" ? "Buy" : "Sell"} ${orderType === "limit" ? "Limit" : "Stop"} · ${selectedPair.symbol}`}
+		                  </span>
+		                </button>
 	              </div>
 	            </div>
 	          ) : rightPanelTab === "order" ? (
