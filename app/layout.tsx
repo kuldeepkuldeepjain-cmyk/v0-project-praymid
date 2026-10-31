@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     default: "EliteFund | Funded Trading Accounts & Prop Trading",
     template: "%s | EliteFund",
   },
-  description: "Explore EliteFund funded trading accounts, evaluation programs, trading rules, and risk-aware tools for disciplined forex and multi-asset traders.",
+  description: "A focused trading workspace for analyzing markets, defining risk, and managing positions. Explore EliteFund challenge programs and review account terms.",
   alternates: {
     canonical: "https://www.elitefund.sbs/",
   },
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
     siteName: "EliteFund",
     title: "EliteFund | Funded Trading Accounts & Prop Trading",
     description: "Explore funded trading programs, clear rules, and risk-aware tools for disciplined traders.",
-    images: [{ url: "/elite-fund-logo.jpg", width: 1200, height: 630, alt: "EliteFund logo" }],
+    images: [{ url: "/images/elitefund-hero-wide.png", alt: "Elite Fund trading workspace" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "EliteFund | Funded Trading Accounts & Prop Trading",
     description: "Explore funded trading programs, clear rules, and risk-aware tools for disciplined traders.",
-    images: ["/elite-fund-logo.jpg"],
+    images: ["/images/elitefund-hero-wide.png"],
   },
   icons: {
     icon: [{ url: "/elite-fund-logo.jpg", type: "image/jpeg" }],

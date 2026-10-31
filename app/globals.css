@@ -565,6 +565,376 @@ button, a, [role="button"] {
   scroll-behavior: smooth;
 }
 
+/* Elite Fund landing page — graphite, ivory, muted gold, and restrained green. */
+.elite-landing {
+  --elite-bg: #0b1015;
+  --elite-text: #f3f0e8;
+  --elite-muted: #a8b0b5;
+  --elite-brand: #d6b66b;
+  --elite-positive: #79c89d;
+  --font-sans: var(--font-inter);
+  min-height: 100vh;
+  background: var(--elite-bg);
+  color: var(--elite-text);
+  scroll-behavior: smooth;
+}
+
+.elite-landing a { color: inherit; text-decoration: none; }
+.elite-landing a:focus-visible,
+.elite-landing button:focus-visible,
+.elite-landing summary:focus-visible {
+  outline: 2px solid var(--elite-brand);
+  outline-offset: 4px;
+}
+.elite-landing .elite-copy { color: var(--elite-muted); line-height: 1.65; }
+.elite-landing .elite-muted { color: var(--elite-muted); }
+.elite-landing .elite-brand-text { color: var(--elite-brand); }
+.elite-landing .elite-positive { color: var(--elite-positive); }
+.elite-landing .elite-eyebrow,
+.elite-landing .elite-footer-title {
+  color: var(--elite-brand);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+.elite-landing .elite-hero {
+  min-height: 620px;
+  background: var(--elite-bg);
+  scroll-margin-top: 5rem;
+}
+.elite-landing .elite-hero-art,
+.elite-landing .elite-hero-scrim {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.elite-landing .elite-hero-art {
+  background-image: url("/images/elitefund-hero-wide.png");
+  background-position: center right;
+  background-size: cover;
+  opacity: 0.8;
+  animation: elite-hero-drift 26s ease-in-out infinite alternate;
+}
+.elite-landing .elite-hero-scrim {
+  background:
+    linear-gradient(90deg, var(--elite-bg) 0%, color-mix(in srgb, var(--elite-bg) 90%, transparent) 34%, color-mix(in srgb, var(--elite-bg) 52%, transparent) 67%, color-mix(in srgb, var(--elite-bg) 24%, transparent) 100%),
+    linear-gradient(0deg, var(--elite-bg) 0%, transparent 32%);
+}
+.elite-landing .elite-hero-copy { animation: elite-copy-in 650ms cubic-bezier(.2,.75,.25,1) both; }
+.elite-landing .elite-eyebrow-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--elite-positive);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--elite-positive) 15%, transparent);
+}
+.elite-landing .elite-display {
+  max-width: none;
+  font-size: clamp(3.4rem, 5.2vw, 4.65rem);
+  font-weight: 650;
+  letter-spacing: -0.065em;
+  line-height: 0.98;
+}
+.elite-landing .elite-heading {
+  font-size: clamp(2.2rem, 4.4vw, 3.7rem);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 1.08;
+}
+.elite-landing .elite-button {
+  display: inline-flex;
+  min-height: 3.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+.elite-landing .elite-button svg,
+.elite-landing .elite-header-cta svg,
+.elite-landing .elite-inline-link svg,
+.elite-landing .elite-mobile-cta svg { width: 1rem; height: 1rem; }
+.elite-landing .elite-button:hover { transform: translateY(-2px); }
+.elite-landing .elite-button-primary {
+  background: var(--elite-brand);
+  color: var(--elite-bg);
+}
+.elite-landing .elite-button-primary:hover { background: color-mix(in srgb, var(--elite-brand) 88%, var(--elite-text)); }
+.elite-landing .elite-button-secondary {
+  border-color: color-mix(in srgb, var(--elite-text) 24%, transparent);
+  background: color-mix(in srgb, var(--elite-bg) 72%, transparent);
+  color: var(--elite-text);
+}
+.elite-landing .elite-button-secondary:hover { border-color: var(--elite-brand); }
+.elite-landing .elite-hero-note { color: color-mix(in srgb, var(--elite-text) 66%, transparent); }
+.elite-landing .elite-hero-trust { border-color: color-mix(in srgb, var(--elite-text) 18%, transparent); color: var(--elite-text); }
+.elite-landing .elite-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent);
+  background: color-mix(in srgb, var(--elite-bg) 92%, transparent);
+  backdrop-filter: blur(16px);
+}
+.elite-landing .elite-brand-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+}
+.elite-landing .elite-brand-mark { overflow: hidden; border: 1px solid color-mix(in srgb, var(--elite-brand) 40%, transparent); }
+.elite-landing .elite-nav-link,
+.elite-landing .elite-header-login {
+  color: color-mix(in srgb, var(--elite-text) 78%, transparent);
+  font-size: 0.84rem;
+  font-weight: 550;
+  transition: color 160ms ease;
+}
+.elite-landing .elite-nav-link:hover,
+.elite-landing .elite-header-login:hover { color: var(--elite-brand); }
+.elite-landing .elite-header-cta,
+.elite-landing .elite-mobile-cta {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: 999px;
+  background: var(--elite-brand);
+  padding: 0.6rem 1rem;
+  color: var(--elite-bg);
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: background-color 160ms ease;
+}
+.elite-landing .elite-header-cta:hover,
+.elite-landing .elite-mobile-cta:hover { background: color-mix(in srgb, var(--elite-brand) 88%, var(--elite-text)); }
+.elite-landing .elite-menu-button {
+  display: inline-flex;
+  width: 2.65rem;
+  height: 2.65rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--elite-text) 20%, transparent);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--elite-text);
+}
+.elite-landing .elite-menu-button svg { width: 1.1rem; height: 1.1rem; }
+.elite-landing .elite-mobile-navigation {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent);
+  background: var(--elite-bg);
+  padding: 0.7rem 1.25rem 1.2rem;
+}
+.elite-landing .elite-mobile-navigation > a:not(.elite-mobile-cta) {
+  border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent);
+  padding: 0.85rem 0;
+  color: var(--elite-muted);
+  font-size: 0.92rem;
+}
+.elite-landing .elite-mobile-cta { margin-top: 0.65rem; }
+.elite-landing .elite-skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  z-index: 100;
+  border-radius: 0.5rem;
+  background: var(--elite-brand);
+  padding: 0.7rem 1rem;
+  color: var(--elite-bg);
+}
+.elite-landing .elite-skip-link:focus { top: 1rem; }
+.elite-landing .elite-market-card,
+.elite-landing .elite-trust-panel,
+.elite-landing .elite-planner,
+.elite-landing .elite-feature-card,
+.elite-landing .elite-step-card {
+  border: 1px solid color-mix(in srgb, var(--elite-text) 14%, transparent);
+  background: color-mix(in srgb, var(--elite-bg) 95%, var(--elite-text));
+}
+.elite-landing .elite-market-card {
+  width: 100%;
+  max-width: 31rem;
+  justify-self: end;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  box-shadow: 0 28px 80px color-mix(in srgb, var(--elite-bg) 60%, transparent);
+  backdrop-filter: blur(18px);
+  animation: elite-copy-in 800ms 120ms cubic-bezier(.2,.75,.25,1) both;
+}
+.elite-landing .elite-market-kicker { color: var(--elite-muted); font-size: 0.67rem; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; }
+.elite-landing .elite-preview-tag {
+  border: 1px solid color-mix(in srgb, var(--elite-brand) 35%, transparent);
+  border-radius: 999px;
+  padding: 0.3rem 0.55rem;
+  color: var(--elite-brand);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.elite-landing .elite-market-tabs,
+.elite-landing .elite-plan-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+.elite-landing .elite-market-tabs button,
+.elite-landing .elite-plan-options button {
+  border: 1px solid color-mix(in srgb, var(--elite-text) 16%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--elite-muted);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 650;
+  padding: 0.55rem 0.85rem;
+  transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+.elite-landing .elite-market-tabs button:hover,
+.elite-landing .elite-plan-options button:hover { border-color: var(--elite-brand); color: var(--elite-text); }
+.elite-landing .elite-market-tabs button.is-selected,
+.elite-landing .elite-plan-options button.is-selected {
+  border-color: var(--elite-brand);
+  background: var(--elite-brand);
+  color: var(--elite-bg);
+}
+.elite-landing .elite-market-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 11%, transparent);
+  padding: 0.85rem 0.1rem;
+  font-size: 0.87rem;
+}
+.elite-landing .elite-market-detail,
+.elite-landing .elite-market-footnote { color: var(--elite-muted); font-size: 0.66rem; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-market-change { display: inline-flex; align-items: center; gap: 0.25rem; font-family: var(--font-geist-mono), monospace; font-size: 0.73rem; font-weight: 650; white-space: nowrap; }
+.elite-landing .elite-market-change svg { width: 0.9rem; height: 0.9rem; }
+.elite-landing .elite-market-change.is-positive { color: var(--elite-positive); }
+.elite-landing .elite-market-change.is-negative { color: var(--elite-muted); }
+.elite-landing .elite-market-footnote { display: flex; align-items: center; gap: 0.5rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 11%, transparent); padding-top: 0.8rem; }
+.elite-landing .elite-section { padding: 5.75rem 0; scroll-margin-top: 5rem; }
+.elite-landing .elite-section-divider { border-top: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); }
+.elite-landing .elite-section-alt { background: color-mix(in srgb, var(--elite-bg) 96%, var(--elite-text)); }
+.elite-landing .elite-feature-card,
+.elite-landing .elite-step-card { border-radius: 1rem; padding: 1.5rem; transition: transform 200ms ease, border-color 200ms ease; }
+.elite-landing .elite-feature-card:hover,
+.elite-landing .elite-step-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--elite-brand) 55%, transparent); }
+.elite-landing .elite-feature-icon {
+  display: flex;
+  width: 2.8rem;
+  height: 2.8rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--elite-brand) 40%, transparent);
+  border-radius: 0.85rem;
+  color: var(--elite-brand);
+}
+.elite-landing .elite-feature-icon svg { width: 1.25rem; height: 1.25rem; }
+.elite-landing .elite-workspace-visual {
+  min-height: 20rem;
+  aspect-ratio: 1.25 / 1;
+  border: 1px solid color-mix(in srgb, var(--elite-text) 16%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--elite-bg) 93%, var(--elite-text));
+}
+.elite-landing .elite-workspace-visual img { transition: transform 500ms ease; }
+.elite-landing .elite-workspace-visual:hover img { transform: scale(1.035); }
+.elite-landing .elite-image-caption {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  border: 1px solid color-mix(in srgb, var(--elite-text) 20%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--elite-bg) 88%, transparent);
+  padding: 0.5rem 0.75rem;
+  color: var(--elite-text);
+  font-size: 0.68rem;
+  backdrop-filter: blur(10px);
+}
+.elite-landing .elite-inline-link { display: inline-flex; align-items: center; gap: 0.6rem; color: var(--elite-brand); font-size: 0.9rem; font-weight: 700; }
+.elite-landing .elite-inline-link:hover { color: var(--elite-text); }
+.elite-landing .elite-planner {
+  display: grid;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  grid-template-columns: minmax(0, 1.5fr) minmax(15rem, 0.75fr);
+}
+.elite-landing .elite-planner-main { padding: clamp(1.25rem, 4vw, 2.5rem); }
+.elite-landing .elite-planner-label { color: var(--elite-muted); font-size: 0.72rem; font-weight: 650; letter-spacing: 0.04em; }
+.elite-landing .elite-planner-summary { margin-top: 2rem; }
+.elite-landing .elite-planner-balance { margin-top: 0.25rem; font-size: clamp(2.6rem, 5vw, 4rem); font-weight: 600; letter-spacing: -0.055em; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-plan-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; margin-top: 1.75rem; }
+.elite-landing .elite-plan-metric { display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 16%, transparent); padding: 0.85rem 0.25rem 0; }
+.elite-landing .elite-plan-metric span { color: var(--elite-muted); font-size: 0.7rem; line-height: 1.4; }
+.elite-landing .elite-plan-metric strong { font-family: var(--font-geist-mono), monospace; font-size: clamp(1.05rem, 2.3vw, 1.35rem); font-weight: 550; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-planner-aside { border-left: 1px solid color-mix(in srgb, var(--elite-text) 13%, transparent); background: color-mix(in srgb, var(--elite-bg) 94%, var(--elite-text)); padding: clamp(1.25rem, 3vw, 2rem); }
+.elite-landing .elite-planner-note { grid-column: 1 / -1; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); padding: 0.85rem 1.25rem; color: var(--elite-muted); font-size: 0.68rem; line-height: 1.55; }
+.elite-landing .elite-step-number { color: var(--elite-brand); font-family: var(--font-geist-mono), monospace; font-size: 0.77rem; letter-spacing: 0.12em; }
+.elite-landing .elite-trust-panel { border-radius: 1rem; padding: 1.6rem; }
+.elite-landing .elite-faq-list { border-top: 1px solid color-mix(in srgb, var(--elite-text) 15%, transparent); }
+.elite-landing .elite-faq-item { border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 15%, transparent); padding: 1.15rem 0; }
+.elite-landing .elite-faq-item summary { display: flex; cursor: pointer; align-items: center; justify-content: space-between; gap: 1.2rem; font-size: 0.98rem; font-weight: 600; list-style: none; }
+.elite-landing .elite-faq-item summary::-webkit-details-marker { display: none; }
+.elite-landing .elite-faq-item summary::after { color: var(--elite-brand); content: "+"; font-size: 1.35rem; font-weight: 400; }
+.elite-landing .elite-faq-item[open] summary::after { content: "−"; }
+.elite-landing .elite-final-cta { border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); background: color-mix(in srgb, var(--elite-bg) 94%, var(--elite-brand)); }
+.elite-landing .elite-footer { border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); background: var(--elite-bg); }
+.elite-landing .elite-footer-title { color: var(--elite-text); letter-spacing: 0.12em; }
+.elite-landing .elite-footer-links { display: flex; flex-direction: column; gap: 0.65rem; margin-top: 0.9rem; color: var(--elite-muted); font-size: 0.82rem; }
+.elite-landing .elite-footer-links a:hover { color: var(--elite-brand); }
+.elite-landing .elite-risk-disclosure { display: flex; flex-direction: column; gap: 0.8rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); padding: 1rem 0; color: var(--elite-muted); font-size: 0.75rem; line-height: 1.6; }
+.elite-landing .elite-risk-disclosure strong { color: var(--elite-brand); }
+.elite-landing .elite-risk-disclosure a { flex-shrink: 0; color: var(--elite-text); font-weight: 650; }
+.elite-landing .elite-risk-disclosure a:hover { color: var(--elite-brand); }
+@keyframes elite-copy-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes elite-hero-drift { from { transform: scale(1.015); } to { transform: scale(1.055); } }
+@media (max-width: 1023px) {
+  .elite-landing .elite-hero-art { opacity: 0.68; background-position: 62% center; }
+  .elite-landing .elite-hero-scrim { background: linear-gradient(90deg, color-mix(in srgb, var(--elite-bg) 92%, transparent), color-mix(in srgb, var(--elite-bg) 55%, transparent)), linear-gradient(0deg, var(--elite-bg) 0%, transparent 55%); }
+  .elite-landing .elite-market-card { justify-self: start; max-width: 38rem; }
+}
+@media (max-width: 767px) {
+  .elite-landing .elite-hero { min-height: 0; }
+  .elite-landing .elite-hero-art { background-image: url("/images/elitefund-hero-mobile.png"); background-position: center 35%; opacity: 0.52; }
+  .elite-landing .elite-hero-scrim { background: linear-gradient(180deg, color-mix(in srgb, var(--elite-bg) 66%, transparent) 0%, color-mix(in srgb, var(--elite-bg) 55%, transparent) 40%, var(--elite-bg) 83%); }
+  .elite-landing .elite-display { font-size: clamp(3.2rem, 13vw, 4.6rem); }
+  .elite-landing .elite-section { padding: 4.25rem 0; }
+  .elite-landing .elite-planner { grid-template-columns: minmax(0, 1fr); }
+  .elite-landing .elite-planner-aside { border-top: 1px solid color-mix(in srgb, var(--elite-text) 13%, transparent); border-left: 0; }
+  .elite-landing .elite-workspace-visual { min-height: 16rem; }
+}
+@media (max-width: 520px) {
+  .elite-landing .elite-plan-metrics { grid-template-columns: 1fr; gap: 0.9rem; }
+  .elite-landing .elite-plan-metric { flex-direction: row; align-items: center; justify-content: space-between; }
+  .elite-landing .elite-market-card { padding: 1rem; }
+  .elite-landing .elite-market-row { font-size: 0.82rem; }
+  .elite-landing .elite-market-detail { font-size: 0.6rem; }
+  .elite-landing .elite-risk-disclosure { align-items: flex-start; }
+}
+@media (min-width: 640px) {
+  .elite-landing .elite-risk-disclosure { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .elite-landing .elite-hero-art,
+  .elite-landing .elite-hero-copy,
+  .elite-landing .elite-market-card { animation: none; }
+  .elite-landing .elite-feature-card,
+  .elite-landing .elite-step-card,
+  .elite-landing .elite-button,
+  .elite-landing .elite-workspace-visual img { transition: none; }
+}
+
 /* Participant dashboard — mobile-first, fills full viewport on all screens */
 .participant-shell {
   width: 100%;
