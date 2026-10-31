@@ -11631,11 +11631,31 @@ body:has(.elite-terminal-shell) {
 
 /* Keep the wide desktop chart landscape-oriented and stack the ticket below it. */
 @media (min-width: 1024px) {
+  html:has(.mt5-terminal.reference-terminal) {
+    scrollbar-width: thin !important;
+    scrollbar-color: #34445a transparent !important;
+    -ms-overflow-style: auto !important;
+  }
+
+  html:has(.mt5-terminal.reference-terminal)::-webkit-scrollbar {
+    display: block !important;
+    width: 8px !important;
+  }
+
+  html:has(.mt5-terminal.reference-terminal)::-webkit-scrollbar-thumb {
+    background: #34445a !important;
+    border-radius: 999px;
+  }
+
+  html:has(.mt5-terminal.reference-terminal)::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+
   .mt5-terminal.reference-terminal .apple-terminal-panel-layout {
     flex: 1 1 0% !important;
-    height: clamp(1200px, calc(100dvh - 190px), 1400px) !important;
-    min-height: 1200px !important;
-    max-height: 1400px !important;
+    height: clamp(1050px, calc(100dvh - 190px), 1230px) !important;
+    min-height: 1050px !important;
+    max-height: 1230px !important;
   }
 
   .mt5-terminal.reference-terminal .apple-terminal-panel-layout > .terminal-dock-group {
