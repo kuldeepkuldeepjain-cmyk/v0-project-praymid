@@ -48,6 +48,7 @@ import {
 } from "lucide-react"
 import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
+import { AccountTypeBadge } from "@/components/admin/account-type-badge"
 import { UserRankBadge } from "@/components/user-rank-badge"
 function safeDateTime(value?: string | null) {
   if (!value) return "Not available"
@@ -511,6 +512,7 @@ export function ParticipantDatabaseView() {
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">#</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Serial No</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">User Info</TableHead>
+                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-white md:table-cell">Account Type</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Password / PIN</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Contact</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Location</TableHead>
@@ -542,12 +544,23 @@ export function ParticipantDatabaseView() {
                     {/* User Info */}
                     <TableCell>
                       <div className="space-y-1">
-                        <p className="font-semibold text-slate-900">{participant.name || "—"}</p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <p className="font-semibold text-slate-900">{participant.name || "—"}</p>
+                          <span className="inline-flex items-center gap-1 md:hidden">
+                            <span className="text-sm font-medium uppercase tracking-wide text-slate-500">Type:</span>
+                            <AccountTypeBadge accountType={participant.account_type} appearance="light" />
+                          </span>
+                        </div>
                         <p className="text-xs text-violet-600">@{participant.username}</p>
                         <div className="flex items-center gap-1">
                           {participant.rank ? <UserRankBadge rank={participant.rank} size="sm" showLabel /> : <span className="text-xs text-slate-500">Rank unavailable</span>}
                         </div>
                       </div>
+                    </TableCell>
+
+                    {/* Account Type */}
+                    <TableCell className="hidden whitespace-nowrap md:table-cell">
+                      <AccountTypeBadge accountType={participant.account_type} appearance="light" />
                     </TableCell>
 
                     {/* Password */}
