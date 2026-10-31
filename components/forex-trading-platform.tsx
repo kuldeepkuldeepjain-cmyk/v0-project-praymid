@@ -41,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
 import type { ReactNode } from "react"
 
@@ -631,7 +632,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ───────────────────────────────────────────────����───���
+// ─��─ Market Sessions Panel ───────────────────────────────────────────────����───���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -3535,28 +3536,34 @@ const maxLeverage = 100
           { id: "stats", label: "Stats", icon: Activity },
           { id: "ai-coach", label: "AI guide", icon: BrainCircuit },
         ] as { id: ActivityPanelId; label: string; icon: typeof Layers; count?: number }[]).map(({ id, label, icon: Icon, count = 0 }) => (
-          <button
-            key={id}
-            type="button"
-            title={label}
-            aria-label={`Open ${label} activity${count ? `, ${count} items` : ""}`}
-            aria-haspopup="dialog"
-            aria-expanded={activityDialogOpen && activePanel === id}
-            aria-pressed={activePanel === id}
-            onClick={() => openActivityPanel(id)}
-            className={`relative flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
-              activePanel === id
-                ? "border-cyan-400/40 bg-cyan-300/10 text-cyan-200"
-                : "border-transparent text-slate-500 hover:border-[#23384b] hover:bg-[#0b1724] hover:text-slate-200"
-            }`}
-          >
-            <Icon className="size-4" aria-hidden="true" />
-            {count > 0 && (
-              <span className="absolute -right-1 -top-1 min-w-4 rounded-full border border-[#060b12] bg-cyan-300 px-1 text-center text-[8px] font-black leading-3 text-[#07111b]" aria-hidden="true">
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
-          </button>
+          <Tooltip key={id}>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label={`Open ${label} activity${count ? `, ${count} items` : ""}`}
+                aria-haspopup="dialog"
+                aria-controls="terminal-activity-dialog"
+                aria-expanded={activityDialogOpen && activePanel === id}
+                aria-pressed={activePanel === id}
+                onClick={() => openActivityPanel(id)}
+                className={`relative flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
+                  activePanel === id
+                    ? "border-cyan-400/40 bg-cyan-300/10 text-cyan-200"
+                    : "border-transparent text-slate-500 hover:border-[#23384b] hover:bg-[#0b1724] hover:text-slate-200"
+                }`}
+              >
+                <Icon className="size-4" aria-hidden="true" />
+                {count > 0 && (
+                  <span className="absolute -right-1 -top-1 min-w-4 rounded-full border border-[#060b12] bg-cyan-300 px-1 text-center text-[8px] font-black leading-3 text-[#07111b]" aria-hidden="true">
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={10} className="border border-cyan-200/20 bg-slate-950/90 text-slate-100 shadow-xl backdrop-blur-xl" arrowClassName="bg-slate-950 fill-slate-950">
+              {label}
+            </TooltipContent>
+          </Tooltip>
         ))}
       </nav>
       <div className={`apple-terminal-panel-layout ${mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}`}>
@@ -4434,17 +4441,26 @@ const maxLeverage = 100
 
       <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
         <DialogContent
+          id="terminal-activity-dialog"
+          overlayClassName="bg-slate-950/35 backdrop-blur-sm"
           showCloseButton={false}
-          className="flex h-[min(82vh,54rem)] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-6xl flex-col gap-0 overflow-hidden border-[#1e2d45] bg-[#060a12] p-0 text-slate-100 sm:max-w-6xl"
-          style={{ background: "#060a12", color: "#e2e8f0" }}
+          className="flex h-[min(82vh,54rem)] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-6xl flex-col gap-0 overflow-hidden border border-sky-100/20 bg-slate-950/60 p-0 text-slate-100 shadow-2xl backdrop-blur-2xl sm:max-w-6xl"
+          style={{
+            background: "linear-gradient(145deg, rgba(20, 42, 66, 0.82), rgba(5, 13, 25, 0.78))",
+            color: "#e2e8f0",
+            borderColor: "rgba(148, 192, 226, 0.28)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 80px rgba(0,0,0,0.48)",
+            backdropFilter: "blur(22px) saturate(140%)",
+            WebkitBackdropFilter: "blur(22px) saturate(140%)",
+          }}
         >
-          <DialogHeader className="flex-row items-center justify-between gap-4 border-b border-[#1e2d45] bg-[#070b13] px-4 py-3 text-left">
+          <DialogHeader className="flex-row items-center justify-between gap-4 border-b border-sky-100/10 bg-slate-950/20 px-4 py-3 text-left backdrop-blur-xl">
             <div className="flex min-w-0 flex-col gap-1">
               <DialogTitle className="truncate text-sm font-black tracking-wide text-slate-100">
                 {ACTIVITY_PANEL_TITLES[activePanel]}
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-500">
-                Live terminal activity for your selected market and account.
+              <DialogDescription className="text-xs text-slate-400">
+                Review this panel without leaving your trading workspace.
               </DialogDescription>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -4458,7 +4474,7 @@ const maxLeverage = 100
             </div>
           </DialogHeader>
 
-          <div id="terminal-activity-content" className="min-h-0 flex-1 overflow-y-auto terminal-scroll">
+          <div id="terminal-activity-content" className="activity-glass-content min-h-0 flex-1 overflow-y-auto terminal-scroll p-3">
 
 	          {/* ── Open Positions ── */}
 	          {activePanel === "positions" && (
