@@ -7,7 +7,7 @@ import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert, ShieldCheck,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
-  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
+  ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
@@ -48,7 +48,7 @@ import type { ReactNode } from "react"
 // ─── Workspace layout (UI preferences only — never market or account data) ──
 
 const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v3"
-const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v2"
+const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v4"
 
 function DockGroup({
   enabled,
@@ -1427,7 +1427,7 @@ function PositionSizer({
   }, [riskPct, slPipsInput, walletBalance, pair.symbol, midPrice])
 
   return (
-    <div className="p-2">
+    <div className="terminal-position-sizer p-2">
       <div className="rounded-xl overflow-hidden" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 px-3 py-2" style={{ borderBottom: "1px solid #1a2640" }}>
           <Target className="h-3 w-3 text-violet-400" />
@@ -3895,8 +3895,8 @@ const maxLeverage = 100
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
         <DockPanel enabled={dockEnabled} id="workspace" order={2} defaultSize={74} minSize={66}>
         <div className="apple-terminal-main-column">
-        <DockGroup enabled={dockEnabled} direction="horizontal" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
-        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={62} minSize={45} maxSize={74}>
+        <DockGroup enabled={dockEnabled} direction="vertical" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
+        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={52} minSize={45} maxSize={72}>
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
@@ -4200,7 +4200,7 @@ const maxLeverage = 100
         {!rightPanelHidden && !(dockEnabled && chartExpanded) && (
         <>
         <DockHandle enabled={dockEnabled} />
-        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={38} minSize={26} maxSize={55}>
+        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={48} minSize={28} maxSize={55}>
         <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderTop: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
@@ -4227,11 +4227,11 @@ const maxLeverage = 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(true)}
-              aria-label="Hide trading sidebar (Ctrl+Shift+O)"
-              title="Hide trading sidebar (Ctrl+Shift+O)"
+              aria-label="Hide order panel (Ctrl+Shift+O)"
+              title="Hide order panel (Ctrl+Shift+O)"
               className="px-2 text-slate-500 transition-colors hover:text-cyan-400"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -4240,7 +4240,7 @@ const maxLeverage = 100
 		            <div className="flex-1 overflow-y-auto terminal-scroll">
 		              <div className="mobile-order-ticket flex flex-col gap-2 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-2">
 	                {/* Header banner */}
-	                <div className="flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
+	                <div className="mobile-order-ticket-banner flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
 	                  <div className="flex items-center gap-2">
 	                    <span className="text-xs font-black uppercase tracking-wider text-cyan-300">{selectedPair.symbol}</span>
 	                    <span className="text-[9px] font-bold text-slate-400">1:{effectiveLeverage}</span>
@@ -4301,7 +4301,7 @@ const maxLeverage = 100
 
 		                {/* Pending price (limit/stop) */}
 	                {orderType !== "market" && (
-	                  <div className="rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
+	                  <div className="mobile-order-pending rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
 	                    <label className="text-[8px] font-bold tracking-widest uppercase text-cyan-300">
 	                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
 	                    </label>
@@ -4323,7 +4323,7 @@ const maxLeverage = 100
 	                )}
 
 			                {/* Volume (lots) */}
-			                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
+			                <div className="mobile-order-volume rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
 			                  <div className="flex items-center justify-between">
 			                    <label className="text-[8px] font-black tracking-wider uppercase text-cyan-300">
 			                      Trade size (lots)
@@ -4353,7 +4353,7 @@ const maxLeverage = 100
 	                </div>
 
                 {/* Essential Risk controls (SL / TP) */}
-                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
+                <div className="mobile-order-risk rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Stop Loss & Take Profit</span>
                   </div>
@@ -4390,7 +4390,7 @@ const maxLeverage = 100
                   type="button"
                   onClick={() => setShowAdvancedOrderControls(!showAdvancedOrderControls)}
                   aria-expanded={showAdvancedOrderControls}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[#1a2640] bg-[#07101b] hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider"
+                  className="mobile-order-advanced-toggle w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[#1a2640] bg-[#07101b] hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider"
                 >
                   <div className="flex items-center gap-1.5">
                     <Wrench className="h-3 w-3 text-cyan-400" />
@@ -4404,7 +4404,7 @@ const maxLeverage = 100
 
                 {/* Advanced Options Body */}
                 {showAdvancedOrderControls && (
-                  <div className="flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
+                  <div className="mobile-order-advanced-options flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
                     {/* Trailing Stop */}
                     <div className="flex items-center justify-between gap-2">
                       <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
@@ -4463,7 +4463,7 @@ const maxLeverage = 100
                 )}
 
 	                {/* Order Metrics summary */}
-	                <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
+	                <div className="mobile-order-metrics grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
 	                  <div className="px-2 py-1 bg-[#090f19] rounded">
 	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Margin</p>
 	                    <p className="price-mono text-[10px] font-black text-amber-300">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toFixed(2)}</p>
@@ -4488,7 +4488,7 @@ const maxLeverage = 100
 
 	                {/* Balance warning */}
 	                {balanceLoaded && estimatedMargin > walletBalance && (
-	                  <div className="flex items-center gap-1.5 px-2 py-1.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px] font-bold">
+	                  <div className="mobile-order-warning flex items-center gap-1.5 px-2 py-1.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px] font-bold">
 	                    <AlertTriangle className="h-3 w-3 shrink-0" />
 	                    Insufficient margin: Need ${estimatedMargin.toFixed(2)} (Have ${walletBalance.toFixed(2)})
 	                  </div>
@@ -4496,7 +4496,7 @@ const maxLeverage = 100
 
 	                {/* Execute button */}
 	                <button
-	                  className={`w-full py-2.5 rounded-lg font-black text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
+	                  className={`mobile-order-execute w-full py-2.5 rounded-lg font-black text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
 	                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
 	                  }`}
 	                  onClick={() => executeTrade()}
@@ -4545,11 +4545,11 @@ const maxLeverage = 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(false)}
-              aria-label="Show trading sidebar (Ctrl+Shift+O)"
-              title="Show trading sidebar (Ctrl+Shift+O)"
+              aria-label="Show order panel (Ctrl+Shift+O)"
+              title="Show order panel (Ctrl+Shift+O)"
               className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronUp className="h-4 w-4" />
             </button>
           </div>
         )}
