@@ -2339,6 +2339,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <PlusCircle />
                 <span>Add Fund</span>
               </Link>
+              <Link href="/participant/dashboard/challenge" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                <ShieldCheck />
+                <span>Challenge</span>
+              </Link>
               <Link href="/participant/dashboard/upi" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
                 <QrCode />
                 <span>UPI Gateway</span>

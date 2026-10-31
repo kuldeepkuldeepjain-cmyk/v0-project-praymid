@@ -105,6 +105,7 @@ export default function LandingPage() {
             <a href="#platform" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Platform</a>
             <a href="#features" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Features</a>
             <a href="#programs" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Programs</a>
+            <a href="#challenge-account" className="text-cyan-300 hover:text-cyan-200 font-medium text-sm transition-colors">Challenge</a>
             <a href="#security" className="text-slate-300 hover:text-white font-medium text-sm transition-colors">Security</a>
           </div>
 
@@ -142,6 +143,7 @@ export default function LandingPage() {
             <a href="#platform" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Platform</a>
             <a href="#features" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Features</a>
             <a href="#programs" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Programs</a>
+            <a href="#challenge-account" className="block text-cyan-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Challenge Account</a>
             <a href="#security" className="block text-slate-300 font-medium py-2 border-b border-slate-800" onClick={() => setIsMenuOpen(false)}>Security</a>
           </div>
         )}
@@ -328,6 +330,98 @@ export default function LandingPage() {
               )
             })}
           </div>
+        </div>
+      </section>
+
+      {/* Challenge account program */}
+      <section id="challenge-account" className="relative overflow-hidden border-t border-slate-800 bg-slate-950 py-16 sm:py-24">
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent" aria-hidden="true" />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+            <div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-300">
+                <Shield className="h-3.5 w-3.5" aria-hidden="true" /> Challenge account
+              </div>
+              <h2 className="max-w-2xl text-3xl font-bold leading-tight text-white sm:text-5xl">Prove your process. Unlock your next level.</h2>
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-400">Start with a clearly defined evaluation account, trade within visible risk limits, and qualify for a funded path when your consistency meets the rules.</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link href="/participant/dashboard/challenge" className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300">
+                  View challenge plans <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </Link>
+                <a href="#challenge-rules" className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-200 transition hover:border-cyan-400/60 hover:text-white">Read the rules</a>
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                ["8%", "Profit target", "Reach the target without breaking a risk limit."],
+                ["5%", "Daily loss limit", "Your daily floor resets at the start of each trading day."],
+                ["10%", "Maximum drawdown", "The account-wide equity floor protects the evaluation."],
+              ].map(([value, label, detail]) => (
+                <div key={label} className="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-2xl shadow-slate-950/30">
+                  <p className="font-mono text-3xl font-bold text-cyan-300">{value}</p>
+                  <p className="mt-3 text-sm font-bold text-white">{label}</p>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">{detail}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div id="challenge-rules" className="mt-14 grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 sm:p-8">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">Standard rules</p>
+                  <h3 className="mt-2 text-2xl font-bold text-white">One scorecard. No hidden thresholds.</h3>
+                </div>
+                <CandlestickChart className="h-7 w-7 text-cyan-400" aria-hidden="true" />
+              </div>
+              <div className="mt-7 grid gap-x-8 gap-y-5 sm:grid-cols-2">
+                {[
+                  ["Profit target", "8% of starting balance"],
+                  ["Daily loss limit", "5% of day-start equity"],
+                  ["Maximum drawdown", "10% from starting balance"],
+                  ["Minimum trading days", "5 active trading days"],
+                  ["Leverage", "Up to 30:1"],
+                  ["Account discipline", "No revenge trading or rule circumvention"],
+                ].map(([label, detail]) => (
+                  <div key={label} className="flex gap-3 border-b border-slate-800 pb-4">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" aria-hidden="true" />
+                    <div><p className="text-sm font-semibold text-white">{label}</p><p className="mt-1 text-xs leading-5 text-slate-500">{detail}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-400/10 via-slate-900 to-blue-500/10 p-6 sm:p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">How it works</p>
+              <div className="mt-6 space-y-6">
+                {[
+                  ["01", "Choose a plan", "Select the starting balance and pay the one-time challenge fee."],
+                  ["02", "Trade the limits", "Keep your daily loss and total drawdown visible before every order."],
+                  ["03", "Qualify", "Hit the target after five trading days without a breach."],
+                ].map(([number, title, detail]) => (
+                  <div key={number} className="flex gap-4">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-400/15 font-mono text-xs font-bold text-cyan-300">{number}</span>
+                    <div><p className="font-bold text-white">{title}</p><p className="mt-1 text-sm leading-6 text-slate-400">{detail}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {[
+              ["Challenge 5K", "$49", "$5,000 starting balance"],
+              ["Challenge 10K", "$89", "$10,000 starting balance"],
+              ["Challenge 25K", "$179", "$25,000 starting balance"],
+            ].map(([name, fee, balance], index) => (
+              <div key={name} className={`rounded-2xl border p-5 ${index === 1 ? "border-cyan-400/50 bg-cyan-400/10" : "border-slate-800 bg-slate-900/60"}`}>
+                {index === 1 && <span className="mb-3 inline-block rounded-full bg-cyan-400 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-950">Most selected</span>}
+                <div className="flex items-end justify-between gap-3"><div><p className="text-sm font-bold text-white">{name}</p><p className="mt-1 text-xs text-slate-500">{balance}</p></div><p className="text-2xl font-bold text-cyan-300">{fee}</p></div>
+                <Link href="/participant/register" className="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-cyan-400 hover:text-white">Start this challenge</Link>
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-xs leading-5 text-slate-500">Trading involves risk. Challenge access, leverage, eligibility, and progression are subject to the full account terms and verification requirements.</p>
         </div>
       </section>
 
