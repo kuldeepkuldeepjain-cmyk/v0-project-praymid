@@ -1412,7 +1412,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => window.clearInterval(timer)
   }, [])
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("10")
+  const [leverage, setLeverage]       = useState(isChallengeAccount ? "30" : "10")
   const defaultOrderInstrumentRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -2182,12 +2182,43 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
             pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
           }
           setOpenTrades(p => [newTrade, ...p])
-          adjustWalletBalance(
-            -margin,
-            `Pending fill — ${order.direction} ${order.lotSize}L ${order.pair} @ ${fmt(fillPrice, order.pair)}`
-          )
-          persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
-          showToast("info", `Pending ${order.orderType.replace("_"," ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
+          if (isChallengeAccount) {
+            void (async () => {
+              const saved = await persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
+              if (!saved) {
+                openTradesRef.current = openTradesRef.current.filter(item => item.id !== order.id)
+                setOpenTrades(current => current.filter(item => item.id !== order.id))
+                setPendingOrders(current => current.some(item => item.id === order.id) ? current : [order, ...current])
+                return
+              }
+              const result = saved as Record<string, unknown>
+              const execution = result.execution as { price?: number; margin?: number } | undefined
+              const verifiedTrade = {
+                ...newTrade,
+                openPrice: typeof execution?.price === "number" ? execution.price : newTrade.openPrice,
+                currentPrice: typeof execution?.price === "number" ? execution.price : newTrade.currentPrice,
+                trailingPeak: typeof execution?.price === "number" ? execution.price : newTrade.trailingPeak,
+                margin: typeof execution?.margin === "number" ? execution.margin : newTrade.margin,
+              }
+              openTradesRef.current = openTradesRef.current.map(item => item.id === order.id ? verifiedTrade : item)
+              setOpenTrades(current => current.map(item => item.id === order.id ? verifiedTrade : item))
+              if (typeof result.newBalance === "number") {
+                suppressExternalSync.current = true
+                setWalletBalance(result.newBalance)
+                setBalanceLoaded(true)
+                onBalanceUpdated?.(result.newBalance)
+                setTimeout(() => { suppressExternalSync.current = false }, 800)
+              }
+              showToast("info", `Challenge pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(verifiedTrade.openPrice, order.pair)}`)
+            })()
+          } else {
+            void adjustWalletBalance(
+              -margin,
+              `Pending fill — ${order.direction} ${order.lotSize}L ${order.pair} @ ${fmt(fillPrice, order.pair)}`
+            )
+            void persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
+            showToast("info", `Pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
+          }
           return prev.filter(o => o.id !== id)
         })
       })
@@ -2644,12 +2675,20 @@ const maxLeverage = 100
           return
         }
 
+        const response = saved as Record<string, unknown>
+        const verifiedClose: ClosedTrade = {
+          ...closed,
+          closePrice: typeof response.closePrice === "number" ? response.closePrice : closed.closePrice,
+          finalPnl: typeof response.finalPnl === "number" ? response.finalPnl : closed.finalPnl,
+          finalPips: typeof response.finalPips === "number" ? response.finalPips : closed.finalPips,
+          closeTime: typeof response.closePrice === "number" ? new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : closed.closeTime,
+        }
         setClosedTrades(prev => {
-          if (prev.some(item => item.id === closed.id)) return prev
-          return [closed, ...prev.slice(0, 99)]
+          if (prev.some(item => item.id === verifiedClose.id)) return prev
+          return [verifiedClose, ...prev.slice(0, 99)]
         })
 
-        const newBalance = saved && typeof saved.newBalance === "number" ? saved.newBalance : null
+        const newBalance = typeof response.newBalance === "number" ? response.newBalance : null
         if (newBalance === null) return
         suppressExternalSync.current = true
         setWalletBalance(newBalance)
@@ -2657,10 +2696,10 @@ const maxLeverage = 100
         onBalanceUpdated?.(newBalance)
         setTimeout(() => { suppressExternalSync.current = false }, 800)
 
-        showToast(reason === "stop_out" ? "error" : (finalPnl >= 0 ? "success" : "error"),
+        showToast(reason === "stop_out" ? "error" : (verifiedClose.finalPnl >= 0 ? "success" : "error"),
           reason === "stop_out"
-            ? `Stop-out: force-closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — margin level hit 100% (${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)})`
-            : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
+            ? `Stop-out: force-closed ${trade.pair} @ ${fmt(verifiedClose.closePrice, trade.pair)} — margin level hit 100% (${verifiedClose.finalPnl >= 0 ? "+" : ""}$${verifiedClose.finalPnl.toFixed(2)})`
+            : `Closed ${trade.pair} @ ${fmt(verifiedClose.closePrice, trade.pair)} — ${verifiedClose.finalPnl >= 0 ? "+" : ""}$${verifiedClose.finalPnl.toFixed(2)} (${verifiedClose.finalPips >= 0 ? "+" : ""}${verifiedClose.finalPips.toFixed(1)} pips)`
         )
         if (soundEnabled) playTerminalSound("close")
       } finally {
@@ -2775,13 +2814,30 @@ const maxLeverage = 100
       return
     }
 
-    setClosedTrades(prev => [closed, ...prev.filter(item => item.id !== closed.id)].slice(0, 100))
-    const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
-    await adjustWalletBalance(returnAmt,
-      `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    const result = saved as Record<string, unknown>
+    const verifiedClose: ClosedTrade = {
+      ...closed,
+      closePrice: typeof result.closePrice === "number" ? result.closePrice : closed.closePrice,
+      finalPnl: typeof result.finalPnl === "number" ? result.finalPnl : closed.finalPnl,
+      finalPips: typeof result.finalPips === "number" ? result.finalPips : closed.finalPips,
+    }
+    setClosedTrades(prev => [verifiedClose, ...prev.filter(item => item.id !== verifiedClose.id)].slice(0, 100))
+    if (isChallengeAccount) {
+      if (typeof result.newBalance === "number") {
+        suppressExternalSync.current = true
+        setWalletBalance(result.newBalance)
+        setBalanceLoaded(true)
+        onBalanceUpdated?.(result.newBalance)
+        setTimeout(() => { suppressExternalSync.current = false }, 800)
+      }
+    } else {
+      const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
+      await adjustWalletBalance(returnAmt,
+        `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    }
 
-    showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    showToast(verifiedClose.finalPnl >= 0 ? "success" : "error",
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(verifiedClose.closePrice, trade.pair)} — ${verifiedClose.finalPnl >= 0 ? "+" : ""}$${verifiedClose.finalPnl.toFixed(2)}`)
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
