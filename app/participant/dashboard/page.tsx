@@ -1972,6 +1972,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             {!isChallengeAccount ? (
               <ParticipantOnboardingDashboard
                 displayName={displayName}
+                email={participantData.email}
                 isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
                 accountType={currentAccountType}
                 accountOptions={<ParticipantAccountPathways accountType={currentAccountType} />}
@@ -1999,16 +2000,15 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               />
             ) : (
               <>
-                <section className="mx-3 mt-3 flex flex-col gap-3 rounded-2xl border border-amber-300/20 bg-slate-950/75 p-4 font-sans sm:mx-4 sm:p-5" aria-label="Challenge workspace">
-                  <div className="flex items-center justify-between gap-3">
-                    <h2 className="text-lg font-semibold tracking-tight text-white">Evaluation workspace</h2>
-                    <span className="rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1 text-sm font-semibold text-amber-100">
-                      {String(participantData.challenge_status || "not_started").replaceAll("_", " ")}
-                    </span>
+                <section className="mx-3 mt-3 flex flex-col gap-4 border border-amber-300/20 bg-[#111c28] p-4 sm:mx-4 sm:flex-row sm:items-center sm:justify-between sm:p-5" aria-label="Challenge workspace">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Evaluation workspace</p>
+                    <h2 className="mt-1 text-lg font-semibold text-white">Trade within your Challenge rules</h2>
+                    <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button type="button" onClick={() => setActiveTab("trading")} className="bg-amber-300 font-bold text-slate-950 hover:bg-amber-200">Trade</Button>
-                    <Button asChild variant="outline" className="border-slate-600 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/participant/dashboard/challenge">Evaluation details</Link></Button>
+                  <div className="flex shrink-0 flex-wrap gap-2">
+                    <Button type="button" onClick={() => setActiveTab("trading")} className="bg-[#d6b66b] font-bold text-[#111315] hover:bg-[#e2c982]">Open trading terminal</Button>
+                    <Button asChild variant="outline" className="border-slate-600 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/participant/dashboard/challenge">View evaluation</Link></Button>
                   </div>
                 </section>
                 <div className="mx-3 mt-3 sm:mx-4"><ParticipantAccountPathways accountType={currentAccountType} /></div>
@@ -2121,7 +2121,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </div>
 
             {/* ── INSTITUTIONAL WELCOME HERO ───────────────────── */}
-            <section className="hidden" aria-labelledby="elitefund-welcome-title">
+            <section className="relative mx-3 mt-3 hidden overflow-hidden border border-[#8f6f2d]/45 bg-[#101722] shadow-[0_18px_50px_rgba(0,0,0,0.22)] sm:mx-4 md:block" aria-labelledby="elitefund-welcome-title">
               <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl">
                   <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
@@ -2144,7 +2144,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
             {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
             {!isChallengeAccount && (
-              <section className="hidden" aria-labelledby="funding-launchpad-title">
+              <section className="mx-3 mt-3 overflow-hidden border border-slate-700/70 bg-[#181b1f] sm:mx-4" aria-labelledby="funding-launchpad-title">
               <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/30 bg-[#d6b66b]/10 text-[#d6b66b]">
@@ -2169,7 +2169,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             )}
 
             {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
-            <section className="hidden" aria-labelledby="account-confidence-title">
+            <section className="mx-3 mt-3 border border-slate-700/60 bg-slate-950/75 sm:mx-4" aria-labelledby="account-confidence-title">
               <div className="flex flex-col gap-4 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
                 <div>
                   <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Account overview</p>
@@ -2204,7 +2204,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </section>
 
             {/* ── INSTITUTIONAL OPERATING STANDARD ─────────────── */}
-            <section className="hidden" aria-labelledby="operating-standard-title">
+            <section className="mx-3 mt-3 border border-slate-700/60 bg-[#0d1520] sm:mx-4" aria-labelledby="operating-standard-title">
               <div className="flex flex-col gap-3 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Institutional operating standard</p>
@@ -2220,7 +2220,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </section>
 
             {/* ── AI TRADE COACH ────────────────────────────────── */}
-            <section className="hidden" aria-labelledby="ai-trade-coach-title">
+            <section className="mx-3 mt-3 overflow-hidden border border-[#d6b66b]/35 bg-[#111c28] sm:mx-4" aria-labelledby="ai-trade-coach-title">
               <div className="flex flex-col gap-5 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex items-start gap-3">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/35 bg-[#d6b66b]/10 text-[#d6b66b]"><Sparkles className="h-5 w-5" /></div>
@@ -2239,7 +2239,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </section>
 
             {/* ── JOURNEY & OPERATING TERMS ────────���───────────── */}
-            <section className="hidden" aria-label="Account journey and operating terms">
+            <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
               <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d6b66b]">Your next best step</p><h2 className="mt-1 text-base font-semibold text-white">Move at your own pace</h2></div><Sparkles className="h-5 w-5 text-[#d6b66b]" /></div>
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -2250,7 +2250,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </section>
 
             {/* ── LIVE TICKER BAR ──────────────────────────────── */}
-            <div className="hidden" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
+            <div className="ticker-wrap border-y py-1.5" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
               <div className="ticker-tape text-[10px] font-mono font-bold text-slate-500 gap-6">
                 {["EUR/USD", "GBP/USD", "USD/JPY", "BTC/USD", "ETH/USD", "XAU/USD", "USD/CHF", "AUD/USD"].map((symbol) => {
                   const quote = liveRates[symbol]
