@@ -743,7 +743,7 @@ export function TradingChart({
     })
   }, [rsid, indicators.rsi, chartPane, times]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Update MACD ─────────────────────────────────────────────────────────���────
+  // ── Update MACD ─────────────────────────────────────────────────────���───���────
   useEffect(() => {
     if (!macdSerRef.current || !macdSigRef.current || !macdHistRef.current || times.length === 0) return
     const show = indicators.macd && chartPane === "macd"
@@ -943,7 +943,7 @@ export function TradingChart({
           <span className="text-[10px]" style={{ color: "#7890ad" }}>Waiting for market data…</span>
         )}
         <div
-          className="ml-auto flex items-center gap-1.5 shrink-0 pl-2"
+          className="flex items-center gap-1.5 shrink-0 pl-2"
           role="status"
           aria-live="polite"
           aria-label={`Market feed ${marketStatus}`}
@@ -957,6 +957,74 @@ export function TradingChart({
           <span className="text-[9px] font-bold tracking-widest" style={{ color: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}>
             {marketStatus === "live" ? "LIVE" : marketStatus === "reconnecting" ? "RECONNECTING" : "CONNECTING"}
           </span>
+        </div>
+        <div className="terminal-chart-market-actions ml-auto flex items-center gap-1.5 shrink-0" role="group" aria-label="Chart actions">
+          <button
+            type="button"
+            onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
+            aria-pressed={alertMode}
+            className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
+            style={alertMode
+              ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
+              : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
+            }
+            title="Click on chart to set a price alert"
+          >
+            <svg aria-hidden="true" width="9" height="9" viewBox="0 0 10 10" fill="none">
+              <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+              <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+            <span className="text-[9px] font-black tracking-wide">ALERT</span>
+            {alerts.length > 0 && (
+              <span
+                className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black ml-0.5"
+                style={{ background: palette.amber, color: "#000" }}
+              >
+                {alerts.length}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!chartRef.current || candleData.length === 0) return
+              userAdjustedViewRef.current = false
+              autoFitRequestedRef.current = true
+              chartRef.current.priceScale("right").applyOptions({ autoScale: true })
+              const from = Math.max(0, candleData.length - 90)
+              chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
+            }}
+            className="flex items-center justify-center w-6 h-6 rounded shrink-0 transition-all hover:opacity-90 active:scale-95"
+            style={{ background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }}
+            aria-label="Reset zoom and fit selected instrument"
+            title="Reset zoom and fit selected instrument"
+          >
+            <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3" />
+            </svg>
+          </button>
+          {onExpand && (
+            <button
+              type="button"
+              onClick={onExpand}
+              aria-label={isExpanded ? "Collapse chart" : "Expand chart"}
+              aria-pressed={isExpanded}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md shrink-0 font-black text-[9px] tracking-widest transition-all active:scale-95"
+              style={isExpanded
+                ? { background: "rgba(57,191,167,0.12)", border: "1px solid rgba(57,191,167,0.42)", color: "#39bfa7" }
+                : { background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }
+              }
+              title={isExpanded ? "Collapse chart" : "Expand chart"}
+            >
+              <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none">
+                {isExpanded
+                  ? <path d="M3 1H1v2M7 1h2v2M3 9H1V7M7 9h2V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                  : <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />}
+              </svg>
+              {isExpanded ? "COLLAPSE" : "EXPAND"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -1073,88 +1141,7 @@ export function TradingChart({
           })}
         </div>
 
-        <div className="indicator-action-controls ml-auto flex shrink-0 items-center gap-1.5" role="group" aria-label="Chart actions">
-          {/* Price Alert toggle */}
-          <button
-            type="button"
-            onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
-            aria-pressed={alertMode}
-            className="flex items-center gap-1 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
-            style={alertMode
-              ? { background: `${palette.amber}20`, border: `1px solid ${palette.amber}60`, color: palette.amber }
-              : { background: "transparent", border: "1px solid rgba(38,59,79,0.6)", color: "#8296ab" }
-            }
-            title="Click on chart to set a price alert"
-          >
-            <svg aria-hidden="true" width="9" height="9" viewBox="0 0 10 10" fill="none">
-              <path d="M5 1v1M5 8v1M1 5h1M8 5h1" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-              <circle cx="5" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
-            </svg>
-            <span className="text-[9px] font-black tracking-wide">ALERT</span>
-            {alerts.length > 0 && (
-              <span
-                className="flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-black ml-0.5"
-                style={{ background: palette.amber, color: "#000" }}
-              >
-                {alerts.length}
-              </span>
-            )}
-          </button>
 
-        {/* Reset zoom */}
-        <button
-          type="button"
-          onClick={() => {
-            if (!chartRef.current || candleData.length === 0) return
-            userAdjustedViewRef.current = false
-            autoFitRequestedRef.current = true
-            chartRef.current.priceScale("right").applyOptions({ autoScale: true })
-            const from = Math.max(0, candleData.length - 90)
-            chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 2 })
-          }}
-          className="flex items-center justify-center w-6 h-6 rounded shrink-0 transition-all hover:opacity-90 active:scale-95"
-          style={{ background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }}
-          aria-label="Reset zoom and fit selected instrument"
-          title="Reset zoom and fit selected instrument"
-        >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.3"/>
-          </svg>
-        </button>
-
-        {/* Expand / Collapse */}
-        {onExpand && (
-          <button
-    type="button"
-    onClick={onExpand}
-    aria-pressed={isExpanded}
-    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md shrink-0 font-black text-[9px] tracking-widest transition-all active:scale-95"
-
-            style={isExpanded
-              ? { background: "rgba(57,191,167,0.12)", border: "1px solid rgba(57,191,167,0.42)", color: "#39bfa7" }
-              : { background: "#122234", border: "1px solid rgba(38,59,79,0.8)", color: "#91a4b8" }
-            }
-            title={isExpanded ? "Collapse chart" : "Expand chart"}
-          >
-            {isExpanded ? (
-              <>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M3 1H1v2M7 1h2v2M3 9H1V7M7 9h2V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                COLLAPSE
-              </>
-            ) : (
-              <>
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                  <path d="M1 3V1h2M9 3V1H7M1 7v2h2M9 7v2H7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                EXPAND
-              </>
-            )}
-          </button>
-        )}
-        </div>
       </div>
 
       {/* ── Chart canvas ───────────────────────────���──���──────────────���──────────── */}

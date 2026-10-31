@@ -11001,6 +11001,162 @@ body:has(.elite-terminal-shell) {
   }
 }
 
+/* Keep market controls together and reserve a separate dock for indicators. */
+.reference-terminal .apple-terminal-chart-column > .chart-header.terminal-market-dock {
+  position: relative;
+  z-index: 13;
+  gap: 0 !important;
+  padding: 7px 12px 0 !important;
+  border: 1px solid rgba(74, 121, 149, .42) !important;
+  border-bottom: 0 !important;
+  border-radius: 9px 9px 0 0 !important;
+  background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+  box-shadow: none !important;
+}
+
+.reference-terminal .terminal-market-dock-primary-row {
+  flex-wrap: nowrap !important;
+  min-width: 0;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(104, 162, 191, .22);
+  scrollbar-width: none;
+}
+
+.reference-terminal .terminal-market-dock-primary-row::-webkit-scrollbar,
+.reference-terminal .terminal-chart-rate-bar::-webkit-scrollbar,
+.reference-terminal .terminal-indicator-toolbar::-webkit-scrollbar,
+.reference-terminal .indicator-overlay-controls::-webkit-scrollbar {
+  display: none;
+}
+
+.reference-terminal .terminal-market-dock-quote,
+.reference-terminal .terminal-market-dock-primary-row > div:nth-child(2),
+.reference-terminal .terminal-market-dock-tools {
+  flex: 0 0 auto;
+}
+
+.reference-terminal .terminal-market-dock-tools {
+  margin-left: auto;
+}
+
+.reference-terminal .terminal-chart-rate-bar {
+  min-height: 38px !important;
+  height: auto !important;
+  gap: 8px 10px !important;
+  padding: 5px 12px !important;
+  border: 1px solid rgba(74, 121, 149, .42) !important;
+  border-top: 0 !important;
+  border-radius: 0 0 9px 9px !important;
+  background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+  scrollbar-width: none;
+}
+
+.reference-terminal .terminal-chart-market-actions button {
+  min-height: 28px;
+}
+
+.reference-terminal .terminal-indicator-toolbar {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  min-height: 40px !important;
+  margin: 6px 0 8px !important;
+  padding: 6px 10px !important;
+  overflow-x: auto !important;
+  border: 1px solid rgba(74, 121, 149, .42) !important;
+  border-radius: 9px !important;
+  background: rgba(9, 24, 40, .9) !important;
+  box-shadow: inset 0 1px rgba(255, 255, 255, .04);
+  scrollbar-width: none;
+}
+
+.reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls {
+  flex: 1 1 auto;
+  flex-wrap: nowrap !important;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.reference-terminal .terminal-indicator-toolbar .indicator-pane-controls {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column > .chart-header.terminal-market-dock {
+    margin: 0 8px !important;
+    padding: 6px 8px 0 !important;
+    border: 1px solid rgba(104, 162, 191, .3) !important;
+    border-bottom: 0 !important;
+    border-radius: 10px 10px 0 0 !important;
+    background: linear-gradient(180deg, #0d1c2b 0%, #091522 100%) !important;
+    box-shadow: none !important;
+  }
+
+  .reference-terminal .terminal-market-dock-primary-row {
+    gap: 8px !important;
+    padding-bottom: 5px;
+  }
+
+  .reference-terminal .terminal-market-dock-quote {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding-bottom: 0 !important;
+    border-bottom: 0 !important;
+  }
+
+  .reference-terminal .terminal-market-dock-tools {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin-left: auto !important;
+    padding-top: 0 !important;
+  }
+
+  .reference-terminal .terminal-chart-rate-bar {
+    flex-wrap: wrap !important;
+    margin: 0 8px !important;
+    padding: 5px 8px !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    border: 1px solid rgba(104, 162, 191, .3) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 10px 10px !important;
+  }
+
+  .reference-terminal .terminal-chart-market-actions {
+    flex: 0 0 100% !important;
+    justify-content: flex-end;
+    margin-left: 0 !important;
+    padding-top: 5px;
+    border-top: 1px solid rgba(104, 162, 191, .22);
+  }
+
+  .reference-terminal .terminal-indicator-toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    margin: 6px 8px !important;
+    padding: 6px 8px !important;
+    overflow-x: hidden !important;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-pane-controls {
+    flex: 1 1 100% !important;
+    width: 100%;
+    margin-left: 0 !important;
+  }
+}
+
 /* The dock follows the supplied reference: one continuous bar with a teal active action. */
 @media (max-width: 767px) {
   .apple-trading-terminal.reference-terminal .reference-mobile-nav {
