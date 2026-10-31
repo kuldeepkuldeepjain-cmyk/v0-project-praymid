@@ -880,6 +880,47 @@ button, a, [role="button"] {
 .elite-landing .elite-plan-metric strong { font-family: var(--font-geist-mono), monospace; font-size: clamp(1.05rem, 2.3vw, 1.35rem); font-weight: 550; font-variant-numeric: tabular-nums; }
 .elite-landing .elite-planner-aside { border-left: 1px solid color-mix(in srgb, var(--elite-text) 13%, transparent); background: color-mix(in srgb, var(--elite-bg) 94%, var(--elite-text)); padding: clamp(1.25rem, 3vw, 2rem); }
 .elite-landing .elite-planner-note { grid-column: 1 / -1; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); padding: 0.85rem 1.25rem; color: var(--elite-muted); font-size: 0.68rem; line-height: 1.55; }
+.elite-landing .elite-account-card,
+.elite-landing .elite-funded-tier,
+.elite-landing .elite-payout-ledger {
+  border: 1px solid color-mix(in srgb, var(--elite-text) 14%, transparent);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--elite-bg) 95%, var(--elite-text));
+}
+.elite-landing .elite-account-card { display: flex; flex-direction: column; gap: 1rem; padding: clamp(1.25rem, 3vw, 2rem); }
+.elite-landing .elite-account-normal { border-color: color-mix(in srgb, var(--elite-brand) 38%, transparent); }
+.elite-landing .elite-account-card-heading { display: flex; align-items: center; gap: 0.9rem; }
+.elite-landing .elite-account-leverage { display: flex; align-items: baseline; gap: 0.55rem; color: var(--elite-muted); font-size: 0.9rem; }
+.elite-landing .elite-account-leverage strong { color: var(--elite-brand); font-size: clamp(2.8rem, 5vw, 4.2rem); font-weight: 600; letter-spacing: -0.06em; line-height: 1; }
+.elite-landing .elite-account-feature-list { display: flex; flex-direction: column; gap: 0.8rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); padding-top: 1rem; font-size: 0.86rem; line-height: 1.5; }
+.elite-landing .elite-account-feature-list li { display: flex; align-items: flex-start; gap: 0.65rem; }
+.elite-landing .elite-account-feature-list svg { width: 1rem; height: 1rem; flex: none; margin-top: 0.15rem; color: var(--elite-positive); }
+.elite-landing .elite-account-plan-list { margin-top: 1rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); }
+.elite-landing .elite-account-plan-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); padding: 0.8rem 0; }
+.elite-landing .elite-account-plan-balance { display: block; font-size: 1rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-account-plan-subtitle,
+.elite-landing .elite-account-plan-price span { display: block; margin-top: 0.2rem; color: var(--elite-muted); font-size: 0.7rem; }
+.elite-landing .elite-account-plan-price { text-align: right; }
+.elite-landing .elite-account-plan-price strong { font-family: var(--font-geist-mono), monospace; font-size: 0.95rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-funded-tier { display: flex; min-height: 8.5rem; flex-direction: column; gap: 0.45rem; padding: 1rem; animation: elite-funded-tier-enter 560ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards; transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+.elite-landing .elite-funded-tier:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--elite-brand) 48%, transparent); box-shadow: 0 14px 28px color-mix(in srgb, var(--elite-text) 10%, transparent); }
+.elite-landing .elite-funded-tier-label { color: var(--elite-muted); font-size: 0.68rem; }
+.elite-landing .elite-funded-tier-balance { font-size: 1.15rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-funded-tier-fee { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); margin-top: auto; padding-top: 0.6rem; color: var(--elite-muted); font-size: 0.72rem; }
+.elite-landing .elite-funded-tier-fee strong { color: var(--elite-text); font-family: var(--font-geist-mono), monospace; font-size: 0.85rem; font-weight: 600; }
+.elite-landing .elite-funded-detail { display: flex; min-height: 8.5rem; flex-direction: column; gap: 0.45rem; border: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); border-radius: 0.9rem; background: color-mix(in srgb, var(--elite-bg) 97%, var(--elite-text)); padding: 1rem; }
+.elite-landing .elite-funded-detail dt { color: var(--elite-muted); font-size: 0.7rem; }
+.elite-landing .elite-funded-detail dd { margin: 0; font-size: 1.05rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-funded-detail p { margin-top: auto; color: var(--elite-muted); font-size: 0.72rem; line-height: 1.5; }
+.elite-landing .elite-terms-link { color: var(--elite-text); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--elite-brand) 55%, transparent); text-underline-offset: 0.18em; }
+.elite-landing .elite-terms-link:hover { color: var(--elite-brand); }
+.elite-landing .elite-payout-ledger { padding: clamp(1.25rem, 3.5vw, 2.25rem); }
+.elite-landing .elite-payout-ledger-heading { display: flex; align-items: center; gap: 0.85rem; }
+.elite-landing .elite-payout-record-fields { margin-top: 1.5rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); }
+.elite-landing .elite-payout-record-fields > div { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); padding: 0.9rem 0; }
+.elite-landing .elite-payout-record-fields dt { color: var(--elite-muted); font-size: 0.8rem; }
+.elite-landing .elite-payout-record-fields dd { max-width: 65%; font-size: 0.82rem; text-align: right; }
+.elite-landing .elite-payout-ledger-note { margin-top: 1rem; color: var(--elite-muted); font-size: 0.72rem; line-height: 1.55; }
 .elite-landing .elite-step-number { color: var(--elite-brand); font-family: var(--font-geist-mono), monospace; font-size: 0.77rem; letter-spacing: 0.12em; }
 .elite-landing .elite-trust-panel { border-radius: 1rem; padding: 1.6rem; }
 .elite-landing .elite-faq-list { border-top: 1px solid color-mix(in srgb, var(--elite-text) 15%, transparent); }
@@ -898,6 +939,7 @@ button, a, [role="button"] {
 .elite-landing .elite-risk-disclosure a { flex-shrink: 0; color: var(--elite-text); font-weight: 650; }
 .elite-landing .elite-risk-disclosure a:hover { color: var(--elite-brand); }
 @keyframes elite-copy-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes elite-funded-tier-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes elite-hero-drift { from { transform: scale(1.015); } to { transform: scale(1.055); } }
 @media (max-width: 1023px) {
   .elite-landing .elite-hero-art { opacity: 0.68; background-position: 62% center; }
@@ -932,7 +974,8 @@ button, a, [role="button"] {
   .elite-landing .elite-feature-card,
   .elite-landing .elite-step-card,
   .elite-landing .elite-button,
-  .elite-landing .elite-workspace-visual img { transition: none; }
+  .elite-landing .elite-funded-tier,
+  .elite-landing .elite-workspace-visual img { animation: none; transition: none; }
 }
 
 /* Participant dashboard — mobile-first, fills full viewport on all screens */

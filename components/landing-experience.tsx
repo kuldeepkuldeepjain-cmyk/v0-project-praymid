@@ -11,8 +11,10 @@ import {
   Wallet,
 } from "lucide-react"
 import { ChallengePlanner } from "@/components/landing-challenge-planner"
+import { LandingAccountOptions } from "@/components/landing-account-options"
 import { LandingFooter } from "@/components/landing-footer"
 import { LandingHeader } from "@/components/landing-header"
+import { LandingPayoutRecords } from "@/components/landing-payout-records"
 import { MarketPreview } from "@/components/landing-market-preview"
 
 const features = [
@@ -68,6 +70,16 @@ const faqs = [
       "The rules shown on this page include an 8% profit target, a 5% daily loss limit, a 10% maximum drawdown, and five minimum trading days. Review the current account terms before registering, since program availability and eligibility can vary.",
   },
   {
+    question: "How much leverage is available?",
+    answer:
+      "Normal accounts offer up to 1,000:1 leverage. Challenge accounts use the leverage limit shown for the selected plan. Actual leverage depends on the instrument, margin requirements, and account terms.",
+  },
+  {
+    question: "Where can I review payout records?",
+    answer:
+      "Sign in to see your private payout history, including request status, amount, method, and an available transaction reference. Eligibility and processing times depend on the applicable payout terms.",
+  },
+  {
     question: "Are the market prices shown live?",
     answer:
       "No. The market panel is an illustrative interface preview. It does not show live quotes and should not be used to make trading decisions.",
@@ -107,8 +119,8 @@ export default function LandingExperience() {
                 A focused workspace for analyzing markets, defining risk, and managing positions—without the noise or the promises.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="#programs" className="elite-button elite-button-primary">
-                  Explore challenge plans <ArrowRight aria-hidden="true" />
+                <Link href="#accounts" className="elite-button elite-button-primary">
+                  Compare account options <ArrowRight aria-hidden="true" />
                 </Link>
                 <Link href="/participant/login" className="elite-button elite-button-secondary">
                   Trader login
@@ -182,13 +194,15 @@ export default function LandingExperience() {
           </div>
         </section>
 
+        <LandingAccountOptions />
+
         <section id="programs" className="elite-section elite-section-divider">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
             <div className="mx-auto max-w-3xl text-center">
               <p className="elite-eyebrow">Challenge account planner</p>
               <h2 className="elite-heading mt-4 text-balance">Know the numbers before you begin.</h2>
               <p className="elite-copy mx-auto mt-4 max-w-2xl">
-                Select an account size to see the reference amounts implied by the published challenge rules.
+                Select a Challenge size to see its plan fee and reference amounts based on the published account rules.
               </p>
             </div>
             <div className="mt-10">
@@ -196,6 +210,8 @@ export default function LandingExperience() {
             </div>
           </div>
         </section>
+
+        <LandingPayoutRecords />
 
         <section id="how-it-works" className="elite-section elite-section-alt">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">

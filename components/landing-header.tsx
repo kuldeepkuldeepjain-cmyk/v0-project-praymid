@@ -8,7 +8,9 @@ import { FlowChainLogo } from "@/components/flowchain-logo"
 const navigation = [
   ["Platform", "#platform"],
   ["Features", "#features"],
+  ["Accounts", "#accounts"],
   ["Programs", "#programs"],
+  ["Payouts", "#payout-records"],
   ["How it works", "#how-it-works"],
   ["FAQ", "#faq"],
 ] as const
