@@ -3559,6 +3559,51 @@ const maxLeverage = 100
 
       {/* ══ MAIN TRADING WORKSPACE ═══════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
+      <nav
+        aria-label="Trading activity shortcuts"
+        className="terminal-scroll hidden w-12 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-[#1e2d45] bg-[#060b12] py-2 xl:flex"
+      >
+        <span className="mb-1 px-1 text-[8px] font-black uppercase tracking-[0.12em] text-slate-500" aria-hidden="true">ACT</span>
+        {([
+          { id: "positions", label: "Positions", icon: Layers, count: openTrades.length },
+          { id: "pending", label: "Orders", icon: Clock, count: pendingOrders.length },
+          { id: "history", label: "History", icon: History, count: closedTrades.length },
+          { id: "risk", label: "Risk", icon: ShieldAlert },
+          { id: "journal", label: "Journal", icon: BookOpen },
+          { id: "performance", label: "Performance", icon: BarChart },
+          { id: "alerts", label: "Alerts", icon: Bell, count: priceAlerts.filter(alert => !alert.triggered).length },
+          { id: "news", label: "News", icon: Newspaper },
+          { id: "sessions", label: "Sessions", icon: Globe2 },
+          { id: "depth", label: "Market depth", icon: BarChart2 },
+        ] as { id: typeof activePanel; label: string; icon: typeof Layers; count?: number }[]).map(({ id, label, icon: Icon, count = 0 }) => (
+          <button
+            key={id}
+            type="button"
+            title={label}
+            aria-label={`Show ${label} activity${count ? `, ${count} items` : ""}`}
+            aria-pressed={activePanel === id}
+            onClick={() => {
+              setActivePanel(id)
+              setFooterOpen(true)
+              setChartExpanded(false)
+              setMobileTab("chart")
+              window.requestAnimationFrame(() => blotterRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }))
+            }}
+            className={`relative flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
+              activePanel === id
+                ? "border-cyan-400/40 bg-cyan-300/10 text-cyan-200"
+                : "border-transparent text-slate-500 hover:border-[#23384b] hover:bg-[#0b1724] hover:text-slate-200"
+            }`}
+          >
+            <Icon className="size-4" aria-hidden="true" />
+            {count > 0 && (
+              <span className="absolute -right-1 -top-1 min-w-4 rounded-full border border-[#060b12] bg-cyan-300 px-1 text-center text-[8px] font-black leading-3 text-[#07111b]" aria-hidden="true">
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
+          </button>
+        ))}
+      </nav>
       <div className={`apple-terminal-panel-layout ${mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}`}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
