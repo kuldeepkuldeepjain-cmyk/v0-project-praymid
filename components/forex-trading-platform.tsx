@@ -1466,6 +1466,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
+  const [chartActionsHost, setChartActionsHost] = useState<HTMLDivElement | null>(null)
   const [activityDialogOpen, setActivityDialogOpen] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
   const marketPanelWidth = 256
@@ -3799,6 +3800,12 @@ const maxLeverage = 100
 
 	                {/* Chart Controls & Tools Group */}
 	                <div className="terminal-market-dock-tools flex items-center gap-1.5 ml-auto">
+                  <div
+                    className="terminal-chart-market-actions flex items-center gap-1.5 shrink-0"
+                    ref={setChartActionsHost}
+                    role="group"
+                    aria-label="Chart actions"
+                  />
                   {/* Chart layout and live-data tools */}
 
 	                  <button
@@ -3840,7 +3847,7 @@ const maxLeverage = 100
 	              {selectedPair && chartLayout === "single" ? (
 	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartReloadKey}`} fallback={
 	                  <div className="chart-silent-error" aria-hidden="true">
-	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
+	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} /> : null}
 	                  </div>
 	                }>
   <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">
@@ -3858,7 +3865,7 @@ const maxLeverage = 100
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-  livePrice={(selectedPair.bid + selectedPair.ask) / 2}
+  actionsHost={chartActionsHost}
   />
   </div>
   </div>

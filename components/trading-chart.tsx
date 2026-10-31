@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
+import { createPortal } from "react-dom"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { decimals as instrumentDecimals } from "@/lib/forex-instruments"
-import { AssetLogo } from "@/components/asset-logo"
 import {
   createChart,
   CandlestickSeries,
@@ -159,12 +159,6 @@ function toTimestamp(c: Candle | null | undefined, idx: number, tfSeconds = 300)
   return 1704067200 + idx * tfSeconds
 }
 
-// ─── OHLCV Info Bar state ─────────────────────────────────────────────────────
-
-type OHLCVInfo = {
-  open: number; high: number; low: number; close: number; volume: number; isUp: boolean
-} | null
-
 // ─── TradingChart ─────────────────────────────────────────────────────────────
 
 export function TradingChart({
@@ -179,13 +173,13 @@ export function TradingChart({
   sellPrice,
   darkTheme = false,
   marketStatus = "connecting",
-  livePrice,
+  actionsHost,
   }: {
   candles: Candle[] | null | undefined
   sym: string | null | undefined
   tf?: string
   marketStatus?: "live" | "reconnecting" | "connecting"
-  livePrice?: number
+  actionsHost?: HTMLElement | null
   openTrades?: OpenTrade[]
   onExpand?: () => void
   isExpanded?: boolean
@@ -225,7 +219,6 @@ export function TradingChart({
     ema9: true, ema21: true, ema50: false, bb: false, rsi: false, macd: false, volume: true,
   })
   const [chartPane, setChartPane] = useState<"rsi" | "macd" | "none">("rsi")
-  const [ohlcv, setOhlcv] = useState<OHLCVInfo>(null)
   const [crosshairActive, setCrosshairActive] = useState(false)
 
   // Price alerts ─────���──────────────────��────────────────────────────────────
@@ -463,25 +456,12 @@ export function TradingChart({
     macdHistRef.current = chart.addSeries(HistogramSeries, { priceScaleId: "macd", priceLineVisible: false, lastValueVisible: false })
     chart.priceScale("macd").applyOptions({ scaleMargins: { top: 0.99, bottom: 0 }, visible: false })
 
-    // ── Crosshair OHLCV subscriber ──
     chart.subscribeCrosshairMove((param) => {
       if (!param || !param.time || param.seriesData.size === 0) {
         setCrosshairActive(false)
-        setOhlcv(null)
         return
       }
-      const cd = param.seriesData.get(cSer) as CandlestickData | undefined
-      const vd = param.seriesData.get(vSer) as HistogramData | undefined
-      if (!cd) return
       setCrosshairActive(true)
-      setOhlcv({
-        open:   cd.open,
-        high:   cd.high,
-        low:    cd.low,
-        close:  cd.close,
-        volume: (vd?.value as number) ?? 0,
-        isUp:   cd.close >= cd.open,
-      })
     })
 
     // ── Click-to-set price alert ──
@@ -695,9 +675,6 @@ export function TradingChart({
       autoFitRequestedRef.current = true
       chartRef.current.timeScale().setVisibleLogicalRange({ from, to: candleData.length + 6 })
     }
-    // Seed OHLCV from last candle
-    const last = candleData[candleData.length - 1]
-    if (last) setOhlcv({ open: last.open, high: last.high, low: last.low, close: last.close, volume: volData[volData.length - 1]?.value ?? 0, isUp: last.close >= last.open })
   }, [candleData, volData, candles])
 
   // ── Update EMA ──────���────────────────────────��───��───────────────────────────
@@ -856,38 +833,7 @@ export function TradingChart({
   }, [candles]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Last candle stats for header ───────────────────────��─────────────────────
-  const lastCandle = safeCandles[safeCandles.length - 1]
-  const displayOhlcv = (() => {
-    const base = ohlcv ?? (lastCandle ? {
-      open: lastCandle.open, high: lastCandle.high,
-      low: lastCandle.low, close: lastCandle.close,
-      volume: lastCandle.volume, isUp: lastCandle.close >= lastCandle.open,
-    } : null)
-    if (!base || !Number.isFinite(livePrice) || (livePrice ?? 0) <= 0) return base
-    const price = Number(livePrice)
-    return {
-      ...base,
-      high: Math.max(base.high, price),
-      low: Math.min(base.low, price),
-      close: price,
-      isUp: price >= base.open,
-    }
-  })()
-
   const fmtP = (v: number) => v.toFixed(dec)
-  const fmtV = (v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(0)}K` : v.toString()
-
-  // ATR(14) derived from current candles for display in OHLCV bar
-  const atr14 = useMemo(() => {
-    if (safeCandles.length < 15) return null
-    const trs: number[] = []
-    for (let i = 1; i < safeCandles.length; i++) {
-      const c = safeCandles[i], p = safeCandles[i - 1]
-      trs.push(Math.max(c.high - c.low, Math.abs(c.high - p.close), Math.abs(c.low - p.close)))
-    }
-    const recent = trs.slice(-14)
-    return recent.reduce((a, b) => a + b, 0) / 14
-  }, [candles])
 
   // Sub-pane config helpers
   const subPaneColor = chartPane === "rsi" ? palette.emerald : palette.orange
@@ -896,69 +842,24 @@ export function TradingChart({
   return (
     <div className="apple-trading-chart terminal-chart-surface flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
 
-      {/* ── OHLCV Info Bar ──────────────────────────────────────────────────────── */}
-      <div
-        className="terminal-chart-rate-bar flex min-h-9 min-w-0 items-center gap-x-3 gap-y-1 px-3 py-1 shrink-0 overflow-x-auto overflow-y-hidden"
-        style={{ height: 36, borderBottom: "1px solid rgba(38,59,79,0.75)", background: "#0d1724", minWidth: 0 }}
-      >
-        <AssetLogo symbol={safeSymbol} size={18} className="shrink-0" />
-        {displayOhlcv ? (
-          <>
-            {/* Change chip */}
+      {actionsHost && createPortal(
+        <>
+          <div
+            className="flex items-center gap-1.5 shrink-0"
+            role="status"
+            aria-live="polite"
+            aria-label={`Market feed ${marketStatus}`}
+            title={marketStatus === "live" ? "Live market quotes are updating the active candle" : "Waiting for live market quotes to reconnect"}
+          >
             <span
-              className="text-[10px] font-black tracking-widest uppercase shrink-0 px-1.5 py-0.5 rounded"
-              style={{
-                color: displayOhlcv.isUp ? "#32c99a" : "#f07883",
-                background: displayOhlcv.isUp ? "rgba(50,201,154,0.1)" : "rgba(240,120,131,0.1)",
-                border: `1px solid ${displayOhlcv.isUp ? "rgba(50,201,154,0.25)" : "rgba(240,120,131,0.25)"}`,
-              }}
-            >
-              {displayOhlcv.isUp ? "+" : "-"}{Math.abs(displayOhlcv.close - displayOhlcv.open).toFixed(dec)}
+              aria-hidden="true"
+              className={marketStatus === "live" ? "size-2 rounded-full animate-pulse" : "size-2 rounded-full"}
+              style={{ background: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}
+            />
+            <span className="text-[9px] font-bold tracking-widest" style={{ color: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}>
+              {marketStatus === "live" ? "LIVE" : marketStatus === "reconnecting" ? "RECONNECTING" : "CONNECTING"}
             </span>
-            <div className="w-px h-4 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
-            {[
-              { label: "O", value: fmtP(displayOhlcv.open),  color: "#8ba3be" },
-              { label: "H", value: fmtP(displayOhlcv.high),  color: "#32c99a" },
-              { label: "L", value: fmtP(displayOhlcv.low),   color: "#f07883" },
-              { label: "C", value: fmtP(displayOhlcv.close), color: displayOhlcv.isUp ? "#32c99a" : "#f07883" },
-            ].map(({ label, value, color }) => (
-              <span key={label} className="flex items-baseline gap-1 shrink-0">
-                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>{label}</span>
-                <span className="terminal-chart-price text-[clamp(9px,1.6vw,11px)] font-black price-mono" style={{ color }}>{value}</span>
-              </span>
-            ))}
-            <div className="w-px h-4 shrink-0" style={{ background: "rgba(38,59,79,0.9)" }} />
-            <span className="terminal-chart-secondary-metric flex items-baseline gap-1 shrink-0">
-              <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>VOL</span>
-              <span className="text-[11px] font-black price-mono" style={{ color: "#91a4b8" }}>{fmtV(displayOhlcv.volume)}</span>
-            </span>
-            {atr14 !== null && (
-              <span className="terminal-chart-secondary-metric flex items-baseline gap-1 shrink-0">
-                <span className="text-[8px] font-bold tracking-widest" style={{ color: "#91a4b8" }}>ATR</span>
-                <span className="text-[11px] font-black price-mono" style={{ color: "#e9b75a" }}>{fmtP(atr14)}</span>
-              </span>
-            )}
-          </>
-        ) : (
-          <span className="text-[10px]" style={{ color: "#7890ad" }}>Waiting for market data…</span>
-        )}
-        <div
-          className="flex items-center gap-1.5 shrink-0 pl-2"
-          role="status"
-          aria-live="polite"
-          aria-label={`Market feed ${marketStatus}`}
-          title={marketStatus === "live" ? "Live market quotes are updating the active candle" : "Waiting for live market quotes to reconnect"}
-        >
-          <span
-            aria-hidden="true"
-            className={marketStatus === "live" ? "size-2 rounded-full animate-pulse" : "size-2 rounded-full"}
-            style={{ background: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}
-          />
-          <span className="text-[9px] font-bold tracking-widest" style={{ color: marketStatus === "live" ? "#39bfa7" : "#e9b75a" }}>
-            {marketStatus === "live" ? "LIVE" : marketStatus === "reconnecting" ? "RECONNECTING" : "CONNECTING"}
-          </span>
-        </div>
-        <div className="terminal-chart-market-actions ml-auto flex items-center gap-1.5 shrink-0" role="group" aria-label="Chart actions">
+          </div>
           <button
             type="button"
             onClick={() => { setAlertMode(m => !m); if (!alertMode) setShowAlertPanel(true) }}
@@ -1025,10 +926,11 @@ export function TradingChart({
               {isExpanded ? "COLLAPSE" : "EXPAND"}
             </button>
           )}
-        </div>
-      </div>
+        </>,
+        actionsHost,
+      )}
 
-      {/* ── Indicator Toolbar ───────────────────────────────────────────────────── */}
+      {/* ── Indicator Toolbar ───────────────────────────────────��───────────────── */}
       <div
         className="terminal-chart-toolbar terminal-indicator-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 shrink-0 text-[9px] font-bold"
         style={{ minHeight: 38, background: "#0d1724", flexShrink: 0 }}
