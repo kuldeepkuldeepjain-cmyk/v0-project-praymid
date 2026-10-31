@@ -58,8 +58,31 @@ export default function ProfilePage() {
   const [kycSubmitting, setKycSubmitting] = useState(false)
 
   const isAuthenticated = isParticipantAuthenticated()
-  const isFundedAccount = participantData?.account_type === "funded"
-  const accountTypeLabel = isFundedAccount ? "Funded Account" : "Normal Account"
+  const normalizedAccountType = String(participantData?.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
+  const isFundedAccount = ["funded", "fundedaccount", "fundedtier", "fundingtier"].includes(normalizedAccountType)
+  const isChallengeAccount = ["challenge", "challengeaccount"].includes(normalizedAccountType)
+  const accountTypeLabel = isFundedAccount ? "Funded Account" : isChallengeAccount ? "Challenge Account" : "Normal Account"
+  const accountTypeBadgeTone = isFundedAccount
+    ? "border border-amber-300/30 bg-amber-400/15 text-amber-200"
+    : isChallengeAccount
+      ? "border border-sky-300/30 bg-sky-400/15 text-sky-200"
+      : "border border-slate-400/30 bg-slate-500/15 text-slate-200"
+  const accountTypeCardTone = isFundedAccount
+    ? "bg-amber-950/30 border-amber-400/25"
+    : isChallengeAccount
+      ? "bg-sky-950/30 border-sky-400/25"
+      : "bg-slate-900/60 border-slate-500/25"
+  const accountTypeIconTone = isFundedAccount
+    ? "bg-gradient-to-br from-amber-500 to-amber-500 shadow-amber-500/30"
+    : isChallengeAccount
+      ? "bg-gradient-to-br from-sky-500 to-cyan-400 shadow-sky-500/30"
+      : "bg-gradient-to-br from-slate-500 to-slate-600 shadow-slate-500/30"
+  const accountTypeRuleTone = isFundedAccount
+    ? "bg-amber-400/15 text-amber-200"
+    : isChallengeAccount
+      ? "bg-sky-400/15 text-sky-200"
+      : "bg-slate-500/20 text-slate-200"
+  const accountTypeRuleLabel = isFundedAccount ? "2% rule" : isChallengeAccount ? "Evaluation" : "Standard"
   const kycStatus = String(kyc?.status ?? "").trim().toLowerCase()
   const isKycVerified = kycStatus === "approved" || kycStatus === "completed"
 
@@ -559,7 +582,7 @@ export default function ProfilePage() {
             >
               {isKycVerified || participantData.activation_fee_paid ? "Verified" : "Pending Verification"}
             </Badge>
-            <Badge className={`px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-semibold ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/15 text-amber-200"}`}>
+            <Badge className={`px-3 py-1 sm:px-4 sm:py-1.5 text-xs sm:text-sm font-semibold ${accountTypeBadgeTone}`}>
               {accountTypeLabel}
             </Badge>
           </div>
@@ -581,12 +604,12 @@ export default function ProfilePage() {
 
             <div className="space-y-2 sm:space-y-2.5 md:space-y-3">
               {/* Account type */}
-              <div className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl border hover:shadow-md transition-all hover:scale-[1.01] ${isFundedAccount ? "bg-amber-950/30 border-amber-400/25" : "bg-slate-900/60 border-cyan-400/25"}`}>
-                <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg flex-shrink-0 ${isFundedAccount ? "bg-gradient-to-br from-amber-500 to-amber-500 shadow-amber-500/30" : "bg-gradient-to-br from-amber-500 to-amber-500 shadow-amber-500/30"}`}>
+              <div className={`flex items-center gap-2 sm:gap-2.5 md:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl border hover:shadow-md transition-all hover:scale-[1.01] ${accountTypeCardTone}`}>
+                <div className={`w-9 h-9 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-lg sm:rounded-xl flex items-center justify-center shadow-md sm:shadow-lg flex-shrink-0 ${accountTypeIconTone}`}>
                   <CreditCard className="h-4 w-4 sm:h-4.5 sm:w-4.5 md:h-5 md:w-5 text-white" />
                 </div>
                 <div className="flex-1 min-w-0"><Label className="text-[10px] sm:text-xs text-slate-300 font-medium">Account type</Label><p className="text-sm sm:text-base text-white font-semibold">{accountTypeLabel}</p></div>
-                <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide ${isFundedAccount ? "bg-amber-400/15 text-amber-200" : "bg-cyan-400/15 text-amber-200"}`}>{isFundedAccount ? "2% rule" : "Standard"}</span>
+                <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-wide ${accountTypeRuleTone}`}>{accountTypeRuleLabel}</span>
               </div>
 
               {/* Username */}
