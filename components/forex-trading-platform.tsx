@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo, useId } from "react"
 
 import { createPortal } from "react-dom"
 import {
@@ -305,6 +305,148 @@ function minimumLotsForMargin(sym: string, price: number, leverage: number, mini
   const marginPerLot = calcMargin(sym, 1, price, leverage)
   if (!Number.isFinite(marginPerLot) || marginPerLot <= 0) return 0.01
   return Math.max(0.01, Math.ceil((minimumMargin / marginPerLot) * 100) / 100)
+}
+
+type InstrumentTradingTab = "Specification" | "Session" | "Margin" | "Swap"
+
+const INSTRUMENT_TRADING_TABS: InstrumentTradingTab[] = ["Specification", "Session", "Margin", "Swap"]
+
+function formatTradingCurrency(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(value) ? value : 0)
+}
+
+function formatSwapRate(value: number) {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : ""
+  return `${sign}${formatTradingCurrency(Math.abs(value), "USD")} / lot / day`
+}
+
+function InstrumentTradingInfo({ pair, leverage, online }: { pair: ForexPair; leverage: number; online: boolean }) {
+  const [activeTab, setActiveTab] = useState<InstrumentTradingTab>("Specification")
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const idPrefix = useId()
+  const category = PAIRS_CONFIG.find(instrument => instrument.symbol === pair.symbol)?.category ?? "Forex"
+  const size = contractSize(pair.symbol)
+  const contractLabel = category === "Commodities"
+    ? `${size.toLocaleString("en-US")} ${pair.symbol.startsWith("XCU/") ? "lb" : "oz"}`
+    : `${size.toLocaleString("en-US")} ${pair.base}`
+  const price = pair.ask > 0 ? pair.ask : pair.bid
+  const marginCurrency = pair.base === "USD" ? "USD" : pair.quote
+  const marginPerLot = calcMargin(pair.symbol, 1, price, leverage)
+  const [longSwap, shortSwap] = SWAP_RATES[pair.symbol] ?? [0, 0]
+  const leverageLabel = Number.isInteger(leverage) ? String(leverage) : leverage.toFixed(2)
+  const feedStatus = online ? "Live" : "Waiting for quotes"
+
+  const sessionRows = category === "Crypto"
+    ? [
+        { label: "Trading hours", value: "24/7" },
+        { label: "Weekend trading", value: "Open" },
+        { label: "Scheduled breaks", value: "None" },
+        { label: "Quote feed", value: feedStatus },
+      ]
+    : category === "Commodities"
+      ? [
+          { label: "Trading hours", value: "Weekdays; daily breaks" },
+          { label: "Weekend trading", value: "Closed" },
+          { label: "Session schedule", value: "Contract-specific" },
+          { label: "Quote feed", value: feedStatus },
+        ]
+      : [
+          { label: "Trading hours", value: "24/5 (Sunday–Friday)" },
+          { label: "Weekend trading", value: "Closed" },
+          { label: "Rollover", value: "Overnight swap may apply" },
+          { label: "Quote feed", value: feedStatus },
+        ]
+
+  const rowsByTab: Record<InstrumentTradingTab, Array<{ label: string; value: string }>> = {
+    Specification: [
+      { label: "Symbol", value: pair.symbol },
+      { label: "Asset Class", value: category },
+      { label: "Contract Size", value: contractLabel },
+      { label: "Minimum Volume", value: "0.01 lot" },
+      { label: "Maximum Volume", value: "100 lots" },
+      { label: "Leverage", value: `1:${leverageLabel}` },
+    ],
+    Session: sessionRows,
+    Margin: [
+      { label: "Leverage", value: `1:${leverageLabel}` },
+      { label: "Margin Rate", value: `${(100 / leverage).toFixed(2)}%` },
+      { label: "Notional / 1 lot", value: formatTradingCurrency(size * (pair.base === "USD" ? 1 : price), marginCurrency) },
+      { label: "Required / 1 lot", value: formatTradingCurrency(marginPerLot, marginCurrency) },
+    ],
+    Swap: [
+      { label: "Buy (long)", value: formatSwapRate(longSwap) },
+      { label: "Sell (short)", value: formatSwapRate(shortSwap) },
+      { label: "Rate basis", value: "Per lot, per day" },
+      { label: "Instrument", value: pair.symbol },
+    ],
+  }
+
+  const activeIndex = INSTRUMENT_TRADING_TABS.indexOf(activeTab)
+  const panelId = `${idPrefix}-panel`
+
+  return (
+    <section aria-label={`${pair.symbol} trading information`} className="mt-3 overflow-hidden rounded-xl border border-[#15263b] bg-[#050d18]/90">
+      <header className="flex items-center gap-2.5 px-3 pb-2 pt-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
+          <Info className="size-4 text-cyan-300" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-sm font-black text-slate-100">Trading Info</h3>
+          <p className="truncate text-xs text-slate-500">{pair.symbol} · {category}</p>
+        </div>
+      </header>
+
+      <div role="tablist" aria-label={`${pair.symbol} trading information tabs`} className="mx-2 mb-2 grid grid-cols-4 gap-1 rounded-lg border border-[#1a2c41] bg-[#071321] p-1 md:grid-cols-2">
+        {INSTRUMENT_TRADING_TABS.map((tab, index) => {
+          const selected = activeTab === tab
+          const tabId = `${idPrefix}-tab-${tab.toLowerCase()}`
+          return (
+            <button
+              key={tab}
+              ref={element => { tabRefs.current[index] = element }}
+              type="button"
+              role="tab"
+              id={tabId}
+              aria-selected={selected}
+              aria-controls={panelId}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={event => {
+                let nextIndex: number | null = null
+                if (event.key === "ArrowRight") nextIndex = (index + 1) % INSTRUMENT_TRADING_TABS.length
+                if (event.key === "ArrowLeft") nextIndex = (index - 1 + INSTRUMENT_TRADING_TABS.length) % INSTRUMENT_TRADING_TABS.length
+                if (event.key === "Home") nextIndex = 0
+                if (event.key === "End") nextIndex = INSTRUMENT_TRADING_TABS.length - 1
+                if (nextIndex === null) return
+                event.preventDefault()
+                setActiveTab(INSTRUMENT_TRADING_TABS[nextIndex])
+                tabRefs.current[nextIndex]?.focus()
+              }}
+              className={`min-h-10 rounded-md border px-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selected ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-100" : "border-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"}`}
+            >
+              {tab}
+            </button>
+          )
+        })}
+      </div>
+
+      <div id={panelId} role="tabpanel" aria-labelledby={`${idPrefix}-tab-${activeTab.toLowerCase()}`} tabIndex={0} className="px-2 pb-2 outline-none">
+        <dl className="overflow-hidden rounded-lg border border-[#14263a] bg-[#040b14] px-3">
+          {rowsByTab[activeTab].map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between gap-3 border-b border-[#14243a] py-2.5 last:border-b-0">
+              <dt className="text-sm text-slate-400 md:text-xs">{label}</dt>
+              <dd className="min-w-0 text-right text-sm font-bold text-slate-100 md:text-xs">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
 }
 
 function playTerminalSound(type: "buy" | "sell" | "close" | "breakeven" | "alert" | "click") {
@@ -2710,7 +2852,7 @@ const maxLeverage = 100
     if (soundEnabled) playTerminalSound("breakeven")
   }, [persistModify, soundEnabled])
 
-  // ── Funded account breach ───────��────���───────────────────────���─────────────
+  // ── Funded account breach ───────��────���──────────���────────────���─────────────
   // When the drawdown limit is breached, every open position is force-closed
   // (booking whatever loss/gain it currently holds), the account is frozen,
   // and the trader is shown a clear breach notice.
@@ -2889,7 +3031,7 @@ const maxLeverage = 100
     showToast("info", "Pending order cancelled")
   }
 
-  // ── Derived values ────────────────────────────────────────────���──��───�����─────
+  // ── Derived values ──────────────────────────────────────���─────���──��───�����─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const minimumFundedLots = selectedPair ? minimumLotsForMargin(selectedPair.symbol, midPrice, effectiveLeverage, 3000) : 0.01
   useEffect(() => {
@@ -3141,6 +3283,8 @@ const maxLeverage = 100
           <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
         </div>
       </div>
+
+      <InstrumentTradingInfo pair={selectedPair} leverage={effectiveLeverage} online={online} />
     </section>
   ) : null
 
