@@ -15,6 +15,7 @@ import {
   ArrowUpRight, ArrowDownRight, Home,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
+import tradeScrollStyles from "./terminal-trade-scroll.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -3976,7 +3977,7 @@ const maxLeverage = 100
         <div className="apple-terminal-main-column">
         <DockGroup enabled={dockEnabled} direction="vertical" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
         <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={55} minSize={45} maxSize={72}>
-        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        <div className={`${tradeScrollStyles.chartColumn} apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="chart-header terminal-market-dock shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
@@ -4052,7 +4053,13 @@ const maxLeverage = 100
 	          )}
 
 	          {/* Chart and timeframe dock; the order ticket follows below. */}
-	          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll" style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}>
+	          <div
+                className={`${tradeScrollStyles.scrollArea} terminal-trade-scroll flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll`}
+                role="region"
+                aria-label="Trade chart and market details"
+                tabIndex={0}
+                style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}
+              >
 	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
 	              {selectedPair && chartLayout === "single" ? (
 	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartReloadKey}`} fallback={
