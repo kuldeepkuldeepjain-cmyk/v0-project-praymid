@@ -38,15 +38,30 @@ import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent a
 
 // ─── Workspace layout (UI preferences only — never market or account data) ──
 
-const DOCK_AUTOSAVE_ID = "elitefund-terminal-columns-v1"
+const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v2"
+const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v1"
 const BLOTTER_HEIGHT_KEY = "elitefund-terminal-blotter-height"
 const TAB_ORDER_KEY = "elitefund-terminal-tab-order"
 const MIN_BLOTTER_HEIGHT = 150
 
-function DockGroup({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+function DockGroup({
+  enabled,
+  children,
+  direction = "horizontal",
+  autoSaveId = DOCK_AUTOSAVE_ID,
+}: {
+  enabled: boolean
+  children: ReactNode
+  direction?: "horizontal" | "vertical"
+  autoSaveId?: string
+}) {
   if (!enabled) return <>{children}</>
   return (
-    <PanelGroup direction="horizontal" autoSaveId={DOCK_AUTOSAVE_ID} className="terminal-dock-group">
+    <PanelGroup
+      direction={direction}
+      autoSaveId={autoSaveId}
+      className={`terminal-dock-group${direction === "vertical" ? " terminal-dock-group-vertical" : ""}`}
+    >
       {children}
     </PanelGroup>
   )
@@ -1582,7 +1597,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const resetTerminalLayout = () => {
     try {
       window.localStorage.removeItem(`react-resizable-panels:${DOCK_AUTOSAVE_ID}`)
-      window.localStorage.removeItem(TAB_ORDER_KEY)
+      window.localStorage.removeItem(`react-resizable-panels:${DOCK_CHART_ORDER_AUTOSAVE_ID}`)
+    window.localStorage.removeItem(TAB_ORDER_KEY)
     } catch {}
     saveBlotterHeight(null)
     setBlotterHeight(null)
@@ -3470,9 +3486,9 @@ const maxLeverage = 100
         </main>
       )}
 
-      {/* ══ MAIN 3-COLUMN GRID ═══════════��════════════�������══════���═��═════════ */}
+      {/* ══ MAIN TRADING WORKSPACE ═══════════════════════════════════════════ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
-      <div className={mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}>
+      <div className={`apple-terminal-panel-layout ${mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}`}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
@@ -3662,7 +3678,10 @@ const maxLeverage = 100
         </DockPanel>
         )}
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
-        <DockPanel enabled={dockEnabled} id="chart" order={2} defaultSize={57} minSize={34}>
+        <DockPanel enabled={dockEnabled} id="workspace" order={2} defaultSize={81} minSize={68}>
+        <div className="apple-terminal-main-column">
+        <DockGroup enabled={dockEnabled} direction="vertical" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
+        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={64} minSize={42}>
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
@@ -4031,24 +4050,12 @@ const maxLeverage = 100
 	        </div>
 	        {/* RIGHT: Order Ticket */}
 	        </DockPanel>
-        {dockEnabled && chartExpanded ? null : rightPanelHidden ? (
-          <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
-            <button
-              type="button"
-              onClick={() => setRightPanelHidden(false)}
-              aria-label="Show trading sidebar (Ctrl+Shift+O)"
-              title="Show trading sidebar (Ctrl+Shift+O)"
-              className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
+        {!rightPanelHidden && !(dockEnabled && chartExpanded) && (
         <>
         <DockHandle enabled={dockEnabled} />
-        <DockPanel enabled={dockEnabled} id="order" order={3} defaultSize={24} minSize={19} maxSize={36}>
+        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={38} minSize={22} maxSize={55}>
         <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
-          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
+          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderTop: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="terminal-order-panel-header flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
@@ -4385,6 +4392,22 @@ const maxLeverage = 100
         </DockPanel>
         </>
         )}
+        </DockGroup>
+        {rightPanelHidden && !chartExpanded && (
+          <div className="reference-sidebar-collapsed apple-terminal-order-collapsed shrink-0 items-center justify-end" style={{ background: "#070b13" }}>
+            <button
+              type="button"
+              onClick={() => setRightPanelHidden(false)}
+              aria-label="Show trading sidebar (Ctrl+Shift+O)"
+              title="Show trading sidebar (Ctrl+Shift+O)"
+              className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        </div>
+        </DockPanel>
         </DockGroup>
         </div>
         {mobileTab === "portfolio" && (
