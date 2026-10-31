@@ -116,7 +116,7 @@ export default function ParticipantRegisterPage() {
     state: "",
     referralCode: "",
     accountType: "normal" as "normal" | "funded" | "challenge",
-    challengePlanKey: DEFAULT_CHALLENGE_PLANS[1].key,
+    challengePlanKey: DEFAULT_CHALLENGE_PLANS[0].key,
   })
   const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(defaultCountry)
 
@@ -504,7 +504,7 @@ export default function ParticipantRegisterPage() {
                       </SelectContent>
                     </Select>
                     {(() => {
-                      const plan = DEFAULT_CHALLENGE_PLANS.find((item) => item.key === formData.challengePlanKey) || DEFAULT_CHALLENGE_PLANS[1]
+                      const plan = DEFAULT_CHALLENGE_PLANS.find((item) => item.key === formData.challengePlanKey) || DEFAULT_CHALLENGE_PLANS[0]
                       return (
                         <p className={cn("mt-3 text-xs leading-5", isLightTheme ? "text-slate-600" : "text-slate-400")}>
                           {plan.profitTargetPercent}% target · {plan.dailyLossLimitPercent}% daily loss cap · {plan.maxDrawdownPercent}% maximum drawdown · {plan.minimumTradingDays} minimum trading days · up to {plan.leverage}:1 leverage. Pay the ${plan.fee} fee after email verification to activate the virtual balance.

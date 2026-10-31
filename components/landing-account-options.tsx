@@ -110,6 +110,9 @@ export function LandingAccountOptions() {
             <p className="elite-copy text-sm">
               Current Challenge plans list a {challengeRules.profitTargetPercent}% target, {challengeRules.dailyLossLimitPercent}% daily loss limit, {challengeRules.maxDrawdownPercent}% maximum drawdown, {challengeRules.minimumTradingDays} minimum trading days, and up to {challengeRules.leverage}:1 leverage.
             </p>
+            <p className="elite-copy mt-3 text-sm">
+              Passing a Challenge evaluation may qualify you for review for the corresponding funded account. Approval, verification, and program terms apply; funding is not guaranteed.
+            </p>
             <Link href="#programs" className="elite-inline-link mt-auto pt-4">
               Calculate Challenge rules <ArrowRight aria-hidden="true" />
             </Link>

@@ -13,8 +13,8 @@ const money = new Intl.NumberFormat("en-US", {
 })
 
 export function ChallengePlanner() {
-  const [selectedId, setSelectedId] = useState(DEFAULT_CHALLENGE_PLANS[1].key)
-  const selected = DEFAULT_CHALLENGE_PLANS.find((account) => account.key === selectedId) ?? DEFAULT_CHALLENGE_PLANS[1]
+  const [selectedId, setSelectedId] = useState(DEFAULT_CHALLENGE_PLANS[0].key)
+  const selected = DEFAULT_CHALLENGE_PLANS.find((account) => account.key === selectedId) ?? DEFAULT_CHALLENGE_PLANS[0]
   const target = selected.startingBalance * (selected.profitTargetPercent / 100)
   const dailyReference = selected.startingBalance * (selected.dailyLossLimitPercent / 100)
   const drawdown = selected.startingBalance * (selected.maxDrawdownPercent / 100)
