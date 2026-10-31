@@ -3113,6 +3113,77 @@ const maxLeverage = 100
   // eslint-disable-next-line react-hooks/exhaustive-deps
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount])
 
+  const instrumentOverviewPanel = selectedPair ? (
+    <section
+      aria-label={`${selectedPair.symbol} instrument overview`}
+      className={`apple-terminal-instrument-overview shrink-0 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 p-3 shadow-lg ${isCompactViewport ? "mx-3 my-2" : ""}`}
+      style={isCompactViewport ? undefined : {
+        position: "absolute",
+        top: "100%",
+        left: 0,
+        width: "100%",
+        height: "100%",
+        minHeight: "100%",
+        margin: 0,
+        borderLeft: 0,
+        borderRight: 0,
+        borderRadius: 0,
+        overflowX: "hidden",
+        overflowY: "auto",
+        scrollSnapAlign: "start",
+      }}
+    >
+      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
+        <div className="flex items-center gap-2">
+          <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
+          <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
+        </div>
+        <span className="text-[9px] font-bold text-slate-400">
+          {online ? "● Market Live" : "○ Market Closed"}
+        </span>
+      </div>
+
+      <div className={`apple-instrument-overview-metrics grid grid-cols-2 gap-2 text-xs ${isCompactViewport ? "sm:grid-cols-4" : ""}`}>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
+          <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
+          <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
+          <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
+          <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+            {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
+          </span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
+          <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
+          <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
+          <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
+            {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
+          </span>
+        </div>
+        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
+          <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
+        </div>
+      </div>
+    </section>
+  ) : null
+
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
@@ -3494,8 +3565,12 @@ const maxLeverage = 100
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
         <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
-	        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+	        <div
+          role="region"
+          aria-label="Market watch and instrument overview"
+          tabIndex={0}
+          className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13", position: dockEnabled ? "relative" : undefined, overflowX: dockEnabled ? "hidden" : undefined, overflowY: dockEnabled ? "auto" : undefined, overscrollBehaviorY: dockEnabled ? "contain" : undefined }}>
 
           <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
             <div className="mb-2.5 flex items-center justify-between">
@@ -3673,6 +3748,7 @@ const maxLeverage = 100
               })}
             </div>
           </div>
+        {!isCompactViewport && instrumentOverviewPanel}
         </div>
         {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
         </DockPanel>
@@ -3751,7 +3827,7 @@ const maxLeverage = 100
 	            </div>
 	          )}
 
-	          {/* Chart + Timeframe Dock + Quick Trade + Instrument Details + Blotter strip */}
+	          {/* Chart and timeframe dock; the order ticket follows below. */}
 	          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll" style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}>
 	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
 	              {selectedPair && chartLayout === "single" ? (
@@ -3830,81 +3906,7 @@ const maxLeverage = 100
 	              </div>
 	            </div>
 
-	            {/* ── Quick Trade Dock (Revealed on Scroll) ── */}
-	            <div className="reference-chart-trade-dock shrink-0">
-	              <div className="reference-chart-trade-heading">
-	                <span>Quick trade</span>
-	                <span>{selectedPair ? `${selectedPair.symbol} �� Market Execution` : "Select an instrument"}</span>
-	              </div>
-	              <div className="reference-chart-trade-actions">
-	                <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
-	                  <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
-	                  <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
-	                </button>
-	                <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
-	                  <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
-	                  <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
-	                </button>
-	              </div>
-	              <button type="button" onClick={() => setMobileTab("order")} disabled={!selectedPair || isFrozen} className="reference-make-order">
-	                <Zap className="h-3.5 w-3.5" /> MAKE ORDER
-	                <span>Open full order ticket</span>
-	              </button>
-	            </div>
-
-	            {/* ── Rich Instrument Details & Key Stats ── */}
-	            {selectedPair && (
-	              <div className="shrink-0 mx-3 my-2 p-3 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 backdrop-blur-md shadow-lg">
-	                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
-	                  <div className="flex items-center gap-2">
-	                    <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
-	                    <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
-	                  </div>
-	                  <span className="text-[9px] font-bold text-slate-400">
-	                    {online ? "● Market Live" : "○ Market Closed"}
-	                  </span>
-	                </div>
-
-	                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
-	                    <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
-	                    <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
-	                    <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
-	                    <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-	                      {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
-	                    </span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
-	                    <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
-	                    <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
-	                    <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
-	                      {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
-	                    </span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
-	                    <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
-	                  </div>
-	                </div>
-	              </div>
-	            )}
+	            {isCompactViewport && instrumentOverviewPanel}
 
 	            {/* ── Mobile Activity / Blotter Section ── */}
 	            <div className="hidden shrink-0 mx-3 my-2 mb-20 md:mb-4 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 overflow-hidden shadow-lg">
@@ -4053,7 +4055,7 @@ const maxLeverage = 100
         {!rightPanelHidden && !(dockEnabled && chartExpanded) && (
         <>
         <DockHandle enabled={dockEnabled} />
-        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={38} minSize={22} maxSize={55}>
+        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={36} minSize={22} maxSize={55}>
         <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderTop: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 

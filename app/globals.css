@@ -6506,11 +6506,18 @@ body:has(.elite-terminal-workspace) {
   max-height: none !important;
   overflow: visible !important;
 }
-.apple-trading-terminal.reference-terminal .apple-terminal-market,
 .apple-trading-terminal.reference-terminal .apple-terminal-chart-column,
 .apple-trading-terminal.reference-terminal .apple-terminal-order {
   max-height: none !important;
   overflow: visible !important;
+}
+@media (min-width: 1024px) {
+  .apple-trading-terminal.reference-terminal .apple-terminal-market {
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+  }
 }
 .apple-trading-terminal.reference-terminal .apple-terminal-chart-column {
   min-height: 560px !important;
