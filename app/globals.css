@@ -4411,21 +4411,21 @@ button, a, [role="button"] {
     gap: 8px;
   }
   .terminal-page .participant-mobile-welcome {
-    --welcome-surface-high: #111922;
-    --welcome-surface-low: #0b1016;
+    --welcome-surface-high: #071722;
+    --welcome-surface-low: #020d16;
     --welcome-primary: #f5f7fa;
     --welcome-muted: #c4cdd6;
-    --welcome-accent: #d6b66b;
-    border-color: rgba(214,182,107,.2);
+    --welcome-accent: #22d3ee;
+    border-color: rgba(34,211,238,.14);
     background: linear-gradient(145deg, var(--welcome-surface-high), var(--welcome-surface-low));
-    box-shadow: 0 12px 28px rgba(2,13,22,.24);
+    box-shadow: 0 12px 32px rgba(2,13,22,.3);
   }
   .terminal-page .participant-welcome-eyebrow,
   .terminal-page .participant-welcome-copy { color: var(--welcome-muted); }
   .terminal-page .participant-welcome-name { color: var(--welcome-primary); }
   .terminal-page .participant-welcome-accent {
     background: var(--welcome-accent);
-    box-shadow: 0 0 8px rgba(214,182,107,.3);
+    box-shadow: 0 0 11px rgba(34,211,238,.46);
   }
   .terminal-page .participant-welcome-dot-texture {
     background-image: radial-gradient(circle, rgba(34,211,238,.48) 1px, transparent 1.6px);
@@ -7346,25 +7346,21 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
   }
 
   .participant-dock-trade-button {
-    color: #f8fafc;
-    border: 1px solid rgba(214, 182, 107, 0.42);
-    background: #141a22;
-    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.06), 0 8px 24px rgba(2, 6, 23, 0.32);
-    transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    --dock-trade-surface-raised: #1a3449;
+    --dock-trade-surface-deep: #0c1927;
+    --dock-trade-accent: #60cfe7;
+    --dock-trade-label: #f8fafc;
+    color: var(--dock-trade-label);
+    border: 1px solid rgba(96, 207, 231, 0.62);
+    background: linear-gradient(115deg, var(--dock-trade-surface-raised) 0%, var(--dock-trade-surface-deep) 52%, var(--dock-trade-surface-raised) 100%);
+    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.12), 0 8px 24px rgba(2, 6, 23, 0.35);
   }
-  .participant-dock-trade-button:hover {
-    border-color: rgba(214, 182, 107, 0.72);
-    background: #19212b;
-    box-shadow: inset 0 1px 0 rgba(248, 250, 252, 0.08), 0 10px 26px rgba(2, 6, 23, 0.38);
+  .participant-dock-trade-button:hover { border-color: var(--dock-trade-accent); }
+  .participant-dock-trade-button:focus-visible { outline: 2px solid var(--dock-trade-accent); outline-offset: 3px; }
+  .participant-dock-trade-icon {
+    color: var(--dock-trade-accent);
+    filter: drop-shadow(0 0 5px rgba(96, 207, 231, 0.58));
   }
-  .participant-dock-trade-button:focus-visible { outline: 2px solid #d6b66b; outline-offset: 3px; }
-  .participant-dock-trade-icon-wrap {
-    border: 1px solid rgba(214, 182, 107, 0.2);
-    background: rgba(214, 182, 107, 0.1);
-  }
-  .participant-dock-trade-icon { color: #e5c982; }
-  .participant-dock-trade-caption { color: #9ca3af; }
-  .participant-dock-trade-arrow { color: #d6b66b; }
 
   /* Hide global dashboard navigation when trading terminal is active */
   body:has(.reference-terminal) .participant-global-mobile-nav,

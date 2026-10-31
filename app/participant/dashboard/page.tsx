@@ -29,7 +29,6 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
-import { ParticipantAccountPathways } from "@/components/participant-account-pathways"
 
 
 
@@ -1715,7 +1714,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const normalizedAccountType = String(participantData?.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
   const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
   const isChallengeAccount = normalizedAccountType === "challenge" || normalizedAccountType === "challengeaccount"
-  const currentAccountType = isChallengeAccount ? "challenge" : isFundedAccount ? "funded" : "normal"
   const fundedBaseAmount = isFundedAccount
     ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
     : 0
@@ -1974,8 +1972,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 displayName={displayName}
                 email={participantData.email}
                 isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
-                accountType={currentAccountType}
-                accountOptions={<ParticipantAccountPathways accountType={currentAccountType} />}
                 accountNotice={isFundedAccount && fundedDrawdownSnapshot ? (
                   <section className="rounded-xl border border-amber-300/20 bg-slate-950/75 p-3 text-xs text-slate-200 md:hidden" aria-label="Funded account risk status">
                     <div className="flex items-center justify-between gap-3">
@@ -1999,20 +1995,17 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 onHelp={() => setIsChatOpen(true)}
               />
             ) : (
-              <>
-                <section className="mx-3 mt-3 flex flex-col gap-4 border border-amber-300/20 bg-[#111c28] p-4 sm:mx-4 sm:flex-row sm:items-center sm:justify-between sm:p-5" aria-label="Challenge workspace">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Evaluation workspace</p>
-                    <h2 className="mt-1 text-lg font-semibold text-white">Trade within your Challenge rules</h2>
-                    <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
-                  </div>
-                  <div className="flex shrink-0 flex-wrap gap-2">
-                    <Button type="button" onClick={() => setActiveTab("trading")} className="bg-[#d6b66b] font-bold text-[#111315] hover:bg-[#e2c982]">Open trading terminal</Button>
-                    <Button asChild variant="outline" className="border-slate-600 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/participant/dashboard/challenge">View evaluation</Link></Button>
-                  </div>
-                </section>
-                <div className="mx-3 mt-3 sm:mx-4"><ParticipantAccountPathways accountType={currentAccountType} /></div>
-              </>
+              <section className="mx-3 mt-3 flex flex-col gap-4 border border-amber-300/20 bg-[#111c28] p-4 sm:mx-4 sm:flex-row sm:items-center sm:justify-between sm:p-5" aria-label="Challenge workspace">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Evaluation workspace</p>
+                  <h2 className="mt-1 text-lg font-semibold text-white">Trade within your Challenge rules</h2>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button type="button" onClick={() => setActiveTab("trading")} className="bg-[#d6b66b] font-bold text-[#111315] hover:bg-[#e2c982]">Open trading terminal</Button>
+                  <Button asChild variant="outline" className="border-slate-600 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/participant/dashboard/challenge">View evaluation</Link></Button>
+                </div>
+              </section>
             )}
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
             <div className="hidden relative overflow-hidden hero-card-deep">
