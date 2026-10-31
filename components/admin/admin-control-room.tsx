@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { AccountTypeBadge } from "@/components/admin/account-type-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -300,7 +301,7 @@ function ControlRoomContent() {
                 <p className="font-medium">{text(row.trader)}</p>
                 <p className="text-xs text-muted-foreground">{text(row.email)}{row.serial_number ? ` · #${row.serial_number}` : ""}</p>
               </td>
-              <td className="p-3 capitalize">{text(row.account_type).replaceAll("_", " ")}</td>
+              <td className="p-3"><AccountTypeBadge accountType={row.account_type} /></td>
               <td className="p-3 tabular-nums">{currency(row.account_balance)}</td>
               <td className="p-3 tabular-nums">{Number(row.funded_initial_balance) > 0 ? currency(row.funded_initial_balance) : "—"}</td>
               <td className="p-3">{number(row.open_positions)} positions · {number(row.pending_orders)} pending</td>

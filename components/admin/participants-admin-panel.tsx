@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
+import { AccountTypeBadge } from "@/components/admin/account-type-badge"
 import { Loader2, RefreshCw, Download, Trash2, Search, UsersRound, WalletCards, Activity, ShieldCheck } from "lucide-react"
 
 interface Participant {
@@ -250,14 +251,7 @@ export function ParticipantsAdminPanel() {
                   ${participant.account_balance.toFixed(2)}
                 </td>
                 <td className="py-3 px-4">
-                  <Badge
-                    variant="outline"
-                    className={participant.account_type?.toLowerCase() === "funded"
-                      ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
-                      : "border-slate-600 bg-slate-800/60 text-slate-300"}
-                  >
-                    {participant.account_type?.toLowerCase() === "funded" ? "Funded" : "Normal"}
-                  </Badge>
+                  <AccountTypeBadge accountType={participant.account_type} />
                 </td>
                 <td className="py-3 px-4 text-white">{participant.total_referrals || 0}</td>
                 <td className="py-3 px-4">
