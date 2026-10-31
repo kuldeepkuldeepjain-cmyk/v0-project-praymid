@@ -48,7 +48,7 @@ import type { ReactNode } from "react"
 // ─── Workspace layout (UI preferences only — never market or account data) ──
 
 const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v3"
-const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v5"
+const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v7"
 
 function DockGroup({
   enabled,
@@ -3896,7 +3896,7 @@ const maxLeverage = 100
         <DockPanel enabled={dockEnabled} id="workspace" order={2} defaultSize={74} minSize={66}>
         <div className="apple-terminal-main-column">
         <DockGroup enabled={dockEnabled} direction="vertical" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
-        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={48} minSize={45} maxSize={72}>
+        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={50} minSize={45} maxSize={72}>
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
@@ -4200,7 +4200,7 @@ const maxLeverage = 100
         {!rightPanelHidden && !(dockEnabled && chartExpanded) && (
         <>
         <DockHandle enabled={dockEnabled} />
-        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={52} minSize={28} maxSize={55}>
+        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={50} minSize={28} maxSize={55}>
         <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderTop: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
