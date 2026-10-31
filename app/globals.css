@@ -11633,9 +11633,9 @@ body:has(.elite-terminal-shell) {
 @media (min-width: 1024px) {
   .mt5-terminal.reference-terminal .apple-terminal-panel-layout {
     flex: 1 1 0% !important;
-    height: clamp(700px, calc(100dvh - 190px), 920px) !important;
-    min-height: 700px !important;
-    max-height: 920px !important;
+    height: clamp(960px, calc(100dvh - 190px), 1120px) !important;
+    min-height: 960px !important;
+    max-height: 1120px !important;
   }
 
   .mt5-terminal.reference-terminal .apple-terminal-panel-layout > .terminal-dock-group {
