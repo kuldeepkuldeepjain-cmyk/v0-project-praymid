@@ -11197,3 +11197,154 @@ body:has(.elite-terminal-shell) {
     font-size: 8px !important;
   }
 }
+
+/* Desktop terminal: keep the chart, side panels, and activity dock in one viewport. */
+@media (min-width: 1200px) {
+  html:has(.elite-terminal-workspace .mt5-terminal.reference-terminal),
+  body:has(.elite-terminal-workspace .mt5-terminal.reference-terminal) {
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .elite-terminal-workspace:has(.mt5-terminal.reference-terminal) {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+  }
+
+  .elite-terminal-platform:has(.mt5-terminal.reference-terminal) {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .elite-terminal-platform > .mt5-terminal.reference-terminal {
+    flex: 1 1 0% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-grid {
+    flex: 1 1 0% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-grid > div,
+  .mt5-terminal.reference-terminal .terminal-dock-group,
+  .mt5-terminal.reference-terminal .terminal-dock-panel {
+    min-height: 0 !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-market,
+  .mt5-terminal.reference-terminal .apple-terminal-order {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column > .flex-1 {
+    flex: 1 1 0% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .mt5-terminal.reference-terminal .mobile-terminal-chart-wrap {
+    flex: 0 0 auto !important;
+    height: clamp(260px, 38dvh, 360px) !important;
+    min-height: 260px !important;
+    max-height: 360px !important;
+    overflow: hidden !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-blotter {
+    flex: 0 0 auto !important;
+    height: clamp(112px, 16dvh, 156px) !important;
+    min-height: 112px !important;
+    max-height: 156px !important;
+    overflow: hidden !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-blotter.is-open {
+    flex-basis: clamp(112px, 16dvh, 156px) !important;
+    height: clamp(112px, 16dvh, 156px) !important;
+    min-height: 112px !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-blotter.is-open.has-custom-height {
+    flex-basis: var(--blotter-h) !important;
+    height: var(--blotter-h) !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar button {
+    min-height: 28px !important;
+    height: 28px !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "overlays overlays"
+      "panes actions";
+    align-items: center;
+    justify-content: normal !important;
+    gap: 6px 10px !important;
+    padding: 7px 12px !important;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls {
+    grid-area: overlays;
+    width: 100%;
+    min-width: 0;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls > span {
+    display: none;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar .indicator-pane-controls {
+    grid-area: panes;
+    min-width: 0;
+    justify-self: start;
+  }
+
+  .mt5-terminal.reference-terminal .terminal-indicator-toolbar .indicator-action-controls {
+    grid-area: actions;
+    min-width: 0;
+    justify-self: end;
+    margin-left: 0 !important;
+  }
+}
