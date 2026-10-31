@@ -11635,6 +11635,9 @@ body:has(.elite-terminal-shell) {
     scrollbar-width: thin !important;
     scrollbar-color: #34445a transparent !important;
     -ms-overflow-style: auto !important;
+    scroll-behavior: smooth;
+    scroll-snap-type: y proximity;
+    scroll-padding-block: 8px;
   }
 
   html:has(.mt5-terminal.reference-terminal)::-webkit-scrollbar {
@@ -11649,6 +11652,19 @@ body:has(.elite-terminal-shell) {
 
   html:has(.mt5-terminal.reference-terminal)::-webkit-scrollbar-track {
     background: transparent !important;
+  }
+
+  .mt5-terminal.reference-terminal .apple-terminal-chart-column,
+  .mt5-terminal.reference-terminal .apple-terminal-order {
+    scroll-snap-align: start;
+    scroll-margin-block: 8px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html:has(.mt5-terminal.reference-terminal) {
+      scroll-behavior: auto !important;
+      scroll-snap-type: none !important;
+    }
   }
 
   .mt5-terminal.reference-terminal .apple-terminal-panel-layout {
