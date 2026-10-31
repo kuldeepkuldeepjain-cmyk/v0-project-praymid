@@ -33,16 +33,21 @@ import { ForexHeader } from "@/components/forex-header"
 import { AssetLogo } from "@/components/asset-logo"
 import { PortfolioActivityView } from "@/components/portfolio-activity-view"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 // ─── Workspace layout (UI preferences only — never market or account data) ──
 
 const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v2"
 const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v1"
-const BLOTTER_HEIGHT_KEY = "elitefund-terminal-blotter-height"
-const TAB_ORDER_KEY = "elitefund-terminal-tab-order"
-const MIN_BLOTTER_HEIGHT = 150
 
 function DockGroup({
   enabled,
@@ -85,15 +90,6 @@ function DockHandle({ enabled }: { enabled: boolean }) {
       <span aria-hidden="true" />
     </PanelResizeHandle>
   )
-}
-
-function applyTabOrder<T extends { id: string }>(items: T[], order: string[]): T[] {
-  if (!order.length) return items
-  const rank = (id: string) => {
-    const saved = order.indexOf(id)
-    return saved === -1 ? order.length + items.findIndex(item => item.id === id) : saved
-  }
-  return [...items].sort((a, b) => rank(a.id) - rank(b.id))
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -139,6 +135,26 @@ export type ClosedTrade = OpenTrade & {
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "30M" | "1H" | "4H" | "1D" | "1W"
+type ActivityPanelId = "positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach" | "trust"
+
+const ACTIVITY_PANEL_TITLES: Record<ActivityPanelId, string> = {
+  positions: "Open positions",
+  history: "Trade history",
+  pending: "Pending orders",
+  depth: "Order depth",
+  stats: "Market stats",
+  performance: "Performance dashboard",
+  alerts: "Price alerts",
+  "smart-alerts": "Smart alerts",
+  support: "Support center",
+  sessions: "Market sessions",
+  dom: "Depth of market",
+  risk: "Risk analytics",
+  journal: "Trade journal",
+  news: "News and economic calendar",
+  "ai-coach": "AI trading guide",
+  trust: "Trust and account protection",
+}
 
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
@@ -1443,15 +1459,22 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach" | "trust">("positions")
+  const [activePanel, setActivePanel] = useState<ActivityPanelId>("positions")
   const [positionsPopupOpen, setPositionsPopupOpen] = useState(false)
   const [historyPopupOpen, setHistoryPopupOpen] = useState(false)
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
-  const [footerOpen, setFooterOpen] = useState(true)
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false)
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
   const marketPanelWidth = 256
+
+  const openActivityPanel = useCallback((panel: ActivityPanelId) => {
+    setActivePanel(panel)
+    setActivityDialogOpen(true)
+    setChartExpanded(false)
+    setMobileTab("chart")
+  }, [])
   const orderPanelWidth = 320
 
   // Map of tradeId ��� partial close lot input value
@@ -1524,21 +1547,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   const dockEnabled = !isCompactViewport
   const [layoutKey, setLayoutKey] = useState(0)
-  const [blotterHeight, setBlotterHeight] = useState<number | null>(null)
-  const [tabOrder, setTabOrder] = useState<string[]>([])
-  const [draggedTab, setDraggedTab] = useState<string | null>(null)
-  const blotterRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    try {
-      const savedHeight = Number(window.localStorage.getItem(BLOTTER_HEIGHT_KEY))
-      if (savedHeight >= MIN_BLOTTER_HEIGHT) setBlotterHeight(savedHeight)
-      const savedOrder: unknown = JSON.parse(window.localStorage.getItem(TAB_ORDER_KEY) ?? "[]")
-      if (Array.isArray(savedOrder)) setTabOrder(savedOrder.filter((value): value is string => typeof value === "string"))
-    } catch {
-      // Ignore unreadable layout preferences and fall back to defaults.
-    }
-  }, [])
 
   useEffect(() => {
     if (!chartExpanded) return
@@ -1547,62 +1555,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => window.removeEventListener("keydown", exitExpanded)
   }, [chartExpanded])
 
-  const clampBlotterHeight = (height: number) =>
-    Math.round(Math.min(Math.max(height, MIN_BLOTTER_HEIGHT), Math.max(MIN_BLOTTER_HEIGHT, window.innerHeight * 0.7)))
-
-  const saveBlotterHeight = (height: number | null) => {
-    try {
-      if (height === null) window.localStorage.removeItem(BLOTTER_HEIGHT_KEY)
-      else window.localStorage.setItem(BLOTTER_HEIGHT_KEY, String(height))
-    } catch {}
-  }
-
-  const startBlotterResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startY = event.clientY
-    const startHeight = blotterRef.current?.getBoundingClientRect().height ?? 260
-    let latest = startHeight
-    const onMove = (moveEvent: PointerEvent) => {
-      latest = clampBlotterHeight(startHeight + startY - moveEvent.clientY)
-      setBlotterHeight(latest)
-    }
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
-      document.body.classList.remove("is-resizing-terminal")
-      saveBlotterHeight(latest)
-    }
-    document.body.classList.add("is-resizing-terminal")
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-  }
-
-  const handleBlotterResizeKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
-    event.preventDefault()
-    const current = blotterHeight ?? blotterRef.current?.getBoundingClientRect().height ?? 260
-    const next = clampBlotterHeight(current + (event.key === "ArrowUp" ? 24 : -24))
-    setBlotterHeight(next)
-    saveBlotterHeight(next)
-  }
-
-  const moveTab = (from: string, to: string, ids: string[]) => {
-    if (from === to) return
-    const next = ids.filter(id => id !== from)
-    next.splice(next.indexOf(to), 0, from)
-    setTabOrder(next)
-    try { window.localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(next)) } catch {}
-  }
-
   const resetTerminalLayout = () => {
     try {
       window.localStorage.removeItem(`react-resizable-panels:${DOCK_AUTOSAVE_ID}`)
       window.localStorage.removeItem(`react-resizable-panels:${DOCK_CHART_ORDER_AUTOSAVE_ID}`)
-    window.localStorage.removeItem(TAB_ORDER_KEY)
     } catch {}
-    saveBlotterHeight(null)
-    setBlotterHeight(null)
-    setTabOrder([])
     setLayoutKey(key => key + 1)
   }
 
@@ -2543,8 +2500,8 @@ const maxLeverage = 100
         createdTimestamp: Date.now(),
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
-	      setPendingOrders(prev => [order, ...prev])
-	      setActivePanel("pending")
+      setPendingOrders(prev => [order, ...prev])
+      openActivityPanel("pending")
 
 	      const pendingSaved = await persistPendingOrder(order)
 	      if (!pendingSaved) {
@@ -2576,8 +2533,8 @@ const maxLeverage = 100
         return [trade, ...prev]
       })
 	      setWalletBalance(prev => prev - margin)
-	      setSl(""); setTp(""); setTrailingPips("")
-	      setActivePanel("positions")
+      setSl(""); setTp(""); setTrailingPips("")
+      openActivityPanel("positions")
 
 	      // The API locks margin, records the trade, and writes the ledger entry in
 	      // one transaction. Never deduct or restore margin in a second request.
@@ -3090,28 +3047,29 @@ const maxLeverage = 100
     { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
     { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
     { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
-    { id: "panel-positions", label: "Show open positions", hint: "Switch the bottom blotter to positions", icon: Layers, action: () => setActivePanel("positions") },
-    { id: "panel-pending", label: "Show pending orders", hint: "Switch the bottom blotter to pending orders", icon: Clock, action: () => setActivePanel("pending") },
-    { id: "panel-history", label: "Show trade history", hint: "Switch the bottom blotter to closed trades", icon: History, action: () => setActivePanel("history") },
-    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book ladder", icon: BarChart2, action: () => setActivePanel("dom") },
-    { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics panel", icon: ShieldAlert, action: () => setActivePanel("risk") },
-    { id: "panel-journal", label: "Show trade journal", hint: "Open the performance journal", icon: BookOpen, action: () => setActivePanel("journal") },
-    { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar", icon: Newspaper, action: () => setActivePanel("news") },
-    { id: "panel-performance", label: "Show performance dashboard", hint: "Open the equity curve and KPIs", icon: BarChart, action: () => setActivePanel("performance") },
-    { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alert manager", icon: Bell, action: () => setActivePanel("alerts") },
-  { id: "panel-support", label: "Open support center", hint: "Live chat, tickets, FAQ, and account support", icon: LifeBuoy, action: () => setActivePanel("support") },
-    { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
-    { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
-  { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => setActivePanel("ai-coach") },
-  { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => setActivePanel("trust") },
-    { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
+    { id: "panel-positions", label: "Show open positions", hint: "Open the positions window", icon: Layers, action: () => openActivityPanel("positions") },
+    { id: "panel-pending", label: "Show pending orders", hint: "Open the pending orders window", icon: Clock, action: () => openActivityPanel("pending") },
+    { id: "panel-history", label: "Show trade history", hint: "Open the trade history window", icon: History, action: () => openActivityPanel("history") },
+    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book window", icon: BarChart2, action: () => openActivityPanel("dom") },
+    { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics window", icon: ShieldAlert, action: () => openActivityPanel("risk") },
+    { id: "panel-journal", label: "Show trade journal", hint: "Open the trade journal window", icon: BookOpen, action: () => openActivityPanel("journal") },
+    { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar window", icon: Newspaper, action: () => openActivityPanel("news") },
+    { id: "panel-performance", label: "Show performance dashboard", hint: "Open the performance window", icon: BarChart, action: () => openActivityPanel("performance") },
+    { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alerts window", icon: Bell, action: () => openActivityPanel("alerts") },
+    { id: "panel-support", label: "Open support center", hint: "Live chat, tickets, FAQ, and account support", icon: LifeBuoy, action: () => openActivityPanel("support") },
+    { id: "panel-sessions", label: "Show market sessions", hint: "Open the market sessions window", icon: Globe2, action: () => openActivityPanel("sessions") },
+    { id: "panel-stats", label: "Show market stats", hint: "Open the market stats window", icon: Activity, action: () => openActivityPanel("stats") },
+    { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => openActivityPanel("ai-coach") },
+    { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => openActivityPanel("trust") },
+    { id: "panel-depth", label: "Show order depth", hint: "Open the order depth window", icon: BarChart2, action: () => openActivityPanel("depth") },
+    { id: "panel-smart-alerts", label: "Show smart alerts", hint: "Open the smart alerts window", icon: BellRing, action: () => openActivityPanel("smart-alerts") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     ...(!isChallengeAccount ? [
       { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
       { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
     ] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount])
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount, openActivityPanel])
 
   const instrumentOverviewPanel = selectedPair ? (
     <section
@@ -3239,14 +3197,9 @@ const maxLeverage = 100
         isConnected={online}
         onNavigate={(panel) => {
           if (panel === "sizer") { setMobileTab("order"); setRightPanelTab("sizer") }
-          else if (panel === "calendar") { setActivePanel("news") }
-          else if (panel === "news") { setActivePanel("news") }
-          else if (panel === "performance") { setActivePanel("performance") }
-	          else if (panel === "history") { setActivePanel("history") }
-	          else if (panel === "journal") { setActivePanel("journal") }
-	          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
-	          else { setActivePanel(panel as typeof activePanel) }
-	        }}
+          else if (panel === "calendar" || panel === "news") openActivityPanel("news")
+          else openActivityPanel(panel as ActivityPanelId)
+        }}
 	        onToggleFullscreen={() => {
 	          if (document.fullscreenElement) document.exitFullscreen()
 	          else document.documentElement.requestFullscreen()
@@ -3322,7 +3275,7 @@ const maxLeverage = 100
           <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
           <ChevronDown className="h-3 w-3 text-slate-400" aria-hidden="true" />
         </button>
-        <button type="button" className="mobile-terminal-notifications" onClick={() => { setMobileTab("chart"); setActivePanel("alerts"); setFooterOpen(true) }} aria-label="Open trading alerts">
+        <button type="button" className="mobile-terminal-notifications" onClick={() => openActivityPanel("alerts")} aria-label="Open trading alerts">
           <Bell aria-hidden="true" />
           {(adminNotifications.filter(item => !item.read).length + toasts.length) > 0 && <span>{adminNotifications.filter(item => !item.read).length + toasts.length}</span>}
         </button>
@@ -3568,27 +3521,29 @@ const maxLeverage = 100
           { id: "positions", label: "Positions", icon: Layers, count: openTrades.length },
           { id: "pending", label: "Orders", icon: Clock, count: pendingOrders.length },
           { id: "history", label: "History", icon: History, count: closedTrades.length },
+          { id: "dom", label: "L2 book", icon: BarChart2 },
           { id: "risk", label: "Risk", icon: ShieldAlert },
           { id: "journal", label: "Journal", icon: BookOpen },
+          { id: "news", label: "News", icon: Newspaper },
           { id: "performance", label: "Performance", icon: BarChart },
           { id: "alerts", label: "Alerts", icon: Bell, count: priceAlerts.filter(alert => !alert.triggered).length },
-          { id: "news", label: "News", icon: Newspaper },
+          { id: "smart-alerts", label: "Smart alerts", icon: BellRing, count: smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length },
+          { id: "support", label: "Support", icon: LifeBuoy },
+          { id: "trust", label: "Trust", icon: ShieldCheck },
           { id: "sessions", label: "Sessions", icon: Globe2 },
           { id: "depth", label: "Market depth", icon: BarChart2 },
-        ] as { id: typeof activePanel; label: string; icon: typeof Layers; count?: number }[]).map(({ id, label, icon: Icon, count = 0 }) => (
+          { id: "stats", label: "Stats", icon: Activity },
+          { id: "ai-coach", label: "AI guide", icon: BrainCircuit },
+        ] as { id: ActivityPanelId; label: string; icon: typeof Layers; count?: number }[]).map(({ id, label, icon: Icon, count = 0 }) => (
           <button
             key={id}
             type="button"
             title={label}
-            aria-label={`Show ${label} activity${count ? `, ${count} items` : ""}`}
+            aria-label={`Open ${label} activity${count ? `, ${count} items` : ""}`}
+            aria-haspopup="dialog"
+            aria-expanded={activityDialogOpen && activePanel === id}
             aria-pressed={activePanel === id}
-            onClick={() => {
-              setActivePanel(id)
-              setFooterOpen(true)
-              setChartExpanded(false)
-              setMobileTab("chart")
-              window.requestAnimationFrame(() => blotterRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }))
-            }}
+            onClick={() => openActivityPanel(id)}
             className={`relative flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
               activePanel === id
                 ? "border-cyan-400/40 bg-cyan-300/10 text-cyan-200"
@@ -3850,7 +3805,7 @@ const maxLeverage = 100
 
 	                  {/* Tools Dropdown */}
 	                  <select
-	                    onChange={e => { if (e.target.value) { setActivePanel(e.target.value as any); e.target.value = "" } }}
+	                    onChange={e => { if (e.target.value) { openActivityPanel(e.target.value as ActivityPanelId); e.target.value = "" } }}
 	                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
 	                    defaultValue=""
 	                    aria-label="Workspace tools menu"
@@ -4477,88 +4432,33 @@ const maxLeverage = 100
         )}
       </div>
 
-      {/* BOTTOM BLOTTER */}
-      {!isCompactViewport && (
-      <section
-        ref={blotterRef}
-        className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
-        aria-label="Trading activity footer"
-        style={{ background: "#060a12", borderTop: "1px solid #1e2d45", ...(dockEnabled && footerOpen && blotterHeight ? { "--blotter-h": `${blotterHeight}px` } : {}) } as CSSProperties}
-      >
-        {dockEnabled && footerOpen && (
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize trading activity panel"
-            aria-valuemin={MIN_BLOTTER_HEIGHT}
-            aria-valuenow={blotterHeight ?? undefined}
-            tabIndex={0}
-            title="Drag to resize · double-click to reset"
-            className="terminal-blotter-resizer"
-            onPointerDown={startBlotterResize}
-            onKeyDown={handleBlotterResizeKey}
-            onDoubleClick={() => { setBlotterHeight(null); saveBlotterHeight(null) }}
-          >
-            <span aria-hidden="true" />
-          </div>
-        )}
-        {/* Tab bar */}
-        <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: footerOpen ? "1px solid #1a2640" : "0", background: "#060a12" }}>
-          <button
-            type="button"
-            onClick={() => setFooterOpen(value => !value)}
-            aria-expanded={footerOpen}
-            aria-controls="terminal-activity-content"
-            aria-label={footerOpen ? "Hide trading activity" : "Show trading activity"}
-            className="terminal-footer-toggle order-first flex h-9 w-10 shrink-0 items-center justify-center border-r border-[#1b3047] text-slate-400 transition hover:bg-cyan-300/10 hover:text-cyan-200"
-          >
-            {footerOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-            <span className="terminal-footer-toggle-label">Activity</span>
-          </button>
-          {applyTabOrder([
-            { id: "positions",   label: `Positions (${openTrades.length})`, icon: Layers },
-            { id: "pending",     label: `Orders (${pendingOrders.length})`, icon: Clock },
-            { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
-            { id: "dom",         label: "L2 Book",                            icon: BarChart2 },
-            { id: "risk",        label: "Risk",                               icon: ShieldAlert },
-            { id: "journal",     label: "Journal",                            icon: BookOpen },
-            { id: "news",        label: "News",                               icon: Newspaper },
-            { id: "performance", label: "Performance",                        icon: BarChart },
-            { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
-            { id: "smart-alerts",label: `Smart (${smartAlerts.filter(a => a.status === "warning" || a.status === "triggered").length})`, icon: BellRing },
-            { id: "support",     label: "Support",                            icon: LifeBuoy },
-  { id: "trust",       label: "Trust",                              icon: ShieldCheck },
-            { id: "sessions",    label: "Sessions",                           icon: Globe2 },
-            { id: "depth",       label: "Depth",                              icon: BarChart2 },
-            { id: "stats",       label: "Stats",                               icon: Activity },
-            { id: "ai-coach",    label: "AI Guide",                            icon: BrainCircuit },
-          ] as { id: typeof activePanel; label: string; icon: any }[], tabOrder).map(({ id, label, icon: Icon }, _index, orderedTabs) => (
-            <button key={id}
-              draggable={dockEnabled}
-              onDragStart={(event) => { setDraggedTab(id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", id) }}
-              onDragOver={(event) => { if (draggedTab) event.preventDefault() }}
-              onDrop={(event) => { event.preventDefault(); if (draggedTab) moveTab(draggedTab, id, orderedTabs.map(tab => tab.id)); setDraggedTab(null) }}
-              onDragEnd={() => setDraggedTab(null)}
-              data-dragging={draggedTab === id ? "true" : undefined}
-              title={dockEnabled ? `${label} · drag to reorder` : undefined}
-              data-panel={id}
-              onClick={() => { setActivePanel(id); setFooterOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
-              className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
-              style={activePanel === id
-                ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
-                : { color: "#374151", borderBottom: "2px solid transparent" }}>
-              <Icon className="h-3 w-3" />{label}
-            </button>
-          ))}
-          {dockEnabled && (
-            <button type="button" onClick={resetTerminalLayout} className="terminal-layout-reset" aria-label="Reset panel sizes and tab order">
-              Reset layout
-            </button>
-          )}
-        </div>
+      <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
+        <DialogContent
+          showCloseButton={false}
+          className="flex h-[min(82vh,54rem)] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-6xl flex-col gap-0 overflow-hidden border-[#1e2d45] bg-[#060a12] p-0 text-slate-100 sm:max-w-6xl"
+          style={{ background: "#060a12", color: "#e2e8f0" }}
+        >
+          <DialogHeader className="flex-row items-center justify-between gap-4 border-b border-[#1e2d45] bg-[#070b13] px-4 py-3 text-left">
+            <div className="flex min-w-0 flex-col gap-1">
+              <DialogTitle className="truncate text-sm font-black tracking-wide text-slate-100">
+                {ACTIVITY_PANEL_TITLES[activePanel]}
+              </DialogTitle>
+              <DialogDescription className="text-xs text-slate-500">
+                Live terminal activity for your selected market and account.
+              </DialogDescription>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <button type="button" onClick={resetTerminalLayout} className="terminal-layout-reset" aria-label="Reset panel sizes">
+                Reset layout
+              </button>
+              <DialogClose className="flex size-8 items-center justify-center rounded-md border border-[#1e2d45] text-slate-400 transition hover:bg-[#0b1724] hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" aria-label="Close activity window">
+                <X className="size-4" aria-hidden="true" />
+                <span className="sr-only">Close activity window</span>
+              </DialogClose>
+            </div>
+          </DialogHeader>
 
-        {/* Blotter content */}
-        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-0" hidden={!footerOpen}>
+          <div id="terminal-activity-content" className="min-h-0 flex-1 overflow-y-auto terminal-scroll">
 
 	          {/* ── Open Positions ── */}
 	          {activePanel === "positions" && (
@@ -4922,9 +4822,9 @@ const maxLeverage = 100
   {/* ── AI Trading Guide ── */}
           {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
 
-        </div>
-      </section>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="reference-statusbar shrink-0">
         <span><i />{online ? "Connected" : "Reconnecting"}</span>
