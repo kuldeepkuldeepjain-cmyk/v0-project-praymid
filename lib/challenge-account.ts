@@ -1,4 +1,6 @@
-export type ChallengeStatus = "not_started" | "pending_payment" | "active" | "passed" | "failed"
+import { contractSize, pip } from "@/lib/forex-instruments"
+
+export type ChallengeStatus = "not_started" | "pending_payment" | "payment_rejected" | "active" | "passed" | "failed"
 
 export interface ChallengePlan {
   key: string
@@ -23,14 +25,77 @@ export function getChallengePlan(key: unknown, plans = DEFAULT_CHALLENGE_PLANS) 
 }
 
 export function getChallengeStatusLabel(status: unknown) {
-  return ({ not_started: "Not started", pending_payment: "Payment pending", active: "In progress", passed: "Passed", failed: "Failed" } as Record<string, string>)[String(status)] ?? "Not started"
+  return ({
+    not_started: "Not started",
+    pending_payment: "Payment pending",
+    payment_rejected: "Payment needs attention",
+    active: "In progress",
+    passed: "Passed",
+    failed: "Failed",
+  } as Record<string, string>)[String(status)] ?? "Not started"
 }
 
-export function getChallengeSnapshot(plan: ChallengePlan, equity: number, dayStartEquity: number, tradingDays: number, status: ChallengeStatus = "active") {
+export function getChallengeSnapshot(
+  plan: ChallengePlan,
+  equity: number,
+  dayStartEquity: number,
+  tradingDays: number,
+  status: ChallengeStatus = "active",
+) {
   const profitTarget = plan.startingBalance * (1 + plan.profitTargetPercent / 100)
   const maxEquityDrawdown = plan.startingBalance * (1 - plan.maxDrawdownPercent / 100)
   const dailyLossFloor = dayStartEquity * (1 - plan.dailyLossLimitPercent / 100)
-  const breached = equity < maxEquityDrawdown || equity < dailyLossFloor
+  const breached = equity <= maxEquityDrawdown || equity <= dailyLossFloor
   const eligibleToPass = equity >= profitTarget && tradingDays >= plan.minimumTradingDays
-  return { profitTarget, maxEquityDrawdown, dailyLossFloor, breached, eligibleToPass, status: breached ? "failed" : eligibleToPass ? "passed" : status }
+  const profitPercent = ((equity - plan.startingBalance) / plan.startingBalance) * 100
+  const dailyLossPercent = dayStartEquity > 0 ? ((dayStartEquity - equity) / dayStartEquity) * 100 : 0
+  const drawdownPercent = ((plan.startingBalance - equity) / plan.startingBalance) * 100
+
+  return {
+    profitTarget,
+    maxEquityDrawdown,
+    dailyLossFloor,
+    breached,
+    eligibleToPass,
+    profitPercent,
+    dailyLossPercent,
+    drawdownPercent,
+    status: breached ? "failed" : eligibleToPass ? "passed" : status,
+  }
+}
+
+export function calculateChallengeMargin(pair: string, lotSize: number, price: number, leverage: number) {
+  if (![lotSize, price, leverage].every(Number.isFinite) || lotSize <= 0 || price <= 0 || leverage <= 0) return 0
+  const base = pair.split("/")[0]
+  const notional = base === "USD" ? lotSize * contractSize(pair) : lotSize * contractSize(pair) * price
+  return Number((notional / leverage).toFixed(2))
+}
+
+export function calculateChallengePnl(
+  pair: string,
+  direction: "BUY" | "SELL",
+  lotSize: number,
+  openPrice: number,
+  closePrice: number,
+  swap = 0,
+) {
+  if (![lotSize, openPrice, closePrice, swap].every(Number.isFinite) || lotSize <= 0 || openPrice <= 0 || closePrice <= 0) {
+    return { pnl: 0, pips: 0 }
+  }
+
+  const pipSize = pip(pair)
+  if (pipSize <= 0) return { pnl: 0, pips: 0 }
+
+  const directionMultiplier = direction === "BUY" ? 1 : -1
+  const priceDelta = (closePrice - openPrice) * directionMultiplier
+  const pipCount = priceDelta / pipSize
+  const isUsdBase = pair.split("/")[0] === "USD"
+  const pipValue = isUsdBase
+    ? (lotSize * contractSize(pair) * pipSize) / closePrice
+    : lotSize * contractSize(pair) * pipSize
+
+  return {
+    pnl: Number((pipCount * pipValue + swap).toFixed(2)),
+    pips: Number(pipCount.toFixed(1)),
+  }
 }

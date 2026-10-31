@@ -52,13 +52,16 @@ export async function POST(request: NextRequest) {
     }
 
     const participants = await query(
-      "SELECT id, email FROM participants WHERE LOWER(email) = $1 LIMIT 1",
+      "SELECT id, email, account_type FROM participants WHERE LOWER(email) = $1 LIMIT 1",
       [authenticatedEmail]
     ) as any[]
     if (participants.length === 0) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
     }
     const participant = participants[0]
+    if (participant.account_type === "challenge") {
+      return NextResponse.json({ success: false, message: "Challenge accounts cannot submit standard wallet top-ups." }, { status: 403 })
+    }
     const requestedFundingMode = String(fundingMode || "actual").toLowerCase()
     if (requestedFundingMode === "funded" && ![50, 100, 250, 500, 1000].includes(requestedAmount)) {
       return NextResponse.json({ success: false, message: "The first funded top-up must be $50, $100, $250, $500, or $1,000" }, { status: 400 })

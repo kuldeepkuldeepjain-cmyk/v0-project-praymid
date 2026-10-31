@@ -74,13 +74,15 @@ export async function POST(request: NextRequest) {
     }
 
     const participantRows = await query(
-      `SELECT id, email, account_balance, funded_amount, account_type,
+       `SELECT id, email, account_balance, funded_amount, account_type, challenge_status,
               funded_breach_status, account_frozen, is_frozen, status
+
        FROM participants WHERE LOWER(email) = $1 LIMIT 1`,
       [email],
     ) as any[]
     const participant = participantRows[0]
     if (!participant) return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
+    if (participant.account_type === "challenge") return NextResponse.json({ success: false, error: "Challenge accounts are not eligible for payouts until they pass the evaluation." }, { status: 403 })
 
     const currentBalance = Number(participant.account_balance) || 0
     if (participant.account_frozen || participant.is_frozen || participant.status === "frozen") {

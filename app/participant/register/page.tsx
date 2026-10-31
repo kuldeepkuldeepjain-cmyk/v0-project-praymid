@@ -12,8 +12,9 @@ import { Eye, EyeOff, AtSign, Mail, Phone, MapPin, Globe, User, Gift, RefreshCcw
 import { useToast } from "@/hooks/use-toast"
 import { useTheme } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { setParticipantAuth } from "@/lib/auth"
+import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
 
 const ADMIN_WHATSAPP = "+995574450590"
 
@@ -114,7 +115,8 @@ export default function ParticipantRegisterPage() {
     country: defaultCountry.name,
     state: "",
     referralCode: "",
-    accountType: "normal" as "normal" | "funded",
+    accountType: "normal" as "normal" | "funded" | "challenge",
+    challengePlanKey: DEFAULT_CHALLENGE_PLANS[1].key,
   })
   const [selectedCountryData, setSelectedCountryData] = useState<typeof COUNTRIES_DATA[0] | null>(defaultCountry)
 
@@ -246,6 +248,7 @@ export default function ParticipantRegisterPage() {
     state: formData.state,
     referralCode: formData.referralCode,
           accountType: formData.accountType,
+          challengePlanKey: formData.challengePlanKey,
         }),
       })
 
@@ -257,7 +260,7 @@ export default function ParticipantRegisterPage() {
       if (data.success) {
         if (data.requiresEmailVerification) {
           setEmailVerification({ email: data.email || formData.email, code: "" })
-          toast({ title: "Check your email", description: "Enter the 6-digit code we sent to verify your account." })
+          toast({ title: "Check your email", description: formData.accountType === "challenge" ? "Verify your email, then sign in to submit your Challenge fee and start the evaluation." : "Enter the 6-digit code we sent to verify your account." })
           return
         }
         // Set sessionStorage auth so isParticipantAuthenticated() returns true
@@ -467,10 +470,11 @@ export default function ParticipantRegisterPage() {
 
               <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: "0.08s" }}>
                 <Label className="text-slate-200 text-sm font-medium">Account Type *</Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                   {([
                     { value: "normal", title: "Normal Account", description: "Standard platform account" },
                     { value: "funded", title: "Funded Account", description: "Trade with a funded balance" },
+                    { value: "challenge", title: "Challenge Account", description: "Pass a rules-based trading evaluation" },
                   ] as const).map((option) => (
                     <button
                       key={option.value}
@@ -484,6 +488,31 @@ export default function ParticipantRegisterPage() {
                     </button>
                   ))}
                 </div>
+                {formData.accountType === "challenge" && (
+                  <div className={cn("rounded-xl border p-4", isLightTheme ? "border-amber-200 bg-amber-50" : "border-amber-400/20 bg-slate-950/70")}>
+                    <Label htmlFor="challengePlan" className={cn("text-sm font-semibold", isLightTheme ? "text-slate-900" : "text-slate-100")}>Choose your Challenge plan</Label>
+                    <Select value={formData.challengePlanKey} onValueChange={(value) => handleChange("challengePlanKey", value)}>
+                      <SelectTrigger id="challengePlan" className="mt-2">
+                        <SelectValue placeholder="Select a plan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {DEFAULT_CHALLENGE_PLANS.map((plan) => (
+                            <SelectItem key={plan.key} value={plan.key}>{plan.name} · ${plan.fee} fee · ${plan.startingBalance.toLocaleString()} virtual balance</SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                    {(() => {
+                      const plan = DEFAULT_CHALLENGE_PLANS.find((item) => item.key === formData.challengePlanKey) || DEFAULT_CHALLENGE_PLANS[1]
+                      return (
+                        <p className={cn("mt-3 text-xs leading-5", isLightTheme ? "text-slate-600" : "text-slate-400")}>
+                          {plan.profitTargetPercent}% target · {plan.dailyLossLimitPercent}% daily loss cap · {plan.maxDrawdownPercent}% maximum drawdown · {plan.minimumTradingDays} minimum trading days · up to {plan.leverage}:1 leverage. Pay the ${plan.fee} fee after email verification to activate the virtual balance.
+                        </p>
+                      )
+                    })()}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>

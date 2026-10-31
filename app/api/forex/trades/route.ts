@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
+import { calculateChallengeMargin, calculateChallengePnl, getChallengePlan, getChallengeSnapshot } from "@/lib/challenge-account"
+import { getChallengeExecutionPrice, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
+
+function utcDateKey() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+function utcDateColumnKey(value: unknown) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  return typeof value === "string" ? value.slice(0, 10) : ""
+}
+
+function getTradeFailure(error: unknown, fallbackMessage: string) {
+  const candidate = error as { status?: unknown } | null
+  const status = Number(candidate?.status)
+  const safeStatus = Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500
+  const message = safeStatus === 500 || !(error instanceof Error) ? fallbackMessage : error.message
+  return { status: safeStatus, message }
+}
 
 /**
  * GET /api/forex/trades?email=...
@@ -116,9 +135,24 @@ export async function POST(req: NextRequest) {
     const db = getPool()
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
 
-    const participantRows = await db.query("SELECT id, account_frozen, is_frozen, account_type, funded_breach_status FROM participants WHERE LOWER(email) = LOWER($1)", [participant_email])
+    const participantRows = await db.query(
+      `SELECT id, account_frozen, is_frozen, account_type, funded_breach_status,
+              challenge_status, challenge_plan_key, challenge_trading_days,
+              challenge_last_trading_date, challenge_day_start_equity, challenge_day_start_date,
+              challenge_peak_equity
+       FROM participants WHERE LOWER(email) = LOWER($1)`,
+      [participant_email],
+    )
     const participant = participantRows.rows[0]
     const participantId = participant?.id ?? null
+    const isChallengeAccount = participant?.account_type === "challenge"
+    const challengePlan = isChallengeAccount ? getChallengePlan(participant?.challenge_plan_key) : null
+    if ((action === "open" || action === "pending") && isChallengeAccount && participant.challenge_status !== "active") {
+      return NextResponse.json({ success: false, error: "Challenge trading is available only while your evaluation is active." }, { status: 403 })
+    }
+    if ((action === "open" || action === "pending") && isChallengeAccount && (!challengePlan || Number(trade.leverage) > challengePlan.leverage)) {
+      return NextResponse.json({ success: false, error: `Challenge leverage is capped at ${challengePlan?.leverage ?? 30}:1.` }, { status: 400 })
+    }
     if ((action === "open" || action === "pending") && participant?.account_type === "funded") {
       if (!Number.isFinite(trade.lotSize) || trade.lotSize < 0.01) {
         return NextResponse.json({ success: false, error: "Funded accounts require a minimum lot size of 0.01" }, { status: 400 })
@@ -130,6 +164,28 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Funded accounts require a minimum order amount of 3000" }, { status: 400 })
       }
     }
+    let challengeRates: Awaited<ReturnType<typeof getLiveChallengeRates>> = null
+    let challengeExecutionPrice: number | null = null
+    if (isChallengeAccount && (action === "open" || action === "partial_close")) {
+      challengeRates = await getLiveChallengeRates(req.nextUrl.origin)
+      if (!challengeRates) {
+        return NextResponse.json({ success: false, error: "A fresh server-side market quote is required for Challenge trades." }, { status: 503 })
+      }
+    }
+    if (isChallengeAccount && action === "open") {
+      challengeExecutionPrice = getChallengeExecutionPrice(challengeRates, trade.pair, trade.direction)
+      if (challengeExecutionPrice === null) {
+        return NextResponse.json({ success: false, error: "A fresh server-side market quote is required for Challenge trades." }, { status: 503 })
+      }
+      const challengeSl = trade.sl === null || trade.sl === undefined ? null : Number(trade.sl)
+      const challengeTp = trade.tp === null || trade.tp === undefined ? null : Number(trade.tp)
+      const validChallengeSl = challengeSl === null || (trade.direction === "BUY" ? challengeSl < challengeExecutionPrice : challengeSl > challengeExecutionPrice)
+      const validChallengeTp = challengeTp === null || (trade.direction === "BUY" ? challengeTp > challengeExecutionPrice : challengeTp < challengeExecutionPrice)
+      if (!validChallengeSl || !validChallengeTp) {
+        return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the verified execution price." }, { status: 400 })
+      }
+    }
+
     const tradeRisk = action === "open" || action === "pending"
       ? await inspectTradeRisk({ email: participant_email, trade })
       : { riskScore: 0, flags: [] as string[] }
@@ -155,19 +211,114 @@ export async function POST(req: NextRequest) {
 
     if (action === "open") {
       if (!participant) return NextResponse.json({ success: false, error: "Participant account was not found" }, { status: 404 })
-      const margin = Number(trade.margin)
-      if (!Number.isFinite(margin) || margin <= 0) return NextResponse.json({ success: false, error: "Invalid margin" }, { status: 400 })
-
+      const executionPrice = isChallengeAccount ? challengeExecutionPrice : Number(trade.openPrice)
       const client = await db.connect()
       try {
         await client.query("BEGIN")
-        const account = await client.query(
-          "SELECT id, account_balance FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE",
+        const accountResult = await client.query(
+          `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
+                  challenge_trading_days, challenge_last_trading_date, challenge_day_start_equity,
+                  challenge_day_start_date, challenge_peak_equity
+           FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
           [participant_email],
         )
-        if (!account.rows[0]) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
-        const balanceBefore = Number(account.rows[0].account_balance) || 0
+        const account = accountResult.rows[0]
+        if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
+        const accountIsChallenge = account.account_type === "challenge"
+        const accountChallengePlan = accountIsChallenge ? getChallengePlan(account.challenge_plan_key) : null
+        if (accountIsChallenge && (account.challenge_status !== "active" || !accountChallengePlan)) {
+          throw Object.assign(new Error("Challenge trading is not active."), { status: 403 })
+        }
+        const margin = accountIsChallenge
+          ? calculateChallengeMargin(trade.pair, trade.lotSize, Number(executionPrice), trade.leverage)
+          : Number(trade.margin)
+        if (!Number.isFinite(margin) || margin <= 0) throw Object.assign(new Error("Invalid margin"), { status: 400 })
+        if (accountIsChallenge && trade.leverage > (accountChallengePlan?.leverage ?? 30)) {
+          throw Object.assign(new Error(`Challenge leverage is capped at ${accountChallengePlan?.leverage ?? 30}:1.`), { status: 400 })
+        }
+        const balanceBefore = Number(account.account_balance) || 0
         if (balanceBefore < margin) throw Object.assign(new Error(`Insufficient balance. Available: $${balanceBefore.toFixed(2)}, required: $${margin.toFixed(2)}`), { status: 400 })
+
+        if (accountIsChallenge && accountChallengePlan) {
+          const currentPositions = await client.query(
+            `SELECT pair, direction, lot_size, open_price FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          const currentPnl = getChallengeOpenPositionPnl(currentPositions.rows, challengeRates)
+          if (!currentPnl.complete) throw Object.assign(new Error("Current market quotes are unavailable for your open Challenge positions."), { status: 503 })
+          const committed = await client.query(
+            `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          const equityBefore = Number((balanceBefore + Number(committed.rows[0]?.amount || 0) + currentPnl.pnl).toFixed(2))
+          const today = utcDateKey()
+          const lastTradingDate = String(account.challenge_last_trading_date || "").slice(0, 10)
+          const isNewTradingDay = lastTradingDate !== today
+          const isNewChallengeDay = utcDateColumnKey(account.challenge_day_start_date) !== today
+          const dayStartEquity = isNewChallengeDay
+            ? equityBefore
+            : Number(account.challenge_day_start_equity) || accountChallengePlan.startingBalance
+          const tradingDays = (Number(account.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
+          const snapshot = getChallengeSnapshot(accountChallengePlan, equityBefore, dayStartEquity, tradingDays, "active")
+          if (snapshot.breached) {
+            await client.query(
+              `UPDATE participants SET challenge_status = 'failed', challenge_failed_at = NOW(),
+                 challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $1), $1), updated_at = NOW()
+               WHERE id = $2`,
+              [equityBefore, account.id],
+            )
+            await client.query(
+              `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
+              [participant_email],
+            )
+            await client.query("COMMIT")
+            return NextResponse.json({ success: false, error: "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
+          }
+
+          const inserted = await client.query(
+            `INSERT INTO forex_trades
+               (id, participant_id, participant_email, pair, direction, lot_size, leverage,
+                open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
+                status, open_time, open_timestamp)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$8,$12,0,'open',$13,$14)
+             ON CONFLICT (id) DO NOTHING RETURNING id`,
+            [trade.id, account.id, participant_email, trade.pair, trade.direction, trade.lotSize,
+              trade.leverage, executionPrice, trade.sl, trade.tp, trade.trailingStopPips,
+              margin, trade.openTime, trade.openTimestamp],
+          )
+          if (inserted.rowCount !== 1) {
+            const existing = await client.query("SELECT participant_email, status FROM forex_trades WHERE id = $1", [trade.id])
+            if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "open") {
+              throw Object.assign(new Error("Trade ID already exists"), { status: 409 })
+            }
+            await client.query("COMMIT")
+            return NextResponse.json({ success: true, alreadySaved: true, newBalance: balanceBefore })
+          }
+          const balanceAfter = Number((balanceBefore - margin).toFixed(2))
+          await client.query(
+            `UPDATE participants SET account_balance = $1, challenge_day_start_equity = $2,
+               challenge_day_start_date = $4::date, challenge_trading_days = $3,
+               challenge_last_trading_date = $4::date,
+               challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $5), $5), updated_at = NOW()
+             WHERE id = $6`,
+            [balanceAfter, dayStartEquity, tradingDays, today, equityBefore, account.id],
+          )
+          await client.query(
+            `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+             VALUES ($1, $2, 'forex_margin_lock', $3, $4, $5, $6, 'completed')`,
+            [account.id, participant_email, margin, `Margin locked — ${trade.pair} ${trade.direction} — ${trade.id}`, balanceBefore, balanceAfter],
+          )
+          await client.query("COMMIT")
+          return NextResponse.json({
+            success: true,
+            riskFlags: tradeRisk.flags,
+            newBalance: balanceAfter,
+            execution: { price: executionPrice, margin },
+          })
+        }
 
         const inserted = await client.query(
           `INSERT INTO forex_trades
@@ -177,7 +328,7 @@ export async function POST(req: NextRequest) {
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,'open',$14,$15)
            ON CONFLICT (id) DO NOTHING
            RETURNING id`,
-          [trade.id, account.rows[0].id, participant_email, trade.pair, trade.direction,
+          [trade.id, account.id, participant_email, trade.pair, trade.direction,
             trade.lotSize, trade.leverage, trade.openPrice, trade.sl, trade.tp,
             trade.trailingStopPips, trade.trailingPeak, margin, trade.openTime, trade.openTimestamp]
         )
@@ -190,11 +341,11 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ success: true, alreadySaved: true, newBalance: balanceBefore })
         }
         const balanceAfter = Number((balanceBefore - margin).toFixed(2))
-        await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, account.rows[0].id])
+        await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, account.id])
         await client.query(
           `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
            VALUES ($1, $2, 'forex_margin_lock', $3, $4, $5, $6, 'completed')`,
-          [account.rows[0].id, participant_email, margin, `Margin locked — ${trade.pair} ${trade.direction} — ${trade.id}`, balanceBefore, balanceAfter],
+          [account.id, participant_email, margin, `Margin locked — ${trade.pair} ${trade.direction} — ${trade.id}`, balanceBefore, balanceAfter],
         )
         await client.query("COMMIT")
         return NextResponse.json({ success: true, riskFlags: tradeRisk.flags, newBalance: balanceAfter })
@@ -252,6 +403,150 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, alreadySaved: true })
           }
           return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        }
+
+        if (isChallengeAccount) {
+          const parentResult = await client.query(
+            `SELECT id, participant_id, pair, direction, lot_size, leverage, open_price,
+                    sl, tp, trailing_stop_pips, trailing_peak, margin, open_time, open_timestamp, status
+             FROM forex_trades
+             WHERE id = $1 AND LOWER(participant_email) = LOWER($2) FOR UPDATE`,
+            [sourceTradeId, participant_email],
+          )
+          const parent = parentResult.rows[0]
+          const closeLots = Number(trade.lotSize)
+          const parentLots = Number(parent?.lot_size)
+          if (!parent || parent.status !== "open" || !Number.isFinite(closeLots) || closeLots <= 0 || closeLots >= parentLots) {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "Open trade was not found or the partial close amount is invalid." }, { status: 409 })
+          }
+
+          const executionPrice = getChallengeExecutionPrice(challengeRates, parent.pair, parent.direction, true)
+          if (executionPrice === null) {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "A current quote is unavailable for this instrument." }, { status: 503 })
+          }
+          const fractionClosed = closeLots / parentLots
+          const closedMargin = Number((Number(parent.margin) * fractionClosed).toFixed(2))
+          const nextLots = Number((parentLots - closeLots).toFixed(2))
+          const nextMargin = Number((Number(parent.margin) - closedMargin).toFixed(2))
+          const calculated = calculateChallengePnl(parent.pair, parent.direction, closeLots, Number(parent.open_price), executionPrice)
+          const actualCloseTime = new Date().toISOString()
+          const participantResult = await client.query(
+            `SELECT id, account_balance, challenge_status, challenge_plan_key,
+                    challenge_trading_days, challenge_last_trading_date,
+                    challenge_day_start_equity, challenge_day_start_date, challenge_peak_equity
+             FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
+            [participant_email],
+          )
+          const participant = participantResult.rows[0]
+          if (!participant) throw new Error("Participant account was not found")
+          const balanceBefore = Number(participant.account_balance) || 0
+          const settlement = Number((closedMargin + calculated.pnl).toFixed(2))
+          const balanceAfter = Number((balanceBefore + settlement).toFixed(2))
+
+          const preClosePositionsResult = await client.query(
+            `SELECT pair, direction, lot_size, open_price FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          const preClosePnl = getChallengeOpenPositionPnl(preClosePositionsResult.rows, challengeRates)
+          const preCloseMarginResult = await client.query(
+            `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          const equityBefore = Number((balanceBefore + Number(preCloseMarginResult.rows[0]?.amount || 0) + (preClosePnl.complete ? preClosePnl.pnl : 0)).toFixed(2))
+
+          await client.query(
+            `UPDATE forex_trades SET lot_size = $1, margin = $2, updated_at = NOW()
+             WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open'`,
+            [nextLots, nextMargin, sourceTradeId, participant_email],
+          )
+          const insertedClose = await client.query(
+            `INSERT INTO forex_trades
+               (id, participant_id, participant_email, pair, direction, lot_size, leverage,
+                open_price, sl, tp, trailing_stop_pips, trailing_peak, margin, swap,
+                close_price, close_reason, final_pnl, final_pips, final_swap,
+                status, open_time, open_timestamp, close_time, close_duration)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,$14,$15,$16,$17,0,'closed',$18,$19,$20,$21)
+             ON CONFLICT (id) DO NOTHING RETURNING id`,
+            [trade.id, parent.participant_id, participant_email, parent.pair, parent.direction,
+              closeLots, parent.leverage, parent.open_price, parent.sl, parent.tp,
+              parent.trailing_stop_pips, parent.trailing_peak, closedMargin, executionPrice,
+              trade.closeReason || "manual", calculated.pnl, calculated.pips,
+              parent.open_time, parent.open_timestamp, actualCloseTime, trade.closeDuration || null],
+          )
+          if (!insertedClose.rowCount) throw Object.assign(new Error("Trade ID already exists"), { status: 409 })
+
+          const plan = getChallengePlan(participant.challenge_plan_key)
+          let challengeStatus = participant.challenge_status
+          let nextTradingDays = Number(participant.challenge_trading_days) || 0
+          let nextDayStart = Number(participant.challenge_day_start_equity) || plan?.startingBalance || 0
+          let currentEquity: number | null = null
+          if (plan && participant.challenge_status === "active") {
+            const remainingTradesResult = await client.query(
+              `SELECT pair, direction, lot_size, open_price FROM forex_trades
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+              [participant_email],
+            )
+            const remainingTrades = remainingTradesResult.rows
+            const remainingPnl = getChallengeOpenPositionPnl(remainingTrades, challengeRates)
+            if (!remainingPnl.complete) throw Object.assign(new Error("Current market quotes are unavailable for your remaining Challenge positions."), { status: 503 })
+            const remainingMarginResult = await client.query(
+              `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+              [participant_email],
+            )
+            const remainingMargin = Number(remainingMarginResult.rows[0]?.amount) || 0
+            const today = utcDateKey()
+            const isNewTradingDay = String(participant.challenge_last_trading_date || "").slice(0, 10) !== today
+            const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
+            nextTradingDays += isNewTradingDay ? 1 : 0
+            nextDayStart = isNewChallengeDay ? equityBefore : nextDayStart
+            currentEquity = Number((balanceAfter + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
+            const snapshot = getChallengeSnapshot(plan, currentEquity, nextDayStart, nextTradingDays, "active")
+            challengeStatus = snapshot.breached
+              ? "failed"
+              : snapshot.eligibleToPass && remainingTrades.length === 0
+                ? "passed"
+                : "active"
+            await client.query(
+              `UPDATE participants SET account_balance = $1, challenge_status = $2,
+                 challenge_failed_at = CASE WHEN $2 = 'failed' THEN NOW() ELSE challenge_failed_at END,
+                 challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
+                 challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
+                 challenge_trading_days = $4, challenge_last_trading_date = $5::date,
+                 challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $6), $6), updated_at = NOW()
+               WHERE id = $7`,
+              [balanceAfter, challengeStatus, nextDayStart, nextTradingDays, today, Math.max(Number(participant.challenge_peak_equity) || 0, currentEquity), participant.id],
+            )
+            if (challengeStatus !== "active") {
+              await client.query(
+                `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+                 WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
+                [participant_email],
+              )
+            }
+          } else {
+            await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, participant.id])
+          }
+          await client.query(
+            `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')`,
+            [participant.id, participant_email, settlement < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(settlement), `Partial trade close settlement — ${trade.id}`, balanceBefore, balanceAfter],
+          )
+          await client.query("COMMIT")
+          return NextResponse.json({
+            success: true,
+            newBalance: balanceAfter,
+            settlement,
+            finalPnl: calculated.pnl,
+            finalPips: calculated.pips,
+            closePrice: executionPrice,
+            challengeStatus,
+            challengeEquity: currentEquity,
+          })
         }
 
         const parentUpdate = await client.query(
@@ -326,7 +621,8 @@ export async function POST(req: NextRequest) {
     })
   } catch (e: any) {
     console.error("[v0] forex trades POST error:", e)
-    return NextResponse.json({ success: false, error: "Trade could not be executed. Please try again." }, { status: 500 })
+    const failure = getTradeFailure(e, "Trade could not be executed. Please try again.")
+    return NextResponse.json({ success: false, error: failure.message }, { status: failure.status })
   }
 }
 
@@ -361,6 +657,17 @@ export async function PATCH(req: NextRequest) {
 
     const db = getPool()
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
+    const accountRuleResult = await db.query(
+      "SELECT account_type, challenge_status FROM participants WHERE LOWER(email) = LOWER($1) LIMIT 1",
+      [participant_email],
+    )
+    const isChallengeAccount = accountRuleResult.rows[0]?.account_type === "challenge"
+    if (isChallengeAccount && action !== "close" && action !== "sync" && accountRuleResult.rows[0]?.challenge_status !== "active") {
+      return NextResponse.json({ success: false, error: "Challenge trading is not active." }, { status: 403 })
+    }
+    if (isChallengeAccount && action === "partial_reduce") {
+      return NextResponse.json({ success: false, error: "Use the verified partial-close flow to reduce Challenge positions." }, { status: 403 })
+    }
 
     if (action === "close") {
       const { closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize, margin } = body
@@ -369,11 +676,22 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ success: false, error: "Invalid close calculation" }, { status: 400 })
       }
 
+      const accountTypeResult = await db.query(
+        "SELECT account_type FROM participants WHERE LOWER(email) = LOWER($1) LIMIT 1",
+        [participant_email],
+      )
+      const isChallengeAccount = accountTypeResult.rows[0]?.account_type === "challenge"
+      const challengeRates = isChallengeAccount ? await getLiveChallengeRates(req.nextUrl.origin) : null
+      if (isChallengeAccount && !challengeRates) {
+        return NextResponse.json({ success: false, error: "A fresh server-side market quote is required to close Challenge trades." }, { status: 503 })
+      }
+
       const client = await db.connect()
       try {
         await client.query("BEGIN")
         const existingTrade = await client.query(
-          `SELECT participant_id, participant_email, margin, status
+          `SELECT participant_id, participant_email, pair, direction, lot_size, leverage,
+                  open_price, margin, status
            FROM forex_trades
            WHERE id = $1 AND LOWER(participant_email) = LOWER($2)
            FOR UPDATE`,
@@ -393,38 +711,124 @@ export async function PATCH(req: NextRequest) {
           return NextResponse.json({ success: false, error: "Trade is not open" }, { status: 409 })
         }
 
+        const actualClosePrice = isChallengeAccount
+          ? getChallengeExecutionPrice(challengeRates, currentTrade.pair, currentTrade.direction, true)
+          : Number(closePrice)
+        if (actualClosePrice === null || !Number.isFinite(actualClosePrice)) {
+          await client.query("ROLLBACK")
+          return NextResponse.json({ success: false, error: "A current quote is unavailable for this instrument." }, { status: 503 })
+        }
+        const actualPnl = isChallengeAccount
+          ? calculateChallengePnl(currentTrade.pair, currentTrade.direction, Number(currentTrade.lot_size), Number(currentTrade.open_price), actualClosePrice).pnl
+          : Number(finalPnl)
+        const actualPips = isChallengeAccount
+          ? calculateChallengePnl(currentTrade.pair, currentTrade.direction, Number(currentTrade.lot_size), Number(currentTrade.open_price), actualClosePrice).pips
+          : Number(finalPips)
+        const actualSwap = isChallengeAccount ? 0 : Number(finalSwap)
+        const actualMargin = Number(currentTrade.margin)
+        const serverCloseTime = isChallengeAccount ? new Date().toISOString() : closeTime
+
         const result = await client.query(
           `UPDATE forex_trades
              SET status = 'closed', close_price = $1, close_time = $2, close_duration = $3,
                  final_pnl = $4, final_pips = $5, final_swap = $6, close_reason = $7,
-                 lot_size = COALESCE($8, lot_size), margin = COALESCE($9, margin), updated_at = NOW()
+                 lot_size = $8, margin = $9, updated_at = NOW()
            WHERE id = $10 AND status = 'open'`,
-          [closePrice, closeTime, closeDuration, finalPnl, finalPips, finalSwap, closeReason, lotSize ?? null, margin ?? null, id]
+          [actualClosePrice, serverCloseTime, closeDuration, actualPnl, actualPips, actualSwap, closeReason, currentTrade.lot_size, actualMargin, id],
         )
         if (result.rowCount !== 1) throw new Error("Trade close could not be saved")
 
-        const settlement = Number((Number(currentTrade.margin) + Number(finalPnl)).toFixed(2))
-        const participant = await client.query(
-          `SELECT id, account_balance FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
+        const settlement = Number((actualMargin + actualPnl).toFixed(2))
+        const participantResult = await client.query(
+          `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
+                  challenge_trading_days, challenge_last_trading_date,
+                  challenge_day_start_equity, challenge_day_start_date, challenge_peak_equity
+           FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
           [participant_email],
         )
-        if (!participant.rows[0]) throw new Error("Participant account was not found")
-        const balanceBefore = Number(participant.rows[0].account_balance) || 0
+        const participant = participantResult.rows[0]
+        if (!participant) throw new Error("Participant account was not found")
+        const balanceBefore = Number(participant.account_balance) || 0
         const balanceAfter = Number((balanceBefore + settlement).toFixed(2))
-        if (balanceAfter < 0) throw new Error("Insufficient balance for trade settlement")
+        if (balanceAfter < 0 && !isChallengeAccount) throw new Error("Insufficient balance for trade settlement")
 
-        await client.query(
-          `UPDATE participants SET account_balance = $1 WHERE id = $2`,
-          [balanceAfter, participant.rows[0].id],
-        )
+        let challengeStatus = participant.challenge_status
+        let challengeEquity: number | null = null
+        if (isChallengeAccount && participant.challenge_status === "active") {
+          const plan = getChallengePlan(participant.challenge_plan_key)
+          if (plan) {
+            const remainingTradesResult = await client.query(
+              `SELECT pair, direction, lot_size, open_price FROM forex_trades
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+              [participant_email],
+            )
+            const remainingTrades = remainingTradesResult.rows
+            const remainingPnl = getChallengeOpenPositionPnl(remainingTrades, challengeRates)
+            if (!remainingPnl.complete) throw Object.assign(new Error("Current market quotes are unavailable for your remaining Challenge positions."), { status: 503 })
+            const remainingMarginResult = await client.query(
+              `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+              [participant_email],
+            )
+            const remainingMargin = Number(remainingMarginResult.rows[0]?.amount) || 0
+            const equityBefore = Number((balanceBefore + actualMargin + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
+            const today = utcDateKey()
+            const lastTradingDate = String(participant.challenge_last_trading_date || "").slice(0, 10)
+            const isNewTradingDay = lastTradingDate !== today
+            const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
+            const dayStartEquity = isNewChallengeDay
+              ? equityBefore
+              : Number(participant.challenge_day_start_equity) || plan.startingBalance
+            const tradingDays = (Number(participant.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
+            challengeEquity = Number((balanceAfter + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
+            const snapshot = getChallengeSnapshot(plan, challengeEquity, dayStartEquity, tradingDays, "active")
+            challengeStatus = snapshot.breached
+              ? "failed"
+              : snapshot.eligibleToPass && remainingTrades.length === 0
+                ? "passed"
+                : "active"
+
+            await client.query(
+              `UPDATE participants SET account_balance = $1, challenge_status = $2,
+                 challenge_failed_at = CASE WHEN $2 = 'failed' THEN NOW() ELSE challenge_failed_at END,
+                 challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
+                 challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
+                 challenge_trading_days = $4, challenge_last_trading_date = $5::date,
+                 challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $6), $6), updated_at = NOW()
+               WHERE id = $7`,
+              [balanceAfter, challengeStatus, dayStartEquity, tradingDays, today, Math.max(Number(participant.challenge_peak_equity) || 0, challengeEquity), participant.id],
+            )
+            if (challengeStatus !== "active") {
+              await client.query(
+                `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+                 WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
+                [participant_email],
+              )
+            }
+          } else {
+            await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, participant.id])
+          }
+        } else {
+          await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, participant.id])
+        }
+
         await client.query(
           `INSERT INTO transactions
              (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
            VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')`,
-          [participant.rows[0].id, participant_email, settlement < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(settlement), `Trade close settlement — ${id}`, balanceBefore, balanceAfter],
+          [participant.id, participant_email, settlement < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(settlement), `Trade close settlement — ${id}`, balanceBefore, balanceAfter],
         )
         await client.query("COMMIT")
-        return NextResponse.json({ success: true, newBalance: balanceAfter, settlement })
+        return NextResponse.json({
+          success: true,
+          newBalance: balanceAfter,
+          settlement,
+          finalPnl: actualPnl,
+          finalPips: actualPips,
+          closePrice: actualClosePrice,
+          challengeStatus,
+          challengeEquity,
+        })
       } catch (error) {
         await client.query("ROLLBACK")
         throw error
@@ -456,6 +860,132 @@ export async function PATCH(req: NextRequest) {
       if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
     } else if (action === "fill") {
       const { openPrice, openTime, openTimestamp } = body
+      const accountTypeResult = await db.query(
+        `SELECT account_type, challenge_status, challenge_plan_key
+         FROM participants WHERE LOWER(email) = LOWER($1) LIMIT 1`,
+        [participant_email],
+      )
+      const isChallengeAccount = accountTypeResult.rows[0]?.account_type === "challenge"
+      if (isChallengeAccount) {
+        const plan = getChallengePlan(accountTypeResult.rows[0]?.challenge_plan_key)
+        if (accountTypeResult.rows[0]?.challenge_status !== "active" || !plan) {
+          return NextResponse.json({ success: false, error: "Challenge trading is not active." }, { status: 403 })
+        }
+        const rates = await getLiveChallengeRates(req.nextUrl.origin)
+        if (!rates) return NextResponse.json({ success: false, error: "A fresh server-side market quote is required to fill Challenge orders." }, { status: 503 })
+
+        const client = await db.connect()
+        try {
+          await client.query("BEGIN")
+          const pendingResult = await client.query(
+            `SELECT id, pair, direction, lot_size, leverage, status FROM forex_trades
+             WHERE id = $1 AND LOWER(participant_email) = LOWER($2) FOR UPDATE`,
+            [id, participant_email],
+          )
+          const pending = pendingResult.rows[0]
+          if (!pending || pending.status !== "pending") {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "Pending order not found" }, { status: 404 })
+          }
+          const participantResult = await client.query(
+            `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
+                    challenge_trading_days, challenge_last_trading_date, challenge_day_start_equity,
+                    challenge_day_start_date, challenge_peak_equity
+             FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
+            [participant_email],
+          )
+          const participant = participantResult.rows[0]
+          if (!participant || participant.account_type !== "challenge" || participant.challenge_status !== "active") {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "Challenge trading is not active." }, { status: 403 })
+          }
+          const challengePlan = getChallengePlan(participant.challenge_plan_key)
+          if (!challengePlan || Number(pending.leverage) > challengePlan.leverage) {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "Challenge leverage limit exceeded." }, { status: 400 })
+          }
+          const executionPrice = getChallengeExecutionPrice(rates, pending.pair, pending.direction)
+          if (executionPrice === null) {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "A current quote is unavailable for this instrument." }, { status: 503 })
+          }
+          const margin = calculateChallengeMargin(pending.pair, Number(pending.lot_size), executionPrice, Number(pending.leverage))
+          const balanceBefore = Number(participant.account_balance) || 0
+          if (balanceBefore < margin) {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "Insufficient balance to fill this Challenge order." }, { status: 400 })
+          }
+          const openPositionsResult = await client.query(
+            `SELECT pair, direction, lot_size, open_price FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          const openPnl = getChallengeOpenPositionPnl(openPositionsResult.rows, rates)
+          if (!openPnl.complete) {
+            await client.query("ROLLBACK")
+            return NextResponse.json({ success: false, error: "Quotes are unavailable for your open Challenge positions." }, { status: 503 })
+          }
+          const openMarginResult = await client.query(
+            `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          const openMargin = Number(openMarginResult.rows[0]?.amount) || 0
+          const equityBefore = Number((balanceBefore + openMargin + openPnl.pnl).toFixed(2))
+          const today = utcDateKey()
+          const lastTradingDate = String(participant.challenge_last_trading_date || "").slice(0, 10)
+          const isNewTradingDay = lastTradingDate !== today
+          const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
+          const dayStartEquity = isNewChallengeDay
+            ? equityBefore
+            : Number(participant.challenge_day_start_equity) || challengePlan.startingBalance
+          const tradingDays = (Number(participant.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
+          const snapshot = getChallengeSnapshot(challengePlan, equityBefore, dayStartEquity, tradingDays, "active")
+          if (snapshot.breached) {
+            await client.query(
+              `UPDATE participants SET challenge_status = 'failed', challenge_failed_at = NOW(), updated_at = NOW()
+               WHERE id = $1`,
+              [participant.id],
+            )
+            await client.query(
+              `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
+              [participant_email],
+            )
+            await client.query("COMMIT")
+            return NextResponse.json({ success: false, error: "Challenge loss limit reached. The evaluation is now failed." }, { status: 403 })
+          }
+
+          const updated = await client.query(
+            `UPDATE forex_trades SET status = 'open', open_price = $1, trailing_peak = $1,
+               margin = $2, open_time = $3, open_timestamp = $4, updated_at = NOW()
+             WHERE id = $5 AND status = 'pending' RETURNING id`,
+            [executionPrice, margin, new Date().toISOString(), Date.now(), id],
+          )
+          if (!updated.rowCount) throw new Error("Pending order could not be filled")
+          const balanceAfter = Number((balanceBefore - margin).toFixed(2))
+          await client.query(
+            `UPDATE participants SET account_balance = $1, challenge_day_start_equity = $2,
+               challenge_day_start_date = $4::date, challenge_trading_days = $3,
+               challenge_last_trading_date = $4::date,
+               challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $5), $5), updated_at = NOW()
+             WHERE id = $6`,
+            [balanceAfter, dayStartEquity, tradingDays, today, equityBefore, participant.id],
+          )
+          await client.query(
+            `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+             VALUES ($1, $2, 'forex_margin_lock', $3, $4, $5, $6, 'completed')`,
+            [participant.id, participant_email, margin, `Margin locked — ${pending.pair} ${pending.direction} — ${id}`, balanceBefore, balanceAfter],
+          )
+          await client.query("COMMIT")
+          return NextResponse.json({ success: true, newBalance: balanceAfter, execution: { price: executionPrice, margin } })
+        } catch (error) {
+          await client.query("ROLLBACK")
+          throw error
+        } finally {
+          client.release()
+        }
+      }
       const result = await db.query(
         `UPDATE forex_trades
            SET status = 'open', open_price = $1, trailing_peak = $1, open_time = $2, open_timestamp = $3, updated_at = NOW()
@@ -468,7 +998,7 @@ export async function PATCH(req: NextRequest) {
       const { currentPrice, pnl, pips, swap } = body
       const result = await db.query(
         `UPDATE forex_trades SET swap = $1, updated_at = NOW() WHERE id = $2 AND LOWER(participant_email) = LOWER($3) AND status = 'open'`,
-        [swap ?? 0, id, participant_email]
+        [isChallengeAccount ? 0 : (swap ?? 0), id, participant_email]
       )
       if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
     } else {
@@ -486,8 +1016,9 @@ export async function PATCH(req: NextRequest) {
     })
     return NextResponse.json({ success: true })
   } catch (e: any) {
-    console.error("[v0] forex trades PATCH error:", e.message)
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 })
+    console.error("[v0] forex trades PATCH error:", e)
+    const failure = getTradeFailure(e, "Trade could not be updated. Please try again.")
+    return NextResponse.json({ success: false, error: failure.message }, { status: failure.status })
   }
 }
 

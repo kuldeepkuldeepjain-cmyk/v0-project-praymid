@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────������───────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────�������───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1361,6 +1361,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   kycVerified = false,
   walletBalance: externalBalance = 0,
   isFundedAccount = false,
+  isChallengeAccount = false,
   fundedAmount,
   isFrozen = false,
   onBalanceUpdated,
@@ -1378,6 +1379,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   kycVerified?: boolean
   walletBalance?: number
   isFundedAccount?: boolean
+  isChallengeAccount?: boolean
   fundedAmount?: number
   isFrozen?: boolean
   onBalanceUpdated?: (newBalance: number) => void
@@ -1410,7 +1412,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => window.clearInterval(timer)
   }, [])
   const [lotSize, setLotSize]         = useState("0.01")
-  const [leverage, setLeverage]       = useState("10")
+  const [leverage, setLeverage]       = useState(isChallengeAccount ? "30" : "10")
   const defaultOrderInstrumentRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -1419,7 +1421,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     setLotSize(defaultLotsForOrderValue(selectedPair.symbol, midPrice, 3000))
     defaultOrderInstrumentRef.current = selectedPair.symbol
   }, [selectedPair?.symbol])
-  const effectiveLeverage = Math.min(isFundedAccount ? (parseFloat(leverage) || 1) : (parseFloat(leverage) || 1), 100)
+  const effectiveLeverage = Math.min(parseFloat(leverage) || 1, isChallengeAccount ? 30 : 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -2180,12 +2182,43 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
             pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
           }
           setOpenTrades(p => [newTrade, ...p])
-          adjustWalletBalance(
-            -margin,
-            `Pending fill — ${order.direction} ${order.lotSize}L ${order.pair} @ ${fmt(fillPrice, order.pair)}`
-          )
-          persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
-          showToast("info", `Pending ${order.orderType.replace("_"," ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
+          if (isChallengeAccount) {
+            void (async () => {
+              const saved = await persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
+              if (!saved) {
+                openTradesRef.current = openTradesRef.current.filter(item => item.id !== order.id)
+                setOpenTrades(current => current.filter(item => item.id !== order.id))
+                setPendingOrders(current => current.some(item => item.id === order.id) ? current : [order, ...current])
+                return
+              }
+              const result = saved as Record<string, unknown>
+              const execution = result.execution as { price?: number; margin?: number } | undefined
+              const verifiedTrade = {
+                ...newTrade,
+                openPrice: typeof execution?.price === "number" ? execution.price : newTrade.openPrice,
+                currentPrice: typeof execution?.price === "number" ? execution.price : newTrade.currentPrice,
+                trailingPeak: typeof execution?.price === "number" ? execution.price : newTrade.trailingPeak,
+                margin: typeof execution?.margin === "number" ? execution.margin : newTrade.margin,
+              }
+              openTradesRef.current = openTradesRef.current.map(item => item.id === order.id ? verifiedTrade : item)
+              setOpenTrades(current => current.map(item => item.id === order.id ? verifiedTrade : item))
+              if (typeof result.newBalance === "number") {
+                suppressExternalSync.current = true
+                setWalletBalance(result.newBalance)
+                setBalanceLoaded(true)
+                onBalanceUpdated?.(result.newBalance)
+                setTimeout(() => { suppressExternalSync.current = false }, 800)
+              }
+              showToast("info", `Challenge pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(verifiedTrade.openPrice, order.pair)}`)
+            })()
+          } else {
+            void adjustWalletBalance(
+              -margin,
+              `Pending fill — ${order.direction} ${order.lotSize}L ${order.pair} @ ${fmt(fillPrice, order.pair)}`
+            )
+            void persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
+            showToast("info", `Pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
+          }
           return prev.filter(o => o.id !== id)
         })
       })
@@ -2642,12 +2675,20 @@ const maxLeverage = 100
           return
         }
 
+        const response = saved as Record<string, unknown>
+        const verifiedClose: ClosedTrade = {
+          ...closed,
+          closePrice: typeof response.closePrice === "number" ? response.closePrice : closed.closePrice,
+          finalPnl: typeof response.finalPnl === "number" ? response.finalPnl : closed.finalPnl,
+          finalPips: typeof response.finalPips === "number" ? response.finalPips : closed.finalPips,
+          closeTime: typeof response.closePrice === "number" ? new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : closed.closeTime,
+        }
         setClosedTrades(prev => {
-          if (prev.some(item => item.id === closed.id)) return prev
-          return [closed, ...prev.slice(0, 99)]
+          if (prev.some(item => item.id === verifiedClose.id)) return prev
+          return [verifiedClose, ...prev.slice(0, 99)]
         })
 
-        const newBalance = saved && typeof saved.newBalance === "number" ? saved.newBalance : null
+        const newBalance = typeof response.newBalance === "number" ? response.newBalance : null
         if (newBalance === null) return
         suppressExternalSync.current = true
         setWalletBalance(newBalance)
@@ -2655,10 +2696,10 @@ const maxLeverage = 100
         onBalanceUpdated?.(newBalance)
         setTimeout(() => { suppressExternalSync.current = false }, 800)
 
-        showToast(reason === "stop_out" ? "error" : (finalPnl >= 0 ? "success" : "error"),
+        showToast(reason === "stop_out" ? "error" : (verifiedClose.finalPnl >= 0 ? "success" : "error"),
           reason === "stop_out"
-            ? `Stop-out: force-closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — margin level hit 100% (${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)})`
-            : `Closed ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)} (${pipCount >= 0 ? "+" : ""}${pipCount.toFixed(1)} pips)`
+            ? `Stop-out: force-closed ${trade.pair} @ ${fmt(verifiedClose.closePrice, trade.pair)} — margin level hit 100% (${verifiedClose.finalPnl >= 0 ? "+" : ""}$${verifiedClose.finalPnl.toFixed(2)})`
+            : `Closed ${trade.pair} @ ${fmt(verifiedClose.closePrice, trade.pair)} — ${verifiedClose.finalPnl >= 0 ? "+" : ""}$${verifiedClose.finalPnl.toFixed(2)} (${verifiedClose.finalPips >= 0 ? "+" : ""}${verifiedClose.finalPips.toFixed(1)} pips)`
         )
         if (soundEnabled) playTerminalSound("close")
       } finally {
@@ -2773,13 +2814,30 @@ const maxLeverage = 100
       return
     }
 
-    setClosedTrades(prev => [closed, ...prev.filter(item => item.id !== closed.id)].slice(0, 100))
-    const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
-    await adjustWalletBalance(returnAmt,
-      `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    const result = saved as Record<string, unknown>
+    const verifiedClose: ClosedTrade = {
+      ...closed,
+      closePrice: typeof result.closePrice === "number" ? result.closePrice : closed.closePrice,
+      finalPnl: typeof result.finalPnl === "number" ? result.finalPnl : closed.finalPnl,
+      finalPips: typeof result.finalPips === "number" ? result.finalPips : closed.finalPips,
+    }
+    setClosedTrades(prev => [verifiedClose, ...prev.filter(item => item.id !== verifiedClose.id)].slice(0, 100))
+    if (isChallengeAccount) {
+      if (typeof result.newBalance === "number") {
+        suppressExternalSync.current = true
+        setWalletBalance(result.newBalance)
+        setBalanceLoaded(true)
+        onBalanceUpdated?.(result.newBalance)
+        setTimeout(() => { suppressExternalSync.current = false }, 800)
+      }
+    } else {
+      const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
+      await adjustWalletBalance(returnAmt,
+        `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    }
 
-    showToast(finalPnl >= 0 ? "success" : "error",
-      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(closePrice, trade.pair)} — ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    showToast(verifiedClose.finalPnl >= 0 ? "success" : "error",
+      `Partial close ${closeLots}L ${trade.pair} @ ${fmt(verifiedClose.closePrice, trade.pair)} — ${verifiedClose.finalPnl >= 0 ? "+" : ""}$${verifiedClose.finalPnl.toFixed(2)}`)
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3032,10 +3090,12 @@ const maxLeverage = 100
   { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => setActivePanel("trust") },
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
-    { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
-    { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+    ...(!isChallengeAccount ? [
+      { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
+      { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+    ] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount])
 
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
@@ -3198,20 +3258,22 @@ const maxLeverage = 100
             </div>
           ))}
         </div>
-        <nav className="terminal-account-actions" aria-label="Account actions">
-          <button type="button" className="terminal-action terminal-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
-            <Wallet className="h-3.5 w-3.5" />
-            <span>Add Funds</span>
-          </button>
-          <button type="button" className="terminal-action terminal-action-withdraw" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
-            <ArrowUpDown className="h-3.5 w-3.5" />
-            <span>Withdraw</span>
-          </button>
-          <button type="button" className="terminal-action terminal-action-accent" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>Prediction</span>
-          </button>
-        </nav>
+        {!isChallengeAccount && (
+          <nav className="terminal-account-actions" aria-label="Account actions">
+            <button type="button" className="terminal-action terminal-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
+              <Wallet className="h-3.5 w-3.5" />
+              <span>Add Funds</span>
+            </button>
+            <button type="button" className="terminal-action terminal-action-withdraw" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <span>Withdraw</span>
+            </button>
+            <button type="button" className="terminal-action terminal-action-accent" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>Prediction</span>
+            </button>
+          </nav>
+        )}
         </div>
       </header>
 
@@ -3360,7 +3422,7 @@ const maxLeverage = 100
           <section className="mobile-account-details" aria-label="Account details">
             <div className="mobile-account-detail">
               <span>Account type</span>
-              <strong>{isFundedAccount ? "Funded account" : "Live account"}</strong>
+              <strong>{isChallengeAccount ? "Challenge account" : isFundedAccount ? "Funded account" : "Live account"}</strong>
             </div>
             <div className={`mobile-account-detail ${accountKycTone}`}>
               <span>KYC status</span>
@@ -3372,18 +3434,20 @@ const maxLeverage = 100
             </div>
           </section>
 
-          <section className="mobile-account-actions" aria-label="Funding and payout">
-            <button type="button" className="mobile-account-action is-primary" onClick={() => onAddFunds ? onAddFunds() : window.location.assign("/participant/dashboard/contribute")}>
-              <span className="mobile-account-action-icon"><Plus aria-hidden="true" /></span>
-              <span className="mobile-account-action-copy"><strong>Add funds</strong><small>Deposit into your account</small></span>
-              <ArrowUpRight aria-hidden="true" />
-            </button>
-            <button type="button" className="mobile-account-action" onClick={() => window.location.assign("/participant/dashboard/payout")}>
-              <span className="mobile-account-action-icon"><ArrowUpDown aria-hidden="true" /></span>
-              <span className="mobile-account-action-copy"><strong>Payout</strong><small>Withdraw available funds</small></span>
-              <ArrowUpRight aria-hidden="true" />
-            </button>
-          </section>
+          {!isChallengeAccount && (
+            <section className="mobile-account-actions" aria-label="Funding and payout">
+              <button type="button" className="mobile-account-action is-primary" onClick={() => onAddFunds ? onAddFunds() : window.location.assign("/participant/dashboard/contribute")}>
+                <span className="mobile-account-action-icon"><Plus aria-hidden="true" /></span>
+                <span className="mobile-account-action-copy"><strong>Add funds</strong><small>Deposit into your account</small></span>
+                <ArrowUpRight aria-hidden="true" />
+              </button>
+              <button type="button" className="mobile-account-action" onClick={() => window.location.assign("/participant/dashboard/payout")}>
+                <span className="mobile-account-action-icon"><ArrowUpDown aria-hidden="true" /></span>
+                <span className="mobile-account-action-copy"><strong>Payout</strong><small>Withdraw available funds</small></span>
+                <ArrowUpRight aria-hidden="true" />
+              </button>
+            </section>
+          )}
 
           <button type="button" className="mobile-account-settings" onClick={() => window.location.assign("/participant/dashboard/settings/security")}>
             <span className="mobile-account-settings-icon"><Settings aria-hidden="true" /></span>
@@ -4219,8 +4283,8 @@ const maxLeverage = 100
                       <span className="text-[8px] font-black tracking-wider uppercase text-amber-300">Account Leverage</span>
                       <select value={leverage} onChange={e => setLeverage(e.target.value)}
                         aria-label="Select leverage"
-                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
-                        {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value}>1:{value}</option>)}
+                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount || isChallengeAccount ? "text-amber-300" : "text-cyan-300"}`}>
+                        {["1", "5", "10", "20", "30", "50", "100"].filter(value => !isChallengeAccount || Number(value) <= 30).map(value => <option key={value} value={value}>1:{value}</option>)}
                       </select>
                     </div>
 

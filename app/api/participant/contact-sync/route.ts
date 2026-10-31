@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
     // Get participant email
     const rows = await query(
-      `SELECT id, email, account_balance FROM participants WHERE id = $1 LIMIT 1`,
+      `SELECT id, email, account_type, account_balance FROM participants WHERE id = $1 LIMIT 1`,
       [userId]
     )
     const participant = rows?.[0]
@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     if (!participant) {
       return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
     }
+    if (participant.account_type === "challenge") return NextResponse.json({ success: false, error: "Challenge accounts cannot claim wallet rewards." }, { status: 403 })
 
     // Insert contacts (ignore duplicates)
     for (const c of validContacts) {

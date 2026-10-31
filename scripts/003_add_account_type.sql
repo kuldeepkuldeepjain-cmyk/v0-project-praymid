@@ -7,4 +7,4 @@ ALTER TABLE participants
 
 ALTER TABLE participants
   ADD CONSTRAINT participants_account_type_check
-  CHECK (account_type IN ('normal', 'funded'));
+  CHECK (account_type IN ('normal', 'funded', 'challenge'));

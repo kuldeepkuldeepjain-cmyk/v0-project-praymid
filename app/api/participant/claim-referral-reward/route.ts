@@ -9,12 +9,13 @@ export async function POST(request: NextRequest) {
 
     const result = await withTransaction(async (client) => {
       const rows = await client.query<any>(
-        "SELECT email, account_balance, referral_earnings FROM participants WHERE LOWER(email) = $1 FOR UPDATE",
+        "SELECT email, account_type, account_balance, referral_earnings FROM participants WHERE LOWER(email) = $1 FOR UPDATE",
         [emailKey]
       )
       if (!rows.rows.length) return { error: "Participant not found", status: 404 as const }
 
       const participant = rows.rows[0]
+      if (participant.account_type === "challenge") return { error: "Challenge accounts cannot claim wallet referral rewards", status: 403 as const }
       const pendingEarnings = Number(participant.referral_earnings) || 0
       if (pendingEarnings <= 0) return { error: "No pending referral earnings to claim", status: 400 as const }
 

@@ -17,9 +17,10 @@ export async function POST(request: NextRequest) {
     const dupCheck = await db.query("SELECT id FROM topup_requests WHERE transaction_id = $1", [transactionHash])
     if (dupCheck.rows.length > 0) return NextResponse.json({ success: false, message: "Transaction already processed" }, { status: 400 })
 
-    const pRes = await db.query("SELECT id, account_balance, email FROM participants WHERE username = $1 OR email = $1", [userId])
+    const pRes = await db.query("SELECT id, account_balance, email, account_type FROM participants WHERE username = $1 OR email = $1", [userId])
     const participant = pRes.rows[0]
     if (!participant) return NextResponse.json({ success: false, message: "User not found" }, { status: 404 })
+    if (participant.account_type === "challenge") return NextResponse.json({ success: false, message: "Challenge balances are activated and evaluated separately from wallet top-ups." }, { status: 403 })
 
     const newBalance = Number(participant.account_balance || 0) + Number(amount)
     await db.query("UPDATE participants SET account_balance=$1 WHERE id=$2", [newBalance, participant.id])

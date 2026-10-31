@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
 
     // Get participant ID for transaction
     const participantRows: any[] = await query(
-      `SELECT id, account_balance FROM participants WHERE email = $1`,
+      `SELECT id, account_balance, account_type FROM participants WHERE email = $1`,
       [participantEmail]
     )
 
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Participant not found" }, { status: 404 })
     }
 
+    if (participantRows[0].account_type === "challenge") return NextResponse.json({ error: "Challenge accounts cannot use wallet games or rewards." }, { status: 403 })
     const participantId = participantRows[0].id
     const balanceBefore = parseFloat(participantRows[0].account_balance || 0)
 
