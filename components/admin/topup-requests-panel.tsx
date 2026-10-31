@@ -201,7 +201,7 @@ export function TopUpRequestsPanel() {
       if (!data.success) throw new Error(data.message)
 
       const creditedAmount = Number(data.creditedAmount ?? (Number(selectedRequest.amount) + Number(selectedRequest.promo_bonus_amount || 0)))
-      toast({ title: "Approved", description: `$${creditedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} credited to ${selectedRequest.participant_email}` })
+      toast({ title: "Approved", description: selectedRequest.payment_method === "challenge" ? data.message : `$${creditedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} credited to ${selectedRequest.participant_email}` })
       setSelectedRequest(null)
       setAdminNoteInput("")
       fetchRequests(true)
@@ -400,6 +400,7 @@ export function TopUpRequestsPanel() {
                         <p className="text-xs text-slate-400 font-mono truncate">
                           {req.transaction_id ? `${req.transaction_id.slice(0, 18)}...` : "—"}
                         </p>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-200">{req.payment_method === "challenge" ? "Challenge fee" : "Wallet top-up"}</p>
                       </div>
                     </div>
 
@@ -443,7 +444,7 @@ export function TopUpRequestsPanel() {
                     <Wallet className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">Top-Up Request</h3>
+                    <h3 className="font-bold text-white">{selectedRequest.payment_method === "challenge" ? "Challenge Fee Request" : "Top-Up Request"}</h3>
                     <p className="text-xs text-slate-400">{selectedRequest.participant_email}</p>
                   </div>
                 </div>
@@ -472,6 +473,7 @@ export function TopUpRequestsPanel() {
                 <div className="rounded-xl bg-slate-800 border border-slate-700 divide-y divide-slate-700">
                   {[
                     { label: "Participant", value: selectedRequest.participant_email },
+                    { label: "Request type", value: selectedRequest.payment_method === "challenge" ? "Challenge evaluation fee" : "Wallet top-up" },
                     { label: "Payment amount", value: `$${Number(selectedRequest.amount).toFixed(2)} ${["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "USD (UPI)" : "USDT"}` },
                     ...(selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 ? [
                       { label: "Promo code", value: selectedRequest.promo_code },

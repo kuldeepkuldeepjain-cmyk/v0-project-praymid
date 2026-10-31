@@ -28,6 +28,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
+import { ChallengeStatusCard } from "@/components/challenge-status-card"
 
 
 
@@ -1471,7 +1472,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     activation_deadline?: string
   account_frozen?: boolean
   is_frozen?: boolean
-  account_type?: "normal" | "funded"
+  account_type?: "normal" | "funded" | "challenge"
   funded_amount?: number
   profile_image?: string
     details_completed?: boolean
@@ -1712,6 +1713,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [terminalStats, setTerminalStats] = useState({ equity: walletBalance, openPnl: 0, openPnlPct: 0 })
   const normalizedAccountType = String(participantData?.account_type ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
   const isFundedAccount = normalizedAccountType === "funded" || normalizedAccountType === "fundedaccount" || normalizedAccountType === "fundingtier"
+  const isChallengeAccount = normalizedAccountType === "challenge" || normalizedAccountType === "challengeaccount"
   const fundedBaseAmount = isFundedAccount
     ? getFundedBaseAmount(participantData?.account_balance, participantData?.funded_amount)
     : 0
@@ -1757,6 +1759,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
+      {isChallengeAccount && <ChallengeStatusCard />}
       {isFundedAccount && fundedDrawdownSnapshot && (
         <div
           className="mx-3 mt-3 hidden rounded-2xl border p-3.5 text-xs text-slate-200 shadow-lg shadow-black/20 sm:mx-4 sm:mt-4 sm:p-4 md:block"
@@ -1849,7 +1852,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
       {/* Top Up Modal */}
       <TopUpModal
-        isOpen={showTopUpModal}
+        isOpen={showTopUpModal && !isChallengeAccount}
         onClose={() => {
           setShowTopUpModal(false)
           setIsInitialFundedTopUp(false)
@@ -1900,9 +1903,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               <p className="text-white text-xs font-semibold leading-none truncate">{displayName}</p>
               <div className="mt-1 flex items-center gap-1.5">
                 <p className="participant-header-account-label hidden text-slate-500 text-[10px] leading-none tracking-wide md:inline">TRADING ACCOUNT</p>
-                <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${isFundedAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200"}`}>
-                  {isFundedAccount && <ShieldCheck aria-hidden="true" className="h-2.5 w-2.5" />}
-                  {isFundedAccount ? "Funded" : "Normal"}
+                <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wide ${isFundedAccount || isChallengeAccount ? "border border-amber-300/30 bg-amber-400/15 text-amber-200" : "border border-cyan-300/30 bg-cyan-400/10 text-cyan-200"}`}>
+                  {(isFundedAccount || isChallengeAccount) && <ShieldCheck aria-hidden="true" className="h-2.5 w-2.5" />}
+                  {isChallengeAccount ? "Challenge" : isFundedAccount ? "Funded" : "Normal"}
                 </span>
               </div>
             </div>
@@ -1945,12 +1948,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <span className="hidden md:inline">Reactivate</span>
               </button>
             )}
-            <Link href="/participant/dashboard/payout" aria-label="Open payout" className="hidden md:inline-flex">
-              <span className="flex h-8 items-center gap-1 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/25 active:scale-95">
-                <ArrowUpRight className="h-3 w-3" />
-                <span className="hidden md:inline">Payout</span>
-              </span>
-            </Link>
+            {!isChallengeAccount && (
+              <Link href="/participant/dashboard/payout" aria-label="Open payout" className="hidden md:inline-flex">
+                <span className="flex h-8 items-center gap-1 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-2 text-[9px] font-black uppercase tracking-wide text-cyan-200 transition-colors hover:bg-cyan-500/25 active:scale-95">
+                  <ArrowUpRight className="h-3 w-3" />
+                  <span className="hidden md:inline">Payout</span>
+                </span>
+              </Link>
+            )}
             <span className="participant-header-divider mx-1 h-7 w-px shrink-0 rounded-full bg-slate-500/40" aria-hidden="true" />
             <div className="participant-header-notifications relative flex h-9 w-9 shrink-0">
               <UserNotificationsBell userEmail={participantData.email ?? ""} />
@@ -2316,7 +2321,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               <div className="elite-terminal-sidebar-account-meta">
                 <div className="elite-terminal-account-detail">
                   <span>Account type</span>
-                  <strong>{isFundedAccount ? "Funded Account" : "Normal Account"}</strong>
+                  <strong>{isChallengeAccount ? "Challenge Account" : isFundedAccount ? "Funded Account" : "Normal Account"}</strong>
                 </div>
                 <div className={`elite-terminal-account-detail elite-terminal-kyc-status ${kycStatusTone}`}>
                   <span>KYC status</span>
@@ -2335,10 +2340,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <User />
                 <span>Profile</span>
               </Link>
-              <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item elite-terminal-add-fund">
-                <PlusCircle />
-                <span>Add Fund</span>
-              </Link>
+              {!isChallengeAccount && (
+                <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item elite-terminal-add-fund">
+                  <PlusCircle />
+                  <span>Add Fund</span>
+                </Link>
+              )}
               <Link href="/participant/dashboard/challenge" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
                 <ShieldCheck />
                 <span>Challenge</span>
@@ -2495,11 +2502,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   kycVerified={isKycVerified}
   walletBalance={walletBalance}
   isFundedAccount={isFundedAccount}
+  isChallengeAccount={isChallengeAccount}
   fundedAmount={fundedBaseAmount}
   fundedTopUpAvailable={isFundedAccount}
   onOpenSidebar={() => setIsTerminalMenuOpen(true)}
   accountMenuOpen={isTerminalMenuOpen}
-  onAddFunds={() => {
+  onAddFunds={isChallengeAccount ? undefined : () => {
   // The funded plan stays visible until the first funded payment is recorded.
   setTopUpIsFundedAccount(isFundedAccount)
   setIsInitialFundedTopUp(isFundedAccount)
@@ -2510,7 +2518,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   setIsInitialFundedTopUp(true)
   setShowTopUpModal(true)
   }}
-  isFrozen={isFundedAccountBreached || (!isFundedAccount && Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen"))}
+  isFrozen={isFundedAccountBreached || (isChallengeAccount && participantData?.challenge_status !== "active") || (!isFundedAccount && !isChallengeAccount && Boolean(participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen"))}
   onAccountFrozen={() => {
   setParticipantData((prev: any) => {
   if (!prev) return prev

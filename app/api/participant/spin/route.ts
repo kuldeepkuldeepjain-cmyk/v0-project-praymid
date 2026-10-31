@@ -37,12 +37,13 @@ export async function POST(request: NextRequest) {
 
     // Fetch participant
     const rows = await query(
-      "SELECT email, account_balance FROM participants WHERE email = $1",
+      "SELECT email, account_balance, account_type FROM participants WHERE email = $1",
       [email.toLowerCase().trim()]
     )
     if (!rows.length) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
 
     const participant = rows[0]
+    if (participant.account_type === "challenge") return NextResponse.json({ error: "Challenge accounts cannot use wallet games or rewards." }, { status: 403 })
     const currentBalance = parseFloat(participant.account_balance) || 0
 
     if (currentBalance < amount) {

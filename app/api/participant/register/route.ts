@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
 import { generateVerificationCode, isValidEmail, sendVerificationEmail } from "@/lib/resend-mail"
+import { getChallengePlan } from "@/lib/challenge-account"
 
 function generateReferralCode(username: string): string {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -10,7 +11,7 @@ function generateReferralCode(username: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp, accountType } = await request.json()
+    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp, accountType, challengePlanKey } = await request.json()
 
     console.log("[v0] Registration attempt for email:", email)
 
@@ -34,7 +35,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: country === "India" || selectedCountryCode === "+91" ? "India requires a valid 10-digit mobile number" : "Please enter a valid mobile number for the selected country" }, { status: 400 })
     }
     const walletAddress = null
-    const normalizedAccountType = accountType === "funded" ? "funded" : "normal"
+    const normalizedAccountType = accountType === "funded" ? "funded" : accountType === "challenge" ? "challenge" : "normal"
+    const selectedChallengePlanKey = normalizedAccountType === "challenge" ? String(challengePlanKey || "") : null
+    if (normalizedAccountType === "challenge" && !getChallengePlan(selectedChallengePlanKey)) {
+      return NextResponse.json({ success: false, message: "Choose a valid Challenge plan." }, { status: 400 })
+    }
     const newReferralCode = generateReferralCode(username)
     try {
       // Check duplicates
@@ -59,7 +64,7 @@ export async function POST(request: Request) {
       }
 
       const verificationCode = generateVerificationCode()
-      const registrationData = { fullName, firstName: firstName.trim(), username: usernameKey, email: emailKey, password: password.trim(), walletAddress, newReferralCode, referralCode: referralCode ? referralCode.toUpperCase() : null, normalizedAccountType, mobileNumber: `${selectedCountryCode}${mobileNumberClean}` }
+      const registrationData = { fullName, firstName: firstName.trim(), username: usernameKey, email: emailKey, password: password.trim(), walletAddress, newReferralCode, referralCode: referralCode ? referralCode.toUpperCase() : null, normalizedAccountType, challengePlanKey: selectedChallengePlanKey, mobileNumber: `${selectedCountryCode}${mobileNumberClean}` }
       await query(`DELETE FROM registration_email_verifications WHERE LOWER(email) = $1`, [emailKey])
       await query(`INSERT INTO registration_email_verifications (email, verification_code, registration_data, expires_at) VALUES ($1, $2, $3::jsonb, NOW() + INTERVAL '15 minutes')`, [emailKey, verificationCode, JSON.stringify(registrationData)])
       const delivery = await sendVerificationEmail(emailKey, verificationCode)

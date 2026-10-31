@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     ) as any[]
     const participant = rows[0]
     if (!participant) return NextResponse.json({ error: "Participant not found" }, { status: 404 })
+    if (participant.account_type === "challenge") return NextResponse.json({ error: "Challenge accounts can only use the forex trading terminal." }, { status: 403 })
     const availableBalance = useReferralBalance
       ? Number(participant.bonus_balance ?? 0)
       : Number(participant.account_balance ?? 0)

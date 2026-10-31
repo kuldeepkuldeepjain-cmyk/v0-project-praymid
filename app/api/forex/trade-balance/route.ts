@@ -60,6 +60,10 @@ export async function POST(req: NextRequest) {
 
       const participantId: string = rows[0].id
       const currentBalance: number = parseFloat(rows[0].account_balance) || 0
+      if (rows[0].account_type === "challenge" && delta !== 0) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "Challenge balances can only change through verified trades." }, { status: 403 })
+      }
 
       // Settlement requests can be retried by the client and by the market
       // monitor at the same time. Treat an identical ledger event received

@@ -1226,7 +1226,7 @@ function MarketStats({ pair }: { pair: ForexPair }) {
   )
 }
 
-// ─── Position Sizer ──────────────────��─────���─����──────────────������───────────����──────
+// ─── Position Sizer ──────────────────��─────���─����──────────────�������───────────����──────
 
 function PositionSizer({
   pair, leverage, walletBalance, onApply,
@@ -1361,6 +1361,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   kycVerified = false,
   walletBalance: externalBalance = 0,
   isFundedAccount = false,
+  isChallengeAccount = false,
   fundedAmount,
   isFrozen = false,
   onBalanceUpdated,
@@ -1378,6 +1379,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   kycVerified?: boolean
   walletBalance?: number
   isFundedAccount?: boolean
+  isChallengeAccount?: boolean
   fundedAmount?: number
   isFrozen?: boolean
   onBalanceUpdated?: (newBalance: number) => void
@@ -1419,7 +1421,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     setLotSize(defaultLotsForOrderValue(selectedPair.symbol, midPrice, 3000))
     defaultOrderInstrumentRef.current = selectedPair.symbol
   }, [selectedPair?.symbol])
-  const effectiveLeverage = Math.min(isFundedAccount ? (parseFloat(leverage) || 1) : (parseFloat(leverage) || 1), 100)
+  const effectiveLeverage = Math.min(parseFloat(leverage) || 1, isChallengeAccount ? 30 : 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
   const [trailingPips, setTrailingPips] = useState("")
@@ -4219,8 +4221,8 @@ const maxLeverage = 100
                       <span className="text-[8px] font-black tracking-wider uppercase text-amber-300">Account Leverage</span>
                       <select value={leverage} onChange={e => setLeverage(e.target.value)}
                         aria-label="Select leverage"
-                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount ? "text-amber-300" : "text-cyan-300"}`}>
-                        {["1", "5", "10", "20", "50", "100"].map(value => <option key={value} value={value}>1:{value}</option>)}
+                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount || isChallengeAccount ? "text-amber-300" : "text-cyan-300"}`}>
+                        {["1", "5", "10", "20", "30", "50", "100"].filter(value => !isChallengeAccount || Number(value) <= 30).map(value => <option key={value} value={value}>1:{value}</option>)}
                       </select>
                     </div>
 

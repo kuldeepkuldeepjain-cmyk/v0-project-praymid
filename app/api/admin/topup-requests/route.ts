@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { query, execute, withTransaction } from "@/lib/db"
 import { requireAdminSession } from "@/lib/auth-middleware"
 import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
+import { getChallengePlan } from "@/lib/challenge-account"
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdminSession(req)
@@ -68,6 +69,94 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: "Request already processed" }, { status: 400 })
     }
 
+    if (topup.payment_method === "challenge") {
+      const reviewResult = await withTransaction(async (client) => {
+        const paymentResult = await client.query(
+          `SELECT id, participant_id, participant_email, amount, status, admin_notes
+           FROM topup_requests WHERE id = $1 FOR UPDATE`,
+          [requestId],
+        )
+        const payment = paymentResult.rows[0]
+        if (!payment || !pendingStatuses.has(String(payment.status).toLowerCase())) {
+          return { error: "Request already processed", status: 409 }
+        }
+
+        const participantResult = await client.query(
+          `SELECT id, email, account_type, challenge_plan_key, challenge_status
+           FROM participants WHERE id = $1 FOR UPDATE`,
+          [payment.participant_id],
+        )
+        const participant = participantResult.rows[0]
+        if (!participant) return { error: "Participant not found", status: 404 }
+        const plan = getChallengePlan(participant.challenge_plan_key)
+        if (participant.account_type !== "challenge" || participant.challenge_status !== "pending_payment" || !plan || Math.abs(Number(payment.amount) - plan.fee) > 0.01) {
+          return { error: "Challenge payment does not match an account awaiting review.", status: 409 }
+        }
+
+        const reviewText = String(adminNotes || rejectionReason || "").trim().slice(0, 1000)
+        const storedNotes = String(payment.admin_notes || "")
+        const notes = reviewText ? `${storedNotes}${storedNotes ? "\\n" : ""}Admin review: ${reviewText}` : storedNotes || null
+        const claimed = await client.query(
+          `UPDATE topup_requests SET status = 'processing'
+           WHERE id = $1 AND LOWER(status) = 'pending' RETURNING id`,
+          [requestId],
+        )
+        if (!claimed.rowCount) return { error: "Request already processed", status: 409 }
+
+        if (action === "approve") {
+          await client.query(
+            `UPDATE participants SET account_type = 'challenge', account_balance = $1,
+               challenge_status = 'active', challenge_started_at = NOW(),
+               challenge_passed_at = NULL, challenge_failed_at = NULL,
+               challenge_peak_equity = $1, challenge_day_start_equity = $1,
+               challenge_trading_days = 0, challenge_last_trading_date = NULL,
+               updated_at = NOW()
+             WHERE id = $2`,
+            [plan.startingBalance, participant.id],
+          )
+          await client.query(
+            `UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2`,
+            [notes, requestId],
+          )
+          await client.query(
+            `INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details)
+             VALUES ($1, $2, 'challenge_activated', 'challenge_account', $3)`,
+            [participant.id, participant.email, `Admin ${adminEmail} approved the ${plan.name} challenge fee; $${plan.startingBalance.toLocaleString()} virtual balance activated`],
+          ).catch(() => {})
+          return { success: true, status: "approved", planName: plan.name, startingBalance: plan.startingBalance }
+        }
+
+        await client.query(
+          `UPDATE participants SET challenge_status = 'payment_rejected', updated_at = NOW()
+           WHERE id = $1 AND challenge_status = 'pending_payment'`,
+          [participant.id],
+        )
+        await client.query(
+          `UPDATE topup_requests SET status = 'rejected', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2`,
+          [notes, requestId],
+        )
+        await client.query(
+          `INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details)
+           VALUES ($1, $2, 'challenge_payment_rejected', 'challenge_account', $3)`,
+          [participant.id, participant.email, `Admin ${adminEmail} rejected the ${plan.name} challenge fee${reviewText ? `: ${reviewText}` : ""}`],
+        ).catch(() => {})
+        return { success: true, status: "rejected", planName: plan.name }
+      })
+
+      if ("error" in reviewResult) {
+        return NextResponse.json({ success: false, message: reviewResult.error }, { status: reviewResult.status })
+      }
+      if (reviewResult.status === "approved") {
+        return NextResponse.json({
+          success: true,
+          message: `${reviewResult.planName} activated with a $${reviewResult.startingBalance.toLocaleString()} virtual balance. The payment was not credited to the participant wallet.`,
+          creditedAmount: 0,
+          challengeStartingBalance: reviewResult.startingBalance,
+        })
+      }
+      return NextResponse.json({ success: true, message: `${reviewResult.planName} payment was rejected.` })
+    }
+
     if (action === "approve") {
       const pRows = await query("SELECT account_balance, account_type, funded_amount, funded_initial_balance, funded_breach_status FROM participants WHERE id = $1", [topup.participant_id])
       if (!pRows.length) {
@@ -75,6 +164,9 @@ export async function POST(req: NextRequest) {
       }
 
       const participant = pRows[0] as any
+      if (participant.account_type === "challenge") {
+        return NextResponse.json({ success: false, message: "Challenge accounts cannot receive standard wallet top-ups." }, { status: 403 })
+      }
       const depositAmount = Number(topup.amount)
       const promoBonusAmount = Number(topup.promo_bonus_amount || 0)
       const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { query, execute } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { uploadBase64ToR2 } from "@/lib/cloudflare-r2"
+import { isChallengeAccount } from "@/lib/challenge-account-server"
 
 export async function POST(request: NextRequest) {
   const auth = await requireParticipantSession(request)
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
     if (!email || !paymentMethod) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+    if (await isChallengeAccount(email)) return NextResponse.json({ error: "Challenge accounts use the separate Challenge fee review flow." }, { status: 403 })
 
     // --- Contribution request (no screenshot/hash yet) ---
     if (reqStatus === "request_pending" || (!screenshot && !transactionHash)) {

@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     // Get participant with unclaimed bonus
     const participants = await query<Record<string, any>>(
-      `SELECT id, email, account_balance, unclaimed_bonus, bonus_claimed, bonus_claimed_at
+      `SELECT id, email, account_type, account_balance, unclaimed_bonus, bonus_claimed, bonus_claimed_at
        FROM participants
        WHERE email = $1 AND unclaimed_bonus > 0 AND bonus_claimed = false
        LIMIT 1`,
@@ -41,6 +41,7 @@ export async function POST(request: Request) {
     }
 
     const participant = participants[0]
+    if (participant.account_type === "challenge") return NextResponse.json({ success: false, message: "Challenge accounts cannot claim wallet bonuses." }, { status: 403 })
     const bonusAmount = participant.unclaimed_bonus
     const newBalance = parseFloat(participant.account_balance) + bonusAmount
 
