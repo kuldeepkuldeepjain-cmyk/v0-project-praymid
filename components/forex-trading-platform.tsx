@@ -4353,6 +4353,7 @@ const maxLeverage = 100
 	                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
 	                      }
 	                    }}
+                      data-order-type={ot}
                       aria-pressed={orderType === ot}
                       aria-label={ot === "market" ? "Market order at the current quote" : `${ot === "limit" ? "Limit" : "Stop"} pending order`}
                       className="flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors">
@@ -4437,7 +4438,8 @@ const maxLeverage = 100
 		                  </div>
 		                )}
 
-		                {/* Trade size and leverage */}
+		                <div className="order-ticket-controls flex min-w-0 flex-col gap-2.5">
+                        {/* Trade size and leverage */}
 		                <div className="mobile-order-volume rounded-xl border border-[#1a2640] bg-[#07101b] p-3 flex flex-col gap-3">
 		                  <div className="flex items-center justify-between gap-3">
 		                    <div className="min-w-0">
@@ -4602,7 +4604,9 @@ const maxLeverage = 100
                   </div>
                 )}
 
-		                {/* Order estimate */}
+		                </div>
+
+                        {/* Order estimate */}
 		                <div className="mobile-order-metrics grid grid-cols-2 gap-2.5 rounded-xl border border-[#1a2640] bg-[#070a10] p-3" role="group" aria-label="Order estimate">
 		                  <div className="col-span-2 flex items-start justify-between gap-3 border-b border-[#1a2640] pb-2">
 		                    <div>
@@ -4637,8 +4641,8 @@ const maxLeverage = 100
 		                    </p>
 		                    {rrRatio && !stopLossError && !takeProfitError && <p className="mt-0.5 text-[10px] text-slate-400">Risk / reward 1:{rrRatio}</p>}
 		                  </div>
-		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
-		                    <p className="text-[10px] font-medium text-slate-400">Pip value</p>
+<div className="col-span-2 min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+			                    <p className="text-[10px] font-medium text-slate-400">Pip value</p>
 		                    <p className="mt-1 price-mono text-[13px] font-bold text-cyan-200">${pipVal.toFixed(4)} / pip</p>
 		                    <p className="mt-0.5 text-[10px] text-slate-400">Est. spread ${estimatedSpreadCost.toFixed(2)}</p>
 		                  </div>
