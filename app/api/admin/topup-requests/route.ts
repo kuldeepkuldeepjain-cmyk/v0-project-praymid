@@ -105,10 +105,17 @@ export async function POST(req: NextRequest) {
 
         if (action === "approve") {
           await client.query(
+            `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual',
+               close_time = COALESCE(close_time, NOW()), updated_at = NOW()
+             WHERE LOWER(participant_email) = LOWER($1) AND status IN ('open', 'pending')`,
+            [participant.email],
+          )
+          await client.query(
             `UPDATE participants SET account_type = 'challenge', account_balance = $1,
                challenge_status = 'active', challenge_started_at = NOW(),
                challenge_passed_at = NULL, challenge_failed_at = NULL,
                challenge_peak_equity = $1, challenge_day_start_equity = $1,
+               challenge_day_start_date = (NOW() AT TIME ZONE 'UTC')::date,
                challenge_trading_days = 0, challenge_last_trading_date = NULL,
                updated_at = NOW()
              WHERE id = $2`,
@@ -144,14 +151,17 @@ export async function POST(req: NextRequest) {
       })
 
       if ("error" in reviewResult) {
-        return NextResponse.json({ success: false, message: reviewResult.error }, { status: reviewResult.status })
+        return NextResponse.json({ success: false, message: reviewResult.error }, {
+          status: typeof reviewResult.status === "number" ? reviewResult.status : 500,
+        })
       }
       if (reviewResult.status === "approved") {
+        const startingBalance = Number(reviewResult.startingBalance)
         return NextResponse.json({
           success: true,
-          message: `${reviewResult.planName} activated with a $${reviewResult.startingBalance.toLocaleString()} virtual balance. The payment was not credited to the participant wallet.`,
+          message: `${reviewResult.planName} activated with a $${startingBalance.toLocaleString()} virtual balance. The payment was not credited to the participant wallet.`,
           creditedAmount: 0,
-          challengeStartingBalance: reviewResult.startingBalance,
+          challengeStartingBalance: startingBalance,
         })
       }
       return NextResponse.json({ success: true, message: `${reviewResult.planName} payment was rejected.` })

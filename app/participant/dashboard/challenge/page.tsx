@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
 import { ArrowLeft, ArrowUpRight, Check, Copy, ShieldCheck, TrendingUp } from "lucide-react"
@@ -37,8 +37,7 @@ export default function ChallengePage() {
     shouldRetryOnError: false,
   })
   const { data: paymentSettings } = useSWR(SETTINGS_URL, settingsFetcher, { revalidateOnFocus: false })
-  const [selectedPlanKey, setSelectedPlanKey] = useState(DEFAULT_CHALLENGE_PLANS[1].key)
-  const [planInitialized, setPlanInitialized] = useState(false)
+  const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null)
   const [paymentNetwork, setPaymentNetwork] = useState("BEP20")
   const [transactionHash, setTransactionHash] = useState("")
   const [walletAddress, setWalletAddress] = useState("")
@@ -50,13 +49,6 @@ export default function ChallengePage() {
   const status = participant?.challenge_status || "not_started"
   const plans: ChallengePlan[] = data?.plans?.length ? data.plans : DEFAULT_CHALLENGE_PLANS
 
-  useEffect(() => {
-    if (!planInitialized && participant?.challenge_plan_key) {
-      setSelectedPlanKey(participant.challenge_plan_key)
-      setPlanInitialized(true)
-    }
-  }, [participant?.challenge_plan_key, planInitialized])
-
   const availableNetworks = useMemo(() => {
     const addresses = [
       { key: "TRC20", address: paymentSettings?.trc20_address },
@@ -66,7 +58,8 @@ export default function ChallengePage() {
     return addresses
   }, [paymentSettings])
   const currentAddress = availableNetworks.find((item) => item.key === paymentNetwork)?.address || ""
-  const plan = plans.find((item) => item.key === selectedPlanKey) || plans[0] || DEFAULT_CHALLENGE_PLANS[1]
+  const effectivePlanKey = selectedPlanKey || participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[1].key
+  const plan = plans.find((item) => item.key === effectivePlanKey) || plans[0] || DEFAULT_CHALLENGE_PLANS[1]
   const metrics = data?.metrics
   const recentTrades = Array.isArray(data?.recentTrades) ? data.recentTrades : []
   const canSubmitPayment = participant?.account_type === "challenge"
@@ -204,7 +197,7 @@ export default function ChallengePage() {
 
                 <div className="grid gap-3 md:grid-cols-2">
                   <Rule title="Profit target" value={`+${plan.profitTargetPercent}%`} detail={`Reach ${CURRENCY.format(Number(metrics.profitTarget) || 0)} equity.`} />
-                  <Rule title="Daily loss limit" value={`${plan.dailyLossLimitPercent}%`} detail={`Measured from the first Challenge trade of each UTC day.`} />
+                  <Rule title="Daily loss limit" value={`${plan.dailyLossLimitPercent}%`} detail={`Measured against the recorded evaluation equity at the start of each UTC day.`} />
                   <Rule title="Maximum drawdown" value={`${plan.maxDrawdownPercent}%`} detail={`Static floor at ${CURRENCY.format(Number(metrics.maxEquityDrawdown) || 0)} of starting balance.`} />
                   <Rule title="Minimum trading days" value={`${plan.minimumTradingDays} days`} detail={`Trade on at least ${plan.minimumTradingDays} separate UTC dates.`} />
                   <Rule title="Leverage" value={`Up to ${plan.leverage}:1`} detail="The server rejects orders above the plan limit." />
@@ -238,7 +231,7 @@ export default function ChallengePage() {
               </div>
               <div className="grid gap-3 md:grid-cols-3">
                 {plans.map((item) => (
-                  <button key={item.key} type="button" onClick={() => setSelectedPlanKey(item.key)} aria-pressed={selectedPlanKey === item.key} className={`rounded-xl text-left transition ${selectedPlanKey === item.key ? "ring-2 ring-[#d6b66b]" : ""}`}>
+                  <button key={item.key} type="button" onClick={() => setSelectedPlanKey(item.key)} aria-pressed={plan.key === item.key} className={`rounded-xl text-left transition ${plan.key === item.key ? "ring-2 ring-[#d6b66b]" : ""}`}>
                     <Card className="h-full border-slate-700 bg-[#181b1f] text-slate-100 transition hover:border-amber-300/50">
                       <CardHeader><CardTitle className="flex items-center justify-between gap-2 text-base text-white"><span>{item.name}</span><span className="font-mono text-amber-100">${item.fee}</span></CardTitle></CardHeader>
                       <CardContent className="flex flex-col gap-3 text-sm text-slate-400">

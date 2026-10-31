@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     const result = await db.query(
       `SELECT id, email, username, account_type, account_balance, challenge_plan_key,
               challenge_status, challenge_started_at, challenge_passed_at, challenge_failed_at,
-              challenge_peak_equity, challenge_day_start_equity, challenge_trading_days,
-              challenge_last_trading_date
+              challenge_peak_equity, challenge_day_start_equity, challenge_day_start_date,
+              challenge_trading_days, challenge_last_trading_date
        FROM participants WHERE id = $1 LIMIT 1`,
       [auth.participantId],
     )
@@ -47,12 +47,37 @@ export async function GET(request: NextRequest) {
       const balance = Number(participant.account_balance) || 0
       const equity = Number((balance + openMargin + openPnl.pnl).toFixed(2))
       const today = utcDateKey()
-      const lastTradingDate = participant.challenge_last_trading_date
-        ? new Date(participant.challenge_last_trading_date).toISOString().slice(0, 10)
+      const storedDayStartDate = participant.challenge_day_start_date
+        ? new Date(participant.challenge_day_start_date).toISOString().slice(0, 10)
         : null
-      const dayStartEquity = lastTradingDate === today
+      let dayStartEquity = storedDayStartDate === today
         ? Number(participant.challenge_day_start_equity) || plan.startingBalance
         : equity
+
+      if (currentStatus === "active" && openPnl.complete && storedDayStartDate !== today) {
+        const baselineResult = await db.query(
+          `UPDATE participants SET challenge_day_start_equity = $1, challenge_day_start_date = $2::date, updated_at = NOW()
+           WHERE id = $3 AND challenge_status = 'active' AND challenge_day_start_date IS DISTINCT FROM $2::date
+           RETURNING challenge_day_start_equity, challenge_day_start_date`,
+          [equity, today, participant.id],
+        )
+        if (baselineResult.rows[0]) {
+          dayStartEquity = Number(baselineResult.rows[0].challenge_day_start_equity) || equity
+          participant.challenge_day_start_equity = dayStartEquity
+          participant.challenge_day_start_date = baselineResult.rows[0].challenge_day_start_date
+        } else {
+          const refreshedBaseline = await db.query(
+            `SELECT challenge_day_start_equity, challenge_day_start_date FROM participants WHERE id = $1`,
+            [participant.id],
+          )
+          const persistedDate = refreshedBaseline.rows[0]?.challenge_day_start_date
+            ? new Date(refreshedBaseline.rows[0].challenge_day_start_date).toISOString().slice(0, 10)
+            : null
+          dayStartEquity = persistedDate === today
+            ? Number(refreshedBaseline.rows[0]?.challenge_day_start_equity) || plan.startingBalance
+            : equity
+        }
+      }
       const tradingDays = Number(participant.challenge_trading_days) || 0
 
       snapshot = getChallengeSnapshot(plan, equity, dayStartEquity, tradingDays, currentStatus)

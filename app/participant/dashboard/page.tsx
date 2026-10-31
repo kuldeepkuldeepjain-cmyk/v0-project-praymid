@@ -1639,7 +1639,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           setParticipantId(data.id || data.participantId || "")
           // PIN setup visibility is decided from the fresh database response below.
 
-  if (data.account_type !== "funded" && (data.account_frozen || data.is_frozen || data.status === "frozen")) {
+  if (data.account_type !== "funded" && data.account_type !== "challenge" && (data.account_frozen || data.is_frozen || data.status === "frozen")) {
   setShowFrozenModal(true)
   }
 
@@ -1725,10 +1725,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   useEffect(() => {
   // Funded accounts use the fixed 2% drawdown breach state, not the normal
   // account-freeze modal. Only normal accounts can enter this modal flow.
-  if (!isFundedAccount && (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")) {
+  if (!isFundedAccount && !isChallengeAccount && (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")) {
   setShowFrozenModal(true)
   }
-  }, [isFundedAccount, participantData?.account_frozen, participantData?.is_frozen, participantData?.status])
+  }, [isFundedAccount, isChallengeAccount, participantData?.account_frozen, participantData?.is_frozen, participantData?.status])
 
   if (!mounted || !participantData) {
     return <PageLoader variant="dashboard" />
@@ -1967,32 +1967,46 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       <main className={activeTab === "trading" ? "hidden" : "pb-24 md:pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            <ParticipantOnboardingDashboard
-              displayName={displayName}
-              email={participantData.email}
-              isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
-              accountNotice={isFundedAccount && fundedDrawdownSnapshot ? (
-                <section className="rounded-xl border border-amber-300/20 bg-slate-950/75 p-3 text-xs text-slate-200 md:hidden" aria-label="Funded account risk status">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-bold uppercase tracking-wider text-slate-400">Funded account · drawdown</span>
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide ${fundedDrawdownSnapshot.status === "BREACHED" ? "bg-red-400/15 text-red-300" : "bg-emerald-400/15 text-emerald-300"}`}>{fundedDrawdownSnapshot.status}</span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Equity / base</span><strong className="price-mono text-xs">${fundedDrawdownSnapshot.currentEquity.toFixed(2)} / ${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
-                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach floor</span><strong className="price-mono text-xs text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
-                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining buffer</span><strong className="price-mono text-xs text-amber-200">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
-                    <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Risk status</span><strong className="text-xs font-bold uppercase text-emerald-300">{fundedDrawdownSnapshot.warningLevel}</strong></div>
-                  </div>
-                </section>
-              ) : null}
-              onExploreTerminal={() => setActiveTab("trading")}
-              onAddFunds={() => {
-                setTopUpIsFundedAccount(false)
-                setIsInitialFundedTopUp(false)
-                setShowTopUpModal(true)
-              }}
-              onHelp={() => setIsChatOpen(true)}
-            />
+            {!isChallengeAccount ? (
+              <ParticipantOnboardingDashboard
+                displayName={displayName}
+                email={participantData.email}
+                isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
+                accountNotice={isFundedAccount && fundedDrawdownSnapshot ? (
+                  <section className="rounded-xl border border-amber-300/20 bg-slate-950/75 p-3 text-xs text-slate-200 md:hidden" aria-label="Funded account risk status">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-bold uppercase tracking-wider text-slate-400">Funded account · drawdown</span>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide ${fundedDrawdownSnapshot.status === "BREACHED" ? "bg-red-400/15 text-red-300" : "bg-emerald-400/15 text-emerald-300"}`}>{fundedDrawdownSnapshot.status}</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Equity / base</span><strong className="price-mono text-xs">${fundedDrawdownSnapshot.currentEquity.toFixed(2)} / ${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
+                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach floor</span><strong className="price-mono text-xs text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
+                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining buffer</span><strong className="price-mono text-xs text-amber-200">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
+                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Risk status</span><strong className="text-xs font-bold uppercase text-emerald-300">{fundedDrawdownSnapshot.warningLevel}</strong></div>
+                    </div>
+                  </section>
+                ) : null}
+                onExploreTerminal={() => setActiveTab("trading")}
+                onAddFunds={() => {
+                  setTopUpIsFundedAccount(false)
+                  setIsInitialFundedTopUp(false)
+                  setShowTopUpModal(true)
+                }}
+                onHelp={() => setIsChatOpen(true)}
+              />
+            ) : (
+              <section className="mx-3 mt-3 flex flex-col gap-4 border border-amber-300/20 bg-[#111c28] p-4 sm:mx-4 sm:flex-row sm:items-center sm:justify-between sm:p-5" aria-label="Challenge workspace">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Evaluation workspace</p>
+                  <h2 className="mt-1 text-lg font-semibold text-white">Trade within your Challenge rules</h2>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
+                </div>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button type="button" onClick={() => setActiveTab("trading")} className="bg-[#d6b66b] font-bold text-[#111315] hover:bg-[#e2c982]">Open trading terminal</Button>
+                  <Button asChild variant="outline" className="border-slate-600 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/participant/dashboard/challenge">View evaluation</Link></Button>
+                </div>
+              </section>
+            )}
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
             <div className="hidden relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
@@ -2107,22 +2121,23 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                     <span className="inline-flex items-center gap-2 text-[#d6b66b]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0] shadow-[0_0_10px_#4bd6a0]" /> EliteFund private markets</span>
                     <span className="text-slate-600">/</span><span className="text-slate-500">Participant workspace</span>
                   </div>
-                  <h1 id="elitefund-welcome-title" className="max-w-xl text-2xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">Your capital, clearly accounted for.</h1>
-                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">Explore markets, review your account, and make informed funding decisions from one secure operating view.</p>
+                  <h1 id="elitefund-welcome-title" className="max-w-xl text-2xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">{isChallengeAccount ? "Your Challenge, clearly measured." : "Your capital, clearly accounted for."}</h1>
+                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">{isChallengeAccount ? "Track your virtual equity, evaluation progress, and risk limits from one secure workspace." : "Explore markets, review your account, and make informed funding decisions from one secure operating view."}</p>
                   <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                     <span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Live market access</span><span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Transparent records</span><span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Human support</span>
                   </div>
                 </div>
                 <div className="min-w-0 border border-slate-700/80 bg-[#0a111b] p-4 sm:min-w-[250px]">
-                  <div className="mb-4 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">Available balance</span><Wallet className="h-4 w-4 text-[#d6b66b]" /></div>
+                  <div className="mb-4 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{isChallengeAccount ? "Virtual balance" : "Available balance"}</span><Wallet className="h-4 w-4 text-[#d6b66b]" /></div>
                   <p className="text-3xl font-semibold tracking-tight text-white">$<AnimatedNumber value={walletBalance} decimals={2} /></p>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3 text-[10px] uppercase tracking-wider"><span className="text-slate-500">Account status</span><span className="flex items-center gap-1.5 font-bold text-[#4bd6a0]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0]" /> Active</span></div>
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3 text-[10px] uppercase tracking-wider"><span className="text-slate-500">Account status</span><span className="flex items-center gap-1.5 font-bold text-[#4bd6a0]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0]" /> {isChallengeAccount ? String(participantData.challenge_status || "not_started").replaceAll("_", " ") : "Active"}</span></div>
                 </div>
               </div>
             </section>
 
             {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
-            <section className="mx-3 mt-3 overflow-hidden border border-slate-700/70 bg-[#181b1f] sm:mx-4" aria-labelledby="funding-launchpad-title">
+            {!isChallengeAccount && (
+              <section className="mx-3 mt-3 overflow-hidden border border-slate-700/70 bg-[#181b1f] sm:mx-4" aria-labelledby="funding-launchpad-title">
               <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/30 bg-[#d6b66b]/10 text-[#d6b66b]">
@@ -2143,7 +2158,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                   <Plus className="h-4 w-4" /> Add funds
                 </button>
               </div>
-            </section>
+              </section>
+            )}
 
             {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
             <section className="mx-3 mt-3 border border-slate-700/60 bg-slate-950/75 sm:mx-4" aria-labelledby="account-confidence-title">
@@ -2172,7 +2188,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
               <div className="flex flex-col gap-3 border-t border-slate-800/80 p-4 text-[11px] leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                 <p><span className="font-bold text-slate-300">Risk notice:</span> Trading involves risk. Review your balance, activity, and funding status before taking action.</p>
-                <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 hover:text-white">View account activity <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
+                {isChallengeAccount ? (
+                  <Link href="/participant/dashboard/challenge" className="shrink-0 font-bold text-slate-300 hover:text-white">Review evaluation status <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
+                ) : (
+                  <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 hover:text-white">View account activity <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
+                )}
               </div>
             </section>
 
@@ -2350,14 +2370,18 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <ShieldCheck />
                 <span>Challenge</span>
               </Link>
-              <Link href="/participant/dashboard/upi" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
-                <QrCode />
-                <span>UPI Gateway</span>
-              </Link>
-              <Link href="/participant/dashboard/payout" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
-                <ArrowUpRight />
-                <span>Payout</span>
-              </Link>
+              {!isChallengeAccount && (
+                <>
+                  <Link href="/participant/dashboard/upi" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                    <QrCode />
+                    <span>UPI Gateway</span>
+                  </Link>
+                  <Link href="/participant/dashboard/payout" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
+                    <ArrowUpRight />
+                    <span>Payout</span>
+                  </Link>
+                </>
+              )}
             </nav>
 
             <div className="elite-terminal-sidebar-footer">

@@ -3090,10 +3090,12 @@ const maxLeverage = 100
   { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => setActivePanel("trust") },
     { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
-    { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
-    { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+    ...(!isChallengeAccount ? [
+      { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
+      { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
+    ] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders])
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount])
 
   return (
     <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
@@ -3256,20 +3258,22 @@ const maxLeverage = 100
             </div>
           ))}
         </div>
-        <nav className="terminal-account-actions" aria-label="Account actions">
-          <button type="button" className="terminal-action terminal-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
-            <Wallet className="h-3.5 w-3.5" />
-            <span>Add Funds</span>
-          </button>
-          <button type="button" className="terminal-action terminal-action-withdraw" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
-            <ArrowUpDown className="h-3.5 w-3.5" />
-            <span>Withdraw</span>
-          </button>
-          <button type="button" className="terminal-action terminal-action-accent" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
-            <TrendingUp className="h-3.5 w-3.5" />
-            <span>Prediction</span>
-          </button>
-        </nav>
+        {!isChallengeAccount && (
+          <nav className="terminal-account-actions" aria-label="Account actions">
+            <button type="button" className="terminal-action terminal-action-primary" onClick={() => onAddFunds?.() || showToast("info", "Add funds flow opened")}>
+              <Wallet className="h-3.5 w-3.5" />
+              <span>Add Funds</span>
+            </button>
+            <button type="button" className="terminal-action terminal-action-withdraw" onClick={() => { window.location.href = "/participant/dashboard/payout" }}>
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              <span>Withdraw</span>
+            </button>
+            <button type="button" className="terminal-action terminal-action-accent" onClick={() => { window.location.href = "/participant/dashboard/predict" }}>
+              <TrendingUp className="h-3.5 w-3.5" />
+              <span>Prediction</span>
+            </button>
+          </nav>
+        )}
         </div>
       </header>
 
@@ -3418,7 +3422,7 @@ const maxLeverage = 100
           <section className="mobile-account-details" aria-label="Account details">
             <div className="mobile-account-detail">
               <span>Account type</span>
-              <strong>{isFundedAccount ? "Funded account" : "Live account"}</strong>
+              <strong>{isChallengeAccount ? "Challenge account" : isFundedAccount ? "Funded account" : "Live account"}</strong>
             </div>
             <div className={`mobile-account-detail ${accountKycTone}`}>
               <span>KYC status</span>
@@ -3430,18 +3434,20 @@ const maxLeverage = 100
             </div>
           </section>
 
-          <section className="mobile-account-actions" aria-label="Funding and payout">
-            <button type="button" className="mobile-account-action is-primary" onClick={() => onAddFunds ? onAddFunds() : window.location.assign("/participant/dashboard/contribute")}>
-              <span className="mobile-account-action-icon"><Plus aria-hidden="true" /></span>
-              <span className="mobile-account-action-copy"><strong>Add funds</strong><small>Deposit into your account</small></span>
-              <ArrowUpRight aria-hidden="true" />
-            </button>
-            <button type="button" className="mobile-account-action" onClick={() => window.location.assign("/participant/dashboard/payout")}>
-              <span className="mobile-account-action-icon"><ArrowUpDown aria-hidden="true" /></span>
-              <span className="mobile-account-action-copy"><strong>Payout</strong><small>Withdraw available funds</small></span>
-              <ArrowUpRight aria-hidden="true" />
-            </button>
-          </section>
+          {!isChallengeAccount && (
+            <section className="mobile-account-actions" aria-label="Funding and payout">
+              <button type="button" className="mobile-account-action is-primary" onClick={() => onAddFunds ? onAddFunds() : window.location.assign("/participant/dashboard/contribute")}>
+                <span className="mobile-account-action-icon"><Plus aria-hidden="true" /></span>
+                <span className="mobile-account-action-copy"><strong>Add funds</strong><small>Deposit into your account</small></span>
+                <ArrowUpRight aria-hidden="true" />
+              </button>
+              <button type="button" className="mobile-account-action" onClick={() => window.location.assign("/participant/dashboard/payout")}>
+                <span className="mobile-account-action-icon"><ArrowUpDown aria-hidden="true" /></span>
+                <span className="mobile-account-action-copy"><strong>Payout</strong><small>Withdraw available funds</small></span>
+                <ArrowUpRight aria-hidden="true" />
+              </button>
+            </section>
+          )}
 
           <button type="button" className="mobile-account-settings" onClick={() => window.location.assign("/participant/dashboard/settings/security")}>
             <span className="mobile-account-settings-icon"><Settings aria-hidden="true" /></span>

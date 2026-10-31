@@ -9,6 +9,19 @@ function utcDateKey() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function utcDateColumnKey(value: unknown) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  return typeof value === "string" ? value.slice(0, 10) : ""
+}
+
+function getTradeFailure(error: unknown, fallbackMessage: string) {
+  const candidate = error as { status?: unknown } | null
+  const status = Number(candidate?.status)
+  const safeStatus = Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500
+  const message = safeStatus === 500 || !(error instanceof Error) ? fallbackMessage : error.message
+  return { status: safeStatus, message }
+}
+
 /**
  * GET /api/forex/trades?email=...
  * Returns { open, pending, closed } trade rows for the authenticated participant.
@@ -125,7 +138,8 @@ export async function POST(req: NextRequest) {
     const participantRows = await db.query(
       `SELECT id, account_frozen, is_frozen, account_type, funded_breach_status,
               challenge_status, challenge_plan_key, challenge_trading_days,
-              challenge_last_trading_date, challenge_day_start_equity, challenge_peak_equity
+              challenge_last_trading_date, challenge_day_start_equity, challenge_day_start_date,
+              challenge_peak_equity
        FROM participants WHERE LOWER(email) = LOWER($1)`,
       [participant_email],
     )
@@ -204,7 +218,7 @@ export async function POST(req: NextRequest) {
         const accountResult = await client.query(
           `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
                   challenge_trading_days, challenge_last_trading_date, challenge_day_start_equity,
-                  challenge_peak_equity
+                  challenge_day_start_date, challenge_peak_equity
            FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
           [participant_email],
         )
@@ -242,7 +256,8 @@ export async function POST(req: NextRequest) {
           const today = utcDateKey()
           const lastTradingDate = String(account.challenge_last_trading_date || "").slice(0, 10)
           const isNewTradingDay = lastTradingDate !== today
-          const dayStartEquity = isNewTradingDay
+          const isNewChallengeDay = utcDateColumnKey(account.challenge_day_start_date) !== today
+          const dayStartEquity = isNewChallengeDay
             ? equityBefore
             : Number(account.challenge_day_start_equity) || accountChallengePlan.startingBalance
           const tradingDays = (Number(account.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
@@ -285,7 +300,8 @@ export async function POST(req: NextRequest) {
           const balanceAfter = Number((balanceBefore - margin).toFixed(2))
           await client.query(
             `UPDATE participants SET account_balance = $1, challenge_day_start_equity = $2,
-               challenge_trading_days = $3, challenge_last_trading_date = $4::date,
+               challenge_day_start_date = $4::date, challenge_trading_days = $3,
+               challenge_last_trading_date = $4::date,
                challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $5), $5), updated_at = NOW()
              WHERE id = $6`,
             [balanceAfter, dayStartEquity, tradingDays, today, equityBefore, account.id],
@@ -419,7 +435,7 @@ export async function POST(req: NextRequest) {
           const participantResult = await client.query(
             `SELECT id, account_balance, challenge_status, challenge_plan_key,
                     challenge_trading_days, challenge_last_trading_date,
-                    challenge_day_start_equity, challenge_peak_equity
+                    challenge_day_start_equity, challenge_day_start_date, challenge_peak_equity
              FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
             [participant_email],
           )
@@ -476,6 +492,7 @@ export async function POST(req: NextRequest) {
             )
             const remainingTrades = remainingTradesResult.rows
             const remainingPnl = getChallengeOpenPositionPnl(remainingTrades, challengeRates)
+            if (!remainingPnl.complete) throw Object.assign(new Error("Current market quotes are unavailable for your remaining Challenge positions."), { status: 503 })
             const remainingMarginResult = await client.query(
               `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
                WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
@@ -484,8 +501,9 @@ export async function POST(req: NextRequest) {
             const remainingMargin = Number(remainingMarginResult.rows[0]?.amount) || 0
             const today = utcDateKey()
             const isNewTradingDay = String(participant.challenge_last_trading_date || "").slice(0, 10) !== today
+            const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
             nextTradingDays += isNewTradingDay ? 1 : 0
-            nextDayStart = isNewTradingDay ? equityBefore : nextDayStart
+            nextDayStart = isNewChallengeDay ? equityBefore : nextDayStart
             currentEquity = Number((balanceAfter + remainingMargin + (remainingPnl.complete ? remainingPnl.pnl : 0)).toFixed(2))
             const snapshot = getChallengeSnapshot(plan, currentEquity, nextDayStart, nextTradingDays, "active")
             challengeStatus = snapshot.breached
@@ -497,8 +515,8 @@ export async function POST(req: NextRequest) {
               `UPDATE participants SET account_balance = $1, challenge_status = $2,
                  challenge_failed_at = CASE WHEN $2 = 'failed' THEN NOW() ELSE challenge_failed_at END,
                  challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
-                 challenge_day_start_equity = $3, challenge_trading_days = $4,
-                 challenge_last_trading_date = $5::date,
+                 challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
+                 challenge_trading_days = $4, challenge_last_trading_date = $5::date,
                  challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $6), $6), updated_at = NOW()
                WHERE id = $7`,
               [balanceAfter, challengeStatus, nextDayStart, nextTradingDays, today, Math.max(Number(participant.challenge_peak_equity) || 0, currentEquity), participant.id],
@@ -516,7 +534,7 @@ export async function POST(req: NextRequest) {
           await client.query(
             `INSERT INTO transactions (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
              VALUES ($1, $2, $3, $4, $5, $6, $7, 'completed')`,
-            [participant.id, participant_email, settlement < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(settlement), `Partial trade close settlement — ${id}`, balanceBefore, balanceAfter],
+            [participant.id, participant_email, settlement < 0 ? "forex_pnl_loss" : "forex_pnl_profit", Math.abs(settlement), `Partial trade close settlement — ${trade.id}`, balanceBefore, balanceAfter],
           )
           await client.query("COMMIT")
           return NextResponse.json({
@@ -603,7 +621,8 @@ export async function POST(req: NextRequest) {
     })
   } catch (e: any) {
     console.error("[v0] forex trades POST error:", e)
-    return NextResponse.json({ success: false, error: "Trade could not be executed. Please try again." }, { status: 500 })
+    const failure = getTradeFailure(e, "Trade could not be executed. Please try again.")
+    return NextResponse.json({ success: false, error: failure.message }, { status: failure.status })
   }
 }
 
@@ -723,7 +742,7 @@ export async function PATCH(req: NextRequest) {
         const participantResult = await client.query(
           `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
                   challenge_trading_days, challenge_last_trading_date,
-                  challenge_day_start_equity, challenge_peak_equity
+                  challenge_day_start_equity, challenge_day_start_date, challenge_peak_equity
            FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
           [participant_email],
         )
@@ -745,6 +764,7 @@ export async function PATCH(req: NextRequest) {
             )
             const remainingTrades = remainingTradesResult.rows
             const remainingPnl = getChallengeOpenPositionPnl(remainingTrades, challengeRates)
+            if (!remainingPnl.complete) throw Object.assign(new Error("Current market quotes are unavailable for your remaining Challenge positions."), { status: 503 })
             const remainingMarginResult = await client.query(
               `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
                WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
@@ -755,7 +775,8 @@ export async function PATCH(req: NextRequest) {
             const today = utcDateKey()
             const lastTradingDate = String(participant.challenge_last_trading_date || "").slice(0, 10)
             const isNewTradingDay = lastTradingDate !== today
-            const dayStartEquity = isNewTradingDay
+            const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
+            const dayStartEquity = isNewChallengeDay
               ? equityBefore
               : Number(participant.challenge_day_start_equity) || plan.startingBalance
             const tradingDays = (Number(participant.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
@@ -771,8 +792,8 @@ export async function PATCH(req: NextRequest) {
               `UPDATE participants SET account_balance = $1, challenge_status = $2,
                  challenge_failed_at = CASE WHEN $2 = 'failed' THEN NOW() ELSE challenge_failed_at END,
                  challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
-                 challenge_day_start_equity = $3, challenge_trading_days = $4,
-                 challenge_last_trading_date = $5::date,
+                 challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
+                 challenge_trading_days = $4, challenge_last_trading_date = $5::date,
                  challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $6), $6), updated_at = NOW()
                WHERE id = $7`,
               [balanceAfter, challengeStatus, dayStartEquity, tradingDays, today, Math.max(Number(participant.challenge_peak_equity) || 0, challengeEquity), participant.id],
@@ -869,7 +890,7 @@ export async function PATCH(req: NextRequest) {
           const participantResult = await client.query(
             `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
                     challenge_trading_days, challenge_last_trading_date, challenge_day_start_equity,
-                    challenge_peak_equity
+                    challenge_day_start_date, challenge_peak_equity
              FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
             [participant_email],
           )
@@ -914,7 +935,8 @@ export async function PATCH(req: NextRequest) {
           const today = utcDateKey()
           const lastTradingDate = String(participant.challenge_last_trading_date || "").slice(0, 10)
           const isNewTradingDay = lastTradingDate !== today
-          const dayStartEquity = isNewTradingDay
+          const isNewChallengeDay = utcDateColumnKey(participant.challenge_day_start_date) !== today
+          const dayStartEquity = isNewChallengeDay
             ? equityBefore
             : Number(participant.challenge_day_start_equity) || challengePlan.startingBalance
           const tradingDays = (Number(participant.challenge_trading_days) || 0) + (isNewTradingDay ? 1 : 0)
@@ -944,7 +966,8 @@ export async function PATCH(req: NextRequest) {
           const balanceAfter = Number((balanceBefore - margin).toFixed(2))
           await client.query(
             `UPDATE participants SET account_balance = $1, challenge_day_start_equity = $2,
-               challenge_trading_days = $3, challenge_last_trading_date = $4::date,
+               challenge_day_start_date = $4::date, challenge_trading_days = $3,
+               challenge_last_trading_date = $4::date,
                challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $5), $5), updated_at = NOW()
              WHERE id = $6`,
             [balanceAfter, dayStartEquity, tradingDays, today, equityBefore, participant.id],
@@ -993,8 +1016,9 @@ export async function PATCH(req: NextRequest) {
     })
     return NextResponse.json({ success: true })
   } catch (e: any) {
-    console.error("[v0] forex trades PATCH error:", e.message)
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 })
+    console.error("[v0] forex trades PATCH error:", e)
+    const failure = getTradeFailure(e, "Trade could not be updated. Please try again.")
+    return NextResponse.json({ success: false, error: failure.message }, { status: failure.status })
   }
 }
 

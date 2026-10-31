@@ -45,7 +45,7 @@ export function getChallengeSnapshot(
   const profitTarget = plan.startingBalance * (1 + plan.profitTargetPercent / 100)
   const maxEquityDrawdown = plan.startingBalance * (1 - plan.maxDrawdownPercent / 100)
   const dailyLossFloor = dayStartEquity * (1 - plan.dailyLossLimitPercent / 100)
-  const breached = equity < maxEquityDrawdown || equity < dailyLossFloor
+  const breached = equity <= maxEquityDrawdown || equity <= dailyLossFloor
   const eligibleToPass = equity >= profitTarget && tradingDays >= plan.minimumTradingDays
   const profitPercent = ((equity - plan.startingBalance) / plan.startingBalance) * 100
   const dailyLossPercent = dayStartEquity > 0 ? ((dayStartEquity - equity) / dayStartEquity) * 100 : 0
