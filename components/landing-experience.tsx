@@ -105,22 +105,22 @@ export default function LandingExperience() {
         <section id="platform" className="elite-hero relative isolate overflow-hidden">
           <div className="elite-hero-art" aria-hidden="true" />
           <div className="elite-hero-scrim" aria-hidden="true" />
-          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-12 px-5 py-14 sm:px-8 sm:py-20 lg:min-h-[690px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-24">
+          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 sm:gap-12 sm:px-8 sm:py-20 lg:min-h-[690px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-24">
             <div className="elite-hero-copy max-w-2xl">
               <p className="elite-eyebrow mb-5 inline-flex items-center gap-2.5">
                 <span className="elite-eyebrow-dot" aria-hidden="true" />
-                Market access for disciplined traders
+                Funded programs for disciplined traders
               </p>
               <h1 className="elite-display text-balance">
                 Trade with a plan.
                 <span className="block elite-brand-text">Stay in control.</span>
               </h1>
-              <p className="elite-copy mt-6 max-w-xl text-base sm:text-lg">
-                A focused workspace for analyzing markets, defining risk, and managing positions—without the noise or the promises.
+              <p className="elite-copy mt-5 max-w-xl text-base sm:mt-6 sm:text-lg">
+                Explore funded account sizes and fees. Review the rules. Plan each trade with focus.
               </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="#accounts" className="elite-button elite-button-primary">
-                  Compare account options <ArrowRight aria-hidden="true" />
+              <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+                <Link href="#funded-accounts" className="elite-button elite-button-primary">
+                  Compare funded accounts <ArrowRight aria-hidden="true" />
                 </Link>
                 <Link href="/participant/login" className="elite-button elite-button-secondary">
                   Trader login

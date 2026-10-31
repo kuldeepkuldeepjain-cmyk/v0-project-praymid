@@ -887,6 +887,17 @@ button, a, [role="button"] {
   border-radius: 1rem;
   background: color-mix(in srgb, var(--elite-bg) 95%, var(--elite-text));
 }
+.elite-landing .elite-funded-feature {
+  border: 1px solid color-mix(in srgb, var(--elite-brand) 42%, transparent);
+  border-radius: 1.25rem;
+  background: color-mix(in srgb, var(--elite-bg) 88%, var(--elite-brand));
+  padding: clamp(1rem, 3vw, 2rem);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--elite-brand) 7%, transparent);
+}
+.elite-landing .elite-funded-feature .elite-funded-tier {
+  border-color: color-mix(in srgb, var(--elite-brand) 26%, transparent);
+  background: color-mix(in srgb, var(--elite-bg) 93%, var(--elite-brand));
+}
 .elite-landing .elite-account-card { display: flex; flex-direction: column; gap: 1rem; padding: clamp(1.25rem, 3vw, 2rem); }
 .elite-landing .elite-account-normal { border-color: color-mix(in srgb, var(--elite-brand) 38%, transparent); }
 .elite-landing .elite-account-card-heading { display: flex; align-items: center; gap: 0.9rem; }
@@ -948,9 +959,9 @@ button, a, [role="button"] {
 }
 @media (max-width: 767px) {
   .elite-landing .elite-hero { min-height: 0; }
-  .elite-landing .elite-hero-art { background-image: url("/images/elitefund-hero-mobile.png"); background-position: center 35%; opacity: 0.52; }
+  .elite-landing .elite-hero-art { background-image: url("/images/elitefund-hero-mobile.png"); background-position: center 35%; opacity: 0.62; }
   .elite-landing .elite-hero-scrim { background: linear-gradient(180deg, color-mix(in srgb, var(--elite-bg) 66%, transparent) 0%, color-mix(in srgb, var(--elite-bg) 55%, transparent) 40%, var(--elite-bg) 83%); }
-  .elite-landing .elite-display { font-size: clamp(3.2rem, 13vw, 4.6rem); }
+  .elite-landing .elite-display { font-size: clamp(2.45rem, 12vw, 3.4rem); }
   .elite-landing .elite-section { padding: 4.25rem 0; }
   .elite-landing .elite-planner { grid-template-columns: minmax(0, 1fr); }
   .elite-landing .elite-planner-aside { border-top: 1px solid color-mix(in srgb, var(--elite-text) 13%, transparent); border-left: 0; }

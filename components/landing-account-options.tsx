@@ -116,22 +116,22 @@ export function LandingAccountOptions() {
           </article>
         </div>
 
-        <div className="mt-10">
+        <section id="funded-accounts" aria-labelledby="funded-accounts-heading" className="elite-funded-feature mt-10 scroll-mt-20">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="elite-eyebrow">Funded accounts</p>
-              <h3 className="mt-3 text-2xl font-semibold text-balance">Choose your capacity. Know the terms.</h3>
+              <p className="elite-eyebrow">Featured funded accounts</p>
+              <h3 id="funded-accounts-heading" className="mt-3 text-3xl font-semibold tracking-tight text-balance">Choose your capacity. Know the terms.</h3>
             </div>
             <p className="elite-copy max-w-xl text-sm">
               Five published account sizes, each paired with its matching program fee. The key trading and payout details are just below.
             </p>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5">
             {fundedAccountTiers.map((tier, index) => (
               <article
                 key={tier.balance}
-                className="elite-funded-tier"
+                className="elite-funded-tier last:col-span-2 lg:last:col-span-1"
                 style={{ animationDelay: `${index * 85}ms` }}
               >
                 <span className="elite-funded-tier-label">Funded capacity</span>
@@ -164,7 +164,7 @@ export function LandingAccountOptions() {
           <p className="elite-copy mt-4 max-w-5xl text-xs">
             Advertised balances represent account or trading capacity, not cash paid to you or a guaranteed withdrawal. Review the applicable loss, drawdown, and payout conditions before trading. Fees, availability, eligibility, and plan terms apply. <Link href="/terms" className="elite-terms-link">Read the Terms</Link>.
           </p>
-        </div>
+        </section>
       </div>
     </section>
   )
