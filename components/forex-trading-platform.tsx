@@ -47,8 +47,8 @@ import type { ReactNode } from "react"
 
 // ─── Workspace layout (UI preferences only — never market or account data) ──
 
-const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v2"
-const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v1"
+const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v3"
+const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v2"
 
 function DockGroup({
   enabled,
@@ -390,7 +390,7 @@ function InstrumentTradingInfo({ pair, leverage, online }: { pair: ForexPair; le
   const panelId = `${idPrefix}-panel`
 
   return (
-    <section aria-label={`${pair.symbol} trading information`} className="mt-3 overflow-hidden rounded-xl border border-[#15263b] bg-[#050d18]/90">
+    <section aria-label={`${pair.symbol} trading information`} className="overflow-hidden rounded-xl border border-[#15263b] bg-[#050d18]/90">
       <header className="flex items-center gap-2.5 px-3 pb-2 pt-3">
         <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
           <Info className="size-4 text-cyan-300" aria-hidden="true" />
@@ -3216,76 +3216,63 @@ const maxLeverage = 100
   ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount, openActivityPanel])
 
   const instrumentOverviewPanel = selectedPair ? (
-    <section
-      aria-label={`${selectedPair.symbol} instrument overview`}
-      className={`apple-terminal-instrument-overview shrink-0 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 p-3 shadow-lg ${isCompactViewport ? "mx-3 my-2" : ""}`}
-      style={isCompactViewport ? undefined : {
-        position: "absolute",
-        top: "100%",
-        left: 0,
-        width: "100%",
-        height: "100%",
-        minHeight: "100%",
-        margin: 0,
-        borderLeft: 0,
-        borderRight: 0,
-        borderRadius: 0,
-        overflowX: "hidden",
-        overflowY: "auto",
-        scrollSnapAlign: "start",
-      }}
-    >
-      <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
-        <div className="flex items-center gap-2">
-          <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
-          <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
+    <div className={`apple-terminal-instrument-stack flex shrink-0 flex-col gap-3 ${isCompactViewport ? "mx-3 my-2" : "px-3 pb-3"}`}>
+      <section
+        aria-label={`${selectedPair.symbol} instrument overview`}
+        className="apple-terminal-instrument-overview shrink-0 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 p-3 shadow-lg"
+      >
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
+          <div className="flex items-center gap-2">
+            <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
+            <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
+          </div>
+          <span className="text-[9px] font-bold text-slate-400">
+            {online ? "● Market Live" : "○ Market Closed"}
+          </span>
         </div>
-        <span className="text-[9px] font-bold text-slate-400">
-          {online ? "● Market Live" : "○ Market Closed"}
-        </span>
-      </div>
 
-      <div className={`apple-instrument-overview-metrics grid grid-cols-2 gap-2 text-xs ${isCompactViewport ? "sm:grid-cols-4" : ""}`}>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
-          <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
+        <div className={`apple-instrument-overview-metrics grid grid-cols-2 gap-2 text-xs ${isCompactViewport ? "sm:grid-cols-4" : ""}`}>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
+            <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
+            <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
+            <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
+            <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+              {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
+            </span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
+            <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
+            <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
+            <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
+              {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
+            </span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
+            <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
-          <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
-        </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
-          <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
-        </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
-          <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-            {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
-          </span>
-        </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
-          <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
-        </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
-          <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
-        </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
-          <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
-            {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
-          </span>
-        </div>
-        <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
-          <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
-        </div>
-      </div>
+      </section>
 
       <InstrumentTradingInfo pair={selectedPair} leverage={effectiveLeverage} online={online} />
-    </section>
+    </div>
   ) : null
 
   return (
@@ -3716,10 +3703,10 @@ const maxLeverage = 100
 
         {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
-        <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
+        <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={26} minSize={22} maxSize={34}>
 	        <div
           role="region"
-          aria-label="Market watch and instrument overview"
+          aria-label="Market Watch, Instrument Overview, and Trading Info"
           tabIndex={0}
           className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13", position: dockEnabled ? "relative" : undefined, overflowX: dockEnabled ? "hidden" : undefined, overflowY: dockEnabled ? "auto" : undefined, overscrollBehaviorY: dockEnabled ? "contain" : undefined }}>
@@ -3786,7 +3773,7 @@ const maxLeverage = 100
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#6f8aa3" }}>Chg%</span>
           </div>
 
-          <div id="market-watch-instruments" className="min-h-0 flex-1 overflow-y-auto terminal-scroll">
+          <div id="market-watch-instruments" className="min-h-0 flex-1 overflow-y-auto terminal-scroll" style={{ flex: dockEnabled ? "0 0 clamp(260px, 38vh, 360px)" : undefined }}>
             {loading ? (
               <div className="p-2 flex flex-col gap-1">
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -3906,10 +3893,10 @@ const maxLeverage = 100
         </DockPanel>
         )}
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
-        <DockPanel enabled={dockEnabled} id="workspace" order={2} defaultSize={81} minSize={68}>
+        <DockPanel enabled={dockEnabled} id="workspace" order={2} defaultSize={74} minSize={66}>
         <div className="apple-terminal-main-column">
-        <DockGroup enabled={dockEnabled} direction="vertical" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
-        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={64} minSize={42}>
+        <DockGroup enabled={dockEnabled} direction="horizontal" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
+        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={62} minSize={45} maxSize={74}>
         <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
@@ -4213,7 +4200,7 @@ const maxLeverage = 100
         {!rightPanelHidden && !(dockEnabled && chartExpanded) && (
         <>
         <DockHandle enabled={dockEnabled} />
-        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={36} minSize={22} maxSize={55}>
+        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={38} minSize={26} maxSize={55}>
         <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderTop: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
