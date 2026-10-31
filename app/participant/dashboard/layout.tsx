@@ -49,14 +49,19 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Link
             href="/participant/dashboard?view=terminal"
             aria-label="Open trading terminal"
-            className="participant-dock-trade-button mx-auto grid h-16 w-full grid-cols-[1fr_auto_1fr] items-center rounded-[18px] px-5 text-[18px] font-semibold tracking-wide transition-transform active:scale-[0.99] focus-visible:outline-none motion-reduce:transition-none"
+            className="participant-dock-trade-button mx-auto grid h-16 w-full grid-cols-[1fr_auto_1fr] items-center rounded-[18px] px-4 text-left transition-transform active:scale-[0.99] focus-visible:outline-none motion-reduce:transition-none"
           >
             <span aria-hidden="true" />
-            <span className="flex items-center justify-center gap-3">
-              <BarChart3 className="participant-dock-trade-icon size-6" strokeWidth={2.6} aria-hidden="true" />
-              <span>Trade</span>
+            <span className="flex items-center justify-center gap-2.5">
+              <span className="participant-dock-trade-icon-wrap flex size-10 shrink-0 items-center justify-center rounded-xl" aria-hidden="true">
+                <BarChart3 className="participant-dock-trade-icon size-[18px]" strokeWidth={2.4} />
+              </span>
+              <span className="flex flex-col items-start gap-1 leading-none">
+                <span className="text-sm font-bold tracking-wide">Trade</span>
+                <span className="participant-dock-trade-caption text-[10px] font-medium">Open terminal</span>
+              </span>
             </span>
-            <ChevronRight className="size-6 justify-self-end" strokeWidth={2} aria-hidden="true" />
+            <ChevronRight className="participant-dock-trade-arrow size-5 justify-self-end" strokeWidth={2} aria-hidden="true" />
           </Link>
         </nav>
       </div>
