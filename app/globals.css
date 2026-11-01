@@ -6745,8 +6745,7 @@ body:has(.reference-terminal) {
   height: auto !important;
 }
 .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap,
-.reference-terminal .apple-terminal-chart-column .apple-trading-chart,
-.reference-terminal .apple-terminal-chart-column canvas {
+.reference-terminal .apple-terminal-chart-column .apple-trading-chart {
   width: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
@@ -6822,8 +6821,7 @@ body:has(.reference-terminal) {
     min-height: 400px !important;
   }
   .reference-terminal .apple-terminal-chart-column .mobile-terminal-chart-wrap,
-  .reference-terminal .apple-terminal-chart-column .apple-trading-chart,
-  .reference-terminal .apple-terminal-chart-column canvas {
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart {
     min-height: 300px !important;
     height: 100% !important;
   }
@@ -6840,7 +6838,6 @@ body:has(.reference-terminal) {
     overflow: hidden !important;
   }
   .reference-terminal .chart-surface .apple-trading-chart,
-  .reference-terminal .chart-surface canvas,
   .reference-terminal .chart-surface .apple-trading-chart-canvas svg {
     display: block !important;
     width: 100% !important;
@@ -7636,10 +7633,9 @@ body.is-resizing-terminal { cursor: row-resize; user-select: none; }
     visibility: visible !important;
     opacity: 1 !important;
   }
+  /* Size the chart hosts only; lightweight-charts owns each canvas's pixel dimensions. */
   .reference-terminal .apple-terminal-chart-column .apple-trading-chart,
-  .reference-terminal .apple-terminal-chart-column .apple-trading-chart canvas,
-  .reference-terminal .apple-terminal-chart-column .apple-trading-chart-canvas,
-  .reference-terminal .apple-terminal-chart-column .chart-surface canvas {
+  .reference-terminal .apple-terminal-chart-column .apple-trading-chart-canvas {
     display: block !important;
     width: 100% !important;
     min-width: 0 !important;

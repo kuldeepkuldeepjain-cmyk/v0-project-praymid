@@ -324,9 +324,14 @@ export function TradingChart({
 
   // ── Create chart on mount ──────────────────────────────────────────────────
   useEffect(() => {
-    if (!containerRef.current) return
+    const container = containerRef.current
+    if (!container) return
 
-    const chart = createChart(containerRef.current, {
+    // Match lightweight-charts' even-pixel sizing to avoid rounding-driven relayouts.
+    const initialWidth = Math.floor(container.clientWidth / 2) * 2
+    const initialHeight = Math.floor(container.clientHeight / 2) * 2
+    const chart = createChart(container, {
+      autoSize: false,
       layout: {
         background: { type: ColorType.Solid, color: palette.bg },
         textColor:  palette.textDim,
@@ -380,8 +385,8 @@ export function TradingChart({
       },
       handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale:  { mouseWheel: true, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
-      width:  containerRef.current.clientWidth,
-      height: containerRef.current.clientHeight,
+      width: initialWidth,
+      height: initialHeight,
     })
 
     chartRef.current = chart
@@ -484,35 +489,32 @@ export function TradingChart({
     // being resized. Coalesce observer callbacks and only resize when the actual
     // container dimensions changed to avoid a ResizeObserver feedback loop.
     let frameId: number | null = null
-    let lastWidth = containerRef.current.clientWidth
-    let lastHeight = containerRef.current.clientHeight
+    let lastWidth = initialWidth
+    let lastHeight = initialHeight
 
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0]
-      if (!entry || frameId !== null) return
+    const ro = new ResizeObserver(() => {
+      if (frameId !== null) return
 
       frameId = requestAnimationFrame(() => {
         frameId = null
-        const container = containerRef.current
-        if (!container) return
-        const width = container.clientWidth
-        const height = container.clientHeight
-        if (!chartRef.current || width <= 0 || height <= 0) return
+        const width = Math.floor(container.clientWidth / 2) * 2
+        const height = Math.floor(container.clientHeight / 2) * 2
+        if (width <= 0 || height <= 0) return
         if (width === lastWidth && height === lastHeight) return
 
         lastWidth = width
         lastHeight = height
-        chartRef.current.applyOptions({
+        // applyOptions already resizes the chart; a second resize repeats layout.
+        chart.applyOptions({
           width,
           height,
           rightPriceScale: {
             minimumWidth: Math.min(88, Math.max(54, Math.round(width * 0.18))),
           },
         })
-        chartRef.current.resize(width, height)
       })
     })
-    ro.observe(containerRef.current)
+    ro.observe(container)
 
     return () => {
       ro.disconnect()
@@ -1053,7 +1055,7 @@ export function TradingChart({
       </div>
 
       {/* ── Chart canvas ───────────────────────────���──���──────────────���──────────── */}
-  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg }}>
+  <div ref={containerRef} className="apple-trading-chart-canvas native-chart-gesture-surface relative flex-1 min-h-0 min-w-0 w-full" aria-label={`${safeSymbol} interactive native candlestick chart`} role="img" style={{ background: darkTheme ? DARK_T.bg : T.bg, contain: "size layout" }}>
 
   {/* Sub-pane label overlay in bottom-left of chart */}
 
