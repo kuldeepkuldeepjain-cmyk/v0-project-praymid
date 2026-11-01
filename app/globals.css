@@ -6,6 +6,11 @@
   --market-watch-foreground: #edf4fc;
   --market-watch-muted: #90a5bc;
   --market-watch-accent: #38bdf8;
+  --activity-background: var(--market-watch-background);
+  --activity-surface: var(--market-watch-surface);
+  --activity-foreground: var(--market-watch-foreground);
+  --activity-muted: var(--market-watch-muted);
+  --activity-accent: var(--market-watch-accent);
 }
 
 .activity-glass-content {

@@ -34,6 +34,10 @@ import {
 import { ForexHeader } from "@/components/forex-header"
 import { AssetLogo } from "@/components/asset-logo"
 import { PortfolioActivityView } from "@/components/portfolio-activity-view"
+import {
+  ACTIVITY_PANEL_TITLES, ACTIVITY_TOOLS, TerminalActivityLauncher, TerminalActivityNavigation,
+  type ActivityPanelId,
+} from "@/components/terminal-activity-navigation"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
 import {
   Dialog,
@@ -138,27 +142,6 @@ export type ClosedTrade = OpenTrade & {
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "30M" | "1H" | "4H" | "1D" | "1W"
-type ActivityPanelId = "positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach" | "trust"
-
-const ACTIVITY_PANEL_TITLES: Record<ActivityPanelId, string> = {
-  positions: "Open positions",
-  history: "Trade history",
-  pending: "Pending orders",
-  depth: "Order depth",
-  stats: "Market stats",
-  performance: "Performance dashboard",
-  alerts: "Price alerts",
-  "smart-alerts": "Smart alerts",
-  support: "Support center",
-  sessions: "Market sessions",
-  dom: "Depth of market",
-  risk: "Risk analytics",
-  journal: "Trade journal",
-  news: "News and economic calendar",
-  "ai-coach": "AI trading guide",
-  trust: "Trust and account protection",
-}
-
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
 type ModifyTarget = { tradeId: string; sl: string; tp: string; trailingPips: string } | null
@@ -1612,11 +1595,17 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [chartExpanded, setChartExpanded] = useState(false)
   const [chartActionsHost, setChartActionsHost] = useState<HTMLDivElement | null>(null)
   const [activityDialogOpen, setActivityDialogOpen] = useState(false)
+  const [activityToolsOpen, setActivityToolsOpen] = useState(false)
+  const changeActivityToolsOpen = useCallback((open: boolean) => {
+    if (open) setActivityDialogOpen(false)
+    setActivityToolsOpen(open)
+  }, [])
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
   const marketPanelWidth = 256
 
   const openActivityPanel = useCallback((panel: ActivityPanelId) => {
     setActivePanel(panel)
+    setActivityToolsOpen(false)
     setActivityDialogOpen(true)
     setChartExpanded(false)
     setMobileTab("chart")
@@ -2154,7 +2143,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Re-fetch candles when pair/TF changes ──��──────────���────������──────────��������������───
+  // ── Re-fetch candles when pair/TF changes ──��──────────���────�������──────────��������������───
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -3631,6 +3620,13 @@ const maxLeverage = 100
         </button>
       </div>
 
+      {mobileTab !== "account" && (
+        <TerminalActivityLauncher
+          onOpen={() => changeActivityToolsOpen(true)}
+          alertCount={priceAlerts.filter(alert => !alert.triggered).length + smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length}
+        />
+      )}
+
       <nav className="reference-mobile-nav" aria-label="Trading navigation">
         <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" && activePanel === "positions" ? "page" : undefined} className={mobileTab === "chart" && activePanel === "positions" ? "is-active" : ""}>
           <CandlestickChart aria-hidden="true" /><span>Trade</span>
@@ -3726,63 +3722,27 @@ const maxLeverage = 100
 
       {/* ══ MAIN TRADING WORKSPACE ═════════════════════════════════════════��═ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
-      <nav
-        aria-label="Trading activity shortcuts"
-        className="terminal-scroll hidden w-12 shrink-0 flex-col items-center gap-1 overflow-y-auto border-r border-[#1e2d45] bg-[#060b12] py-2 xl:flex"
-      >
-        <span className="mb-1 px-1 text-[8px] font-black uppercase tracking-[0.12em] text-slate-500" aria-hidden="true">ACT</span>
-        {([
-          { id: "positions", label: "Positions", icon: Layers, count: openTrades.length },
-          { id: "pending", label: "Orders", icon: Clock, count: pendingOrders.length },
-          { id: "history", label: "History", icon: History, count: closedTrades.length },
-          { id: "dom", label: "L2 book", icon: BarChart2 },
-          { id: "risk", label: "Risk", icon: ShieldAlert },
-          { id: "journal", label: "Journal", icon: BookOpen },
-          { id: "news", label: "News", icon: Newspaper },
-          { id: "performance", label: "Performance", icon: BarChart },
-          { id: "alerts", label: "Alerts", icon: Bell, count: priceAlerts.filter(alert => !alert.triggered).length },
-          { id: "smart-alerts", label: "Smart alerts", icon: BellRing, count: smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length },
-          { id: "support", label: "Support", icon: LifeBuoy },
-          { id: "trust", label: "Trust", icon: ShieldCheck },
-          { id: "sessions", label: "Sessions", icon: Globe2 },
-          { id: "depth", label: "Market depth", icon: BarChart2 },
-          { id: "stats", label: "Stats", icon: Activity },
-          { id: "ai-coach", label: "AI guide", icon: BrainCircuit },
-        ] as { id: ActivityPanelId; label: string; icon: typeof Layers; count?: number }[]).map(({ id, label, icon: Icon, count = 0 }) => (
-          <Tooltip key={id}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label={`Open ${label} activity${count ? `, ${count} items` : ""}`}
-                aria-haspopup="dialog"
-                aria-controls="terminal-activity-dialog"
-                aria-expanded={activityDialogOpen && activePanel === id}
-                aria-pressed={activePanel === id}
-                onClick={() => openActivityPanel(id)}
-                className={`relative flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${
-                  activePanel === id
-                    ? "border-cyan-400/40 bg-cyan-300/10 text-cyan-200"
-                    : "border-transparent text-slate-500 hover:border-[#23384b] hover:bg-[#0b1724] hover:text-slate-200"
-                }`}
-              >
-                <Icon className="size-4" aria-hidden="true" />
-                {count > 0 && (
-                  <span className="absolute -right-1 -top-1 min-w-4 rounded-full border border-[#060b12] bg-cyan-300 px-1 text-center text-[8px] font-black leading-3 text-[#07111b]" aria-hidden="true">
-                    {count > 99 ? "99+" : count}
-                  </span>
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={10} className="border border-cyan-200/20 bg-slate-950/90 text-slate-100 shadow-xl backdrop-blur-xl" arrowClassName="bg-slate-950 fill-slate-950">
-              {label}
-            </TooltipContent>
-          </Tooltip>
-        ))}
-      </nav>
+      <TerminalActivityNavigation
+        activePanel={activePanel}
+        panelOpen={activityDialogOpen}
+        open={activityToolsOpen}
+        onOpenChange={changeActivityToolsOpen}
+        onSelect={openActivityPanel}
+        counts={{
+          positions: openTrades.length,
+          pending: pendingOrders.length,
+          history: closedTrades.length,
+          alerts: priceAlerts.filter(alert => !alert.triggered).length,
+          "smart-alerts": smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length,
+        }}
+        onNewOrder={() => { setRightPanelTab("order"); setMobileTab("order"); setRightPanelHidden(false); setChartExpanded(false) }}
+        onPositionSizer={() => { setRightPanelTab("sizer"); setMobileTab("order"); setRightPanelHidden(false); setChartExpanded(false) }}
+        onResetLayout={resetTerminalLayout}
+      />
       <div className={`apple-terminal-panel-layout ${mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}`}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
-        {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
+        {/* ── LEFT: Market Watch ──────────────────────���──────��������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
         <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={26} minSize={22} maxSize={34}>
 	        <div
@@ -4019,19 +3979,16 @@ const maxLeverage = 100
 	                    {chartLayout === "single" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
 	                  </button>
 
-	                  {/* Tools Dropdown */}
-	                  <select
-	                    onChange={e => { if (e.target.value) { openActivityPanel(e.target.value as ActivityPanelId); e.target.value = "" } }}
-	                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
-	                    defaultValue=""
-	                    aria-label="Workspace tools menu"
+	                  <button
+	                    type="button"
+	                    onClick={() => changeActivityToolsOpen(true)}
+	                    className="flex min-h-11 items-center gap-2 rounded border border-[var(--activity-muted)] bg-[var(--activity-background)] px-3 text-sm font-semibold text-[var(--activity-foreground)]"
+	                    aria-label="Browse workspace tools"
+	                    aria-haspopup="dialog"
+	                    aria-controls="terminal-activity-tools"
 	                  >
-	                    <option value="" disabled>TOOLS ▾</option>
-	                    <option value="dom" className="bg-[#0b1625] text-white">L2 Order Book</option>
-	                    <option value="risk" className="bg-[#0b1625] text-white">Risk Analytics</option>
-	                    <option value="alerts" className="bg-[#0b1625] text-white">Price Alerts</option>
-	                    <option value="ai-coach" className="bg-[#0b1625] text-white">AI Guide</option>
-	                  </select>
+	                    <Grid3x3 className="size-4" aria-hidden="true" /> Tools
+	                  </button>
 
 	                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
 	                </div>
@@ -4760,25 +4717,39 @@ const maxLeverage = 100
             WebkitBackdropFilter: "blur(22px) saturate(140%)",
           }}
         >
-          <DialogHeader className="flex-row items-center justify-between gap-4 border-b border-sky-100/10 bg-slate-950/20 px-4 py-3 text-left backdrop-blur-xl">
-            <div className="flex min-w-0 flex-col gap-1">
-              <DialogTitle className="truncate text-sm font-black tracking-wide text-slate-100">
+          <DialogHeader className="flex-row items-center justify-between gap-2 border-b border-[var(--activity-muted)]/20 px-3 py-2 text-left">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <DialogTitle className="text-pretty text-sm font-semibold leading-5 text-[var(--activity-foreground)]">
                 {ACTIVITY_PANEL_TITLES[activePanel]}
               </DialogTitle>
-              <DialogDescription className="text-xs text-slate-400">
-                Review this panel without leaving your trading workspace.
+              <DialogDescription className="sr-only">
+                Switch panels below or browse all activity tools without leaving your workspace.
               </DialogDescription>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <button type="button" onClick={resetTerminalLayout} className="terminal-layout-reset" aria-label="Reset panel sizes">
-                Reset layout
+            <div className="flex shrink-0 items-center gap-1">
+              <button type="button" onClick={() => changeActivityToolsOpen(true)} className="flex size-11 items-center justify-center rounded-md border border-[var(--activity-muted)]/25 bg-[var(--activity-surface)] text-[var(--activity-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--activity-accent)]" aria-label="Browse all activity tools" aria-haspopup="dialog">
+                <Grid3x3 className="size-4" aria-hidden="true" />
               </button>
-              <DialogClose className="flex size-8 items-center justify-center rounded-md border border-[#1e2d45] text-slate-400 transition hover:bg-[#0b1724] hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300" aria-label="Close activity window">
+              <DialogClose className="flex size-11 items-center justify-center rounded-md border border-[var(--activity-muted)]/25 bg-[var(--activity-surface)] text-[var(--activity-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--activity-accent)]" aria-label="Close activity window">
                 <X className="size-4" aria-hidden="true" />
-                <span className="sr-only">Close activity window</span>
               </DialogClose>
             </div>
           </DialogHeader>
+          <div className="shrink-0 border-b border-[var(--activity-muted)]/20 px-3 py-2">
+            <label htmlFor="terminal-activity-panel-switcher" className="sr-only">Switch activity panel</label>
+            <select
+              id="terminal-activity-panel-switcher"
+              value={activePanel}
+              onChange={event => setActivePanel(event.target.value as ActivityPanelId)}
+              className="min-h-11 w-full min-w-0 rounded-lg border border-[var(--activity-muted)]/30 bg-[var(--activity-background)] px-2 text-sm text-[var(--activity-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--activity-accent)]"
+            >
+              {[...new Set(ACTIVITY_TOOLS.map(tool => tool.group))].map(group => (
+                <optgroup key={group} label={group}>
+                  {ACTIVITY_TOOLS.filter(tool => tool.group === group).map(tool => <option key={tool.id} value={tool.id}>{tool.title}</option>)}
+                </optgroup>
+              ))}
+            </select>
+          </div>
 
           <div id="terminal-activity-content" className="activity-glass-content min-h-0 flex-1 overflow-y-auto terminal-scroll p-3">
 
