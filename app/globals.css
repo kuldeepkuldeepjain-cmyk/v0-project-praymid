@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+:root {
+  --market-watch-background: #091522;
+  --market-watch-surface: #112337;
+  --market-watch-foreground: #edf4fc;
+  --market-watch-muted: #90a5bc;
+  --market-watch-accent: #38bdf8;
+}
+
 .activity-glass-content {
   background:
     radial-gradient(circle at top right, rgba(56, 189, 248, 0.08), transparent 34%),

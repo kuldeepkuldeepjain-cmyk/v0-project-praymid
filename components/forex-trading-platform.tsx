@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import tradeScrollStyles from "./terminal-trade-scroll.module.css"
+import marketWatchStyles from "./market-watch-header.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -211,7 +212,7 @@ type PerfStats = {
   maxDrawdown: number; sharpe: number
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────��───────────────────────────────────
 // PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, and the
 // isJpy/isCrypto/isGold/isSilver/isCommodity/decimals/pip/contractSize helpers
 // live in @/lib/forex-instruments so the UI and the rates/candles API routes
@@ -2153,7 +2154,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Re-fetch candles when pair/TF changes ──��──────────���────������──────────�����������────
+  // ── Re-fetch candles when pair/TF changes ──��──────────���────������──────────��������������───
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -3530,7 +3531,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════��������═���═��══������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═��══������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3791,61 +3792,51 @@ const maxLeverage = 100
           className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
           style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13", position: dockEnabled ? "relative" : undefined, overflowX: dockEnabled ? "hidden" : undefined, overflowY: dockEnabled ? "auto" : undefined, overscrollBehaviorY: dockEnabled ? "contain" : undefined }}>
 
-          <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
-            <div className="mb-2.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.32)", boxShadow: "0 0 14px rgba(34,211,238,0.14)" }}>
-                  <Activity className="h-3.5 w-3.5 text-cyan-300" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
-                    <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-emerald-300">Live</span>
-                  </div>
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-slate-500">Real-time instruments</span>
-                </div>
-              </div>
+          <header className={`${marketWatchStyles.header} font-sans`}>
+            <div className={marketWatchStyles.titleRow}>
+              <h2 className={marketWatchStyles.title}>Market Watch</h2>
+              <span className={marketWatchStyles.status}>Live</span>
             </div>
-            <div role="search" className="mb-2 flex items-center gap-2 rounded-md px-2.5" style={{ height: 44, border: "1px solid #1a2640", background: "rgba(4,12,22,0.72)" }}>
-              <Search className="size-3.5 shrink-0" style={{ color: "#6f8aa3" }} aria-hidden="true" />
+            <div role="search" className={marketWatchStyles.search}>
+              <Search aria-hidden="true" />
               <input
                 ref={pairSearchRef}
                 type="text"
                 aria-label="Search instruments"
-                placeholder="Search symbol or name..."
+                placeholder="Search instruments"
                 value={pairSearch}
                 onChange={(event) => setPairSearch(event.currentTarget.value)}
-                className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-500"
+                autoComplete="off"
+                spellCheck={false}
               />
               {pairSearch && (
                 <button
                   type="button"
                   aria-label="Clear instrument search"
                   onClick={() => setPairSearch("")}
-                  className="flex size-10 shrink-0 items-center justify-center rounded"
-                  style={{ minHeight: 42, color: "#8ba0b5" }}
+                  className={marketWatchStyles.clear}
                 >
-                  <X className="size-3.5" aria-hidden="true" />
+                  <X aria-hidden="true" />
                 </button>
               )}
             </div>
-            <div className="flex gap-1">
+            <div className={marketWatchStyles.filters} role="group" aria-label="Instrument categories">
               {categoryTabs.map(cat => {
-                const isActive = activeCategory === cat
-                const cc = cat === "All"
-                  ? { text: "#94a3b8", border: "#334155", bg: "rgba(148,163,184,0.1)" }
-                  : { text: CATEGORY_COLOR[cat as AssetCategory].text, border: CATEGORY_COLOR[cat as AssetCategory].border, bg: CATEGORY_COLOR[cat as AssetCategory].bg }
-                const label = cat === "All" ? "All" : cat === "Commodities" ? "Au" : cat === "Forex" ? "FX" : cat
+                const label = cat === "Commodities" ? "Metals" : cat === "Forex" ? "FX" : cat
                 return (
-                  <button key={cat} onClick={() => setActiveCategory(cat)}
-                    className="flex-1 py-1 text-[9px] font-black tracking-wider uppercase transition-all"
-                    style={{ borderRadius: 4, background: isActive ? cc.bg : "transparent", color: isActive ? cc.text : "#374151", border: `1px solid ${isActive ? cc.border : "#1a2640"}` }}>
+                  <button
+                    key={cat}
+                    type="button"
+                    aria-label={cat === "Commodities" ? "Precious metals" : cat}
+                    aria-pressed={activeCategory === cat}
+                    onClick={() => setActiveCategory(cat)}
+                  >
                     {label}
                   </button>
                 )
               })}
             </div>
-          </div>
+          </header>
 
           <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "#0a1321", borderBottom: "1px solid #1e2d45" }}>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#6f8aa3" }}>Instrument</span>
