@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect, useState, useCallback, useRef, useMemo } from "react"
+import { useEffect, useState, useCallback, useRef, useMemo, useId } from "react"
 
 import { createPortal } from "react-dom"
 import {
   TrendingUp, TrendingDown, RefreshCw, BarChart2, AlertTriangle, BrainCircuit,
   CheckCircle2, History, Layers, Activity, Zap, Target, ShieldAlert, ShieldCheck,
   CandlestickChart, Wallet, Edit3, X, Plus, Clock, Info, Bell,
-  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
+  ChevronDown, ChevronUp, ChevronRight, ArrowUpDown, Award, Flame, TrendingUp as TUp,
   BarChart, LineChart, PieChart, Trophy, AlarmClock, Globe2, Newspaper,
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
@@ -15,6 +15,9 @@ import {
   ArrowUpRight, ArrowDownRight, Home,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
+import tradeScrollStyles from "./terminal-trade-scroll.module.css"
+import marketWatchStyles from "./market-watch-header.module.css"
+import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -32,21 +35,46 @@ import {
 import { ForexHeader } from "@/components/forex-header"
 import { AssetLogo } from "@/components/asset-logo"
 import { PortfolioActivityView } from "@/components/portfolio-activity-view"
+import {
+  ACTIVITY_PANEL_TITLES, ACTIVITY_TOOLS, TerminalActivityLauncher, TerminalActivityNavigation,
+  type ActivityPanelId,
+} from "@/components/terminal-activity-navigation"
 import { useMarketDataStream } from "@/hooks/use-market-data-stream"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels"
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from "react"
+import type { ReactNode } from "react"
 
 // ─── Workspace layout (UI preferences only — never market or account data) ──
 
-const DOCK_AUTOSAVE_ID = "elitefund-terminal-columns-v1"
-const BLOTTER_HEIGHT_KEY = "elitefund-terminal-blotter-height"
-const TAB_ORDER_KEY = "elitefund-terminal-tab-order"
-const MIN_BLOTTER_HEIGHT = 150
+const DOCK_AUTOSAVE_ID = "elitefund-terminal-workspace-v3"
+const DOCK_CHART_ORDER_AUTOSAVE_ID = "elitefund-terminal-chart-order-v8"
 
-function DockGroup({ enabled, children }: { enabled: boolean; children: ReactNode }) {
+function DockGroup({
+  enabled,
+  children,
+  direction = "horizontal",
+  autoSaveId = DOCK_AUTOSAVE_ID,
+}: {
+  enabled: boolean
+  children: ReactNode
+  direction?: "horizontal" | "vertical"
+  autoSaveId?: string
+}) {
   if (!enabled) return <>{children}</>
   return (
-    <PanelGroup direction="horizontal" autoSaveId={DOCK_AUTOSAVE_ID} className="terminal-dock-group">
+    <PanelGroup
+      direction={direction}
+      autoSaveId={autoSaveId}
+      className={`terminal-dock-group${direction === "vertical" ? " terminal-dock-group-vertical" : ""}`}
+    >
       {children}
     </PanelGroup>
   )
@@ -70,15 +98,6 @@ function DockHandle({ enabled }: { enabled: boolean }) {
       <span aria-hidden="true" />
     </PanelResizeHandle>
   )
-}
-
-function applyTabOrder<T extends { id: string }>(items: T[], order: string[]): T[] {
-  if (!order.length) return items
-  const rank = (id: string) => {
-    const saved = order.indexOf(id)
-    return saved === -1 ? order.length + items.findIndex(item => item.id === id) : saved
-  }
-  return [...items].sort((a, b) => rank(a.id) - rank(b.id))
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -124,7 +143,6 @@ export type ClosedTrade = OpenTrade & {
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "30M" | "1H" | "4H" | "1D" | "1W"
-
 type ToastItem = { id: number; type: "success" | "error" | "info" | "warning"; text: string }
 
 type ModifyTarget = { tradeId: string; sl: string; tp: string; trailingPips: string } | null
@@ -178,7 +196,7 @@ type PerfStats = {
   maxDrawdown: number; sharpe: number
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────��───────────────────────────────────
 // PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, and the
 // isJpy/isCrypto/isGold/isSilver/isCommodity/decimals/pip/contractSize helpers
 // live in @/lib/forex-instruments so the UI and the rates/candles API routes
@@ -273,6 +291,148 @@ function minimumLotsForMargin(sym: string, price: number, leverage: number, mini
   const marginPerLot = calcMargin(sym, 1, price, leverage)
   if (!Number.isFinite(marginPerLot) || marginPerLot <= 0) return 0.01
   return Math.max(0.01, Math.ceil((minimumMargin / marginPerLot) * 100) / 100)
+}
+
+type InstrumentTradingTab = "Specification" | "Session" | "Margin" | "Swap"
+
+const INSTRUMENT_TRADING_TABS: InstrumentTradingTab[] = ["Specification", "Session", "Margin", "Swap"]
+
+function formatTradingCurrency(value: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(value) ? value : 0)
+}
+
+function formatSwapRate(value: number) {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : ""
+  return `${sign}${formatTradingCurrency(Math.abs(value), "USD")} / lot / day`
+}
+
+function InstrumentTradingInfo({ pair, leverage, online }: { pair: ForexPair; leverage: number; online: boolean }) {
+  const [activeTab, setActiveTab] = useState<InstrumentTradingTab>("Specification")
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const idPrefix = useId()
+  const category = PAIRS_CONFIG.find(instrument => instrument.symbol === pair.symbol)?.category ?? "Forex"
+  const size = contractSize(pair.symbol)
+  const contractLabel = category === "Commodities"
+    ? `${size.toLocaleString("en-US")} ${pair.symbol.startsWith("XCU/") ? "lb" : "oz"}`
+    : `${size.toLocaleString("en-US")} ${pair.base}`
+  const price = pair.ask > 0 ? pair.ask : pair.bid
+  const marginCurrency = pair.base === "USD" ? "USD" : pair.quote
+  const marginPerLot = calcMargin(pair.symbol, 1, price, leverage)
+  const [longSwap, shortSwap] = SWAP_RATES[pair.symbol] ?? [0, 0]
+  const leverageLabel = Number.isInteger(leverage) ? String(leverage) : leverage.toFixed(2)
+  const feedStatus = online ? "Live" : "Waiting for quotes"
+
+  const sessionRows = category === "Crypto"
+    ? [
+        { label: "Trading hours", value: "24/7" },
+        { label: "Weekend trading", value: "Open" },
+        { label: "Scheduled breaks", value: "None" },
+        { label: "Quote feed", value: feedStatus },
+      ]
+    : category === "Commodities"
+      ? [
+          { label: "Trading hours", value: "Weekdays; daily breaks" },
+          { label: "Weekend trading", value: "Closed" },
+          { label: "Session schedule", value: "Contract-specific" },
+          { label: "Quote feed", value: feedStatus },
+        ]
+      : [
+          { label: "Trading hours", value: "24/5 (Sunday–Friday)" },
+          { label: "Weekend trading", value: "Closed" },
+          { label: "Rollover", value: "Overnight swap may apply" },
+          { label: "Quote feed", value: feedStatus },
+        ]
+
+  const rowsByTab: Record<InstrumentTradingTab, Array<{ label: string; value: string }>> = {
+    Specification: [
+      { label: "Symbol", value: pair.symbol },
+      { label: "Asset Class", value: category },
+      { label: "Contract Size", value: contractLabel },
+      { label: "Minimum Volume", value: "0.01 lot" },
+      { label: "Maximum Volume", value: "100 lots" },
+      { label: "Leverage", value: `1:${leverageLabel}` },
+    ],
+    Session: sessionRows,
+    Margin: [
+      { label: "Leverage", value: `1:${leverageLabel}` },
+      { label: "Margin Rate", value: `${(100 / leverage).toFixed(2)}%` },
+      { label: "Notional / 1 lot", value: formatTradingCurrency(size * (pair.base === "USD" ? 1 : price), marginCurrency) },
+      { label: "Required / 1 lot", value: formatTradingCurrency(marginPerLot, marginCurrency) },
+    ],
+    Swap: [
+      { label: "Buy (long)", value: formatSwapRate(longSwap) },
+      { label: "Sell (short)", value: formatSwapRate(shortSwap) },
+      { label: "Rate basis", value: "Per lot, per day" },
+      { label: "Instrument", value: pair.symbol },
+    ],
+  }
+
+  const activeIndex = INSTRUMENT_TRADING_TABS.indexOf(activeTab)
+  const panelId = `${idPrefix}-panel`
+
+  return (
+    <section aria-label={`${pair.symbol} trading information`} className="overflow-hidden rounded-xl border border-[#15263b] bg-[#050d18]/90">
+      <header className="flex items-center gap-2.5 px-3 pb-2 pt-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-cyan-400/20 bg-cyan-400/10">
+          <Info className="size-4 text-cyan-300" aria-hidden="true" />
+        </span>
+        <div className="min-w-0">
+          <h3 className="text-sm font-black text-slate-100">Trading Info</h3>
+          <p className="truncate text-xs text-slate-500">{pair.symbol} · {category}</p>
+        </div>
+      </header>
+
+      <div role="tablist" aria-label={`${pair.symbol} trading information tabs`} className="mx-2 mb-2 grid grid-cols-4 gap-1 rounded-lg border border-[#1a2c41] bg-[#071321] p-1 md:grid-cols-2">
+        {INSTRUMENT_TRADING_TABS.map((tab, index) => {
+          const selected = activeTab === tab
+          const tabId = `${idPrefix}-tab-${tab.toLowerCase()}`
+          return (
+            <button
+              key={tab}
+              ref={element => { tabRefs.current[index] = element }}
+              type="button"
+              role="tab"
+              id={tabId}
+              aria-selected={selected}
+              aria-controls={panelId}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={event => {
+                let nextIndex: number | null = null
+                if (event.key === "ArrowRight") nextIndex = (index + 1) % INSTRUMENT_TRADING_TABS.length
+                if (event.key === "ArrowLeft") nextIndex = (index - 1 + INSTRUMENT_TRADING_TABS.length) % INSTRUMENT_TRADING_TABS.length
+                if (event.key === "Home") nextIndex = 0
+                if (event.key === "End") nextIndex = INSTRUMENT_TRADING_TABS.length - 1
+                if (nextIndex === null) return
+                event.preventDefault()
+                setActiveTab(INSTRUMENT_TRADING_TABS[nextIndex])
+                tabRefs.current[nextIndex]?.focus()
+              }}
+              className={`min-h-10 rounded-md border px-1 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 ${selected ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-100" : "border-transparent text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"}`}
+            >
+              {tab}
+            </button>
+          )
+        })}
+      </div>
+
+      <div id={panelId} role="tabpanel" aria-labelledby={`${idPrefix}-tab-${activeTab.toLowerCase()}`} tabIndex={0} className="px-2 pb-2 outline-none">
+        <dl className="overflow-hidden rounded-lg border border-[#14263a] bg-[#040b14] px-3">
+          {rowsByTab[activeTab].map(({ label, value }) => (
+            <div key={label} className="flex items-center justify-between gap-3 border-b border-[#14243a] py-2.5 last:border-b-0">
+              <dt className="text-sm text-slate-400 md:text-xs">{label}</dt>
+              <dd className="min-w-0 text-right text-sm font-bold text-slate-100 md:text-xs">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  )
 }
 
 function playTerminalSound(type: "buy" | "sell" | "close" | "breakeven" | "alert" | "click") {
@@ -600,7 +760,7 @@ function PerformanceDashboard({ closed, equityHistory, walletBalance }: {
   )
 }
 
-// ─── Market Sessions Panel ───────────────────────────────────────────────����───���
+// ─��─ Market Sessions Panel ───────────────────────────────────────────────����───���
 
 function MarketSessionsPanel() {
   const [now, setNow] = useState(() => new Date())
@@ -1253,7 +1413,7 @@ function PositionSizer({
   }, [riskPct, slPipsInput, walletBalance, pair.symbol, midPrice])
 
   return (
-    <div className="p-2">
+    <div className="terminal-position-sizer p-2">
       <div className="rounded-xl overflow-hidden" style={{ background: "#0a1120", border: "1px solid #1a2640" }}>
         <div className="flex items-center gap-1.5 px-3 py-2" style={{ borderBottom: "1px solid #1a2640" }}>
           <Target className="h-3 w-3 text-violet-400" />
@@ -1428,15 +1588,29 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [openTrades, setOpenTrades]   = useState<OpenTrade[]>([])
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([])
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([])
-  const [activePanel, setActivePanel] = useState<"positions" | "history" | "pending" | "depth" | "stats" | "performance" | "alerts" | "smart-alerts" | "support" | "sessions" | "dom" | "risk" | "journal" | "news" | "ai-coach" | "trust">("positions")
+  const [activePanel, setActivePanel] = useState<ActivityPanelId>("positions")
   const [positionsPopupOpen, setPositionsPopupOpen] = useState(false)
   const [historyPopupOpen, setHistoryPopupOpen] = useState(false)
   const [profilePanel, setProfilePanel] = useState<"support" | "smart-alerts" | null>(null)
   const [priceAlerts, setPriceAlerts] = useState<PriceAlertItem[]>([])
   const [chartExpanded, setChartExpanded] = useState(false)
-  const [footerOpen, setFooterOpen] = useState(true)
+  const [chartActionsHost, setChartActionsHost] = useState<HTMLDivElement | null>(null)
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false)
+  const [activityToolsOpen, setActivityToolsOpen] = useState(false)
+  const changeActivityToolsOpen = useCallback((open: boolean) => {
+    if (open) setActivityDialogOpen(false)
+    setActivityToolsOpen(open)
+  }, [])
   const [rightPanelHidden, setRightPanelHidden] = useState(false)
   const marketPanelWidth = 256
+
+  const openActivityPanel = useCallback((panel: ActivityPanelId) => {
+    setActivePanel(panel)
+    setActivityToolsOpen(false)
+    setActivityDialogOpen(true)
+    setChartExpanded(false)
+    setMobileTab(tab => tab === "account" ? tab : "chart")
+  }, [])
   const orderPanelWidth = 320
 
   // Map of tradeId ��� partial close lot input value
@@ -1509,21 +1683,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   const dockEnabled = !isCompactViewport
   const [layoutKey, setLayoutKey] = useState(0)
-  const [blotterHeight, setBlotterHeight] = useState<number | null>(null)
-  const [tabOrder, setTabOrder] = useState<string[]>([])
-  const [draggedTab, setDraggedTab] = useState<string | null>(null)
-  const blotterRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    try {
-      const savedHeight = Number(window.localStorage.getItem(BLOTTER_HEIGHT_KEY))
-      if (savedHeight >= MIN_BLOTTER_HEIGHT) setBlotterHeight(savedHeight)
-      const savedOrder: unknown = JSON.parse(window.localStorage.getItem(TAB_ORDER_KEY) ?? "[]")
-      if (Array.isArray(savedOrder)) setTabOrder(savedOrder.filter((value): value is string => typeof value === "string"))
-    } catch {
-      // Ignore unreadable layout preferences and fall back to defaults.
-    }
-  }, [])
 
   useEffect(() => {
     if (!chartExpanded) return
@@ -1532,61 +1691,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     return () => window.removeEventListener("keydown", exitExpanded)
   }, [chartExpanded])
 
-  const clampBlotterHeight = (height: number) =>
-    Math.round(Math.min(Math.max(height, MIN_BLOTTER_HEIGHT), Math.max(MIN_BLOTTER_HEIGHT, window.innerHeight * 0.7)))
-
-  const saveBlotterHeight = (height: number | null) => {
-    try {
-      if (height === null) window.localStorage.removeItem(BLOTTER_HEIGHT_KEY)
-      else window.localStorage.setItem(BLOTTER_HEIGHT_KEY, String(height))
-    } catch {}
-  }
-
-  const startBlotterResize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const startY = event.clientY
-    const startHeight = blotterRef.current?.getBoundingClientRect().height ?? 260
-    let latest = startHeight
-    const onMove = (moveEvent: PointerEvent) => {
-      latest = clampBlotterHeight(startHeight + startY - moveEvent.clientY)
-      setBlotterHeight(latest)
-    }
-    const onUp = () => {
-      window.removeEventListener("pointermove", onMove)
-      window.removeEventListener("pointerup", onUp)
-      document.body.classList.remove("is-resizing-terminal")
-      saveBlotterHeight(latest)
-    }
-    document.body.classList.add("is-resizing-terminal")
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-  }
-
-  const handleBlotterResizeKey = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return
-    event.preventDefault()
-    const current = blotterHeight ?? blotterRef.current?.getBoundingClientRect().height ?? 260
-    const next = clampBlotterHeight(current + (event.key === "ArrowUp" ? 24 : -24))
-    setBlotterHeight(next)
-    saveBlotterHeight(next)
-  }
-
-  const moveTab = (from: string, to: string, ids: string[]) => {
-    if (from === to) return
-    const next = ids.filter(id => id !== from)
-    next.splice(next.indexOf(to), 0, from)
-    setTabOrder(next)
-    try { window.localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(next)) } catch {}
-  }
-
   const resetTerminalLayout = () => {
     try {
       window.localStorage.removeItem(`react-resizable-panels:${DOCK_AUTOSAVE_ID}`)
-      window.localStorage.removeItem(TAB_ORDER_KEY)
+      window.localStorage.removeItem(`react-resizable-panels:${DOCK_CHART_ORDER_AUTOSAVE_ID}`)
     } catch {}
-    saveBlotterHeight(null)
-    setBlotterHeight(null)
-    setTabOrder([])
     setLayoutKey(key => key + 1)
   }
 
@@ -2035,7 +2144,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Re-fetch candles when pair/TF changes ──��──────────���────������──────────�����������────
+  // ── Re-fetch candles when pair/TF changes ──��──────────���────�������──────────��������������───
   useEffect(() => {
     if (!selectedPair) return
     fetchCandles(selectedPair.symbol, timeframe)
@@ -2420,11 +2529,28 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     if (isNaN(lev) || lev < 1) { showToast("error", "Invalid leverage"); return }
 
     setDirection(tradeDirection)
-    const price  = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
-    const slNum  = sl ? parseFloat(sl) : null
-    const tpNum  = tp ? parseFloat(tp) : null
-    const trailN = trailingPips ? parseFloat(trailingPips) : null
-    if ((sl && !Number.isFinite(slNum)) || (tp && !Number.isFinite(tpNum)) || (trailingPips && (trailN === null || trailN < 0 || !Number.isFinite(trailN)))) {
+    const quotePrice = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
+    let price = quotePrice
+    if (orderType !== "market") {
+      const pendingEntryPrice = Number.parseFloat(pendingPrice)
+      if (!Number.isFinite(pendingEntryPrice) || pendingEntryPrice <= 0) {
+        showToast("error", "Enter a valid pending order price")
+        return
+      }
+      const isInvalidLevel = orderType === "limit"
+        ? (tradeDirection === "BUY" ? pendingEntryPrice >= selectedPair.ask : pendingEntryPrice <= selectedPair.bid)
+        : (tradeDirection === "BUY" ? pendingEntryPrice <= selectedPair.ask : pendingEntryPrice >= selectedPair.bid)
+      if (isInvalidLevel) {
+        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${tradeDirection === "BUY" ? "ask" : "bid"}`)
+        return
+      }
+      price = pendingEntryPrice
+    }
+
+    const slNum = sl.trim() ? Number.parseFloat(sl) : null
+    const tpNum = tp.trim() ? Number.parseFloat(tp) : null
+    const trailN = trailingPips.trim() ? Number.parseFloat(trailingPips) : null
+    if ((slNum !== null && (!Number.isFinite(slNum) || slNum <= 0)) || (tpNum !== null && (!Number.isFinite(tpNum) || tpNum <= 0)) || (trailN !== null && (!Number.isFinite(trailN) || trailN < 0))) {
       showToast("error", "Use valid numbers for Stop Loss, Take Profit, and Trailing Stop")
       return
     }
@@ -2440,21 +2566,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
 
     if (orderType !== "market") {
-      const pPrice = parseFloat(pendingPrice)
-      if (isNaN(pPrice) || pPrice <= 0) { showToast("error", "Enter a valid pending order price"); return }
-      const currentQuote = tradeDirection === "BUY" ? selectedPair.ask : selectedPair.bid
-      const isInvalidLevel = orderType === "limit"
-        ? (tradeDirection === "BUY" ? pPrice >= currentQuote : pPrice <= currentQuote)
-        : (tradeDirection === "BUY" ? pPrice <= currentQuote : pPrice >= currentQuote)
-      if (isInvalidLevel) {
-        showToast("error", `${orderType === "limit" ? "Limit" : "Stop"} price is on the wrong side of the current ${tradeDirection === "BUY" ? "ask" : "bid"}`)
-        return
-      }
       const oType: PendingOrder["orderType"] =
         orderType === "limit"
           ? tradeDirection === "BUY" ? "BUY_LIMIT" : "SELL_LIMIT"
           : tradeDirection === "BUY" ? "BUY_STOP" : "SELL_STOP"
-      requestConfirm(tradeDirection, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price: pPrice, expiry: pendingExpiry })
+      requestConfirm(tradeDirection, lot, lev, price, slNum, tpNum, trailN, true, { orderType: oType, price, expiry: pendingExpiry })
       return
     }
 
@@ -2527,8 +2643,8 @@ const maxLeverage = 100
         createdTimestamp: Date.now(),
         expiry: tradeConfirm.pendingExpiry ?? "GTC",
       }
-	      setPendingOrders(prev => [order, ...prev])
-	      setActivePanel("pending")
+      setPendingOrders(prev => [order, ...prev])
+      openActivityPanel("pending")
 
 	      const pendingSaved = await persistPendingOrder(order)
 	      if (!pendingSaved) {
@@ -2560,8 +2676,8 @@ const maxLeverage = 100
         return [trade, ...prev]
       })
 	      setWalletBalance(prev => prev - margin)
-	      setSl(""); setTp(""); setTrailingPips("")
-	      setActivePanel("positions")
+      setSl(""); setTp(""); setTrailingPips("")
+      openActivityPanel("positions")
 
 	      // The API locks margin, records the trade, and writes the ledger entry in
 	      // one transaction. Never deduct or restore margin in a second request.
@@ -2735,7 +2851,7 @@ const maxLeverage = 100
     if (soundEnabled) playTerminalSound("breakeven")
   }, [persistModify, soundEnabled])
 
-  // ── Funded account breach ───────��────���───────────────────────���─────────────
+  // ── Funded account breach ───────��────���──────────���────────────���─────────────
   // When the drawdown limit is breached, every open position is force-closed
   // (booking whatever loss/gain it currently holds), the account is frozen,
   // and the trader is shown a clear breach notice.
@@ -2914,33 +3030,105 @@ const maxLeverage = 100
     showToast("info", "Pending order cancelled")
   }
 
-  // ── Derived values ────────────────────────────────────────────���──��───�����─────
+  // ── Derived values ──────────────────────────────────────���─────���──��───�����─────
   const midPrice = selectedPair ? (selectedPair.bid + selectedPair.ask) / 2 : 0
   const minimumFundedLots = selectedPair ? minimumLotsForMargin(selectedPair.symbol, midPrice, effectiveLeverage, 3000) : 0.01
   useEffect(() => {
     if (!isFundedAccount || !selectedPair || !Number.isFinite(minimumFundedLots)) return
     setLotSize(current => Math.max(Number.parseFloat(current) || 0.01, minimumFundedLots).toFixed(2))
   }, [isFundedAccount, selectedPair?.symbol, midPrice, effectiveLeverage, minimumFundedLots])
+  const marketEntryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
+  const parsedPendingPrice = Number.parseFloat(pendingPrice)
+  const hasPendingEntryPrice = orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0
+  const entryPrice = hasPendingEntryPrice ? parsedPendingPrice : marketEntryPrice
+  const parsedLotSize = Number.parseFloat(lotSize)
+  const estimateLotSize = Number.isFinite(parsedLotSize) && parsedLotSize > 0 ? parsedLotSize : 0.01
   const estimatedMargin = selectedPair
-    ? calcMargin(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice, effectiveLeverage)
+    ? calcMargin(selectedPair.symbol, estimateLotSize, entryPrice, effectiveLeverage)
     : 0
   const estimatedFees: number | null = null
   const estimatedSpreadCost = selectedPair
-    ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
+    ? pipValue(selectedPair.symbol, estimateLotSize, marketEntryPrice) * ((selectedPair.spread / pip(selectedPair.symbol)) || 0)
     : 0
   const pipVal = selectedPair
-    ? pipValue(selectedPair.symbol, parseFloat(lotSize) || 0.01, midPrice)
+    ? pipValue(selectedPair.symbol, estimateLotSize, entryPrice)
     : 0
   const isUp = selectedPair ? selectedPair.change >= 0 : true
   const lastCandle = selectedPair?.candles?.slice(-1)[0]
-  const entryPrice = selectedPair ? (direction === "BUY" ? selectedPair.ask : selectedPair.bid) : midPrice
-  const slVal = sl && !isNaN(parseFloat(sl)) ? parseFloat(sl) : null
-  const tpVal = tp && !isNaN(parseFloat(tp)) ? parseFloat(tp) : null
-  const slPips = slVal !== null && selectedPair ? Math.abs((slVal - entryPrice) / pip(selectedPair.symbol)) : 0
-  const tpPips = tpVal !== null && selectedPair ? Math.abs((tpVal - entryPrice) / pip(selectedPair.symbol)) : 0
+  const slVal = sl.trim() ? Number.parseFloat(sl) : null
+  const tpVal = tp.trim() ? Number.parseFloat(tp) : null
+  const slPips = slVal !== null && Number.isFinite(slVal) && selectedPair ? Math.abs((slVal - entryPrice) / pip(selectedPair.symbol)) : 0
+  const tpPips = tpVal !== null && Number.isFinite(tpVal) && selectedPair ? Math.abs((tpVal - entryPrice) / pip(selectedPair.symbol)) : 0
   const maxLoss = slPips * pipVal
   const maxGain = tpPips * pipVal
   const rrRatio = slPips > 0 ? (tpPips / slPips).toFixed(2) : null
+  const lotSizeError = !Number.isFinite(parsedLotSize) || parsedLotSize < 0.01 || parsedLotSize > 100
+    ? "Trade size must be between 0.01 and 100 lots."
+    : isFundedAccount && estimatedMargin < 3000
+      ? "Funded accounts require at least $3,000 in margin."
+      : null
+  const pendingPriceWrongSide = Boolean(
+    selectedPair && orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0 && (
+      orderType === "limit"
+        ? (direction === "BUY" ? parsedPendingPrice >= selectedPair.ask : parsedPendingPrice <= selectedPair.bid)
+        : (direction === "BUY" ? parsedPendingPrice <= selectedPair.ask : parsedPendingPrice >= selectedPair.bid)
+    ),
+  )
+  const pendingPriceError = orderType === "market"
+    ? null
+    : !Number.isFinite(parsedPendingPrice) || parsedPendingPrice <= 0
+      ? "Enter a pending price above zero."
+      : pendingPriceWrongSide
+        ? orderType === "limit"
+          ? (direction === "BUY" ? "A buy limit must be below the current ask." : "A sell limit must be above the current bid.")
+          : (direction === "BUY" ? "A buy stop must be above the current ask." : "A sell stop must be below the current bid.")
+        : null
+  const stopLossError = sl.trim() === ""
+    ? null
+    : slVal === null || !Number.isFinite(slVal) || slVal <= 0
+      ? "Enter a valid stop price above zero."
+      : direction === "BUY" && slVal >= entryPrice
+        ? "For a buy, the stop loss must be below entry."
+        : direction === "SELL" && slVal <= entryPrice
+          ? "For a sell, the stop loss must be above entry."
+          : null
+  const takeProfitError = tp.trim() === ""
+    ? null
+    : tpVal === null || !Number.isFinite(tpVal) || tpVal <= 0
+      ? "Enter a valid target price above zero."
+      : direction === "BUY" && tpVal <= entryPrice
+        ? "For a buy, take profit must be above entry."
+        : direction === "SELL" && tpVal >= entryPrice
+          ? "For a sell, take profit must be below entry."
+          : null
+  const trailingStopValue = trailingPips.trim() ? Number.parseFloat(trailingPips) : null
+  const trailingStopError = trailingStopValue !== null && (!Number.isFinite(trailingStopValue) || trailingStopValue < 0)
+    ? "Enter a trailing stop of zero or more pips."
+    : null
+  const riskPercent = walletBalance > 0 && slVal !== null && Number.isFinite(slVal) && !stopLossError
+    ? (maxLoss / walletBalance) * 100
+    : 0
+  const pendingDistancePips = selectedPair && orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0
+    ? Math.abs(parsedPendingPrice - marketEntryPrice) / pip(selectedPair.symbol)
+    : null
+  const validationError = lotSizeError ?? pendingPriceError ?? stopLossError ?? takeProfitError ?? trailingStopError
+  const marginError = orderType === "market" && estimatedMargin > walletBalance
+    ? `Insufficient balance — need $${estimatedMargin.toFixed(2)}, have $${walletBalance.toFixed(2)}.`
+    : null
+  const orderFormIssue = tradingLocked
+    ? "Trading is disabled for this account."
+    : !balanceLoaded
+      ? "Loading your available balance."
+      : !online
+        ? "Waiting for a fresh live quote."
+        : validationError ?? marginError
+  const nudgeLotSize = (adjustment: -1 | 1) => {
+    const minimumLots = isFundedAccount ? minimumFundedLots : 0.01
+    const currentLots = Number.isFinite(parsedLotSize) && parsedLotSize > 0 ? parsedLotSize : minimumLots
+    const step = currentLots < 0.1 ? 0.01 : currentLots < 1 ? 0.1 : 0.5
+    const nextLots = Math.max(minimumLots, Math.min(100, currentLots + adjustment * step))
+    setLotSize(nextLots.toFixed(2))
+  }
 
   const categoryTabs: (AssetCategory | "All")[] = ["All", "Forex", "Commodities", "Crypto"]
   // Search always scans the complete catalog, regardless of the selected
@@ -3074,31 +3262,92 @@ const maxLeverage = 100
     { id: "refresh", label: "Refresh market data", hint: "Re-fetch rates and candles", icon: RefreshCw, action: () => { fetchRates(); if (selectedPair) fetchCandles(selectedPair.symbol, timeframe) } },
     { id: "theme", label: isDarkTheme ? "Switch to light theme" : "Switch to dark theme", hint: "Toggle the terminal color scheme", icon: isDarkTheme ? Sun : Moon, action: () => setIsDarkTheme(v => !v) },
     { id: "chart-grid", label: chartLayout === "single" ? "Switch to multi-chart grid" : "Switch to single chart", hint: "Toggle the institutional multi-asset view", icon: chartLayout === "single" ? Grid3x3 : Square, action: () => setChartLayout(v => v === "single" ? "grid" : "single") },
-    { id: "panel-positions", label: "Show open positions", hint: "Switch the bottom blotter to positions", icon: Layers, action: () => setActivePanel("positions") },
-    { id: "panel-pending", label: "Show pending orders", hint: "Switch the bottom blotter to pending orders", icon: Clock, action: () => setActivePanel("pending") },
-    { id: "panel-history", label: "Show trade history", hint: "Switch the bottom blotter to closed trades", icon: History, action: () => setActivePanel("history") },
-    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book ladder", icon: BarChart2, action: () => setActivePanel("dom") },
-    { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics panel", icon: ShieldAlert, action: () => setActivePanel("risk") },
-    { id: "panel-journal", label: "Show trade journal", hint: "Open the performance journal", icon: BookOpen, action: () => setActivePanel("journal") },
-    { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar", icon: Newspaper, action: () => setActivePanel("news") },
-    { id: "panel-performance", label: "Show performance dashboard", hint: "Open the equity curve and KPIs", icon: BarChart, action: () => setActivePanel("performance") },
-    { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alert manager", icon: Bell, action: () => setActivePanel("alerts") },
-  { id: "panel-support", label: "Open support center", hint: "Live chat, tickets, FAQ, and account support", icon: LifeBuoy, action: () => setActivePanel("support") },
-    { id: "panel-sessions", label: "Show market sessions", hint: "Open the global session tracker", icon: Globe2, action: () => setActivePanel("sessions") },
-    { id: "panel-stats", label: "Show market stats", hint: "Open the instrument statistics panel", icon: Activity, action: () => setActivePanel("stats") },
-  { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => setActivePanel("ai-coach") },
-  { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => setActivePanel("trust") },
-    { id: "panel-depth", label: "Show order depth", hint: "Open the static depth ladder", icon: BarChart2, action: () => setActivePanel("depth") },
+    { id: "panel-positions", label: "Show open positions", hint: "Open the positions window", icon: Layers, action: () => openActivityPanel("positions") },
+    { id: "panel-pending", label: "Show pending orders", hint: "Open the pending orders window", icon: Clock, action: () => openActivityPanel("pending") },
+    { id: "panel-history", label: "Show trade history", hint: "Open the trade history window", icon: History, action: () => openActivityPanel("history") },
+    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book window", icon: BarChart2, action: () => openActivityPanel("dom") },
+    { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics window", icon: ShieldAlert, action: () => openActivityPanel("risk") },
+    { id: "panel-journal", label: "Show trade journal", hint: "Open the trade journal window", icon: BookOpen, action: () => openActivityPanel("journal") },
+    { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar window", icon: Newspaper, action: () => openActivityPanel("news") },
+    { id: "panel-performance", label: "Show performance dashboard", hint: "Open the performance window", icon: BarChart, action: () => openActivityPanel("performance") },
+    { id: "panel-alerts", label: "Show price alerts", hint: "Open the price alerts window", icon: Bell, action: () => openActivityPanel("alerts") },
+    { id: "panel-support", label: "Open support center", hint: "Live chat, tickets, FAQ, and account support", icon: LifeBuoy, action: () => openActivityPanel("support") },
+    { id: "panel-sessions", label: "Show market sessions", hint: "Open the market sessions window", icon: Globe2, action: () => openActivityPanel("sessions") },
+    { id: "panel-stats", label: "Show market stats", hint: "Open the market stats window", icon: Activity, action: () => openActivityPanel("stats") },
+    { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => openActivityPanel("ai-coach") },
+    { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => openActivityPanel("trust") },
+    { id: "panel-depth", label: "Show order depth", hint: "Open the order depth window", icon: BarChart2, action: () => openActivityPanel("depth") },
+    { id: "panel-smart-alerts", label: "Show smart alerts", hint: "Open the smart alerts window", icon: BellRing, action: () => openActivityPanel("smart-alerts") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     ...(!isChallengeAccount ? [
       { id: "add-funds", label: "Add funds", hint: "Open the deposit flow", icon: Plus, action: () => onAddFunds?.() },
       { id: "payout", label: "Withdraw", hint: "Open the withdrawal page", icon: ArrowUpDown, action: () => { window.location.href = "/participant/dashboard/payout" } },
     ] : []),
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount])
+  ], [isDarkTheme, chartLayout, selectedPair, isFrozen, balanceLoaded, openTrades, pendingOrders, isChallengeAccount, openActivityPanel])
+
+  const instrumentOverviewPanel = selectedPair ? (
+    <div className={`apple-terminal-instrument-stack flex shrink-0 flex-col gap-3 ${isCompactViewport ? "mx-3 my-2" : "px-3 pb-3"}`}>
+      <section
+        aria-label={`${selectedPair.symbol} instrument overview`}
+        className="apple-terminal-instrument-overview shrink-0 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 p-3 shadow-lg"
+      >
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
+          <div className="flex items-center gap-2">
+            <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
+            <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
+          </div>
+          <span className="text-[9px] font-bold text-slate-400">
+            {online ? "● Market Live" : "○ Market Closed"}
+          </span>
+        </div>
+
+        <div className={`apple-instrument-overview-metrics grid grid-cols-2 gap-2 text-xs ${isCompactViewport ? "sm:grid-cols-4" : ""}`}>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
+            <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
+            <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
+            <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
+            <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+              {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
+            </span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
+            <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
+            <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
+            <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
+              {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
+            </span>
+          </div>
+          <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
+            <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
+          </div>
+        </div>
+      </section>
+
+      <InstrumentTradingInfo pair={selectedPair} leverage={effectiveLeverage} online={online} />
+    </div>
+  ) : null
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
+    <div data-mobile-tab={mobileTab} className={`${mobileControlsStyles.surface} flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3152,14 +3401,9 @@ const maxLeverage = 100
         isConnected={online}
         onNavigate={(panel) => {
           if (panel === "sizer") { setMobileTab("order"); setRightPanelTab("sizer") }
-          else if (panel === "calendar") { setActivePanel("news") }
-          else if (panel === "news") { setActivePanel("news") }
-          else if (panel === "performance") { setActivePanel("performance") }
-	          else if (panel === "history") { setActivePanel("history") }
-	          else if (panel === "journal") { setActivePanel("journal") }
-	          else if (panel === "support" || panel === "smart-alerts") { setProfilePanel(panel as "support" | "smart-alerts"); setRightPanelHidden(false) }
-	          else { setActivePanel(panel as typeof activePanel) }
-	        }}
+          else if (panel === "calendar" || panel === "news") openActivityPanel("news")
+          else openActivityPanel(panel as ActivityPanelId)
+        }}
 	        onToggleFullscreen={() => {
 	          if (document.fullscreenElement) document.exitFullscreen()
 	          else document.documentElement.requestFullscreen()
@@ -3224,7 +3468,7 @@ const maxLeverage = 100
         <div className="mobile-terminal-brand-group">
           <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
             <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
-            <span><strong>ELITE FUND</strong></span>
+            <span><strong>Elite Fund</strong></span>
           </a>
           <a className="mobile-terminal-home" href="/participant/dashboard" aria-label="Go to dashboard" title="Go to dashboard">
             <Home aria-hidden="true" />
@@ -3235,7 +3479,7 @@ const maxLeverage = 100
           <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
           <ChevronDown className="h-3 w-3 text-slate-400" aria-hidden="true" />
         </button>
-        <button type="button" className="mobile-terminal-notifications" onClick={() => { setMobileTab("chart"); setActivePanel("alerts"); setFooterOpen(true) }} aria-label="Open trading alerts">
+        <button type="button" className="mobile-terminal-notifications" onClick={() => openActivityPanel("alerts")} aria-label="Open trading alerts">
           <Bell aria-hidden="true" />
           {(adminNotifications.filter(item => !item.read).length + toasts.length) > 0 && <span>{adminNotifications.filter(item => !item.read).length + toasts.length}</span>}
         </button>
@@ -3277,7 +3521,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ═══════════��════════════�������══════���══════��������═���═��══������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3377,21 +3621,21 @@ const maxLeverage = 100
         </button>
       </div>
 
-      <nav className="reference-mobile-nav" aria-label="Trading navigation">
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" && activePanel === "positions" ? "page" : undefined} className={mobileTab === "chart" && activePanel === "positions" ? "is-active" : ""}>
-          <CandlestickChart aria-hidden="true" /><span>Trade</span>
+      <nav className={`reference-mobile-nav ${mobileControlsStyles.dock}`} data-active-tab={mobileTab} aria-label="Trading navigation">
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions"); chartActionsHost?.scrollTo({ left: 0 }) }} aria-current={mobileTab === "chart" ? "page" : undefined} className={mobileTab === "chart" ? "is-active" : ""}>
+          <span className={mobileControlsStyles.dockIcon}><CandlestickChart aria-hidden="true" /></span><span>Trade</span>
         </button>
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
-          <Globe2 aria-hidden="true" /><span>Markets</span>
+          <span className={mobileControlsStyles.dockIcon}><BarChart2 aria-hidden="true" /></span><span>Markets</span>
         </button>
-        <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions") }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
-          <Zap aria-hidden="true" /><span>Order</span>
+        <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions"); setRightPanelHidden(false); setChartExpanded(false) }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
+          <span className={mobileControlsStyles.dockIcon}><ArrowUpDown aria-hidden="true" /></span><span>Order</span>
         </button>
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
-          <Wallet aria-hidden="true" /><span>Portfolio</span>
+          <span className={mobileControlsStyles.dockIcon}><PieChart aria-hidden="true" /></span><span>Assets</span>
         </button>
         <button type="button" onClick={() => setMobileTab("account")} aria-label="Open account page" aria-current={mobileTab === "account" ? "page" : undefined} className={mobileTab === "account" ? "is-active" : ""}>
-          <UserRound aria-hidden="true" /><span>Account</span>
+          <span className={mobileControlsStyles.dockIcon}><UserRound aria-hidden="true" /></span><span>Account</span>
         </button>
       </nav>
 
@@ -3418,6 +3662,11 @@ const maxLeverage = 100
               <ArrowUpRight aria-hidden="true" />
             </button>
           </section>
+
+          <TerminalActivityLauncher
+            onOpen={() => changeActivityToolsOpen(true)}
+            alertCount={priceAlerts.filter(alert => !alert.triggered).length + smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length}
+          />
 
           <section className="mobile-account-details" aria-label="Account details">
             <div className="mobile-account-detail">
@@ -3470,72 +3719,83 @@ const maxLeverage = 100
         </main>
       )}
 
-      {/* ══ MAIN 3-COLUMN GRID ═══════════��════════════�������══════���═��═════════ */}
+      {/* ══ MAIN TRADING WORKSPACE ═════════════════════════════════════════��═ */}
       <div className="apple-terminal-grid flex-1 flex min-h-0" style={{ borderBottom: "1px solid #1e2d45" }}>
-      <div className={mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}>
+      <TerminalActivityNavigation
+        activePanel={activePanel}
+        panelOpen={activityDialogOpen}
+        open={activityToolsOpen}
+        onOpenChange={changeActivityToolsOpen}
+        onSelect={openActivityPanel}
+        counts={{
+          positions: openTrades.length,
+          pending: pendingOrders.length,
+          history: closedTrades.length,
+          alerts: priceAlerts.filter(alert => !alert.triggered).length,
+          "smart-alerts": smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length,
+        }}
+        onNewOrder={() => { setRightPanelTab("order"); setMobileTab("order"); setRightPanelHidden(false); setChartExpanded(false) }}
+        onPositionSizer={() => { setRightPanelTab("sizer"); setMobileTab("order"); setRightPanelHidden(false); setChartExpanded(false) }}
+        onResetLayout={resetTerminalLayout}
+      />
+      <div className={`apple-terminal-panel-layout ${mobileTab === "portfolio" ? "hidden lg:flex lg:min-w-0 lg:flex-1" : "flex min-w-0 flex-1"}`}>
       <DockGroup key={layoutKey} enabled={dockEnabled}>
 
-        {/* ── LEFT: Market Watch ──────────────────────���──────�������───────────────��� */}
+        {/* ── LEFT: Market Watch ──────────────────────���──────��������───────────────��� */}
         {(!dockEnabled || !chartExpanded) && (
-        <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={19} minSize={14} maxSize={32}>
-	        <div className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
-          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13" }}>
+        <DockPanel enabled={dockEnabled} id="market" order={1} defaultSize={26} minSize={22} maxSize={34}>
+	        <div
+          role="region"
+          aria-label="Market Watch, Instrument Overview, and Trading Info"
+          tabIndex={0}
+          className={`apple-terminal-market flex-col shrink-0 ${chartExpanded || mobileTab !== "market" ? "hidden" : "flex"} ${mobileTab === "market" ? "flex" : "hidden lg:flex tablet-panel-hidden"}`}
+          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${marketPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderRight: "1px solid #1e2d45", background: "#070b13", position: dockEnabled ? "relative" : undefined, overflowX: dockEnabled ? "hidden" : undefined, overflowY: dockEnabled ? "auto" : undefined, overscrollBehaviorY: dockEnabled ? "contain" : undefined }}>
 
-          <div className="shrink-0 px-3 pt-3 pb-2.5" style={{ background: "linear-gradient(180deg, rgba(12,32,54,0.98), rgba(7,11,19,0.98))", borderBottom: "1px solid rgba(34,211,238,0.22)", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
-            <div className="mb-2.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg" style={{ background: "rgba(34,211,238,0.12)", border: "1px solid rgba(34,211,238,0.32)", boxShadow: "0 0 14px rgba(34,211,238,0.14)" }}>
-                  <Activity className="h-3.5 w-3.5 text-cyan-300" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black tracking-[0.18em] text-white uppercase">Market Watch</span>
-                    <span className="rounded-full border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-0.5 text-[7px] font-black uppercase tracking-wider text-emerald-300">Live</span>
-                  </div>
-                  <span className="text-[8px] font-semibold uppercase tracking-[0.14em] text-slate-500">Real-time instruments</span>
-                </div>
-              </div>
+          <header className={`${marketWatchStyles.header} font-sans`}>
+            <div className={marketWatchStyles.titleRow}>
+              <h2 className={marketWatchStyles.title}>Market Watch</h2>
+              <span className={marketWatchStyles.status}>Live</span>
             </div>
-            <div role="search" className="mb-2 flex items-center gap-2 rounded-md px-2.5" style={{ height: 44, border: "1px solid #1a2640", background: "rgba(4,12,22,0.72)" }}>
-              <Search className="size-3.5 shrink-0" style={{ color: "#6f8aa3" }} aria-hidden="true" />
+            <div role="search" className={marketWatchStyles.search}>
+              <Search aria-hidden="true" />
               <input
                 ref={pairSearchRef}
                 type="text"
                 aria-label="Search instruments"
-                placeholder="Search symbol or name..."
+                placeholder="Search instruments"
                 value={pairSearch}
                 onChange={(event) => setPairSearch(event.currentTarget.value)}
-                className="h-full min-w-0 flex-1 bg-transparent text-sm text-slate-200 outline-none placeholder:text-slate-500"
+                autoComplete="off"
+                spellCheck={false}
               />
               {pairSearch && (
                 <button
                   type="button"
                   aria-label="Clear instrument search"
                   onClick={() => setPairSearch("")}
-                  className="flex size-10 shrink-0 items-center justify-center rounded"
-                  style={{ minHeight: 42, color: "#8ba0b5" }}
+                  className={marketWatchStyles.clear}
                 >
-                  <X className="size-3.5" aria-hidden="true" />
+                  <X aria-hidden="true" />
                 </button>
               )}
             </div>
-            <div className="flex gap-1">
+            <div className={marketWatchStyles.filters} role="group" aria-label="Instrument categories">
               {categoryTabs.map(cat => {
-                const isActive = activeCategory === cat
-                const cc = cat === "All"
-                  ? { text: "#94a3b8", border: "#334155", bg: "rgba(148,163,184,0.1)" }
-                  : { text: CATEGORY_COLOR[cat as AssetCategory].text, border: CATEGORY_COLOR[cat as AssetCategory].border, bg: CATEGORY_COLOR[cat as AssetCategory].bg }
-                const label = cat === "All" ? "All" : cat === "Commodities" ? "Au" : cat === "Forex" ? "FX" : cat
+                const label = cat === "Commodities" ? "Metals" : cat === "Forex" ? "FX" : cat
                 return (
-                  <button key={cat} onClick={() => setActiveCategory(cat)}
-                    className="flex-1 py-1 text-[9px] font-black tracking-wider uppercase transition-all"
-                    style={{ borderRadius: 4, background: isActive ? cc.bg : "transparent", color: isActive ? cc.text : "#374151", border: `1px solid ${isActive ? cc.border : "#1a2640"}` }}>
+                  <button
+                    key={cat}
+                    type="button"
+                    aria-label={cat === "Commodities" ? "Precious metals" : cat}
+                    aria-pressed={activeCategory === cat}
+                    onClick={() => setActiveCategory(cat)}
+                  >
                     {label}
                   </button>
                 )
               })}
             </div>
-          </div>
+          </header>
 
           <div className="apple-market-table-head grid shrink-0 px-3 py-1.5" style={{ gridTemplateColumns: "1fr 72px 52px", background: "#0a1321", borderBottom: "1px solid #1e2d45" }}>
             <span className="text-[8px] font-black tracking-[0.15em] uppercase" style={{ color: "#6f8aa3" }}>Instrument</span>
@@ -3543,7 +3803,7 @@ const maxLeverage = 100
             <span className="text-[8px] font-black tracking-[0.15em] uppercase text-right" style={{ color: "#6f8aa3" }}>Chg%</span>
           </div>
 
-          <div id="market-watch-instruments" className="min-h-0 flex-1 overflow-y-auto terminal-scroll">
+          <div id="market-watch-instruments" className="min-h-0 flex-1 overflow-y-auto terminal-scroll" style={{ flex: dockEnabled ? "0 0 clamp(260px, 38vh, 360px)" : undefined }}>
             {loading ? (
               <div className="p-2 flex flex-col gap-1">
                 {Array.from({ length: 10 }).map((_, i) => (
@@ -3588,6 +3848,8 @@ const maxLeverage = 100
                         const hasTrade = openTrades.some(t => t.pair === p.symbol)
                         return (
                           <button key={p.symbol}
+                            type="button"
+                            aria-current={isSelected ? "true" : undefined}
                             onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe); setMobileTab("chart") }}
                             className="w-full mw-row"
                             style={{
@@ -3657,13 +3919,17 @@ const maxLeverage = 100
               })}
             </div>
           </div>
+        {!isCompactViewport && instrumentOverviewPanel}
         </div>
         {/* ── CENTER: Chart ────���─��────����────���─���─���────���─��────────────────������─────── */}
         </DockPanel>
         )}
         {!chartExpanded && <DockHandle enabled={dockEnabled} />}
-        <DockPanel enabled={dockEnabled} id="chart" order={2} defaultSize={57} minSize={34}>
-        <div className={`apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
+        <DockPanel enabled={dockEnabled} id="workspace" order={2} defaultSize={74} minSize={66}>
+        <div className="apple-terminal-main-column">
+        <DockGroup enabled={dockEnabled} direction="vertical" autoSaveId={DOCK_CHART_ORDER_AUTOSAVE_ID}>
+        <DockPanel enabled={dockEnabled} id="chart" order={1} defaultSize={55} minSize={45} maxSize={72}>
+        <div className={`${tradeScrollStyles.chartColumn} apple-terminal-chart-column min-w-0 flex-1 flex-col ${dockEnabled ? "h-full w-full" : ""} ${mobileTab !== "chart" ? "hidden" : "flex"} ${mobileTab === "chart" ? "flex" : "hidden lg:flex"} ${chartExpanded ? "is-chart-expanded" : ""}`}>
           {/* Pair header */}
           {selectedPair ? (
             <div className="chart-header terminal-market-dock shrink-0 flex flex-col px-3 py-1.5 gap-1.5" style={{ background: "linear-gradient(180deg, #0d1727 0%, #080c14 100%)", borderBottom: "1px solid #243752", boxShadow: "0 4px 16px rgba(0,0,0,.2)" }}>
@@ -3697,6 +3963,12 @@ const maxLeverage = 100
 
 	                {/* Chart Controls & Tools Group */}
 	                <div className="terminal-market-dock-tools flex items-center gap-1.5 ml-auto">
+                  <div
+                    className="terminal-chart-market-actions flex items-center gap-1.5 shrink-0"
+                    ref={setChartActionsHost}
+                    role="group"
+                    aria-label="Chart actions"
+                  />
                   {/* Chart layout and live-data tools */}
 
 	                  <button
@@ -3708,19 +3980,16 @@ const maxLeverage = 100
 	                    {chartLayout === "single" ? <Grid3x3 className="h-3.5 w-3.5" /> : <Square className="h-3.5 w-3.5" />}
 	                  </button>
 
-	                  {/* Tools Dropdown */}
-	                  <select
-	                    onChange={e => { if (e.target.value) { setActivePanel(e.target.value as any); e.target.value = "" } }}
-	                    className="rounded border border-[#1e2d45] bg-[#0b1625] px-1.5 py-1 text-[9px] font-bold text-slate-300 outline-none cursor-pointer"
-	                    defaultValue=""
-	                    aria-label="Workspace tools menu"
+	                  <button
+	                    type="button"
+	                    onClick={() => changeActivityToolsOpen(true)}
+	                    className="hidden min-h-11 items-center gap-2 rounded border border-[var(--activity-muted)] bg-[var(--activity-background)] px-3 text-sm font-semibold text-[var(--activity-foreground)] md:flex"
+	                    aria-label="Browse workspace tools"
+	                    aria-haspopup="dialog"
+	                    aria-controls="terminal-activity-tools"
 	                  >
-	                    <option value="" disabled>TOOLS ▾</option>
-	                    <option value="dom" className="bg-[#0b1625] text-white">L2 Order Book</option>
-	                    <option value="risk" className="bg-[#0b1625] text-white">Risk Analytics</option>
-	                    <option value="alerts" className="bg-[#0b1625] text-white">Price Alerts</option>
-	                    <option value="ai-coach" className="bg-[#0b1625] text-white">AI Guide</option>
-	                  </select>
+	                    <Grid3x3 className="size-4" aria-hidden="true" /> Tools
+	                  </button>
 
 	                  {candleLoading && <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />}
 	                </div>
@@ -3732,13 +4001,19 @@ const maxLeverage = 100
 	            </div>
 	          )}
 
-	          {/* Chart + Timeframe Dock + Quick Trade + Instrument Details + Blotter strip */}
-	          <div className="flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll" style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}>
+	          {/* Chart and timeframe dock; the order ticket follows below. */}
+	          <div
+                className={`${tradeScrollStyles.scrollArea} terminal-trade-scroll flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll`}
+                role="region"
+                aria-label="Trade chart and market details"
+                tabIndex={0}
+                style={{ background: "#080c14", WebkitOverflowScrolling: "touch" }}
+              >
 	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
 	              {selectedPair && chartLayout === "single" ? (
 	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartReloadKey}`} fallback={
 	                  <div className="chart-silent-error" aria-hidden="true">
-	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} /> : null}
+	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} /> : null}
 	                  </div>
 	                }>
   <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">
@@ -3756,7 +4031,7 @@ const maxLeverage = 100
   sellPrice={selectedPair.bid}
   darkTheme={isDarkTheme}
   marketStatus={online ? "live" : marketError ? "reconnecting" : "connecting"}
-  livePrice={(selectedPair.bid + selectedPair.ask) / 2}
+  actionsHost={chartActionsHost}
   />
   </div>
   </div>
@@ -3811,81 +4086,7 @@ const maxLeverage = 100
 	              </div>
 	            </div>
 
-	            {/* ── Quick Trade Dock (Revealed on Scroll) ── */}
-	            <div className="reference-chart-trade-dock shrink-0">
-	              <div className="reference-chart-trade-heading">
-	                <span>Quick trade</span>
-	                <span>{selectedPair ? `${selectedPair.symbol} �� Market Execution` : "Select an instrument"}</span>
-	              </div>
-	              <div className="reference-chart-trade-actions">
-	                <button type="button" onClick={() => quickTrade("BUY")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy">
-	                  <span><TrendingUp className="h-3.5 w-3.5" /> BUY</span>
-	                  <strong>{selectedPair ? fmt(selectedPair.ask, selectedPair.symbol) : "—"}</strong>
-	                </button>
-	                <button type="button" onClick={() => quickTrade("SELL")} disabled={!selectedPair || isFrozen || !balanceLoaded || estimatedMargin > walletBalance} className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell">
-	                  <span><TrendingDown className="h-3.5 w-3.5" /> SELL</span>
-	                  <strong>{selectedPair ? fmt(selectedPair.bid, selectedPair.symbol) : "—"}</strong>
-	                </button>
-	              </div>
-	              <button type="button" onClick={() => setMobileTab("order")} disabled={!selectedPair || isFrozen} className="reference-make-order">
-	                <Zap className="h-3.5 w-3.5" /> MAKE ORDER
-	                <span>Open full order ticket</span>
-	              </button>
-	            </div>
-
-	            {/* ── Rich Instrument Details & Key Stats ── */}
-	            {selectedPair && (
-	              <div className="shrink-0 mx-3 my-2 p-3 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 backdrop-blur-md shadow-lg">
-	                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#162338]">
-	                  <div className="flex items-center gap-2">
-	                    <AssetLogo symbol={selectedPair.symbol} size={18} className="shrink-0" />
-	                    <span className="text-xs font-black text-white tracking-wide">{selectedPair.symbol} Overview</span>
-	                  </div>
-	                  <span className="text-[9px] font-bold text-slate-400">
-	                    {online ? "● Market Live" : "○ Market Closed"}
-	                  </span>
-	                </div>
-
-	                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h High</span>
-	                    <span className="price-mono font-black text-emerald-400 text-xs mt-0.5">{fmt(selectedPair.high, selectedPair.symbol)}</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Low</span>
-	                    <span className="price-mono font-black text-red-400 text-xs mt-0.5">{fmt(selectedPair.low, selectedPair.symbol)}</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spread</span>
-	                    <span className="price-mono font-black text-cyan-300 text-xs mt-0.5">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)} pips</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">24h Change</span>
-	                    <span className={`price-mono font-black text-xs mt-0.5 ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-	                      {isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%
-	                    </span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Leverage</span>
-	                    <span className="price-mono font-black text-purple-300 text-xs mt-0.5">1:{effectiveLeverage}</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pip Value</span>
-	                    <span className="price-mono font-black text-amber-300 text-xs mt-0.5">~$10.00 / lot</span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Contract Size</span>
-	                    <span className="price-mono font-black text-slate-200 text-xs mt-0.5">
-	                      {isCommodity(selectedPair.symbol) ? "100 oz" : isCrypto(selectedPair.symbol) ? "1 Coin" : "100,000 units"}
-	                    </span>
-	                  </div>
-	                  <div className="flex flex-col p-2 rounded-lg bg-[#040810]/70 border border-[#121c2e]">
-	                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Est. Margin</span>
-	                    <span className="price-mono font-black text-cyan-400 text-xs mt-0.5">${estimatedMargin.toFixed(2)}</span>
-	                  </div>
-	                </div>
-	              </div>
-	            )}
+	            {isCompactViewport && instrumentOverviewPanel}
 
 	            {/* ── Mobile Activity / Blotter Section ── */}
 	            <div className="hidden shrink-0 mx-3 my-2 mb-20 md:mb-4 rounded-xl border border-[#1e2d45] bg-[#07111e]/90 overflow-hidden shadow-lg">
@@ -4031,30 +4232,18 @@ const maxLeverage = 100
 	        </div>
 	        {/* RIGHT: Order Ticket */}
 	        </DockPanel>
-        {dockEnabled && chartExpanded ? null : rightPanelHidden ? (
-          <div className="reference-sidebar-collapsed shrink-0 items-start justify-center pt-2" style={{ borderLeft: "1px solid #1e2d45", background: "#070b13" }}>
-            <button
-              type="button"
-              onClick={() => setRightPanelHidden(false)}
-              aria-label="Show trading sidebar (Ctrl+Shift+O)"
-              title="Show trading sidebar (Ctrl+Shift+O)"
-              className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-          </div>
-        ) : (
+        {!rightPanelHidden && !(dockEnabled && chartExpanded) && (
         <>
         <DockHandle enabled={dockEnabled} />
-        <DockPanel enabled={dockEnabled} id="order" order={3} defaultSize={24} minSize={19} maxSize={36}>
+        <DockPanel enabled={dockEnabled} id="order" order={2} defaultSize={45} minSize={28} maxSize={55}>
         <div className={`apple-terminal-order flex-col shrink-0 ${mobileTab !== "order" || chartExpanded ? "hidden" : "flex"} ${mobileTab === "order" ? "flex" : "hidden lg:flex"}`}
-          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderLeft: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
+          style={{ flex: dockEnabled ? "1 1 auto" : `0 0 ${orderPanelWidth}px`, width: dockEnabled ? "100%" : undefined, height: dockEnabled ? "100%" : undefined, maxWidth: "100%", borderTop: "1px solid #243752", background: "linear-gradient(180deg, #0a1321 0%, #070b13 100%)" }}>
 
           {/* Right panel tab switcher */}
           <div className="terminal-order-panel-header flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
             <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
               <Zap className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white">Order Panel</div></div>
+              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white"><span className={mobileControlsStyles.mobileTitle}>Order</span><span className={mobileControlsStyles.desktopTitle}>Order Panel</span></div></div>
             </div>
             <div className="terminal-order-view-dock" role="group" aria-label="Order panel view">
               {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
@@ -4073,11 +4262,11 @@ const maxLeverage = 100
             <button
               type="button"
               onClick={() => setRightPanelHidden(true)}
-              aria-label="Hide trading sidebar (Ctrl+Shift+O)"
-              title="Hide trading sidebar (Ctrl+Shift+O)"
+              aria-label="Hide order panel (Ctrl+Shift+O)"
+              title="Hide order panel (Ctrl+Shift+O)"
               className="px-2 text-slate-500 transition-colors hover:text-cyan-400"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <ChevronDown className="h-3.5 w-3.5" />
             </button>
           </div>
 
@@ -4086,21 +4275,27 @@ const maxLeverage = 100
 		            <div className="flex-1 overflow-y-auto terminal-scroll">
 		              <div className="mobile-order-ticket flex flex-col gap-2 p-2 pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-2">
 	                {/* Header banner */}
-	                <div className="flex items-center justify-between rounded-lg border border-[#1e2d45] bg-[#071221] px-2.5 py-1.5 shadow-sm">
-	                  <div className="flex items-center gap-2">
-	                    <span className="text-xs font-black uppercase tracking-wider text-cyan-300">{selectedPair.symbol}</span>
-	                    <span className="text-[9px] font-bold text-slate-400">1:{effectiveLeverage}</span>
-	                  </div>
-	                  <div className="flex items-center gap-1.5">
-	                    <span className={`rounded px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider ${balanceLoaded ? "bg-emerald-400/10 text-emerald-300 border border-emerald-400/20" : "bg-amber-400/10 text-amber-300 border border-amber-400/20"}`}>
-	                      {balanceLoaded ? "Ready" : "Loading"}
-	                    </span>
-	                    <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-cyan-300">{online ? "Live" : "Offline"}</span>
-	                  </div>
-	                </div>
+<div className="mobile-order-ticket-banner flex items-center justify-between gap-3 rounded-xl border border-[#1e2d45] bg-[#071221] px-3 py-2.5 shadow-sm">
+		                  <div className="min-w-0">
+		                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">New order</p>
+		                    <div className="mt-1 flex flex-wrap items-center gap-2">
+		                      <AssetLogo key={selectedPair.symbol} symbol={selectedPair.symbol} size={36} className={mobileControlsStyles.orderLogo} />
+                              <span className={`text-base font-black tracking-tight text-cyan-200 ${mobileControlsStyles.orderSymbol}`}>{selectedPair.symbol}</span>
+		                      <span className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[10px] font-bold text-cyan-200">
+		                        {orderType === "market" ? "Market" : orderType === "limit" ? "Limit" : "Stop"} · 1:{effectiveLeverage}
+		                      </span>
+		                    </div>
+		                  </div>
+		                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+		                    <span className={`rounded-md border px-2 py-1 text-[10px] font-bold ${tradingLocked ? "border-rose-400/25 bg-rose-400/10 text-rose-200" : balanceLoaded ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200" : "border-amber-400/20 bg-amber-400/10 text-amber-200"}`}>
+		                      {tradingLocked ? "Trading locked" : balanceLoaded ? "Balance ready" : "Loading balance"}
+		                    </span>
+		                    <span className={`text-[10px] font-semibold ${online ? "text-emerald-300" : "text-amber-300"}`}>{online ? "Live quote" : "Waiting for quote"}</span>
+		                  </div>
+		                </div>
 
 	                {/* Order type tabs */}
-                <div className="terminal-order-type-dock flex items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]">
+                <div className="terminal-order-type-dock flex items-stretch overflow-hidden rounded-xl border border-[#1a2640] bg-[#070a10]" role="group" aria-label="Order type">
                   {(["market","limit","stop"] as typeof orderType[]).map(ot => (
                     <button key={ot} type="button" onClick={() => {
 	                      setOrderType(ot)
@@ -4115,8 +4310,10 @@ const maxLeverage = 100
 	                        setPendingPrice(suggested.toFixed(decimals(selectedPair.symbol)))
 	                      }
 	                    }}
+                      data-order-type={ot}
                       aria-pressed={orderType === ot}
-                      className="flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-[9px] font-black uppercase tracking-wider transition-colors">
+                      aria-label={ot === "market" ? "Market order at the current quote" : `${ot === "limit" ? "Limit" : "Stop"} pending order`}
+                      className="flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-[11px] font-bold uppercase tracking-wider transition-colors">
                       {ot}
 	                    </button>
 	                  ))}
@@ -4140,93 +4337,165 @@ const maxLeverage = 100
                     <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
                     <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                   </button>
-			                  <div className="mobile-quote-spread pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+			                  <div className="mobile-quote-spread pointer-events-none md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
 			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
 			                  </div>
 			                </div>
 
-		                {/* Pending price (limit/stop) */}
-	                {orderType !== "market" && (
-	                  <div className="rounded-lg border border-cyan-400/20 bg-[#07101b] p-2 flex flex-col gap-1.5">
-	                    <label className="text-[8px] font-bold tracking-widest uppercase text-cyan-300">
-	                      {orderType === "limit" ? "Limit Price" : "Stop Price"}
-	                    </label>
-	                    <input type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
-	                      placeholder={fmt(midPrice, selectedPair.symbol)}
-	                      className="w-full price-mono text-sm font-black text-white focus:outline-none px-2 py-1.5 rounded bg-[#070a10] border border-cyan-400/30" />
-                    <div className="terminal-order-expiry-dock flex items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
-                      {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                        <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
-                          className="min-w-0 flex-1 px-2 py-1 text-[8px] font-black tracking-wider uppercase transition-colors"
-                          style={pendingExpiry === e
-                            ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
-                            : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
-                          {e}
-	                        </button>
-	                      ))}
-	                    </div>
-	                  </div>
-	                )}
+                {/* Pending price (limit/stop) */}
+		                {orderType !== "market" && (
+		                  <div className="mobile-order-pending rounded-xl border border-cyan-400/20 bg-[#07101b] p-3 flex flex-col gap-2.5">
+		                    <div className="flex items-start justify-between gap-3">
+		                      <div className="min-w-0">
+		                        <label htmlFor="pending-order-price" className="text-[11px] font-bold tracking-wide text-cyan-200">
+		                          {orderType === "limit" ? "Limit price" : "Stop price"}
+		                        </label>
+		                        <p className="mt-1 text-[10px] leading-relaxed text-slate-400">
+		                          {orderType === "limit"
+		                            ? direction === "BUY" ? "Buy limit below ask" : "Sell limit above bid"
+		                            : direction === "BUY" ? "Buy stop above ask" : "Sell stop below bid"}
+		                        </p>
+		                      </div>
+		                      <span className="shrink-0 rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">
+		                        {direction === "BUY" ? "Ask" : "Bid"} {fmt(direction === "BUY" ? selectedPair.ask : selectedPair.bid, selectedPair.symbol)}
+		                      </span>
+		                    </div>
+		                    <input id="pending-order-price" type="number" value={pendingPrice} onChange={e => setPendingPrice(e.target.value)}
+		                      min="0" step={Math.pow(10, -decimals(selectedPair.symbol))}
+		                      aria-invalid={Boolean(pendingPriceError)}
+		                      aria-describedby={pendingPriceError ? "pending-order-price-help pending-order-price-error" : "pending-order-price-help"}
+		                      placeholder={fmt(midPrice, selectedPair.symbol)}
+		                      className="w-full rounded-lg border border-cyan-400/30 bg-[#070a10] px-3 py-2.5 price-mono text-base font-bold text-white focus:outline-none" />
+		                    <p id="pending-order-price-help" className="text-[10px] leading-relaxed text-slate-400">
+		                      {pendingPriceError
+		                        ? "Choose a price on the correct side of the live quote."
+		                        : pendingDistancePips !== null
+		                          ? `${pendingDistancePips.toLocaleString("en-US", { maximumFractionDigits: 1 })} pips from the current quote.`
+		                          : "Your pending order waits for price to reach this level."}
+		                    </p>
+		                    {pendingPriceError && <p id="pending-order-price-error" className="text-[10px] font-semibold text-rose-300" role="alert">{pendingPriceError}</p>}
+		                    <div className="flex items-center justify-between gap-3 border-t border-[#142032] pt-2">
+		                      <div className="shrink-0">
+		                        <p className="text-[11px] font-semibold text-slate-200">Time in force</p>
+		                        <p className="mt-0.5 text-[10px] text-slate-400">How long it stays active</p>
+		                      </div>
+		                      <div className="terminal-order-expiry-dock flex min-w-0 flex-1 items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]" role="group" aria-label="Pending order expiry">
+		                        {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
+		                          <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
+		                            aria-label={e === "GTC" ? "Good until canceled" : "Expires today"}
+		                            className="min-w-0 flex-1 px-3 py-2 text-[11px] font-bold tracking-wide transition-colors"
+		                            style={pendingExpiry === e
+		                              ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
+		                              : { background: "#070a10", color: "#94a3b8", border: "1px solid #1a2640" }}>
+		                            {e === "GTC" ? "GTC" : "Today"}
+		                          </button>
+		                        ))}
+		                      </div>
+		                    </div>
+		                  </div>
+		                )}
 
-			                {/* Volume (lots) */}
-			                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-1.5">
-			                  <div className="flex items-center justify-between">
-			                    <label className="text-[8px] font-black tracking-wider uppercase text-cyan-300">
-			                      Trade size (lots)
-			                    </label>
-			                    <span className="text-[8px] font-bold text-slate-400">Leverage: 1:{effectiveLeverage}</span>
-			                  </div>
-			                  <input type="number" value={lotSize} onChange={e => {
-			                    const next = Number.parseFloat(e.target.value)
-			                    setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
-			                  }}
-			                  onBlur={() => {
-			                    if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
-			                  }}
-			                  step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100" aria-describedby="lot-size-help"
-			                  className="w-full price-mono text-sm font-black text-white focus:outline-none px-2.5 py-1.5 rounded bg-[#070a10] border border-[#243752]"
-			                  placeholder="0.01"
-			                  />
-			                  {isFundedAccount && <p id="lot-size-help" className="text-[9px] font-semibold text-cyan-300">Auto min: {minimumFundedLots.toFixed(2)} lots · $3,000 margin</p>}
-                  <div className="terminal-order-size-dock flex items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
-                    {["0.01","0.10","0.50","1.00","5.00","10.0"].map(l => (
-                      <button key={l} type="button" onClick={() => setLotSize(l)} aria-pressed={lotSize === l}
-                        className="min-w-0 flex-1 px-1 py-1 text-[7px] font-black tracking-wide transition-colors">
-                        {l}
-				                      </button>
-				                    ))}
-				                  </div>
-	                </div>
+		                <div className="order-ticket-controls flex min-w-0 flex-col gap-2.5">
+                        {/* Trade size and leverage */}
+		                <div className="mobile-order-volume rounded-xl border border-[#1a2640] bg-[#07101b] p-3 flex flex-col gap-3">
+		                  <div className="flex items-center justify-between gap-3">
+		                    <div className="min-w-0">
+		                      <label htmlFor="order-lot-size" className="text-[12px] font-bold text-slate-100">Trade size</label>
+		                      <p className="mt-0.5 text-[10px] text-slate-400">Position volume in lots</p>
+		                    </div>
+		                    <label htmlFor="order-leverage" className="flex shrink-0 flex-col items-end gap-1">
+		                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Leverage</span>
+		                      <select id="order-leverage" value={leverage} onChange={e => setLeverage(e.target.value)}
+		                        aria-label="Select leverage"
+		                        className={`min-h-9 rounded-md border border-[#263b4f] bg-[#080c14] px-2 price-mono text-[11px] font-bold focus:outline-none cursor-pointer ${isFundedAccount || isChallengeAccount ? "text-amber-300" : "text-cyan-300"}`}>
+		                        {["1", "5", "10", "20", "30", "50", "100"].filter(value => !isChallengeAccount || Number(value) <= 30).map(value => <option key={value} value={value}>1:{value}</option>)}
+		                      </select>
+		                    </label>
+		                  </div>
+		                  <div className="flex items-stretch gap-2">
+		                    <button type="button" onClick={() => nudgeLotSize(-1)}
+		                      disabled={Number.isFinite(parsedLotSize) && parsedLotSize <= (isFundedAccount ? minimumFundedLots : 0.01)}
+		                      aria-label="Decrease trade size" title="Decrease trade size"
+		                      className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-[#243752] bg-[#0d1726] text-slate-300 transition-colors hover:border-cyan-400/40 hover:text-cyan-200 disabled:cursor-not-allowed disabled:opacity-40">
+		                      <ChevronDown className="size-4" />
+		                    </button>
+		                    <input id="order-lot-size" type="number" value={lotSize} onChange={e => {
+		                      const next = Number.parseFloat(e.target.value)
+		                      setLotSize(isFundedAccount && Number.isFinite(next) && next > 0 ? Math.max(next, minimumFundedLots).toFixed(2) : e.target.value)
+		                    }}
+		                    onBlur={() => {
+		                      if (isFundedAccount) setLotSize(Math.max(Number.parseFloat(lotSize) || 0.01, minimumFundedLots).toFixed(2))
+		                    }}
+		                    step="0.01" min={isFundedAccount ? minimumFundedLots : 0.01} max="100"
+		                    aria-label="Trade size in lots"
+		                    aria-invalid={Boolean(lotSizeError)}
+		                    aria-describedby={lotSizeError ? "order-lot-size-help order-lot-size-error" : "order-lot-size-help"}
+		                    className="min-w-0 flex-1 rounded-lg border border-[#243752] bg-[#070a10] px-3 price-mono text-center text-lg font-bold text-white focus:outline-none"
+		                    placeholder="0.01"
+		                    />
+		                    <button type="button" onClick={() => nudgeLotSize(1)}
+		                      aria-label="Increase trade size" title="Increase trade size"
+		                      className="flex size-11 shrink-0 items-center justify-center rounded-lg border border-[#243752] bg-[#0d1726] text-slate-300 transition-colors hover:border-cyan-400/40 hover:text-cyan-200">
+		                      <ChevronUp className="size-4" />
+		                    </button>
+		                  </div>
+		                  <p id="order-lot-size-help" className="text-[10px] leading-relaxed text-slate-400">
+		                    {isFundedAccount ? `Minimum ${minimumFundedLots.toFixed(2)} lots keeps margin at $3,000.` : "Choose a size from 0.01 to 100 lots."}
+		                  </p>
+		                  {lotSizeError && <p id="order-lot-size-error" className="text-[10px] font-semibold text-rose-300" role="alert">{lotSizeError}</p>}
+		                  <div className="terminal-order-size-dock flex items-stretch overflow-hidden rounded-lg border border-[#1a2640] bg-[#070a10]" role="group" aria-label="Quick trade sizes">
+		                    {["0.01","0.10","0.50","1.00","5.00","10.00"].map(l => (
+		                      <button key={l} type="button" onClick={() => {
+		                        const requestedLots = Number.parseFloat(l)
+		                        setLotSize(Math.max(requestedLots, isFundedAccount ? minimumFundedLots : 0.01).toFixed(2))
+		                      }} aria-pressed={Number.isFinite(parsedLotSize) && Math.abs(parsedLotSize - Number.parseFloat(l)) < 0.001}
+		                        aria-label={`Set trade size to ${l} lots`}
+		                        className="min-w-0 flex-1 px-1 py-2 text-[10px] font-bold tracking-wide transition-colors">
+		                        {l}
+		                      </button>
+		                    ))}
+		                  </div>
+		                </div>
 
-                {/* Essential Risk controls (SL / TP) */}
-                <div className="rounded-lg border border-[#1a2640] bg-[#07101b] p-2 flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-black uppercase tracking-wider text-slate-400">Stop Loss & Take Profit</span>
+                {/* Essential risk controls */}
+                <div className="mobile-order-risk rounded-xl border border-[#1a2640] bg-[#07101b] p-3 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[12px] font-bold text-slate-100">Risk protection</p>
+                      <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">Optional exits, checked against your entry price.</p>
+                    </div>
+                    <span className="rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">Optional</span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {/* SL */}
-                    <div>
-                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-rose-400">
-                        <span className="flex items-center gap-1"><ShieldAlert className="h-2.5 w-2.5" /> SL</span>
-                        {slVal !== null && <span className="text-[8px] font-bold text-slate-400">{slPips.toFixed(1)}p · -${maxLoss.toFixed(2)}</span>}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="min-w-0">
+                      <label htmlFor="order-stop-loss" className="mb-1.5 flex min-h-5 items-center justify-between gap-1 text-[10px] font-bold text-rose-300">
+                        <span className="flex items-center gap-1"><ShieldAlert className="size-3.5" /> Stop loss</span>
+                        {slVal !== null && Number.isFinite(slVal) && !stopLossError && <span className="truncate text-[9px] font-semibold text-slate-400">{slPips.toFixed(1)}p · −${maxLoss.toFixed(2)}</span>}
                       </label>
-                      <input type="number" value={sl} onChange={e => setSl(e.target.value)}
-                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#0d0204] border border-rose-500/30"
-                        placeholder={fmt(midPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
+                      <input id="order-stop-loss" type="number" min="0" step={Math.pow(10, -decimals(selectedPair.symbol))} value={sl} onChange={e => setSl(e.target.value)}
+                        aria-label="Stop loss price"
+                        aria-invalid={Boolean(stopLossError)}
+                        aria-describedby={stopLossError ? "order-stop-loss-error" : undefined}
+                        className="w-full rounded-lg border border-rose-500/30 bg-[#0d0204] px-2.5 py-2 price-mono text-sm font-bold text-white focus:outline-none"
+                        placeholder={fmt(entryPrice * (direction === "BUY" ? 0.9990 : 1.0010), selectedPair.symbol)}
                       />
+                      {stopLossError && <p id="order-stop-loss-error" className="mt-1.5 text-[10px] font-semibold leading-relaxed text-rose-300" role="alert">{stopLossError}</p>}
                     </div>
 
-                    {/* TP */}
-                    <div>
-                      <label className="text-[8px] font-black tracking-wider uppercase mb-1 flex items-center justify-between text-emerald-400">
-                        <span className="flex items-center gap-1"><Target className="h-2.5 w-2.5" /> TP</span>
-                        {tpVal !== null && <span className="text-[8px] font-bold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
+                    <div className="min-w-0">
+                      <label htmlFor="order-take-profit" className="mb-1.5 flex min-h-5 items-center justify-between gap-1 text-[10px] font-bold text-emerald-300">
+                        <span className="flex items-center gap-1"><Target className="size-3.5" /> Take profit</span>
+                        {tpVal !== null && Number.isFinite(tpVal) && !takeProfitError && <span className="truncate text-[9px] font-semibold text-slate-400">{tpPips.toFixed(1)}p · +${maxGain.toFixed(2)}</span>}
                       </label>
-                      <input type="number" value={tp} onChange={e => setTp(e.target.value)}
-                        className="w-full price-mono text-xs font-bold text-white focus:outline-none px-2 py-1.5 rounded bg-[#010d06] border border-emerald-500/30"
-                        placeholder={fmt(midPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
+                      <input id="order-take-profit" type="number" min="0" step={Math.pow(10, -decimals(selectedPair.symbol))} value={tp} onChange={e => setTp(e.target.value)}
+                        aria-label="Take profit price"
+                        aria-invalid={Boolean(takeProfitError)}
+                        aria-describedby={takeProfitError ? "order-take-profit-error" : undefined}
+                        className="w-full rounded-lg border border-emerald-500/30 bg-[#010d06] px-2.5 py-2 price-mono text-sm font-bold text-white focus:outline-none"
+                        placeholder={fmt(entryPrice * (direction === "BUY" ? 1.0010 : 0.9990), selectedPair.symbol)}
                       />
+                      {takeProfitError && <p id="order-take-profit-error" className="mt-1.5 text-[10px] font-semibold leading-relaxed text-rose-300" role="alert">{takeProfitError}</p>}
                     </div>
                   </div>
                 </div>
@@ -4236,12 +4505,12 @@ const maxLeverage = 100
                   type="button"
                   onClick={() => setShowAdvancedOrderControls(!showAdvancedOrderControls)}
                   aria-expanded={showAdvancedOrderControls}
-                  className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[#1a2640] bg-[#07101b] hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider"
+                  className="mobile-order-advanced-toggle w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg border border-[#1a2640] bg-[#07101b] hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all text-[9px] font-black uppercase tracking-wider"
                 >
                   <div className="flex items-center gap-1.5">
                     <Wrench className="h-3 w-3 text-cyan-400" />
-                    <span>Advanced Options</span>
-                    {(Boolean(trailingPips && parseFloat(trailingPips) > 0) || pendingExpiry !== "GTC" || leverage !== "100") && (
+                    <span>Advanced settings</span>
+                    {Boolean(trailingPips && parseFloat(trailingPips) > 0) && (
                       <span className="rounded bg-cyan-400/20 px-1 py-0.2 text-[7px] font-bold text-cyan-300">Active</span>
                     )}
                   </div>
@@ -4250,111 +4519,123 @@ const maxLeverage = 100
 
                 {/* Advanced Options Body */}
                 {showAdvancedOrderControls && (
-                  <div className="flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
-                    {/* Trailing Stop */}
-                    <div className="flex items-center justify-between gap-2">
-                      <label className="text-[8px] font-black tracking-wider uppercase text-purple-300 flex items-center gap-1 shrink-0">
-                        <ArrowUpDown className="h-2.5 w-2.5" /> Trailing Stop (pips)
-                      </label>
-                      <input type="number" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
-                        className="w-28 price-mono text-xs text-white focus:outline-none px-2 py-1 rounded bg-[#07030f] border border-purple-500/30 text-right"
-                        placeholder="0 (disabled)"
-                      />
-                    </div>
-
-                    {/* Pending Order Expiry */}
-                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
-                      <span className="text-[8px] font-black tracking-wider uppercase text-slate-400">Order Expiry</span>
-                      <div className="terminal-order-expiry-dock flex flex-1 items-stretch overflow-hidden rounded-md border border-[#1a2640] bg-[#070a10]">
-                        {(["GTC","TODAY"] as PendingOrder["expiry"][]).map(e => (
-                          <button key={e} type="button" onClick={() => setPendingExpiry(e)} aria-pressed={pendingExpiry === e}
-                            className="min-w-0 flex-1 px-2 py-0.5 text-[8px] font-black tracking-wider uppercase transition-colors"
-                            style={pendingExpiry === e
-                              ? { background: "rgba(34,211,238,0.15)", color: "#22d3ee", border: "1px solid rgba(34,211,238,0.3)" }
-                              : { background: "#070a10", color: "#64748b", border: "1px solid #1a2640" }}>
-                            {e}
-                          </button>
-                        ))}
+                  <div className="mobile-order-advanced-options flex flex-col gap-2 rounded-lg border border-[#1a2640] bg-[#050b14] p-2 transition-all">
+                    {/* Trailing stop */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <label htmlFor="order-trailing-stop" className="flex items-center gap-1.5 text-[11px] font-semibold text-cyan-200">
+                          <ArrowUpDown className="size-3.5" /> Trailing stop
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <input id="order-trailing-stop" type="number" min="0" step="any" value={trailingPips} onChange={e => setTrailingPips(e.target.value)}
+                            aria-label="Trailing stop distance in pips"
+                            aria-invalid={Boolean(trailingStopError)}
+                            aria-describedby={trailingStopError ? "order-trailing-stop-error" : "order-trailing-stop-help"}
+                            className="w-24 rounded-lg border border-cyan-400/30 bg-[#07030f] px-2.5 py-2 price-mono text-sm text-white focus:outline-none text-right"
+                            placeholder="Off"
+                          />
+                          <span className="text-[10px] text-slate-400">pips</span>
+                        </div>
                       </div>
+                      <p id="order-trailing-stop-help" className="text-[10px] leading-relaxed text-slate-400">Leave blank to keep this setting off.</p>
+                      {trailingStopError && <p id="order-trailing-stop-error" className="text-[10px] font-semibold text-rose-300" role="alert">{trailingStopError}</p>}
                     </div>
 
-                    {/* Leverage Selection */}
-                    <div className="flex items-center justify-between gap-2 border-t border-[#142032] pt-1.5">
-                      <span className="text-[8px] font-black tracking-wider uppercase text-amber-300">Account Leverage</span>
-                      <select value={leverage} onChange={e => setLeverage(e.target.value)}
-                        aria-label="Select leverage"
-                        className={`bg-[#080c14] price-mono text-[9px] font-bold focus:outline-none px-2 py-0.5 rounded border border-[#263b4f] cursor-pointer ${isFundedAccount || isChallengeAccount ? "text-amber-300" : "text-cyan-300"}`}>
-                        {["1", "5", "10", "20", "30", "50", "100"].filter(value => !isChallengeAccount || Number(value) <= 30).map(value => <option key={value} value={value}>1:{value}</option>)}
-                      </select>
-                    </div>
-
-                    {/* Quick Risk Presets */}
-                    <div className="border-t border-[#142032] pt-1.5">
-                      <span className="text-[8px] font-black uppercase tracking-wider text-slate-400 block mb-1">Risk Presets</span>
-                      <div className="grid grid-cols-4 gap-1">
+                    {/* Quick risk presets */}
+                    <div className="border-t border-[#142032] pt-2">
+                      <span className="mb-2 block text-[11px] font-semibold text-slate-300">Quick risk profile</span>
+                      <div className="grid grid-cols-4 gap-1.5">
                         {[{ label: "Scalp", slPips: 8, tpPips: 12 }, { label: "1:2", slPips: 15, tpPips: 30 }, { label: "1:3", slPips: 20, tpPips: 60 }, { label: "Clear", slPips: 0, tpPips: 0 }].map(preset => (
                           <button key={preset.label} type="button" onClick={() => {
                             if (preset.slPips === 0) { setSl(""); setTp(""); return }
-                            const point = direction === "BUY" ? selectedPair.ask : selectedPair.bid
+                            const point = entryPrice
                             const unit = pip(selectedPair.symbol)
                             const stop = direction === "BUY" ? point - preset.slPips * unit : point + preset.slPips * unit
                             const target = direction === "BUY" ? point + preset.tpPips * unit : point - preset.tpPips * unit
                             setSl(stop.toFixed(decimals(selectedPair.symbol)))
                             setTp(target.toFixed(decimals(selectedPair.symbol)))
-                          }} className="rounded border border-[#243752] bg-[#0b1625] px-1.5 py-0.5 text-[8px] font-bold text-slate-400 hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
+                          }} className="min-h-9 rounded-lg border border-[#243752] bg-[#0b1625] px-2 py-2 text-[10px] font-semibold text-slate-300 transition-colors hover:border-cyan-400/40 hover:text-cyan-200">{preset.label}</button>
                         ))}
                       </div>
                     </div>
                   </div>
                 )}
 
-	                {/* Order Metrics summary */}
-	                <div className="grid grid-cols-2 gap-1 rounded-lg border border-[#1a2640] bg-[#070a10] p-1.5">
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Margin</p>
-	                    <p className="price-mono text-[10px] font-black text-amber-300">${isNaN(estimatedMargin) ? "—" : estimatedMargin.toFixed(2)}</p>
-	                  </div>
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Pip Value</p>
-	                    <p className="price-mono text-[10px] font-black text-cyan-300">${pipVal.toFixed(4)}</p>
-	                  </div>
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Risk / Reward</p>
-	                    <p className="price-mono text-[10px] font-black text-purple-300">
-	                      {slVal !== null ? `-$${maxLoss.toFixed(2)}` : "—"} / {tpVal !== null ? `+$${maxGain.toFixed(2)}` : "—"} {rrRatio ? `(1:${rrRatio})` : ""}
-	                    </p>
-	                  </div>
-	                  <div className="px-2 py-1 bg-[#090f19] rounded">
-	                    <p className="text-[8px] uppercase tracking-wider text-slate-400">Notional</p>
-	                    <p className="price-mono text-[10px] font-black text-slate-200">
-	                      ${((parseFloat(lotSize)||0.01)*contractSize(selectedPair.symbol)*midPrice).toLocaleString("en-US",{maximumFractionDigits:0})}
-	                    </p>
-	                  </div>
-	                </div>
+		                </div>
 
-	                {/* Balance warning */}
-	                {balanceLoaded && estimatedMargin > walletBalance && (
-	                  <div className="flex items-center gap-1.5 px-2 py-1.5 rounded border border-rose-500/30 bg-rose-500/10 text-rose-400 text-[10px] font-bold">
-	                    <AlertTriangle className="h-3 w-3 shrink-0" />
-	                    Insufficient margin: Need ${estimatedMargin.toFixed(2)} (Have ${walletBalance.toFixed(2)})
-	                  </div>
-	                )}
+                        {/* Order estimate */}
+		                <div className="mobile-order-metrics grid grid-cols-2 gap-2.5 rounded-xl border border-[#1a2640] bg-[#070a10] p-3" role="group" aria-label="Order estimate">
+		                  <div className="col-span-2 flex items-start justify-between gap-3 border-b border-[#1a2640] pb-2">
+		                    <div>
+		                      <p className="text-[12px] font-bold text-slate-100">Order preview</p>
+		                      <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">Estimates exclude slippage and fees.</p>
+		                    </div>
+		                    <span className="rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">
+		                      {orderType === "market" ? "At market" : "At target price"}
+		                    </span>
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Margin required</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-amber-200">${Number.isFinite(estimatedMargin) ? estimatedMargin.toFixed(2) : "—"}</p>
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Balance after fill</p>
+		                    <p className={`mt-1 price-mono text-[13px] font-bold ${walletBalance - estimatedMargin < 0 ? "text-rose-300" : "text-slate-100"}`}>
+		                      ${(walletBalance - estimatedMargin).toFixed(2)}
+		                    </p>
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">Risk at stop</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-rose-200">
+		                      {slVal !== null && Number.isFinite(slVal) && !stopLossError ? `−$${maxLoss.toFixed(2)}` : "Add a stop loss"}
+		                    </p>
+		                    {slVal !== null && Number.isFinite(slVal) && !stopLossError && <p className="mt-0.5 text-[10px] text-slate-400">{riskPercent.toFixed(2)}% of balance</p>}
+		                  </div>
+		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+		                    <p className="text-[10px] font-medium text-slate-400">At take profit</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-emerald-200">
+		                      {tpVal !== null && Number.isFinite(tpVal) && !takeProfitError ? `+$${maxGain.toFixed(2)}` : "No target set"}
+		                    </p>
+		                    {rrRatio && !stopLossError && !takeProfitError && <p className="mt-0.5 text-[10px] text-slate-400">Risk / reward 1:{rrRatio}</p>}
+		                  </div>
+<div className="col-span-2 min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
+			                    <p className="text-[10px] font-medium text-slate-400">Pip value</p>
+		                    <p className="mt-1 price-mono text-[13px] font-bold text-cyan-200">${pipVal.toFixed(4)} / pip</p>
+		                    <p className="mt-0.5 text-[10px] text-slate-400">Est. spread ${estimatedSpreadCost.toFixed(2)}</p>
+		                  </div>
+		                </div>
 
-	                {/* Execute button */}
-	                <button
-	                  className={`w-full py-2.5 rounded-lg font-black text-xs tracking-wider flex items-center justify-center gap-2 transition-all ${
-	                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
-	                  }`}
-	                  onClick={() => executeTrade()}
-	                  disabled={isFrozen || !balanceLoaded || (balanceLoaded && estimatedMargin > walletBalance && orderType === "market")}
-	                >
-	                  <Zap className="h-3.5 w-3.5 relative z-10" />
-	                  <span className="relative z-10 uppercase">
-	                    {orderType === "market"
-	                      ? `Execute ${direction} ${selectedPair.symbol} (${lotSize} Lots)`
-	                      : `Place ${direction} ${orderType.toUpperCase()} @ ${pendingPrice || "—"}`}
-	                  </span>
-	                </button>
+		                {orderType !== "market" && balanceLoaded && estimatedMargin > walletBalance && (
+		                  <div className="mobile-order-warning flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-[11px] leading-relaxed text-amber-100" role="note">
+		                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+		                    <span>Available balance is ${(estimatedMargin - walletBalance).toFixed(2)} short of estimated margin. This pending order may be canceled if funds are still short when it is triggered.</span>
+		                  </div>
+		                )}
+
+		                {orderFormIssue && (
+		                  <div id="order-submit-message" className="mobile-order-warning flex items-start gap-2 rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2.5 text-[11px] leading-relaxed text-rose-200" role="alert" aria-live="polite">
+		                    <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+		                    <span>{orderFormIssue}</span>
+		                  </div>
+		                )}
+
+		                {/* Place order */}
+		                <button
+		                  className={`mobile-order-execute sticky bottom-0 z-10 w-full rounded-xl border border-[#243752] py-3 font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+		                    direction === "BUY" ? "btn-3d-execute-buy" : "btn-3d-execute-sell"
+		                  }`}
+		                  onClick={() => executeTrade()}
+		                  disabled={Boolean(orderFormIssue)}
+		                  aria-describedby={orderFormIssue ? "order-submit-message" : undefined}
+		                  title={orderFormIssue ?? undefined}
+		                >
+		                  <Zap className="relative z-10 size-4" />
+		                  <span className="relative z-10">
+		                    {orderType === "market"
+		                      ? `${direction === "BUY" ? "Buy" : "Sell"} ${selectedPair.symbol} · ${Number.isFinite(parsedLotSize) ? parsedLotSize.toFixed(2) : "—"} lots`
+		                      : `Place ${direction === "BUY" ? "Buy" : "Sell"} ${orderType === "limit" ? "Limit" : "Stop"} · ${selectedPair.symbol}`}
+		                  </span>
+		                </button>
 	              </div>
 	            </div>
 	          ) : rightPanelTab === "order" ? (
@@ -4386,6 +4667,22 @@ const maxLeverage = 100
         </>
         )}
         </DockGroup>
+        {rightPanelHidden && !chartExpanded && (
+          <div className="reference-sidebar-collapsed apple-terminal-order-collapsed shrink-0 items-center justify-end" style={{ background: "#070b13" }}>
+            <button
+              type="button"
+              onClick={() => setRightPanelHidden(false)}
+              aria-label="Show order panel (Ctrl+Shift+O)"
+              title="Show order panel (Ctrl+Shift+O)"
+              className="rounded p-1.5 text-cyan-400 transition-colors hover:bg-cyan-400/10"
+            >
+              <ChevronUp className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        </div>
+        </DockPanel>
+        </DockGroup>
         </div>
         {mobileTab === "portfolio" && (
         <div className="mobile-portfolio-view flex flex-1 min-h-0 flex-col overflow-y-auto lg:hidden">
@@ -4407,88 +4704,56 @@ const maxLeverage = 100
         )}
       </div>
 
-      {/* BOTTOM BLOTTER */}
-      {!isCompactViewport && (
-      <section
-        ref={blotterRef}
-        className={`apple-terminal-blotter ${footerOpen ? "is-open" : "is-collapsed"} ${dockEnabled && footerOpen && blotterHeight ? "has-custom-height" : ""} flex flex-col shrink-0`}
-        aria-label="Trading activity footer"
-        style={{ background: "#060a12", borderTop: "1px solid #1e2d45", ...(dockEnabled && footerOpen && blotterHeight ? { "--blotter-h": `${blotterHeight}px` } : {}) } as CSSProperties}
-      >
-        {dockEnabled && footerOpen && (
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Resize trading activity panel"
-            aria-valuemin={MIN_BLOTTER_HEIGHT}
-            aria-valuenow={blotterHeight ?? undefined}
-            tabIndex={0}
-            title="Drag to resize · double-click to reset"
-            className="terminal-blotter-resizer"
-            onPointerDown={startBlotterResize}
-            onKeyDown={handleBlotterResizeKey}
-            onDoubleClick={() => { setBlotterHeight(null); saveBlotterHeight(null) }}
-          >
-            <span aria-hidden="true" />
+      <Dialog open={activityDialogOpen} onOpenChange={setActivityDialogOpen}>
+        <DialogContent
+          id="terminal-activity-dialog"
+          overlayClassName="bg-slate-950/35 backdrop-blur-sm"
+          showCloseButton={false}
+          className="flex h-[min(82vh,54rem)] max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-6xl flex-col gap-0 overflow-hidden border border-sky-100/20 bg-slate-950/60 p-0 text-slate-100 shadow-2xl backdrop-blur-2xl sm:max-w-6xl"
+          style={{
+            background: "linear-gradient(145deg, rgba(20, 42, 66, 0.82), rgba(5, 13, 25, 0.78))",
+            color: "#e2e8f0",
+            borderColor: "rgba(148, 192, 226, 0.28)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 24px 80px rgba(0,0,0,0.48)",
+            backdropFilter: "blur(22px) saturate(140%)",
+            WebkitBackdropFilter: "blur(22px) saturate(140%)",
+          }}
+        >
+          <DialogHeader className="flex-row items-center justify-between gap-2 border-b border-[var(--activity-muted)]/20 px-3 py-2 text-left">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <DialogTitle className="text-pretty text-sm font-semibold leading-5 text-[var(--activity-foreground)]">
+                {ACTIVITY_PANEL_TITLES[activePanel]}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                Switch panels below or browse all activity tools without leaving your workspace.
+              </DialogDescription>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              <button type="button" onClick={() => changeActivityToolsOpen(true)} className="flex size-11 items-center justify-center rounded-md border border-[var(--activity-muted)]/25 bg-[var(--activity-surface)] text-[var(--activity-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--activity-accent)]" aria-label="Browse all activity tools" aria-haspopup="dialog">
+                <Grid3x3 className="size-4" aria-hidden="true" />
+              </button>
+              <DialogClose className="flex size-11 items-center justify-center rounded-md border border-[var(--activity-muted)]/25 bg-[var(--activity-surface)] text-[var(--activity-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--activity-accent)]" aria-label="Close activity window">
+                <X className="size-4" aria-hidden="true" />
+              </DialogClose>
+            </div>
+          </DialogHeader>
+          <div className="shrink-0 border-b border-[var(--activity-muted)]/20 px-3 py-2">
+            <label htmlFor="terminal-activity-panel-switcher" className="sr-only">Switch activity panel</label>
+            <select
+              id="terminal-activity-panel-switcher"
+              value={activePanel}
+              onChange={event => setActivePanel(event.target.value as ActivityPanelId)}
+              className="min-h-11 w-full min-w-0 rounded-lg border border-[var(--activity-muted)]/30 bg-[var(--activity-background)] px-2 text-sm text-[var(--activity-foreground)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--activity-accent)]"
+            >
+              {[...new Set(ACTIVITY_TOOLS.map(tool => tool.group))].map(group => (
+                <optgroup key={group} label={group}>
+                  {ACTIVITY_TOOLS.filter(tool => tool.group === group).map(tool => <option key={tool.id} value={tool.id}>{tool.title}</option>)}
+                </optgroup>
+              ))}
+            </select>
           </div>
-        )}
-        {/* Tab bar */}
-        <div className="apple-terminal-blotter-tabs flex items-center shrink-0 overflow-x-auto terminal-scroll" style={{ borderBottom: footerOpen ? "1px solid #1a2640" : "0", background: "#060a12" }}>
-          <button
-            type="button"
-            onClick={() => setFooterOpen(value => !value)}
-            aria-expanded={footerOpen}
-            aria-controls="terminal-activity-content"
-            aria-label={footerOpen ? "Hide trading activity" : "Show trading activity"}
-            className="terminal-footer-toggle order-first flex h-9 w-10 shrink-0 items-center justify-center border-r border-[#1b3047] text-slate-400 transition hover:bg-cyan-300/10 hover:text-cyan-200"
-          >
-            {footerOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
-            <span className="terminal-footer-toggle-label">Activity</span>
-          </button>
-          {applyTabOrder([
-            { id: "positions",   label: `Positions (${openTrades.length})`, icon: Layers },
-            { id: "pending",     label: `Orders (${pendingOrders.length})`, icon: Clock },
-            { id: "history",     label: `History (${closedTrades.length})`,  icon: History },
-            { id: "dom",         label: "L2 Book",                            icon: BarChart2 },
-            { id: "risk",        label: "Risk",                               icon: ShieldAlert },
-            { id: "journal",     label: "Journal",                            icon: BookOpen },
-            { id: "news",        label: "News",                               icon: Newspaper },
-            { id: "performance", label: "Performance",                        icon: BarChart },
-            { id: "alerts",      label: `Alerts (${priceAlerts.filter(a=>!a.triggered).length})`, icon: Bell },
-            { id: "smart-alerts",label: `Smart (${smartAlerts.filter(a => a.status === "warning" || a.status === "triggered").length})`, icon: BellRing },
-            { id: "support",     label: "Support",                            icon: LifeBuoy },
-  { id: "trust",       label: "Trust",                              icon: ShieldCheck },
-            { id: "sessions",    label: "Sessions",                           icon: Globe2 },
-            { id: "depth",       label: "Depth",                              icon: BarChart2 },
-            { id: "stats",       label: "Stats",                               icon: Activity },
-            { id: "ai-coach",    label: "AI Guide",                            icon: BrainCircuit },
-          ] as { id: typeof activePanel; label: string; icon: any }[], tabOrder).map(({ id, label, icon: Icon }, _index, orderedTabs) => (
-            <button key={id}
-              draggable={dockEnabled}
-              onDragStart={(event) => { setDraggedTab(id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", id) }}
-              onDragOver={(event) => { if (draggedTab) event.preventDefault() }}
-              onDrop={(event) => { event.preventDefault(); if (draggedTab) moveTab(draggedTab, id, orderedTabs.map(tab => tab.id)); setDraggedTab(null) }}
-              onDragEnd={() => setDraggedTab(null)}
-              data-dragging={draggedTab === id ? "true" : undefined}
-              title={dockEnabled ? `${label} · drag to reorder` : undefined}
-              data-panel={id}
-              onClick={() => { setActivePanel(id); setFooterOpen(true) }} aria-label={id === "positions" ? "Open positions manager" : id === "history" ? "Open trading history" : label}
-              className="flex items-center gap-1.5 px-3 py-2 text-[9px] font-black tracking-wider uppercase transition-all shrink-0"
-              style={activePanel === id
-                ? { color: "#22d3ee", borderBottom: "2px solid #22d3ee", background: "rgba(34,211,238,0.04)" }
-                : { color: "#374151", borderBottom: "2px solid transparent" }}>
-              <Icon className="h-3 w-3" />{label}
-            </button>
-          ))}
-          {dockEnabled && (
-            <button type="button" onClick={resetTerminalLayout} className="terminal-layout-reset" aria-label="Reset panel sizes and tab order">
-              Reset layout
-            </button>
-          )}
-        </div>
 
-        {/* Blotter content */}
-        <div id="terminal-activity-content" className="flex-1 overflow-y-auto terminal-scroll pb-[calc(76px+env(safe-area-inset-bottom,0px))] md:pb-0" hidden={!footerOpen}>
+          <div id="terminal-activity-content" className="activity-glass-content min-h-0 flex-1 overflow-y-auto terminal-scroll p-3">
 
 	          {/* ── Open Positions ── */}
 	          {activePanel === "positions" && (
@@ -4852,9 +5117,9 @@ const maxLeverage = 100
   {/* ── AI Trading Guide ── */}
           {activePanel === "ai-coach" && <TradingAiCoach pair={selectedPair} openTrades={openTrades} walletBalance={walletBalance} onOpenRisk={() => setActivePanel("risk")} />}
 
-        </div>
-      </section>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="reference-statusbar shrink-0">
         <span><i />{online ? "Connected" : "Reconnecting"}</span>

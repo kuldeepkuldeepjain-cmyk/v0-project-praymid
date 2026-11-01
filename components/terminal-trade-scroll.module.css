@@ -1,0 +1,40 @@
+@media (max-width: 1023px) {
+  :global(.mt5-terminal.reference-terminal) .chartColumn:not(:global(.hidden)) {
+    height: max(16rem, calc(100dvh - 13rem - env(safe-area-inset-bottom))) !important;
+    min-height: 0 !important;
+    flex: none !important;
+    overflow: hidden !important;
+  }
+
+  :global(.mt5-terminal.reference-terminal) .chartColumn > .scrollArea {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    scroll-padding-block: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mobile-terminal-muted) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scrollArea > * {
+    flex-shrink: 0;
+  }
+
+  :global(.mt5-terminal.reference-terminal) .scrollArea :global(.mobile-terminal-chart-wrap) {
+    min-height: clamp(320px, 62dvh, 580px) !important;
+    height: clamp(320px, 62dvh, 580px) !important;
+    max-height: none !important;
+    flex: none !important;
+    overflow: hidden !important;
+    touch-action: pan-y !important;
+    overscroll-behavior-y: auto;
+  }
+
+  :global(.mt5-terminal.reference-terminal.is-chart-expanded) .chartColumn:not(:global(.hidden)) {
+    height: calc(100dvh - env(safe-area-inset-bottom)) !important;
+  }
+}

@@ -7,9 +7,9 @@ import { DashboardHeartbeat, DesktopDashboardNavigation } from "@/components/par
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="terminal-page min-h-screen min-h-dvh" style={{ background: "#111315" }}>
+    <div className="terminal-page min-h-screen min-h-dvh" style={{ background: "var(--terminal-graphite-bg)" }}>
       <DashboardHeartbeat />
-      <div className="fixed inset-0 pointer-events-none bg-[#111315]" />
+      <div className="fixed inset-0 pointer-events-none" style={{ background: "var(--terminal-graphite-bg)" }} />
 
       {/* ── TABLET & DESKTOP LAYOUT (md+): Full-width content + bottom nav ── */}
       <div className="hidden md:flex flex-col h-screen h-dvh overflow-hidden relative z-10">

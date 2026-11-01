@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, ChevronRight, QrCode, ShieldCheck, Wallet } from "lucide-react"
+import { AlertCircle, ArrowLeft, ArrowRight, ChevronRight, Clock3, QrCode, ShieldCheck } from "lucide-react"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { FundingSection } from "@/components/funding-checkout-sections"
 import { PageLoader } from "@/components/ui/page-loader"
 import { TopUpModal } from "@/components/topup-modal"
 import { getParticipantData, isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -86,87 +90,95 @@ export default function AddFundPage() {
   const canUseFundedTier = isFundedAccount && !hasFundedTierTopUp
 
   return (
-    <div className="min-h-screen bg-[#111315] flex flex-col">
-      <header className="border-b border-slate-800 bg-[#15181b]">
-        <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-4">
-          <Link href="/participant/dashboard" aria-label="Back to dashboard">
-            <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-600 hover:text-slate-900">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">Add Fund</h1>
-            <p className="text-xs text-slate-500">Top up your trading wallet</p>
+    <div className="participant-funding-workspace funding-landing font-sans">
+      <header className="funding-landing-header">
+        <div className="funding-header-inner">
+          <Button asChild variant="outline" size="icon">
+            <Link href="/participant/dashboard" aria-label="Back to dashboard"><ArrowLeft data-icon="inline-start" /></Link>
+          </Button>
+          <div className="flex flex-col gap-1">
+            <p className="font-medium text-foreground">Wallet &amp; funding</p>
+            <p className="text-sm text-muted-foreground">Your EliteFund trading account</p>
           </div>
         </div>
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-4 py-10">
-        <Card className="w-full max-w-lg overflow-hidden border border-slate-700 bg-[#181b1f] shadow-[0_20px_60px_rgba(0,0,0,0.24)]">
-          <CardContent className="p-0">
-            <div className={`px-6 py-8 text-center text-white ${isFundedAccountBreached ? "bg-[#3a2523]" : "bg-[#24201a]"}`}>
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15">
-                <Wallet className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold">{isFundedAccountBreached ? "Funded Account Top Up" : "Top Up Your Wallet"}</h2>
-              <p className={`mx-auto mt-2 max-w-sm text-sm leading-relaxed ${isFundedAccountBreached ? "text-emerald-100" : "text-violet-100"}`}>
-                {isFundedAccountBreached
-                  ? "Choose a funded account tier and submit your USDT payment for approval."
-                  : "Add funds to your trading wallet using USDT. Your balance will update after payment verification."}
-              </p>
-            </div>
+      <main className="funding-landing-content">
+        <div className="funding-heading">
+          <p className="funding-kicker">Account funding</p>
+          <h1 className="funding-page-title text-balance">Add funds. Keep moving.</h1>
+          <p className="text-pretty leading-relaxed text-muted-foreground">Fund your trading wallet with USDT or INR. Choose your amount, make your transfer, and submit the reference for review.</p>
+        </div>
 
-            <div className="space-y-5 p-6">
-              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                <span className="text-sm font-medium text-slate-600">Current balance</span>
-                <span className="text-lg font-bold text-slate-900">${currentBalance.toFixed(2)} USDT</span>
-              </div>
+        {isFundedAccountBreached && (
+          <Alert variant="destructive" className="funding-error">
+            <AlertCircle aria-hidden="true" />
+            <AlertTitle>Account reactivation required</AlertTitle>
+            <AlertDescription>Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.</AlertDescription>
+          </Alert>
+        )}
 
-              <Button
-                type="button"
-                onClick={() => { setOpenFundedTier(false); setShowTopUpModal(true) }}
-                className={`h-12 w-full text-base font-semibold text-white shadow-md ${isFundedAccountBreached ? "bg-[#a8655b] hover:bg-[#bd7469]" : "bg-[#d6b66b] text-[#111315] hover:bg-[#e2c982]"}`}
-              >
-                <Wallet className="mr-2 h-5 w-5" />
-                {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}
-              </Button>
+        <div className="funding-landing-grid">
+          <div className="flex min-w-0 flex-col gap-5">
+            <Card className="funding-balance-card">
+              <CardHeader>
+                <CardDescription>Current trading balance</CardDescription>
+                <CardTitle>
+                  <p className="funding-balance-value">${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span>USDT</span></p>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm leading-relaxed text-muted-foreground">{isFundedAccountBreached ? "Top up your funded account and request reactivation after your payment is approved." : "Choose UPI, bank transfer, or a supported USDT network in checkout. Your balance updates after payment verification."}</p>
+              </CardContent>
+              <CardFooter className="flex flex-col gap-3">
+                <Button type="button" onClick={() => { setOpenFundedTier(false); setShowTopUpModal(true) }} className="funding-primary-action h-12 w-full">
+                  {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}<ArrowRight data-icon="inline-end" />
+                </Button>
+                <p className="funding-inline-note"><Clock3 className="size-4" aria-hidden="true" />Payment review takes up to 24 hours</p>
+              </CardFooter>
+            </Card>
 
-              <Link
-                href="/participant/dashboard/upi"
-                className="flex items-center gap-3 rounded-xl border border-[#d6b66b]/30 bg-[#d6b66b]/5 px-4 py-3 transition hover:border-[#d6b66b]/60 hover:bg-[#d6b66b]/10"
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#d6b66b]/15 text-[#d6b66b]">
-                  <QrCode className="size-4" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-sm font-semibold text-slate-900">EliteFund UPI Gateway</span>
-                  <span className="block text-xs text-slate-500">Pay in INR with any UPI app and confirm the reference</span>
-                </span>
-                <ChevronRight className="size-4 shrink-0 text-slate-400" aria-hidden="true" />
-              </Link>
+            <Link href="/participant/dashboard/upi" className="funding-gateway-link">
+              <QrCode className="size-6 shrink-0 text-primary" aria-hidden="true" />
+              <span className="flex min-w-0 flex-1 flex-col gap-1">
+                <span className="font-medium">EliteFund UPI Gateway</span>
+                <span className="text-sm leading-relaxed text-muted-foreground">Pay in INR with any UPI app and confirm your reference.</span>
+              </span>
+              <ChevronRight className="size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </Link>
 
-              {isFundedAccount && (
-                <div className="space-y-2">
-                  <Button
-                    type="button"
-                    disabled={!canUseFundedTier}
-                    onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }}
-                    className="h-12 w-full border border-[#d6b66b]/40 bg-[#d6b66b]/10 text-base font-semibold text-[#e2c982] shadow-sm hover:bg-[#d6b66b]/15 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    <ShieldCheck className="mr-2 h-5 w-5" />
-                    {canUseFundedTier ? "Funded-tier Fund" : "Funded-tier Fund Used"}
+            {isFundedAccount && (
+              <Card className="funding-panel">
+                <CardHeader>
+                  <div className="funding-plan-heading"><CardTitle><h2>Funded-tier funding</h2></CardTitle><Badge variant="outline">{canUseFundedTier ? "First deposit" : "Already used"}</Badge></div>
+                  <CardDescription>{canUseFundedTier ? "Choose a funded account tier in checkout. Available only for your first funded deposit." : "Funded-tier funding has already been used. Normal Add Fund is still available."}</CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button type="button" variant="outline" disabled={!canUseFundedTier} onClick={() => { setOpenFundedTier(true); setShowTopUpModal(true) }} className="h-12 w-full">
+                    <ShieldCheck data-icon="inline-start" />{canUseFundedTier ? "Funded-tier Fund" : "Funded-tier Fund Used"}
                   </Button>
-                  {!canUseFundedTier && <p className="text-center text-xs text-slate-500">Funded-tier funding is available only for your first funded deposit.</p>}
-                </div>
-              )}
-              {isFundedAccountBreached && (
-                <p className="text-center text-xs leading-relaxed text-red-600">
-                  Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                </CardFooter>
+              </Card>
+            )}
+          </div>
+
+          <FundingSection title="A clear path to funding" description="Three steps, with your payment details in one place.">
+            <ol className="funding-guide">
+              {[
+                { title: "Choose your method", description: "Select USDT or pay in INR through UPI or bank transfer." },
+                { title: "Transfer the exact amount", description: "Use the payment details in checkout. For crypto, match the selected network." },
+                { title: "Submit your reference", description: "Add your transaction hash or UPI transaction ID / UTR so the team can review your payment." },
+              ].map((item, index) => (
+                <li key={item.title}>
+                  <span className="funding-section-number" aria-hidden="true">{index + 1}</span>
+                  <div className="flex min-w-0 flex-col gap-1"><h3 className="font-medium text-foreground">{item.title}</h3><p className="text-sm leading-relaxed text-muted-foreground">{item.description}</p></div>
+                </li>
+              ))}
+            </ol>
+            <Separator />
+            <p className="funding-inline-note"><ShieldCheck className="size-4 shrink-0" aria-hidden="true" /><span>Check pending requests in checkout before sending another payment.</span></p>
+          </FundingSection>
+        </div>
       </main>
 
       <TopUpModal

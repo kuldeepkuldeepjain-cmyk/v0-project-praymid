@@ -58,8 +58,8 @@ export default function ChallengePage() {
     return addresses
   }, [paymentSettings])
   const currentAddress = availableNetworks.find((item) => item.key === paymentNetwork)?.address || ""
-  const effectivePlanKey = selectedPlanKey || participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[1].key
-  const plan = plans.find((item) => item.key === effectivePlanKey) || plans[0] || DEFAULT_CHALLENGE_PLANS[1]
+  const effectivePlanKey = selectedPlanKey || participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[0].key
+  const plan = plans.find((item) => item.key === effectivePlanKey) || plans[0] || DEFAULT_CHALLENGE_PLANS[0]
   const metrics = data?.metrics
   const recentTrades = Array.isArray(data?.recentTrades) ? data.recentTrades : []
   const canSubmitPayment = participant?.account_type === "challenge"

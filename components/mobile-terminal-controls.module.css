@@ -1,0 +1,1885 @@
+.indicatorTrigger.indicatorTrigger {
+  display: none !important;
+}
+
+.indicatorPanel {
+  --popover: var(--terminal-graphite-surface, #0d1724);
+  --popover-foreground: var(--terminal-graphite-text, #e5edf5);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-foreground);
+  --input: var(--terminal-graphite-border, #263b4f);
+  --ring: var(--primary);
+  --border: var(--input);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-border: var(--border);
+  font-family: var(--font-sans), Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  width: min(276px, calc(100vw - 24px));
+  max-height: min(520px, var(--radix-popover-content-available-height));
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 16px 48px color-mix(in srgb, var(--popover) 72%, transparent);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.panelHeader {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 12px 8px 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panelHeader h2 {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.panelHeader p,
+.indicatorDescription,
+.panelFooter > span,
+.groupLegend.groupLegend {
+  color: color-mix(in srgb, var(--popover-foreground) 66%, var(--popover));
+}
+
+.closeButton {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+}
+
+.closeButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.indicatorList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  padding: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.indicatorGroup.indicatorGroup {
+  gap: 4px;
+  min-width: 0;
+}
+
+.groupLegend.groupLegend {
+  margin-bottom: 4px;
+  padding-inline: 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.indicatorFields.indicatorFields {
+  gap: 4px;
+}
+
+.indicatorRow.indicatorRow {
+  min-height: 56px;
+  padding-inline: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.indicatorRow[data-active="true"] {
+  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, var(--popover));
+}
+
+.indicatorLabel.indicatorLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.indicatorDescription {
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.panelFooter {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+}
+
+.panelFooter > button {
+  min-height: 40px;
+  padding-inline: 20px;
+  border-radius: 10px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-weight: 650;
+}
+
+.closeButton:focus-visible,
+.panelFooter > button:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .desktopMarketStatus.desktopMarketStatus,
+  :global(.reference-terminal) .desktopToolbar.desktopToolbar[data-hosted="true"] {
+    display: none !important;
+  }
+
+  :global(.reference-terminal .terminal-chart-market-actions) .indicatorTrigger.indicatorTrigger {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 5px !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    padding-inline: 8px !important;
+    border: 1px solid color-mix(in srgb, var(--terminal-graphite-teal) 38%, var(--terminal-graphite-border)) !important;
+    border-radius: 8px !important;
+    background: color-mix(in srgb, var(--terminal-graphite-teal) 10%, var(--terminal-graphite-surface)) !important;
+    color: var(--terminal-graphite-text) !important;
+    font-size: 14px !important;
+    font-weight: 600;
+    transition: background-color 160ms ease, transform 160ms ease;
+  }
+
+  :global(.reference-terminal .terminal-chart-market-actions) .indicatorTrigger svg {
+    width: 16px;
+    height: 16px;
+    color: var(--terminal-graphite-teal);
+  }
+
+  .indicatorTrigger .activeCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 22px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--terminal-graphite-teal) 16%, transparent);
+    color: var(--terminal-graphite-teal);
+  }
+
+  .indicatorTrigger:active {
+    transform: scale(.97);
+  }
+
+  .indicatorTrigger[data-state="open"] {
+    outline: 1px solid var(--terminal-graphite-teal);
+    outline-offset: 1px;
+  }
+}
+
+@media (max-width: 767px) {
+  :global(.apple-trading-terminal.reference-terminal) .dock.dock {
+    --dock-active-index: 0;
+    position: fixed;
+    isolation: isolate;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0 !important;
+    min-height: 76px;
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow: visible !important;
+    border-top: 1px solid var(--terminal-graphite-border) !important;
+    background: color-mix(in srgb, var(--terminal-graphite-surface) 96%, transparent) !important;
+    color: var(--terminal-graphite-muted);
+    box-shadow: 0 -8px 24px color-mix(in srgb, var(--terminal-graphite-bg) 32%, transparent) !important;
+    animation: dockEnter 360ms cubic-bezier(.2, .8, .2, 1) both;
+  }
+
+  .dock[data-active-tab="market"] { --dock-active-index: 1 !important; }
+  .dock[data-active-tab="order"] { --dock-active-index: 2 !important; }
+  .dock[data-active-tab="portfolio"] { --dock-active-index: 3 !important; }
+  .dock[data-active-tab="account"] { --dock-active-index: 4 !important; }
+
+  .dock::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    left: 6px;
+    width: calc((100% - 12px) / 5);
+    border: 1px solid color-mix(in srgb, var(--terminal-graphite-teal) 26%, transparent);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--terminal-graphite-teal) 10%, transparent);
+    transform: translateX(calc(var(--dock-active-index) * 100%));
+    transition: transform 300ms cubic-bezier(.2, .8, .2, 1);
+    pointer-events: none;
+  }
+
+  :global(.apple-trading-terminal.reference-terminal) .dock.dock > button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px !important;
+    min-width: 0;
+    min-height: 58px !important;
+    padding: 3px 0 !important;
+    border: 0 !important;
+    border-radius: 14px !important;
+    background: transparent !important;
+    color: var(--terminal-graphite-muted) !important;
+    box-shadow: none !important;
+    font-size: 14px !important;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: -.035em;
+    text-transform: none;
+    transition: color 180ms ease, transform 160ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :global(.apple-trading-terminal.reference-terminal) .dock.dock > button[aria-current="page"] {
+    color: var(--terminal-graphite-teal) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  :global(.apple-trading-terminal.reference-terminal) .dock.dock > button:active {
+    transform: scale(.94);
+  }
+
+  .dockIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    transition: transform 240ms cubic-bezier(.2, .8, .2, 1), background-color 180ms ease;
+  }
+
+  :global(.apple-trading-terminal.reference-terminal) .dock.dock .dockIcon svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 1.7;
+  }
+
+  .dock > button[aria-current="page"] .dockIcon {
+    transform: translateY(-2px);
+    animation: iconSelect 260ms cubic-bezier(.2, .8, .2, 1) both;
+  }
+
+  .dock > button:nth-child(3) .dockIcon {
+    background: transparent;
+    color: inherit;
+  }
+
+  .dock > button:focus-visible {
+    outline: 2px solid var(--terminal-graphite-teal) !important;
+    outline-offset: -2px;
+  }
+}
+
+.mobileTitle {
+  display: none;
+}
+
+.orderLogo {
+  flex: 0 0 36px;
+  outline: 1px solid var(--terminal-graphite-border);
+  outline-offset: 4px;
+}
+
+.orderSymbol {
+  color: var(--terminal-graphite-text);
+}
+
+/* Isolate phone layouts from the terminal's desktop panel cascade. */
+@media (max-width: 767px) {
+  .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal) {
+    --phone-background: var(--terminal-graphite-bg);
+    --phone-surface: var(--terminal-graphite-surface-2);
+    --phone-panel: var(--terminal-graphite-surface);
+    --phone-border: color-mix(in srgb, var(--terminal-graphite-border) 80%, transparent);
+    --phone-foreground: var(--terminal-graphite-text);
+    --phone-muted: color-mix(in srgb, var(--phone-foreground) 66%, var(--phone-background));
+    --phone-accent: var(--terminal-graphite-teal);
+    --phone-negative: var(--terminal-graphite-negative);
+    --phone-dock-height: calc(76px + env(safe-area-inset-bottom, 0px));
+    --market-watch-background: var(--phone-background);
+    --market-watch-surface: var(--phone-surface);
+    --market-watch-foreground: var(--phone-foreground);
+    --market-watch-muted: var(--phone-muted);
+    --market-watch-accent: var(--phone-accent);
+    box-sizing: border-box;
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    padding: 0 0 var(--phone-dock-height) !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--phone-background) !important;
+    color: var(--phone-foreground) !important;
+    box-shadow: none !important;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+
+    & button {
+      border: 0 !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    & :global(.mobile-terminal-header) {
+      position: relative !important;
+      top: auto;
+      flex: 0 0 56px;
+      gap: 8px !important;
+      height: 56px;
+      min-height: 56px;
+      padding: 4px 12px !important;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-terminal-brand-group) {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    & :global(.mobile-terminal-brand) {
+      gap: 8px;
+      min-width: 0;
+    }
+
+    & :global(.mobile-terminal-brand img) {
+      width: 24px;
+      height: 24px;
+      border: 0;
+      border-radius: 7px;
+    }
+
+    & :global(.mobile-terminal-brand strong) {
+      color: var(--phone-foreground) !important;
+      font-size: 14px !important;
+      font-weight: 650;
+      letter-spacing: -.035em !important;
+      text-transform: none;
+    }
+
+    & :global(.mobile-terminal-home) {
+      display: none !important;
+    }
+
+    & :global(.mobile-terminal-account) {
+      justify-content: center;
+      flex: 0 1 auto;
+      gap: 0;
+      min-height: 44px;
+      max-width: none;
+      padding: 0 4px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-terminal-account > svg) {
+      display: none;
+    }
+
+    & :global(.mobile-terminal-account strong) {
+      font-size: 14px !important;
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: -.02em;
+    }
+
+    & :global(.mobile-terminal-notifications) {
+      flex: 0 0 40px;
+      width: 40px;
+      height: 44px;
+      border: 0 !important;
+      border-radius: 12px !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-terminal-notifications svg) {
+      width: 20px;
+      height: 20px;
+    }
+
+    & :global(.reference-watchlist) {
+      flex: 0 0 64px;
+      gap: 8px !important;
+      height: 64px;
+      min-height: 64px;
+      margin: 0 !important;
+      padding: 4px 16px 8px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      scrollbar-width: none;
+    }
+
+    &:not([data-mobile-tab="chart"]) > :global(.reference-watchlist) {
+      display: none !important;
+    }
+
+    & :global(.reference-watch-card) {
+      gap: 8px !important;
+      min-height: 48px;
+      padding: 6px 10px !important;
+      border: 0 !important;
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.reference-watch-card.is-selected) {
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      outline: none !important;
+    }
+
+    & :global(.reference-watch-copy strong),
+    & :global(.reference-watch-copy > span),
+    & :global(.reference-watch-up),
+    & :global(.reference-watch-down) {
+      font-size: 14px !important;
+      line-height: 1.4;
+      letter-spacing: -.025em;
+    }
+
+    & :global(.reference-watch-up),
+    & :global(.reference-watch-down),
+    & :global(.reference-watch-icon) {
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.reference-watch-add),
+    & :global(.reference-watch-theme) {
+      width: 44px;
+      height: 44px;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.apple-terminal-grid) {
+      flex: 1 1 0% !important;
+      gap: 0 !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.apple-terminal-panel-layout) {
+      flex: 1 1 0% !important;
+      flex-direction: column;
+      gap: 0 !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      height: 100% !important;
+      padding: 0 !important;
+    }
+
+    & :global(.apple-terminal-market),
+    & :global(.apple-terminal-chart-column),
+    & :global(.apple-terminal-order),
+    & :global(.mobile-portfolio-view) {
+      flex: 1 1 0% !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      max-height: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    &:not([data-mobile-tab="chart"]) :global(.apple-terminal-chart-column),
+    &:not([data-mobile-tab="market"]) :global(.apple-terminal-market),
+    &:not([data-mobile-tab="order"]) :global(.apple-terminal-order),
+    &[data-mobile-tab="portfolio"] :global(.apple-terminal-panel-layout),
+    &[data-mobile-tab="account"] > :global(.apple-terminal-grid) {
+      display: none !important;
+    }
+
+    & :global(.apple-terminal-blotter) {
+      display: none !important;
+    }
+
+    & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock) {
+      flex: 0 0 auto;
+      min-height: 56px;
+      margin: 0 !important;
+      padding: 6px 16px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.terminal-market-dock-primary-row) {
+      display: flex !important;
+      align-items: center;
+      gap: 8px !important;
+      width: 100%;
+      padding: 0 !important;
+      border: 0 !important;
+    }
+
+    & :global(.terminal-market-dock-quote) {
+      flex: 0 0 auto !important;
+      width: auto !important;
+      min-width: 104px !important;
+      padding: 0 !important;
+      overflow: visible !important;
+      border: 0 !important;
+    }
+
+    & :global(.chart-symbol-switch) {
+      min-height: 44px !important;
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      font-size: 14px !important;
+      font-weight: 650 !important;
+      letter-spacing: -.025em !important;
+    }
+
+    & :global(.terminal-market-dock-tools) {
+      flex: 1 1 0% !important;
+      min-width: 0 !important;
+      width: auto !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+    }
+
+    & :global(.terminal-market-dock-tools > button) {
+      display: none !important;
+    }
+
+    & :global(.terminal-chart-market-actions) {
+      flex: 1 1 0% !important;
+      justify-content: flex-start !important;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      overscroll-behavior-x: contain;
+    }
+
+    & :global(.terminal-chart-market-actions > button) {
+      flex-shrink: 0;
+      min-width: 44px;
+      min-height: 44px !important;
+      border: 0 !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+      scroll-snap-align: start;
+    }
+
+    & :global(.terminal-chart-market-actions) .indicatorTrigger.indicatorTrigger {
+      min-height: 44px !important;
+      height: 44px !important;
+      padding-inline: 10px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.terminal-trade-scroll),
+    & :global(.terminal-single-chart-stack),
+    & :global(.terminal-native-chart-panel),
+    & :global(.mobile-terminal-chart-wrap),
+    & :global(.apple-trading-chart) {
+      width: 100% !important;
+      margin-inline: 0 !important;
+      padding-inline: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-terminal-chart-wrap) {
+      height: clamp(340px, 62dvh, 540px) !important;
+      min-height: clamp(340px, 62dvh, 540px) !important;
+    }
+
+    & :global(.chart-timeframe-toolbar) {
+      gap: 4px !important;
+      padding: 8px 12px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.chart-timeframe-toolbar button) {
+      min-width: 44px;
+      min-height: 44px !important;
+      border: 0 !important;
+      border-radius: 10px !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+      font-size: 14px !important;
+      font-weight: 550;
+    }
+
+    & :global(.chart-timeframe-toolbar button[aria-pressed="true"]),
+    & :global(.chart-timeframe-toolbar button.is-active) {
+      background: var(--phone-surface) !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.apple-terminal-market > header) {
+      gap: 12px;
+      padding: 8px 16px 12px;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.apple-terminal-market > header h2) {
+      font-size: 26px !important;
+      font-weight: 650 !important;
+      letter-spacing: -.045em !important;
+    }
+
+    & :global(.apple-terminal-market [role="search"]) {
+      height: 48px;
+      border: 0 !important;
+      border-radius: 14px !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.apple-terminal-market [aria-label="Instrument categories"]) {
+      gap: 4px;
+      padding: 0;
+      background: transparent;
+    }
+
+    & :global(.apple-terminal-market [aria-label="Instrument categories"] button) {
+      min-height: 44px;
+      border: 0 !important;
+      border-radius: 12px !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.apple-terminal-market [aria-label="Instrument categories"] button[aria-pressed="true"]) {
+      background: color-mix(in srgb, var(--phone-accent) 12%, var(--phone-background)) !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.apple-market-table-head) {
+      grid-template-columns: minmax(0, 1fr) 86px 64px !important;
+      padding: 8px 16px !important;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.apple-market-table-head span) {
+      color: var(--phone-muted) !important;
+      font-size: 14px !important;
+      font-weight: 400;
+      letter-spacing: -.03em;
+      text-transform: none;
+    }
+
+    & :global(.apple-market-category-row) {
+      min-height: 36px;
+      padding: 8px 16px !important;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.apple-market-category-row > div) {
+      width: 5px;
+      height: 5px;
+      background: var(--phone-accent) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.apple-market-category-row span) {
+      color: var(--phone-muted) !important;
+      font-size: 14px !important;
+      font-weight: 500;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(#market-watch-instruments) {
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mw-row) {
+      height: auto !important;
+      min-height: 72px !important;
+      margin: 0 !important;
+      padding: 12px 16px !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      text-align: left;
+    }
+
+    & :global(.mw-row[aria-current="true"]) {
+      background: color-mix(in srgb, var(--phone-accent) 8%, var(--phone-background)) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mw-row > div) {
+      grid-template-columns: minmax(0, 1fr) 86px 64px !important;
+    }
+
+    & :global(.mw-row .mw-badge) {
+      width: 28px;
+      height: 28px;
+      border: 0 !important;
+      border-radius: 50% !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mw-row span),
+    & :global(.mw-row .price-mono),
+    & :global(.mw-row > div > div:first-child > div:last-child > div:last-child) {
+      font-size: 14px !important;
+      font-weight: 500;
+      line-height: 1.5 !important;
+      letter-spacing: -.035em;
+    }
+
+    & :global(.mw-row > div > div:first-child > div:last-child > div:first-child span) {
+      color: var(--phone-foreground) !important;
+      font-weight: 600;
+    }
+
+    & :global(.mw-row > div > div:last-child > div:last-child) {
+      display: none;
+    }
+
+    & :global(.apple-market-footer) {
+      min-height: 36px;
+      padding: 8px 16px !important;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.apple-market-footer > div:last-child) {
+      display: none;
+    }
+
+    & :global(.apple-market-footer span) {
+      color: var(--phone-muted) !important;
+      font-size: 14px !important;
+      font-weight: 400;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(.terminal-order-panel-header) {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      flex: 0 0 auto;
+      align-items: center;
+      min-height: 64px;
+      padding: 8px 16px !important;
+      border: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.terminal-order-panel-header > div:first-child) {
+      flex: 0 1 auto !important;
+      min-width: 0 !important;
+      width: auto !important;
+      padding: 0 !important;
+    }
+
+    & :global(.terminal-order-panel-header > div:first-child > svg),
+    & :global(.terminal-order-panel-header > button) {
+      display: none !important;
+    }
+
+    & .mobileTitle {
+      display: inline;
+      color: var(--phone-foreground);
+      font-size: 26px;
+      font-weight: 650;
+      line-height: 1.4;
+      letter-spacing: -.045em;
+      text-transform: none;
+    }
+
+    & .desktopTitle {
+      display: none;
+    }
+
+    & :global(.terminal-order-view-dock) {
+      flex: 0 0 auto !important;
+      min-width: 0 !important;
+      width: auto !important;
+      margin: 0 !important;
+      padding: 4px !important;
+      gap: 4px;
+      border: 0 !important;
+      border-radius: 12px !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.terminal-order-view-dock button) {
+      min-width: 0 !important;
+      min-height: 44px !important;
+      padding: 8px 10px !important;
+      border: 0 !important;
+      border-radius: 10px !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: normal;
+      text-transform: capitalize;
+    }
+
+    & :global(.terminal-order-view-dock button[aria-pressed="true"]) {
+      background: color-mix(in srgb, var(--phone-accent) 14%, var(--phone-surface)) !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.terminal-order-view-dock svg) {
+      display: none;
+    }
+
+    & :global(.apple-terminal-order > .terminal-scroll) {
+      flex: 1 1 0% !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      padding: 0 !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    & :global(.mobile-order-ticket) {
+      gap: 24px !important;
+      padding: 0 16px 24px !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-order-ticket p),
+    & :global(.mobile-order-ticket label),
+    & :global(.mobile-order-ticket button),
+    & :global(.mobile-order-ticket select),
+    & :global(.mobile-order-ticket span) {
+      font-size: 14px !important;
+      line-height: 1.5;
+    }
+
+    & :global(.mobile-order-ticket label),
+    & :global(.mobile-order-ticket button),
+    & :global(.mobile-order-ticket p) {
+      letter-spacing: normal !important;
+      text-transform: none !important;
+    }
+
+    & :global(.mobile-order-ticket-banner),
+    & :global(.mobile-order-volume),
+    & :global(.mobile-order-risk),
+    & :global(.mobile-order-pending),
+    & :global(.mobile-order-metrics),
+    & :global(.mobile-order-advanced-options) {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-order-ticket-banner) {
+      min-height: 52px;
+      gap: 8px;
+    }
+
+    & :global(.mobile-order-ticket-banner > div:first-child > p),
+    & :global(.mobile-order-ticket-banner > div:first-child > div > span:last-child) {
+      display: none;
+    }
+
+    & :global(.mobile-order-ticket-banner > div:first-child > div) {
+      margin: 0;
+    }
+
+    & .orderSymbol.orderSymbol {
+      color: var(--phone-foreground) !important;
+      font-size: 20px !important;
+      font-weight: 600;
+      letter-spacing: -.04em;
+    }
+
+    & :global(.mobile-order-ticket-banner > div:last-child span) {
+      padding: 0 !important;
+      border: 0 !important;
+      background: transparent !important;
+    }
+
+    & :global(.terminal-order-type-dock),
+    & :global(.terminal-order-expiry-dock) {
+      gap: 4px;
+      padding: 0 !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--phone-border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.terminal-order-type-dock button),
+    & :global(.terminal-order-expiry-dock button) {
+      min-height: 44px;
+      border: 0 !important;
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+      font-weight: 550;
+      text-transform: capitalize !important;
+    }
+
+    & :global(.terminal-order-type-dock button[aria-pressed="true"]),
+    & :global(.terminal-order-expiry-dock button[aria-pressed="true"]) {
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.mobile-quote-switch) {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px !important;
+      overflow: visible;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-quote-side) {
+      align-items: flex-start;
+      min-height: 76px;
+      padding: 12px 0 !important;
+      border: 0 !important;
+      border-bottom: 2px solid var(--phone-border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      text-align: left;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-quote-side .price-mono) {
+      color: inherit !important;
+      font-size: 19px !important;
+      font-weight: 650;
+      letter-spacing: -.05em;
+    }
+
+    & :global(.mobile-quote-buy[data-active="true"]) {
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.mobile-quote-sell[data-active="true"]) {
+      border-bottom-color: var(--phone-negative) !important;
+      background: transparent !important;
+      color: var(--phone-negative) !important;
+    }
+
+    & :global(.mobile-quote-spread) {
+      position: static !important;
+      inset: auto !important;
+      translate: none !important;
+      grid-column: 1 / -1;
+      justify-self: center;
+      padding: 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      transform: none !important;
+    }
+
+    & :global(.mobile-quote-spread span) {
+      color: var(--phone-muted) !important;
+      font-weight: 400;
+    }
+
+    & :global(.order-ticket-controls) {
+      gap: 24px !important;
+    }
+
+    & :global(.mobile-order-ticket input),
+    & :global(.mobile-order-ticket select),
+    & :global(.mobile-order-volume button[aria-label="Decrease trade size"]),
+    & :global(.mobile-order-volume button[aria-label="Increase trade size"]) {
+      min-height: 48px !important;
+      border: 0 !important;
+      border-radius: 12px !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      font-size: 16px !important;
+    }
+
+    & :global(.mobile-order-ticket input[aria-invalid="true"]) {
+      outline: 1px solid var(--phone-negative);
+      outline-offset: 1px;
+    }
+
+    & :global(.terminal-order-size-dock) {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      overflow: visible;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+    }
+
+    & :global(.terminal-order-size-dock button) {
+      min-height: 44px;
+      border: 0 !important;
+      border-radius: 10px !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.terminal-order-size-dock button[aria-pressed="true"]) {
+      background: color-mix(in srgb, var(--phone-accent) 14%, var(--phone-background)) !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.mobile-order-risk > div:first-child > span) {
+      display: none;
+    }
+
+    & :global(.mobile-order-risk > .grid) {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    & :global(.mobile-order-advanced-toggle) {
+      min-height: 48px;
+      padding: 12px 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      font-weight: 500;
+    }
+
+    & :global(.mobile-order-metrics > div) {
+      min-width: 0;
+      padding: 8px 0 !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-order-metrics > div:first-child > span) {
+      display: none;
+    }
+
+    & :global(.mobile-order-metrics .price-mono) {
+      overflow-wrap: anywhere;
+      font-size: 16px !important;
+      font-weight: 550;
+    }
+
+    & :global(.mobile-order-warning) {
+      padding: 12px !important;
+      border: 0 !important;
+      border-radius: 12px !important;
+      background: color-mix(in srgb, var(--phone-negative) 10%, var(--phone-background)) !important;
+      color: var(--phone-negative) !important;
+    }
+
+    & :global(.mobile-order-execute) {
+      min-height: 52px;
+      padding: 12px !important;
+      border: 0 !important;
+      border-radius: 14px !important;
+      background: var(--phone-accent) !important;
+      color: var(--phone-background) !important;
+      box-shadow: none !important;
+      font-size: 16px !important;
+      font-weight: 650;
+      text-shadow: none !important;
+    }
+
+    & :global(.mobile-order-execute):hover:not(:disabled),
+    & :global(.mobile-account-action.is-primary):hover:not(:disabled) {
+      background: var(--phone-accent) !important;
+      color: var(--phone-background) !important;
+      box-shadow: none !important;
+      transform: none;
+    }
+
+    & :global(.mobile-order-execute.btn-3d-execute-sell),
+    & :global(.mobile-order-execute.btn-3d-execute-sell):hover:not(:disabled) {
+      background: var(--phone-negative) !important;
+      color: var(--phone-background) !important;
+    }
+
+    & :global(.mobile-account-settings):hover:not(:disabled),
+    & :global(.mobile-account-profile-edit):hover:not(:disabled),
+    & :global(.mobile-order-advanced-toggle):hover:not(:disabled) {
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      transform: none;
+    }
+
+    & :global(.mobile-order-execute::before),
+    & :global(.mobile-order-execute::after) {
+      display: none !important;
+    }
+
+    & :global(.mobile-order-execute span) {
+      color: inherit !important;
+      font-size: 16px !important;
+    }
+
+    & :global(.mobile-portfolio-view) {
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain;
+      scrollbar-width: none;
+    }
+
+    & :global(.portfolio-page) {
+      gap: 28px;
+      max-width: none;
+      margin: 0;
+      padding: 12px 16px 24px;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.portfolio-page-header) {
+      align-items: center;
+      padding: 0;
+    }
+
+    & :global(.portfolio-page-header > div:first-child > svg),
+    & :global(.portfolio-page-header > div:first-child p) {
+      display: none;
+    }
+
+    & :global(.portfolio-page-header h1) {
+      font-size: 26px !important;
+      font-weight: 650;
+      line-height: 1.4;
+      letter-spacing: -.045em;
+      text-transform: none;
+    }
+
+    & :global(.portfolio-page-header > div:last-child p) {
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(.portfolio-page > section) {
+      flex: 0 0 auto;
+      overflow: visible;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.portfolio-page > section:first-of-type > div:first-child) {
+      padding: 0;
+      border: 0 !important;
+    }
+
+    & :global(.portfolio-page > section:first-of-type h2),
+    & :global(.portfolio-page > section:first-of-type > div:first-child > span) {
+      color: var(--phone-muted) !important;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(.portfolio-wallet-metrics) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px 12px;
+      padding: 12px 0 0;
+    }
+
+    & :global(.portfolio-wallet-metrics > div) {
+      min-width: 0;
+      padding: 0;
+      border: 0 !important;
+    }
+
+    & :global(.portfolio-wallet-metrics > div:first-child) {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    & :global(.portfolio-wallet-metrics dt) {
+      color: var(--phone-muted) !important;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(.portfolio-wallet-metrics dd) {
+      overflow: visible;
+      margin: 4px 0 0;
+      color: var(--phone-foreground) !important;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 550;
+      line-height: 1.5;
+      letter-spacing: -.035em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    & :global(.portfolio-wallet-metrics > div:first-child dd) {
+      margin: 0;
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -.055em;
+    }
+
+    & :global(.portfolio-section-heading) {
+      min-height: 36px;
+      padding: 0;
+      border: 0 !important;
+    }
+
+    & :global(.portfolio-section-heading h2) {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.5;
+      letter-spacing: -.025em;
+      text-transform: none;
+    }
+
+    & :global(.portfolio-section-heading svg) {
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.portfolio-section-heading > span) {
+      min-width: 24px;
+      border: 0 !important;
+      border-radius: 8px;
+      background: var(--phone-surface) !important;
+      color: var(--phone-muted) !important;
+      font-size: 14px;
+      font-weight: 400;
+      text-align: center;
+    }
+
+    & :global(.portfolio-page > section > .font-mono) {
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      padding: 4px 0;
+      border: 0 !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.5;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(.portfolio-empty) {
+      padding: 12px 0;
+      color: var(--phone-muted) !important;
+      font-size: 14px;
+      line-height: 1.5;
+      text-align: left;
+    }
+
+    & :global(.portfolio-page article) {
+      flex-wrap: wrap;
+      gap: 12px;
+      min-height: 72px;
+      padding: 12px 0;
+      border: 0 !important;
+    }
+
+    & :global(.portfolio-page article p),
+    & :global(.portfolio-page article span),
+    & :global(.portfolio-page article button) {
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    & :global(.portfolio-page article button) {
+      min-height: 44px;
+      padding: 8px 12px;
+      border: 0 !important;
+      border-radius: 10px !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-account-page) {
+      gap: 20px;
+      padding: 12px 16px 24px !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+      scrollbar-width: none;
+      overscroll-behavior-y: contain;
+    }
+
+    & :global(.mobile-account-page > *) {
+      flex-shrink: 0;
+    }
+
+    & :global(.mobile-account-page-header) {
+      gap: 8px;
+    }
+
+    & :global(.mobile-account-eyebrow),
+    & :global(.mobile-account-profile-label) {
+      display: none;
+    }
+
+    & :global(.mobile-account-page-header h1) {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 650;
+      line-height: 1.4;
+      letter-spacing: -.045em;
+    }
+
+    & :global(.mobile-account-kyc-badge) {
+      gap: 6px;
+      padding: 6px 8px;
+      border: 0;
+      border-radius: 10px;
+      background: var(--phone-surface);
+      color: var(--phone-muted);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    & :global(.mobile-account-kyc-badge > span) {
+      width: 5px;
+      height: 5px;
+      background: var(--phone-accent);
+    }
+
+    & :global(.mobile-account-profile) {
+      order: 1;
+      gap: 12px;
+      padding: 0;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-account-avatar) {
+      flex: 0 0 48px;
+      width: 48px;
+      height: 48px;
+      border: 0;
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--phone-accent) 12%, var(--phone-background));
+      color: var(--phone-accent);
+      font-size: 20px;
+      font-weight: 550;
+    }
+
+    & :global(.mobile-account-profile-copy) {
+      gap: 2px;
+    }
+
+    & :global(.mobile-account-profile-copy strong) {
+      color: var(--phone-foreground);
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: -.025em;
+    }
+
+    & :global(.mobile-account-profile-email) {
+      color: var(--phone-muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    & :global(.mobile-account-profile-edit) {
+      width: 44px;
+      height: 44px;
+      border: 0 !important;
+      border-radius: 12px !important;
+      background: transparent !important;
+      color: var(--phone-muted) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-account-details) {
+      order: 2;
+      gap: 20px 12px;
+    }
+
+    & :global(.mobile-account-detail) {
+      gap: 4px;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: var(--phone-foreground);
+    }
+
+    & :global(.mobile-account-detail > span) {
+      color: var(--phone-muted);
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+      letter-spacing: normal;
+      text-transform: none;
+    }
+
+    & :global(.mobile-account-detail strong) {
+      color: var(--phone-foreground);
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.5;
+      letter-spacing: -.02em;
+    }
+
+    & :global(.mobile-account-balance) {
+      order: -1;
+      gap: 4px;
+      padding: 8px 0 4px;
+    }
+
+    & :global(.mobile-account-balance strong) {
+      overflow: visible;
+      color: var(--phone-foreground);
+      font-size: 34px;
+      font-weight: 600;
+      line-height: 1.25;
+      letter-spacing: -.055em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    & :global(.mobile-account-actions) {
+      order: 3;
+      gap: 12px;
+    }
+
+    & :global(.mobile-account-action) {
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      padding: 12px 8px;
+      border: 0 !important;
+      border-radius: 14px !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-account-action.is-primary) {
+      background: var(--phone-accent) !important;
+      color: var(--phone-background) !important;
+    }
+
+    & :global(.mobile-account-action.is-primary strong),
+    & :global(.mobile-account-action.is-primary svg) {
+      color: var(--phone-background) !important;
+    }
+
+    & :global(.mobile-account-action-icon) {
+      width: 20px;
+      height: 20px;
+      color: inherit;
+    }
+
+    & :global(.mobile-account-action-copy) {
+      flex: 0 1 auto;
+    }
+
+    & :global(.mobile-account-action-copy strong) {
+      color: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+
+    & :global(.mobile-account-action-copy small),
+    & :global(.mobile-account-action > svg) {
+      display: none;
+    }
+
+    & :global(.mobile-account-page > div:has(> button[aria-label="Open activity tools"])) {
+      order: 4;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    & :global(.mobile-account-page button[aria-label="Open activity tools"]) {
+      min-height: 52px;
+      padding: 12px 0;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    & :global(.mobile-account-settings) {
+      order: 5;
+      gap: 12px;
+      min-height: 56px;
+      padding: 0;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mobile-account-settings-icon) {
+      width: 24px;
+      height: 24px;
+      color: var(--phone-accent);
+    }
+
+    & :global(.mobile-account-settings strong),
+    & :global(.mobile-account-settings small) {
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 1.5;
+    }
+
+    & :global(.mobile-account-settings strong) {
+      color: var(--phone-foreground);
+      font-weight: 500;
+    }
+
+    & :global(.mobile-account-settings small) {
+      color: var(--phone-muted);
+    }
+
+    & :global(.mobile-account-logout) {
+      order: 6;
+      justify-content: flex-start;
+      gap: 12px;
+      min-height: 48px;
+      margin: 0;
+      padding: 0;
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+      color: var(--phone-negative) !important;
+      box-shadow: none !important;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    & :global(.mobile-account-logout svg) {
+      color: inherit;
+    }
+
+    & .dock.dock {
+      inset-inline: 0;
+      bottom: 0;
+      width: 100%;
+      min-height: var(--phone-dock-height);
+      border: 0 !important;
+      border-radius: 0 !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-muted);
+      box-shadow: none !important;
+    }
+
+    & .dock::before {
+      display: none;
+    }
+
+    /* Keep desktop colors while leaving mobile content on a continuous surface. */
+    & :global(.mobile-terminal-header) {
+      border-bottom: 1px solid var(--phone-border) !important;
+      background: var(--phone-panel) !important;
+    }
+
+    & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock),
+    & :global(.chart-timeframe-toolbar),
+    & :global(.apple-terminal-market > header),
+    & :global(.terminal-order-panel-header) {
+      border-bottom: 1px solid var(--phone-border) !important;
+      background: var(--phone-background) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mw-row) {
+      border-bottom: 1px solid color-mix(in srgb, var(--phone-border) 65%, transparent) !important;
+      background: transparent !important;
+      color: var(--phone-foreground) !important;
+      transition: background-color 160ms ease;
+    }
+
+    & :global(.mw-row[aria-current="true"]) {
+      background: color-mix(in srgb, var(--phone-accent) 8%, var(--phone-background)) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
+    }
+
+    & :global(.mw-row .mw-badge) {
+      width: 32px;
+      height: 32px;
+      border: 0 !important;
+      background: var(--phone-surface) !important;
+      color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-order-ticket) {
+      padding-top: 16px !important;
+    }
+
+    & :global(.mobile-order-ticket-banner) {
+      flex-wrap: wrap;
+      gap: 12px !important;
+    }
+
+    & :global(.mobile-order-ticket-banner > div:first-child > div) {
+      flex-wrap: nowrap;
+      gap: 12px;
+    }
+
+    & :global(.mobile-order-ticket-banner > div:last-child) {
+      flex: 1 0 auto;
+      flex-direction: row;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    & :global(.terminal-order-view-dock) {
+      padding: 0 !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--phone-border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+    }
+
+    & :global(.terminal-order-view-dock button) {
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+    }
+
+    & :global(.terminal-order-view-dock button[aria-pressed="true"]) {
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
+      color: var(--phone-accent) !important;
+    }
+
+    & :global(.mobile-order-ticket .text-slate-400),
+    & :global(.mobile-order-ticket .text-slate-500),
+    & :global(.portfolio-page .text-slate-500),
+    & :global(.portfolio-page .text-slate-600) {
+      color: var(--phone-muted) !important;
+    }
+
+    & :global(.portfolio-page > section:not(:first-of-type)) {
+      padding-top: 20px;
+      border-top: 1px solid var(--phone-border) !important;
+    }
+
+    & :global(.portfolio-wallet-metrics > div:not(:first-child)) {
+      padding-top: 12px;
+      border-top: 1px solid var(--phone-border) !important;
+    }
+
+    & :global(.mobile-account-profile) {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--phone-border) !important;
+    }
+
+    & :global(.mobile-order-execute),
+    & :global(.mobile-account-action) {
+      transition: background-color 160ms ease, opacity 160ms ease;
+    }
+
+    & :global(.mobile-order-execute):active:not(:disabled),
+    & :global(.mobile-account-action):active:not(:disabled) {
+      opacity: .8;
+    }
+
+    & .dock.dock {
+      border-top: 1px solid var(--phone-border) !important;
+      background: var(--phone-panel) !important;
+      color: var(--phone-muted);
+    }
+
+    & .dock.dock > button:hover {
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+
+    &[data-mobile-tab="chart"] :global(.terminal-trade-scroll),
+    &[data-mobile-tab="market"] :global(#market-watch-instruments),
+    &[data-mobile-tab="order"] :global(.mobile-order-ticket),
+    &[data-mobile-tab="portfolio"] :global(.portfolio-page),
+    &[data-mobile-tab="account"] :global(.mobile-account-page) {
+      animation: panelFade 180ms ease-out both;
+    }
+
+    & :is(button, input, select, [role="button"]):focus-visible {
+      outline: 2px solid var(--phone-accent) !important;
+      outline-offset: 2px;
+    }
+
+    &:global(.is-chart-expanded) {
+      padding-bottom: 0 !important;
+    }
+
+    &:global(.is-chart-expanded) :global(.apple-terminal-chart-column) {
+      height: 100% !important;
+    }
+  }
+}
+
+@keyframes panelFade {
+  from { opacity: .6; }
+  to { opacity: 1; }
+}
+
+@keyframes dockEnter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes iconSelect {
+  from { transform: translateY(0) scale(.92); }
+  to { transform: translateY(-2px) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surface.surface:global(.reference-terminal) *,
+  .surface.surface:global(.reference-terminal) *::before,
+  .surface.surface:global(.reference-terminal) *::after,
+  .dock.dock,
+  .dock::before,
+  .dock > button,
+  .dockIcon,
+  .indicatorPanel,
+  .indicatorTrigger,
+  .indicatorRow {
+    animation: none !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,159 @@
+.theme {
+  --font-sans: var(--font-inter, ui-sans-serif), system-ui, sans-serif;
+  --color-background: var(--activity-background);
+  --color-foreground: var(--activity-foreground);
+  --color-popover: var(--activity-background);
+  --color-popover-foreground: var(--activity-foreground);
+  --color-accent: var(--activity-surface);
+  --color-accent-foreground: var(--activity-foreground);
+  --color-muted-foreground: var(--activity-muted);
+  --color-border: color-mix(in srgb, var(--activity-muted) 24%, transparent);
+  --color-ring: var(--activity-accent);
+  --background: var(--activity-background);
+  --foreground: var(--activity-foreground);
+  --popover: var(--activity-background);
+  --popover-foreground: var(--activity-foreground);
+  --accent: var(--activity-surface);
+  --accent-foreground: var(--activity-foreground);
+  --muted-foreground: var(--activity-muted);
+  --border: color-mix(in srgb, var(--activity-muted) 24%, transparent);
+  --ring: var(--activity-accent);
+  color: var(--activity-foreground);
+  font-family: var(--font-sans);
+}
+
+/* The legacy terminal's high-specificity button rules otherwise shrink these touch targets. */
+.theme .launcher,
+.theme .railButton {
+  min-height: 44px !important;
+  font-size: 14px !important;
+  letter-spacing: normal !important;
+}
+
+.theme .launcher { height: 44px; }
+
+.mobileBar {
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--activity-background);
+}
+
+.launcher {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  justify-content: flex-start;
+  border-radius: 0;
+}
+
+.launcherHint {
+  margin-left: auto;
+  color: var(--activity-muted);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.rail { display: none; }
+
+.directory {
+  display: flex;
+  width: calc(100vw - 16px);
+  max-width: 36rem;
+  height: min(680px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  border-color: var(--border);
+  border-radius: 16px;
+}
+
+.directoryHeader {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.headingRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.headingRow h2 { font-size: 18px; line-height: 1.4; }
+.directoryHeader p { line-height: 1.5; }
+.closeButton { flex: 0 0 auto; min-width: 44px; min-height: 44px; }
+
+.command {
+  min-height: 0;
+  flex: 1 1 auto;
+  border-radius: 0;
+}
+
+.command [data-slot="command-input-wrapper"] {
+  flex: 0 0 auto;
+  min-height: 48px;
+  border-top: 1px solid var(--border);
+}
+
+.command input { font-size: 16px; }
+
+.commandList {
+  min-height: 0;
+  max-height: none;
+  flex: 1 1 auto;
+  overscroll-behavior: contain;
+  padding: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--activity-muted) transparent;
+}
+
+.command [cmdk-group-heading] {
+  color: var(--activity-muted);
+  font-size: 14px;
+  padding: 12px 8px 8px;
+}
+
+.toolItem {
+  min-height: 64px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 8px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.toolItem > svg { color: var(--activity-accent); }
+.itemCopy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.itemTitle { font-size: 14px; line-height: 1.4; font-weight: 600; overflow-wrap: anywhere; }
+.itemDescription { color: var(--activity-muted); font-size: 14px; line-height: 1.4; }
+.count { flex: 0 0 auto; color: var(--activity-accent); font-size: 14px; font-variant-numeric: tabular-nums; }
+.directoryFooter { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--border); color: var(--activity-muted); font-size: 14px; line-height: 1.4; }
+.keyboardHint { display: none; }
+
+@media (min-width: 768px) {
+  .directory { width: calc(100vw - 32px); }
+  .keyboardHint { display: inline; }
+}
+
+@media (min-width: 1280px) {
+  .mobileBar { display: none; }
+  .rail { display: flex; width: 64px; min-height: 0; flex: 0 0 auto; flex-direction: column; align-items: stretch; align-self: stretch; overflow: hidden; padding: 8px; border-right: 1px solid var(--border); background: var(--activity-background); }
+  .expanded { width: 224px; }
+  .railScroll { display: flex; min-height: 0; flex: 1 1 auto; flex-direction: column; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--activity-muted) transparent; }
+  .railGroup { display: flex; flex: 0 0 auto; flex-direction: column; align-items: stretch; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .groupLabel { color: var(--activity-muted); padding: 6px 8px; font-size: 14px; font-weight: 500; }
+  .railButton { position: relative; display: flex; min-width: 44px; min-height: 44px; height: auto; flex: 0 0 auto; justify-content: center; padding: 8px; border: 1px solid transparent; border-radius: 8px; }
+  .expanded .railButton { justify-content: flex-start; }
+  .railButton > svg { flex: 0 0 auto; }
+  .railButton > span:not(.railCount) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .theme .railButton { border-color: transparent; background: var(--activity-background); color: var(--activity-foreground); }
+  .theme .railButton:hover { background: var(--activity-surface); }
+  .theme .selected { border-color: var(--activity-accent) !important; background: var(--activity-surface) !important; color: var(--activity-accent) !important; }
+  .railCount { position: absolute; top: 0; right: 0; min-width: 18px; padding: 0 3px; border-radius: 5px; background: var(--activity-accent); color: var(--activity-background); font-size: 14px; line-height: 18px; font-variant-numeric: tabular-nums; }
+  .expanded .railCount { position: static; margin-left: auto; }
+}

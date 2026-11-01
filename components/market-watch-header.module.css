@@ -1,0 +1,158 @@
+:global(.mt5-terminal.reference-terminal .apple-terminal-market) .header {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 12px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--market-watch-muted) 18%, transparent);
+  background: var(--market-watch-background);
+  color: var(--market-watch-foreground);
+  font-family: inherit;
+}
+
+.header .titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.header .title {
+  margin: 0;
+  color: var(--market-watch-foreground) !important;
+  font-size: 18px !important;
+  font-weight: 650 !important;
+  line-height: 1.4;
+  letter-spacing: -0.025em !important;
+  text-transform: none !important;
+}
+
+.header .status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--market-watch-accent);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+:global(.mt5-terminal.reference-terminal) .header .search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 44px;
+  padding-inline: 12px;
+  border: 1px solid color-mix(in srgb, var(--market-watch-muted) 22%, transparent);
+  border-radius: 10px;
+  background: var(--market-watch-surface);
+  color: var(--market-watch-muted);
+}
+
+.header .search > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+:global(.mt5-terminal.reference-terminal) .header .search:focus-within {
+  border-color: var(--market-watch-accent);
+  outline: 2px solid color-mix(in srgb, var(--market-watch-accent) 18%, transparent);
+  outline-offset: 2px;
+}
+
+:global(.mt5-terminal.reference-terminal) .header .search input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--market-watch-foreground) !important;
+  font-family: inherit;
+  font-size: 16px !important;
+  font-weight: 400 !important;
+  line-height: 1.5 !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.header .search input::placeholder {
+  color: var(--market-watch-muted) !important;
+  opacity: 1;
+}
+
+.header .clear {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--market-watch-muted);
+  cursor: pointer;
+}
+
+.header .clear svg {
+  width: 16px;
+  height: 16px;
+}
+
+.header .filters {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--market-watch-surface);
+  color: var(--market-watch-muted);
+}
+
+:global(.mt5-terminal.reference-terminal) .header .filters button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 0 !important;
+  border-radius: 7px !important;
+  background: transparent !important;
+  color: var(--market-watch-muted) !important;
+  font-family: inherit;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1.4;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  cursor: pointer;
+}
+
+:global(.mt5-terminal.reference-terminal) .header .filters button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--market-watch-accent) 15%, var(--market-watch-surface)) !important;
+  color: var(--market-watch-accent) !important;
+  font-weight: 650 !important;
+}
+
+.header .filters button:focus-visible,
+.header .clear:focus-visible {
+  outline: 2px solid var(--market-watch-accent);
+  outline-offset: -2px;
+}
