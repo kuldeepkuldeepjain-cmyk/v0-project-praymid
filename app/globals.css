@@ -1273,7 +1273,7 @@ button, a, [role="button"] {
   }
 }
 
-/* ─── Deep Trading Dashboard Effects ────────────────────── */
+/* ─── Deep Trading Dashboard Effects ─────────────────��──── */
 
 /* Deep glass card — frosted dark panel with multi-layer depth */
 .glass-dark {
@@ -11642,25 +11642,115 @@ body:has(.elite-terminal-shell) {
 
 @media (max-width: 640px) {
   .mt5-terminal.reference-terminal .apple-terminal-chart-column > .chart-header.terminal-market-dock {
-    margin: 0 8px !important;
+    width: auto !important;
+    margin: 0 !important;
     padding: 6px 8px !important;
   }
 
   .reference-terminal .terminal-market-dock-primary-row {
-    gap: 8px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    overflow: visible;
+    touch-action: pan-y;
+  }
+
+  .reference-terminal .terminal-market-dock-quote,
+  .reference-terminal .terminal-market-dock-tools {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0;
+    margin: 0 !important;
+    overflow: visible;
+  }
+
+  .reference-terminal .terminal-market-dock-tools {
+    flex-wrap: wrap;
+  }
+
+  .reference-terminal .terminal-chart-market-actions {
+    flex: 1 1 auto !important;
+    flex-wrap: wrap;
+    width: auto !important;
+    min-width: 0;
+  }
+
+  .reference-terminal .terminal-native-chart-panel > .apple-trading-chart {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
+  .reference-terminal .apple-trading-chart > .apple-trading-chart-canvas {
+    flex: 1 1 0% !important;
+    height: 0 !important;
+    min-height: 0 !important;
   }
 
   .reference-terminal .terminal-indicator-toolbar {
-    margin: 0 8px 6px !important;
-    padding: 4px 7px !important;
+    display: grid !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(2, 36px);
+    gap: 4px !important;
+    align-items: stretch;
+    width: 100%;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 6px 4px !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    background: var(--terminal-graphite-surface) !important;
+    touch-action: pan-y;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls {
+    display: contents !important;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls > span,
+  .reference-terminal .terminal-indicator-toolbar .indicator-pane-controls > span,
+  .reference-terminal .terminal-indicator-toolbar button:not(.indicator-master-button) > span[aria-hidden="true"] {
+    display: none;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-master-button {
+    grid-column: 1 / 4;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-overlay-controls > button:not(.indicator-master-button) {
+    grid-row: 2;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar .indicator-pane-controls {
+    grid-column: 4 / -1;
+    grid-row: 1;
+    justify-content: flex-end;
+    gap: 4px;
+    width: auto !important;
+    min-width: 0;
+    margin: 0 !important;
   }
 
   .reference-terminal .terminal-indicator-toolbar button,
   .mt5-terminal.reference-terminal .terminal-indicator-toolbar button,
-  .reference-terminal .terminal-indicator-toolbar .indicator-master-button {
-    min-height: 24px !important;
-    height: 24px !important;
-    padding: 0 6px !important;
+  .reference-terminal .terminal-indicator-toolbar .indicator-master-button,
+  .reference-terminal .terminal-indicator-toolbar .indicator-master-button[aria-pressed="true"] {
+    justify-content: center;
+    min-width: 0 !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    max-width: 100%;
+    padding: 0 1px !important;
+  }
+
+  .reference-terminal .terminal-indicator-toolbar button span {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
   }
 }
 

@@ -38,3 +38,10 @@
     height: calc(100dvh - env(safe-area-inset-bottom)) !important;
   }
 }
+
+@media (max-width: 640px) {
+  :global(.mt5-terminal.reference-terminal) .scrollArea :global(.mobile-terminal-chart-wrap) {
+    min-height: 300px !important;
+    height: 100% !important;
+  }
+}
