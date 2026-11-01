@@ -3521,7 +3521,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═��══������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -4279,7 +4279,8 @@ const maxLeverage = 100
 		                  <div className="min-w-0">
 		                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">New order</p>
 		                    <div className="mt-1 flex flex-wrap items-center gap-2">
-		                      <span className="text-base font-black tracking-tight text-cyan-200">{selectedPair.symbol}</span>
+		                      <AssetLogo key={selectedPair.symbol} symbol={selectedPair.symbol} size={36} className={mobileControlsStyles.orderLogo} />
+                              <span className={`text-base font-black tracking-tight text-cyan-200 ${mobileControlsStyles.orderSymbol}`}>{selectedPair.symbol}</span>
 		                      <span className="rounded-md border border-cyan-400/20 bg-cyan-400/10 px-2 py-1 text-[10px] font-bold text-cyan-200">
 		                        {orderType === "market" ? "Market" : orderType === "limit" ? "Limit" : "Stop"} · 1:{effectiveLeverage}
 		                      </span>
