@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
 :root {
+  --profile-background: #111315;
+  --profile-foreground: #f1f5f4;
+  --profile-muted: #9aa6a3;
+  --profile-primary: #4ad7bd;
+  --profile-error: #ef8b8b;
+  --profile-surface: color-mix(in srgb, var(--profile-foreground) 4%, var(--profile-background));
+  --profile-line: color-mix(in srgb, var(--profile-foreground) 13%, var(--profile-background));
   --market-watch-background: #091522;
   --market-watch-surface: #112337;
   --market-watch-foreground: #edf4fc;
@@ -11,6 +18,134 @@
   --activity-foreground: var(--market-watch-foreground);
   --activity-muted: var(--market-watch-muted);
   --activity-accent: var(--market-watch-accent);
+}
+
+.participant-profile-workspace {
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans);
+  --background: var(--profile-background);
+  --foreground: var(--profile-foreground);
+  --card: var(--profile-surface);
+  --card-foreground: var(--profile-foreground);
+  --popover: var(--profile-surface);
+  --popover-foreground: var(--profile-foreground);
+  --primary: var(--profile-primary);
+  --primary-foreground: var(--profile-background);
+  --secondary: var(--profile-surface);
+  --secondary-foreground: var(--profile-foreground);
+  --muted: var(--profile-surface);
+  --muted-foreground: var(--profile-muted);
+  --accent: var(--profile-surface);
+  --accent-foreground: var(--profile-foreground);
+  --destructive: var(--profile-error);
+  --destructive-foreground: var(--profile-background);
+  --border: var(--profile-line);
+  --input: var(--profile-line);
+  --ring: var(--profile-primary);
+  --color-background: var(--profile-background);
+  --color-foreground: var(--profile-foreground);
+  --color-card: var(--profile-surface);
+  --color-card-foreground: var(--profile-foreground);
+  --color-popover: var(--profile-surface);
+  --color-popover-foreground: var(--profile-foreground);
+  --color-primary: var(--profile-primary);
+  --color-primary-foreground: var(--profile-background);
+  --color-secondary: var(--profile-surface);
+  --color-secondary-foreground: var(--profile-foreground);
+  --color-muted: var(--profile-surface);
+  --color-muted-foreground: var(--profile-muted);
+  --color-accent: var(--profile-surface);
+  --color-accent-foreground: var(--profile-foreground);
+  --color-destructive: var(--profile-error);
+  --color-destructive-foreground: var(--profile-background);
+  --color-border: var(--profile-line);
+  --color-input: var(--profile-line);
+  --color-ring: var(--profile-primary);
+  color-scheme: dark;
+  background: var(--background);
+  color: var(--foreground);
+}
+.terminal-page:has(.participant-profile-workspace) { background: var(--profile-background) !important; }
+.participant-profile-workspace [data-slot="avatar-fallback"] {
+  background: color-mix(in srgb, var(--profile-primary) 12%, var(--profile-background));
+  color: var(--profile-primary);
+  border: 1px solid color-mix(in srgb, var(--profile-primary) 24%, var(--profile-background));
+}
+.participant-profile-workspace [data-slot="badge"] { font-size: 14px; }
+.terminal-page:has(.participant-profile-workspace) .participant-global-mobile-nav {
+  background: var(--profile-background) !important;
+  border-color: var(--profile-line) !important;
+  box-shadow: none !important;
+}
+.terminal-page:has(.participant-profile-workspace) .participant-dock-trade-button {
+  background: var(--profile-surface) !important;
+  border-color: var(--profile-line) !important;
+  color: var(--profile-foreground) !important;
+  box-shadow: none !important;
+}
+.terminal-page:has(.participant-profile-workspace) .participant-dock-trade-icon {
+  color: var(--profile-primary) !important;
+  filter: none !important;
+}
+.terminal-page .participant-profile-workspace input,
+.terminal-page .participant-profile-workspace select {
+  min-width: 0;
+  min-height: 44px;
+  background: var(--profile-surface) !important;
+  color: var(--profile-foreground) !important;
+  border-color: var(--profile-line) !important;
+  font-size: 16px;
+}
+.terminal-page .participant-profile-workspace input:focus,
+.terminal-page .participant-profile-workspace select:focus {
+  border-color: var(--profile-primary) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--profile-primary) 18%, transparent) !important;
+}
+.terminal-page .participant-profile-workspace button { min-height: 44px; }
+.terminal-page .participant-profile-workspace [role="checkbox"] { min-height: 20px; }
+.terminal-page .participant-profile-workspace .profile-tabs {
+  display: flex;
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--profile-line);
+  background: transparent;
+}
+.terminal-page .participant-profile-workspace .profile-tabs [role="tab"] {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 48px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--profile-muted);
+  box-shadow: none;
+  font-size: 14px;
+}
+.terminal-page .participant-profile-workspace .profile-tabs [role="tab"][data-state="active"] {
+  border-bottom-color: var(--profile-primary);
+  color: var(--profile-foreground);
+}
+.terminal-page .participant-profile-workspace button:focus-visible,
+.terminal-page .participant-profile-workspace a:focus-visible {
+  outline: 2px solid var(--profile-primary);
+  outline-offset: 3px;
+}
+.participant-profile-workspace .profile-upload-target:focus-within { border-color: var(--profile-primary); }
+.participant-profile-workspace .profile-upload-target[data-ready="true"] { border-style: solid; }
+.participant-profile-workspace .profile-ledger [data-slot="card"] { background: var(--profile-background) !important; border-color: var(--profile-line) !important; box-shadow: none; }
+.participant-profile-workspace .profile-ledger [class*="text-slate-"] { color: var(--profile-muted) !important; }
+.participant-profile-workspace .profile-ledger [class*="border-slate-"] { border-color: var(--profile-line) !important; }
+.participant-profile-workspace .profile-ledger [class*="bg-slate-"],
+.participant-profile-workspace .profile-ledger .bg-white { background: var(--profile-surface) !important; }
+@media (min-width: 768px) {
+  .terminal-page .participant-profile-workspace .profile-tabs [role="tab"] { flex: 0 1 auto; padding-inline: 8px; }
+  .terminal-page .participant-profile-workspace .profile-tabs { gap: 32px; }
 }
 
 .activity-glass-content {
@@ -1273,7 +1408,7 @@ button, a, [role="button"] {
   }
 }
 
-/* ─── Deep Trading Dashboard Effects ────────────────────── */
+/* ─── Deep Trading Dashboard Effects ─────────────────��──── */
 
 /* Deep glass card — frosted dark panel with multi-layer depth */
 .glass-dark {

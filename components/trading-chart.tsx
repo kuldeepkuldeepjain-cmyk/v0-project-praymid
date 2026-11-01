@@ -367,7 +367,7 @@ export function TradingChart({
         entireTextOnly: false,
         autoScale: true,
         alignLabels: true,
-        minimumWidth: Math.min(88, Math.max(54, Math.round(containerRef.current.clientWidth * 0.18))),
+        minimumWidth: Math.min(88, Math.max(54, Math.round((containerRef.current?.clientWidth ?? 300) * 0.18))),
         ticksVisible: true,
         borderVisible: true,
       },
