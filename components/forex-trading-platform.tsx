@@ -17,6 +17,7 @@ import {
 import { TradingChart } from "@/components/trading-chart"
 import tradeScrollStyles from "./terminal-trade-scroll.module.css"
 import marketWatchStyles from "./market-watch-header.module.css"
+import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
@@ -3620,21 +3621,21 @@ const maxLeverage = 100
         </button>
       </div>
 
-      <nav className="reference-mobile-nav" aria-label="Trading navigation">
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" && activePanel === "positions" ? "page" : undefined} className={mobileTab === "chart" && activePanel === "positions" ? "is-active" : ""}>
-          <CandlestickChart aria-hidden="true" /><span>Trade</span>
+      <nav className={`reference-mobile-nav ${mobileControlsStyles.dock}`} data-active-tab={mobileTab} aria-label="Trading navigation">
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" ? "page" : undefined} className={mobileTab === "chart" ? "is-active" : ""}>
+          <span className={mobileControlsStyles.dockIcon}><CandlestickChart aria-hidden="true" /></span><span>Trade</span>
         </button>
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
-          <Globe2 aria-hidden="true" /><span>Markets</span>
+          <span className={mobileControlsStyles.dockIcon}><BarChart2 aria-hidden="true" /></span><span>Markets</span>
         </button>
         <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions") }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
-          <Zap aria-hidden="true" /><span>Order</span>
+          <span className={mobileControlsStyles.dockIcon}><ArrowUpDown aria-hidden="true" /></span><span>Order</span>
         </button>
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
-          <Wallet aria-hidden="true" /><span>Portfolio</span>
+          <span className={mobileControlsStyles.dockIcon}><PieChart aria-hidden="true" /></span><span>Assets</span>
         </button>
         <button type="button" onClick={() => setMobileTab("account")} aria-label="Open account page" aria-current={mobileTab === "account" ? "page" : undefined} className={mobileTab === "account" ? "is-active" : ""}>
-          <UserRound aria-hidden="true" /><span>Account</span>
+          <span className={mobileControlsStyles.dockIcon}><UserRound aria-hidden="true" /></span><span>Account</span>
         </button>
       </nav>
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
+import { MobileChartIndicators, type ChartIndicatorKey as IndicatorKey } from "@/components/mobile-chart-indicators"
+import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { decimals as instrumentDecimals } from "@/lib/forex-instruments"
 import {
@@ -40,8 +42,6 @@ export type OpenTrade = {
   sl: number | null
   tp: number | null
 }
-
-type IndicatorKey = "ema9" | "ema21" | "ema50" | "bb" | "rsi" | "macd" | "volume"
 
 type PriceAlert = {
   id: number
@@ -773,6 +773,15 @@ export function TradingChart({
   // The price pane stays clean: no quote or open-trade labels are drawn over candles.
 
   const toggle = useCallback((key: IndicatorKey) => setIndicators((p) => ({ ...p, [key]: !p[key] })), [])
+  const toggleStudy = (key: "rsi" | "macd") => {
+    const isActive = chartPane === key && indicators[key]
+    setChartPane(isActive ? "none" : key)
+    setIndicators((previous) => ({
+      ...previous,
+      rsi: key === "rsi" && !isActive,
+      macd: key === "macd" && !isActive,
+    }))
+  }
   const isLoading = safeCandles.length === 0
 
   // Sync alertMode to DOM so the subscribeClick handler can read it without stale closure
@@ -844,8 +853,12 @@ export function TradingChart({
 
       {actionsHost && createPortal(
         <>
+          <MobileChartIndicators
+            indicators={indicators}
+            onToggle={(key) => key === "rsi" || key === "macd" ? toggleStudy(key) : toggle(key)}
+          />
           <div
-            className="flex items-center gap-1.5 shrink-0"
+            className={`${mobileControlsStyles.desktopMarketStatus} flex items-center gap-1.5 shrink-0`}
             role="status"
             aria-live="polite"
             aria-label={`Market feed ${marketStatus}`}
@@ -932,7 +945,8 @@ export function TradingChart({
 
       {/* ── Indicator Toolbar ───────────────────────────────────��───────────────── */}
       <div
-        className="terminal-chart-toolbar terminal-indicator-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 shrink-0 text-[9px] font-bold"
+        className={`${mobileControlsStyles.desktopToolbar} terminal-chart-toolbar terminal-indicator-toolbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-3 py-2 shrink-0 text-[9px] font-bold`}
+        data-hosted={Boolean(actionsHost)}
         style={{ minHeight: 38, background: "#0d1724", flexShrink: 0 }}
       >
         <div className="indicator-overlay-controls flex min-w-0 flex-wrap items-center gap-2" role="group" aria-label="Chart indicators">
@@ -1015,15 +1029,7 @@ export function TradingChart({
               <button
                 key={id}
                 type="button"
-                onClick={() => {
-                  if (isActive) {
-                    setChartPane("none")
-                    setIndicators((p) => ({ ...p, [id]: false }))
-                  } else {
-                    setChartPane(id)
-                    setIndicators((p) => ({ ...p, rsi: id === "rsi", macd: id === "macd" }))
-                  }
-                }}
+                onClick={() => toggleStudy(id)}
                 aria-pressed={isActive}
                 title={title}
                 className="flex items-center gap-1.5 px-2 py-1 rounded shrink-0 transition-all active:scale-95"
