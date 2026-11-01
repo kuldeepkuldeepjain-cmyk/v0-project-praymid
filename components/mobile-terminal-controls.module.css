@@ -287,8 +287,8 @@
   }
 
   .dock > button:nth-child(3) .dockIcon {
-    background: color-mix(in srgb, var(--terminal-graphite-teal) 16%, transparent);
-    color: var(--terminal-graphite-teal);
+    background: transparent;
+    color: inherit;
   }
 
   .dock > button:focus-visible {
@@ -318,7 +318,6 @@
     --phone-surface: var(--terminal-graphite-surface-2);
     --phone-panel: var(--terminal-graphite-surface);
     --phone-border: color-mix(in srgb, var(--terminal-graphite-border) 80%, transparent);
-    --phone-shadow: 0 6px 18px color-mix(in srgb, var(--terminal-graphite-bg) 55%, transparent), inset 0 1px 0 color-mix(in srgb, var(--terminal-graphite-text) 5%, transparent);
     --phone-foreground: var(--terminal-graphite-text);
     --phone-muted: color-mix(in srgb, var(--phone-foreground) 66%, var(--phone-background));
     --phone-accent: var(--terminal-graphite-teal);
@@ -459,14 +458,16 @@
       min-height: 48px;
       padding: 6px 10px !important;
       border: 0 !important;
-      border-radius: 12px !important;
-      background: var(--phone-surface) !important;
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
+      background: transparent !important;
       color: var(--phone-foreground) !important;
       box-shadow: none !important;
     }
 
     & :global(.reference-watch-card.is-selected) {
-      background: color-mix(in srgb, var(--phone-accent) 12%, var(--phone-background)) !important;
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
       color: var(--phone-foreground) !important;
       outline: none !important;
     }
@@ -494,8 +495,8 @@
       width: 44px;
       height: 44px;
       border: 0 !important;
-      border-radius: 12px !important;
-      background: var(--phone-surface) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
       color: var(--phone-muted) !important;
       box-shadow: none !important;
     }
@@ -627,7 +628,7 @@
       min-width: 44px;
       min-height: 44px !important;
       border: 0 !important;
-      background: var(--phone-surface) !important;
+      background: transparent !important;
       color: var(--phone-muted) !important;
       box-shadow: none !important;
       scroll-snap-align: start;
@@ -638,8 +639,8 @@
       height: 44px !important;
       padding-inline: 10px !important;
       border: 0 !important;
-      border-radius: 12px !important;
-      background: var(--phone-surface) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
       color: var(--phone-foreground) !important;
       box-shadow: none !important;
     }
@@ -989,7 +990,7 @@
       margin: 0;
     }
 
-    & .orderSymbol {
+    & .orderSymbol.orderSymbol {
       color: var(--phone-foreground) !important;
       font-size: 20px !important;
       font-weight: 600;
@@ -1005,10 +1006,11 @@
     & :global(.terminal-order-type-dock),
     & :global(.terminal-order-expiry-dock) {
       gap: 4px;
-      padding: 4px !important;
+      padding: 0 !important;
       border: 0 !important;
-      border-radius: 14px !important;
-      background: var(--phone-surface) !important;
+      border-bottom: 1px solid var(--phone-border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
       color: var(--phone-muted) !important;
     }
 
@@ -1016,7 +1018,8 @@
     & :global(.terminal-order-expiry-dock button) {
       min-height: 44px;
       border: 0 !important;
-      border-radius: 10px !important;
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
       background: transparent !important;
       color: var(--phone-muted) !important;
       box-shadow: none !important;
@@ -1026,7 +1029,8 @@
 
     & :global(.terminal-order-type-dock button[aria-pressed="true"]),
     & :global(.terminal-order-expiry-dock button[aria-pressed="true"]) {
-      background: color-mix(in srgb, var(--phone-accent) 14%, var(--phone-surface)) !important;
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
       color: var(--phone-accent) !important;
     }
 
@@ -1044,30 +1048,33 @@
     & :global(.mobile-quote-side) {
       align-items: flex-start;
       min-height: 76px;
-      padding: 12px !important;
+      padding: 12px 0 !important;
       border: 0 !important;
-      border-radius: 14px !important;
-      background: var(--phone-surface) !important;
+      border-bottom: 2px solid var(--phone-border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
       color: var(--phone-foreground) !important;
       text-align: left;
       box-shadow: none !important;
     }
 
     & :global(.mobile-quote-side .price-mono) {
-      color: var(--phone-foreground) !important;
+      color: inherit !important;
       font-size: 19px !important;
       font-weight: 650;
       letter-spacing: -.05em;
     }
 
     & :global(.mobile-quote-buy[data-active="true"]) {
-      background: color-mix(in srgb, var(--phone-accent) 15%, var(--phone-background)) !important;
-      color: var(--phone-foreground) !important;
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
+      color: var(--phone-accent) !important;
     }
 
     & :global(.mobile-quote-sell[data-active="true"]) {
-      background: color-mix(in srgb, var(--phone-negative) 15%, var(--phone-background)) !important;
-      color: var(--phone-foreground) !important;
+      border-bottom-color: var(--phone-negative) !important;
+      background: transparent !important;
+      color: var(--phone-negative) !important;
     }
 
     & :global(.mobile-quote-spread) {
@@ -1699,38 +1706,13 @@
     }
 
     & .dock::before {
-      border: 0;
-      background: color-mix(in srgb, var(--phone-accent) 10%, var(--phone-background));
+      display: none;
     }
 
-    /* Reuse the desktop graphite layers without changing chart or scroll geometry. */
+    /* Keep desktop colors while leaving mobile content on a continuous surface. */
     & :global(.mobile-terminal-header) {
       border-bottom: 1px solid var(--phone-border) !important;
       background: var(--phone-panel) !important;
-      box-shadow: var(--phone-shadow) !important;
-    }
-
-    & :global(.mobile-terminal-account) {
-      padding-inline: 10px !important;
-      border: 1px solid var(--phone-border) !important;
-      border-radius: 10px !important;
-      background: var(--phone-surface) !important;
-      color: var(--phone-foreground) !important;
-    }
-
-    & :global(.reference-watch-card),
-    & :global(.reference-watch-add),
-    & :global(.reference-watch-theme),
-    & :global(.terminal-chart-market-actions > button),
-    & :global(.terminal-chart-market-actions) .indicatorTrigger.indicatorTrigger {
-      border: 1px solid var(--phone-border) !important;
-      box-shadow: var(--phone-shadow) !important;
-    }
-
-    & :global(.reference-watch-card.is-selected) {
-      border-color: color-mix(in srgb, var(--phone-accent) 50%, var(--phone-border)) !important;
-      background: var(--terminal-graphite-elevated) !important;
-      color: var(--phone-foreground) !important;
     }
 
     & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock),
@@ -1738,69 +1720,38 @@
     & :global(.apple-terminal-market > header),
     & :global(.terminal-order-panel-header) {
       border-bottom: 1px solid var(--phone-border) !important;
-      background: var(--phone-panel) !important;
+      background: var(--phone-background) !important;
       color: var(--phone-foreground) !important;
-    }
-
-    & :global(.apple-terminal-market [role="search"]),
-    & :global(.terminal-order-view-dock),
-    & :global(.terminal-order-type-dock),
-    & :global(.terminal-order-expiry-dock) {
-      border: 1px solid var(--phone-border) !important;
-      box-shadow: inset 0 2px 5px color-mix(in srgb, var(--phone-background) 45%, transparent) !important;
     }
 
     & :global(.mw-row) {
       border-bottom: 1px solid color-mix(in srgb, var(--phone-border) 65%, transparent) !important;
-      background: var(--phone-panel) !important;
+      background: transparent !important;
       color: var(--phone-foreground) !important;
-      transition: background-color 160ms ease, box-shadow 160ms ease;
+      transition: background-color 160ms ease;
     }
 
     & :global(.mw-row[aria-current="true"]) {
-      background: color-mix(in srgb, var(--phone-accent) 12%, var(--phone-surface)) !important;
+      background: color-mix(in srgb, var(--phone-accent) 8%, var(--phone-background)) !important;
       color: var(--phone-foreground) !important;
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--phone-accent) 30%, transparent) !important;
+      box-shadow: none !important;
     }
 
     & :global(.mw-row .mw-badge) {
       width: 32px;
       height: 32px;
-      border: 1px solid var(--phone-border) !important;
+      border: 0 !important;
       background: var(--phone-surface) !important;
       color: var(--phone-foreground) !important;
     }
 
     & :global(.mobile-order-ticket) {
-      gap: 16px !important;
       padding-top: 16px !important;
-    }
-
-    & :global(.order-ticket-controls) { gap: 16px !important; }
-
-    & :global(.mobile-order-ticket-banner),
-    & :global(.mobile-order-volume),
-    & :global(.mobile-order-risk),
-    & :global(.mobile-order-pending),
-    & :global(.mobile-order-advanced-options),
-    & :global(.portfolio-page > section),
-    & :global(.mobile-account-profile),
-    & :global(.mobile-account-detail),
-    & :global(.mobile-account-settings),
-    & :global(.mobile-account-page > div:has(> button[aria-label="Open activity tools"])) {
-      padding: 16px !important;
-      border: 1px solid var(--phone-border) !important;
-      border-radius: 16px !important;
-      background: var(--phone-panel) !important;
-      color: var(--phone-foreground) !important;
-      box-shadow: var(--phone-shadow) !important;
     }
 
     & :global(.mobile-order-ticket-banner) {
       flex-wrap: wrap;
       gap: 12px !important;
-      background: var(--phone-surface) !important;
-      color: var(--phone-foreground) !important;
     }
 
     & :global(.mobile-order-ticket-banner > div:first-child > div) {
@@ -1816,6 +1767,26 @@
       gap: 8px;
     }
 
+    & :global(.terminal-order-view-dock) {
+      padding: 0 !important;
+      border: 0 !important;
+      border-bottom: 1px solid var(--phone-border) !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+    }
+
+    & :global(.terminal-order-view-dock button) {
+      border-bottom: 2px solid transparent !important;
+      border-radius: 0 !important;
+      background: transparent !important;
+    }
+
+    & :global(.terminal-order-view-dock button[aria-pressed="true"]) {
+      border-bottom-color: var(--phone-accent) !important;
+      background: transparent !important;
+      color: var(--phone-accent) !important;
+    }
+
     & :global(.mobile-order-ticket .text-slate-400),
     & :global(.mobile-order-ticket .text-slate-500),
     & :global(.portfolio-page .text-slate-500),
@@ -1823,53 +1794,9 @@
       color: var(--phone-muted) !important;
     }
 
-    & :global(.mobile-quote-side),
-    & :global(.mobile-order-ticket input),
-    & :global(.mobile-order-ticket select),
-    & :global(.terminal-order-size-dock button),
-    & :global(.mobile-account-action) {
-      border: 1px solid var(--phone-border) !important;
-      box-shadow: var(--phone-shadow) !important;
-      transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-    }
-
-    & :global(.mobile-quote-buy[data-active="true"]),
-    & :global(.terminal-order-size-dock button[aria-pressed="true"]) {
-      border-color: color-mix(in srgb, var(--phone-accent) 60%, transparent) !important;
-      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--phone-accent) 20%, transparent), var(--phone-shadow) !important;
-    }
-
-    & :global(.mobile-quote-sell[data-active="true"]) {
-      border-color: color-mix(in srgb, var(--phone-negative) 60%, transparent) !important;
-    }
-
-    & :global(.mobile-order-execute),
-    & :global(.mobile-account-action.is-primary) {
-      box-shadow: 0 4px 0 color-mix(in srgb, var(--phone-accent) 40%, var(--phone-background)), 0 8px 20px color-mix(in srgb, var(--phone-accent) 12%, transparent) !important;
-      transition: transform 160ms ease, box-shadow 160ms ease;
-    }
-
-    & :global(.mobile-order-execute.btn-3d-execute-sell) {
-      box-shadow: 0 4px 0 color-mix(in srgb, var(--phone-negative) 40%, var(--phone-background)), 0 8px 20px color-mix(in srgb, var(--phone-negative) 12%, transparent) !important;
-    }
-
-    & :global(.mobile-order-execute):active:not(:disabled),
-    & :global(.mobile-account-action):active:not(:disabled) {
-      transform: translateY(2px);
-      box-shadow: none !important;
-    }
-
-    & :global(.portfolio-page) { gap: 16px; }
-    & :global(.mobile-account-page) { gap: 16px; }
-    & :global(.mobile-account-details) { gap: 12px; }
-
-    & :global(.portfolio-page > section:first-of-type),
-    & :global(.mobile-account-balance) {
-      padding: 20px !important;
-      border-color: color-mix(in srgb, var(--phone-accent) 30%, var(--phone-border)) !important;
-      background: var(--phone-surface) !important;
-      color: var(--phone-foreground) !important;
-      box-shadow: var(--phone-shadow), inset 0 1px 0 color-mix(in srgb, var(--phone-accent) 16%, transparent) !important;
+    & :global(.portfolio-page > section:not(:first-of-type)) {
+      padding-top: 20px;
+      border-top: 1px solid var(--phone-border) !important;
     }
 
     & :global(.portfolio-wallet-metrics > div:not(:first-child)) {
@@ -1877,45 +1804,38 @@
       border-top: 1px solid var(--phone-border) !important;
     }
 
-    & :global(.portfolio-empty) { padding: 16px 0 4px; }
-    & :global(.portfolio-section-heading) { padding-bottom: 8px; }
-    & :global(.mobile-account-profile-edit) {
-      background: var(--phone-surface) !important;
-      color: var(--phone-accent) !important;
+    & :global(.mobile-account-profile) {
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--phone-border) !important;
+    }
+
+    & :global(.mobile-order-execute),
+    & :global(.mobile-account-action) {
+      transition: background-color 160ms ease, opacity 160ms ease;
+    }
+
+    & :global(.mobile-order-execute):active:not(:disabled),
+    & :global(.mobile-account-action):active:not(:disabled) {
+      opacity: .8;
     }
 
     & .dock.dock {
       border-top: 1px solid var(--phone-border) !important;
       background: var(--phone-panel) !important;
       color: var(--phone-muted);
-      box-shadow: 0 -8px 24px color-mix(in srgb, var(--phone-background) 55%, transparent) !important;
     }
 
-    & .dock::before {
-      border: 1px solid color-mix(in srgb, var(--phone-accent) 30%, transparent);
-      background: color-mix(in srgb, var(--phone-accent) 12%, var(--phone-surface));
-      box-shadow: inset 0 1px 0 color-mix(in srgb, var(--phone-accent) 12%, transparent);
+    & .dock.dock > button:hover {
+      background: transparent !important;
+      box-shadow: none !important;
     }
-
-    &[data-mobile-tab="chart"] :global(.terminal-market-dock),
-    &[data-mobile-tab="market"] :global(.apple-terminal-market > header),
-    &[data-mobile-tab="order"] :global(.mobile-order-ticket > *),
-    &[data-mobile-tab="portfolio"] :global(.portfolio-page > *),
-    &[data-mobile-tab="account"] :global(.mobile-account-page > *) {
-      animation: panelReveal 240ms cubic-bezier(.2, .8, .2, 1) both;
-    }
-
-    &[data-mobile-tab="order"] :global(.mobile-order-ticket > :nth-child(2)),
-    &[data-mobile-tab="portfolio"] :global(.portfolio-page > :nth-child(2)),
-    &[data-mobile-tab="account"] :global(.mobile-account-page > :nth-child(2)) { animation-delay: 35ms; }
-
-    &[data-mobile-tab="order"] :global(.mobile-order-ticket > :nth-child(n+3)),
-    &[data-mobile-tab="portfolio"] :global(.portfolio-page > :nth-child(n+3)),
-    &[data-mobile-tab="account"] :global(.mobile-account-page > :nth-child(n+3)) { animation-delay: 70ms; }
 
     &[data-mobile-tab="chart"] :global(.terminal-trade-scroll),
-    &[data-mobile-tab="market"] :global(#market-watch-instruments) {
-      animation: panelFade 240ms ease-out both;
+    &[data-mobile-tab="market"] :global(#market-watch-instruments),
+    &[data-mobile-tab="order"] :global(.mobile-order-ticket),
+    &[data-mobile-tab="portfolio"] :global(.portfolio-page),
+    &[data-mobile-tab="account"] :global(.mobile-account-page) {
+      animation: panelFade 180ms ease-out both;
     }
 
     & :is(button, input, select, [role="button"]):focus-visible {
@@ -1931,11 +1851,6 @@
       height: 100% !important;
     }
   }
-}
-
-@keyframes panelReveal {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes panelFade {
