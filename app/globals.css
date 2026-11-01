@@ -20,7 +20,8 @@
   --activity-accent: var(--market-watch-accent);
 }
 
-.participant-profile-workspace {
+.participant-profile-workspace,
+.participant-funding-workspace {
   --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
   font-family: var(--font-sans);
   --background: var(--profile-background);
@@ -146,6 +147,162 @@
 @media (min-width: 768px) {
   .terminal-page .participant-profile-workspace .profile-tabs [role="tab"] { flex: 0 1 auto; padding-inline: 8px; }
   .terminal-page .participant-profile-workspace .profile-tabs { gap: 32px; }
+}
+
+.terminal-page:has(.participant-funding-workspace) { background: var(--profile-background) !important; }
+.terminal-page:has(.participant-funding-workspace) .participant-global-mobile-nav { background: var(--profile-background) !important; border-color: var(--profile-line) !important; box-shadow: none !important; }
+.terminal-page:has(.participant-funding-workspace) .participant-dock-trade-button { background: var(--profile-surface) !important; color: var(--profile-foreground) !important; border-color: var(--profile-line) !important; box-shadow: none !important; }
+.terminal-page:has(.participant-funding-workspace) .participant-dock-trade-icon { color: var(--profile-primary) !important; filter: none !important; }
+.participant-funding-workspace { font-size: 14px; line-height: 1.5; }
+.participant-funding-workspace [data-slot="card"] { min-width: 0; background: var(--card) !important; color: var(--card-foreground) !important; border-color: var(--border) !important; box-shadow: none; }
+.participant-funding-workspace [data-slot="card-title"] { color: var(--foreground) !important; font-size: 16px; line-height: 1.5; }
+.participant-funding-workspace [data-slot="card-description"],
+.participant-funding-workspace [data-slot="field-description"] { color: var(--muted-foreground) !important; font-size: 14px; line-height: 1.6; }
+.participant-funding-workspace [data-slot="badge"] { max-width: 100%; font-size: 14px; white-space: normal; }
+.participant-funding-workspace [data-slot="button"] { min-height: 44px; border-radius: 10px; background: var(--secondary) !important; color: var(--secondary-foreground) !important; border-color: var(--border) !important; box-shadow: none !important; font-size: 14px; }
+.participant-funding-workspace [data-slot="button"][aria-label] { min-width: 44px; }
+.participant-funding-workspace [data-slot="button"]:hover { border-color: var(--primary) !important; }
+.participant-funding-workspace [data-slot="button"].funding-primary-action { background: var(--primary) !important; color: var(--primary-foreground) !important; border-color: var(--primary) !important; }
+.participant-funding-workspace [data-slot="button"].funding-primary-action:hover { filter: brightness(1.06); }
+.participant-funding-workspace input,
+.participant-funding-workspace select { min-width: 0; min-height: 44px; background: var(--background) !important; color: var(--foreground) !important; border-color: var(--input) !important; border-radius: 10px; font-size: 16px !important; }
+.participant-funding-workspace input::placeholder { color: var(--muted-foreground) !important; }
+.participant-funding-workspace input:focus-visible,
+.participant-funding-workspace select:focus-visible { outline-color: var(--ring); border-color: var(--ring) !important; box-shadow: none !important; }
+.participant-funding-workspace [data-slot="input-group"] { min-height: 48px; border-radius: 10px; background: var(--background) !important; color: var(--foreground); border-color: var(--input) !important; }
+.participant-funding-workspace [data-slot="input-group"] input { background: transparent !important; border: 0 !important; border-radius: 0; box-shadow: none !important; }
+.participant-funding-workspace [data-slot="input-group"]:focus-within { border-color: var(--ring) !important; }
+.participant-funding-workspace [data-slot="field-label"] { color: var(--foreground); font-size: 14px; }
+.participant-funding-workspace [data-slot="alert"] { background: var(--background) !important; color: var(--foreground); border-color: var(--border); }
+.participant-funding-workspace [data-slot="alert-description"] { color: var(--muted-foreground); line-height: 1.6; }
+.participant-funding-workspace .funding-error,
+.participant-funding-workspace [data-slot="field-error"] { color: var(--destructive) !important; }
+.participant-funding-workspace .funding-error { border-color: color-mix(in srgb, var(--destructive) 35%, var(--background)); }
+.participant-funding-workspace .funding-error [data-slot="alert-description"] { color: var(--destructive); }
+.participant-funding-workspace button:focus-visible,
+.participant-funding-workspace a:focus-visible,
+.participant-funding-workspace select:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.funding-landing { min-height: 100dvh; }
+.funding-landing-header { border-bottom: 1px solid var(--border); }
+.funding-header-inner { display: flex; align-items: center; gap: 16px; width: min(100%, 1040px); margin-inline: auto; padding: 20px 24px; }
+.funding-landing-content { display: flex; flex-direction: column; gap: 28px; width: min(100%, 1040px); margin-inline: auto; padding: 36px 24px 48px; }
+.funding-heading { display: flex; flex-direction: column; gap: 12px; max-width: 600px; }
+.participant-funding-workspace .funding-kicker { color: var(--primary); font-size: 14px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+.participant-funding-workspace .funding-page-title { color: var(--foreground) !important; font-size: clamp(28px, 4vw, 36px); font-weight: 600; letter-spacing: -0.04em; line-height: 1.2; }
+.funding-landing-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 24px; }
+.funding-balance-card { overflow: hidden; }
+.funding-balance-value { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; color: var(--foreground); font-size: clamp(30px, 4vw, 42px); font-weight: 500; letter-spacing: -0.04em; line-height: 1.3; }
+.funding-balance-value span { color: var(--muted-foreground); font-size: 14px; font-weight: 400; letter-spacing: 0; }
+.funding-inline-note { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 14px; line-height: 1.5; }
+.funding-gateway-link { display: flex; align-items: center; gap: 16px; padding: 20px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); color: var(--foreground); transition: border-color 150ms; }
+.funding-gateway-link:hover { border-color: var(--primary); }
+.funding-guide { display: flex; flex-direction: column; gap: 24px; }
+.funding-guide li { display: flex; align-items: flex-start; gap: 12px; }
+.funding-section-number { display: grid; flex-shrink: 0; place-items: center; width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 50%; background: var(--background); color: var(--muted-foreground); font-size: 14px; font-weight: 500; }
+.funding-panel { gap: 20px; padding-block: 20px; border-radius: 16px; }
+.funding-panel [data-slot="card-header"],
+.funding-panel [data-slot="card-content"],
+.funding-panel [data-slot="card-footer"] { padding-inline: 20px; }
+.funding-panel [data-slot="card-header"] { gap: 8px; }
+.funding-panel [data-slot="card-header"]:has(.funding-section-number) [data-slot="card-description"] { padding-left: 40px; }
+.funding-checkout-dialog { display: flex; flex-direction: column; gap: 0; width: min(960px, calc(100vw - 24px)); max-width: 960px; max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; border: 1px solid var(--profile-line); border-radius: 20px; box-shadow: 0 24px 80px color-mix(in srgb, var(--profile-background) 80%, transparent); }
+.funding-checkout-header { display: flex; flex-shrink: 0; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 24px 24px 20px; }
+.funding-checkout-heading { display: flex; flex-direction: column; gap: 8px; }
+.funding-checkout-heading [data-slot="dialog-title"] { color: var(--foreground); font-size: 24px; line-height: 1.2; letter-spacing: -0.025em; }
+.funding-checkout-heading [data-slot="dialog-description"] { max-width: 520px; font-size: 14px; line-height: 1.5; }
+.funding-progress { display: flex; flex-shrink: 0; align-items: flex-start; gap: 12px; padding: 0 24px 20px; border-bottom: 1px solid var(--border); }
+.funding-progress li { display: flex; flex: 1 1 0; align-items: center; gap: 8px; min-width: 0; color: var(--muted-foreground); }
+.funding-progress li[data-active="true"] { color: var(--foreground); }
+.funding-progress li[data-active="true"] .funding-section-number { border-color: var(--primary); color: var(--primary); }
+.funding-progress li[data-complete="true"] .funding-section-number { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+.funding-checkout-scroll { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 20px; }
+.funding-checkout-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 20px; }
+.funding-checkout-main,
+.funding-checkout-aside { display: flex; min-width: 0; flex-direction: column; gap: 20px; }
+.funding-account-options { display: flex; min-width: 0; flex-direction: column; gap: 12px; }
+.funding-plan-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.participant-funding-workspace .funding-choice-group { display: flex; width: 100%; gap: 8px; border-radius: 0; box-shadow: none; }
+.participant-funding-workspace [data-slot="toggle-group-item"] { min-width: 0; min-height: 44px; height: auto; flex: 1 1 0; padding: 10px 12px; white-space: normal; border: 1px solid var(--border) !important; border-radius: 10px !important; background: var(--background) !important; color: var(--muted-foreground) !important; font-size: 14px; line-height: 1.5; box-shadow: none !important; }
+.participant-funding-workspace [data-slot="toggle-group-item"]:hover { border-color: var(--muted-foreground) !important; }
+.participant-funding-workspace [data-slot="toggle-group-item"][data-state="on"] { border-color: var(--primary) !important; background: color-mix(in srgb, var(--primary) 8%, var(--background)) !important; color: var(--primary) !important; }
+.participant-funding-workspace .funding-method-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.participant-funding-workspace .funding-method-group [data-slot="toggle-group-item"] { display: flex; align-items: flex-start; justify-content: flex-start; gap: 12px; padding: 16px 12px; text-align: left; }
+.funding-method-copy { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.funding-method-copy strong { color: var(--foreground); font-size: 14px; font-weight: 500; }
+.funding-method-copy span { color: var(--muted-foreground); font-size: 14px; }
+.participant-funding-workspace .funding-tier-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.participant-funding-workspace .funding-tier-group [data-slot="toggle-group-item"] { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
+.funding-tier-group span { color: var(--muted-foreground); font-size: 14px; font-weight: 400; }
+.funding-normal-option { height: auto; justify-content: space-between; gap: 12px; padding: 12px; text-align: left; white-space: normal; }
+.funding-normal-option[data-active="true"] { outline: 1px solid var(--primary); }
+.funding-normal-option span { display: flex; flex-direction: column; gap: 4px; }
+.funding-normal-option small { color: var(--muted-foreground); font-size: 14px; font-weight: 400; }
+.funding-amount-input { font-weight: 500; font-variant-numeric: tabular-nums; }
+.funding-promo-message { font-size: 14px; line-height: 1.5; }
+.funding-transfer-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.funding-qr-well { display: grid; flex-shrink: 0; place-items: center; width: fit-content; max-width: 100%; padding: 10px; border-radius: 12px; background: var(--profile-foreground); color: var(--profile-background); }
+.funding-qr-well img { display: block; max-width: 100%; height: auto; border-radius: 4px; }
+.funding-qr-empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 16px; border: 1px dashed var(--border); border-radius: 12px; text-align: center; color: var(--muted-foreground); }
+.funding-payment-amount { color: var(--foreground); font-size: 24px; font-weight: 500; letter-spacing: -0.025em; }
+.funding-payment-amount span { color: var(--muted-foreground); font-size: 14px; font-weight: 400; }
+.funding-bank-details { display: flex; flex-direction: column; gap: 12px; }
+.funding-bank-details div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.funding-bank-details dt { color: var(--muted-foreground); }
+.funding-bank-details dd { overflow-wrap: anywhere; text-align: right; }
+.funding-crypto-qr { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.funding-address-row { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); }
+.funding-summary-list { display: flex; flex-direction: column; gap: 14px; }
+.funding-summary-list > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.funding-summary-list dt { min-width: 0; color: var(--muted-foreground); }
+.funding-summary-list dd { flex-shrink: 0; max-width: 65%; overflow-wrap: anywhere; text-align: right; color: var(--foreground); font-weight: 500; font-variant-numeric: tabular-nums; }
+.funding-promo-label { display: block; overflow-wrap: anywhere; color: var(--primary); }
+.funding-credit-total { display: flex; flex-direction: column; gap: 4px; padding: 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); }
+.funding-credit-total > p:last-child { color: var(--primary); font-size: 28px; line-height: 1.3; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.025em; }
+.funding-review-panel { gap: 16px; padding-block: 16px; }
+.funding-review-panel [data-slot="card-header"] { gap: 4px; }
+.funding-review-panel [data-slot="card-content"] { gap: 12px; }
+.funding-review-panel .funding-summary-list { gap: 8px; }
+.funding-review-panel .funding-credit-total { padding: 12px; }
+.funding-pending-request { display: flex; flex-direction: column; gap: 8px; }
+.funding-pending-request + .funding-pending-request { padding-top: 16px; border-top: 1px solid var(--border); }
+.funding-checkout-footer { display: flex; flex-shrink: 0; flex-direction: column; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--border); background: var(--background); }
+.funding-checkout-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.funding-footer-total { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.funding-footer-total > p { color: var(--muted-foreground); }
+.funding-footer-total > strong { color: var(--foreground); font-size: 20px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.funding-checkout-actions > button { min-width: 200px; }
+.funding-success { display: flex; flex-direction: column; align-items: center; gap: 20px; max-width: 480px; margin-inline: auto; padding-block: 12px; }
+.funding-success-icon { display: grid; place-items: center; width: 56px; height: 56px; border: 1px solid var(--border); border-radius: 16px; background: var(--card); color: var(--primary); }
+.funding-success > .funding-review-panel { width: 100%; }
+@media (min-width: 480px) {
+  .funding-crypto-qr { flex-direction: row; align-items: center; }
+}
+@media (min-width: 768px) {
+  .funding-landing-grid { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .funding-landing-content { padding-top: 44px; }
+}
+@media (min-width: 820px) {
+  .funding-checkout-grid { grid-template-columns: minmax(0, 1fr) 280px; }
+  .funding-checkout-aside { position: sticky; top: 0; }
+}
+@media (max-width: 599px) {
+  .funding-header-inner { padding: 16px; }
+  .funding-landing-content { padding: 28px 16px 32px; }
+  .funding-checkout-header { padding: 20px 16px 16px; }
+  .funding-progress { padding-inline: 16px; }
+  .funding-checkout-scroll { padding: 12px; }
+  .funding-panel [data-slot="card-header"],
+  .funding-panel [data-slot="card-content"],
+  .funding-panel [data-slot="card-footer"] { padding-inline: 16px; }
+  .funding-checkout-footer { padding: 12px 16px; }
+  .funding-checkout-actions { flex-direction: column; align-items: stretch; gap: 10px; }
+  .funding-footer-total { justify-content: space-between; }
+  .participant-funding-workspace .funding-method-group [data-slot="toggle-group-item"] { flex-direction: column; gap: 8px; }
+}
+@media (max-width: 359px) {
+  .funding-progress li { flex-direction: column; align-items: flex-start; }
+  .participant-funding-workspace .funding-choice-group:not(.funding-method-group):not(.funding-tier-group) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .funding-address-row { align-items: flex-start; }
 }
 
 .activity-glass-content {

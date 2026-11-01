@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from "react"
 import QRCode from "qrcode"
-import { X, Wallet, Copy, CheckCircle2, AlertCircle, Loader2, Send, ShieldCheck, Clock3, LockKeyhole, ArrowRight, QrCode as QrCodeIcon, TicketPercent } from "lucide-react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { X, Wallet, CheckCircle2, AlertCircle, Loader2, Send, Landmark } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
+import { Separator } from "@/components/ui/separator"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { FundingPaymentInstructions, FundingReviewSummary, FundingSection, PendingFundingRequests } from "@/components/funding-checkout-sections"
+import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 
@@ -333,413 +340,147 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
     }
   }
 
+  const checkoutProgress = step === "success" ? 3 : isAmountValid && txHash.trim() ? 2 : isAmountValid ? 1 : 0
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open && step !== "submitting") onClose() }}>
-      <DialogContent className="w-[calc(100vw-24px)] max-w-xl bg-white border border-slate-200 shadow-[0_24px_80px_rgba(15,36,56,0.2)] p-0 overflow-hidden max-h-[92dvh] flex flex-col">
-        {/* Payment gateway header */}
-        <div className="relative flex-shrink-0 overflow-hidden bg-[#102a43] px-5 py-5 text-white">
-          <div className="absolute inset-y-0 right-0 w-1/2 border-l border-white/5 bg-[#163e5c]/40" />
-          <div className="relative flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-cyan-300/20 bg-cyan-300/10">
-                <Wallet className="size-5 text-cyan-200" />
-              </div>
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-cyan-200/75">Secure checkout</p>
-                <h2 className="mt-1 text-lg font-bold leading-tight">Add funds</h2>
-                <p className="mt-1 max-w-xs text-[11px] leading-4 text-slate-300">Choose how you want to fund your trading account.</p>
-              </div>
-            </div>
-            {step !== "submitting" && (
-              <button onClick={onClose} aria-label="Close funding checkout" className="rounded-lg p-1.5 text-slate-300 transition-colors hover:bg-white/10 hover:text-white">
-                <X className="size-4" />
-              </button>
-            )}
+      <DialogContent className="participant-funding-workspace funding-checkout-dialog font-sans" showCloseButton={false} style={{ background: "var(--profile-background)", color: "var(--profile-foreground)" }}>
+        <header className="funding-checkout-header">
+          <div className="funding-checkout-heading">
+            <p className="funding-kicker">EliteFund checkout</p>
+            <DialogTitle>{step === "success" ? "Request submitted" : "Add funds"}</DialogTitle>
+            <DialogDescription>{step === "success" ? "Your payment reference has been sent for review." : "Choose your amount, transfer your payment, and submit the reference."}</DialogDescription>
           </div>
-          <div className="relative mt-4 grid grid-cols-3 gap-2 text-[9px] font-semibold">
-            <div className="flex items-center gap-1.5 text-cyan-100"><span className="grid size-5 place-items-center rounded-full bg-cyan-300 text-[#102a43]">1</span><span>Choose method</span></div>
-            <div className="flex items-center gap-1.5 text-slate-300"><span className="grid size-5 place-items-center rounded-full border border-white/20">2</span><span>Pay securely</span></div>
-            <div className="flex items-center gap-1.5 text-slate-300"><span className="grid size-5 place-items-center rounded-full border border-white/20">3</span><span>Submit proof</span></div>
-          </div>
-        </div>
+          {step !== "submitting" && <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close funding checkout"><X data-icon="inline-start" /></Button>}
+        </header>
+        <ol className="funding-progress" aria-label="Funding steps">
+          {["Details", "Transfer", "Confirm"].map((label, index) => (
+            <li key={label} data-active={checkoutProgress === index} data-complete={checkoutProgress > index} aria-current={checkoutProgress === index ? "step" : undefined}>
+              <span className="funding-section-number" aria-hidden="true">{checkoutProgress > index ? <CheckCircle2 className="size-4" /> : index + 1}</span><span>{label}</span>
+            </li>
+          ))}
+        </ol>
 
-        <div className="grid grid-cols-3 gap-px border-b border-slate-200 bg-slate-200">
-          <div className="flex items-center justify-center gap-1.5 bg-white px-2 py-2 text-[9px] font-semibold text-slate-600"><LockKeyhole className="h-3.5 w-3.5 text-emerald-600" /> Secure review</div>
-          <div className="flex items-center justify-center gap-1.5 bg-white px-2 py-2 text-[9px] font-semibold text-slate-600"><ShieldCheck className="h-3.5 w-3.5 text-blue-600" /> Verified payment</div>
-          <div className="flex items-center justify-center gap-1.5 bg-white px-2 py-2 text-[9px] font-semibold text-slate-600"><Clock3 className="h-3.5 w-3.5 text-amber-600" /> Up to 24h</div>
-        </div>
-
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 bg-slate-50/70 px-4 py-5 sm:px-6">
-
-          {/* FORM STEP */}
+        <div className="funding-checkout-scroll">
           {(step === "form" || step === "submitting") && (
-            <div className="space-y-3">
+            <div className="funding-checkout-grid">
+              <div className="funding-checkout-main">
+                <FundingSection number={1} title="Funding details" description="Choose your account option, payment method, and amount.">
+                  <FieldGroup>
 
-              {showFundingOptions && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Funding method</p>
-                      <h3 className="mt-1 text-sm font-bold text-slate-900">Choose an account option</h3>
-                    </div>
-                    <span className="rounded-full bg-emerald-50 px-2 py-1 text-[9px] font-bold text-emerald-700">Available now</span>
-                  </div>
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <Label className="text-xs font-semibold text-slate-700">
-                        Choose how to add funds <span className="text-red-500">*</span>
-                      </Label>
-                      <p className="mt-1 text-[10px] text-slate-500">Select one payment option below. Funded-tier activation appears first for new funded accounts.</p>
-                    </div>
-
-                    <div className={`w-full rounded-xl border p-3 text-left transition-all ${fundingMode === "funded" && canUseFundedTier ? "border-emerald-600 bg-emerald-50 ring-2 ring-emerald-100" : "border-slate-200 bg-slate-50"} ${!canUseFundedTier ? "cursor-not-allowed opacity-60" : "hover:border-emerald-300"}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="flex size-5 items-center justify-center rounded-full bg-emerald-600 text-[10px] font-bold text-white">1</span>
-                            <span className="text-sm font-bold text-slate-900">Funded-tier Fund</span>
-                            {canUseFundedTier && isInitialFundedTopUp && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-bold text-emerald-700">First deposit only</span>}
-                          </div>
-                            <p className="mt-1 pl-7 text-[10px] leading-4 text-slate-500">{checkingFundedTier ? "Checking first-deposit eligibility..." : canUseFundedTier ? "Activate a funded account by choosing one of the plans below." : "Already used — only Normal Add Fund is available now."}</p>
-                        </div>
-                        <span className={`mt-1 size-3 rounded-full border-2 ${fundingMode === "funded" && canUseFundedTier ? "border-emerald-600 bg-emerald-600 ring-2 ring-emerald-200" : "border-slate-300"}`} />
+                    {showFundingOptions && (
+                      <div className="funding-account-options">
+                        <div className="funding-plan-heading"><p className="font-medium">Funded-tier Fund</p>{canUseFundedTier && isInitialFundedTopUp && <Badge variant="outline">First deposit only</Badge>}</div>
+                        <p className="text-sm leading-relaxed text-muted-foreground">{checkingFundedTier ? "Checking first-deposit eligibility..." : canUseFundedTier ? "Choose a plan to activate your funded account." : "Already used — only Normal Add Fund is available now."}</p>
+                        {canUseFundedTier ? (
+                          <ToggleGroup type="single" variant="outline" className="funding-choice-group funding-tier-group" aria-label="Funded account plan" value={fundingMode === "funded" ? String(Number(amount)) : ""} disabled={step === "submitting"}>
+                            {[50, 100, 250, 500, 1000].map((tier) => <ToggleGroupItem key={tier} value={String(tier)} onClick={() => { setFundingMode("funded"); setPaymentMethod("inr"); setNetwork("INR"); setAmount(String(tier)) }}><strong>${tier.toLocaleString()} payment</strong><span>${(tier * 100).toLocaleString()} funded</span></ToggleGroupItem>)}
+                          </ToggleGroup>
+                        ) : <p className="text-sm text-muted-foreground">Already activated — available during first activation only.</p>}
+                        <Button type="button" variant="outline" className="funding-normal-option" data-active={fundingMode === "actual"} aria-pressed={fundingMode === "actual"} onClick={() => { setFundingMode("actual"); setAmount("") }} disabled={step === "submitting"}>
+                          <span><strong>Normal Add Fund</strong><small>Add your selected amount to your trading wallet.</small></span>{fundingMode === "actual" && <CheckCircle2 data-icon="inline-end" />}
+                        </Button>
+                        <Separator />
                       </div>
-                      {canUseFundedTier ? (
-                        <div className="mt-3 grid grid-cols-2 gap-2 pl-7">
-                          {[50, 100, 250, 500, 1000].map((tier) => (
-                            <button key={tier} type="button" onClick={() => { setFundingMode("funded"); setPaymentMethod("inr"); setNetwork("INR"); setAmount(String(tier)) }} disabled={step === "submitting"} className={`rounded-lg border px-2.5 py-2 text-left text-[10px] transition-colors ${Number(amount) === tier && fundingMode === "funded" ? "border-emerald-600 bg-emerald-600 text-white" : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-400"}`}>
-                              <span className="block font-bold">${tier.toLocaleString()} payment</span>
-                              <span className="mt-0.5 block opacity-80">${(tier * 100).toLocaleString()} funded</span>
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="mt-2 pl-7 text-[10px] font-semibold text-amber-600">Already activated — available during first activation only.</p>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => { setFundingMode("actual"); setAmount("") }}
-                      disabled={step === "submitting"}
-                      className={`w-full rounded-xl border p-3 text-left transition-all ${fundingMode === "actual" ? "border-[#1769aa] bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-slate-300"}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="flex size-5 items-center justify-center rounded-full bg-[#1769aa] text-[10px] font-bold text-white">2</span>
-                            <span className="text-sm font-bold text-slate-900">Normal Add Fund</span>
-                          </div>
-                          <p className="mt-1 pl-7 text-[10px] leading-4 text-slate-500">Add the exact USDT amount you send. Available for regular top-ups.</p>
-                        </div>
-                        <span className={`mt-1 size-3 rounded-full border-2 ${fundingMode === "actual" ? "border-[#1769aa] bg-[#1769aa] ring-2 ring-blue-200" : "border-slate-300"}`} />
-                      </div>
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {pendingRequests.length > 0 && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm" aria-live="polite">
-                  <div className="flex items-start justify-between gap-3">
-                    <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-amber-700">Funding activity</p><h3 className="mt-1 text-sm font-bold text-amber-950">Pending Add Fund Requests</h3><p className="mt-1 text-[10px] leading-4 text-amber-800">Your payment is being reviewed. You do not need to submit it again.</p></div>
-                    <Clock3 className="mt-1 size-5 shrink-0 text-amber-600" />
-                  </div>
-                  <div className="mt-3 space-y-2">{pendingRequests.map((request) => (
-                    <div key={request.id} className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white px-3 py-2.5">
-                      <div><p className="text-xs font-bold text-slate-900">${Number(request.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })} payment</p>{request.promo_code && Number(request.promo_bonus_amount) > 0 && <p className="mt-0.5 text-xs font-semibold text-emerald-700">${(Number(request.amount) + Number(request.promo_bonus_amount)).toFixed(2)} requested · {request.promo_code}</p>}<p className="mt-0.5 text-[9px] text-slate-500">{new Date(request.created_at).toLocaleString()} · {request.payment_method.replace(/_/g, " ")}</p><p className="mt-0.5 font-mono text-[9px] text-slate-400">TX: {request.transaction_id.slice(0, 10)}…</p></div>
-                      <span className="rounded-full bg-amber-100 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-amber-800">{request.status}</span>
-                    </div>
-                  ))}</div>
-                </div>
-              )}
-              {loadingRequests && <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[10px] text-slate-500">Loading your funding requests…</div>}
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Order summary</p>
-                    <h3 className="mt-1 text-sm font-bold text-slate-900">Payment details</h3>
-                    <p className="mt-1 text-[11px] leading-5 text-slate-500">Send USDT to the verified address, then submit your transfer hash for review.</p>
-                  </div>
-                  <div className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-right">
-                    <p className="text-[9px] font-semibold uppercase tracking-wide text-blue-500">Current balance</p>
-                    <p className="font-mono text-sm font-bold text-blue-900">${currentBalance.toFixed(2)}</p>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-                  <div><p className="text-[9px] uppercase tracking-wide text-slate-400">Selected option</p><p className="mt-1 text-xs font-bold text-slate-800">{isFundedAccount && fundingMode === "funded" ? "Funded-tier Account" : "Normal Fund"}</p></div>
-                  <div className="text-right"><p className="text-[9px] uppercase tracking-wide text-slate-400">Settlement</p><p className="mt-1 text-xs font-bold text-emerald-700">Manual review</p></div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-slate-400">Payment method</p><h3 className="mt-1 text-sm font-bold text-slate-900">How would you like to pay?</h3></div>
-                  <ShieldCheck className="size-5 text-emerald-600" />
-                </div>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Payment method">
-                  <button type="button" role="radio" aria-checked={paymentMethod === "inr"} onClick={() => { setPaymentMethod("inr"); setNetwork("INR") }} disabled={step === "submitting"} className={`rounded-xl border p-3 text-left transition-all ${paymentMethod === "inr" ? "border-orange-500 bg-orange-50 ring-2 ring-orange-100" : "border-slate-200 bg-white hover:border-orange-300"}`}>
-                    <div className="flex items-start justify-between gap-2"><span className="grid size-8 place-items-center rounded-lg bg-orange-100 text-sm font-black text-orange-700">₹</span><span className={`mt-1 size-3 rounded-full border-2 ${paymentMethod === "inr" ? "border-orange-600 bg-orange-600 ring-2 ring-orange-200" : "border-slate-300"}`} /></div>
-                    <p className="mt-2 text-xs font-bold text-slate-900">UPI / Bank transfer</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Scan a QR for an exact INR amount</p>
-                  </button>
-                  <button type="button" role="radio" aria-checked={paymentMethod === "crypto"} onClick={() => { setPaymentMethod("crypto"); setNetwork("ALL") }} disabled={step === "submitting"} className={`rounded-xl border p-3 text-left transition-all ${paymentMethod === "crypto" ? "border-blue-600 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-blue-300"}`}>
-                    <div className="flex items-start justify-between gap-2"><span className="grid size-8 place-items-center rounded-lg bg-blue-100 text-xs font-black text-blue-700">₮</span><span className={`mt-1 size-3 rounded-full border-2 ${paymentMethod === "crypto" ? "border-blue-600 bg-blue-600 ring-2 ring-blue-200" : "border-slate-300"}`} /></div>
-                    <p className="mt-2 text-xs font-bold text-slate-900">USDT / Crypto</p><p className="mt-1 text-[10px] leading-4 text-slate-500">Send USDT on your selected network</p>
-                  </button>
-                </div>
-                {paymentMethod === "inr" && <p className="mt-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 text-[10px] font-medium leading-4 text-orange-800">Payouts are sent to the same account used to add funds.</p>}
-              </div>
-
-              {/* Amount */}
-              <div className="space-y-1">
-                <Label htmlFor="topup-amount" className="text-xs font-semibold text-slate-700">
-                  {paymentMethod === "inr" ? "Funding amount (USD) — QR in INR" : appliedPromo ? "Funding amount (USD)" : "Amount sent (USDT)"} <span className="text-red-500">*</span>
-                </Label>
-                <div className="relative">
-                  <Input id="topup-amount" type="number" min="5" max="100000" step="0.01" placeholder="Enter amount" value={amount} onChange={(e) => setAmount(e.target.value)} className="h-9 pr-14 text-sm border border-slate-200 focus:border-violet-500 rounded-lg" disabled={step === "submitting"} />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">{paymentMethod === "inr" || appliedPromo ? "USD" : "USDT"}</span>
-                </div>
-                <div className="flex flex-wrap gap-2 pt-1" aria-label="Quick funding amounts">{(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <button key={quickAmount} type="button" onClick={() => setAmount(String(quickAmount))} disabled={step === "submitting"} className="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-600 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 disabled:opacity-50">${quickAmount}</button>)}</div>
-              {amount && !isAmountValid && isPromoCompatible && <p className="text-xs leading-relaxed text-red-600">{appliedPromo && payableAmount < 5 ? "The promo discount must leave at least $5 to send." : fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</p>}
-              {paymentMethod === "inr" && Number.isFinite(payableAmount) && payableAmount > 0 && <p className="text-xs font-semibold leading-relaxed text-orange-700">UPI payment: ₹{(payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹{inrRate} per $1.</p>}
-
-              <div className="rounded-xl border border-violet-200 bg-violet-50/70 p-3">
-                <div className="flex items-start gap-2.5">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
-                    <TicketPercent className="size-4" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <Label htmlFor="topup-promo-code" className="text-xs font-bold text-violet-950">Promo code <span className="font-normal text-violet-700">(optional)</span></Label>
-                    <p className="mt-0.5 text-xs leading-relaxed text-violet-700">Apply a valid code to lower your payment while keeping the requested funding amount.</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Input id="topup-promo-code" value={promoCode} onChange={(event) => { setPromoCode(event.target.value.toUpperCase()); setAppliedPromo(null); setPromoMessage("") }} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); applyPromoCode() } }} placeholder="ENTER CODE" autoComplete="off" maxLength={32} className="h-9 min-w-[150px] flex-1 border-violet-200 bg-white text-sm font-semibold uppercase tracking-wide focus:border-violet-500" disabled={step === "submitting" || applyingPromo} />
-                      <Button type="button" onClick={applyPromoCode} disabled={step === "submitting" || applyingPromo || !promoCode.trim()} variant="outline" className="h-9 border-violet-300 px-3 text-[10px] font-bold text-violet-700 hover:bg-violet-100">{applyingPromo ? <Loader2 className="size-3.5 animate-spin" /> : "Apply promo code"}</Button>
-                    </div>
-                    {promoMessage && <p className={`mt-2 text-xs font-semibold leading-relaxed ${appliedPromo ? "text-emerald-700" : "text-red-600"}`} aria-live="polite">{promoMessage}</p>}
-                    {appliedPromo && !isPromoCompatible && <p className="mt-2 text-xs font-semibold text-red-600" role="alert">This INR discount requires UPI / bank transfer.</p>}
-                    {appliedPromo && Number.isFinite(parsedAmount) && parsedAmount > 0 && <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs">
-                      <div className="flex items-center justify-between gap-2 text-emerald-800"><span>Promo savings</span><span className="font-bold">-${promoDiscountAmount.toFixed(2)}{appliedPromo.discountType === "inr" ? ` (₹${(promoDiscountAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })})` : ""}</span></div>
-                      <div className="mt-1.5 flex items-center justify-between gap-2 border-t border-emerald-200 pt-1.5 font-bold text-emerald-950"><span>Payment due</span><span>${payableAmount.toFixed(2)}{paymentMethod === "inr" ? ` · ₹${(payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })}` : " USDT"}</span></div>
-                      <p className="mt-1.5 leading-relaxed text-emerald-800">${expectedCreditAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} account credit expected after approval.</p>
-                    </div>}
-                  </div>
-                </div>
-              </div>
-              </div>
-
-              {/* Network selector */}
-              {paymentMethod === "crypto" && (<div className="space-y-1.5">
-                <Label htmlFor="topup-network" className="text-xs font-semibold text-slate-700">
-                  Deposit Network <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  id="topup-network"
-                  value={network}
-                  onChange={(event) => setNetwork(event.target.value as typeof network)}
-                  disabled={step === "submitting"}
-                  className="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-colors focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-60"
-                >
-                  <option value="ALL">All networks</option>
-                  <option value="TRC20">TRC20 (TRON)</option>
-                  <option value="BEP20">BEP20 (BSC)</option>
-                  <option value="ERC20">ERC20 (Ethereum)</option>
-                </select>
-                <p className="text-[10px] text-slate-500">
-                  Select the USDT network used for your transfer.
-                </p>
-              </div>)}
-
-              {paymentMethod === "inr" ? (
-                <div className="space-y-3 rounded-2xl border border-orange-200 bg-orange-50 p-4">
-                  <div><p className="text-[9px] font-bold uppercase tracking-[0.18em] text-orange-700">INR payment</p><h3 className="mt-1 text-sm font-bold text-orange-950">Pay the selected amount</h3><p className="mt-1 text-[10px] leading-4 text-orange-800">Scan the QR with your UPI app. The QR amount is generated from your entered dollar amount and converted to INR at ₹104 per $1.</p></div>
-                  {inrQrExpired ? (
-                    <div className="rounded-xl border border-dashed border-red-300 bg-white p-4 text-center text-xs text-red-700">This payment QR expired. Change the amount to generate a fresh QR code.</div>
-                  ) : inrQrDataUrl ? (
-                    <div className="space-y-3">
-                      <div className="flex justify-center rounded-xl bg-white p-3"><img src={inrQrDataUrl} alt={`UPI QR code for ₹${amount || "0"}`} className="size-48" /></div>
-                      <div className="flex items-center justify-center gap-2 rounded-lg bg-white px-3 py-2 text-xs font-semibold text-orange-900"><Clock3 className="size-4" /> Pay within {inrCountdownLabel}</div>
-                    </div>
-                  ) : <div className="rounded-xl border border-dashed border-orange-300 bg-white p-4 text-center text-xs text-orange-700">Enter an INR amount to generate the QR code.</div>}
-                  <div className="grid gap-2 text-xs text-orange-950 sm:grid-cols-2"><p><span className="font-semibold">Payment:</span> Scan the QR to pay securely</p><p><span className="font-semibold">Account:</span> {inrDetails.accountNumber || "Not configured"}</p><p><span className="font-semibold">Bank:</span> {inrDetails.bankName || "Not configured"}</p><p><span className="font-semibold">IFSC:</span> {inrDetails.ifsc || "Not configured"}</p></div>
-                </div>
-              ) : null}
-
-              {/* Wallet Address */}
-              {paymentMethod === "crypto" && (<div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">{network === "ALL" ? "USDT Deposit Address" : `${network} Deposit Address (USDT)`}</Label>
-                {loadingAddress ? (
-                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-2.5 animate-pulse">
-                    <div className="h-3 bg-slate-200 rounded flex-1" />
-                    <div className="h-6 w-6 bg-slate-200 rounded" />
-                  </div>
-                ) : selectedWalletAddress ? (
-                  <div className="rounded-xl border border-blue-200 bg-white overflow-hidden shadow-sm">
-                    {/* Header strip */}
-                    <div className="px-3 py-2 bg-[#163e5c] flex items-center justify-between">
-                      <span className="text-[10px] font-bold text-white tracking-widest uppercase">{network === "ALL" ? "All Networks" : `${network} Network`}</span>
-                      <span className="text-[10px] text-white/80">USDT Only</span>
-                    </div>
-                    {/* Scannable QR code */}
-                    <div className="flex items-center justify-center gap-4 px-3 py-3 border-b border-slate-100">
-                      <div className="flex size-[104px] shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white p-1.5">
-                        {qrLoading ? (
-                          <Loader2 className="h-5 w-5 animate-spin text-slate-300" />
-                        ) : qrDataUrl ? (
-                          <img src={qrDataUrl} alt={`QR code for ${network} deposit address`} className="size-full" />
-                        ) : (
-                          <QrCodeIcon className="h-8 w-8 text-slate-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <p className="text-[10px] font-semibold text-slate-600">Scan with your wallet app</p>
-                        <p className="text-[10px] leading-4 text-slate-500">Open your USDT wallet, scan this code, and confirm the network before sending.</p>
-                      </div>
-                    </div>
-                    {/* Address row */}
-                    <div className="flex items-center gap-2 px-3 py-2.5">
-                      <code className="flex-1 text-[11px] text-violet-900 font-mono break-all leading-snug">
-                        {selectedWalletAddress}
-                      </code>
-                      <button
-                        onClick={copyAddress}
-                        className="flex-shrink-0 p-1.5 rounded-lg bg-violet-100 hover:bg-violet-200 transition-colors"
-                        title="Copy address"
-                      >
-                        {copiedAddress
-                          ? <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          : <Copy className="h-4 w-4 text-violet-600" />}
-                      </button>
-                    </div>
-                    {copiedAddress && (
-                      <p className="text-[10px] text-green-700 font-medium text-center pb-1.5">Address copied!</p>
                     )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5">
-                    <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0" />
-                    <p className="text-[11px] text-amber-700">
-                      Deposit address not set. Please contact admin.
-                    </p>
-                  </div>
-                )}
-                <p className="text-[10px] text-slate-500">
-                  Send USDT using the selected network to this address, then fill in your transaction details below.
-                </p>
-              </div>)}
+
+                    <Field>
+                      <FieldLabel>Payment method</FieldLabel>
+                      <ToggleGroup type="single" variant="outline" className="funding-choice-group funding-method-group" aria-label="Payment method" value={paymentMethod} disabled={step === "submitting"}>
+                        <ToggleGroupItem value="inr" onClick={() => { setPaymentMethod("inr"); setNetwork("INR") }}><Landmark data-icon="inline-start" /><span className="funding-method-copy"><strong>UPI / Bank transfer</strong><span>Pay in INR</span></span></ToggleGroupItem>
+                        <ToggleGroupItem value="crypto" onClick={() => { setPaymentMethod("crypto"); setNetwork("ALL") }}><Wallet data-icon="inline-start" /><span className="funding-method-copy"><strong>USDT / Crypto</strong><span>Choose your network</span></span></ToggleGroupItem>
+                      </ToggleGroup>
+                      {paymentMethod === "inr" && <FieldDescription>Payouts are sent to the same account used to add funds.</FieldDescription>}
+                    </Field>
+
+                    <Field data-invalid={Boolean(amount && !isAmountValid)}>
+                      <FieldLabel htmlFor="topup-amount">{paymentMethod === "inr" ? "Funding amount (USD) — QR in INR" : appliedPromo ? "Funding amount (USD)" : "Amount sent (USDT)"}<span aria-hidden="true">*</span></FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput id="topup-amount" type="number" inputMode="decimal" min="5" max="100000" step="0.01" placeholder="0.00" value={amount} onChange={(e) => setAmount(e.target.value)} className="funding-amount-input" disabled={step === "submitting"} aria-required="true" aria-invalid={Boolean(amount && !isAmountValid)} aria-describedby={amount && !isAmountValid && isPromoCompatible ? "topup-amount-help topup-amount-error" : "topup-amount-help"} />
+                        <InputGroupAddon align="inline-end">{paymentMethod === "inr" || appliedPromo ? "USD" : "USDT"}</InputGroupAddon>
+                      </InputGroup>
+                      <ToggleGroup type="single" variant="outline" className="funding-choice-group" value={String(Number(amount))} disabled={step === "submitting"} aria-label="Quick funding amounts">
+                        {(fundingMode === "funded" ? [50, 100, 250, 500] : [25, 50, 100, 250]).map((quickAmount) => <ToggleGroupItem key={quickAmount} value={String(quickAmount)} onClick={() => setAmount(String(quickAmount))}>${quickAmount}</ToggleGroupItem>)}
+                      </ToggleGroup>
+                      <FieldDescription id="topup-amount-help">{paymentMethod === "inr" && Number.isFinite(payableAmount) && payableAmount > 0 ? `UPI payment: ₹${(payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })} at ₹${inrRate} per $1.` : fundingMode === "funded" ? "Use one of the supported funded account tiers." : "Minimum funding amount: $5."}</FieldDescription>
+                      {amount && !isAmountValid && isPromoCompatible && <FieldError id="topup-amount-error">{appliedPromo && payableAmount < 5 ? "The promo discount must leave at least $5 to send." : fundingMode === "funded" ? "Choose one funded amount: $50, $100, $250, $500, or $1,000" : "Minimum amount is $5"}</FieldError>}
+                    </Field>
+
+                    <Field data-invalid={Boolean(promoMessage && !appliedPromo) || !isPromoCompatible}>
+                      <FieldLabel htmlFor="topup-promo-code">Promo code <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
+                      <InputGroup>
+                        <InputGroupInput id="topup-promo-code" value={promoCode} onChange={(event) => { setPromoCode(event.target.value.toUpperCase()); setAppliedPromo(null); setPromoMessage("") }} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); applyPromoCode() } }} placeholder="ENTER CODE" autoComplete="off" maxLength={32} disabled={step === "submitting" || applyingPromo} aria-invalid={Boolean(promoMessage && !appliedPromo) || !isPromoCompatible} aria-describedby="topup-promo-help topup-promo-feedback" />
+                        <InputGroupAddon align="inline-end"><InputGroupButton type="button" onClick={applyPromoCode} disabled={step === "submitting" || applyingPromo || !promoCode.trim()} variant="secondary" size="sm" aria-label="Apply promo code">{applyingPromo ? <Loader2 data-icon="inline-start" className="animate-spin" /> : "Apply"}</InputGroupButton></InputGroupAddon>
+                      </InputGroup>
+                      <FieldDescription id="topup-promo-help">Lower your payment without reducing your requested funding.</FieldDescription>
+                      <div id="topup-promo-feedback" aria-live="polite" className="flex flex-col gap-2">
+                        {promoMessage && <p className={cn("funding-promo-message", appliedPromo ? "text-primary" : "funding-error")}>{promoMessage}</p>}
+                        {appliedPromo && !isPromoCompatible && <FieldError>This INR discount requires UPI / bank transfer.</FieldError>}
+                        {appliedPromo && appliedPromo.discountType === "inr" && Number.isFinite(parsedAmount) && parsedAmount > 0 && <p className="text-sm text-primary">Promo savings: ₹{(promoDiscountAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })}</p>}
+                      </div>
+                    </Field>
+
+                    {paymentMethod === "crypto" && (
+                      <Field>
+                        <FieldLabel htmlFor="topup-network">Deposit Network <span aria-hidden="true">*</span></FieldLabel>
+                        <select id="topup-network" value={network} onChange={(event) => setNetwork(event.target.value as typeof network)} disabled={step === "submitting"} className="w-full border px-3" aria-required="true" aria-describedby="topup-network-help">
+                          <option value="ALL">All networks</option>
+                          <option value="TRC20">TRC20 (TRON)</option>
+                          <option value="BEP20">BEP20 (BSC)</option>
+                          <option value="ERC20">ERC20 (Ethereum)</option>
+                        </select>
+                        <FieldDescription id="topup-network-help">Select the USDT network used for your transfer.</FieldDescription>
+                      </Field>
+                    )}
+                  </FieldGroup>
+                </FundingSection>
+
+                <FundingPaymentInstructions paymentMethod={paymentMethod} network={network} payableAmount={payableAmount} inrRate={inrRate} inrDetails={inrDetails} inrQrDataUrl={inrQrDataUrl} inrQrExpired={inrQrExpired} inrCountdownLabel={inrCountdownLabel} selectedWalletAddress={selectedWalletAddress} loadingAddress={loadingAddress} qrLoading={qrLoading} qrDataUrl={qrDataUrl} copiedAddress={copiedAddress} onCopyAddress={copyAddress} />
 
 
-{/* Transaction proof */}
-  <div className="space-y-1">
-  <Label htmlFor="topup-txhash" className="text-xs font-semibold text-slate-700">
-  Transaction Hash / UPI Transaction ID <span className="text-red-500">*</span>
-  </Label>
-                <Input
-                  id="topup-txhash"
-                  placeholder={paymentMethod === "inr" ? "Enter UPI transaction ID / UTR number" : "0x1234567890abcdef..."}
-                  value={txHash}
-                  onChange={(e) => setTxHash(e.target.value)}
-                  className="h-9 font-mono text-xs border border-slate-200 focus:border-violet-500 rounded-lg"
-                  disabled={step === "submitting"}
-                />
+                <FundingSection number={3} title="Confirm your transfer" description="Already paid? Add your payment reference so the team can verify it.">
+                  <FieldGroup>
+                    <Field data-invalid={errorMessage === "Please enter your transaction hash" && !txHash.trim()}>
+                      <FieldLabel htmlFor="topup-txhash">Transaction Hash / UPI Transaction ID <span aria-hidden="true">*</span></FieldLabel>
+                      <Input id="topup-txhash" placeholder={paymentMethod === "inr" ? "Enter UPI transaction ID / UTR number" : "0x1234567890abcdef..."} value={txHash} onChange={(e) => setTxHash(e.target.value)} className="font-mono" disabled={step === "submitting"} aria-required="true" aria-invalid={errorMessage === "Please enter your transaction hash" && !txHash.trim()} aria-describedby="topup-reference-help" />
+                      <FieldDescription id="topup-reference-help">{paymentMethod === "inr" ? "Find the UTR or transaction ID in your UPI or banking app." : "Copy the transaction hash from your completed USDT transfer."}</FieldDescription>
+                    </Field>
+                    <Field>
+                      <FieldLabel htmlFor="topup-note">Note <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
+                      <Input id="topup-note" placeholder="Additional info for admin..." value={note} onChange={(e) => setNote(e.target.value)} disabled={step === "submitting"} />
+                    </Field>
+                  </FieldGroup>
+                </FundingSection>
               </div>
-
-              {/* Optional note */}
-              <div className="space-y-1">
-                <Label htmlFor="topup-note" className="text-xs font-semibold text-slate-700">
-                  Note <span className="text-slate-400 font-normal">(optional)</span>
-                </Label>
-                <Input
-                  id="topup-note"
-                  placeholder="Additional info for admin..."
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  className="h-9 text-sm border border-slate-200 focus:border-violet-500 rounded-lg"
-                  disabled={step === "submitting"}
-                />
-              </div>
-
-              {/* Current balance info */}
-              <div className="flex justify-between text-[10px] text-slate-500 border-t border-slate-100 pt-2">
-                <span>Current balance</span>
-                <span className="font-semibold text-slate-700">${currentBalance.toFixed(2)} USDT</span>
-              </div>
-
-              {/* Error */}
-              {errorMessage && (
-                <div className="rounded-lg p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
-                  <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {/* Submit */}
-              <Button
-                onClick={handleSubmit}
-                disabled={step === "submitting"}
-                className="w-full h-10 rounded-lg font-semibold text-sm text-white"
-                style={{
-                  background: step === "submitting" ? "#cbd5e1" : "linear-gradient(135deg, #7c3aed, #6366f1)",
-                  boxShadow: step !== "submitting" ? "0 4px 14px rgba(124,58,237,0.35)" : "none",
-                }}
-              >
-                {step === "submitting" ? (
-                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />Submitting...</>
-                ) : (
-                  <><Send className="h-4 w-4 mr-2" />Submit Request</>
-                )}
-              </Button>
+              <aside className="funding-checkout-aside" aria-label="Payment review">
+                <FundingReviewSummary currentBalance={currentBalance} parsedAmount={parsedAmount} payableAmount={payableAmount} expectedCreditAmount={expectedCreditAmount} paymentMethod={paymentMethod} network={network} inrRate={inrRate} isFundedTier={fundingMode === "funded"} promoCode={appliedPromo?.code} promoDiscountAmount={promoDiscountAmount} />
+                <PendingFundingRequests requests={pendingRequests} isLoading={loadingRequests} />
+              </aside>
             </div>
           )}
 
-          {/* SUCCESS STEP */}
           {step === "success" && (
-            <div className="py-4 text-center space-y-4">
-              <div
-                className="w-14 h-14 mx-auto rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #10b981, #059669)", boxShadow: "0 6px 18px rgba(16,185,129,0.3)" }}
-              >
-                <CheckCircle2 className="h-7 w-7 text-white" />
+            <div className="funding-success">
+              <div className="funding-success-icon"><CheckCircle2 className="size-7" aria-hidden="true" /></div>
+              <div className="flex flex-col gap-2 text-center">
+                <h3 className="text-xl font-medium text-foreground">Request Submitted!</h3>
+                <p className="text-pretty leading-relaxed text-muted-foreground">Your payment of <strong className="font-medium text-foreground">${payableAmount.toFixed(2)}{paymentMethod === "inr" ? " USD" : " USDT"}</strong> is pending review. If approved, <strong className="font-medium text-foreground">${expectedCreditAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> will be credited to your account.</p>
               </div>
-
-              <div>
-                <h3 className="text-lg font-bold text-emerald-600 mb-1">Request Submitted!</h3>
-                <p className="text-sm leading-relaxed text-slate-600">
-                  Your payment of <span className="font-bold text-slate-800">${payableAmount.toFixed(2)}{paymentMethod === "inr" ? " USD" : " USDT"}</span> is pending review. If approved, <span className="font-bold text-slate-800">${expectedCreditAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> will be credited to your account.
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-left space-y-1.5">
-                <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-slate-500">Payment due</span>
-                  <span className="font-semibold text-slate-800">${payableAmount.toFixed(2)}{paymentMethod === "inr" ? " USD" : " USDT"}</span>
-                </div>
-                {appliedPromo && <div className="flex justify-between gap-3 text-xs"><span className="text-slate-500">Promo savings</span><span className="font-semibold text-emerald-700">-${promoDiscountAmount.toFixed(2)}</span></div>}
-                <div className="flex justify-between gap-3 text-xs">
-                  <span className="text-slate-500">Expected account credit</span>
-                  <span className="font-semibold text-slate-800">${expectedCreditAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Status</span>
-                  <span className="font-semibold text-amber-600">Pending Review</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-slate-500">Processing</span>
-                  <span className="font-semibold text-slate-800">Up to 24 hours</span>
-                </div>
-              </div>
-
-              <Button
-                onClick={onClose}
-                className="w-full h-10 rounded-lg font-semibold text-sm text-white"
-style={{ background: "linear-gradient(135deg, #0f2438, #163e5c)" }}
-              >
-                Done
-              </Button>
+              <FundingReviewSummary currentBalance={currentBalance} parsedAmount={parsedAmount} payableAmount={payableAmount} expectedCreditAmount={expectedCreditAmount} paymentMethod={paymentMethod} network={network} inrRate={inrRate} isFundedTier={fundingMode === "funded"} promoCode={appliedPromo?.code} promoDiscountAmount={promoDiscountAmount} isSubmitted />
             </div>
           )}
         </div>
+        <footer className="funding-checkout-footer">
+          {errorMessage && <Alert variant="destructive" className="funding-error"><AlertCircle aria-hidden="true" /><AlertDescription>{errorMessage}</AlertDescription></Alert>}
+          {step === "success" ? <Button type="button" onClick={onClose} className="funding-primary-action w-full">Done</Button> : (
+            <div className="funding-checkout-actions">
+              <div className="funding-footer-total"><p>Payment due</p><strong>{Number.isFinite(payableAmount) && payableAmount > 0 ? paymentMethod === "inr" ? `₹${(payableAmount * inrRate).toLocaleString("en-IN", { maximumFractionDigits: 2 })} INR` : `$${payableAmount.toFixed(2)} USDT` : "—"}</strong></div>
+              <Button type="button" onClick={handleSubmit} disabled={step === "submitting"} className="funding-primary-action h-12">
+                {step === "submitting" ? <><Loader2 data-icon="inline-start" className="animate-spin" />Submitting...</> : <><Send data-icon="inline-start" />Submit Request</>}
+              </Button>
+            </div>
+          )}
+        </footer>
       </DialogContent>
     </Dialog>
   )
