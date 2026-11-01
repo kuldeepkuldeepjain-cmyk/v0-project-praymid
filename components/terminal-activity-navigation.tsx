@@ -74,7 +74,7 @@ export function TerminalActivityNavigation({
   activePanel, panelOpen, open, onOpenChange, onSelect, counts,
   onNewOrder, onPositionSizer, onResetLayout,
 }: TerminalActivityNavigationProps) {
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(true)
   const [recent, setRecent] = useState<ActivityPanelId[]>([])
   const [query, setQuery] = useState("")
   const searchRef = useRef<HTMLInputElement>(null)

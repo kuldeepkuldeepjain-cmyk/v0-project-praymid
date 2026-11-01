@@ -1608,7 +1608,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     setActivityToolsOpen(false)
     setActivityDialogOpen(true)
     setChartExpanded(false)
-    setMobileTab("chart")
+    setMobileTab(tab => tab === "account" ? tab : "chart")
   }, [])
   const orderPanelWidth = 320
 
@@ -3620,13 +3620,6 @@ const maxLeverage = 100
         </button>
       </div>
 
-      {mobileTab !== "account" && (
-        <TerminalActivityLauncher
-          onOpen={() => changeActivityToolsOpen(true)}
-          alertCount={priceAlerts.filter(alert => !alert.triggered).length + smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length}
-        />
-      )}
-
       <nav className="reference-mobile-nav" aria-label="Trading navigation">
         <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" && activePanel === "positions" ? "page" : undefined} className={mobileTab === "chart" && activePanel === "positions" ? "is-active" : ""}>
           <CandlestickChart aria-hidden="true" /><span>Trade</span>
@@ -3668,6 +3661,11 @@ const maxLeverage = 100
               <ArrowUpRight aria-hidden="true" />
             </button>
           </section>
+
+          <TerminalActivityLauncher
+            onOpen={() => changeActivityToolsOpen(true)}
+            alertCount={priceAlerts.filter(alert => !alert.triggered).length + smartAlerts.filter(alert => alert.status === "warning" || alert.status === "triggered").length}
+          />
 
           <section className="mobile-account-details" aria-label="Account details">
             <div className="mobile-account-detail">
@@ -3982,7 +3980,7 @@ const maxLeverage = 100
 	                  <button
 	                    type="button"
 	                    onClick={() => changeActivityToolsOpen(true)}
-	                    className="flex min-h-11 items-center gap-2 rounded border border-[var(--activity-muted)] bg-[var(--activity-background)] px-3 text-sm font-semibold text-[var(--activity-foreground)]"
+	                    className="hidden min-h-11 items-center gap-2 rounded border border-[var(--activity-muted)] bg-[var(--activity-background)] px-3 text-sm font-semibold text-[var(--activity-foreground)] md:flex"
 	                    aria-label="Browse workspace tools"
 	                    aria-haspopup="dialog"
 	                    aria-controls="terminal-activity-tools"
