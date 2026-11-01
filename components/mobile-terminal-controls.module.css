@@ -5,8 +5,8 @@
 .indicatorPanel {
   --popover: var(--terminal-graphite-surface, #0d1724);
   --popover-foreground: var(--terminal-graphite-text, #e5edf5);
-  --primary: var(--terminal-graphite-teal, #39bfa7);
-  --primary-foreground: var(--terminal-graphite-surface, #0d1724);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--brand-primary-foreground);
   --input: var(--terminal-graphite-border, #263b4f);
   --ring: var(--primary);
   --border: var(--input);

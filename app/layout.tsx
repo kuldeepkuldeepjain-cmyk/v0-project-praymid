@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const viewport: Viewport = {
-  themeColor: "#080c14",
+  themeColor: "#080e17",
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
@@ -79,7 +79,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Elite Fund" />
         <meta name="application-name" content="Elite Fund" />
-        <meta name="msapplication-TileColor" content="#080c14" />
+        <meta name="msapplication-TileColor" content="#080e17" />
         <meta name="msapplication-tap-highlight" content="no" />
         <link rel="icon" href="/elite-fund-logo.jpg" type="image/jpeg" />
         <link rel="apple-touch-icon" href="/elite-fund-logo.jpg" />
