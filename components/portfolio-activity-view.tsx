@@ -30,7 +30,7 @@ function SectionHeading({
   count: number
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-[#1b2b3d] px-3 py-3">
+    <div className="portfolio-section-heading flex items-center justify-between border-b border-[#1b2b3d] px-3 py-3">
       <div className="flex items-center gap-2">
         <Icon className="size-4 text-cyan-300" aria-hidden="true" />
         <h2 className="text-xs font-black uppercase tracking-[0.14em] text-slate-100">{title}</h2>
@@ -44,7 +44,7 @@ function SectionHeading({
 
 function EmptySection({ children }: { children: string }) {
   return (
-    <p className="px-3 py-5 text-center text-[11px] text-slate-500">{children}</p>
+    <p className="portfolio-empty px-3 py-5 text-center text-[11px] text-slate-500">{children}</p>
   )
 }
 
@@ -67,8 +67,8 @@ export function PortfolioActivityView({
     `$${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-3 p-3 pb-6 text-slate-100">
-      <header className="flex items-center justify-between gap-3 px-1 py-1">
+    <main className="portfolio-page mx-auto flex w-full max-w-3xl flex-col gap-3 p-3 pb-6 text-slate-100">
+      <header className="portfolio-page-header flex items-center justify-between gap-3 px-1 py-1">
         <div className="flex items-center gap-2">
           <Wallet className="size-5 text-cyan-300" aria-hidden="true" />
           <div>
@@ -89,7 +89,7 @@ export function PortfolioActivityView({
           <h2 id="wallet-overview-heading" className="text-[10px] font-black uppercase tracking-[0.14em] text-slate-300">Wallet overview</h2>
           <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-cyan-300">USD</span>
         </div>
-        <dl className="grid grid-cols-3 divide-x divide-[#1b2b3d] px-1 py-3">
+        <dl className="portfolio-wallet-metrics grid grid-cols-3 divide-x divide-[#1b2b3d] px-1 py-3">
           <div className="min-w-0 px-2">
             <dt className="truncate text-[9px] font-bold uppercase tracking-wider text-slate-500">Balance</dt>
             <dd className="mt-1 truncate font-mono text-xs font-black text-slate-100">{formatCurrency(walletBalance)}</dd>

@@ -3347,7 +3347,7 @@ const maxLeverage = 100
   ) : null
 
   return (
-    <div className={`flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
+    <div data-mobile-tab={mobileTab} className={`${mobileControlsStyles.surface} flex flex-col forex-deep-bg apple-trading-terminal terminal-live-surface reference-terminal mt5-terminal ${isDarkTheme ? "is-dark" : ""} ${isCompactViewport ? "compact-terminal" : ""} ${chartExpanded ? "is-chart-expanded" : ""} ${dockEnabled ? "is-docked" : ""} ${mobileTab === "market" && !chartExpanded ? "is-market-watch-active" : ""} ${mobileTab === "portfolio" ? "is-portfolio-active" : ""} ${mobileTab === "account" ? "is-account-active" : ""} text-slate-900`} style={{ width: "100%", position: "relative", fontFamily: "inherit", borderTop: "2px solid #2f80c9" }}>
 
       {/* ── Toast Stack ── */}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
@@ -3468,7 +3468,7 @@ const maxLeverage = 100
         <div className="mobile-terminal-brand-group">
           <a className="mobile-terminal-brand" href="/participant/dashboard" aria-label="Elite Fund home">
             <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
-            <span><strong>ELITE FUND</strong></span>
+            <span><strong>Elite Fund</strong></span>
           </a>
           <a className="mobile-terminal-home" href="/participant/dashboard" aria-label="Go to dashboard" title="Go to dashboard">
             <Home aria-hidden="true" />
@@ -3622,13 +3622,13 @@ const maxLeverage = 100
       </div>
 
       <nav className={`reference-mobile-nav ${mobileControlsStyles.dock}`} data-active-tab={mobileTab} aria-label="Trading navigation">
-        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions") }} aria-current={mobileTab === "chart" ? "page" : undefined} className={mobileTab === "chart" ? "is-active" : ""}>
+        <button type="button" onClick={() => { setMobileTab("chart"); setActivePanel("positions"); chartActionsHost?.scrollTo({ left: 0 }) }} aria-current={mobileTab === "chart" ? "page" : undefined} className={mobileTab === "chart" ? "is-active" : ""}>
           <span className={mobileControlsStyles.dockIcon}><CandlestickChart aria-hidden="true" /></span><span>Trade</span>
         </button>
         <button type="button" onClick={() => setMobileTab("market")} aria-current={mobileTab === "market" ? "page" : undefined} className={mobileTab === "market" ? "is-active" : ""}>
           <span className={mobileControlsStyles.dockIcon}><BarChart2 aria-hidden="true" /></span><span>Markets</span>
         </button>
-        <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions") }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
+        <button type="button" onClick={() => { setMobileTab("order"); setActivePanel("positions"); setRightPanelHidden(false); setChartExpanded(false) }} aria-current={mobileTab === "order" ? "page" : undefined} className={mobileTab === "order" ? "is-active" : ""} aria-label="Open order ticket">
           <span className={mobileControlsStyles.dockIcon}><ArrowUpDown aria-hidden="true" /></span><span>Order</span>
         </button>
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
@@ -3848,6 +3848,8 @@ const maxLeverage = 100
                         const hasTrade = openTrades.some(t => t.pair === p.symbol)
                         return (
                           <button key={p.symbol}
+                            type="button"
+                            aria-current={isSelected ? "true" : undefined}
                             onClick={() => { setSelectedPair(p); fetchCandles(p.symbol, timeframe); setMobileTab("chart") }}
                             className="w-full mw-row"
                             style={{
@@ -4241,7 +4243,7 @@ const maxLeverage = 100
           <div className="terminal-order-panel-header flex shrink-0 items-stretch bg-[#08101d] border-b border-[#1a2640]">
             <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
               <Zap className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white">Order Panel</div></div>
+              <div className="min-w-0"><div className="truncate text-[10px] font-black uppercase tracking-wider text-white"><span className={mobileControlsStyles.mobileTitle}>Order</span><span className={mobileControlsStyles.desktopTitle}>Order Panel</span></div></div>
             </div>
             <div className="terminal-order-view-dock" role="group" aria-label="Order panel view">
               {[{ id: "order", label: "Order", icon: Zap }, { id: "sizer", label: "Sizer", icon: Target }].map(({ id, label, icon: Icon }) => (
@@ -4334,7 +4336,7 @@ const maxLeverage = 100
                     <span className="block text-[8px] font-black tracking-wider uppercase text-emerald-300">Buy · Ask</span>
                     <span className="price-mono text-sm font-black text-white">{fmt(selectedPair.ask, selectedPair.symbol)}</span>
                   </button>
-			                  <div className="mobile-quote-spread pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
+			                  <div className="mobile-quote-spread pointer-events-none md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 rounded border border-[#243752] bg-[#0d1726] px-2 py-0.5 text-center">
 			                    <span className="price-mono text-[9px] font-black text-slate-300">{((selectedPair.spread / pip(selectedPair.symbol)) || 0).toFixed(1)}p</span>
 			                  </div>
 			                </div>
