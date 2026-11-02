@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 import { participantFetch } from '@/lib/auth'
 
@@ -81,8 +81,6 @@ export function LivePredictionMonitor({
   const isLost = (p: Prediction) => p.result === 'lost' || p.status === 'lost'
   const isRefunded = (p: Prediction) =>
     p.result === 'refunded' || p.status === 'refunded'
-  const isSettled = (p: Prediction) => !isLive(p)
-
   const filtered = predictions.filter((p) => {
     if (activeFilter === 'all')      return true
     if (activeFilter === 'live')     return isLive(p)
@@ -102,39 +100,43 @@ export function LivePredictionMonitor({
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <div className="w-10 h-10 border-4 border-slate-300 border-t-slate-600 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-sm text-slate-500">Loading trade history...</p>
+      <div className="flex flex-col items-center gap-4 py-12">
+        <div aria-hidden="true" className="size-10 animate-spin rounded-full border-4 border-[var(--terminal-graphite-border)] border-t-[var(--brand-primary)]" />
+        <p className="text-sm text-[var(--terminal-graphite-muted)]">Loading trade history...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="text-center py-12 space-y-3">
-        <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center">
-          <Clock className="h-5 w-5 text-amber-500" />
+      <div className="terminal-panel flex flex-col items-center gap-3 rounded-2xl p-8 text-center">
+        <div className="flex size-10 items-center justify-center rounded-full border border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface-2)]">
+          <Clock aria-hidden="true" className="size-5 text-[var(--brand-primary)]" />
         </div>
-        <p className="text-sm font-semibold text-slate-700">Unable to load history</p>
-        <p className="text-xs text-slate-500">Please check your connection and try again.</p>
+        <p className="text-sm font-semibold text-[var(--terminal-graphite-text)]">Unable to load history</p>
+        <p className="text-sm text-[var(--terminal-graphite-muted)]">Please check your connection and try again.</p>
       </div>
     )
   }
 
   if (predictions.length === 0) {
     return (
-      <div className="text-center py-16 text-slate-500">
-        <Clock className="w-10 h-10 mx-auto mb-3 opacity-30" />
-        <p className="font-semibold">No trade history yet</p>
-        <p className="text-sm mt-1">Place your first trade to see results here</p>
+      <div className="terminal-panel flex flex-col items-center gap-2 rounded-2xl px-5 py-12 text-center">
+        <Clock aria-hidden="true" className="mb-2 size-9 text-[var(--terminal-graphite-muted)]" />
+        <p className="font-semibold text-[var(--terminal-graphite-text)]">No trade history yet</p>
+        <p className="text-sm text-[var(--terminal-graphite-muted)]">Place your first prediction to see results here.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      {/* Filter Tabs */}
-      <div className="flex gap-1 border-b border-slate-200 overflow-x-auto">
+    <div className="flex min-w-0 flex-col gap-4">
+      <div
+        aria-label="Filter trade history"
+        className="terminal-scroll flex min-w-0 gap-1 overflow-x-auto border-b"
+        role="group"
+        style={{ borderColor: "var(--terminal-graphite-border)" }}
+      >
         {(
           [
             { key: 'all'      as const, label: 'All'      },
@@ -143,29 +145,34 @@ export function LivePredictionMonitor({
             { key: 'lost'     as const, label: 'Lost'     },
             { key: 'refunded' as const, label: 'Refunded' },
           ] as const
-        ).map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setActiveFilter(key)}
-            className={`px-3 py-2.5 whitespace-nowrap font-semibold text-sm transition-colors border-b-2 ${
-              activeFilter === key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            {label}
-            <span className="ml-1 text-xs opacity-60">({stats[key]})</span>
-          </button>
-        ))}
+        ).map(({ key, label }) => {
+          const active = activeFilter === key
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => setActiveFilter(key)}
+              aria-pressed={active}
+              className="min-h-11 shrink-0 whitespace-nowrap border-b-2 px-3 py-2 font-semibold text-sm transition-colors"
+              style={{
+                borderColor: active ? "var(--brand-primary)" : "transparent",
+                color: active ? "var(--brand-primary)" : "var(--terminal-graphite-muted)",
+              }}
+            >
+              {label}
+              <span className="ml-1 text-xs opacity-70">({stats[key]})</span>
+            </button>
+          )
+        })}
       </div>
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="text-center py-10 text-slate-500">
-          <p className="text-sm">No {activeFilter === 'all' ? '' : activeFilter + ' '}trades found</p>
+        <div className="rounded-xl border border-dashed px-5 py-10 text-center" style={{ borderColor: "var(--terminal-graphite-border)" }}>
+          <p className="text-sm text-[var(--terminal-graphite-muted)]">No {activeFilter === 'all' ? '' : activeFilter + ' '}trades found</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {filtered.map((prediction) => {
             const amount      = Number(prediction.amount)
             const entryPrice  = Number(prediction.entry_price)
@@ -189,6 +196,21 @@ export function LivePredictionMonitor({
               : (targetPrice ?? entryPrice)
 
             const pricePrecision = getPricePrecision(entryPrice)
+            const outcomeColor = won
+              ? "var(--terminal-graphite-positive)"
+              : lost
+                ? "var(--terminal-graphite-negative)"
+                : refunded
+                  ? "var(--terminal-graphite-warning)"
+                  : "var(--brand-primary)"
+            const directionColor = prediction.prediction_type === "up"
+              ? "var(--terminal-graphite-positive)"
+              : "var(--terminal-graphite-negative)"
+            const resultLabel = live
+              ? "Pending"
+              : profitLoss === null
+                ? `+$${amount.toFixed(2)}`
+                : `${profitLoss > 0 ? "+" : profitLoss < 0 ? "−" : ""}$${Math.abs(profitLoss).toFixed(2)}`
 
             // Closed date — prefer closed_at, fall back to expiry_at
             const closedDate = prediction.closed_at
@@ -198,116 +220,83 @@ export function LivePredictionMonitor({
             return (
               <Card
                 key={prediction.id}
-                className={`overflow-hidden border ${
-                  won      ? 'border-green-200' :
-                  lost     ? 'border-red-200'   :
-                  refunded ? 'border-amber-200' :
-                             'border-slate-200'
-                }`}
+                className="terminal-panel gap-0 overflow-hidden rounded-2xl p-0 shadow-none"
+                style={{ borderColor: outcomeColor }}
               >
-                {/* Coloured top stripe */}
-                <div
-                  className={`h-1 w-full ${
-                    won      ? 'bg-green-500'  :
-                    lost     ? 'bg-red-500'    :
-                    refunded ? 'bg-amber-500'  :
-                               'bg-blue-500'
-                  }`}
-                />
-
-                <div className="p-4 space-y-3">
-                  {/* Row 1: pair + direction + status badge */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div
-                        className={`p-1.5 rounded ${
-                          prediction.prediction_type === 'up' ? 'bg-green-100' : 'bg-red-100'
-                        }`}
-                      >
-                        {prediction.prediction_type === 'up' ? (
-                          <TrendingUp className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <TrendingDown className="h-4 w-4 text-red-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm">{prediction.crypto_pair}</p>
-                        <p className="text-xs text-slate-500 capitalize">
-                          {prediction.prediction_type === 'up' ? 'UP' : 'DOWN'} &middot; ${amount.toFixed(2)} bet
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Status badge */}
-                    {live ? (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                        <Clock className="h-3 w-3" />
-                        {countdown}
-                      </span>
-                    ) : won ? (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
-                        <CheckCircle className="h-3 w-3" />
-                        Won
-                      </span>
-                    ) : lost ? (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
-                        <XCircle className="h-3 w-3" />
-                        Lost
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">
-                        <RotateCcw className="h-3 w-3" />
-                        Refunded
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Row 2: price grid */}
-                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100">
-                    <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Entry Price</p>
-                      <p className="text-sm font-bold text-slate-800">
-                        ${entryPrice.toFixed(pricePrecision)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">
-                        {live ? 'Current Price' : 'Final Price'}
-                      </p>
-                      <p className="text-sm font-bold text-slate-800">
-                        ${displayPrice.toFixed(pricePrecision)}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-slate-400 uppercase font-semibold mb-0.5">Result</p>
-                      {live ? (
-                        <p className="text-sm font-bold text-slate-500">Pending</p>
-                      ) : profitLoss != null ? (
-                        <p
-                          className={`text-sm font-bold ${
-                            profitLoss > 0 ? 'text-green-600' :
-                            profitLoss < 0 ? 'text-red-600'  :
-                            'text-amber-600'
-                          }`}
-                        >
-                          {profitLoss > 0 ? '+' : profitLoss === 0 ? '' : '-'}
-                          ${Math.abs(profitLoss).toFixed(2)}
-                        </p>
+                <div aria-hidden="true" className="h-1 w-full" style={{ backgroundColor: outcomeColor }} />
+                <CardHeader className="flex flex-row items-center justify-between gap-3 px-4 py-4 sm:px-5">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div
+                      className="flex size-10 shrink-0 items-center justify-center rounded-xl border"
+                      style={{
+                        borderColor: `color-mix(in srgb, ${directionColor} 35%, var(--terminal-graphite-border))`,
+                        backgroundColor: `color-mix(in srgb, ${directionColor} 12%, var(--terminal-graphite-surface))`,
+                      }}
+                    >
+                      {prediction.prediction_type === 'up' ? (
+                        <TrendingUp aria-hidden="true" className="size-5" style={{ color: directionColor }} />
                       ) : (
-                        <p className="text-sm font-bold text-amber-600">+${amount.toFixed(2)}</p>
+                        <TrendingDown aria-hidden="true" className="size-5" style={{ color: directionColor }} />
                       )}
                     </div>
+                    <div className="min-w-0">
+                      <CardTitle className="truncate text-sm font-bold text-[var(--terminal-graphite-text)] sm:text-base">{prediction.crypto_pair}</CardTitle>
+                      <CardDescription className="mt-1 text-sm text-[var(--terminal-graphite-muted)]">
+                        {prediction.prediction_type === 'up' ? 'UP' : 'DOWN'} · ${amount.toFixed(2)} stake
+                      </CardDescription>
+                    </div>
                   </div>
 
-                  {/* Row 3: timestamp */}
-                  <p className="text-[11px] text-slate-400 flex items-center gap-1 pt-1 border-t border-slate-100">
-                    <Clock className="h-3 w-3" />
+                  <span
+                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold"
+                    style={{
+                      borderColor: `color-mix(in srgb, ${outcomeColor} 40%, var(--terminal-graphite-border))`,
+                      backgroundColor: `color-mix(in srgb, ${outcomeColor} 12%, var(--terminal-graphite-surface))`,
+                      color: outcomeColor,
+                    }}
+                  >
+                    {live ? <Clock aria-hidden="true" className="size-3.5" />
+                      : won ? <CheckCircle aria-hidden="true" className="size-3.5" />
+                      : lost ? <XCircle aria-hidden="true" className="size-3.5" />
+                      : <RotateCcw aria-hidden="true" className="size-3.5" />}
+                    {live ? countdown : won ? 'Won' : lost ? 'Lost' : 'Refunded'}
+                  </span>
+                </CardHeader>
+
+                <CardContent className="px-4 pb-4 sm:px-5">
+                  <div
+                    className="grid grid-cols-3 gap-2 border-t pt-3"
+                    style={{ borderColor: "var(--terminal-graphite-border)" }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[var(--terminal-graphite-muted)]">Entry</p>
+                      <p className="price-mono mt-1 truncate text-sm font-semibold text-[var(--terminal-graphite-text)]">${entryPrice.toFixed(pricePrecision)}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium text-[var(--terminal-graphite-muted)]">{live ? 'Current' : 'Final'}</p>
+                      <p className="price-mono mt-1 truncate text-sm font-semibold text-[var(--terminal-graphite-text)]">${displayPrice.toFixed(pricePrecision)}</p>
+                    </div>
+                    <div className="min-w-0 text-right">
+                      <p className="text-xs font-medium text-[var(--terminal-graphite-muted)]">Result</p>
+                      <p className="price-mono mt-1 truncate text-sm font-semibold" style={{ color: live ? "var(--terminal-graphite-muted)" : outcomeColor }}>
+                        {resultLabel}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+
+                <CardFooter
+                  className="min-w-0 gap-2 border-t px-4 py-3 text-xs text-[var(--terminal-graphite-muted)] sm:px-5"
+                  style={{ borderColor: "var(--terminal-graphite-border)" }}
+                >
+                  <Clock aria-hidden="true" className="size-3.5 shrink-0" />
+                  <span className="min-w-0 break-words">
                     {live
                       ? `Placed ${new Date(prediction.created_at).toLocaleString()}`
                       : `Settled ${closedDate}`
                     }
-                  </p>
-                </div>
+                  </span>
+                </CardFooter>
               </Card>
             )
           })}

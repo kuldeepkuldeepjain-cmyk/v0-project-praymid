@@ -46,6 +46,15 @@ interface TopupRequest {
   promo_bonus_amount: number | string | null
 }
 
+function isInrChallengePayment(request: Pick<TopupRequest, "payment_method" | "admin_notes">) {
+  return request.payment_method === "challenge" && /(?:^|; )payment_currency=INR(?:;|$)/.test(request.admin_notes || "")
+}
+
+function getChallengeInrAmount(adminNotes: string | null) {
+  const amount = Number(/(?:^|; )inr_amount=([0-9.]+)(?:;|$)/.exec(adminNotes || "")?.[1])
+  return Number.isFinite(amount) && amount > 0 ? amount : null
+}
+
 const STATUS_CONFIG = {
   pending:   { label: "Pending",   bg: "bg-amber-100",  text: "text-amber-800",  border: "border-amber-300",  icon: Clock },
   completed: { label: "Approved",  bg: "bg-green-100",  text: "text-green-800",  border: "border-green-300",  icon: CheckCircle2 },
@@ -474,14 +483,16 @@ export function TopUpRequestsPanel() {
                   {[
                     { label: "Participant", value: selectedRequest.participant_email },
                     { label: "Request type", value: selectedRequest.payment_method === "challenge" ? "Challenge evaluation fee" : "Wallet top-up" },
-                    { label: "Payment amount", value: `$${Number(selectedRequest.amount).toFixed(2)} ${["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "USD (UPI)" : "USDT"}` },
+                    { label: "Payment amount", value: isInrChallengePayment(selectedRequest) && getChallengeInrAmount(selectedRequest.admin_notes) !== null
+                      ? `$${Number(selectedRequest.amount).toFixed(2)} USDT fee · ₹${getChallengeInrAmount(selectedRequest.admin_notes)!.toLocaleString("en-IN", { maximumFractionDigits: 2 })} UPI`
+                      : `$${Number(selectedRequest.amount).toFixed(2)} ${["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "USD (UPI)" : "USDT"}` },
                     ...(selectedRequest.promo_code && Number(selectedRequest.promo_bonus_amount) > 0 ? [
                       { label: "Promo code", value: selectedRequest.promo_code },
                       { label: "Promo savings", value: `$${Number(selectedRequest.promo_bonus_amount).toFixed(2)}` },
                       { label: "Funding requested", value: `$${(Number(selectedRequest.amount) + Number(selectedRequest.promo_bonus_amount)).toFixed(2)}` },
                     ] : []),
                     { label: "Submitted", value: new Date(selectedRequest.created_at).toLocaleString() },
-                    { label: "Payment Method", value: ["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "EliteFund UPI" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
+                    { label: "Payment Method", value: isInrChallengePayment(selectedRequest) ? "UPI (INR)" : ["inr_bank", "upi"].includes(selectedRequest.payment_method) ? "EliteFund UPI" : selectedRequest.payment_method === "funded_tier" ? "Funded-tier payment" : "Crypto" },
                     ...(selectedRequest.reviewed_at ? [
                       { label: "Reviewed At", value: new Date(selectedRequest.reviewed_at).toLocaleString() },
                       { label: "Reviewed By", value: selectedRequest.reviewed_by_email || "—" },
@@ -499,12 +510,12 @@ export function TopUpRequestsPanel() {
 
                 {/* Transaction Hash */}
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-slate-400">Transaction Hash</Label>
+                  <Label className="text-sm text-slate-400">{isInrChallengePayment(selectedRequest) ? "UPI transaction reference (UTR)" : "Transaction Hash"}</Label>
                   <div className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5">
                     <code className="flex-1 text-xs text-slate-300 font-mono break-all">
                       {selectedRequest.transaction_id || "Not provided"}
                     </code>
-                    {selectedRequest.transaction_id && (
+                    {selectedRequest.transaction_id && !isInrChallengePayment(selectedRequest) && (
                       <a
                         href={`https://bscscan.com/tx/${selectedRequest.transaction_id}`}
                         target="_blank"
