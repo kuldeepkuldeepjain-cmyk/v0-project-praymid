@@ -3474,7 +3474,7 @@ const maxLeverage = 100
             <Home aria-hidden="true" />
           </a>
         </div>
-        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar?.()} aria-label="Open account menu" aria-expanded={onOpenSidebar ? accountMenuOpen : undefined} aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
+        <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar ? onOpenSidebar() : setMobileTab("account")} aria-label="Open account menu" aria-expanded={onOpenSidebar ? accountMenuOpen : undefined} aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
           <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" />
           <span><strong className="text-xs font-bold text-white">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></span>
           <ChevronDown className="h-3 w-3 text-slate-400" aria-hidden="true" />

@@ -324,6 +324,7 @@
     --phone-accent: var(--terminal-graphite-teal);
     --phone-negative: var(--terminal-graphite-negative);
     --phone-dock-height: calc(76px + env(safe-area-inset-bottom, 0px));
+    --phone-section-radius: 16px;
     --market-watch-background: var(--phone-background);
     --market-watch-surface: var(--phone-surface);
     --market-watch-foreground: var(--phone-foreground);
@@ -559,6 +560,17 @@
       display: none !important;
     }
 
+    & :global(.terminal-trade-scroll),
+    & :global(#market-watch-instruments),
+    & :global(.apple-terminal-order > .terminal-scroll),
+    & :global(.mobile-portfolio-view),
+    & :global(.mobile-account-page) {
+      min-height: 0 !important;
+      overflow-x: hidden !important;
+      scroll-padding-block: 16px;
+      scrollbar-gutter: stable;
+    }
+
     & :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock) {
       flex: 0 0 auto;
       min-height: 56px;
@@ -573,17 +585,19 @@
 
     & :global(.terminal-market-dock-primary-row) {
       display: flex !important;
+      flex-wrap: wrap !important;
       align-items: center;
-      gap: 8px !important;
+      gap: 0 !important;
       width: 100%;
       padding: 0 !important;
       border: 0 !important;
     }
 
     & :global(.terminal-market-dock-quote) {
-      flex: 0 0 auto !important;
-      width: auto !important;
-      min-width: 104px !important;
+      flex: 0 0 100% !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100%;
       padding: 0 !important;
       overflow: visible !important;
       border: 0 !important;
@@ -602,9 +616,9 @@
     }
 
     & :global(.terminal-market-dock-tools) {
-      flex: 1 1 0% !important;
+      flex: 1 0 100% !important;
       min-width: 0 !important;
-      width: auto !important;
+      width: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
@@ -614,8 +628,22 @@
       display: none !important;
     }
 
+    & :global(.terminal-chart-market-actions > button[aria-label="Expand chart"]),
+    & :global(.terminal-chart-market-actions > button[aria-label="Exit expanded chart"]) {
+      justify-content: center;
+      width: 44px;
+      padding-inline: 0 !important;
+      font-size: 0 !important;
+    }
+
+    & :global(.terminal-chart-market-actions > button:not([aria-haspopup]) svg) {
+      width: 18px;
+      height: 18px;
+    }
+
     & :global(.terminal-chart-market-actions) {
       flex: 1 1 0% !important;
+      gap: 4px !important;
       justify-content: flex-start !important;
       min-width: 0;
       max-width: 100%;
@@ -638,7 +666,7 @@
     & :global(.terminal-chart-market-actions) .indicatorTrigger.indicatorTrigger {
       min-height: 44px !important;
       height: 44px !important;
-      padding-inline: 10px !important;
+      padding-inline: 0 !important;
       border: 0 !important;
       border-radius: 0 !important;
       background: transparent !important;
@@ -667,6 +695,11 @@
     }
 
     & :global(.chart-timeframe-toolbar) {
+      display: flex;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scrollbar-width: none;
       gap: 4px !important;
       padding: 8px 12px !important;
       border: 0 !important;
@@ -802,6 +835,21 @@
 
     & :global(.mw-row > div) {
       grid-template-columns: minmax(0, 1fr) 86px 64px !important;
+      align-items: center;
+    }
+
+    & :global(.mw-row > div > div) {
+      min-width: 0;
+    }
+
+    & :global(.mw-row .price-mono) {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    & :global(.mw-row > div > div:first-child > div:last-child > div:first-child) {
+      flex-wrap: wrap;
+      row-gap: 2px;
     }
 
     & :global(.mw-row .mw-badge) {
@@ -975,6 +1023,17 @@
       background: transparent !important;
       color: var(--phone-foreground) !important;
       box-shadow: none !important;
+    }
+
+    & :global(.mobile-order-volume),
+    & :global(.mobile-order-risk),
+    & :global(.mobile-order-pending),
+    & :global(.mobile-order-metrics) {
+      padding: 16px !important;
+      border: 1px solid var(--phone-border) !important;
+      border-radius: var(--phone-section-radius) !important;
+      background: var(--phone-panel) !important;
+      color: var(--phone-foreground) !important;
     }
 
     & :global(.mobile-order-ticket-banner) {
@@ -1287,6 +1346,14 @@
       box-shadow: none !important;
     }
 
+    & :global(.portfolio-page > section:first-of-type) {
+      padding: 16px;
+      border: 1px solid var(--phone-border) !important;
+      border-radius: var(--phone-section-radius) !important;
+      background: var(--phone-panel) !important;
+      color: var(--phone-foreground) !important;
+    }
+
     & :global(.portfolio-page > section:first-of-type > div:first-child) {
       padding: 0;
       border: 0 !important;
@@ -1342,9 +1409,14 @@
       font-variant-numeric: tabular-nums;
     }
 
+    & :global(.portfolio-wallet-metrics dd) {
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
     & :global(.portfolio-wallet-metrics > div:first-child dd) {
       margin: 0;
-      font-size: 34px;
+      font-size: clamp(24px, 8vw, 34px);
       font-weight: 600;
       line-height: 1.25;
       letter-spacing: -.055em;
@@ -1439,7 +1511,19 @@
     }
 
     & :global(.mobile-account-page-header) {
+      flex-wrap: wrap;
+      align-items: center;
       gap: 8px;
+    }
+
+    & :global(.mobile-account-profile-copy),
+    & :global(.mobile-account-settings > span),
+    & :global(.mobile-account-detail) {
+      min-width: 0;
+    }
+
+    & :global(.mobile-account-settings small) {
+      white-space: normal;
     }
 
     & :global(.mobile-account-eyebrow),
@@ -1525,7 +1609,13 @@
 
     & :global(.mobile-account-details) {
       order: 2;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 20px 12px;
+      padding: 16px;
+      border: 1px solid var(--phone-border);
+      border-radius: var(--phone-section-radius);
+      background: var(--phone-panel);
+      color: var(--phone-foreground);
     }
 
     & :global(.mobile-account-detail) {
@@ -1562,8 +1652,9 @@
 
     & :global(.mobile-account-balance strong) {
       overflow: visible;
+      overflow-wrap: anywhere;
       color: var(--phone-foreground);
-      font-size: 34px;
+      font-size: clamp(24px, 8vw, 34px);
       font-weight: 600;
       line-height: 1.25;
       letter-spacing: -.055em;
@@ -1698,7 +1789,8 @@
       inset-inline: 0;
       bottom: 0;
       width: 100%;
-      min-height: var(--phone-dock-height);
+      height: var(--phone-dock-height) !important;
+      min-height: var(--phone-dock-height) !important;
       border: 0 !important;
       border-radius: 0 !important;
       background: var(--phone-background) !important;
@@ -1707,7 +1799,21 @@
     }
 
     & .dock::before {
-      display: none;
+      display: block;
+      top: 8px;
+      bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+      border: 0;
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--phone-accent) 10%, var(--phone-panel));
+    }
+
+    & .dock.dock > button[aria-current="page"] {
+      color: var(--phone-accent) !important;
+    }
+
+    & .dock > button[aria-current="page"] .dockIcon {
+      animation: none;
+      transform: none;
     }
 
     /* Keep desktop colors while leaving mobile content on a continuous surface. */
@@ -1761,7 +1867,8 @@
     }
 
     & :global(.mobile-order-ticket-banner > div:last-child) {
-      flex: 1 0 auto;
+      flex: 1 0 100%;
+      min-width: 0;
       flex-direction: row;
       flex-wrap: wrap;
       justify-content: space-between;
@@ -1869,7 +1976,10 @@
 @media (max-width: 359px) {
   .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal) {
     & :global(.apple-market-table-head),
-    & :global(.mw-row > div) { grid-template-columns: minmax(0, 1fr) 76px 52px !important; }
+    & :global(.mw-row > div) {
+      grid-template-columns: minmax(0, 1fr) 76px 60px !important;
+      column-gap: 8px !important;
+    }
     & :global(.mw-row),
     & :global(.apple-market-table-head) { padding-inline: 12px !important; }
     & :global(.mw-row > div > div:first-child) { gap: 6px !important; }
