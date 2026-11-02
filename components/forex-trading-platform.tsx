@@ -3521,7 +3521,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═�����═������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════���������═���═�����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3937,6 +3937,28 @@ const maxLeverage = 100
               <div className="terminal-market-dock-primary-row flex flex-wrap items-center justify-between gap-2">
                 {/* Symbol & Price Group */}
                 <div className="terminal-market-dock-quote flex items-center gap-2.5 min-w-0">
+		                  {chartExpanded && isCompactViewport && (
+		                    <label className={`terminal-expanded-instrument-picker ${mobileControlsStyles.expandedInstrumentPicker}`}>
+		                      <span aria-hidden="true">{selectedPair.symbol}</span>
+		                      <ChevronDown aria-hidden="true" />
+		                      <select
+		                        aria-label="Choose chart instrument"
+		                        value={selectedPair.symbol}
+		                        onChange={event => {
+		                          const match = pairsRef.current.find(pair => pair.symbol === event.currentTarget.value)
+		                          if (!match) return
+		                          setSelectedPair({ ...match, candles: candleCache[`${match.symbol}|${timeframe}`] ?? [] })
+		                          void fetchCandles(match.symbol, timeframe)
+		                        }}
+		                      >
+		                        {pairs.map(pair => (
+		                          <option key={pair.symbol} value={pair.symbol}>
+		                            {pair.symbol} — {FULL_NAMES[pair.symbol] ?? pair.symbol}
+		                          </option>
+		                        ))}
+		                      </select>
+		                    </label>
+		                  )}
 	                  <button type="button" onClick={() => setMobileTab("market")} className="chart-symbol-switch flex items-center gap-1.5 text-sm font-black text-white tracking-wider hover:text-cyan-300 transition-colors" aria-label={`${selectedPair.symbol} selected. Open instrument list`}>
 	                    <AssetLogo symbol={selectedPair.symbol} size={20} className="shrink-0" />
 	                    <span>{selectedPair.symbol}</span>
@@ -3946,10 +3968,10 @@ const maxLeverage = 100
                     const cat = PAIRS_CONFIG.find(c => c.symbol === selectedPair.symbol)?.category
                     if (!cat || cat === "Forex") return null
                     const cc = CATEGORY_COLOR[cat]
-                    return <span className="text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{cat}</span>
+                    return <span className="terminal-market-dock-category text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rounded" style={{ background: cc.bg, color: cc.text, border: `1px solid ${cc.border}` }}>{cat}</span>
                   })()}
-                  <span className="price-mono text-sm font-black" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
-                  <span className="price-mono text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: isUp ? "#10b981" : "#ef4444", background: isUp ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
+                  <span className="terminal-market-dock-quote-price price-mono text-sm font-black" style={{ color: isUp ? "#10b981" : "#ef4444" }}>{fmt(selectedPair.bid, selectedPair.symbol)}</span>
+                  <span className="terminal-market-dock-quote-change price-mono text-xs font-bold px-1.5 py-0.5 rounded" style={{ color: isUp ? "#10b981" : "#ef4444", background: isUp ? "rgba(16,185,129,0.12)" : "rgba(239,68,68,0.12)" }}>{isUp ? "+" : ""}{(selectedPair.change ?? 0).toFixed(2)}%</span>
                 </div>
 
 	                {/* Key Quote Metrics (Compact & Non-duplicated) */}
@@ -5132,7 +5154,7 @@ const maxLeverage = 100
         <span>{utcClock} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──����────���───��──────���────────────────────���────── */}
+      {/* ── Trade Confirmation Modal ──����────�����───��──────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"

@@ -851,7 +851,7 @@ export function TradingChart({
   const subPaneLabel = chartPane !== "none" && indicators[chartPane] ? chartPane.toUpperCase() : null
 
   return (
-    <div className="apple-trading-chart terminal-chart-surface flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
+    <div className="apple-trading-chart terminal-chart-surface relative flex min-h-0 min-w-0 w-full h-full flex-col overflow-hidden select-none" style={{ background: "#0d1724" }}>
 
       {actionsHost && createPortal(
         <>
@@ -1161,7 +1161,7 @@ export function TradingChart({
 
         {isExpanded && onQuickTrade && !isLoading && (
           <div
-            className="absolute bottom-3 left-1/2 z-30 flex w-[min(280px,calc(100%-20px))] -translate-x-1/2 items-stretch gap-1.5 rounded-lg p-1.5"
+            className={`${mobileControlsStyles.expandedQuickTradeDock} absolute bottom-3 left-1/2 z-30 flex w-[min(280px,calc(100%-20px))] -translate-x-1/2 items-stretch gap-1.5 rounded-lg p-1.5`}
             style={{
               background: "rgba(4,8,15,0.92)",
               border: "1px solid rgba(148,163,184,0.2)",
@@ -1172,7 +1172,7 @@ export function TradingChart({
             <button
               type="button"
               onClick={() => onQuickTrade("SELL")}
-              className="reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 transition-transform hover:-translate-y-0.5 active:translate-y-0"
+              className={`${mobileControlsStyles.expandedQuickTradeSell} reference-quick-trade reference-quick-trade-sell btn-3d-execute-sell flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 transition-transform hover:-translate-y-0.5 active:translate-y-0`}
               aria-label={`Sell ${safeSymbol} at ${sellPrice !== undefined ? fmtP(sellPrice) : "market price"}`}
             >
               <span className="relative z-10 flex items-center gap-1.5 text-[10px] font-black tracking-[0.12em]">SELL</span>
@@ -1181,7 +1181,7 @@ export function TradingChart({
             <button
               type="button"
               onClick={() => onQuickTrade("BUY")}
-              className="reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 transition-transform hover:-translate-y-0.5 active:translate-y-0"
+              className={`${mobileControlsStyles.expandedQuickTradeBuy} reference-quick-trade reference-quick-trade-buy btn-3d-execute-buy flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-md px-2 py-2 transition-transform hover:-translate-y-0.5 active:translate-y-0`}
               aria-label={`Buy ${safeSymbol} at ${buyPrice !== undefined ? fmtP(buyPrice) : "market price"}`}
             >
               <span className="relative z-10 flex items-center gap-1.5 text-[10px] font-black tracking-[0.12em]">BUY</span>
