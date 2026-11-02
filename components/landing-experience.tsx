@@ -22,21 +22,25 @@ const features = [
     icon: CandlestickChart,
     title: "Read the market",
     description: "Bring supported instruments and chart context into one focused trading workspace.",
+    detail: "Switch between Forex, metals, and digital instruments in the preview above to explore the layout before you register.",
   },
   {
     icon: Shield,
     title: "Define risk first",
     description: "Review size, stop-loss, take-profit, and account limits before an order is placed.",
+    detail: "Try the Challenge planner below. Each account size shows the profit target, daily loss reference, and maximum drawdown in dollars.",
   },
   {
     icon: BarChart2,
     title: "See your exposure",
     description: "Keep positions, margin, and account activity visible while you manage a trade.",
+    detail: "Review margin and open positions together, then use your account history to understand how each decision affects your exposure.",
   },
   {
     icon: Users,
     title: "Build consistency",
     description: "Use clear records and support resources to review decisions over time.",
+    detail: "Follow your trading activity and evaluation rules over time. A repeatable process matters more than any individual result.",
   },
 ]
 
@@ -103,9 +107,7 @@ export default function LandingExperience() {
 
       <main id="main-content">
         <section id="platform" className="elite-hero relative isolate overflow-hidden">
-          <div className="elite-hero-art" aria-hidden="true" />
-          <div className="elite-hero-scrim" aria-hidden="true" />
-          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 sm:gap-12 sm:px-8 sm:py-20 lg:min-h-[690px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-24">
+          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:gap-12 sm:px-8 sm:py-20 lg:min-h-[620px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-20">
             <div className="elite-hero-copy max-w-2xl">
               <p className="elite-eyebrow mb-5 inline-flex items-center gap-2.5">
                 <span className="elite-eyebrow-dot" aria-hidden="true" />
@@ -146,12 +148,16 @@ export default function LandingExperience() {
               </p>
             </div>
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map(({ icon: Icon, title, description }) => (
-                <article key={title} className="elite-feature-card">
-                  <div className="elite-feature-icon"><Icon aria-hidden="true" /></div>
-                  <h3 className="mt-6 text-lg font-semibold">{title}</h3>
-                  <p className="elite-copy mt-2 text-sm">{description}</p>
-                </article>
+              {features.map(({ icon: Icon, title, description, detail }, index) => (
+                <details key={title} className="elite-feature-card elite-interactive-tile" style={{ animationDelay: `${index * 80}ms` }}>
+                  <summary>
+                    <span className="elite-tile-top"><span className="elite-feature-icon"><Icon aria-hidden="true" /></span><span className="elite-tile-toggle" aria-hidden="true">+</span></span>
+                    <h3 className="mt-6 text-lg font-semibold">{title}</h3>
+                    <span className="elite-copy mt-2 block text-sm">{description}</span>
+                    <span className="elite-tile-prompt">Explore this tool <ArrowRight className="size-4" aria-hidden="true" /></span>
+                  </summary>
+                  <p className="elite-tile-detail">{detail}</p>
+                </details>
               ))}
             </div>
           </div>

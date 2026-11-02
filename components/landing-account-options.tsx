@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Check, Gauge, Shield } from "lucide-react"
 import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
@@ -40,6 +43,8 @@ const currency = new Intl.NumberFormat("en-US", {
 })
 
 export function LandingAccountOptions() {
+  const [selectedBalance, setSelectedBalance] = useState(25_000)
+  const selectedTier = fundedAccountTiers.find((tier) => tier.balance === selectedBalance) ?? fundedAccountTiers[2]
   const challengeRules = DEFAULT_CHALLENGE_PLANS[0]
 
   return (
@@ -130,11 +135,16 @@ export function LandingAccountOptions() {
             </p>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <p className="elite-copy mt-5 text-sm">Tap a tile to compare your starting point.</p>
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5" role="group" aria-label="Compare funded account sizes">
             {fundedAccountTiers.map((tier, index) => (
-              <article
+              <button
+                type="button"
                 key={tier.balance}
                 className="elite-funded-tier last:col-span-2 lg:last:col-span-1"
+                aria-pressed={selectedBalance === tier.balance}
+                aria-label={`Compare ${currency.format(tier.balance)} funded account`}
+                onClick={() => setSelectedBalance(tier.balance)}
                 style={{ animationDelay: `${index * 85}ms` }}
               >
                 <span className="elite-funded-tier-label">Funded capacity</span>
@@ -143,8 +153,12 @@ export function LandingAccountOptions() {
                   <span>Program fee</span>
                   <strong>{currency.format(tier.fee)}</strong>
                 </div>
-              </article>
+              </button>
             ))}
+          </div>
+          <div className="elite-selected-account mt-4">
+            <p aria-live="polite" aria-atomic="true"><strong>{currency.format(selectedTier.balance)} capacity</strong><span>{currency.format(selectedTier.fee)} program fee · Eligibility and terms apply</span></p>
+            <Link href="/participant/register" className="elite-inline-link">Review account <ArrowRight aria-hidden="true" /></Link>
           </div>
 
           <div className="elite-funded-details-heading mt-8">

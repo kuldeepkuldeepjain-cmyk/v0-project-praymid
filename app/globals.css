@@ -934,11 +934,14 @@ button, a, [role="button"] {
 
 /* Elite Fund landing page — graphite, ivory, muted gold, and restrained green. */
 .elite-landing {
-  --elite-bg: #0b1015;
-  --elite-text: #f3f0e8;
-  --elite-muted: #a8b0b5;
-  --elite-brand: #d6b66b;
-  --elite-positive: #79c89d;
+  --elite-bg: #f5f9fd;
+  --elite-surface: #ffffff;
+  --elite-text: #122234;
+  --elite-muted: #526579;
+  --elite-brand: var(--brand-primary);
+  --elite-ink: color-mix(in srgb, var(--elite-brand) 48%, var(--elite-text));
+  --elite-positive: var(--elite-ink);
+  color-scheme: light;
   --font-sans: var(--font-inter);
   min-height: 100vh;
   background: var(--elite-bg);
@@ -1030,7 +1033,7 @@ button, a, [role="button"] {
 .elite-landing .elite-button:hover { transform: translateY(-2px); }
 .elite-landing .elite-button-primary {
   background: var(--elite-brand);
-  color: var(--elite-bg);
+  color: var(--elite-text);
 }
 .elite-landing .elite-button-primary:hover { background: color-mix(in srgb, var(--elite-brand) 88%, var(--elite-text)); }
 .elite-landing .elite-button-secondary {
@@ -1074,8 +1077,8 @@ button, a, [role="button"] {
   border-radius: 999px;
   background: var(--elite-brand);
   padding: 0.6rem 1rem;
-  color: var(--elite-bg);
-  font-size: 0.82rem;
+  color: var(--elite-text);
+  font-size: 0.875rem;
   font-weight: 700;
   transition: background-color 160ms ease;
 }
@@ -1094,7 +1097,7 @@ button, a, [role="button"] {
 }
 .elite-landing .elite-menu-button svg { width: 1.1rem; height: 1.1rem; }
 .elite-landing .elite-mobile-navigation {
-  display: flex;
+  display: none;
   flex-direction: column;
   gap: 0.15rem;
   border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent);
@@ -1172,7 +1175,7 @@ button, a, [role="button"] {
 .elite-landing .elite-plan-options button.is-selected {
   border-color: var(--elite-brand);
   background: var(--elite-brand);
-  color: var(--elite-bg);
+  color: var(--elite-text);
 }
 .elite-landing .elite-market-row {
   display: flex;
@@ -1354,6 +1357,88 @@ button, a, [role="button"] {
   .elite-landing .elite-button,
   .elite-landing .elite-funded-tier,
   .elite-landing .elite-workspace-visual img { animation: none; transition: none; }
+}
+
+:root:has(.elite-landing) { background: var(--elite-bg, #f5f9fd); scroll-behavior: smooth; scroll-padding-top: 5rem; }
+.elite-landing .elite-brand-text { color: var(--elite-ink); }
+.elite-landing .elite-eyebrow { color: var(--elite-ink); font-size: 0.875rem; letter-spacing: 0.09em; }
+.elite-landing .elite-header { background: color-mix(in srgb, var(--elite-surface) 94%, transparent); }
+.elite-landing .elite-header nav { gap: 1rem; }
+.elite-landing .elite-header nav > .hidden.items-center { gap: 1rem; }
+.elite-landing .elite-nav-link, .elite-landing .elite-header-login { font-size: 0.875rem; }
+.elite-landing .elite-header-login { display: inline-flex; min-height: 44px; align-items: center; }
+.elite-landing .elite-hero { min-height: 0; }
+.elite-landing .elite-display { font-weight: 600; line-height: 1.08; letter-spacing: -0.06em; }
+.elite-landing .elite-hero-trust { color: var(--elite-muted); }
+.elite-landing .elite-button { border-radius: 0.85rem; min-height: 52px; }
+.elite-landing .elite-button-secondary { background: var(--elite-surface); }
+.elite-landing .elite-market-card { background: var(--elite-surface); padding: 1.75rem; border-radius: 1.5rem; border-color: color-mix(in srgb, var(--elite-brand) 35%, var(--elite-bg)); box-shadow: 0 24px 64px color-mix(in srgb, var(--elite-text) 8%, transparent), 0 0 0 8px color-mix(in srgb, var(--elite-brand) 8%, transparent); backdrop-filter: none; }
+.elite-landing .elite-preview-tag { background: color-mix(in srgb, var(--elite-brand) 14%, var(--elite-surface)); color: var(--elite-ink); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+.elite-landing .elite-market-tabs button, .elite-landing .elite-plan-options button { min-height: 44px; flex: 1; border-radius: 0.75rem; font-size: 0.875rem; }
+.elite-landing .elite-market-row { min-height: 80px; font-size: 0.875rem; }
+.elite-landing .elite-market-row > div { display: flex; flex-direction: column; gap: 0.4rem; }
+.elite-landing .elite-market-change { background: var(--elite-bg); border-radius: 0.5rem; padding: 0.4rem; }
+.elite-landing .elite-market-change.is-positive { background: color-mix(in srgb, var(--elite-brand) 12%, var(--elite-surface)); }
+.elite-landing .elite-market-kicker, .elite-landing .elite-preview-tag, .elite-landing .elite-market-detail, .elite-landing .elite-market-footnote, .elite-landing .elite-market-change,
+.elite-landing .elite-planner-label, .elite-landing .elite-plan-metric span, .elite-landing .elite-planner-note,
+.elite-landing .elite-funded-tier-label, .elite-landing .elite-funded-tier-fee, .elite-landing .elite-funded-detail dt, .elite-landing .elite-funded-detail p,
+.elite-landing .elite-account-plan-subtitle, .elite-landing .elite-account-plan-price span, .elite-landing .elite-payout-ledger-note, .elite-landing .elite-image-caption,
+.elite-landing .elite-risk-disclosure, .elite-landing .elite-footer-links, .elite-landing .text-xs { font-size: 0.875rem; }
+.elite-landing .elite-feature-card, .elite-landing .elite-step-card, .elite-landing .elite-account-card, .elite-landing .elite-payout-ledger, .elite-landing .elite-trust-panel, .elite-landing .elite-planner { background: var(--elite-surface); border-radius: 1.25rem; }
+.elite-landing .elite-section-alt { background: var(--elite-surface); }
+.elite-landing .elite-feature-icon { color: var(--elite-ink); background: color-mix(in srgb, var(--elite-brand) 12%, var(--elite-surface)); border-color: transparent; }
+.elite-landing .elite-interactive-tile { align-self: start; padding: 0; overflow: hidden; }
+.elite-landing .elite-interactive-tile summary { padding: 1.5rem; cursor: pointer; list-style: none; }
+.elite-landing .elite-interactive-tile summary::-webkit-details-marker { display: none; }
+.elite-landing .elite-tile-top { display: flex; align-items: center; justify-content: space-between; }
+.elite-landing .elite-tile-toggle { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--elite-bg); color: var(--elite-ink); font-size: 20px; transition: transform 200ms ease; }
+.elite-landing .elite-interactive-tile[open] { border-color: var(--elite-brand); }
+.elite-landing .elite-interactive-tile[open] .elite-tile-toggle { transform: rotate(45deg); }
+.elite-landing .elite-tile-prompt { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem; color: var(--elite-ink); font-size: 0.875rem; font-weight: 600; }
+.elite-landing .elite-tile-detail { border-top: 1px solid color-mix(in srgb, var(--elite-brand) 20%, var(--elite-bg)); padding: 1.25rem 1.5rem; color: var(--elite-muted); background: var(--elite-bg); font-size: 0.875rem; line-height: 1.6; animation: elite-copy-in 240ms ease both; }
+.elite-landing .elite-inline-link { color: var(--elite-ink); min-height: 44px; }
+.elite-landing .elite-funded-feature { background: color-mix(in srgb, var(--elite-brand) 9%, var(--elite-surface)); box-shadow: none; }
+.elite-landing .elite-funded-feature .elite-funded-tier { background: var(--elite-surface); text-align: left; cursor: pointer; min-width: 0; }
+.elite-landing .elite-funded-tier[aria-pressed="true"] { border-color: var(--elite-ink); box-shadow: 0 0 0 1px var(--elite-ink); background: color-mix(in srgb, var(--elite-brand) 16%, var(--elite-surface)); }
+.elite-landing .elite-funded-tier-balance { font-size: clamp(1.25rem, 2vw, 1.65rem); letter-spacing: -0.04em; }
+.elite-landing .elite-selected-account { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-radius: 0.85rem; background: var(--elite-surface); padding: 1rem; }
+.elite-landing .elite-selected-account p { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.875rem; }
+.elite-landing .elite-selected-account p span { color: var(--elite-muted); }
+.elite-landing .elite-funded-detail, .elite-landing .elite-planner-aside { background: var(--elite-bg); }
+.elite-landing .elite-workspace-visual img { filter: saturate(0.35); }
+.elite-landing .elite-image-caption { left: 1rem; right: 1rem; border-radius: 0.75rem; background: color-mix(in srgb, var(--elite-surface) 94%, transparent); color: var(--elite-text); }
+.elite-landing .elite-faq-item summary { min-height: 44px; }
+.elite-landing .elite-faq-item[open] p { animation: elite-copy-in 240ms ease both; }
+.elite-landing .elite-final-cta { background: color-mix(in srgb, var(--elite-brand) 14%, var(--elite-surface)); }
+@media (min-width: 640px) { .elite-landing .elite-mobile-login { display: none; } }
+@media (max-width: 1023px) {
+  .elite-landing .elite-market-card { max-width: none; }
+  .elite-landing .elite-mobile-navigation { display: flex; }
+}
+@media (max-width: 767px) {
+  .elite-landing .elite-display { font-size: clamp(2.7rem, 11vw, 4rem); }
+  .elite-landing .elite-heading { font-size: clamp(1.9rem, 8vw, 2.6rem); line-height: 1.15; }
+  .elite-landing .elite-section { padding-block: 3.5rem; }
+  .elite-landing .elite-market-card { padding: 1.25rem; border-radius: 1.25rem; box-shadow: 0 12px 32px color-mix(in srgb, var(--elite-text) 6%, transparent); }
+  .elite-landing .elite-hero-trust { gap: 0.75rem; font-size: 0.875rem; }
+  .elite-landing .elite-market-row { gap: 0.5rem; font-size: 0.875rem; }
+  .elite-landing .elite-market-footnote { line-height: 1.5; align-items: flex-start; }
+  .elite-landing .elite-funded-tier { min-height: 148px; }
+  .elite-landing .elite-funded-tier-fee { flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+  .elite-landing .elite-funded-tier:last-child { min-height: 128px; }
+  .elite-landing .elite-mobile-navigation { max-height: calc(100dvh - 64px); overflow-y: auto; animation: elite-copy-in 200ms ease both; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .elite-landing .elite-market-row { animation: elite-copy-in 320ms ease both; }
+  .elite-landing .elite-market-row:nth-child(2) { animation-delay: 60ms; }
+  .elite-landing .elite-market-row:nth-child(3) { animation-delay: 120ms; }
+  @supports (animation-timeline: view()) {
+    .elite-landing .elite-section-heading, .elite-landing .elite-feature-card, .elite-landing .elite-step-card, .elite-landing .elite-workspace-visual { animation: elite-copy-in ease both; animation-timeline: view(); animation-range: entry 0% entry 22%; }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:has(.elite-landing) { scroll-behavior: auto; }
+  .elite-landing *, .elite-landing *::before, .elite-landing *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 /* Participant dashboard — mobile-first, fills full viewport on all screens */
