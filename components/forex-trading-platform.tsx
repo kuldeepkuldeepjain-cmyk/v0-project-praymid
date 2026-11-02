@@ -3521,7 +3521,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════���������═���═�����═������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════����������═���═�����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -4025,7 +4025,7 @@ const maxLeverage = 100
 
 	          {/* Chart and timeframe dock; the order ticket follows below. */}
 	          <div
-                className={`${tradeScrollStyles.scrollArea} terminal-trade-scroll flex-1 min-h-0 flex flex-col overflow-y-auto terminal-scroll`}
+                className={`${tradeScrollStyles.scrollArea} terminal-trade-scroll flex-1 min-h-0 flex flex-col ${chartExpanded && isCompactViewport ? "" : "overflow-y-auto"} terminal-scroll`}
                 role="region"
                 aria-label="Trade chart and market details"
                 tabIndex={0}
@@ -4034,8 +4034,8 @@ const maxLeverage = 100
 	            <div className="relative flex-1 min-h-[460px] h-[58vh] max-h-[620px] min-w-0 mobile-terminal-chart-wrap chart-surface">
 	              {selectedPair && chartLayout === "single" ? (
 	                <ErrorBoundary key={`${selectedPair?.symbol ?? "none"}|${timeframe}|${chartReloadKey}`} fallback={
-	                  <div className="chart-silent-error" aria-hidden="true">
-	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={false} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} /> : null}
+	                  <div className="chart-silent-error">
+	                    {selectedPair?.candles?.length ? <TradingChart candles={selectedPair.candles} sym={selectedPair.symbol} tf={timeframe} openTrades={openTrades.filter(t => t.pair === selectedPair.symbol)} onExpand={() => setChartExpanded(e => !e)} isExpanded={chartExpanded} onQuickTrade={quickTrade} buyPrice={selectedPair.ask} sellPrice={selectedPair.bid} darkTheme={isDarkTheme} marketStatus={online ? "live" : "reconnecting"} actionsHost={chartActionsHost} /> : null}
 	                  </div>
 	                }>
   <div className="terminal-single-chart-stack h-full min-h-0 w-full flex-1">

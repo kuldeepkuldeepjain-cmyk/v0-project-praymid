@@ -1196,7 +1196,7 @@ export function TradingChart({
         <div
           role="group"
           aria-label="Quick trade"
-          className={`${mobileControlsStyles.expandedQuickTradeDock} absolute bottom-3 left-1/2 z-30 flex w-[min(280px,calc(100%-20px))] -translate-x-1/2 items-stretch gap-1.5 rounded-lg p-1.5`}
+          className={`${mobileControlsStyles.expandedQuickTradeDock} absolute bottom-3 left-1/2 z-30 flex w-[min(280px,calc(100%-20px))] ${isExpanded ? "lg:-translate-x-1/2" : "-translate-x-1/2"} items-stretch gap-1.5 rounded-lg p-1.5`}
           style={{
             background: "rgba(4,8,15,0.92)",
             border: "1px solid rgba(148,163,184,0.2)",

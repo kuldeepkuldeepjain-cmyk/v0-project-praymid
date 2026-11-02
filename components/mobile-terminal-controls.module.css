@@ -2201,6 +2201,20 @@
       touch-action: pan-y !important;
     }
 
+    &:global(.is-chart-expanded) :global(.mobile-terminal-chart-wrap .apple-trading-chart) {
+      display: flex !important;
+      flex-direction: column !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+    }
+
+    &:global(.is-chart-expanded) :global(.mobile-terminal-chart-wrap .apple-trading-chart-canvas) {
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+      height: auto !important;
+    }
+
     .expandedInstrumentPicker {
       position: relative;
       display: inline-flex;
