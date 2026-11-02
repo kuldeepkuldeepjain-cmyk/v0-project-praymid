@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { ToastProvider } from "@/components/ui/toast-provider"
 import { GlobalErrorListener } from "@/components/global-error-listener"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { SITE_DESCRIPTION, SITE_IMAGE, SITE_NAME, SITE_ORIGIN } from "@/lib/site-seo"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
@@ -22,24 +23,21 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.elitefund.sbs"),
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
-    default: "EliteFund | Funded Trading Accounts & Prop Trading",
+    default: "Funded Trading Challenges & Accounts | EliteFund",
     template: "%s | EliteFund",
   },
-  description: "A focused trading workspace for analyzing markets, defining risk, and managing positions. Explore EliteFund challenge programs and review account terms.",
-  alternates: {
-    canonical: "https://www.elitefund.sbs/",
-  },
-  applicationName: "EliteFund",
-  creator: "EliteFund",
-  publisher: "EliteFund",
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   category: "finance",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Elite Fund",
+    title: SITE_NAME,
     startupImage: "/elite-fund-logo.jpg",
   },
   formatDetection: {
@@ -47,17 +45,16 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: "https://www.elitefund.sbs/",
-    siteName: "EliteFund",
-    title: "EliteFund | Funded Trading Accounts & Prop Trading",
-    description: "Explore funded trading programs, clear rules, and risk-aware tools for disciplined traders.",
-    images: [{ url: "/images/elitefund-hero-wide.png", alt: "Elite Fund trading workspace" }],
+    siteName: SITE_NAME,
+    title: "Funded Trading Challenges & Accounts | EliteFund",
+    description: SITE_DESCRIPTION,
+    images: [{ url: SITE_IMAGE, alt: "EliteFund trading workspace and funded account plans" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "EliteFund | Funded Trading Accounts & Prop Trading",
-    description: "Explore funded trading programs, clear rules, and risk-aware tools for disciplined traders.",
-    images: ["/images/elitefund-hero-wide.png"],
+    title: "Funded Trading Challenges & Accounts | EliteFund",
+    description: SITE_DESCRIPTION,
+    images: [SITE_IMAGE],
   },
   icons: {
     icon: [{ url: "/elite-fund-logo.jpg", type: "image/jpeg" }],
@@ -91,10 +88,17 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "Organization",
-              name: "EliteFund",
-              url: "https://www.elitefund.sbs/",
-              logo: "https://www.elitefund.sbs/elite-fund-logo.jpg",
-              description: "Funded trading programs and risk-aware tools for disciplined traders.",
+              "@id": `${SITE_ORIGIN}/#organization`,
+              name: SITE_NAME,
+              alternateName: "Elite Fund",
+              url: `${SITE_ORIGIN}/`,
+              logo: `${SITE_ORIGIN}/elite-fund-logo.jpg`,
+              description: SITE_DESCRIPTION,
+              contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "customer support",
+                email: "support@elitefund.sbs",
+              },
             }),
           }}
         />
@@ -104,8 +108,12 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "WebSite",
-              name: "EliteFund",
-              url: "https://www.elitefund.sbs/",
+              "@id": `${SITE_ORIGIN}/#website`,
+              name: SITE_NAME,
+              alternateName: "Elite Fund",
+              url: `${SITE_ORIGIN}/`,
+              inLanguage: "en",
+              publisher: { "@id": `${SITE_ORIGIN}/#organization` },
             }),
           }}
         />

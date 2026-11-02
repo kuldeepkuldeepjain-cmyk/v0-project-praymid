@@ -1,22 +1,10 @@
 import type { MetadataRoute } from "next"
+import { SITE_ORIGIN } from "@/lib/site-seo"
 
-const siteUrl = "https://elitefund.sbs"
-
-const publicRoutes = [
-  "",
-  "/leaderboard",
-  "/privacy",
-  "/terms",
-  "/cookies",
-] as const
+const publicRoutes = ["/", "/privacy", "/terms", "/cookies"] as const
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date()
-
   return publicRoutes.map((path) => ({
-    url: `${siteUrl}${path}`,
-    lastModified: now,
-    changeFrequency: path === "" ? "weekly" : "monthly",
-    priority: path === "" ? 1 : 0.6,
+    url: new URL(path, SITE_ORIGIN).toString(),
   }))
 }

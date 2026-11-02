@@ -1,5 +1,12 @@
 import { Suspense } from "react"
 import LeaderboardContent from "./leaderboard-content"
+import { createSiteMetadata } from "@/lib/site-seo"
+
+export const metadata = createSiteMetadata({
+  title: "Leaderboard Preview",
+  description: "A sample leaderboard layout for the EliteFund trading platform.",
+  noIndex: true,
+})
 
 export default function LeaderboardPage() {
   return (

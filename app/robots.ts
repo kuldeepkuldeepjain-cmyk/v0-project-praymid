@@ -1,6 +1,5 @@
 import type { MetadataRoute } from "next"
-
-const siteUrl = "https://elitefund.sbs"
+import { SITE_ORIGIN } from "@/lib/site-seo"
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -11,7 +10,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/api/", "/participant/dashboard/", "/finalflow/dashboard/", "/superadmin/", "/customer-care/dashboard/", "/test-db/"],
       },
     ],
-    sitemap: `${siteUrl}/sitemap.xml`,
-    host: siteUrl,
+    sitemap: `${SITE_ORIGIN}/sitemap.xml`,
+    host: SITE_ORIGIN,
   }
 }

@@ -1,9 +1,12 @@
 import Link from "next/link"
+import { createSiteMetadata } from "@/lib/site-seo"
 
-export const metadata = {
-  title: "Terms and Conditions | Elite Fund",
-  description: "Terms and conditions governing Elite Fund accounts, trading plans, fees, payouts, and platform use.",
-}
+export const metadata = createSiteMetadata({
+  title: "Terms and Conditions",
+  description:
+    "Review EliteFund’s funded trading challenge terms, program fees, account rules, drawdown limits, payout conditions, and risk disclosures before using the platform.",
+  canonicalPath: "/terms",
+})
 
 const sections = [
   ["1. Acceptance of Terms", "By accessing the Elite Fund website, creating an account, purchasing a trading plan, or using services offered through the platform, you acknowledge that you have read, understood, and agreed to these Terms and Conditions. If you do not agree, discontinue using the platform. These terms apply to all users, account holders, and participants."],
