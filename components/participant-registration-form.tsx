@@ -54,6 +54,7 @@ export function ParticipantRegistrationForm({ formData, onChange, onCountryChang
   const passwordMismatch = formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword
 
   const goToStep = (next: number) => {
+    if (next === 2 && !captcha) onRefreshCaptcha()
     setStep(next)
     requestAnimationFrame(() => { titleRef.current?.focus(); titleRef.current?.scrollIntoView({ block: "start", behavior: "instant" }) })
   }
@@ -76,8 +77,10 @@ export function ParticipantRegistrationForm({ formData, onChange, onCountryChang
           <legend className="sr-only">{STEP_NAMES[step]}</legend>
           <FieldGroup>
             {step === 0 && <>
+              <FieldGroup className="grid grid-cols-1 sm:grid-cols-2">
               <Field><FieldLabel htmlFor="firstName">First name</FieldLabel><Input id="firstName" name="firstName" autoComplete="given-name" placeholder="First name" value={formData.firstName} onChange={(event) => onChange("firstName", event.target.value.replace(/[^\p{L}\p{M}\s'-]/gu, ""))} required /></Field>
               <Field><FieldLabel htmlFor="lastName">Last name</FieldLabel><Input id="lastName" name="lastName" autoComplete="family-name" placeholder="Last name" value={formData.lastName} onChange={(event) => onChange("lastName", event.target.value.replace(/[^\p{L}\p{M}\s'-]/gu, ""))} required /></Field>
+              </FieldGroup>
               <Field><FieldLabel htmlFor="username">Username</FieldLabel><Input id="username" name="username" autoComplete="username" autoCapitalize="none" spellCheck={false} minLength={3} maxLength={20} pattern="[a-z0-9_]{3,20}" placeholder="Choose a username" value={formData.username} onChange={(event) => onChange("username", event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))} aria-describedby="username-help" required /><FieldDescription id="username-help">3–20 letters, numbers, or underscores.</FieldDescription></Field>
               <Field><FieldLabel htmlFor="email">Email address</FieldLabel><Input id="email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="you@example.com" value={formData.email} onChange={(event) => onChange("email", event.target.value)} aria-describedby="email-help" required /><FieldDescription id="email-help">We&apos;ll send your verification code here.</FieldDescription></Field>
             </>}

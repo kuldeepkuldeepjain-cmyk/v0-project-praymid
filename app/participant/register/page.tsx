@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type FormEvent } from "react"
+import { useState, useEffect, useRef, type FormEvent } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowRight, Loader2, Mail } from "lucide-react"
@@ -24,13 +24,13 @@ export default function ParticipantRegisterPage() {
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
   const [captchaInput, setCaptchaInput] = useState("")
   const [error, setError] = useState("")
-  // Post-registration state
-  const [referralApplied, setReferralApplied] = useState(false)
+  const errorSummaryRef = useRef<HTMLDivElement>(null)
+  const referralCodeFromUrl = searchParams.get("ref")?.toUpperCase() || ""
   const defaultCountry = REGISTRATION_COUNTRIES[0]
   const [formData, setFormData] = useState<RegistrationData>({
     firstName: "", lastName: "", username: "", email: "", countryCode: defaultCountry.code,
     mobileNumber: "", password: "", confirmPassword: "", country: defaultCountry.name,
-    state: "", referralCode: "", accountType: "normal", challengePlanKey: DEFAULT_CHALLENGE_PLANS[0].key,
+    state: "", referralCode: referralCodeFromUrl, accountType: "normal", challengePlanKey: DEFAULT_CHALLENGE_PLANS[0].key,
   })
 
   const generateCaptcha = () => {
@@ -41,15 +41,15 @@ export default function ParticipantRegisterPage() {
     setCaptcha({ text: code, answer: code })
     setCaptchaInput("")
   }
-  useEffect(() => { generateCaptcha() }, [])
   useEffect(() => {
-    const refCode = searchParams.get("ref")
-    if (refCode && !referralApplied) {
-      setFormData((previous) => ({ ...previous, referralCode: refCode.toUpperCase() }))
-      setReferralApplied(true)
-      toast({ title: "Referral code applied", description: `Your referral code ${refCode} has been added.` })
+    if (referralCodeFromUrl) toast({ title: "Referral code applied", description: `Your referral code ${referralCodeFromUrl} has been added.` })
+  }, [referralCodeFromUrl, toast])
+  useEffect(() => {
+    if (error) {
+      errorSummaryRef.current?.focus()
+      errorSummaryRef.current?.scrollIntoView({ block: "nearest" })
     }
-  }, [searchParams, referralApplied, toast])
+  }, [error])
 
   const handleChange = (field: string, value: string) => {
     setFormData((previous) => ({ ...previous, [field]: value }))
@@ -135,7 +135,7 @@ export default function ParticipantRegisterPage() {
         <h1 className="text-balance text-3xl font-semibold tracking-tight">{emailVerification ? "Check your inbox" : "Create your account"}</h1>
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{emailVerification ? "Verify your email to finish setting up your account." : "A few details. One focused trading workspace."}</p>
       </div>
-      {error && <Alert variant="destructive"><AlertTitle>{emailVerification ? "Unable to verify email" : "Please check your details"}</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
+      {error && <div ref={errorSummaryRef} tabIndex={-1} className="outline-none"><Alert variant="destructive"><AlertTitle>{emailVerification ? "Unable to verify email" : "Please check your details"}</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div>}
       {emailVerification ? (
         <form onSubmit={verifyEmail} aria-busy={loading} className="flex flex-col gap-5">
           <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"><Mail className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" /><p className="min-w-0 break-words text-sm leading-relaxed text-muted-foreground">We sent a 6-digit code to <strong className="font-medium text-foreground">{emailVerification.email}</strong>. Check your spam folder too.</p></div>
