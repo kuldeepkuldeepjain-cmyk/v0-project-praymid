@@ -182,34 +182,42 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   // --- RESULT CARD ---
   if (phase === "result" || phase === "settling") {
     const isSettling = phase === "settling"
-    const bgColor = resultType === "refunded" ? "bg-amber-500 border-amber-400"
-      : resultType === "won" ? "bg-green-500 border-green-400"
-      : "bg-red-500 border-red-400"
+    const accentColor = resultType === "refunded"
+      ? "var(--terminal-graphite-warning)"
+      : resultType === "won"
+        ? "var(--terminal-graphite-positive)"
+        : "var(--terminal-graphite-negative)"
 
     const Icon = resultType === "refunded" ? RefreshCw
       : resultType === "won" ? CheckCircle
       : XCircle
 
     return (
-      <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-4 w-[calc(100%-24px)] sm:w-72 z-50">
-        <Card className={`border-2 shadow-2xl ${bgColor}`}>
-          <div className="p-4 text-white">
+      <div className="pointer-events-auto w-full">
+        <Card className="terminal-panel overflow-hidden rounded-2xl border-2 p-0 shadow-2xl" style={{ borderColor: accentColor }}>
+          <div className="p-4 text-[var(--terminal-graphite-text)]">
             {isSettling ? (
-              <div className="flex items-center justify-center gap-2 py-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="flex items-center justify-center gap-3 py-2">
+                <div aria-hidden="true" className="size-5 animate-spin rounded-full border-2 border-[var(--terminal-graphite-border)] border-t-[var(--brand-primary)]" />
                 <span className="text-sm font-semibold">Settling trade...</span>
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-full bg-white/20">
-                    <Icon className="h-6 w-6 text-white" />
+                <div className="mb-4 flex items-center gap-3">
+                  <div
+                    className="flex size-11 shrink-0 items-center justify-center rounded-full border"
+                    style={{
+                      borderColor: `color-mix(in srgb, ${accentColor} 40%, var(--terminal-graphite-border))`,
+                      backgroundColor: `color-mix(in srgb, ${accentColor} 14%, var(--terminal-graphite-surface))`,
+                    }}
+                  >
+                    <Icon aria-hidden="true" className="size-5" style={{ color: accentColor }} />
                   </div>
-                  <div>
-                    <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">
-                      {resultType === "refunded" ? "Trade Refunded" : resultType === "won" ? "Trade Won!" : "Trade Lost"}
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-[var(--terminal-graphite-muted)]">
+                      {resultType === "refunded" ? "Trade refunded" : resultType === "won" ? "Trade won" : "Trade lost"}
                     </p>
-                    <p className="text-2xl font-black tabular-nums leading-tight">
+                    <p className="price-mono text-2xl font-bold leading-tight" style={{ color: accentColor }}>
                       {resultType === "refunded"
                         ? `$${normalizedTrade.amount.toFixed(2)} back`
                         : resultType === "won"
@@ -219,28 +227,29 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 mb-3 text-center">
-                  <div className="bg-white/10 rounded-lg p-1.5">
-                    <p className="text-[9px] text-white/60 uppercase">Pair</p>
-                    <p className="text-[11px] font-bold">{normalizedTrade.crypto_pair}</p>
+                <div className="mb-4 grid grid-cols-3 gap-2 text-center">
+                  <div className="terminal-panel-raised min-w-0 rounded-lg p-2">
+                    <p className="text-xs text-[var(--terminal-graphite-muted)]">Pair</p>
+                    <p className="truncate text-xs font-semibold text-[var(--terminal-graphite-text)]">{normalizedTrade.crypto_pair}</p>
                   </div>
-                  <div className="bg-white/10 rounded-lg p-1.5">
-                    <p className="text-[9px] text-white/60 uppercase">Direction</p>
-                    <p className="text-[11px] font-bold">{normalizedTrade.prediction_type.toUpperCase()}</p>
+                  <div className="terminal-panel-raised min-w-0 rounded-lg p-2">
+                    <p className="text-xs text-[var(--terminal-graphite-muted)]">Direction</p>
+                    <p className="text-xs font-semibold text-[var(--terminal-graphite-text)]">{normalizedTrade.prediction_type.toUpperCase()}</p>
                   </div>
-                  <div className="bg-white/10 rounded-lg p-1.5">
-                    <p className="text-[9px] text-white/60 uppercase">Stake</p>
-                    <p className="text-[11px] font-bold">${normalizedTrade.amount.toFixed(2)}</p>
+                  <div className="terminal-panel-raised min-w-0 rounded-lg p-2">
+                    <p className="text-xs text-[var(--terminal-graphite-muted)]">Stake</p>
+                    <p className="price-mono truncate text-xs font-semibold text-[var(--terminal-graphite-text)]">${normalizedTrade.amount.toFixed(2)}</p>
                   </div>
                 </div>
 
                 <button
+                  type="button"
                   onClick={() => {
                     setPhase("hidden")
                     settlingRef.current = false
                     onTradeSettled()
                   }}
-                  className="w-full py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-bold transition-colors"
+                  className="min-h-11 w-full rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Dismiss
                 </button>
@@ -253,69 +262,87 @@ export function ActiveTradeTracker({ activeTrade, currentPrice, onTradeSettled }
   }
 
   // --- LIVE CARD ---
+  const liveAccentColor = isTie
+    ? "var(--terminal-graphite-warning)"
+    : isWinning
+      ? "var(--terminal-graphite-positive)"
+      : "var(--terminal-graphite-negative)"
+
   return (
-    <div className="fixed bottom-20 sm:bottom-6 right-3 sm:right-4 w-[calc(100%-24px)] sm:w-72 z-50">
-      <Card className={`border shadow-xl ${
-        isTie ? "bg-amber-50 border-amber-400"
-        : isWinning ? "bg-green-50 border-green-400"
-        : "bg-red-50 border-red-400"
-      }`}>
-        <div className="p-3">
+    <div className="pointer-events-auto w-full">
+      <Card
+        className="terminal-panel overflow-hidden rounded-2xl p-0 shadow-xl"
+        style={{ borderColor: liveAccentColor }}
+      >
+        <div className="p-4">
           {/* Header row */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <div className={`p-1 rounded ${normalizedTrade.prediction_type === "up" ? "bg-green-500" : "bg-red-500"}`}>
+              <div
+                className="flex size-8 items-center justify-center rounded-lg border"
+                style={{
+                  borderColor: `color-mix(in srgb, ${normalizedTrade.prediction_type === "up" ? "var(--terminal-graphite-positive)" : "var(--terminal-graphite-negative)"} 38%, var(--terminal-graphite-border))`,
+                  backgroundColor: `color-mix(in srgb, ${normalizedTrade.prediction_type === "up" ? "var(--terminal-graphite-positive)" : "var(--terminal-graphite-negative)"} 13%, var(--terminal-graphite-surface))`,
+                }}
+              >
                 {normalizedTrade.prediction_type === "up"
-                  ? <TrendingUp className="h-3 w-3 text-white" />
-                  : <TrendingDown className="h-3 w-3 text-white" />
+                  ? <TrendingUp aria-hidden="true" className="size-4" style={{ color: "var(--terminal-graphite-positive)" }} />
+                  : <TrendingDown aria-hidden="true" className="size-4" style={{ color: "var(--terminal-graphite-negative)" }} />
                 }
               </div>
-              <div>
-                <p className="text-xs font-bold text-slate-800">{normalizedTrade.crypto_pair}</p>
-                <p className="text-[9px] text-slate-500">${normalizedTrade.amount.toFixed(2)} stake</p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-[var(--terminal-graphite-text)]">{normalizedTrade.crypto_pair}</p>
+                <p className="text-xs text-[var(--terminal-graphite-muted)]">${normalizedTrade.amount.toFixed(2)} stake</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 bg-slate-900 text-white px-2 py-1 rounded-lg">
-              <Clock className="h-3 w-3" />
-              <span className="font-mono text-xs font-bold tabular-nums">{formatTime(timeRemaining)}</span>
+            <div className="terminal-panel-raised flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[var(--terminal-graphite-text)]">
+              <Clock aria-hidden="true" className="size-3.5 text-[var(--brand-primary)]" />
+              <span className="price-mono text-xs font-bold tabular-nums">{formatTime(timeRemaining)}</span>
             </div>
           </div>
 
           {/* P/L bar */}
-          <div className={`rounded-lg p-2.5 mb-2 ${
-            isTie ? "bg-amber-500" : isWinning ? "bg-green-500" : "bg-red-500"
-          }`}>
+          <div
+            className="mb-3 rounded-xl border p-3"
+            style={{
+              borderColor: `color-mix(in srgb, ${liveAccentColor} 36%, var(--terminal-graphite-border))`,
+              backgroundColor: `color-mix(in srgb, ${liveAccentColor} 12%, var(--terminal-graphite-surface))`,
+            }}
+          >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[9px] text-white/70 uppercase font-semibold">
-                  {isTie ? "Flat Market" : "Live P/L"}
+                <p className="text-xs font-semibold uppercase text-[var(--terminal-graphite-muted)]">
+                  {isTie ? "Flat market" : "Live P/L"}
                 </p>
-                <p className="text-xl font-black text-white tabular-nums">
+                <p className="price-mono text-xl font-bold tabular-nums" style={{ color: liveAccentColor }}>
                   {isTie ? "$0.00" : `${currentPL >= 0 ? "+" : ""}$${Math.abs(currentPL).toFixed(2)}`}
                 </p>
               </div>
-              <div className="p-1.5 rounded-lg bg-white/20">
-                {isTie ? <Clock className="h-5 w-5 text-white" />
-                  : isWinning ? <TrendingUp className="h-5 w-5 text-white" />
-                  : <TrendingDown className="h-5 w-5 text-white" />
+              <div
+                className="flex size-9 items-center justify-center rounded-lg border"
+                style={{
+                  borderColor: `color-mix(in srgb, ${liveAccentColor} 36%, var(--terminal-graphite-border))`,
+                  backgroundColor: `color-mix(in srgb, ${liveAccentColor} 10%, var(--terminal-graphite-surface))`,
+                }}
+              >
+                {isTie ? <Clock aria-hidden="true" className="size-5" style={{ color: liveAccentColor }} />
+                  : isWinning ? <TrendingUp aria-hidden="true" className="size-5" style={{ color: liveAccentColor }} />
+                  : <TrendingDown aria-hidden="true" className="size-5" style={{ color: liveAccentColor }} />
                 }
               </div>
             </div>
           </div>
 
-          {/* Entry / Current prices */}
-          <div className="grid grid-cols-2 gap-1.5">
-            <div className="bg-white/60 rounded-lg p-2">
-              <p className="text-[8px] text-slate-500 uppercase font-semibold">Entry</p>
-              <p className="text-[11px] font-bold text-slate-800 tabular-nums">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="terminal-panel-raised min-w-0 rounded-lg p-2.5">
+              <p className="text-xs font-medium text-[var(--terminal-graphite-muted)]">Entry</p>
+              <p className="price-mono mt-1 truncate text-sm font-semibold text-[var(--terminal-graphite-text)]">
                 {normalizedTrade.entry_price.toFixed(pricePrecision)}
               </p>
             </div>
-            <div className="bg-white/60 rounded-lg p-2">
-              <p className="text-[8px] text-slate-500 uppercase font-semibold">Current</p>
-              <p className={`text-[11px] font-bold tabular-nums ${
-                isTie ? "text-amber-600" : isWinning ? "text-green-600" : "text-red-600"
-              }`}>
+            <div className="terminal-panel-raised min-w-0 rounded-lg p-2.5">
+              <p className="text-xs font-medium text-[var(--terminal-graphite-muted)]">Current</p>
+              <p className="price-mono mt-1 truncate text-sm font-semibold tabular-nums" style={{ color: liveAccentColor }}>
                 {currentPrice.toFixed(pricePrecision)}
               </p>
             </div>
