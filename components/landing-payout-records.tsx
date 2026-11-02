@@ -15,10 +15,10 @@ export function LandingPayoutRecords() {
           <p className="elite-eyebrow">Private payout history</p>
           <h2 className="elite-heading mt-4 text-balance">A clear record for every payout request.</h2>
           <p className="elite-copy mt-5">
-            Review your request amount, status, payment method, and transaction reference when available in your account dashboard.
+            See request amount, status, payment method, and available transaction reference in your account.
           </p>
           <p className="elite-copy mt-3 text-sm">
-            Personal payout activity stays private to your account. Eligibility, review, and timing depend on the applicable terms.
+            Your payout history is private. Eligibility and processing times depend on account terms.
           </p>
           <Link href="/participant/login" className="elite-inline-link mt-7">
             Sign in to view payout records <ArrowRight aria-hidden="true" />
@@ -45,7 +45,7 @@ export function LandingPayoutRecords() {
           </dl>
 
           <p className="elite-payout-ledger-note">
-            This preview describes the fields available in account history. It does not display sample transactions or unverified payout claims.
+            Shows available record fields—not sample or unverified payouts.
           </p>
         </div>
       </div>

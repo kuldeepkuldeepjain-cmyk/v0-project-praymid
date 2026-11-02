@@ -17,22 +17,22 @@ const fundedAccountDetails = [
   {
     label: "Leverage cap",
     value: "Up to 100×",
-    detail: "Maximum funded-account leverage; instrument limits still apply.",
+    detail: "Actual leverage varies by instrument.",
   },
   {
     label: "Minimum position",
     value: "0.01 lots",
-    detail: "Smallest funded-account position size accepted by the platform.",
+    detail: "Smallest allowed position.",
   },
   {
     label: "Minimum order",
     value: "$3,000",
-    detail: "Platform minimum for a funded-account order amount.",
+    detail: "Minimum order amount.",
   },
   {
     label: "Eligible profit share",
     value: "Up to 90%",
-    detail: "Payouts depend on plan rules, verification, and eligibility.",
+    detail: "Subject to plan rules and eligibility.",
   },
 ]
 
@@ -54,7 +54,7 @@ export function LandingAccountOptions() {
           <p className="elite-eyebrow">Account options</p>
           <h2 className="elite-heading mt-4 text-balance">Choose the account that fits your approach.</h2>
           <p className="elite-copy mt-4 max-w-2xl">
-            Compare standard platform access, Challenge evaluations, and the published funded account tiers before registering.
+            Compare standard access, Challenge plans, and funded accounts.
           </p>
         </div>
 
@@ -74,7 +74,7 @@ export function LandingAccountOptions() {
               <span>leverage</span>
             </div>
             <p className="elite-copy text-sm">
-              Normal accounts offer up to 1,000:1 leverage. Actual leverage depends on the instrument, margin requirements, and account terms.
+              Actual leverage varies by instrument and account terms.
             </p>
 
             <ul className="elite-account-feature-list">
@@ -113,10 +113,10 @@ export function LandingAccountOptions() {
             </div>
 
             <p className="elite-copy text-sm">
-              Current Challenge plans list a {challengeRules.profitTargetPercent}% target, {challengeRules.dailyLossLimitPercent}% daily loss limit, {challengeRules.maxDrawdownPercent}% maximum drawdown, {challengeRules.minimumTradingDays} minimum trading days, and up to {challengeRules.leverage}:1 leverage.
+              Target: {challengeRules.profitTargetPercent}%. Daily loss limit: {challengeRules.dailyLossLimitPercent}%. Max drawdown: {challengeRules.maxDrawdownPercent}%. Minimum trading days: {challengeRules.minimumTradingDays}. Leverage: up to {challengeRules.leverage}:1.
             </p>
             <p className="elite-copy mt-3 text-sm">
-              Passing a Challenge evaluation may qualify you for review for the corresponding funded account. Approval, verification, and program terms apply; funding is not guaranteed.
+              Passing a Challenge may qualify you for funded-account review. Approval and funding are not guaranteed.
             </p>
             <Link href="#programs" className="elite-inline-link mt-auto pt-4">
               Calculate Challenge rules <ArrowRight aria-hidden="true" />
@@ -131,11 +131,11 @@ export function LandingAccountOptions() {
               <h3 id="funded-accounts-heading" className="mt-3 text-3xl font-semibold tracking-tight text-balance">Choose your capacity. Know the terms.</h3>
             </div>
             <p className="elite-copy max-w-xl text-sm">
-              Five published account sizes, each paired with its matching program fee. The key trading and payout details are just below.
+              Five account sizes, each with a clear fee and key details.
             </p>
           </div>
 
-          <p className="elite-copy mt-5 text-sm">Tap a tile to compare your starting point.</p>
+          <p className="elite-copy mt-5 text-sm">Choose a size to compare.</p>
           <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5" role="group" aria-label="Compare funded account sizes">
             {fundedAccountTiers.map((tier, index) => (
               <button
@@ -162,9 +162,9 @@ export function LandingAccountOptions() {
           </div>
 
           <div className="elite-funded-details-heading mt-8">
-            <p className="elite-eyebrow">The details behind each tier</p>
+            <p className="elite-eyebrow">Funded account details</p>
             <p className="elite-copy mt-2 max-w-2xl text-sm">
-              Compare the operating limits and payout framework before choosing your funded account.
+              See key limits and payout terms for each account size.
             </p>
           </div>
 
@@ -179,7 +179,7 @@ export function LandingAccountOptions() {
           </dl>
 
           <p className="elite-copy mt-4 max-w-5xl text-xs">
-            Advertised balances represent account or trading capacity, not cash paid to you or a guaranteed withdrawal. Review the applicable loss, drawdown, and payout conditions before trading. Fees, availability, eligibility, and plan terms apply. <Link href="/terms" className="elite-terms-link">Read the Terms</Link>.
+            Balances show trading capacity, not payouts. Fees, loss limits, and eligibility rules apply. <Link href="/terms" className="elite-terms-link">Read the Terms</Link>.
           </p>
         </section>
       </div>

@@ -42,7 +42,7 @@ export function ChallengePlanner() {
         <div className="elite-planner-summary" aria-live="polite" aria-atomic="true">
           <p className="elite-planner-label">{selected.name} · {money.format(selected.fee)} program fee</p>
           <p className="elite-planner-balance">{money.format(selected.startingBalance)}</p>
-          <p className="elite-copy text-sm">Reference values based on the published challenge rules.</p>
+          <p className="elite-copy text-sm">Values calculated from published plan rules.</p>
         </div>
 
         <div className="elite-plan-metrics">
@@ -76,7 +76,7 @@ export function ChallengePlanner() {
       </aside>
 
       <p className="elite-planner-note">
-        Reference amounts are calculations from the listed percentages. The daily loss rule is measured against day-start equity; account terms determine the applicable limits.
+        Amounts use the listed percentages. Daily loss is measured from day-start equity; account terms apply.
       </p>
     </div>
   )
