@@ -3521,7 +3521,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═����═������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════��������═���═�����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
@@ -3632,7 +3632,7 @@ const maxLeverage = 100
           <span className={mobileControlsStyles.dockIcon}><ArrowUpDown aria-hidden="true" /></span><span>Order</span>
         </button>
         <button type="button" onClick={() => setMobileTab("portfolio")} aria-current={mobileTab === "portfolio" ? "page" : undefined} className={mobileTab === "portfolio" ? "is-active" : ""} aria-label="Open portfolio">
-          <span className={mobileControlsStyles.dockIcon}><PieChart aria-hidden="true" /></span><span>Assets</span>
+          <span className={mobileControlsStyles.dockIcon}><PieChart aria-hidden="true" /></span><span>Portfolio</span>
         </button>
         <button type="button" onClick={() => setMobileTab("account")} aria-label="Open account page" aria-current={mobileTab === "account" ? "page" : undefined} className={mobileTab === "account" ? "is-active" : ""}>
           <span className={mobileControlsStyles.dockIcon}><UserRound aria-hidden="true" /></span><span>Account</span>
@@ -3685,7 +3685,7 @@ const maxLeverage = 100
 
           {!isChallengeAccount && (
             <section className="mobile-account-actions" aria-label="Funding and payout">
-              <button type="button" className="mobile-account-action is-primary" onClick={() => onAddFunds ? onAddFunds() : window.location.assign("/participant/dashboard/contribute")}>
+              <button type="button" className="mobile-account-action is-primary" onClick={() => window.location.assign("/participant/dashboard/add-funds")}>
                 <span className="mobile-account-action-icon"><Plus aria-hidden="true" /></span>
                 <span className="mobile-account-action-copy"><strong>Add funds</strong><small>Deposit into your account</small></span>
                 <ArrowUpRight aria-hidden="true" />
@@ -5132,7 +5132,7 @@ const maxLeverage = 100
         <span>{utcClock} (UTC+5:30)</span>
       </div>
 
-      {/* ── Trade Confirmation Modal ──����────���──────────���────────────────────���────── */}
+      {/* ── Trade Confirmation Modal ──����────���───��──────���────────────────────���────── */}
       {breachInfo && (
         <div
           className="absolute inset-0 z-[60] flex items-center justify-center p-4"

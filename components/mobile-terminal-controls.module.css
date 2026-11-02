@@ -314,6 +314,7 @@
 /* Isolate phone layouts from the terminal's desktop panel cascade. */
 @media (max-width: 767px) {
   .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal) {
+    --terminal-graphite-teal: var(--brand-primary);
     --phone-background: var(--terminal-graphite-bg);
     --phone-surface: var(--terminal-graphite-surface-2);
     --phone-panel: var(--terminal-graphite-surface);
@@ -661,8 +662,8 @@
     }
 
     & :global(.mobile-terminal-chart-wrap) {
-      height: clamp(340px, 62dvh, 540px) !important;
-      min-height: clamp(340px, 62dvh, 540px) !important;
+      height: clamp(240px, calc(100dvh - 352px - env(safe-area-inset-bottom, 0px)), 540px) !important;
+      min-height: clamp(240px, calc(100dvh - 352px - env(safe-area-inset-bottom, 0px)), 540px) !important;
     }
 
     & :global(.chart-timeframe-toolbar) {
@@ -939,7 +940,7 @@
     }
 
     & :global(.mobile-order-ticket) {
-      gap: 24px !important;
+      gap: 16px !important;
       padding: 0 16px 24px !important;
       background: var(--phone-background) !important;
       color: var(--phone-foreground) !important;
@@ -1097,7 +1098,7 @@
     }
 
     & :global(.order-ticket-controls) {
-      gap: 24px !important;
+      gap: 16px !important;
     }
 
     & :global(.mobile-order-ticket input),
@@ -1242,7 +1243,7 @@
     }
 
     & :global(.portfolio-page) {
-      gap: 28px;
+      gap: 20px;
       max-width: none;
       margin: 0;
       padding: 12px 16px 24px;
@@ -1850,6 +1851,38 @@
     &:global(.is-chart-expanded) :global(.apple-terminal-chart-column) {
       height: 100% !important;
     }
+  }
+}
+
+@media (max-width: 767px) {
+  .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal) {
+    & :is(button, a, [role="button"]) { touch-action: manipulation; }
+    & :global(.mobile-order-ticket input) { scroll-margin-block: 80px; }
+    & :global(.mobile-account-profile-email) { overflow-wrap: anywhere; }
+    & :global(.mobile-account-detail strong) { overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    & :global(.mw-row),
+    & :global(.portfolio-page article) { content-visibility: auto; contain-intrinsic-size: auto 76px; }
+    & .dock.dock > button { letter-spacing: -.045em; }
+  }
+}
+
+@media (max-width: 359px) {
+  .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal) {
+    & :global(.apple-market-table-head),
+    & :global(.mw-row > div) { grid-template-columns: minmax(0, 1fr) 76px 52px !important; }
+    & :global(.mw-row),
+    & :global(.apple-market-table-head) { padding-inline: 12px !important; }
+    & :global(.mw-row > div > div:first-child) { gap: 6px !important; }
+    & :global(.mw-row .mw-badge) { width: 24px; height: 24px; }
+    & :global(.mw-row > div > div:first-child > div:last-child > div:last-child) { display: none; }
+    & .dock.dock > button { font-size: 14px !important; letter-spacing: -.065em; }
+  }
+}
+
+@media (max-height: 600px) and (max-width: 767px) {
+  .surface.surface:global(.apple-trading-terminal.reference-terminal.mt5-terminal) {
+    & :global(.reference-watchlist) { display: none !important; }
+    & :global(.mobile-terminal-chart-wrap) { height: 240px !important; min-height: 240px !important; }
   }
 }
 

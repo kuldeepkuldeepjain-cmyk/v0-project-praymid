@@ -198,6 +198,38 @@
 .participant-funding-workspace a:focus-visible,
 .participant-funding-workspace select:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 .funding-landing { min-height: 100dvh; }
+.funding-checkout-page { display: flex; flex-direction: column; width: min(100%, 960px); min-height: 100dvh; margin-inline: auto; background: var(--background); color: var(--foreground); }
+.funding-checkout-page .funding-checkout-heading h1 { font-size: 28px; font-weight: 600; line-height: 1.25; letter-spacing: -.035em; }
+.funding-checkout-page .funding-checkout-heading > p:last-child { max-width: 520px; color: var(--muted-foreground); font-size: 14px; line-height: 1.6; }
+.funding-checkout-page .funding-checkout-scroll { flex: none; overflow: visible; scrollbar-gutter: auto; }
+.funding-checkout-page .funding-checkout-footer { position: sticky; bottom: 0; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.mobile-finance-message { background: var(--background); color: var(--foreground); }
+.payout-review-page { display: flex; flex-direction: column; gap: 24px; width: min(100%, 640px); min-height: 100dvh; margin-inline: auto; padding: 20px 16px 32px; background: var(--background); color: var(--foreground); }
+.payout-review-page .payout-review-heading > button { align-self: flex-start; }
+.payout-review-page .payout-dialog-body { max-height: none; overflow: visible; padding: 0; }
+.payout-review-page .payout-confirmation-footer { padding: 16px 0 0; }
+@media (max-width: 767px) {
+  .participant-global-mobile-nav { min-height: calc(52px + env(safe-area-inset-bottom, 0px)); }
+  .mobile-dashboard-add-funds { min-height: 48px; background: var(--brand-primary) !important; color: var(--brand-primary-foreground) !important; border-color: var(--brand-primary) !important; box-shadow: none !important; font-size: 14px; text-transform: none; }
+  .mobile-dashboard-add-funds > span { background: transparent !important; color: inherit !important; border-color: transparent !important; box-shadow: none !important; font-size: 14px; }
+  .mobile-dashboard-trade { border: 1px solid var(--terminal-graphite-border); background: var(--terminal-graphite-surface) !important; color: var(--terminal-graphite-text) !important; box-shadow: none !important; }
+  .mobile-dashboard-trade:focus-visible { outline: 2px solid var(--brand-primary); outline-offset: 3px; }
+  .terminal-page:has(.funding-checkout-page, .payout-review-page) .participant-global-mobile-nav { display: none; }
+  .terminal-page:has(.funding-checkout-page, .payout-review-page) .participant-dashboard-content { padding-bottom: 0; }
+  .funding-checkout-page .funding-checkout-header { padding-top: max(20px, env(safe-area-inset-top, 0px)); }
+  .funding-checkout-page .funding-checkout-grid { gap: 16px; }
+  .funding-checkout-page .funding-checkout-actions > button { width: 100%; min-width: 0; }
+  .payout-workspace .payout-content { gap: 20px; padding-inline: 16px; }
+  .payout-workspace .payout-page-title { font-size: 28px; }
+  .payout-workspace .payout-network-options [data-slot="toggle-group-item"] { min-height: 96px; padding: 12px; }
+  .payout-review-page input { scroll-margin-block: 24px; }
+  .payout-review-page .payout-dialog-actions { display: flex; flex-direction: column-reverse; gap: 12px; }
+  .payout-review-page .payout-dialog-actions > button { width: 100%; min-height: 48px; }
+}
+@media (max-width: 359px) {
+  .funding-checkout-page .funding-method-group { grid-template-columns: minmax(0, 1fr); }
+  .funding-checkout-page .funding-choice-group:not(.funding-method-group):not(.funding-tier-group) { flex-wrap: wrap; }
+}
 .funding-landing-header { border-bottom: 1px solid var(--border); }
 .funding-header-inner { display: flex; align-items: center; gap: 16px; width: min(100%, 1040px); margin-inline: auto; padding: 20px 24px; }
 .funding-landing-content { display: flex; flex-direction: column; gap: 28px; width: min(100%, 1040px); margin-inline: auto; padding: 36px 24px 48px; }

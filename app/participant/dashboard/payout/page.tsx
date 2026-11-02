@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useId } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useIsMobile } from "@/hooks/use-mobile"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +21,8 @@ import { PayoutConfirmationDialog, PayoutDisputeDialog } from "@/components/part
 
 export default function PayoutPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isMobile = useIsMobile()
   const { toast } = useToast()
   const workspaceId = useId()
   const historyId = `${workspaceId}-history`
@@ -143,7 +146,11 @@ export default function PayoutPage() {
       return
     }
 
-    setShowPayoutDialog(true)
+    if (isMobile) {
+      router.push("/participant/dashboard/payout?step=confirm", { scroll: true })
+    } else {
+      setShowPayoutDialog(true)
+    }
   }
 
   const handleWithdrawal = async () => {
@@ -195,6 +202,10 @@ export default function PayoutPage() {
       if (data.success) {
         // Close dialog
         setShowPayoutDialog(false)
+        if (isMobile) {
+          setWithdrawAmount("")
+          router.replace("/participant/dashboard/payout", { scroll: true })
+        }
         
         toast({ 
           title: "Withdrawal Submitted",
@@ -273,6 +284,7 @@ export default function PayoutPage() {
         setShowDisputeDialog(false)
         setDisputeReason("")
         setDisputePayoutId(null)
+        if (isMobile) router.replace("/participant/dashboard/payout", { scroll: true })
       } else {
         toast({ title: "Unable to Raise Dispute", description: "Could not submit dispute. Please try again.", variant: "destructive" })
       }
@@ -303,6 +315,36 @@ export default function PayoutPage() {
   const canWithdraw = isFundedAccount
     ? maximumFundedPayout > 0 && !hasActivePayout
     : enteredAmount >= MIN_WITHDRAWAL && walletBalance >= enteredAmount && !hasActivePayout
+
+  const reviewPage = isMobile && searchParams.get("step") === "confirm" && withdrawalAmount > 0
+  const confirmation = (
+    <PayoutConfirmationDialog
+      open={reviewPage || showPayoutDialog}
+      presentation={reviewPage ? "page" : "dialog"}
+      onOpenChange={(open) => {
+        setShowPayoutDialog(open)
+        if (!open && isMobile && searchParams.get("step") === "confirm") router.replace("/participant/dashboard/payout", { scroll: true })
+      }}
+      network={selectedNetworkConfig}
+      values={{ bep20Address, upiId, bankAccountName, bankAccountNumber, bankIfsc }}
+      onValueChange={(field, value) => { const setters = { bep20Address: setBep20Address, upiId: setUpiId, bankAccountName: setBankAccountName, bankAccountNumber: setBankAccountNumber, bankIfsc: setBankIfsc }; setters[field](value) }}
+      isWithdrawing={isWithdrawing}
+      amount={withdrawalAmount}
+      networkFee={networkFee}
+      amountAfterFee={amountAfterFee}
+      onConfirm={handleWithdrawal}
+    />
+  )
+  if (reviewPage) return confirmation
+  if (isMobile && searchParams.get("step") === "dispute" && disputePayoutId) return (
+    <PayoutDisputeDialog
+      open presentation="page"
+      onOpenChange={(open) => { if (!open) router.replace("/participant/dashboard/payout") }}
+      reason={disputeReason} onReasonChange={setDisputeReason}
+      processing={!!processingPayoutActionId} onSubmit={handleRaiseDispute}
+      onCancel={() => { setDisputeReason(""); setDisputePayoutId(null); router.replace("/participant/dashboard/payout", { scroll: true }) }}
+    />
+  )
 
   return (
     <div className="participant-payout-workspace payout-workspace font-sans">
@@ -348,7 +390,7 @@ export default function PayoutPage() {
           />
           <PayoutSummary network={selectedNetworkConfig} amount={withdrawalAmount} networkFee={networkFee} amountAfterFee={amountAfterFee} isFundedAccount={isFundedAccount} />
         </div>
-        <PayoutHistory id={historyId} payouts={payoutHistory} processingPayoutActionId={processingPayoutActionId} onConfirmReceipt={handleConfirmReceipt} onDispute={(payoutId) => { setDisputePayoutId(payoutId); setShowDisputeDialog(true) }} />
+        <PayoutHistory id={historyId} payouts={payoutHistory} processingPayoutActionId={processingPayoutActionId} onConfirmReceipt={handleConfirmReceipt} onDispute={(payoutId) => { setDisputePayoutId(payoutId); if (isMobile) router.push("/participant/dashboard/payout?step=dispute", { scroll: true }); else setShowDisputeDialog(true) }} />
       </div>
       <PayoutDisputeDialog
         open={showDisputeDialog}
@@ -359,18 +401,7 @@ export default function PayoutPage() {
         onSubmit={handleRaiseDispute}
         onCancel={() => { setShowDisputeDialog(false); setDisputeReason(""); setDisputePayoutId(null) }}
       />
-      <PayoutConfirmationDialog
-        open={showPayoutDialog}
-        onOpenChange={setShowPayoutDialog}
-        network={selectedNetworkConfig}
-        values={{ bep20Address, upiId, bankAccountName, bankAccountNumber, bankIfsc }}
-        onValueChange={(field, value) => { const setters = { bep20Address: setBep20Address, upiId: setUpiId, bankAccountName: setBankAccountName, bankAccountNumber: setBankAccountNumber, bankIfsc: setBankIfsc }; setters[field](value) }}
-        isWithdrawing={isWithdrawing}
-        amount={withdrawalAmount}
-        networkFee={networkFee}
-        amountAfterFee={amountAfterFee}
-        onConfirm={handleWithdrawal}
-      />
+      {confirmation}
       <TopUpModal
         isOpen={showTopUpModal}
         onClose={() => setShowTopUpModal(false)}

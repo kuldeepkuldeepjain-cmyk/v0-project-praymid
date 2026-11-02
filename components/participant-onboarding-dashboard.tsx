@@ -88,7 +88,7 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, accoun
         <button
           type="button"
           onClick={onAddFunds}
-          className="action-tile col-span-2 flex min-h-16 items-center justify-center gap-2 rounded-xl p-2 text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:scale-[0.99] sm:col-span-3 md:col-span-2"
+          className="mobile-dashboard-add-funds action-tile col-span-2 flex min-h-16 items-center justify-center gap-2 rounded-xl p-2 text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 active:scale-[0.99] sm:col-span-3 md:col-span-2"
           style={{
             background: "linear-gradient(145deg, rgba(214,182,107,0.18) 0%, rgba(214,182,107,0.08) 100%)",
             border: "1px solid rgba(214,182,107,0.35)",
@@ -99,6 +99,11 @@ export function ParticipantOnboardingDashboard({ displayName, isVerified, accoun
           </span>
           <span className="min-w-0 flex-1 text-xs font-black text-amber-100">Add funds</span>
         </button>
+        <Link href="/participant/dashboard?view=terminal" className="mobile-dashboard-trade participant-dock-trade-button col-span-2 flex min-h-14 items-center justify-between rounded-xl px-5 font-sans text-base font-semibold sm:col-span-3 md:hidden">
+          <BarChart3 className="participant-dock-trade-icon size-5" aria-hidden="true" />
+          <span>Trade</span>
+          <ArrowRight className="size-5" aria-hidden="true" />
+        </Link>
       </section>
 
       {accountNotice}

@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Info, Loader2, ShieldAlert, Wallet, X } from "lucide-react"
+import { ArrowLeft, Bell, Info, Loader2, ShieldAlert, Wallet, X } from "lucide-react"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -20,8 +20,9 @@ export interface PayoutDestinationValues {
 }
 
 export function PayoutConfirmationDialog({
-  open, onOpenChange, network, values, onValueChange, isWithdrawing, amount, networkFee, amountAfterFee, onConfirm,
+  open, onOpenChange, network, values, onValueChange, isWithdrawing, amount, networkFee, amountAfterFee, onConfirm, presentation = "dialog",
 }: {
+  presentation?: "dialog" | "page"
   open: boolean
   onOpenChange: (open: boolean) => void
   network: PayoutNetwork
@@ -38,13 +39,20 @@ export function PayoutConfirmationDialog({
     ? !upiId.trim() && !(bankAccountName.trim() && bankAccountNumber.trim() && bankIfsc.trim())
     : !bep20Address
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="participant-payout-workspace payout-dialog font-sans">
-        <DialogHeader>
-          <div className="payout-dialog-heading"><DialogTitle>Confirm withdrawal</DialogTitle><DialogClose asChild><Button type="button" variant="ghost" size="icon" aria-label="Close withdrawal confirmation"><X data-icon="inline-start" aria-hidden="true" /></Button></DialogClose></div>
-          <DialogDescription>{network.id === "INR" ? "Add your UPI or bank details, then review your request." : "Add your receiving wallet and double-check the details."}</DialogDescription>
-        </DialogHeader>
+  const content = (
+    <>
+        {presentation === "page" ? (
+          <header className="payout-review-heading flex flex-col gap-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isWithdrawing}><ArrowLeft data-icon="inline-start" />Back to payout</Button>
+            <h1 className="text-balance text-2xl font-semibold">Confirm withdrawal</h1>
+            <p className="payout-muted text-pretty">{network.id === "INR" ? "Add your UPI or bank details, then review your request." : "Add your receiving wallet and double-check the details."}</p>
+          </header>
+        ) : (
+          <DialogHeader>
+            <div className="payout-dialog-heading"><DialogTitle>Confirm withdrawal</DialogTitle><DialogClose asChild><Button type="button" variant="ghost" size="icon" aria-label="Close withdrawal confirmation"><X data-icon="inline-start" aria-hidden="true" /></Button></DialogClose></div>
+            <DialogDescription>{network.id === "INR" ? "Add your UPI or bank details, then review your request." : "Add your receiving wallet and double-check the details."}</DialogDescription>
+          </DialogHeader>
+        )}
         <div className="payout-dialog-body">
           <div className="payout-dialog-method">
             <div className="flex min-w-0 items-center gap-3"><span className="payout-heading-icon"><Wallet className="size-5" aria-hidden="true" /></span><div className="flex min-w-0 flex-col gap-1"><strong>{network.ticker}</strong><span className="payout-muted">{network.label}</span></div></div>
@@ -90,12 +98,15 @@ export function PayoutConfirmationDialog({
             </Button>
           </div>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   )
+
+  if (presentation === "page") return open ? <main className="participant-payout-workspace payout-review-page font-sans">{content}</main> : null
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent showCloseButton={false} className="participant-payout-workspace payout-dialog font-sans">{content}</DialogContent></Dialog>
 }
 
-export function PayoutDisputeDialog({ open, onOpenChange, reason, onReasonChange, processing, onSubmit, onCancel }: {
+export function PayoutDisputeDialog({ open, onOpenChange, reason, onReasonChange, processing, onSubmit, onCancel, presentation = "dialog" }: {
+  presentation?: "dialog" | "page"
   open: boolean
   onOpenChange: (open: boolean) => void
   reason: string
@@ -104,13 +115,20 @@ export function PayoutDisputeDialog({ open, onOpenChange, reason, onReasonChange
   onSubmit: () => void
   onCancel: () => void
 }) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="participant-payout-workspace payout-dialog font-sans">
-        <DialogHeader>
-          <div className="payout-dialog-heading"><DialogTitle>Report a missing payout</DialogTitle><DialogClose asChild><Button type="button" variant="ghost" size="icon" aria-label="Close payout dispute"><X data-icon="inline-start" aria-hidden="true" /></Button></DialogClose></div>
-          <DialogDescription>Tell us what happened so our team can review your payout.</DialogDescription>
-        </DialogHeader>
+  const content = (
+    <>
+        {presentation === "page" ? (
+          <header className="payout-review-heading flex flex-col gap-4">
+            <Button type="button" variant="outline" onClick={onCancel} disabled={processing}><ArrowLeft data-icon="inline-start" />Back to payout</Button>
+            <h1 className="text-balance text-2xl font-semibold">Report a missing payout</h1>
+            <p className="payout-muted text-pretty">Tell us what happened so our team can review your payout.</p>
+          </header>
+        ) : (
+          <DialogHeader>
+            <div className="payout-dialog-heading"><DialogTitle>Report a missing payout</DialogTitle><DialogClose asChild><Button type="button" variant="ghost" size="icon" aria-label="Close payout dispute"><X data-icon="inline-start" aria-hidden="true" /></Button></DialogClose></div>
+            <DialogDescription>Tell us what happened so our team can review your payout.</DialogDescription>
+          </DialogHeader>
+        )}
         <div className="payout-dialog-body">
           <Alert role="note"><ShieldAlert aria-hidden="true" /><AlertTitle>Check the receiving account first</AlertTitle><AlertDescription>Only raise a dispute if you genuinely did not receive the funds. False disputes may result in account suspension.</AlertDescription></Alert>
           <FieldGroup>
@@ -127,7 +145,8 @@ export function PayoutDisputeDialog({ open, onOpenChange, reason, onReasonChange
             {processing ? <Loader2 data-icon="inline-start" className="animate-spin" aria-hidden="true" /> : <ShieldAlert data-icon="inline-start" aria-hidden="true" />}{processing ? "Submitting..." : "Submit dispute"}
           </Button>
         </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </>
   )
+  if (presentation === "page") return open ? <main className="participant-payout-workspace payout-review-page font-sans">{content}</main> : null
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent showCloseButton={false} className="participant-payout-workspace payout-dialog font-sans">{content}</DialogContent></Dialog>
 }
