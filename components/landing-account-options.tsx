@@ -52,7 +52,7 @@ export function LandingAccountOptions() {
       <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
         <div className="elite-section-heading max-w-3xl">
           <p className="elite-eyebrow">Account options</p>
-          <h2 className="elite-heading mt-4 text-balance">Choose the account that fits your approach.</h2>
+          <h2 className="elite-heading mt-4 text-balance">Compare funded trading accounts and Challenge plans.</h2>
           <p className="elite-copy mt-4 max-w-2xl">
             Compare standard access, Challenge plans, and funded accounts.
           </p>

@@ -1,4 +1,11 @@
 import { ArrowRight, TrendingUp, BarChart3, Shield, Zap, Target, DollarSign } from 'lucide-react'
+import { createSiteMetadata } from "@/lib/site-seo"
+
+export const metadata = createSiteMetadata({
+  title: "Archived Trading Demo",
+  description: "A legacy trading demo that is not part of the active EliteFund product pages.",
+  noIndex: true,
+})
 
 export default function BinaryTradingLandingDemo() {
   return (

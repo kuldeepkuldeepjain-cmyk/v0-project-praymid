@@ -64,9 +64,14 @@ const steps = [
 
 const faqs = [
   {
-    question: "What is Elite Fund?",
+    question: "What is EliteFund?",
     answer:
-      "A trading workspace with optional Challenge programs. Features and eligibility vary by account.",
+      "EliteFund offers a trading workspace with optional funded trading challenge programs. Compare account sizes, evaluation fees, profit targets, and drawdown rules; eligibility varies by plan.",
+  },
+  {
+    question: "How does a funded trading challenge work?",
+    answer:
+      "Choose a plan, review its fee and published rules, and track trading against the profit target, daily loss limit, maximum drawdown, and minimum trading days. Passing may qualify you for funded-account review; funding, profits, and payouts are not guaranteed.",
   },
   {
     question: "What are the challenge rules?",
@@ -114,11 +119,11 @@ export default function LandingExperience() {
                 Funded programs for disciplined traders
               </p>
               <h1 className="elite-display text-balance">
-                Trade with a plan.
-                <span className="block elite-brand-text">Stay in control.</span>
+                Funded trading challenges
+                <span className="block elite-brand-text">with clear rules.</span>
               </h1>
               <p className="elite-copy mt-5 max-w-xl text-base sm:mt-6 sm:text-lg">
-                Explore funded account sizes and fees. Review the rules. Plan each trade with focus.
+                Compare funded trading accounts, prop trading challenge fees, profit targets, and drawdown rules before choosing a plan.
               </p>
               <div className="mt-7 flex flex-col gap-3 sm:mt-8 sm:flex-row">
                 <Link href="#funded-accounts" className="elite-button elite-button-primary">

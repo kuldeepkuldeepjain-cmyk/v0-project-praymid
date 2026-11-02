@@ -1,6 +1,12 @@
 import Link from "next/link"
+import { createSiteMetadata } from "@/lib/site-seo"
 
-export const metadata = { title: "Privacy Policy | Elite Fund", description: "How Elite Fund collects and protects member information." }
+export const metadata = createSiteMetadata({
+  title: "Privacy Policy",
+  description:
+    "Learn how EliteFund collects, uses, and protects account, identity, payment, and technical information for its trading workspace.",
+  canonicalPath: "/privacy",
+})
 
 export default function PrivacyPage() {
   return <PolicyPage title="Privacy Policy" updated="September 21, 2026">
