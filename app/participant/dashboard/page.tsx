@@ -1495,8 +1495,18 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     const handleRates = (event: Event) => {
       try {
         const payload = JSON.parse((event as MessageEvent<string>).data)
-        if (payload?.rates) {
-          setLiveRates(payload.rates)
+        const rates = payload?.rates
+        if (rates && typeof rates === "object" && !Array.isArray(rates)) {
+          const normalizedRates: Record<string, { mid: number; change: number }> = {}
+          for (const [symbol, candidate] of Object.entries(rates)) {
+            if (!candidate || typeof candidate !== "object") continue
+            const rate = candidate as { mid?: unknown; change?: unknown }
+            const mid = Number(rate.mid)
+            if (!Number.isFinite(mid) || mid <= 0) continue
+            const change = Number(rate.change)
+            normalizedRates[symbol] = { mid, change: Number.isFinite(change) ? change : 0 }
+          }
+          setLiveRates(normalizedRates)
           setMarketStatus(payload.source === "live" || payload.source === "partial-live" ? "live" : "stale")
         }
       } catch {

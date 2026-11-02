@@ -40,6 +40,11 @@ function formatDashboardCurrency(value: number) {
   }).format(Number.isFinite(value) ? value : 0)
 }
 
+function formatDashboardCount(value: number) {
+  const count = Number(value)
+  return Number.isFinite(count) ? Math.max(0, Math.floor(count)).toLocaleString() : "0"
+}
+
 export function ParticipantOnboardingDashboard({
   displayName,
   email,
@@ -62,8 +67,8 @@ export function ParticipantOnboardingDashboard({
   const completed = isVerified ? 1 : 0
   const metrics = [
     { label: "Total earnings", value: formatDashboardCurrency(totalEarnings) },
-    { label: "Trades", value: tradeCount.toLocaleString() },
-    { label: "Referrals", value: referralCount.toLocaleString(), detail: `${formatDashboardCurrency(referralEarnings)} rewards` },
+    { label: "Trades", value: formatDashboardCount(tradeCount) },
+    { label: "Referrals", value: formatDashboardCount(referralCount), detail: `${formatDashboardCurrency(referralEarnings)} rewards` },
     { label: "Bonus balance", value: formatDashboardCurrency(bonusBalance) },
   ]
 
