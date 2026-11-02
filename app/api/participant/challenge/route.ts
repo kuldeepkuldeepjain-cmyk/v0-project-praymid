@@ -159,6 +159,9 @@ export async function GET(request: NextRequest) {
       [participant.id],
     )
     const payment = paymentResult.rows[0]
+    const paymentNotes = String(payment?.admin_notes || "")
+    const paymentCurrency = /(?:^|; )payment_currency=(INR|USDT)(?:;|$)/.exec(paymentNotes)?.[1] || "USDT"
+    const inrAmount = Number(/(?:^|; )inr_amount=([0-9.]+)(?:;|$)/.exec(paymentNotes)?.[1]) || null
 
     return NextResponse.json({
       success: true,
@@ -172,6 +175,8 @@ export async function GET(request: NextRequest) {
         transactionId: payment.transaction_id,
         amount: Number(payment.amount) || 0,
         submittedAt: payment.created_at,
+        paymentCurrency,
+        inrAmount,
         adminNote: String(payment.admin_notes || "").match(/(?:^|\n)Admin review: (.+)$/m)?.[1] || null,
       } : null,
       plans: DEFAULT_CHALLENGE_PLANS,
@@ -189,12 +194,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const plan = getChallengePlan(body?.planKey)
-    const transactionHash = typeof body?.transactionHash === "string" ? body.transactionHash.trim() : ""
+    const paymentMethod = String(body?.paymentMethod || "USDT").trim().toUpperCase()
+    const isInrPayment = paymentMethod === "INR"
+    const transactionHash = (isInrPayment ? body?.upiReference : body?.transactionHash)
+    const transactionId = typeof transactionHash === "string" ? transactionHash.trim().toUpperCase() : ""
     const walletAddress = typeof body?.walletAddress === "string" ? body.walletAddress.trim() : ""
-    const paymentNetwork = String(body?.paymentNetwork || "").trim().toUpperCase()
+    const expectedInrAmount = Number(body?.inrAmount)
+    const paymentNetwork = isInrPayment ? "INR" : String(body?.paymentNetwork || "").trim().toUpperCase()
+    const validTransactionId = isInrPayment
+      ? /^[A-Z0-9]{8,40}$/.test(transactionId)
+      : transactionId.length >= 8 && transactionId.length <= 200
 
-    if (!plan || transactionHash.length < 8 || transactionHash.length > 200 || walletAddress.length < 8 || walletAddress.length > 160 || !PAYMENT_NETWORKS.has(paymentNetwork)) {
-      return NextResponse.json({ success: false, message: "Choose a valid plan and network, then enter the transaction hash and sending wallet." }, { status: 400 })
+    if (!plan || !["INR", "USDT"].includes(paymentMethod) || !validTransactionId || (isInrPayment && (!Number.isFinite(expectedInrAmount) || expectedInrAmount <= 0)) || (!isInrPayment && (walletAddress.length < 8 || walletAddress.length > 160 || !PAYMENT_NETWORKS.has(paymentNetwork)))) {
+      return NextResponse.json({ success: false, message: isInrPayment ? "Choose a valid plan and enter the UPI transaction reference (UTR)." : "Choose a valid plan and network, then enter the transaction hash and sending wallet." }, { status: 400 })
     }
 
     const result = await withTransaction(async (client) => {
@@ -214,16 +226,30 @@ export async function POST(request: NextRequest) {
 
       const duplicate = await client.query(
         `SELECT id FROM topup_requests WHERE LOWER(transaction_id) = LOWER($1) LIMIT 1`,
-        [transactionHash],
+        [transactionId],
       )
       if (duplicate.rows.length) return { error: "This transaction has already been submitted.", status: 409 }
 
-      const notes = `challenge_plan_key=${plan.key}; payment_network=${paymentNetwork}; sender_wallet=${walletAddress}`
+      let notes: string
+      if (isInrPayment) {
+        const rateResult = await client.query(
+          "SELECT setting_value FROM system_settings WHERE setting_key = 'topup_usdt_inr_rate' LIMIT 1",
+        )
+        const configuredRate = Number(rateResult.rows[0]?.setting_value)
+        const inrRate = Number.isFinite(configuredRate) && configuredRate > 0 ? configuredRate : 104
+        const inrAmount = Number((plan.fee * inrRate).toFixed(2))
+        if (Math.abs(expectedInrAmount - inrAmount) > 0.01) {
+          return { error: "The INR conversion has changed. Refresh the page and pay the updated amount.", status: 409 }
+        }
+        notes = `challenge_plan_key=${plan.key}; payment_currency=INR; payment_method=UPI; payment_network=INR; inr_amount=${inrAmount.toFixed(2)}; inr_rate=${inrRate}`
+      } else {
+        notes = `challenge_plan_key=${plan.key}; payment_currency=USDT; payment_method=crypto; payment_network=${paymentNetwork}; sender_wallet=${walletAddress}`
+      }
       await client.query(
         `INSERT INTO topup_requests
           (participant_id, participant_email, amount, transaction_id, payment_method, status, admin_notes)
          VALUES ($1, $2, $3, $4, 'challenge', 'pending', $5)`,
-        [participant.id, participant.email, plan.fee, transactionHash, notes],
+        [participant.id, participant.email, plan.fee, transactionId, notes],
       )
       await client.query(
         `UPDATE participants SET challenge_plan_key = $1, challenge_status = 'pending_payment', updated_at = NOW()
@@ -237,7 +263,12 @@ export async function POST(request: NextRequest) {
     if ("error" in result) {
       return NextResponse.json({ success: false, message: result.error }, { status: result.status })
     }
-    return NextResponse.json({ success: true, message: "Challenge fee submitted for review. Your virtual account balance will be activated after approval." })
+    return NextResponse.json({
+      success: true,
+      message: isInrPayment
+        ? "UPI payment reference submitted for review. Your virtual account balance will be activated after approval."
+        : "Challenge fee submitted for review. Your virtual account balance will be activated after approval.",
+    })
   } catch (error) {
     console.error("[v0] Challenge POST error:", error)
     return NextResponse.json({ success: false, message: "Unable to submit Challenge payment" }, { status: 500 })

@@ -1,7 +1,9 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
+import QRCode from "qrcode"
 import useSWR from "swr"
 import { ArrowLeft, ArrowUpRight, Check, Copy, ShieldCheck, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -38,9 +40,12 @@ export default function ChallengePage() {
   })
   const { data: paymentSettings } = useSWR(SETTINGS_URL, settingsFetcher, { revalidateOnFocus: false })
   const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<"USDT" | "INR">("USDT")
   const [paymentNetwork, setPaymentNetwork] = useState("BEP20")
   const [transactionHash, setTransactionHash] = useState("")
   const [walletAddress, setWalletAddress] = useState("")
+  const [upiReference, setUpiReference] = useState("")
+  const [qrData, setQrData] = useState<{ paymentLink: string; dataUrl: string } | null>(null)
   const [message, setMessage] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -60,27 +65,50 @@ export default function ChallengePage() {
   const currentAddress = availableNetworks.find((item) => item.key === paymentNetwork)?.address || ""
   const effectivePlanKey = selectedPlanKey || participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[0].key
   const plan = plans.find((item) => item.key === effectivePlanKey) || plans[0] || DEFAULT_CHALLENGE_PLANS[0]
+  const configuredInrRate = Number(paymentSettings?.usdt_inr_rate)
+  const inrRate = Number.isFinite(configuredInrRate) && configuredInrRate > 0 ? configuredInrRate : 104
+  const inrAmount = Number((plan.fee * inrRate).toFixed(2))
+  const upiId = typeof paymentSettings?.inr_upi_id === "string" ? paymentSettings.inr_upi_id : "elitefun@slc"
+  const payeeName = typeof paymentSettings?.inr_account_holder_name === "string" && paymentSettings.inr_account_holder_name.trim()
+    ? paymentSettings.inr_account_holder_name
+    : "EliteFund"
+  const upiPaymentLink = useMemo(() => paymentMethod === "INR"
+    ? `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(payeeName)}&am=${inrAmount.toFixed(2)}&cu=INR&tn=${encodeURIComponent("EliteFund Challenge fee")}`
+    : "", [paymentMethod, upiId, payeeName, inrAmount])
   const metrics = data?.metrics
   const recentTrades = Array.isArray(data?.recentTrades) ? data.recentTrades : []
+
+  useEffect(() => {
+    if (paymentMethod !== "INR" || !upiPaymentLink) return
+
+    let cancelled = false
+    QRCode.toDataURL(upiPaymentLink, { width: 240, margin: 1, color: { dark: "#0a111b", light: "#ffffff" } })
+      .then((dataUrl) => { if (!cancelled) setQrData({ paymentLink: upiPaymentLink, dataUrl }) })
+      .catch(() => { if (!cancelled) setQrData(null) })
+
+    return () => { cancelled = true }
+  }, [paymentMethod, upiPaymentLink])
+
   const canSubmitPayment = participant?.account_type === "challenge"
     && !["active", "pending_payment", "passed"].includes(status)
   const progress = Math.max(0, Math.min(100, Number(metrics?.progressPercent) || 0))
   const displayStatus = getChallengeStatusLabel(status)
 
   async function copyAddress() {
-    if (!currentAddress) return
+    const valueToCopy = paymentMethod === "INR" ? upiId : currentAddress
+    if (!valueToCopy) return
     try {
-      await navigator.clipboard.writeText(currentAddress)
+      await navigator.clipboard.writeText(valueToCopy)
       setCopied(true)
       window.setTimeout(() => setCopied(false), 1800)
     } catch {
-      setMessage("Could not copy the payment address. Please copy it manually.")
+      setMessage("Could not copy the payment details. Please copy them manually.")
     }
   }
 
   async function submitPayment() {
-    if (!plan || !currentAddress) {
-      setMessage("No receiving address is configured for this payment network. Select another network or contact support.")
+    if (!plan || (paymentMethod === "USDT" && !currentAddress)) {
+      setMessage("No receiving address is configured for this payment method. Select another network or contact support.")
       return
     }
     setSubmitting(true)
@@ -89,13 +117,22 @@ export default function ChallengePage() {
       const response = await participantFetch(CHALLENGE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planKey: plan.key, transactionHash, walletAddress, paymentNetwork }),
+        body: JSON.stringify({
+          planKey: plan.key,
+          paymentMethod,
+          paymentNetwork,
+          transactionHash,
+          walletAddress,
+          upiReference,
+          inrAmount: paymentMethod === "INR" ? inrAmount : undefined,
+        }),
       })
       const result = await response.json()
       if (!response.ok || !result.success) throw new Error(result.message || "Unable to submit Challenge payment")
       setMessage(result.message || "Challenge payment submitted for review.")
       setTransactionHash("")
       setWalletAddress("")
+      setUpiReference("")
       await mutate()
     } catch (submitError) {
       setMessage(submitError instanceof Error ? submitError.message : "Unable to submit payment. Please try again.")
@@ -253,12 +290,29 @@ export default function ChallengePage() {
                 )}
                 {status === "failed" && <p className="rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-sm leading-6 text-slate-300">Your previous evaluation is closed. A new approved fee starts a fresh evaluation and resets the trading-day and drawdown counters.</p>}
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <Metric label="Fee" value={`${CURRENCY.format(plan.fee)} USDT`} />
+                  <Metric
+                    label="Challenge fee"
+                    value={paymentMethod === "INR" ? `₹${inrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} INR` : `${CURRENCY.format(plan.fee)} USDT`}
+                    detail={paymentMethod === "INR" ? `${CURRENCY.format(plan.fee)} equivalent · ₹${inrRate.toLocaleString("en-IN")} / USDT` : undefined}
+                  />
                   <Metric label="Virtual starting balance" value={CURRENCY.format(plan.startingBalance)} />
                   <Metric label="Leverage" value={`${plan.leverage}:1`} />
                 </div>
 
-                {availableNetworks.length ? (
+                <div className="flex max-w-sm flex-col gap-2">
+                  <Label htmlFor="challenge-payment-method" className="text-slate-200">Payment method</Label>
+                  <Select value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as "USDT" | "INR")}>
+                    <SelectTrigger id="challenge-payment-method" className="border-slate-700 bg-slate-900 text-white"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="USDT">USDT · Crypto</SelectItem>
+                        <SelectItem value="INR" disabled={!paymentSettings?.success}>INR · UPI</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {paymentMethod === "USDT" ? availableNetworks.length ? (
                   <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="challenge-network" className="text-slate-200">Payment network</Label>
@@ -279,17 +333,51 @@ export default function ChallengePage() {
                   </div>
                 ) : (
                   <p role="status" className="rounded-lg border border-amber-300/25 bg-amber-300/10 p-3 text-sm leading-6 text-amber-100">No Challenge receiving address is configured yet. Contact support before sending a payment.</p>
+                ) : (
+                  <div className="grid gap-4 rounded-lg border border-slate-700 bg-slate-900/60 p-4 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+                    {qrData?.paymentLink === upiPaymentLink ? (
+                      <Image unoptimized src={qrData.dataUrl} alt={`UPI payment QR for ₹${inrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })}`} width={176} height={176} className="size-44 rounded-md bg-white p-2" />
+                    ) : (
+                      <div className="flex size-44 items-center justify-center rounded-md border border-slate-700 text-center text-xs text-slate-400" role="status">Preparing UPI QR</div>
+                    )}
+                    <div className="flex min-w-0 flex-col gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-white">Pay exactly ₹{inrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} INR</p>
+                        <p className="mt-1 text-xs leading-5 text-slate-400">Challenge fee conversion uses ₹{inrRate.toLocaleString("en-IN")} per USDT. Your virtual balance activates only after review.</p>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Label htmlFor="challenge-upi-id" className="text-slate-200">UPI ID · {payeeName}</Label>
+                        <div className="flex gap-2">
+                          <Input id="challenge-upi-id" readOnly value={upiId} className="min-w-0 border-slate-700 bg-slate-900 font-mono text-xs text-white" />
+                          <Button type="button" variant="outline" onClick={copyAddress} className="shrink-0 border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"><Copy data-icon="inline-start" />{copied ? "Copied" : "Copy"}</Button>
+                        </div>
+                      </div>
+                      <Button asChild variant="outline" className="self-start border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700">
+                        <a href={upiPaymentLink}>Open UPI app <ArrowUpRight data-icon="inline-end" /></a>
+                      </Button>
+                    </div>
+                  </div>
                 )}
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="flex flex-col gap-2"><Label htmlFor="challenge-sender-wallet" className="text-slate-200">Your sending wallet</Label><Input id="challenge-sender-wallet" autoComplete="off" value={walletAddress} onChange={(event) => setWalletAddress(event.target.value)} placeholder="Wallet address used to send the fee" className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500" /></div>
-                  <div className="flex flex-col gap-2"><Label htmlFor="challenge-transaction-hash" className="text-slate-200">Transaction hash</Label><Input id="challenge-transaction-hash" autoComplete="off" value={transactionHash} onChange={(event) => setTransactionHash(event.target.value)} placeholder="Paste your transaction hash" className="border-slate-700 bg-slate-900 font-mono text-white placeholder:text-slate-500" /></div>
+                <div className={`grid gap-4 ${paymentMethod === "USDT" ? "md:grid-cols-2" : "md:grid-cols-1"}`}>
+                  {paymentMethod === "USDT" && <div className="flex flex-col gap-2"><Label htmlFor="challenge-sender-wallet" className="text-slate-200">Your sending wallet</Label><Input id="challenge-sender-wallet" autoComplete="off" value={walletAddress} onChange={(event) => setWalletAddress(event.target.value)} placeholder="Wallet address used to send the fee" className="border-slate-700 bg-slate-900 text-white placeholder:text-slate-500" /></div>}
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor={paymentMethod === "INR" ? "challenge-upi-reference" : "challenge-transaction-hash"} className="text-slate-200">{paymentMethod === "INR" ? "UPI transaction reference (UTR)" : "Transaction hash"}</Label>
+                    <Input
+                      id={paymentMethod === "INR" ? "challenge-upi-reference" : "challenge-transaction-hash"}
+                      autoComplete="off"
+                      value={paymentMethod === "INR" ? upiReference : transactionHash}
+                      onChange={(event) => paymentMethod === "INR" ? setUpiReference(event.target.value) : setTransactionHash(event.target.value)}
+                      placeholder={paymentMethod === "INR" ? "Enter the reference from your UPI app" : "Paste your transaction hash"}
+                      className="border-slate-700 bg-slate-900 font-mono text-white placeholder:text-slate-500"
+                    />
+                  </div>
                 </div>
-                <Button type="button" onClick={submitPayment} disabled={submitting || !currentAddress || !transactionHash.trim() || !walletAddress.trim()} className="h-11 self-start bg-[#d6b66b] font-semibold text-[#111315] hover:bg-[#e2c982]">
-                  <TrendingUp data-icon="inline-start" />{submitting ? "Submitting…" : `Submit ${CURRENCY.format(plan.fee)} fee`}
+                <Button type="button" onClick={submitPayment} disabled={submitting || (paymentMethod === "INR" ? !upiReference.trim() : !currentAddress || !transactionHash.trim() || !walletAddress.trim())} className="h-11 self-start bg-[#d6b66b] font-semibold text-[#111315] hover:bg-[#e2c982]">
+                  <TrendingUp data-icon="inline-start" />{submitting ? "Submitting…" : paymentMethod === "INR" ? `Submit ₹${inrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} fee` : `Submit ${CURRENCY.format(plan.fee)} fee`}
                 </Button>
                 {message && <p className="text-sm text-slate-300" role="status">{message}</p>}
-                <p className="flex items-start gap-2 text-xs leading-5 text-slate-500"><Check className="mt-0.5 size-3 shrink-0 text-amber-200" /> Payment is reviewed by the team. Do not send funds until the receiving address and network are confirmed.</p>
+                <p className="flex items-start gap-2 text-xs leading-5 text-slate-500"><Check className="mt-0.5 size-3 shrink-0 text-amber-200" /> Payments are reviewed by the team. Confirm the selected method, amount, network, and receiving details before transferring.</p>
               </CardContent>
             </Card>
           </>
@@ -301,7 +389,11 @@ export default function ChallengePage() {
             <CardContent className="flex flex-col gap-2 text-sm leading-6 text-slate-400">
               <p>Your Challenge fee has been submitted. The virtual starting balance is not available until the payment is approved.</p>
               {data.paymentReview?.transactionId && <p>Transaction: <span className="break-all font-mono text-slate-200">{data.paymentReview.transactionId}</span></p>}
-              {data.paymentReview?.amount > 0 && <p>Fee submitted: {CURRENCY.format(data.paymentReview.amount)} USDT</p>}
+              {data.paymentReview?.amount > 0 && data.paymentReview?.paymentCurrency === "INR" && data.paymentReview?.inrAmount ? (
+                <p>Fee submitted: ₹{Number(data.paymentReview.inrAmount).toLocaleString("en-IN", { maximumFractionDigits: 2 })} INR · {CURRENCY.format(data.paymentReview.amount)} equivalent</p>
+              ) : data.paymentReview?.amount > 0 ? (
+                <p>Fee submitted: {CURRENCY.format(data.paymentReview.amount)} USDT</p>
+              ) : null}
             </CardContent>
           </Card>
         )}
