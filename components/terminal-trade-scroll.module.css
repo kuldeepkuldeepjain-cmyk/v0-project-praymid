@@ -36,5 +36,18 @@
 
   :global(.mt5-terminal.reference-terminal.is-chart-expanded) .chartColumn:not(:global(.hidden)) {
     height: calc(100dvh - env(safe-area-inset-bottom)) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :global(.mt5-terminal.reference-terminal.is-chart-expanded) .chartColumn > .scrollArea {
+    flex: 0 0 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    overscroll-behavior: auto;
   }
 }

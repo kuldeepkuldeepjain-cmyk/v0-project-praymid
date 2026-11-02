@@ -53,7 +53,7 @@ export function MarketPreview() {
         ))}
       </div>
 
-      <div className="mt-4" aria-live="polite" aria-atomic="true">
+      <div key={activeGroup} className="mt-4" aria-live="polite" aria-atomic="true">
         {marketGroups[activeGroup].map((market) => (
           <div key={market.symbol} className="elite-market-row">
             <div>

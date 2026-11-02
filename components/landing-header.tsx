@@ -41,8 +41,8 @@ export function LandingHeader() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:hidden">
-            <Link href="/participant/login" className="elite-header-login">Log in</Link>
+          <div className="flex items-center gap-2 lg:hidden">
+            <Link href="/participant/login" className="elite-header-login elite-mobile-login">Log in</Link>
             <button
               type="button"
               className="elite-menu-button"
@@ -57,7 +57,7 @@ export function LandingHeader() {
         </nav>
 
         {isMenuOpen && (
-          <div id="elite-mobile-navigation" className="elite-mobile-navigation sm:hidden">
+          <div id="elite-mobile-navigation" className="elite-mobile-navigation lg:hidden">
             {navigation.map(([label, href]) => (
               <Link key={href} href={href} onClick={() => setIsMenuOpen(false)}>{label}</Link>
             ))}

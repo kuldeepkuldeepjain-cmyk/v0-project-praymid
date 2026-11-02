@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useIsMobile } from "@/hooks/use-mobile"
 import QRCode from "qrcode"
-import { X, Wallet, CheckCircle2, AlertCircle, Loader2, Send, Landmark } from "lucide-react"
+import { ArrowLeft, X, Wallet, CheckCircle2, AlertCircle, Loader2, Send, Landmark } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -49,7 +51,26 @@ function describePromoDiscount(promo: AppliedPromo) {
   return `$${promo.discountValue.toFixed(2)} off your payment.`
 }
 
-export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable }: TopUpModalProps) {
+export function TopUpModal(props: TopUpModalProps) {
+  const isMobile = useIsMobile()
+  const router = useRouter()
+  const { isOpen, onClose, isFundedAccount, isInitialFundedTopUp, openFundedTier } = props
+
+  useEffect(() => {
+    if (!isOpen || !isMobile) return
+    const query = new URLSearchParams()
+    if (isFundedAccount) query.set("account", "funded")
+    if (isInitialFundedTopUp) query.set("initial", "1")
+    if (openFundedTier) query.set("tier", "1")
+    router.push(`/participant/dashboard/add-funds${query.size ? `?${query}` : ""}`)
+    onClose()
+  }, [isOpen, isMobile, isFundedAccount, isInitialFundedTopUp, openFundedTier, router, onClose])
+
+  if (isMobile) return null
+  return <FundingCheckout {...props} />
+}
+
+export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable, presentation = "dialog" }: TopUpModalProps & { presentation?: "dialog" | "page" }) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
@@ -342,16 +363,15 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
 
   const checkoutProgress = step === "success" ? 3 : isAmountValid && txHash.trim() ? 2 : isAmountValid ? 1 : 0
 
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && step !== "submitting") onClose() }}>
-      <DialogContent className="participant-funding-workspace funding-checkout-dialog font-sans" showCloseButton={false} style={{ background: "var(--profile-background)", color: "var(--profile-foreground)" }}>
+  const content = (
+    <>
         <header className="funding-checkout-header">
           <div className="funding-checkout-heading">
             <p className="funding-kicker">EliteFund checkout</p>
-            <DialogTitle>{step === "success" ? "Request submitted" : "Add funds"}</DialogTitle>
-            <DialogDescription>{step === "success" ? "Your payment reference has been sent for review." : "Choose your amount, transfer your payment, and submit the reference."}</DialogDescription>
+            {presentation === "page" ? <h1>{step === "success" ? "Request submitted" : "Add funds"}</h1> : <DialogTitle>{step === "success" ? "Request submitted" : "Add funds"}</DialogTitle>}
+            {presentation === "page" ? <p>{step === "success" ? "Your payment reference has been sent for review." : "Choose your amount, transfer your payment, and submit the reference."}</p> : <DialogDescription>{step === "success" ? "Your payment reference has been sent for review." : "Choose your amount, transfer your payment, and submit the reference."}</DialogDescription>}
           </div>
-          {step !== "submitting" && <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close funding checkout"><X data-icon="inline-start" /></Button>}
+          {step !== "submitting" && <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label={presentation === "page" ? "Back to dashboard" : "Close funding checkout"}>{presentation === "page" ? <ArrowLeft data-icon="inline-start" /> : <X data-icon="inline-start" />}</Button>}
         </header>
         <ol className="funding-progress" aria-label="Funding steps">
           {["Details", "Transfer", "Confirm"].map((label, index) => (
@@ -481,7 +501,14 @@ export function TopUpModal({ isOpen, onClose, currentBalance, userId, userEmail,
             </div>
           )}
         </footer>
-      </DialogContent>
+    </>
+  )
+
+  if (presentation === "page") return <main className="participant-funding-workspace funding-checkout-page font-sans">{content}</main>
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && step !== "submitting") onClose() }}>
+      <DialogContent className="participant-funding-workspace funding-checkout-dialog font-sans" showCloseButton={false} style={{ background: "var(--profile-background)", color: "var(--profile-foreground)" }}>{content}</DialogContent>
     </Dialog>
   )
 }

@@ -21,22 +21,26 @@ const features = [
   {
     icon: CandlestickChart,
     title: "Read the market",
-    description: "Bring supported instruments and chart context into one focused trading workspace.",
+    description: "See supported markets and charts in one focused workspace.",
+    detail: "Preview Forex, metals, and digital markets above.",
   },
   {
     icon: Shield,
     title: "Define risk first",
-    description: "Review size, stop-loss, take-profit, and account limits before an order is placed.",
+    description: "Set trade size, stop-loss, and take-profit before entry.",
+    detail: "Compare each Challenge plan’s target and loss limits below.",
   },
   {
     icon: BarChart2,
     title: "See your exposure",
-    description: "Keep positions, margin, and account activity visible while you manage a trade.",
+    description: "See open positions, margin, and activity together.",
+    detail: "Review your margin, positions, and trade history in one place.",
   },
   {
     icon: Users,
     title: "Build consistency",
-    description: "Use clear records and support resources to review decisions over time.",
+    description: "Use clear records to improve your trading process.",
+    detail: "Track your trades and evaluation rules to stay consistent.",
   },
 ]
 
@@ -44,17 +48,17 @@ const steps = [
   {
     number: "01",
     title: "Choose an account",
-    description: "Compare available challenge sizes and review the full rules before registering.",
+    description: "Compare plans, fees, and rules before you sign up.",
   },
   {
     number: "02",
     title: "Trade your process",
-    description: "Use the platform to assess markets, plan your risk, and manage each position.",
+    description: "Assess the market, set your risk, and manage each trade.",
   },
   {
     number: "03",
     title: "Review your progress",
-    description: "Track activity against the applicable evaluation rules and account terms.",
+    description: "Track your progress against your account rules.",
   },
 ]
 
@@ -62,37 +66,37 @@ const faqs = [
   {
     question: "What is Elite Fund?",
     answer:
-      "Elite Fund provides a trading workspace and challenge programs for eligible traders. Platform access, instruments, and program terms depend on the account you select.",
+      "A trading workspace with optional Challenge programs. Features and eligibility vary by account.",
   },
   {
     question: "What are the challenge rules?",
     answer:
-      "The rules shown on this page include an 8% profit target, a 5% daily loss limit, a 10% maximum drawdown, and five minimum trading days. Review the current account terms before registering, since program availability and eligibility can vary.",
+      "Compare plans before signing up: check the target, loss limits, drawdown, and required trading days.",
   },
   {
     question: "How much leverage is available?",
     answer:
-      "Normal accounts offer up to 1,000:1 leverage. Challenge accounts use the leverage limit shown for the selected plan. Actual leverage depends on the instrument, margin requirements, and account terms.",
+      "Normal accounts offer up to 1,000:1. Challenge leverage varies by plan. Instrument limits apply.",
   },
   {
     question: "Where can I review payout records?",
     answer:
-      "Sign in to see your private payout history, including request status, amount, method, and an available transaction reference. Eligibility and processing times depend on the applicable payout terms.",
+      "See your payout amount, status, payment method, and transaction reference if available. Terms apply.",
   },
   {
     question: "Are the market prices shown live?",
     answer:
-      "No. The market panel is an illustrative interface preview. It does not show live quotes and should not be used to make trading decisions.",
+      "No. These are illustrative values, not live prices. Don’t use them to trade.",
   },
   {
     question: "Does a challenge guarantee funding or profits?",
     answer:
-      "No. Completing an evaluation does not remove market risk or guarantee a particular outcome. Progression is subject to the applicable rules, eligibility checks, and account terms.",
+      "No. Passing a Challenge does not guarantee funding or profits. Eligibility and program rules apply.",
   },
   {
     question: "Where can I read the full risk and account terms?",
     answer:
-      "Read the Terms and Privacy pages before registering. Trading involves significant risk, and you should only trade with an understanding of the potential losses.",
+      "Read the Terms and Privacy pages before registering. Trading can result in significant losses.",
   },
 ]
 
@@ -103,9 +107,7 @@ export default function LandingExperience() {
 
       <main id="main-content">
         <section id="platform" className="elite-hero relative isolate overflow-hidden">
-          <div className="elite-hero-art" aria-hidden="true" />
-          <div className="elite-hero-scrim" aria-hidden="true" />
-          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-8 px-5 py-10 sm:gap-12 sm:px-8 sm:py-20 lg:min-h-[690px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-24">
+          <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:gap-12 sm:px-8 sm:py-20 lg:min-h-[620px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-20">
             <div className="elite-hero-copy max-w-2xl">
               <p className="elite-eyebrow mb-5 inline-flex items-center gap-2.5">
                 <span className="elite-eyebrow-dot" aria-hidden="true" />
@@ -142,16 +144,20 @@ export default function LandingExperience() {
               <p className="elite-eyebrow">A workspace with purpose</p>
               <h2 className="elite-heading mt-4 text-balance">The essentials, without the noise.</h2>
               <p className="elite-copy mt-4 max-w-2xl">
-                Tools that help you understand the setup, define the risk, and stay close to the details that matter.
+                Plan trades, manage risk, and focus on what matters.
               </p>
             </div>
             <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {features.map(({ icon: Icon, title, description }) => (
-                <article key={title} className="elite-feature-card">
-                  <div className="elite-feature-icon"><Icon aria-hidden="true" /></div>
-                  <h3 className="mt-6 text-lg font-semibold">{title}</h3>
-                  <p className="elite-copy mt-2 text-sm">{description}</p>
-                </article>
+              {features.map(({ icon: Icon, title, description, detail }, index) => (
+                <details key={title} className="elite-feature-card elite-interactive-tile" style={{ animationDelay: `${index * 80}ms` }}>
+                  <summary>
+                    <span className="elite-tile-top"><span className="elite-feature-icon"><Icon aria-hidden="true" /></span><span className="elite-tile-toggle" aria-hidden="true">+</span></span>
+                    <h3 className="mt-6 text-lg font-semibold">{title}</h3>
+                    <span className="elite-copy mt-2 block text-sm">{description}</span>
+                    <span className="elite-tile-prompt">Explore this tool <ArrowRight className="size-4" aria-hidden="true" /></span>
+                  </summary>
+                  <p className="elite-tile-detail">{detail}</p>
+                </details>
               ))}
             </div>
           </div>
@@ -173,7 +179,7 @@ export default function LandingExperience() {
               <p className="elite-eyebrow">Designed around the decision</p>
               <h2 className="elite-heading mt-4 text-balance">From market context to a considered order.</h2>
               <p className="elite-copy mt-5">
-                Keep your market view, position sizing, and risk settings close together. The platform is designed to support a deliberate process—not replace your judgment.
+                See markets, trade size, and risk controls together. You make the decisions.
               </p>
               <ul className="mt-7 flex flex-col gap-4">
                 {[
@@ -202,7 +208,7 @@ export default function LandingExperience() {
               <p className="elite-eyebrow">Challenge account planner</p>
               <h2 className="elite-heading mt-4 text-balance">Know the numbers before you begin.</h2>
               <p className="elite-copy mx-auto mt-4 max-w-2xl">
-                Select a Challenge size to see its plan fee and reference amounts based on the published account rules.
+                Choose a Challenge plan to compare its fee and key limits.
               </p>
             </div>
             <div className="mt-10">
@@ -220,7 +226,7 @@ export default function LandingExperience() {
                 <p className="elite-eyebrow">A straightforward path</p>
                 <h2 className="elite-heading mt-4 text-balance">Understand the steps. Then make your move.</h2>
               </div>
-              <p className="elite-copy max-w-md text-sm">Every account is governed by its own published rules and verification requirements.</p>
+              <p className="elite-copy max-w-md text-sm">Rules and verification vary by account.</p>
             </div>
             <div className="mt-10 grid gap-4 lg:grid-cols-3">
               {steps.map((step) => (
@@ -240,19 +246,19 @@ export default function LandingExperience() {
               <p className="elite-eyebrow">Clarity is part of control</p>
               <h2 className="elite-heading mt-4 text-balance">Know what you are agreeing to.</h2>
               <p className="elite-copy mt-5 max-w-xl">
-                Read the account terms, challenge rules, and risk disclosures before you register. Trading carries risk, and a challenge is not a promise of profits or funding.
+                Review account rules and risk disclosures before signing up. Challenges do not guarantee funding or profits.
               </p>
             </div>
             <div className="elite-trust-panel grid gap-5 sm:grid-cols-2">
               <div>
                 <Shield className="elite-brand-text size-6" aria-hidden="true" />
                 <h3 className="mt-4 font-semibold">Account controls</h3>
-                <p className="elite-copy mt-2 text-sm">Verification steps and clear account activity records support safer account access.</p>
+                <p className="elite-copy mt-2 text-sm">Verify your account and review its activity.</p>
               </div>
               <div>
                 <Wallet className="elite-brand-text size-6" aria-hidden="true" />
                 <h3 className="mt-4 font-semibold">Risk information</h3>
-                <p className="elite-copy mt-2 text-sm">Review margin, position size, and applicable limits as part of your trading routine.</p>
+                <p className="elite-copy mt-2 text-sm">Check margin, trade size, and account limits before trading.</p>
               </div>
             </div>
           </div>
@@ -263,7 +269,7 @@ export default function LandingExperience() {
             <div className="max-w-md">
               <p className="elite-eyebrow">Good to know</p>
               <h2 className="elite-heading mt-4 text-balance">Questions, answered.</h2>
-              <p className="elite-copy mt-4">Start with the details that help you decide whether the platform and program fit your needs.</p>
+              <p className="elite-copy mt-4">Quick answers about accounts, payouts, and trading risk.</p>
             </div>
             <div className="elite-faq-list">
               {faqs.map(({ question, answer }) => (
@@ -281,7 +287,7 @@ export default function LandingExperience() {
             <div className="max-w-2xl">
               <p className="elite-eyebrow">Your next step</p>
               <h2 className="elite-heading mt-4 text-balance">Start with the rules. Trade with intention.</h2>
-              <p className="elite-copy mt-4">Explore the available programs, read the terms, and decide if Elite Fund is right for you.</p>
+              <p className="elite-copy mt-4">Compare programs. Review the terms. Then decide.</p>
             </div>
             <Link href="/participant/register" className="elite-button elite-button-primary shrink-0">
               Create an account <ArrowRight aria-hidden="true" />
