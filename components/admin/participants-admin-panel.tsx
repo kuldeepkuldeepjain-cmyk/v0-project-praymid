@@ -6,9 +6,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { AccountTypeBadge } from "@/components/admin/account-type-badge"
-import { Loader2, RefreshCw, Download, Trash2, Search, UsersRound, WalletCards, Activity, ShieldCheck } from "lucide-react"
+import { Filter, Loader2, RefreshCw, Download, Trash2, Search, UsersRound, WalletCards, Activity, ShieldCheck, X } from "lucide-react"
 
 interface Participant {
   id: string
@@ -36,6 +44,52 @@ interface Participant {
   full_address?: string | null
 }
 
+type ActivityFilter = "all" | "online" | "offline"
+type LastLoginFilter = "all" | "day" | "week" | "month" | "older" | "never"
+
+const ONLINE_WINDOW_MS = 5 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function getAccountTypeFilterValue(value?: string | null) {
+  const normalized = (value ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
+  if (["funded", "fundedaccount", "fundedtier", "fundingtier"].includes(normalized)) return "funded"
+  if (["challenge", "challengeaccount"].includes(normalized)) return "challenge"
+  if (["normal", "standard", "regular", "normalaccount"].includes(normalized)) return "normal"
+  return normalized ? `other:${normalized}` : "unassigned"
+}
+
+function getAccountTypeFilterLabel(value?: string | null) {
+  const normalized = (value ?? "").trim().toLowerCase().replace(/[\s_-]+/g, "")
+  if (["funded", "fundedaccount", "fundedtier", "fundingtier"].includes(normalized)) return "Funded"
+  if (["challenge", "challengeaccount"].includes(normalized)) return "Challenge"
+  if (["normal", "standard", "regular", "normalaccount"].includes(normalized)) return "Normal"
+  const rawValue = (value ?? "").trim()
+  return rawValue
+    ? rawValue.replace(/[_-]+/g, " ").replace(/\s+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase())
+    : "Unassigned"
+}
+
+function isParticipantOnline(participant: Participant, now: number) {
+  const lastActivity = participant.last_seen_at || participant.active_in_at || participant.last_seen
+  const lastActivityTime = lastActivity ? new Date(lastActivity).getTime() : Number.NaN
+  const activityAge = now - lastActivityTime
+  return Number.isFinite(lastActivityTime) && activityAge >= 0 && activityAge < ONLINE_WINDOW_MS
+}
+
+function matchesLastLoginFilter(value: string | null | undefined, filter: LastLoginFilter, now: number) {
+  if (filter === "all") return true
+  const loginTime = value ? new Date(value).getTime() : Number.NaN
+  if (!Number.isFinite(loginTime)) return filter === "never"
+  if (filter === "never") return false
+
+  const loginAge = now - loginTime
+  if (loginAge < 0) return false
+  if (filter === "day") return loginAge <= DAY_MS
+  if (filter === "week") return loginAge > DAY_MS && loginAge <= 7 * DAY_MS
+  if (filter === "month") return loginAge > 7 * DAY_MS && loginAge <= 30 * DAY_MS
+  return loginAge > 30 * DAY_MS
+}
+
 function formatDateTime(value?: string | null) {
   if (!value) return "Not available"
   const date = new Date(value)
@@ -59,9 +113,18 @@ export function ParticipantsAdminPanel() {
   const [participants, setParticipants] = useState<Participant[]>([])
   const [stats, setStats] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [accountTypeFilter, setAccountTypeFilter] = useState("all")
+  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all")
+  const [lastLoginFilter, setLastLoginFilter] = useState<LastLoginFilter>("all")
+  const [currentTime, setCurrentTime] = useState(() => Date.now())
 
   useEffect(() => {
     fetchParticipantsData()
+  }, [])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setCurrentTime(Date.now()), 30_000)
+    return () => window.clearInterval(intervalId)
   }, [])
 
   const fetchParticipantsData = async () => {
@@ -112,12 +175,32 @@ export function ParticipantsAdminPanel() {
     a.click()
   }
 
-  const filteredParticipants = participants.filter(
-    (p) =>
-      p.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.username?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const accountTypeOptions = Array.from(
+    new Map(
+      participants.map((participant) => {
+        const value = getAccountTypeFilterValue(participant.account_type)
+        return [value, { value, label: getAccountTypeFilterLabel(participant.account_type) }] as const
+      }),
+    ).values(),
+  ).sort((left, right) => left.label.localeCompare(right.label))
+
+  const normalizedSearch = searchTerm.trim().toLowerCase()
+  const filteredParticipants = participants.filter((participant) => {
+    const matchesSearch =
+      participant.email?.toLowerCase().includes(normalizedSearch) ||
+      participant.full_name?.toLowerCase().includes(normalizedSearch) ||
+      participant.username?.toLowerCase().includes(normalizedSearch)
+    const matchesAccountType =
+      accountTypeFilter === "all" || getAccountTypeFilterValue(participant.account_type) === accountTypeFilter
+    const isOnline = isParticipantOnline(participant, currentTime)
+    const matchesActivity =
+      activityFilter === "all" || (activityFilter === "online" ? isOnline : !isOnline)
+    const matchesLastLogin = matchesLastLoginFilter(participant.last_login, lastLoginFilter, currentTime)
+
+    return matchesSearch && matchesAccountType && matchesActivity && matchesLastLogin
+  })
+  const hasActiveFilters =
+    accountTypeFilter !== "all" || activityFilter !== "all" || lastLoginFilter !== "all"
 
   if (loading) {
     return <div className="flex items-center justify-center p-8"><Loader2 className="size-8 animate-spin text-cyan-300" /></div>
@@ -183,23 +266,92 @@ export function ParticipantsAdminPanel() {
         </div>
       )}
 
-      <div className="flex flex-col gap-3 rounded-xl border border-slate-700/80 bg-slate-900/60 p-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
-          <Input
-            aria-label="Search participants"
-            placeholder="Search name, email, or username"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-10 border-slate-700 bg-slate-950/70 pl-9 text-slate-100 placeholder:text-slate-500 focus-visible:ring-cyan-400"
-          />
+      <div className="flex flex-col gap-3 rounded-xl border border-slate-700/80 bg-slate-900/60 p-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500" />
+            <Input
+              aria-label="Search participants"
+              placeholder="Search name, email, or username"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-10 border-slate-700 bg-slate-950/70 pl-9 text-slate-100 placeholder:text-slate-500 focus-visible:ring-cyan-400"
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 sm:justify-end">
+            <span className="text-xs text-slate-500">{filteredParticipants.length} of {participants.length} participants</span>
+            <Button onClick={() => handleExportCSV(filteredParticipants, "participants.csv")} size="sm" variant="outline" className="border-slate-600 bg-slate-950 text-slate-200 hover:bg-slate-800">
+              <Download className="mr-2 size-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center justify-between gap-3 sm:justify-end">
-          <span className="text-xs text-slate-500">{filteredParticipants.length} of {participants.length} participants</span>
-          <Button onClick={() => handleExportCSV(filteredParticipants, "participants.csv")} size="sm" variant="outline" className="border-slate-600 bg-slate-950 text-slate-200 hover:bg-slate-800">
-            <Download className="mr-2 size-4" />
-            Export CSV
-          </Button>
+
+        <div className="flex flex-col gap-3 border-t border-slate-700/80 pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-400 sm:w-16 sm:shrink-0">
+            <Filter className="size-4 text-cyan-300" />
+            <span>Filters</span>
+          </div>
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            <Select value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
+              <SelectTrigger aria-label="Filter by account type" className="h-9 w-full border-slate-700 bg-slate-950/70 text-slate-200 focus:ring-cyan-400">
+                <SelectValue placeholder="All account types" />
+              </SelectTrigger>
+              <SelectContent className="border-slate-700 bg-slate-950 text-slate-100">
+                <SelectGroup>
+                  <SelectItem value="all">All account types</SelectItem>
+                  {accountTypeOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
+            <Select value={activityFilter} onValueChange={(value) => setActivityFilter(value as ActivityFilter)}>
+              <SelectTrigger aria-label="Filter by online status" className="h-9 w-full border-slate-700 bg-slate-950/70 text-slate-200 focus:ring-cyan-400">
+                <SelectValue placeholder="All activity" />
+              </SelectTrigger>
+              <SelectContent className="border-slate-700 bg-slate-950 text-slate-100">
+                <SelectGroup>
+                  <SelectItem value="all">All activity</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="offline">Offline</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+
+            <Select value={lastLoginFilter} onValueChange={(value) => setLastLoginFilter(value as LastLoginFilter)}>
+              <SelectTrigger aria-label="Filter by last login" className="h-9 w-full border-slate-700 bg-slate-950/70 text-slate-200 focus:ring-cyan-400">
+                <SelectValue placeholder="Any last login" />
+              </SelectTrigger>
+              <SelectContent className="border-slate-700 bg-slate-950 text-slate-100">
+                <SelectGroup>
+                  <SelectItem value="all">Any last login</SelectItem>
+                  <SelectItem value="day">Within the last 24 hours</SelectItem>
+                  <SelectItem value="week">1–7 days ago</SelectItem>
+                  <SelectItem value="month">8–30 days ago</SelectItem>
+                  <SelectItem value="older">More than 30 days ago</SelectItem>
+                  <SelectItem value="never">Never logged in</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setAccountTypeFilter("all")
+                setActivityFilter("all")
+                setLastLoginFilter("all")
+              }}
+              className="w-fit shrink-0 text-slate-400 hover:bg-slate-800 hover:text-white"
+            >
+              <X data-icon="inline-start" />
+              Clear filters
+            </Button>
+          )}
         </div>
       </div>
 
