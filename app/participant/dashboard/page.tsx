@@ -1964,25 +1964,34 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         </div>
       </header>
 
-      <main className={activeTab === "trading" ? "hidden" : "pb-24 md:pb-6"} style={{ background: "transparent" }}>
+      <main className={activeTab === "trading" ? "hidden" : "pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
             {!isChallengeAccount ? (
               <ParticipantOnboardingDashboard
                 displayName={displayName}
                 email={participantData.email}
-                isVerified={Boolean(participantData.kyc_status === "approved" || participantData.kyc_verified || participantData.verification_status === "approved")}
+                isVerified={isKycVerified}
+                verificationStatus={kycStatusLabel}
+                accountBalance={walletBalance}
+                accountType={isFundedAccount ? "Funded" : "Standard"}
+                accountStatus={participantData.account_frozen || participantData.is_frozen || participantData.status === "frozen" ? "Frozen" : "Active"}
+                bonusBalance={Number(participantData.bonus_balance) || 0}
+                totalEarnings={Number(participantData.total_earnings) || 0}
+                tradeCount={Number(participantData.participation_count) || 0}
+                referralCount={Number(participantData.total_referrals) || 0}
+                referralEarnings={referralEarnings}
                 accountNotice={isFundedAccount && fundedDrawdownSnapshot ? (
-                  <section className="rounded-xl border border-amber-300/20 bg-slate-950/75 p-3 text-xs text-slate-200 md:hidden" aria-label="Funded account risk status">
+                  <section className="rounded-xl border border-amber-300/20 bg-slate-950/75 p-3 text-sm text-slate-200 md:hidden" aria-label="Funded account risk status">
                     <div className="flex items-center justify-between gap-3">
                       <span className="font-bold uppercase tracking-wider text-slate-400">Funded account · drawdown</span>
-                      <span className={`rounded-full px-2 py-1 text-[10px] font-black uppercase tracking-wide ${fundedDrawdownSnapshot.status === "BREACHED" ? "bg-red-400/15 text-red-300" : "bg-emerald-400/15 text-emerald-300"}`}>{fundedDrawdownSnapshot.status}</span>
+                      <span className={`rounded-full px-2 py-1 text-sm font-black uppercase tracking-wide ${fundedDrawdownSnapshot.status === "BREACHED" ? "bg-red-400/15 text-red-300" : "bg-emerald-400/15 text-emerald-300"}`}>{fundedDrawdownSnapshot.status}</span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-3">
-                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Equity / base</span><strong className="price-mono text-xs">${fundedDrawdownSnapshot.currentEquity.toFixed(2)} / ${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
-                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Breach floor</span><strong className="price-mono text-xs text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
-                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Remaining buffer</span><strong className="price-mono text-xs text-amber-200">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
-                      <div><span className="block text-[10px] uppercase tracking-wider text-slate-500">Risk status</span><strong className="text-xs font-bold uppercase text-emerald-300">{fundedDrawdownSnapshot.warningLevel}</strong></div>
+                      <div><span className="block text-sm uppercase tracking-wider text-slate-500">Equity / base</span><strong className="price-mono text-sm">${fundedDrawdownSnapshot.currentEquity.toFixed(2)} / ${fundedDrawdownSnapshot.initialBalance.toFixed(2)}</strong></div>
+                      <div><span className="block text-sm uppercase tracking-wider text-slate-500">Breach floor</span><strong className="price-mono text-sm text-red-300">${fundedDrawdownSnapshot.breachEquity.toFixed(2)}</strong></div>
+                      <div><span className="block text-sm uppercase tracking-wider text-slate-500">Remaining buffer</span><strong className="price-mono text-sm text-amber-200">${fundedDrawdownSnapshot.remainingDrawdown.toFixed(2)}</strong></div>
+                      <div><span className="block text-sm uppercase tracking-wider text-slate-500">Risk status</span><strong className="text-sm font-bold uppercase text-emerald-300">{fundedDrawdownSnapshot.warningLevel}</strong></div>
                     </div>
                   </section>
                 ) : null}
