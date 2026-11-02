@@ -934,14 +934,15 @@ button, a, [role="button"] {
 
 /* Elite Fund landing page — graphite, ivory, muted gold, and restrained green. */
 .elite-landing {
-  --elite-bg: #f5f9fd;
-  --elite-surface: #ffffff;
-  --elite-text: #122234;
-  --elite-muted: #526579;
+  --elite-bg: var(--terminal-graphite-bg);
+  --elite-surface: var(--terminal-graphite-surface);
+  --elite-text: var(--terminal-graphite-text);
+  --elite-muted: var(--terminal-graphite-muted);
   --elite-brand: var(--brand-primary);
-  --elite-ink: color-mix(in srgb, var(--elite-brand) 48%, var(--elite-text));
+  --elite-brand-foreground: var(--brand-primary-foreground);
+  --elite-ink: var(--brand-primary);
   --elite-positive: var(--elite-ink);
-  color-scheme: light;
+  color-scheme: dark;
   --font-sans: var(--font-inter);
   min-height: 100vh;
   background: var(--elite-bg);
@@ -1033,7 +1034,7 @@ button, a, [role="button"] {
 .elite-landing .elite-button:hover { transform: translateY(-2px); }
 .elite-landing .elite-button-primary {
   background: var(--elite-brand);
-  color: var(--elite-text);
+  color: var(--elite-brand-foreground);
 }
 .elite-landing .elite-button-primary:hover { background: color-mix(in srgb, var(--elite-brand) 88%, var(--elite-text)); }
 .elite-landing .elite-button-secondary {
@@ -1077,7 +1078,7 @@ button, a, [role="button"] {
   border-radius: 999px;
   background: var(--elite-brand);
   padding: 0.6rem 1rem;
-  color: var(--elite-text);
+  color: var(--elite-brand-foreground);
   font-size: 0.875rem;
   font-weight: 700;
   transition: background-color 160ms ease;
@@ -1175,7 +1176,7 @@ button, a, [role="button"] {
 .elite-landing .elite-plan-options button.is-selected {
   border-color: var(--elite-brand);
   background: var(--elite-brand);
-  color: var(--elite-text);
+  color: var(--elite-brand-foreground);
 }
 .elite-landing .elite-market-row {
   display: flex;
@@ -1359,7 +1360,7 @@ button, a, [role="button"] {
   .elite-landing .elite-workspace-visual img { animation: none; transition: none; }
 }
 
-:root:has(.elite-landing) { background: var(--elite-bg, #f5f9fd); scroll-behavior: smooth; scroll-padding-top: 5rem; }
+:root:has(.elite-landing) { background: var(--terminal-graphite-bg); color-scheme: dark; scroll-behavior: smooth; scroll-padding-top: 5rem; }
 .elite-landing .elite-brand-text { color: var(--elite-ink); }
 .elite-landing .elite-eyebrow { color: var(--elite-ink); font-size: 0.875rem; letter-spacing: 0.09em; }
 .elite-landing .elite-header { background: color-mix(in srgb, var(--elite-surface) 94%, transparent); }
@@ -1372,7 +1373,7 @@ button, a, [role="button"] {
 .elite-landing .elite-hero-trust { color: var(--elite-muted); }
 .elite-landing .elite-button { border-radius: 0.85rem; min-height: 52px; }
 .elite-landing .elite-button-secondary { background: var(--elite-surface); }
-.elite-landing .elite-market-card { background: var(--elite-surface); padding: 1.75rem; border-radius: 1.5rem; border-color: color-mix(in srgb, var(--elite-brand) 35%, var(--elite-bg)); box-shadow: 0 24px 64px color-mix(in srgb, var(--elite-text) 8%, transparent), 0 0 0 8px color-mix(in srgb, var(--elite-brand) 8%, transparent); backdrop-filter: none; }
+.elite-landing .elite-market-card { background: var(--elite-surface); padding: 1.75rem; border-radius: 1.5rem; border-color: color-mix(in srgb, var(--elite-brand) 35%, var(--elite-bg)); box-shadow: 0 24px 64px color-mix(in srgb, var(--elite-bg) 70%, transparent), 0 0 0 8px color-mix(in srgb, var(--elite-brand) 8%, transparent); backdrop-filter: none; }
 .elite-landing .elite-preview-tag { background: color-mix(in srgb, var(--elite-brand) 14%, var(--elite-surface)); color: var(--elite-ink); letter-spacing: 0; text-transform: none; white-space: nowrap; }
 .elite-landing .elite-market-tabs button, .elite-landing .elite-plan-options button { min-height: 44px; flex: 1; border-radius: 0.75rem; font-size: 0.875rem; }
 .elite-landing .elite-market-row { min-height: 80px; font-size: 0.875rem; }
@@ -1419,7 +1420,7 @@ button, a, [role="button"] {
   .elite-landing .elite-display { font-size: clamp(2.7rem, 11vw, 4rem); }
   .elite-landing .elite-heading { font-size: clamp(1.9rem, 8vw, 2.6rem); line-height: 1.15; }
   .elite-landing .elite-section { padding-block: 3.5rem; }
-  .elite-landing .elite-market-card { padding: 1.25rem; border-radius: 1.25rem; box-shadow: 0 12px 32px color-mix(in srgb, var(--elite-text) 6%, transparent); }
+  .elite-landing .elite-market-card { padding: 1.25rem; border-radius: 1.25rem; box-shadow: 0 12px 32px color-mix(in srgb, var(--elite-bg) 60%, transparent); }
   .elite-landing .elite-hero-trust { gap: 0.75rem; font-size: 0.875rem; }
   .elite-landing .elite-market-row { gap: 0.5rem; font-size: 0.875rem; }
   .elite-landing .elite-market-footnote { line-height: 1.5; align-items: flex-start; }
