@@ -2062,21 +2062,27 @@
       min-height: 0 !important;
       max-height: none !important;
       padding: 0 !important;
-      overflow: hidden !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
     }
 
     &:global(.is-chart-expanded) :global(.apple-terminal-chart-column > .chart-header.terminal-market-dock) {
-      position: absolute !important;
-      inset: 0 0 auto !important;
+      position: relative !important;
+      inset: auto !important;
       z-index: 80 !important;
       display: flex !important;
-      flex: none !important;
+      flex: 0 0 auto !important;
       flex-direction: row !important;
+      align-self: stretch;
       width: 100%;
       height: auto !important;
       min-height: 0 !important;
       margin: 0 !important;
-      padding: calc(10px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 0 calc(12px + env(safe-area-inset-left, 0px)) !important;
+      padding: calc(10px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 6px calc(12px + env(safe-area-inset-left, 0px)) !important;
       border: 0 !important;
       background: transparent !important;
       box-shadow: none !important;
@@ -2170,13 +2176,14 @@
     }
 
     &:global(.is-chart-expanded) :global(.terminal-trade-scroll) {
-      flex: 1 1 0% !important;
+      flex: 0 0 auto !important;
       width: 100% !important;
-      height: 100% !important;
+      height: auto !important;
       min-height: 0 !important;
       padding: 0 !important;
-      overflow: hidden !important;
-      overscroll-behavior: none;
+      overflow: visible !important;
+      overscroll-behavior: auto;
+      touch-action: pan-y;
     }
 
     &:global(.is-chart-expanded) :global(.mobile-chart-scroll-layer) {
@@ -2185,16 +2192,13 @@
 
     &:global(.is-chart-expanded) :global(.terminal-trade-scroll > .mobile-terminal-chart-wrap) {
       position: relative;
-      flex: 1 1 0% !important;
+      flex: 0 0 auto !important;
       width: 100% !important;
-      height: 100% !important;
-      min-height: 0 !important;
+      height: clamp(320px, 70dvh, 620px) !important;
+      min-height: clamp(320px, 70dvh, 620px) !important;
       max-height: none !important;
       overflow: hidden !important;
-    }
-
-    &:global(.is-chart-expanded) :global(.terminal-trade-scroll > :not(.mobile-terminal-chart-wrap)) {
-      display: none !important;
+      touch-action: pan-y !important;
     }
 
     .expandedInstrumentPicker {
@@ -2255,8 +2259,16 @@
     }
 
     &:global(.is-chart-expanded) .expandedQuickTradeDock {
-      bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+      position: static !important;
+      inset: auto !important;
+      bottom: auto !important;
+      left: auto !important;
+      transform: none !important;
+      translate: none !important;
+      align-self: center;
+      flex: 0 0 auto !important;
       width: min(360px, calc(100% - 28px)) !important;
+      margin: 8px auto calc(10px + env(safe-area-inset-bottom, 0px)) !important;
       gap: 8px !important;
       padding: 6px !important;
       border: 1px solid color-mix(in srgb, var(--brand-primary) 22%, transparent) !important;
