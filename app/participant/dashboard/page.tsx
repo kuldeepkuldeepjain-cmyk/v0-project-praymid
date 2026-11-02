@@ -1446,13 +1446,30 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isSpinOpen, setIsSpinOpen] = useState(false)
   const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
+  const terminalSidebarCloseButtonRef = useRef<HTMLButtonElement>(null)
+  const terminalSidebarTriggerRef = useRef<HTMLElement | null>(null)
   const [isTerminalSettingsOpen, setIsTerminalSettingsOpen] = useState(false)
   const [activeSettingsSection, setActiveSettingsSection] = useState("Account")
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">(() => searchParams.get("view") === "terminal" ? "trading" : "dashboard")
 
+  const openTerminalSidebar = () => {
+    const activeElement = document.activeElement
+    terminalSidebarTriggerRef.current = activeElement instanceof HTMLElement ? activeElement : null
+    setIsTerminalMenuOpen(true)
+  }
+
+  const closeTerminalSidebar = (restoreFocus = true) => {
+    setIsTerminalMenuOpen(false)
+    if (restoreFocus) window.requestAnimationFrame(() => terminalSidebarTriggerRef.current?.focus())
+  }
+
   useEffect(() => {
     if (terminalView && activeTab !== "trading") setActiveTab("trading")
   }, [terminalView, activeTab])
+
+  useEffect(() => {
+    if (isTerminalMenuOpen) terminalSidebarCloseButtonRef.current?.focus()
+  }, [isTerminalMenuOpen])
 
   const [participantData, setParticipantData] = useState<{
     wallet: string
@@ -2405,36 +2422,67 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               type="button"
               className="elite-terminal-sidebar-backdrop"
               aria-label="Close terminal navigation"
-              onClick={() => setIsTerminalMenuOpen(false)}
+              onClick={() => closeTerminalSidebar()}
             />
           )}
-          <aside id="elite-terminal-sidebar" className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`} aria-hidden={!isTerminalMenuOpen} aria-label="Trading terminal navigation">
+          <aside
+            id="elite-terminal-sidebar"
+            className={`elite-terminal-sidebar ${isTerminalMenuOpen ? "is-open" : ""}`}
+            role="dialog"
+            aria-modal={isTerminalMenuOpen}
+            aria-hidden={!isTerminalMenuOpen}
+            aria-labelledby="elite-terminal-sidebar-title"
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                event.preventDefault()
+                event.stopPropagation()
+                closeTerminalSidebar()
+                return
+              }
+              if (event.key !== "Tab") return
+              const focusableItems = event.currentTarget.querySelectorAll<HTMLElement>('a[href], button:not([disabled])')
+              const firstItem = focusableItems[0]
+              const lastItem = focusableItems[focusableItems.length - 1]
+              if (!firstItem || !lastItem) {
+                event.preventDefault()
+                return
+              }
+              if (event.shiftKey && document.activeElement === firstItem) {
+                event.preventDefault()
+                lastItem.focus()
+              } else if (!event.shiftKey && document.activeElement === lastItem) {
+                event.preventDefault()
+                firstItem.focus()
+              }
+            }}
+          >
             <div className="elite-terminal-brand">
-              <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} aria-label="Go to trading dashboard home">
+              <Link href="/participant/dashboard" onClick={() => closeTerminalSidebar(false)} aria-label="Go to trading dashboard home">
                 <div className="elite-terminal-brand-mark">FC</div>
               </Link>
               <div>
-                <strong>Elite Fund</strong>
+                <strong id="elite-terminal-sidebar-title">Elite Fund</strong>
                 <span>TRADING TERMINAL</span>
               </div>
               <button
+                ref={terminalSidebarCloseButtonRef}
                 type="button"
                 className="elite-terminal-sidebar-close"
-                onClick={() => setIsTerminalMenuOpen(false)}
+                onClick={() => closeTerminalSidebar()}
                 aria-label="Close terminal navigation"
               >
-                <X />
+                <X aria-hidden="true" />
               </button>
             </div>
 
             <Link
               href="/participant/dashboard/profile"
-              onClick={() => setIsTerminalMenuOpen(false)}
+              onClick={() => closeTerminalSidebar(false)}
               className="elite-terminal-sidebar-account"
               aria-label={`View ${displayName}'s profile and account status`}
             >
               <div className="elite-terminal-sidebar-account-main">
-                <div className="elite-terminal-sidebar-avatar">{displayName.charAt(0).toUpperCase()}</div>
+                <div className="elite-terminal-sidebar-avatar" aria-hidden="true">{displayName.charAt(0).toUpperCase()}</div>
                 <div className="elite-terminal-sidebar-account-copy">
                   <strong>{displayName}</strong>
                   <span className="elite-terminal-sidebar-account-email">{participantData.email || "Email unavailable"}</span>
@@ -2455,32 +2503,32 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
             <div className="elite-terminal-section-label">Workspace</div>
             <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
-              <Link href="/participant/dashboard" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item is-active">
-                <Home />
+              <Link href="/participant/dashboard" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item is-active" aria-current="page">
+                <Home aria-hidden="true" />
                 <span>Home</span>
               </Link>
-              <Link href="/participant/dashboard/profile" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
-                <User />
+              <Link href="/participant/dashboard/profile" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                <User aria-hidden="true" />
                 <span>Profile</span>
               </Link>
               {!isChallengeAccount && (
-                <Link href="/participant/dashboard/contribute" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item elite-terminal-add-fund">
-                  <PlusCircle />
+                <Link href="/participant/dashboard/contribute" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item elite-terminal-add-fund">
+                  <PlusCircle aria-hidden="true" />
                   <span>Add Fund</span>
                 </Link>
               )}
-              <Link href="/participant/dashboard/challenge" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
-                <ShieldCheck />
+              <Link href="/participant/dashboard/challenge" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                <ShieldCheck aria-hidden="true" />
                 <span>Challenge</span>
               </Link>
               {!isChallengeAccount && (
                 <>
-                  <Link href="/participant/dashboard/upi" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
-                    <QrCode />
+                  <Link href="/participant/dashboard/upi" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                    <QrCode aria-hidden="true" />
                     <span>UPI Gateway</span>
                   </Link>
-                  <Link href="/participant/dashboard/payout" onClick={() => setIsTerminalMenuOpen(false)} className="elite-terminal-nav-item">
-                    <ArrowUpRight />
+                  <Link href="/participant/dashboard/payout" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                    <ArrowUpRight aria-hidden="true" />
                     <span>Payout</span>
                   </Link>
                 </>
@@ -2494,14 +2542,14 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 onClick={() => {
                   setActiveSettingsSection("Account")
                   setIsTerminalSettingsOpen(true)
-                  setIsTerminalMenuOpen(false)
+                  closeTerminalSidebar(false)
                 }}
                 aria-haspopup="dialog"
                 aria-expanded={isTerminalSettingsOpen}
               >
-                <Settings />
+                <Settings aria-hidden="true" />
                 <span>Settings</span>
-                <ChevronRight className="ml-auto" />
+                <ChevronRight className="ml-auto" aria-hidden="true" />
               </button>
               <div className="elite-terminal-promo">
                 <div className="elite-terminal-promo-copy">
@@ -2510,7 +2558,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 </div>
               </div>
               <button type="button" className="elite-terminal-logout" onClick={handleLogout}>
-                <LogOut />
+                <LogOut aria-hidden="true" />
                 <span>Logout</span>
               </button>
             </div>
@@ -2632,7 +2680,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   isChallengeAccount={isChallengeAccount}
   fundedAmount={fundedBaseAmount}
   fundedTopUpAvailable={isFundedAccount}
-  onOpenSidebar={() => setIsTerminalMenuOpen(true)}
+  onOpenSidebar={openTerminalSidebar}
   accountMenuOpen={isTerminalMenuOpen}
   onAddFunds={isChallengeAccount ? undefined : () => {
   // The funded plan stays visible until the first funded payment is recorded.
