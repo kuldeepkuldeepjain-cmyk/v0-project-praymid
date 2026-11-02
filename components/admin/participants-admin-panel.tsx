@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { AccountTypeBadge } from "@/components/admin/account-type-badge"
+import { IpIntelligenceCells } from "@/components/admin/ip-intelligence-cells"
 import { Filter, Loader2, RefreshCw, Download, Trash2, Search, UsersRound, WalletCards, Activity, ShieldCheck, X } from "lucide-react"
 
 interface Participant {
@@ -96,8 +97,15 @@ function formatDateTime(value?: string | null) {
   return Number.isNaN(date.getTime()) ? "Not available" : date.toLocaleString()
 }
 
-function formatLocation(participant: Participant) {
-  return [participant.country, participant.state, participant.pin_code].filter(Boolean).join(", ") || "Not available"
+function getDeviceOperatingSystem(userAgent?: string | null) {
+  if (!userAgent) return "Not available"
+  if (/android/i.test(userAgent)) return "Android"
+  if (/iphone|ipad|ipod/i.test(userAgent)) return "iOS"
+  if (/windows/i.test(userAgent)) return "Windows"
+  if (/cros/i.test(userAgent)) return "ChromeOS"
+  if (/macintosh|mac os x/i.test(userAgent)) return "macOS"
+  if (/linux/i.test(userAgent)) return "Linux"
+  return "Other"
 }
 
 function formatActiveDuration(seconds?: number | null) {
@@ -360,16 +368,16 @@ export function ParticipantsAdminPanel() {
         <div className="flex flex-col gap-2 border-b border-slate-700/80 bg-slate-900/80 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="flex items-center gap-2"><Activity className="size-4 text-cyan-300" /><h3 className="font-semibold text-white">Participant activity</h3></div>
-            <p className="mt-1 text-xs text-slate-400">Identity, account health, access history, and network details</p>
+            <p className="mt-1 text-xs text-slate-400">IP lookups use ipwho.is; locations are approximate and VPNs or proxies can affect accuracy.</p>
           </div>
           <span className="w-fit rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-medium text-slate-300">{filteredParticipants.length} shown</span>
         </div>
         <div className="overflow-x-auto">
-        <table className="min-w-[1500px] w-full text-sm">
+        <table className="min-w-[1800px] w-full text-sm">
           <thead>
             <tr className="border-b border-slate-700 bg-slate-950/90">
               <th colSpan={7} className="border-r border-slate-800 px-4 pb-2 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300">Participant & account</th>
-              <th colSpan={6} className="border-r border-slate-800 px-4 pb-2 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300">Access & activity</th>
+              <th colSpan={8} className="border-r border-slate-800 px-4 pb-2 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-300">Access & activity</th>
               <th className="px-4 pb-2 pt-3 text-right text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Manage</th>
             </tr>
             <tr className="border-b border-slate-700 bg-slate-900/70">
@@ -380,11 +388,13 @@ export function ParticipantsAdminPanel() {
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Account Type</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Referrals</th>
               <th className="text-left py-3 px-4 text-slate-400 font-medium">Status</th>
-              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Location</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium" title="Approximate location inferred from the IP address">IP location (approx.)</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Network / ISP</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Last login</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Last active</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Time spent</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">IP address</th>
+              <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Device / OS</th>
               <th className="whitespace-nowrap text-left py-3 px-4 text-slate-400 font-medium">Joined</th>
               <th className="text-right py-3 px-4 text-slate-400 font-medium">Actions</th>
             </tr>
@@ -414,11 +424,14 @@ export function ParticipantsAdminPanel() {
                     {participant.status}
                   </Badge>
                 </td>
-                <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs">{formatLocation(participant)}</td>
+                <IpIntelligenceCells ipAddress={participant.last_ip_address} />
                 <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs"><span className="font-medium text-white">{formatDateTime(participant.last_login)}</span></td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-300 text-xs"><span className="font-medium text-amber-200">{formatDateTime(participant.active_in_at || participant.last_seen_at)}</span></td>
                 <td className="whitespace-nowrap py-3 px-4 text-emerald-300 text-xs font-medium">{formatActiveDuration(participant.total_active_seconds)}</td>
                 <td className="whitespace-nowrap py-3 px-4 font-mono text-slate-300 text-xs">{participant.last_ip_address || "Not available"}</td>
+                <td className="whitespace-nowrap py-3 px-4 text-xs">
+                  <Badge variant="outline" className="font-medium">{getDeviceOperatingSystem(participant.last_user_agent)}</Badge>
+                </td>
                 <td className="whitespace-nowrap py-3 px-4 text-slate-400 text-xs">{formatDateTime(participant.created_at)}</td>
                 <td className="py-3 px-4 text-right">
                   <Button type="button" variant="outline" size="sm" onClick={() => handleDeleteParticipant(participant)} className="border-red-500/30 text-red-300 hover:bg-red-500/15 hover:text-red-200">
