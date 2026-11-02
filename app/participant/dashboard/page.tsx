@@ -2156,109 +2156,193 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
             {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
             {!isChallengeAccount && (
-              <section className="mx-3 mt-3 overflow-hidden border border-slate-700/70 bg-[#181b1f] sm:mx-4" aria-labelledby="funding-launchpad-title">
-              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/30 bg-[#d6b66b]/10 text-[#d6b66b]">
-                    <Wallet className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 id="funding-launchpad-title" className="text-sm font-black tracking-wide text-white sm:text-base">Ready to put your balance to work?</h2>
-                      <span className="rounded-full border border-emerald-300/20 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#d6b66b]">Secure flow</span>
+              <section
+                className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4"
+                aria-labelledby="funding-launchpad-title"
+                style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
+              >
+                <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <div
+                      className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl border"
+                      style={{
+                        color: "var(--brand-primary)",
+                        borderColor: "color-mix(in srgb, var(--brand-primary) 28%, var(--terminal-graphite-border))",
+                        background: "color-mix(in srgb, var(--brand-primary) 10%, var(--terminal-graphite-surface-2))",
+                      }}
+                    >
+                      <Wallet className="size-5" aria-hidden="true" />
                     </div>
-                    <p className="mt-1 max-w-xl text-xs leading-5 text-slate-400">Add funds in a few simple steps. Choose your amount, review the instructions, and submit proof from one clear screen.</p>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-                      <span><b className="text-cyan-300">1</b> Choose amount</span><span><b className="text-cyan-300">2</b> Transfer</span><span><b className="text-cyan-300">3</b> Track approval</span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 id="funding-launchpad-title" className="text-sm font-black tracking-wide text-white sm:text-base">Ready to put your balance to work?</h2>
+                        <Badge variant="outline" className="rounded-full">Secure flow</Badge>
+                      </div>
+                      <p className="mt-1 max-w-xl text-sm leading-6 text-slate-400">Add funds in a few simple steps. Choose your amount, review the instructions, and submit proof from one clear screen.</p>
+                      <div className="mt-3 flex flex-wrap gap-2 text-sm font-semibold text-slate-300">
+                        {[
+                          { step: "1", label: "Choose amount" },
+                          { step: "2", label: "Transfer" },
+                          { step: "3", label: "Track approval" },
+                        ].map(({ step, label }) => (
+                          <span
+                            key={step}
+                            className="inline-flex items-center gap-2 rounded-full border px-2.5 py-1.5"
+                            style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}
+                          >
+                            <span
+                              className="flex size-5 items-center justify-center rounded-full text-sm font-bold"
+                              style={{
+                                color: "var(--brand-primary)",
+                                background: "color-mix(in srgb, var(--brand-primary) 12%, var(--terminal-graphite-surface))",
+                              }}
+                            >
+                              {step}
+                            </span>
+                            {label}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => { setTopUpIsFundedAccount(false); setIsInitialFundedTopUp(false); setShowTopUpModal(true) }}
+                    className="flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl px-5 text-sm font-bold transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:scale-[0.98] sm:w-auto"
+                    style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}
+                  >
+                    <Plus className="size-4" aria-hidden="true" /> Add funds
+                  </button>
                 </div>
-                <button type="button" onClick={() => { setTopUpIsFundedAccount(false); setIsInitialFundedTopUp(false); setShowTopUpModal(true) }} className="flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-[#d6b66b] px-5 text-xs font-black uppercase tracking-wider text-[#111315] shadow-[0_8px_24px_rgba(214,182,107,0.12)] transition hover:bg-[#e2c982] active:scale-[0.98]">
-                  <Plus className="h-4 w-4" /> Add funds
-                </button>
-              </div>
               </section>
             )}
 
             {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
-            <section className="mx-3 mt-3 border border-slate-700/60 bg-slate-950/75 sm:mx-4" aria-labelledby="account-confidence-title">
-              <div className="flex flex-col gap-4 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+            <section
+              className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4"
+              aria-labelledby="account-confidence-title"
+              style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
+            >
+              <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5" style={{ borderColor: "var(--terminal-graphite-border)" }}>
                 <div>
-                  <p className="mb-1 text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Account overview</p>
+                  <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>Account overview</p>
                   <h2 id="account-confidence-title" className="text-lg font-semibold tracking-tight text-white">A clearer way to manage your account</h2>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Every important action is visible, reviewable, and supported by a clear record.</p>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">Every important action is visible, reviewable, and supported by a clear record.</p>
                 </div>
-                <Link href="/participant/dashboard/profile" className="inline-flex items-center gap-2 text-xs font-bold text-[#d6b66b] transition hover:text-[#e2c982]"><ShieldCheck className="h-4 w-4" /> Review account settings</Link>
+                <Link href="/participant/dashboard/profile" className="inline-flex items-center gap-2 text-sm font-bold transition hover:brightness-125" style={{ color: "var(--brand-primary)" }}><ShieldCheck className="size-4" aria-hidden="true" /> Review account settings</Link>
               </div>
-              <div className="grid gap-px bg-slate-800/70 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { icon: ShieldCheck, label: "Account security", value: "Protected", detail: "Session controls active", tone: "text-emerald-300" },
-                  { icon: BadgeCheck, label: "Identity status", value: participantData?.kyc_status === "approved" ? "Verified" : "Action available", detail: participantData?.kyc_status === "approved" ? "KYC approved" : "Complete your profile", tone: "text-[#d6b66b]" },
+                  { icon: BadgeCheck, label: "Identity status", value: participantData?.kyc_status === "approved" ? "Verified" : "Action available", detail: participantData?.kyc_status === "approved" ? "KYC approved" : "Complete your profile", tone: "brand" },
                   { icon: ReceiptText, label: "Funding records", value: "Traceable", detail: "Requests and status history", tone: "text-slate-300" },
-                  { icon: Headphones, label: "Help when needed", value: "Support ready", detail: "Contact the support team", tone: "text-amber-300" },
+                  { icon: Headphones, label: "Help when needed", value: "Support ready", detail: "Contact the support team", tone: "text-sky-300" },
                 ].map(({ icon: Icon, label, value, detail, tone }) => (
-                  <div key={label} className="bg-slate-950/80 p-4">
-                    <Icon className={`mb-3 h-4 w-4 ${tone}`} />
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-                    <p className={`mt-1 text-sm font-bold ${tone}`}>{value}</p>
-                    <p className="mt-1 text-[11px] leading-4 text-slate-500">{detail}</p>
+                  <div key={label} className="rounded-xl border p-4" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
+                    <Icon className={`mb-3 size-4 ${tone === "brand" ? "" : tone}`} style={tone === "brand" ? { color: "var(--brand-primary)" } : undefined} aria-hidden="true" />
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
+                    <p className={`mt-1 text-sm font-bold ${tone === "brand" ? "" : tone}`} style={tone === "brand" ? { color: "var(--brand-primary)" } : undefined}>{value}</p>
+                    <p className="mt-1 text-sm leading-5 text-slate-500">{detail}</p>
                   </div>
                 ))}
               </div>
-              <div className="flex flex-col gap-3 border-t border-slate-800/80 p-4 text-[11px] leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                <p><span className="font-bold text-slate-300">Risk notice:</span> Trading involves risk. Review your balance, activity, and funding status before taking action.</p>
+              <div className="flex flex-col gap-3 border-t p-4 text-sm leading-relaxed text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:p-5" style={{ borderColor: "var(--terminal-graphite-border)" }}>
+                <p><span className="font-bold text-slate-200">Risk notice:</span> Trading involves risk. Review your balance, activity, and funding status before taking action.</p>
                 {isChallengeAccount ? (
-                  <Link href="/participant/dashboard/challenge" className="shrink-0 font-bold text-slate-300 hover:text-white">Review evaluation status <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
+                  <Link href="/participant/dashboard/challenge" className="shrink-0 font-bold text-slate-300 transition hover:text-white">Review evaluation status <ArrowUpRight className="ml-1 inline size-3" aria-hidden="true" /></Link>
                 ) : (
-                  <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 hover:text-white">View account activity <ArrowUpRight className="ml-1 inline h-3 w-3" /></Link>
+                  <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 transition hover:text-white">View account activity <ArrowUpRight className="ml-1 inline size-3" aria-hidden="true" /></Link>
                 )}
               </div>
             </section>
 
             {/* ── INSTITUTIONAL OPERATING STANDARD ─────────────── */}
-            <section className="mx-3 mt-3 border border-slate-700/60 bg-[#0d1520] sm:mx-4" aria-labelledby="operating-standard-title">
-              <div className="flex flex-col gap-3 border-b border-slate-800/80 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
+            <section
+              className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4"
+              aria-labelledby="operating-standard-title"
+              style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
+            >
+              <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5" style={{ borderColor: "var(--terminal-graphite-border)" }}>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Institutional operating standard</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>Institutional operating standard</p>
                   <h2 id="operating-standard-title" className="mt-1 text-lg font-semibold tracking-tight text-white">Built for decisions you can stand behind.</h2>
                 </div>
-                <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-emerald-300"><ShieldCheck className="h-4 w-4" /> Controls in view</span>
+                <span className="inline-flex items-center gap-2 text-sm font-bold text-emerald-300"><ShieldCheck className="size-4" aria-hidden="true" /> Controls in view</span>
               </div>
-              <div className="grid gap-px bg-slate-800/70 md:grid-cols-3">
+              <div className="grid gap-2 p-3 md:grid-cols-3">
                 {[{ icon: ReceiptText, title: "Clear records", text: "Funding requests, account activity, and payouts stay organized for review." }, { icon: SlidersHorizontal, title: "Measured access", text: "Use the terminal, account controls, and funding flows at your own pace." }, { icon: Headphones, title: "Responsive support", text: "Get help from a real support channel when a question needs context." }].map(({ icon: Icon, title, text }) => (
-                  <div key={title} className="bg-[#0d1520] p-4 sm:p-5"><Icon className="h-4 w-4 text-[#d6b66b]" /><h3 className="mt-3 text-sm font-semibold text-white">{title}</h3><p className="mt-1 text-xs leading-5 text-slate-500">{text}</p></div>
+                  <div key={title} className="rounded-xl border p-4 sm:p-5" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
+                    <Icon className="size-4" style={{ color: "var(--brand-primary)" }} aria-hidden="true" />
+                    <h3 className="mt-3 text-sm font-semibold text-white">{title}</h3>
+                    <p className="mt-1 text-sm leading-6 text-slate-400">{text}</p>
+                  </div>
                 ))}
               </div>
             </section>
 
             {/* ── AI TRADE COACH ────────────────────────────────── */}
-            <section className="mx-3 mt-3 overflow-hidden border border-[#d6b66b]/35 bg-[#111c28] sm:mx-4" aria-labelledby="ai-trade-coach-title">
+            <section className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4" aria-labelledby="ai-trade-coach-title" style={{ background: "var(--terminal-graphite-surface)", borderColor: "color-mix(in srgb, var(--brand-primary) 24%, var(--terminal-graphite-border))" }}>
               <div className="flex flex-col gap-5 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#d6b66b]/35 bg-[#d6b66b]/10 text-[#d6b66b]"><Sparkles className="h-5 w-5" /></div>
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border" style={{ color: "var(--brand-primary)", borderColor: "color-mix(in srgb, var(--brand-primary) 28%, var(--terminal-graphite-border))", background: "color-mix(in srgb, var(--brand-primary) 10%, var(--terminal-graphite-surface-2))" }}>
+                    <Sparkles className="size-5" aria-hidden="true" />
+                  </div>
                   <div className="max-w-2xl">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">EliteFund AI trade coach</p>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>EliteFund AI trade coach</p>
                     <h2 id="ai-trade-coach-title" className="mt-1 text-lg font-semibold tracking-tight text-white">Plan the trade before you place it.</h2>
-                    <p className="mt-2 text-xs leading-5 text-slate-400">Get a structured walkthrough for market context, entry logic, invalidation, position sizing, and review. The coach is educational and never promises returns or tells you what to buy.</p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-500"><span className="border border-slate-700 bg-[#0a111b] px-2.5 py-1.5">Thesis</span><span className="border border-slate-700 bg-[#0a111b] px-2.5 py-1.5">Risk plan</span><span className="border border-slate-700 bg-[#0a111b] px-2.5 py-1.5">Post-trade review</span></div>
+                    <p className="mt-2 text-sm leading-6 text-slate-400">Get a structured walkthrough for market context, entry logic, invalidation, position sizing, and review. The coach is educational and never promises returns or tells you what to buy.</p>
+                    <div className="mt-3 flex flex-wrap gap-2 text-sm font-semibold text-slate-300">
+                      {["Thesis", "Risk plan", "Post-trade review"].map((item) => (
+                        <span key={item} className="rounded-full border px-3 py-1.5" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>{item}</span>
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col">
-                  <button type="button" onClick={() => setIsChatOpen(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#d6b66b] px-4 text-xs font-black uppercase tracking-wider text-[#111315] transition hover:bg-[#e2c982] active:scale-[0.98]"><Sparkles className="h-4 w-4" /> Ask AI to guide me</button>
-                  <button type="button" onClick={() => { setIsChatOpen(true); }} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-700 px-4 text-xs font-bold uppercase tracking-wider text-slate-300 transition hover:border-[#d6b66b]/60 hover:text-white"><ShieldCheck className="h-4 w-4" /> Open risk checklist</button>
+                <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row lg:flex-col">
+                  <button type="button" onClick={() => setIsChatOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition hover:brightness-110 active:scale-[0.98]" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}>
+                    <Sparkles className="size-4" aria-hidden="true" /> Ask AI to guide me
+                  </button>
+                  <button type="button" onClick={() => setIsChatOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold text-slate-300 transition hover:text-white" style={{ borderColor: "var(--terminal-graphite-border)" }}>
+                    <ShieldCheck className="size-4" aria-hidden="true" /> Open risk checklist
+                  </button>
                 </div>
               </div>
             </section>
 
             {/* ── JOURNEY & OPERATING TERMS ────────���───────────── */}
             <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
-              <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5">
-                <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d6b66b]">Your next best step</p><h2 className="mt-1 text-base font-semibold text-white">Move at your own pace</h2></div><Sparkles className="h-5 w-5 text-[#d6b66b]" /></div>
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  {[{ n: "01", title: "Secure", text: "Review your profile and protection settings." }, { n: "02", title: "Explore", text: "Use the demo terminal before funding." }, { n: "03", title: "Decide", text: "Add funds only when the terms are clear." }].map((step) => <div key={step.n} className="border border-slate-700/60 bg-[#0a111b] p-3"><span className="font-mono text-[10px] text-[#d6b66b]">{step.n}</span><h3 className="mt-3 text-sm font-semibold text-white">{step.title}</h3><p className="mt-1 text-[11px] leading-5 text-slate-500">{step.text}</p></div>)}
+              <div className="rounded-2xl border p-4 sm:p-5" style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>Your next best step</p>
+                    <h2 className="mt-1 text-base font-semibold text-white">Move at your own pace</h2>
+                  </div>
+                  <Sparkles className="size-5 shrink-0" style={{ color: "var(--brand-primary)" }} aria-hidden="true" />
+                </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  {[{ n: "01", title: "Secure", text: "Review your profile and protection settings." }, { n: "02", title: "Explore", text: "Use the demo terminal before funding." }, { n: "03", title: "Decide", text: "Add funds only when the terms are clear." }].map((step) => (
+                    <div key={step.n} className="rounded-xl border p-3" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
+                      <span className="font-mono text-sm font-semibold" style={{ color: "var(--brand-primary)" }}>{step.n}</span>
+                      <h3 className="mt-2 text-sm font-semibold text-white">{step.title}</h3>
+                      <p className="mt-1 text-sm leading-5 text-slate-400">{step.text}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="border border-slate-700/60 bg-[#101722] p-4 sm:p-5"><div className="flex items-center gap-2"><FileText className="h-4 w-4 text-[#d6b66b]" /><h2 className="text-sm font-semibold text-white">Before you fund</h2></div><ul className="mt-4 space-y-3 text-xs leading-5 text-slate-400"><li className="flex gap-2"><span className="text-[#4bd6a0]">•</span> Review deposit minimums and processing status.</li><li className="flex gap-2"><span className="text-[#4bd6a0]">•</span> Withdrawal eligibility follows account terms.</li><li className="flex gap-2"><span className="text-[#4bd6a0]">•</span> Transaction history remains available for review.</li></ul><Link href="/terms" className="mt-4 inline-flex items-center gap-1 text-[11px] font-bold text-[#d6b66b] hover:text-[#f0d68a]">Read terms and disclosures <ArrowUpRight className="h-3 w-3" /></Link></div>
+              <div className="rounded-2xl border p-4 sm:p-5" style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}>
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4" style={{ color: "var(--brand-primary)" }} aria-hidden="true" />
+                  <h2 className="text-sm font-semibold text-white">Before you fund</h2>
+                </div>
+                <ul className="mt-4 flex flex-col gap-3 text-sm leading-relaxed text-slate-400">
+                  <li className="flex gap-2"><span aria-hidden="true" style={{ color: "var(--brand-primary)" }}>•</span> Review deposit minimums and processing status.</li>
+                  <li className="flex gap-2"><span aria-hidden="true" style={{ color: "var(--brand-primary)" }}>•</span> Withdrawal eligibility follows account terms.</li>
+                  <li className="flex gap-2"><span aria-hidden="true" style={{ color: "var(--brand-primary)" }}>•</span> Transaction history remains available for review.</li>
+                </ul>
+                <Link href="/terms" className="mt-4 inline-flex items-center gap-1 text-sm font-bold transition hover:brightness-125" style={{ color: "var(--brand-primary)" }}>
+                  Read terms and disclosures <ArrowUpRight className="size-4" aria-hidden="true" />
+                </Link>
+              </div>
             </section>
 
             {/* ── LIVE TICKER BAR ──────────────────────────────── */}
