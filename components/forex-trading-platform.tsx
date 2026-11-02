@@ -3521,7 +3521,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════����������═���═�����═������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════���������═���═�����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
