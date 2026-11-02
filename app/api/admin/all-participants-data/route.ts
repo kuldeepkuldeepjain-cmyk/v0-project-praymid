@@ -22,6 +22,7 @@ export async function GET() {
         p.last_login,
         p.last_seen,
         activity.last_ip_address AS participant_ip_address,
+        activity.last_user_agent AS last_user_agent,
         p.country,
         p.state,
         p.pin_code,
@@ -31,7 +32,8 @@ export async function GET() {
        FROM participants p
        LEFT JOIN LATERAL (
          SELECT
-           (ARRAY_AGG(ps.ip_address ORDER BY ps.last_activity DESC NULLS LAST, ps.created_at DESC))[1] AS last_ip_address,
+           (ARRAY_AGG(ps.ip_address ORDER BY ps.last_activity DESC NULLS LAST, ps.created_at DESC) FILTER (WHERE ps.ip_address IS NOT NULL))[1] AS last_ip_address,
+           (ARRAY_AGG(ps.user_agent ORDER BY ps.last_activity DESC NULLS LAST, ps.created_at DESC) FILTER (WHERE ps.user_agent IS NOT NULL))[1] AS last_user_agent,
            MAX(ps.last_activity) AS last_session_activity,
            COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(ps.last_activity, ps.created_at) - ps.created_at))), 0)::bigint AS total_active_seconds
          FROM participant_sessions ps
@@ -54,6 +56,7 @@ export async function GET() {
             last_seen_at: p.last_session_activity || p.last_seen || null,
             active_in_at: p.last_session_activity || p.last_seen || null,
             last_ip_address: p.participant_ip_address || p.last_ip_address || null,
+            last_user_agent: p.last_user_agent || null,
             total_active_seconds: Number(p.total_active_seconds || 0),
             account_balance: parseFloat(p.account_balance || 0),
           })),
