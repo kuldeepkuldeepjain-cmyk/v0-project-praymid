@@ -7,6 +7,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function PlansPage() {
-  return <ParticipantPlansPage />
+export default async function PlansPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const { category } = await searchParams
+  return <ParticipantPlansPage initialCategory={category === "challenge" ? "challenge" : undefined} />
 }

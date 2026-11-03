@@ -27,6 +27,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
+import { DashboardChallengeOffer } from "@/components/dashboard-challenge-offer"
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
@@ -2699,6 +2700,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         </nav>
       </footer>
 
+
+      {activeTab === "dashboard" && !isChallengeAccount && !showTopUpModal && <DashboardChallengeOffer />}
 
       {/* Floating AI Chat Button */}
       <Button

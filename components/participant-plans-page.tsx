@@ -19,7 +19,7 @@ async function loadParticipant(url: string): Promise<{ account_type: string }> {
   return data.participant
 }
 
-export function ParticipantPlansPage() {
+export function ParticipantPlansPage({ initialCategory }: { initialCategory?: "challenge" }) {
   const router = useRouter()
   const { data: participant, error, isLoading, mutate } = useSWR("/api/participant/me", loadParticipant, {
     revalidateOnFocus: false,
@@ -47,6 +47,7 @@ export function ParticipantPlansPage() {
       </header>
       <DashboardPlanExplorer
         accountType={planAccountType}
+        initialCategory={initialCategory}
         onFund={(mode, amount) => {
           const params = new URLSearchParams({ mode: mode === "funded" ? "funded" : "actual", amount: String(amount), from: "plans" })
           if (mode === "funded") params.set("tier", "1")
