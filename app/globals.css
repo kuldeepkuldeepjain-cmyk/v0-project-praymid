@@ -1221,6 +1221,13 @@ button, a, [role="button"] {
 .elite-landing .elite-market-change.is-positive { color: var(--elite-positive); }
 .elite-landing .elite-market-change.is-negative { color: var(--elite-muted); }
 .elite-landing .elite-market-footnote { display: flex; align-items: center; gap: 0.5rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 11%, transparent); padding-top: 0.8rem; }
+.elite-landing .elite-funding-invite { background: var(--elite-surface); color: var(--elite-text); }
+.elite-landing .elite-funding-flow { overflow: hidden; border: 1px solid color-mix(in srgb, var(--elite-brand) 32%, var(--terminal-graphite-border)); border-radius: 1rem; background: var(--elite-bg); padding: 1.25rem 1.5rem; }
+.elite-landing .elite-funding-flow-header { border-bottom: 1px solid var(--terminal-graphite-border); padding-bottom: 1rem; color: var(--elite-muted); }
+.elite-landing .elite-funding-flow-tag { border: 1px solid color-mix(in srgb, var(--elite-brand) 40%, transparent); border-radius: 999px; padding: 0.25rem 0.65rem; color: var(--elite-brand); font-size: 0.75rem; white-space: nowrap; }
+.elite-landing .elite-funding-flow-step + .elite-funding-flow-step { border-top: 1px solid var(--terminal-graphite-border); }
+.elite-landing .elite-funding-flow-icon { background: color-mix(in srgb, var(--elite-brand) 12%, var(--elite-bg)); color: var(--elite-brand); }
+.elite-landing .elite-funding-flow-footer { border-top: 1px solid var(--terminal-graphite-border); padding-top: 1rem; color: var(--elite-muted); line-height: 1.5; }
 .elite-landing .elite-section { padding: 5.75rem 0; scroll-margin-top: 5rem; }
 .elite-landing .elite-section-divider { border-top: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); }
 .elite-landing .elite-section-alt { background: color-mix(in srgb, var(--elite-bg) 96%, var(--elite-text)); }

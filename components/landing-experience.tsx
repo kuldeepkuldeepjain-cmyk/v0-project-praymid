@@ -13,6 +13,7 @@ import {
 import { ChallengePlanner } from "@/components/landing-challenge-planner"
 import { LandingAccountOptions } from "@/components/landing-account-options"
 import { LandingFooter } from "@/components/landing-footer"
+import { LandingFundingInvite } from "@/components/landing-funding-invite"
 import { LandingHeader } from "@/components/landing-header"
 import { LandingPayoutRecords } from "@/components/landing-payout-records"
 import { MarketPreview } from "@/components/landing-market-preview"
@@ -133,6 +134,9 @@ export default function LandingExperience() {
                   Trader login
                 </Link>
               </div>
+              <Link href="#add-funds" className="elite-inline-link mt-5">
+                Curious about adding funds? See how it works <ArrowRight aria-hidden="true" />
+              </Link>
               <div className="elite-hero-trust mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t pt-5 text-sm">
                 <span className="inline-flex items-center gap-2"><Shield className="elite-brand-text size-4" aria-hidden="true" /> Risk rules in view</span>
                 <span className="inline-flex items-center gap-2"><Lock className="elite-brand-text size-4" aria-hidden="true" /> Secure account access</span>
@@ -142,6 +146,8 @@ export default function LandingExperience() {
             <MarketPreview />
           </div>
         </section>
+
+        <LandingFundingInvite />
 
         <section id="features" className="elite-section elite-section-divider">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
