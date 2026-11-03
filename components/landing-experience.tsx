@@ -135,7 +135,7 @@ export default function LandingExperience() {
                 </Link>
               </div>
               <Link href="#add-funds" className="elite-inline-link mt-5">
-                Curious about adding funds? See how it works <ArrowRight aria-hidden="true" />
+                Your next move starts here <ArrowRight aria-hidden="true" />
               </Link>
               <div className="elite-hero-trust mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t pt-5 text-sm">
                 <span className="inline-flex items-center gap-2"><Shield className="elite-brand-text size-4" aria-hidden="true" /> Risk rules in view</span>
