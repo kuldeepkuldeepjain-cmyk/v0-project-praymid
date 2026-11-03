@@ -9,7 +9,7 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, PlusCircle, MessageCircle, Menu, Search,
+  AlertCircle, Home, LayoutGrid, Plus, PlusCircle, MessageCircle, Menu, Search,
   ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal, QrCode,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -27,6 +27,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
+import { DashboardChallengeOffer } from "@/components/dashboard-challenge-offer"
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
@@ -2453,6 +2454,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <Home aria-hidden="true" />
                 <span>Home</span>
               </Link>
+              <Link href="/participant/dashboard/plans" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                <LayoutGrid aria-hidden="true" />
+                <span>Plans</span>
+              </Link>
               <Link href="/participant/dashboard/profile" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
                 <User aria-hidden="true" />
                 <span>Profile</span>
@@ -2695,6 +2700,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         </nav>
       </footer>
 
+
+      {activeTab === "dashboard" && !isChallengeAccount && !showTopUpModal && <DashboardChallengeOffer />}
 
       {/* Floating AI Chat Button */}
       <Button

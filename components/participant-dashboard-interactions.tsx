@@ -3,13 +3,14 @@
 import { useEffect, useSyncExternalStore } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Gift, Home, PlusCircle, Sparkles, TrendingUp, User, Wallet } from "lucide-react"
+import { Gift, Home, LayoutGrid, PlusCircle, Sparkles, TrendingUp, User, Wallet } from "lucide-react"
 
 const profileHref = "/participant/dashboard/profile"
 
 const navItems = [
   { href: "/participant/dashboard", icon: Home, label: "Overview", shortLabel: "Home", group: "Workspace" },
   { href: "/participant/dashboard?view=terminal", icon: TrendingUp, label: "Trading terminal", shortLabel: "Terminal", group: "Workspace" },
+  { href: "/participant/dashboard/plans", icon: LayoutGrid, label: "Plans", shortLabel: "Plans", group: "Workspace" },
   { href: "/participant/dashboard/predict", icon: Sparkles, label: "Prediction", shortLabel: "Predict", group: "Workspace" },
   { href: profileHref, icon: User, label: "Profile", shortLabel: "Profile", group: "Account" },
   { href: "/participant/dashboard/contribute", icon: PlusCircle, label: "Add funds", shortLabel: "Fund", group: "Account" },

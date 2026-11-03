@@ -4,6 +4,9 @@ import { useEffect, useRef } from "react"
 import * as Sentry from "@sentry/nextjs"
 import { toast } from "@/hooks/use-toast"
 
+const isBrowserExtensionError = (source?: string) =>
+  typeof source === "string" && /(?:chrome|moz|safari-web)-extension:\/\//.test(source)
+
 /**
  * Mounted once in the root layout. Catches JS errors and promise rejections that
  * happen outside React's render cycle (event handlers, timers, fetch calls, etc.)
@@ -29,14 +32,20 @@ export function GlobalErrorListener() {
 
     const handleError = (event: ErrorEvent) => {
       const isCrossOriginScriptError = event.message === "Script error." || (!event.error && event.filename && !event.filename.startsWith(window.location.origin))
+      if (isCrossOriginScriptError || isBrowserExtensionError(event.filename) || isBrowserExtensionError(event.error?.stack)) return
+
       console.error("[v0] Uncaught error:", event.error ?? event.message)
-      if (isCrossOriginScriptError) return
       Sentry.captureException(event.error ?? new Error(event.message))
       notify("An unexpected error occurred. Please try again.")
     }
 
     const handleRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason
+      if (isBrowserExtensionError(reason?.stack)) {
+        event.preventDefault()
+        return
+      }
+
       // Suppress non-critical background promise rejections (e.g. AbortError, ServiceWorker / Cache SecurityError, network cancels)
       if (
         reason === "Canceled" ||
