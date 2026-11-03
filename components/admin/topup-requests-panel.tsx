@@ -24,7 +24,6 @@ import {
 } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { getAdminData } from "@/lib/auth"
 
 interface TopupRequest {
   id: string
@@ -38,7 +37,7 @@ interface TopupRequest {
   reviewed_at: string | null
   reviewed_by_email: string | null
   payment_method: string
-  status: "pending" | "completed" | "rejected"
+  status: "pending" | "pending_collection" | "completed" | "rejected"
   created_at: string
   bep20_address: string | null
   promo_code: string | null
@@ -57,6 +56,7 @@ function getChallengeInrAmount(adminNotes: string | null) {
 
 const STATUS_CONFIG = {
   pending:   { label: "Pending",   bg: "bg-amber-100",  text: "text-amber-800",  border: "border-amber-300",  icon: Clock },
+  pending_collection: { label: "Awaiting collection", bg: "bg-amber-100", text: "text-amber-800", border: "border-amber-300", icon: Clock },
   completed: { label: "Approved",  bg: "bg-green-100",  text: "text-green-800",  border: "border-green-300",  icon: CheckCircle2 },
   rejected:  { label: "Rejected",  bg: "bg-red-100",    text: "text-red-800",    border: "border-red-300",    icon: XCircle },
 }
@@ -86,8 +86,6 @@ export function TopUpRequestsPanel() {
   const [topupErc20Input, setTopupErc20Input] = useState("")
   const [isSavingTopupAddresses, setIsSavingTopupAddresses] = useState(false)
   const [topupBep20Copied, setTopupBep20Copied] = useState(false)
-
-  const adminData = getAdminData()
 
   // Load all global top-up addresses from the admin payment settings endpoint.
   useEffect(() => {
@@ -202,7 +200,6 @@ export function TopUpRequestsPanel() {
         body: JSON.stringify({
           requestId: selectedRequest.id,
           action: "approve",
-          adminEmail: adminData?.email,
           adminNotes: adminNoteInput.trim() || null,
         }),
       })
@@ -231,7 +228,6 @@ export function TopUpRequestsPanel() {
         body: JSON.stringify({
           requestId: selectedRequest.id,
           action: "reject",
-          adminEmail: adminData?.email,
           adminNotes: adminNoteInput.trim() || null,
           rejectionReason: rejectionInput.trim() || "Not specified",
         }),
@@ -258,15 +254,16 @@ export function TopUpRequestsPanel() {
       !search ||
       r.participant_email.toLowerCase().includes(search.toLowerCase()) ||
       (r.transaction_id || "").toLowerCase().includes(search.toLowerCase())
-    const matchesStatus = statusFilter === "all" || r.status === statusFilter
+    const matchesStatus = statusFilter === "all" || r.status === statusFilter || (statusFilter === "pending" && r.status === "pending_collection")
     return matchesSearch && matchesStatus
   })
 
-  const pendingCount = requests.filter((r) => r.status === "pending").length
+  const isPending = (status: TopupRequest["status"]) => status === "pending" || status === "pending_collection"
+  const pendingCount = requests.filter((r) => isPending(r.status)).length
 
   // Summary stats
   const totalApproved = requests.filter((r) => r.status === "completed").reduce((sum, request) => sum + Number(request.amount), 0)
-  const totalPending = requests.filter((r) => r.status === "pending").reduce((sum, request) => sum + Number(request.amount), 0)
+  const totalPending = requests.filter((r) => isPending(r.status)).reduce((sum, request) => sum + Number(request.amount), 0)
 
   return (
     <div className="space-y-6">
@@ -588,7 +585,7 @@ export function TopUpRequestsPanel() {
                 )}
 
                 {/* Action area — only for pending requests */}
-                {selectedRequest.status === "pending" && (
+                {isPending(selectedRequest.status) && (
                   <div className="space-y-3 border-t border-slate-700 pt-4">
                     <div className="space-y-1.5">
                       <Label className="text-sm text-slate-400">Admin Note (optional)</Label>

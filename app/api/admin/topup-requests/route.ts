@@ -47,8 +47,9 @@ export async function POST(req: NextRequest) {
   if (!auth.ok) return auth.response
 
   try {
-    const { requestId, action, adminEmail, adminNotes, rejectionReason } = await req.json()
-    if (!requestId || !action || !adminEmail) {
+    const { requestId, action, adminNotes, rejectionReason } = await req.json()
+    const adminEmail = auth.email
+    if (!requestId || !action) {
       return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
@@ -168,47 +169,49 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "approve") {
-      const pRows = await query("SELECT account_balance, account_type, funded_amount, funded_initial_balance, funded_breach_status FROM participants WHERE id = $1", [topup.participant_id])
-      if (!pRows.length) {
-        return NextResponse.json({ success: false, message: "Participant not found" }, { status: 404 })
-      }
-
-      const participant = pRows[0] as any
-      if (participant.account_type === "challenge") {
-        return NextResponse.json({ success: false, message: "Challenge accounts cannot receive standard wallet top-ups." }, { status: 403 })
-      }
-      const depositAmount = Number(topup.amount)
-      const promoBonusAmount = Number(topup.promo_bonus_amount || 0)
-      const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))
-      const fundedSizes: Record<number, number> = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
-      const isFundedAccount = participant.account_type === "funded"
-      // A funded account's first activation is tier-based regardless of active/frozen status.
-      const isInitialFundedTopUp = isFundedAccount
-        && topup.payment_method === "funded_tier"
-        && !Number(participant.funded_initial_balance || 0)
-        && Number(participant.account_balance || 0) <= 0
-      const fundedCredit = fundedSizes[requestedFundingAmount]
-      if (isInitialFundedTopUp && !fundedCredit) {
-        return NextResponse.json({ success: false, message: "The first funded top-up must be $50, $100, $250, $500, or $1,000" }, { status: 400 })
-      }
-      const creditedAmount = isInitialFundedTopUp ? fundedCredit : requestedFundingAmount
-      const totalCredit = creditedAmount
-      const newBalance = Number(participant.account_balance || 0) + totalCredit
-      const fundedBaseAmount = isFundedAccount
-        ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
-        : 0
-      const remainsBelowLossLimit = isFundedAccount && newBalance < getFundedMinimumBalance(fundedBaseAmount)
-      const revivalSql = isFundedAccount
-        ? `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
-        : "account_frozen = account_frozen, is_frozen = is_frozen, status = status"
-      await withTransaction(async (client) => {
-        const claimed = await client.query(
-          `UPDATE topup_requests SET status = 'processing'
-           WHERE id = $1 AND LOWER(status) IN ('pending', 'pending_collection')
-           RETURNING id`,
+      const approval = await withTransaction(async (client) => {
+        const requestResult = await client.query(
+          `SELECT participant_id, participant_email, amount, payment_method, status, promo_bonus_amount
+           FROM topup_requests WHERE id = $1 FOR UPDATE`,
           [requestId],
         )
-        if (!claimed.rowCount) throw new Error("TOPUP_ALREADY_PROCESSED")
+        const payment = requestResult.rows[0]
+        if (!payment || !pendingStatuses.has(String(payment.status).toLowerCase())) {
+          throw new Error("TOPUP_ALREADY_PROCESSED")
+        }
+
+        const participantResult = await client.query(
+          `SELECT account_balance, account_type, funded_amount, funded_initial_balance
+           FROM participants WHERE id = $1 FOR UPDATE`,
+          [payment.participant_id],
+        )
+        const participant = participantResult.rows[0]
+        if (!participant) throw new Error("TOPUP_PARTICIPANT_MISSING")
+        if (participant.account_type === "challenge") throw new Error("TOPUP_CHALLENGE_ACCOUNT")
+
+        const depositAmount = Number(payment.amount)
+        const promoBonusAmount = Number(payment.promo_bonus_amount || 0)
+        if (!Number.isFinite(depositAmount) || depositAmount <= 0 || !Number.isFinite(promoBonusAmount) || promoBonusAmount < 0) {
+          throw new Error("TOPUP_INVALID_AMOUNT")
+        }
+        const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))
+        const fundedSizes: Record<number, number> = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
+        const isFundedAccount = participant.account_type === "funded"
+        // A funded account's first activation is tier-based regardless of active/frozen status.
+        const isInitialFundedTopUp = isFundedAccount
+          && payment.payment_method === "funded_tier"
+          && !Number(participant.funded_initial_balance || 0)
+          && Number(participant.account_balance || 0) <= 0
+        const fundedCredit = fundedSizes[requestedFundingAmount]
+        if (isInitialFundedTopUp && !fundedCredit) throw new Error("TOPUP_INVALID_FUNDED_TIER")
+
+        const creditedAmount = isInitialFundedTopUp ? fundedCredit : requestedFundingAmount
+        const newBalance = Number(participant.account_balance || 0) + creditedAmount
+        const fundedBaseAmount = isFundedAccount
+          ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
+          : 0
+        const remainsBelowLossLimit = isFundedAccount && newBalance < getFundedMinimumBalance(fundedBaseAmount)
+        const revivalSql = `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
 
         await client.query(
           isFundedAccount
@@ -219,72 +222,86 @@ export async function POST(req: NextRequest) {
                    ${revivalSql}, updated_at = NOW()
                WHERE id = $2`
             : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-          [newBalance, topup.participant_id, isInitialFundedTopUp, fundedBaseAmount],
+          isFundedAccount
+            ? [newBalance, payment.participant_id, isInitialFundedTopUp, fundedBaseAmount]
+            : [newBalance, payment.participant_id],
         )
         await client.query(
-          "UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1 WHERE id = $2",
+          `UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1
+           WHERE id = $2 AND LOWER(status) IN ('pending', 'pending_collection')`,
           [adminNotes || null, requestId],
         )
+
+        // Credit $5 only after a qualifying funded event: $50+ for normal accounts,
+        // or a funded-account tier whose credited funded amount is $50+.
+        let referrerEmail: string | null = null
+        if (creditedAmount >= 50) {
+          const referrerResult = await client.query(
+            `SELECT id, email, account_balance FROM participants
+             WHERE referral_code = (SELECT referred_by FROM participants WHERE id = $1)
+               AND id <> $1 FOR UPDATE`,
+            [payment.participant_id],
+          )
+          const referrer = referrerResult.rows[0]
+          if (referrer) {
+            const bonusDescription = `Referral bonus - ${payment.participant_email} added funds`
+            const previousBonus = await client.query(
+              `SELECT id FROM transactions
+               WHERE LOWER(participant_email) = LOWER($1) AND description IN ($2, $3) LIMIT 1`,
+              [referrer.email, bonusDescription, `Referral bonus - ${payment.participant_email} activated`],
+            )
+            if (!previousBonus.rowCount) {
+              const referrerBonus = 5
+              const referrerBalanceBefore = Number(referrer.account_balance || 0)
+              const referrerNewBalance = referrerBalanceBefore + referrerBonus
+              await client.query(
+                `UPDATE participants SET account_balance = COALESCE(account_balance, 0) + $1,
+                   referral_earnings = referral_earnings + $1, updated_at = NOW() WHERE id = $2`,
+                [referrerBonus, referrer.id],
+              )
+              await client.query(
+                `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
+                 VALUES ($1, 'referral_bonus', $2, $3, $4, $5)`,
+                [referrer.email, referrerBonus, bonusDescription, referrerBalanceBefore, referrerNewBalance],
+              )
+              referrerEmail = referrer.email
+            }
+          }
+        }
+
+        return {
+          participantId: payment.participant_id,
+          participantEmail: payment.participant_email,
+          amount: depositAmount,
+          newBalance,
+          creditedAmount,
+          promoBonusAmount,
+          isFundedAccount,
+          accountRevived: isFundedAccount && !remainsBelowLossLimit,
+          referrerEmail,
+        }
       })
       await execute(
         "INSERT INTO activity_logs (actor_id, actor_email, action, target_type, details) VALUES ($1,$2,$3,$4,$5)",
-        [topup.participant_id, topup.participant_email, "topup_approved", "wallet", `Admin ${adminEmail} approved $${topup.amount} top-up${isFundedAccount ? ` for a $${creditedAmount.toLocaleString()} funded account` : ""}`]
+        [approval.participantId, approval.participantEmail, "topup_approved", "wallet", `Admin ${adminEmail} approved $${approval.amount} top-up${approval.isFundedAccount ? ` for a $${approval.creditedAmount.toLocaleString()} funded account` : ""}`],
       ).catch(() => {})
-
-      // Credit $5 only after a qualifying funded event: $50+ for normal accounts,
-      // or a funded-account tier whose credited funded amount is $50+.
-      const qualifyingFundAmount = creditedAmount
-      const meetsReferralFundingThreshold = qualifyingFundAmount >= 50
-      const referrerRows = meetsReferralFundingThreshold ? await query(
-        `SELECT id, email, account_balance, referral_earnings FROM participants WHERE referral_code = (SELECT referred_by FROM participants WHERE email = $1)`,
-        [topup.participant_email]
-      ) : []
-      if (referrerRows.length > 0) {
-        const referrer = referrerRows[0] as any
-        
-        // Check if bonus was already given for this referred user
-        const bonusCheckRows = await query(
-          `SELECT id FROM referral_bonuses WHERE referred_email = $1 AND referrer_id = $2`,
-          [topup.participant_email, referrer.id]
-        )
-        
-        // Only add bonus if it hasn't been added yet for this referred user
-        if (bonusCheckRows.length === 0) {
-          const referrerBonus = 5 // $5 per referred participant after the first approved fund add
-          const referrerBalanceBefore = Number(referrer.account_balance || 0)
-          const referrerNewBalance = referrerBalanceBefore + referrerBonus
-          const referrerNewEarnings = Number(referrer.referral_earnings || 0) + referrerBonus
-          await execute(
-            `UPDATE participants SET account_balance = $1, referral_earnings = $2 WHERE id = $3`,
-            [referrerNewBalance, referrerNewEarnings, referrer.id]
-          )
-          await execute(
-            `INSERT INTO transactions (participant_email, type, amount, description, balance_before, balance_after)
-             VALUES ($1, 'credit', $2, $3, $4, $5)`,
-            [referrer.email, referrerBonus, `Referral bonus - ${topup.participant_email} added funds`, referrerBalanceBefore, referrerNewBalance]
-          ).catch(() => {})
-          await execute(
-            `INSERT INTO activity_logs(actor_email, action, details, target_type) VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
-            [referrer.email, `Earned $5 referral bonus from ${topup.participant_email} adding funds`]
-          ).catch(() => {})
-          
-          // Track that bonus was given for this referred user
-          await execute(
-            `INSERT INTO referral_bonuses (referred_email, referrer_id, bonus_amount, given_date) VALUES ($1, $2, $3, NOW())`,
-            [topup.participant_email, referrer.id, referrerBonus]
-          ).catch(() => {})
-        }
+      if (approval.referrerEmail) {
+        await execute(
+          `INSERT INTO activity_logs (actor_email, action, details, target_type)
+           VALUES ($1, 'referral_bonus_credited', $2, 'referral_bonus')`,
+          [approval.referrerEmail, `Earned $5 referral bonus from ${approval.participantEmail} adding funds`],
+        ).catch(() => {})
       }
 
       return NextResponse.json({
         success: true,
-        message: isFundedAccount
-          ? `Top-up approved and $${creditedAmount.toLocaleString()} funded balance credited${!remainsBelowLossLimit ? "; account is live again" : ""}`
+        message: approval.isFundedAccount
+          ? `Top-up approved and $${approval.creditedAmount.toLocaleString()} funded balance credited${approval.accountRevived ? "; account is live again" : ""}`
           : "Top-up approved and wallet credited",
-        newBalance,
-        creditedAmount: totalCredit,
-        promoBonusAmount,
-        accountRevived: isFundedAccount && !remainsBelowLossLimit,
+        newBalance: approval.newBalance,
+        creditedAmount: approval.creditedAmount,
+        promoBonusAmount: approval.promoBonusAmount,
+        accountRevived: approval.accountRevived,
       })
     }
 
@@ -311,8 +328,16 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Top-up rejected" })
   } catch (error) {
-    if (error instanceof Error && error.message === "TOPUP_ALREADY_PROCESSED") {
-      return NextResponse.json({ success: false, message: "Request already processed" }, { status: 409 })
+    if (error instanceof Error) {
+      const knownErrors: Record<string, { message: string; status: number }> = {
+        TOPUP_ALREADY_PROCESSED: { message: "Request already processed", status: 409 },
+        TOPUP_PARTICIPANT_MISSING: { message: "Participant not found", status: 404 },
+        TOPUP_CHALLENGE_ACCOUNT: { message: "Challenge accounts cannot receive standard wallet top-ups.", status: 403 },
+        TOPUP_INVALID_AMOUNT: { message: "Invalid top-up amount", status: 400 },
+        TOPUP_INVALID_FUNDED_TIER: { message: "The first funded top-up must be $50, $100, $250, $500, or $1,000", status: 400 },
+      }
+      const knownError = knownErrors[error.message]
+      if (knownError) return NextResponse.json({ success: false, message: knownError.message }, { status: knownError.status })
     }
     console.error("[topup-requests] POST error:", error)
     return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
