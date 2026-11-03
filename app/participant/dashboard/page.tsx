@@ -9,7 +9,7 @@ import {
   TrendingUp, ChevronRight, ArrowUpRight, Send, Wallet, Gift,
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
-  AlertCircle, Home, Plus, PlusCircle, MessageCircle, Menu, Search,
+  AlertCircle, Home, LayoutGrid, Plus, PlusCircle, MessageCircle, Menu, Search,
   ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal, QrCode,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
@@ -30,7 +30,6 @@ import { ParticipantOnboardingDashboard } from "@/components/participant-onboard
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
-import { DashboardPlanExplorer } from "@/components/dashboard-plan-explorer"
 
 
 
@@ -1504,7 +1503,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
-  const [planCheckout, setPlanCheckout] = useState<{ mode: "actual" | "funded"; amount: number } | null>(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
@@ -1848,10 +1846,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onClose={() => {
           setShowTopUpModal(false)
           setIsInitialFundedTopUp(false)
-          setPlanCheckout(null)
         }}
-        initialAmount={planCheckout?.amount}
-        initialFundingMode={planCheckout?.mode}
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
@@ -1860,7 +1855,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   onSuccess={async () => {
   setShowTopUpModal(false)
   setIsInitialFundedTopUp(false)
-  setPlanCheckout(null)
   if (participantData?.email) {
   await refreshParticipantData(participantData.email)
   }
@@ -2203,16 +2197,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </section>
             )}
 
-            <DashboardPlanExplorer
-              accountType={isChallengeAccount ? "challenge" : isFundedAccount ? "funded" : "normal"}
-              onFund={(mode, amount) => {
-                setPlanCheckout({ mode: mode === "funded" ? "funded" : "actual", amount })
-                setTopUpIsFundedAccount(isFundedAccount)
-                setIsInitialFundedTopUp(mode === "funded")
-                setShowTopUpModal(true)
-              }}
-            />
-
             {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
             <section
               className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4"
@@ -2468,6 +2452,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               <Link href="/participant/dashboard" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item is-active" aria-current="page">
                 <Home aria-hidden="true" />
                 <span>Home</span>
+              </Link>
+              <Link href="/participant/dashboard/plans" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                <LayoutGrid aria-hidden="true" />
+                <span>Plans</span>
               </Link>
               <Link href="/participant/dashboard/profile" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
                 <User aria-hidden="true" />
