@@ -1505,60 +1505,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
-  const [liveRates, setLiveRates] = useState<Record<string, { mid: number; change: number }>>({})
-  const [marketStatus, setMarketStatus] = useState<"live" | "stale" | "offline">("offline")
-
-  useEffect(() => {
-    const source = new EventSource("/api/market-data/stream")
-    let lastFreshQuoteAt = 0
-    const freshnessTimer = window.setInterval(() => {
-      if (lastFreshQuoteAt && Date.now() - lastFreshQuoteAt > 60_000) {
-        setMarketStatus((current) => current === "live" ? "stale" : current)
-      }
-    }, 10_000)
-    const handleRates = (event: Event) => {
-      try {
-        const payload = JSON.parse((event as MessageEvent<string>).data)
-        const rates = payload?.rates
-        if (rates && typeof rates === "object" && !Array.isArray(rates)) {
-          const normalizedRates: Record<string, { mid: number; change: number }> = {}
-          for (const [symbol, candidate] of Object.entries(rates)) {
-            if (!candidate || typeof candidate !== "object") continue
-            const rate = candidate as { mid?: unknown; change?: unknown }
-            const mid = Number(rate.mid)
-            if (!Number.isFinite(mid) || mid <= 0) continue
-            const change = Number(rate.change)
-            normalizedRates[symbol] = { mid, change: Number.isFinite(change) ? change : 0 }
-          }
-          setLiveRates(normalizedRates)
-          const providerSource = String(payload.source ?? "")
-          const recentlyUpdated = Number.isFinite(Number(payload.ts)) && Date.now() - Number(payload.ts) < 60_000
-          const fromLiveProvider = providerSource === "live" || providerSource === "partial-live" || providerSource.startsWith("live-") || (providerSource === "cache" && Object.values(payload.sources ?? {}).some((provider) => provider !== "stale-cache"))
-          const fresh = recentlyUpdated && fromLiveProvider
-          if (fresh) lastFreshQuoteAt = Date.now()
-          setMarketStatus(Object.keys(normalizedRates).length === 0 ? "offline" : fresh ? "live" : "stale")
-        }
-      } catch {
-        setMarketStatus("stale")
-      }
-    }
-    const handleStatus = (event: Event) => {
-      try {
-        const status = JSON.parse((event as MessageEvent<string>).data)?.status
-        if (status === "offline") setMarketStatus("offline")
-        else if (status === "reconnecting" || status === "fallback") setMarketStatus("stale")
-      } catch {
-        setMarketStatus("stale")
-      }
-    }
-    source.addEventListener("rates", handleRates)
-    source.addEventListener("status", handleStatus)
-    source.onerror = () => setMarketStatus((current) => current === "live" ? "stale" : "offline")
-    return () => {
-      source.close()
-      window.clearInterval(freshnessTimer)
-    }
-  }, [])
   const [queueData, setQueueData] = useState<any>(null)
   const [showPinSetup, setShowPinSetup] = useState(false)
   
@@ -2060,7 +2006,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 </div>
               </section>
             )}
-            <ParticipantMarketTicker rates={liveRates} status={marketStatus} />
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
             <div className="hidden relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
@@ -2380,6 +2325,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </section>
 
+            <ParticipantMarketTicker />
           </>
         )}
 
@@ -2414,7 +2360,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       {/* ── FULLSCREEN TRADING TERMINAL ��────────────────────────────────────
           Rendered outside <main> so it escapes all padding/overflow constraints.
           Uses fixed inset-0 z-[60] so it sits above the header but below modals.
-      ─────���────────────��───────────────────────────────────────────────────── */}
+      ─────���────────────��───────────────���───────────────────────────────────── */}
       {activeTab === "trading" && (
         <div className="elite-terminal-shell">
           {isTerminalMenuOpen && (
