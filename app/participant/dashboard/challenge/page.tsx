@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { Suspense, useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import Image from "next/image"
 import QRCode from "qrcode"
 import useSWR from "swr"
@@ -33,13 +34,21 @@ async function settingsFetcher(url: string) {
 }
 
 export default function ChallengePage() {
+  return <Suspense fallback={<PageLoader variant="subpage" />}><ChallengeContent /></Suspense>
+}
+
+function ChallengeContent() {
+  const searchParams = useSearchParams()
   const { data, error, isLoading, mutate } = useSWR(CHALLENGE_URL, participantFetcher, {
     refreshInterval: 15_000,
     revalidateOnFocus: true,
     shouldRetryOnError: false,
   })
   const { data: paymentSettings } = useSWR(SETTINGS_URL, settingsFetcher, { revalidateOnFocus: false })
-  const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(null)
+  const [selectedPlanKey, setSelectedPlanKey] = useState<string | null>(() => {
+    const requestedPlan = searchParams.get("plan")
+    return DEFAULT_CHALLENGE_PLANS.some((plan) => plan.key === requestedPlan) ? requestedPlan : null
+  })
   const [paymentMethod, setPaymentMethod] = useState<"USDT" | "INR">("USDT")
   const [paymentNetwork, setPaymentNetwork] = useState("BEP20")
   const [transactionHash, setTransactionHash] = useState("")
@@ -63,7 +72,9 @@ export default function ChallengePage() {
     return addresses
   }, [paymentSettings])
   const currentAddress = availableNetworks.find((item) => item.key === paymentNetwork)?.address || ""
-  const effectivePlanKey = selectedPlanKey || participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[0].key
+  const effectivePlanKey = ["active", "pending_payment", "passed"].includes(status)
+    ? participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[0].key
+    : selectedPlanKey || participant?.challenge_plan_key || DEFAULT_CHALLENGE_PLANS[0].key
   const plan = plans.find((item) => item.key === effectivePlanKey) || plans[0] || DEFAULT_CHALLENGE_PLANS[0]
   const configuredInrRate = Number(paymentSettings?.usdt_inr_rate)
   const inrRate = Number.isFinite(configuredInrRate) && configuredInrRate > 0 ? configuredInrRate : 104

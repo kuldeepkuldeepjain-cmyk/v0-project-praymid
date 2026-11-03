@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { FundingPaymentInstructions, FundingReviewSummary, FundingSection, PendingFundingRequests } from "@/components/funding-checkout-sections"
 import { cn } from "@/lib/utils"
+import { FUNDED_PLANS } from "@/lib/funded-account"
 import { useToast } from "@/hooks/use-toast"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
 
@@ -30,6 +31,8 @@ interface TopUpModalProps {
   isInitialFundedTopUp?: boolean
   openFundedTier?: boolean
   fundedTierAvailable?: boolean
+  initialAmount?: number
+  initialFundingMode?: "actual" | "funded"
 }
 
 type Step = "form" | "submitting" | "success"
@@ -54,7 +57,7 @@ function describePromoDiscount(promo: AppliedPromo) {
 export function TopUpModal(props: TopUpModalProps) {
   const isMobile = useIsMobile()
   const router = useRouter()
-  const { isOpen, onClose, isFundedAccount, isInitialFundedTopUp, openFundedTier } = props
+  const { isOpen, onClose, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode } = props
 
   useEffect(() => {
     if (!isOpen || !isMobile) return
@@ -62,15 +65,17 @@ export function TopUpModal(props: TopUpModalProps) {
     if (isFundedAccount) query.set("account", "funded")
     if (isInitialFundedTopUp) query.set("initial", "1")
     if (openFundedTier) query.set("tier", "1")
+    if (initialAmount && Number.isFinite(initialAmount)) query.set("amount", String(initialAmount))
+    if (initialFundingMode) query.set("mode", initialFundingMode)
     router.push(`/participant/dashboard/add-funds${query.size ? `?${query}` : ""}`)
     onClose()
-  }, [isOpen, isMobile, isFundedAccount, isInitialFundedTopUp, openFundedTier, router, onClose])
+  }, [isOpen, isMobile, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode, router, onClose])
 
   if (isMobile) return null
   return <FundingCheckout {...props} />
 }
 
-export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable, presentation = "dialog" }: TopUpModalProps & { presentation?: "dialog" | "page" }) {
+export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable, initialAmount, initialFundingMode, presentation = "dialog" }: TopUpModalProps & { presentation?: "dialog" | "page" }) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
@@ -104,7 +109,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   useEffect(() => {
     if (!isOpen) return
     setStep("form")
-    setAmount("")
+    setAmount(Number.isFinite(initialAmount) && initialAmount !== undefined && initialAmount >= 5 && initialAmount <= 100_000 ? String(initialAmount) : "")
     setTxHash("")
     setNote("")
     setPromoCode("")
@@ -154,7 +159,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
           return
         }
         setFundedTierEligibility(available)
-        if (available && (openFundedTier || isInitialFundedTopUp)) setFundingMode("funded")
+        if (available && (initialFundingMode === "funded" || (initialFundingMode !== "actual" && (openFundedTier || isInitialFundedTopUp)))) setFundingMode("funded")
       } catch {
         setFundedTierEligibility(false)
       } finally {
@@ -177,7 +182,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
       }
     }
     fetchAddress()
-  }, [isOpen, isFundedAccount, isInitialFundedTopUp, openFundedTier])
+  }, [isOpen, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode])
 
   const copyAddress = () => {
     const walletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
@@ -253,7 +258,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const payableAmount = Number.isFinite(parsedAmount) && parsedAmount > 0
     ? Number((parsedAmount - promoDiscountAmount).toFixed(2))
     : parsedAmount
-  const fundedTiers = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 } as const
+  const fundedTiers: Record<number, number> = Object.fromEntries(FUNDED_PLANS.map((plan) => [plan.topUpAmount, plan.baseAmount]))
   // Keep the two funded-account choices visible even if the parent updates
   // the modal mode and open state in the same batched click event.
   const showFundingOptions = Boolean(isFundedAccount || isInitialFundedTopUp)

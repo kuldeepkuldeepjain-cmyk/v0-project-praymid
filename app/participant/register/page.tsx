@@ -26,11 +26,15 @@ export default function ParticipantRegisterPage() {
   const [error, setError] = useState("")
   const errorSummaryRef = useRef<HTMLDivElement>(null)
   const referralCodeFromUrl = searchParams.get("ref")?.toUpperCase() || ""
+  const requestedAccountType = searchParams.get("account")
+  const initialAccountType: RegistrationData["accountType"] = requestedAccountType === "funded" || requestedAccountType === "challenge" ? requestedAccountType : "normal"
+  const requestedPlan = searchParams.get("plan")
+  const initialChallengePlan = DEFAULT_CHALLENGE_PLANS.find((plan) => plan.key === requestedPlan)?.key ?? DEFAULT_CHALLENGE_PLANS[0].key
   const defaultCountry = REGISTRATION_COUNTRIES[0]
   const [formData, setFormData] = useState<RegistrationData>({
     firstName: "", lastName: "", username: "", email: "", countryCode: defaultCountry.code,
     mobileNumber: "", password: "", confirmPassword: "", country: defaultCountry.name,
-    state: "", referralCode: referralCodeFromUrl, accountType: "normal", challengePlanKey: DEFAULT_CHALLENGE_PLANS[0].key,
+    state: "", referralCode: referralCodeFromUrl, accountType: initialAccountType, challengePlanKey: initialChallengePlan,
   })
 
   const generateCaptcha = () => {

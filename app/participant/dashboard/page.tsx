@@ -30,6 +30,7 @@ import { ParticipantOnboardingDashboard } from "@/components/participant-onboard
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
+import { DashboardPlanExplorer } from "@/components/dashboard-plan-explorer"
 
 
 
@@ -1503,6 +1504,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
+  const [planCheckout, setPlanCheckout] = useState<{ mode: "actual" | "funded"; amount: number } | null>(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
@@ -1846,7 +1848,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onClose={() => {
           setShowTopUpModal(false)
           setIsInitialFundedTopUp(false)
+          setPlanCheckout(null)
         }}
+        initialAmount={planCheckout?.amount}
+        initialFundingMode={planCheckout?.mode}
         currentBalance={walletBalance}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
@@ -1855,6 +1860,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   onSuccess={async () => {
   setShowTopUpModal(false)
   setIsInitialFundedTopUp(false)
+  setPlanCheckout(null)
   if (participantData?.email) {
   await refreshParticipantData(participantData.email)
   }
@@ -2196,6 +2202,16 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 </div>
               </section>
             )}
+
+            <DashboardPlanExplorer
+              accountType={isChallengeAccount ? "challenge" : isFundedAccount ? "funded" : "normal"}
+              onFund={(mode, amount) => {
+                setPlanCheckout({ mode: mode === "funded" ? "funded" : "actual", amount })
+                setTopUpIsFundedAccount(isFundedAccount)
+                setIsInitialFundedTopUp(mode === "funded")
+                setShowTopUpModal(true)
+              }}
+            />
 
             {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
             <section
