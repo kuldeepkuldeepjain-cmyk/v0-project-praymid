@@ -148,6 +148,7 @@ export default function LandingExperience() {
         </section>
 
         <LandingFundingInvite />
+        <LandingPayoutRecords />
 
         <section id="features" className="elite-section elite-section-divider">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
@@ -227,8 +228,6 @@ export default function LandingExperience() {
             </div>
           </div>
         </section>
-
-        <LandingPayoutRecords />
 
         <section id="how-it-works" className="elite-section elite-section-alt">
           <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
