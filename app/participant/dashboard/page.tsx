@@ -27,6 +27,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
+import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
 
@@ -1509,6 +1510,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
   useEffect(() => {
     const source = new EventSource("/api/market-data/stream")
+    let lastFreshQuoteAt = 0
+    const freshnessTimer = window.setInterval(() => {
+      if (lastFreshQuoteAt && Date.now() - lastFreshQuoteAt > 60_000) {
+        setMarketStatus((current) => current === "live" ? "stale" : current)
+      }
+    }, 10_000)
     const handleRates = (event: Event) => {
       try {
         const payload = JSON.parse((event as MessageEvent<string>).data)
@@ -1524,7 +1531,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             normalizedRates[symbol] = { mid, change: Number.isFinite(change) ? change : 0 }
           }
           setLiveRates(normalizedRates)
-          setMarketStatus(payload.source === "live" || payload.source === "partial-live" ? "live" : "stale")
+          const providerSource = String(payload.source ?? "")
+          const recentlyUpdated = Number.isFinite(Number(payload.ts)) && Date.now() - Number(payload.ts) < 60_000
+          const fromLiveProvider = providerSource === "live" || providerSource === "partial-live" || providerSource.startsWith("live-") || (providerSource === "cache" && Object.values(payload.sources ?? {}).some((provider) => provider !== "stale-cache"))
+          const fresh = recentlyUpdated && fromLiveProvider
+          if (fresh) lastFreshQuoteAt = Date.now()
+          setMarketStatus(Object.keys(normalizedRates).length === 0 ? "offline" : fresh ? "live" : "stale")
         }
       } catch {
         setMarketStatus("stale")
@@ -1532,7 +1544,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     }
     const handleStatus = (event: Event) => {
       try {
-        setMarketStatus(JSON.parse((event as MessageEvent<string>).data)?.status === "offline" ? "offline" : "stale")
+        const status = JSON.parse((event as MessageEvent<string>).data)?.status
+        if (status === "offline") setMarketStatus("offline")
+        else if (status === "reconnecting" || status === "fallback") setMarketStatus("stale")
       } catch {
         setMarketStatus("stale")
       }
@@ -1540,7 +1554,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
     source.addEventListener("rates", handleRates)
     source.addEventListener("status", handleStatus)
     source.onerror = () => setMarketStatus((current) => current === "live" ? "stale" : "offline")
-    return () => source.close()
+    return () => {
+      source.close()
+      window.clearInterval(freshnessTimer)
+    }
   }, [])
   const [queueData, setQueueData] = useState<any>(null)
   const [showPinSetup, setShowPinSetup] = useState(false)
@@ -2043,6 +2060,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 </div>
               </section>
             )}
+            <ParticipantMarketTicker rates={liveRates} status={marketStatus} />
             {/* ── PORTFOLIO HERO ──────���───────────────────────────── */}
             <div className="hidden relative overflow-hidden hero-card-deep">
               {/* Depth grid */}
@@ -2297,7 +2315,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </section>
 
-            {/* ── AI TRADE COACH ────────────────────────────────── */}
+            {/* ── AI TRADE COACH ──────────────────────────���─────── */}
             <section className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4" aria-labelledby="ai-trade-coach-title" style={{ background: "var(--terminal-graphite-surface)", borderColor: "color-mix(in srgb, var(--brand-primary) 24%, var(--terminal-graphite-border))" }}>
               <div className="flex flex-col gap-5 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-start gap-3">
@@ -2362,24 +2380,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </section>
 
-            {/* ── LIVE TICKER BAR ──────────────────────────────── */}
-            <div className="ticker-wrap border-y py-1.5" style={{ borderColor: "rgba(255,255,255,0.05)", background: "rgba(0,0,0,0.4)" }}>
-              <div className="ticker-tape text-[10px] font-mono font-bold text-slate-500 gap-6">
-                {["EUR/USD", "GBP/USD", "USD/JPY", "BTC/USD", "ETH/USD", "XAU/USD", "USD/CHF", "AUD/USD"].map((symbol) => {
-                  const quote = liveRates[symbol]
-                  const decimals = symbol.includes("JPY") ? 3 : symbol.includes("BTC") || symbol.includes("ETH") || symbol.includes("XAU") ? 2 : 4
-                  const value = quote ? quote.mid.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals }) : "—"
-                  const change = quote?.change
-                  return <span key={symbol} className="mx-4 shrink-0"><span className="mr-1 text-slate-600">▸</span>{symbol} · {value} {typeof change === "number" ? <span className={change >= 0 ? "text-emerald-400" : "text-red-400"}>{change >= 0 ? "+" : ""}{change.toFixed(2)}%</span> : null}</span>
-                })}
-                <span className={`mx-4 shrink-0 text-[9px] uppercase tracking-wider ${marketStatus === "live" ? "text-emerald-400" : "text-amber-400"}`}>{marketStatus === "live" ? "Live rates" : marketStatus === "stale" ? "Stale rates" : "Rates unavailable"}</span>
-              </div>
-            </div>
-
-
-
-
-
           </>
         )}
 
@@ -2411,7 +2411,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
       </main>
 
-      {/* ── FULLSCREEN TRADING TERMINAL ─────────────────────────────────────
+      {/* ── FULLSCREEN TRADING TERMINAL ��────────────────────────────────────
           Rendered outside <main> so it escapes all padding/overflow constraints.
           Uses fixed inset-0 z-[60] so it sits above the header but below modals.
       ─────���────────────��───────────────────────────────────────────────────── */}

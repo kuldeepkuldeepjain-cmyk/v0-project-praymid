@@ -1849,16 +1849,20 @@ button, a, [role="button"] {
   overflow: hidden;
 }
 .ticker-tape {
-  display: inline-flex;
+  display: flex;
+  width: max-content;
   white-space: nowrap;
-  animation: ticker-scroll 28s linear infinite;
+  animation: ticker-scroll 32s linear infinite;
 }
-.ticker-tape:hover {
+.ticker-tape:hover,
+.ticker-tape:focus-within {
   animation-play-state: paused;
 }
+@media (prefers-reduced-motion: reduce) {
+  .ticker-tape { animation: none; }
+}
 @keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  to { transform: translateX(-50%); }
 }
 
 /* Depth grid for hero */
