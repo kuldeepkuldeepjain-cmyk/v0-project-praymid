@@ -1,33 +1,33 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { query } from "@/lib/db"
+import { requireParticipantSession } from "@/lib/auth-middleware"
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const email = searchParams.get("email")
-    if (!email) return NextResponse.json({ success: false, error: "Email is required" }, { status: 400 })
+    const session = await requireParticipantSession()
+    if (!session.ok) return session.response
 
     const rows = await query(
-      "SELECT referral_code, total_referrals, referral_earnings, referral_count, username FROM participants WHERE email = $1",
-      [email.toLowerCase().trim()]
+      "SELECT referral_code, referral_earnings FROM participants WHERE id = $1 AND LOWER(email) = $2",
+      [session.participantId, session.email.toLowerCase().trim()],
     )
-    const userData = rows[0]
-    if (!userData) return NextResponse.json({ success: false, error: "User not found" }, { status: 404 })
+    const participant = rows[0]
+    if (!participant) return NextResponse.json({ success: false, error: "Account not found" }, { status: 404 })
 
-    const referredUsers = await query(
-      `SELECT username, email, created_at, is_active, account_balance
-       FROM participants WHERE referred_by = $1 ORDER BY created_at DESC`,
-      [userData.referral_code]
-    )
+    const referralCode = String(participant.referral_code || "")
+    const referredUsers = referralCode ? await query(
+      "SELECT username, created_at FROM participants WHERE referred_by = $1 ORDER BY created_at DESC",
+      [referralCode],
+    ) : []
 
     return NextResponse.json({
       success: true,
-      referralCode: userData.referral_code,
-      referralCount: Number(userData.referral_count || userData.total_referrals || 0),
-      referralEarnings: Number(userData.referral_earnings) || 0,
-      referredUsers: referredUsers || [],
-      referralLink: `https://elitefund.sbs/register?ref=${encodeURIComponent(userData.referral_code || "")}`,
-    })
+      referralCode,
+      referralCount: referredUsers.length,
+      referralEarnings: Number(participant.referral_earnings) || 0,
+      referredUsers,
+      referralLink: referralCode ? `https://elitefund.sbs/register?ref=${encodeURIComponent(referralCode)}` : "",
+    }, { headers: { "Cache-Control": "private, no-store" } })
   } catch (error) {
     console.error("[v0] Referrals API error:", error)
     return NextResponse.json({ success: false, error: "Failed to fetch referral data" }, { status: 500 })
