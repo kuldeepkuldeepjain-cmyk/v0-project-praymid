@@ -10,7 +10,7 @@ import {
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
   AlertCircle, Home, LayoutGrid, Plus, PlusCircle, MessageCircle, Menu, Search,
-  ChevronDown, FileText, ShieldCheck, BadgeCheck, ReceiptText, Headphones, Palette, BellRing, SlidersHorizontal, QrCode,
+  ChevronDown, FileText, ShieldCheck, Palette, BellRing, SlidersHorizontal, QrCode,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
@@ -1916,8 +1916,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               role="group"
               aria-label={`Current balance $${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             >
-              <span className="participant-header-wallet-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-amber-300/20 bg-amber-300/10" aria-hidden="true">
-                <Wallet className="h-4 w-4 text-amber-200" />
+              <span className="participant-header-wallet-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10" aria-hidden="true">
+                <Wallet className="h-4 w-4 text-primary" />
               </span>
               <div className="min-w-0 leading-none">
                 <span className="participant-header-balance-label block text-[8px] font-bold uppercase tracking-[0.12em] text-slate-400">Balance</span>
@@ -2124,28 +2124,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </div>
             </div>
 
-            {/* ── INSTITUTIONAL WELCOME HERO ───────────────────── */}
-            <section className="relative mx-3 mt-3 hidden overflow-hidden border border-[#8f6f2d]/45 bg-[#101722] shadow-[0_18px_50px_rgba(0,0,0,0.22)] sm:mx-4 md:block" aria-labelledby="elitefund-welcome-title">
-              <div className="relative flex flex-col gap-6 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between">
-                <div className="max-w-2xl">
-                  <div className="mb-4 flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
-                    <span className="inline-flex items-center gap-2 text-[#d6b66b]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0] shadow-[0_0_10px_#4bd6a0]" /> EliteFund private markets</span>
-                    <span className="text-slate-600">/</span><span className="text-slate-500">Participant workspace</span>
-                  </div>
-                  <h1 id="elitefund-welcome-title" className="max-w-xl text-2xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">{isChallengeAccount ? "Your Challenge, clearly measured." : "Your capital, clearly accounted for."}</h1>
-                  <p className="mt-3 max-w-xl text-sm leading-6 text-slate-400">{isChallengeAccount ? "Track your virtual equity, evaluation progress, and risk limits from one secure workspace." : "Explore markets, review your account, and make informed funding decisions from one secure operating view."}</p>
-                  <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    <span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Live market access</span><span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Transparent records</span><span className="border border-slate-700 bg-slate-900/70 px-3 py-2">Human support</span>
-                  </div>
-                </div>
-                <div className="min-w-0 border border-slate-700/80 bg-[#0a111b] p-4 sm:min-w-[250px]">
-                  <div className="mb-4 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">{isChallengeAccount ? "Virtual balance" : "Available balance"}</span><Wallet className="h-4 w-4 text-[#d6b66b]" /></div>
-                  <p className="text-3xl font-semibold tracking-tight text-white">$<AnimatedNumber value={walletBalance} decimals={2} /></p>
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3 text-[10px] uppercase tracking-wider"><span className="text-slate-500">Account status</span><span className="flex items-center gap-1.5 font-bold text-[#4bd6a0]"><span className="h-1.5 w-1.5 rounded-full bg-[#4bd6a0]" /> {isChallengeAccount ? String(participantData.challenge_status || "not_started").replaceAll("_", " ") : "Active"}</span></div>
-                </div>
-              </div>
-            </section>
-
             {/* ── FUNDING LAUNCHPAD ────────────────────────────── */}
             {!isChallengeAccount && (
               <section
@@ -2209,69 +2187,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </section>
             )}
 
-            {/* ── TRUST & ACCOUNT CENTER ───────────────────────── */}
-            <section
-              className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4"
-              aria-labelledby="account-confidence-title"
-              style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
-            >
-              <div className="flex flex-col gap-4 border-b p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5" style={{ borderColor: "var(--terminal-graphite-border)" }}>
-                <div>
-                  <p className="mb-1 text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>Account overview</p>
-                  <h2 id="account-confidence-title" className="text-lg font-semibold tracking-tight text-white">A clearer way to manage your account</h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">Every important action is visible, reviewable, and supported by a clear record.</p>
-                </div>
-                <Link href="/participant/dashboard/profile" className="inline-flex items-center gap-2 text-sm font-bold transition hover:brightness-125" style={{ color: "var(--brand-primary)" }}><ShieldCheck className="size-4" aria-hidden="true" /> Review account settings</Link>
-              </div>
-              <div className="grid gap-2 p-3 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  { icon: ShieldCheck, label: "Account security", value: "Protected", detail: "Session controls active", tone: "text-emerald-300" },
-                  { icon: BadgeCheck, label: "Identity status", value: participantData?.kyc_status === "approved" ? "Verified" : "Action available", detail: participantData?.kyc_status === "approved" ? "KYC approved" : "Complete your profile", tone: "brand" },
-                  { icon: ReceiptText, label: "Funding records", value: "Traceable", detail: "Requests and status history", tone: "text-slate-300" },
-                  { icon: Headphones, label: "Help when needed", value: "Support ready", detail: "Contact the support team", tone: "text-sky-300" },
-                ].map(({ icon: Icon, label, value, detail, tone }) => (
-                  <div key={label} className="rounded-xl border p-4" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
-                    <Icon className={`mb-3 size-4 ${tone === "brand" ? "" : tone}`} style={tone === "brand" ? { color: "var(--brand-primary)" } : undefined} aria-hidden="true" />
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
-                    <p className={`mt-1 text-sm font-bold ${tone === "brand" ? "" : tone}`} style={tone === "brand" ? { color: "var(--brand-primary)" } : undefined}>{value}</p>
-                    <p className="mt-1 text-sm leading-5 text-slate-500">{detail}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-3 border-t p-4 text-sm leading-relaxed text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:p-5" style={{ borderColor: "var(--terminal-graphite-border)" }}>
-                <p><span className="font-bold text-slate-200">Risk notice:</span> Trading involves risk. Review your balance, activity, and funding status before taking action.</p>
-                {isChallengeAccount ? (
-                  <Link href="/participant/dashboard/challenge" className="shrink-0 font-bold text-slate-300 transition hover:text-white">Review evaluation status <ArrowUpRight className="ml-1 inline size-3" aria-hidden="true" /></Link>
-                ) : (
-                  <Link href="/participant/dashboard/payout" className="shrink-0 font-bold text-slate-300 transition hover:text-white">View account activity <ArrowUpRight className="ml-1 inline size-3" aria-hidden="true" /></Link>
-                )}
-              </div>
-            </section>
-
-            {/* ── INSTITUTIONAL OPERATING STANDARD ─────────────── */}
-            <section
-              className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4"
-              aria-labelledby="operating-standard-title"
-              style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
-            >
-              <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5" style={{ borderColor: "var(--terminal-graphite-border)" }}>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>Institutional operating standard</p>
-                  <h2 id="operating-standard-title" className="mt-1 text-lg font-semibold tracking-tight text-white">Built for decisions you can stand behind.</h2>
-                </div>
-                <span className="inline-flex items-center gap-2 text-sm font-bold text-emerald-300"><ShieldCheck className="size-4" aria-hidden="true" /> Controls in view</span>
-              </div>
-              <div className="grid gap-2 p-3 md:grid-cols-3">
-                {[{ icon: ReceiptText, title: "Clear records", text: "Funding requests, account activity, and payouts stay organized for review." }, { icon: SlidersHorizontal, title: "Measured access", text: "Use the terminal, account controls, and funding flows at your own pace." }, { icon: Headphones, title: "Responsive support", text: "Get help from a real support channel when a question needs context." }].map(({ icon: Icon, title, text }) => (
-                  <div key={title} className="rounded-xl border p-4 sm:p-5" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
-                    <Icon className="size-4" style={{ color: "var(--brand-primary)" }} aria-hidden="true" />
-                    <h3 className="mt-3 text-sm font-semibold text-white">{title}</h3>
-                    <p className="mt-1 text-sm leading-6 text-slate-400">{text}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             {/* ── AI TRADE COACH ──────────────────────────���─────── */}
             <section className="mx-3 mt-3 overflow-hidden rounded-2xl border sm:mx-4" aria-labelledby="ai-trade-coach-title" style={{ background: "var(--terminal-graphite-surface)", borderColor: "color-mix(in srgb, var(--brand-primary) 24%, var(--terminal-graphite-border))" }}>
               <div className="flex flex-col gap-5 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -2298,42 +2213,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                     <ShieldCheck className="size-4" aria-hidden="true" /> Open risk checklist
                   </button>
                 </div>
-              </div>
-            </section>
-
-            {/* ── JOURNEY & OPERATING TERMS ────────���───────────── */}
-            <section className="mx-3 mt-3 grid gap-3 sm:mx-4 lg:grid-cols-[1.25fr_0.75fr]" aria-label="Account journey and operating terms">
-              <div className="rounded-2xl border p-4 sm:p-5" style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}>
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.18em]" style={{ color: "var(--brand-primary)" }}>Your next best step</p>
-                    <h2 className="mt-1 text-base font-semibold text-white">Move at your own pace</h2>
-                  </div>
-                  <Sparkles className="size-5 shrink-0" style={{ color: "var(--brand-primary)" }} aria-hidden="true" />
-                </div>
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                  {[{ n: "01", title: "Secure", text: "Review your profile and protection settings." }, { n: "02", title: "Explore", text: "Use the demo terminal before funding." }, { n: "03", title: "Decide", text: "Add funds only when the terms are clear." }].map((step) => (
-                    <div key={step.n} className="rounded-xl border p-3" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
-                      <span className="font-mono text-sm font-semibold" style={{ color: "var(--brand-primary)" }}>{step.n}</span>
-                      <h3 className="mt-2 text-sm font-semibold text-white">{step.title}</h3>
-                      <p className="mt-1 text-sm leading-5 text-slate-400">{step.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-2xl border p-4 sm:p-5" style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}>
-                <div className="flex items-center gap-2">
-                  <FileText className="size-4" style={{ color: "var(--brand-primary)" }} aria-hidden="true" />
-                  <h2 className="text-sm font-semibold text-white">Before you fund</h2>
-                </div>
-                <ul className="mt-4 flex flex-col gap-3 text-sm leading-relaxed text-slate-400">
-                  <li className="flex gap-2"><span aria-hidden="true" style={{ color: "var(--brand-primary)" }}>•</span> Review deposit minimums and processing status.</li>
-                  <li className="flex gap-2"><span aria-hidden="true" style={{ color: "var(--brand-primary)" }}>•</span> Withdrawal eligibility follows account terms.</li>
-                  <li className="flex gap-2"><span aria-hidden="true" style={{ color: "var(--brand-primary)" }}>•</span> Transaction history remains available for review.</li>
-                </ul>
-                <Link href="/terms" className="mt-4 inline-flex items-center gap-1 text-sm font-bold transition hover:brightness-125" style={{ color: "var(--brand-primary)" }}>
-                  Read terms and disclosures <ArrowUpRight className="size-4" aria-hidden="true" />
-                </Link>
               </div>
             </section>
 

@@ -20,6 +20,11 @@ export const DEFAULT_CHALLENGE_PLANS: ChallengePlan[] = [
   { key: "challenge_25k", name: "Challenge 25K", fee: 179, startingBalance: 25_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
 ]
 
+export function getChallengeRewardAmount(plan: ChallengePlan, passedEquity: number) {
+  if (plan.key === "challenge_5k" || !Number.isFinite(passedEquity)) return 0
+  return Math.max(0, Math.round((passedEquity - plan.startingBalance) * 50) / 100)
+}
+
 export function getChallengePlan(key: unknown, plans = DEFAULT_CHALLENGE_PLANS) {
   return plans.find((plan) => plan.key === String(key)) ?? null
 }

@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { ArrowRight, ArrowUpRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Eye, FileCheck2, Gauge, Gift, LockKeyhole, PlayCircle, ShieldCheck, Sparkles, TrendingUp, UserRound, WalletCards, X } from "lucide-react"
+import { ArrowRight, ArrowUpRight, BarChart3, CheckCircle2, CircleHelp, CreditCard, Gauge, Gift, LockKeyhole, ShieldCheck, TrendingUp, UserRound, WalletCards, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -73,123 +73,68 @@ export function ParticipantOnboardingDashboard({
   ]
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-3 py-3 text-slate-100 sm:px-4 md:gap-4 md:px-6 md:py-5">
-      <section className="participant-mobile-welcome relative isolate overflow-hidden rounded-2xl border bg-slate-950/85 p-4 shadow-xl shadow-black/20 md:p-6" aria-labelledby="participant-welcome-title" style={{ borderColor: "color-mix(in srgb, var(--brand-primary) 26%, var(--terminal-graphite-border))" }}>
-        <div className="participant-welcome-dot-texture pointer-events-none absolute right-0 top-0 z-0 h-36 w-36 md:hidden" aria-hidden="true" />
-        <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="min-w-0 max-w-2xl">
-            <div className="mb-2 hidden items-center gap-2 text-sm font-bold uppercase tracking-[0.18em] text-sky-300 md:inline-flex">
-              <Sparkles className="h-3.5 w-3.5" /> EliteFund · Participant workspace
-            </div>
-            <p className="participant-welcome-eyebrow mb-3 text-sm font-bold uppercase tracking-[0.16em] text-slate-300 md:hidden">WELCOME BACK</p>
-            <h1 id="participant-welcome-title" className="participant-welcome-name text-balance text-[clamp(2.25rem,10.5vw,3rem)] font-bold leading-none tracking-tight text-white md:text-3xl md:leading-tight">
-              <span className="md:hidden">{displayName}.</span>
-              <span className="hidden md:inline">Welcome back, {displayName}.</span>
-            </h1>
-            <span className="participant-welcome-accent mt-5 block h-1 w-14 rounded-full md:hidden" style={{ background: "var(--brand-primary)" }} aria-hidden="true" />
-            <p className="participant-welcome-copy mt-6 max-w-xl text-[15px] leading-7 text-slate-300 md:mt-2 md:text-sm md:leading-6">
-              Balances, activity, and trading tools—at a glance.
-            </p>
-            <div className="mt-4 hidden flex-wrap items-center gap-x-4 gap-y-2 text-sm font-bold uppercase tracking-[0.12em] text-slate-400 md:flex">
-              <span className="inline-flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Secure session</span>
-              <span className="inline-flex items-center gap-1.5"><FileCheck2 className="h-3.5 w-3.5 text-sky-300" /> Clear records</span>
-              <span className="inline-flex items-center gap-1.5"><Eye className="h-3.5 w-3.5 text-cyan-300" /> Full visibility</span>
-            </div>
-          </div>
-          <div className="hidden flex-wrap gap-2 md:flex">
-            <Button onClick={onExploreTerminal} className="h-10 rounded-xl px-4 font-bold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}>
-              <PlayCircle data-icon="inline-start" /> Explore terminal
-            </Button>
-            <Button onClick={onAddFunds} variant="outline" className="h-10 rounded-xl bg-slate-900/70 px-4 font-bold" style={{ borderColor: "var(--terminal-graphite-border)", color: "var(--brand-primary)" }}>
-              <WalletCards data-icon="inline-start" /> Add funds
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section
-        className="rounded-2xl border p-4 shadow-sm md:p-5"
-        aria-labelledby="account-snapshot-title"
-        style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
-      >
-        <div className="flex items-start justify-between gap-3">
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5 text-foreground md:gap-6 md:px-6 md:py-7">
+      <section className="overflow-hidden rounded-2xl border border-border bg-card text-card-foreground" aria-labelledby="participant-welcome-title">
+        <div className="flex flex-col gap-7 p-5 sm:p-7 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
           <div className="min-w-0">
-            <h2 id="account-snapshot-title" className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: "var(--brand-primary)" }}>Account snapshot</h2>
-            <p className="mt-2 text-sm font-semibold uppercase tracking-wider text-slate-400">Account balance</p>
-            <p className="mt-1 truncate font-mono text-2xl font-bold leading-tight tracking-tight text-white sm:text-3xl">{formatDashboardCurrency(accountBalance)}</p>
-            {email && <p className="mt-1 truncate text-sm text-slate-500">{email}</p>}
+            <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary"><span className="size-1.5 rounded-full bg-primary" aria-hidden="true" /> EliteFund / Participant overview</p>
+            <h1 id="participant-welcome-title" className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">Welcome back, {displayName}.</h1>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-muted-foreground">Your account, market tools, and next steps in one place.</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <Button onClick={onExploreTerminal}><BarChart3 data-icon="inline-start" /> Open trading terminal</Button>
+              <Button onClick={onAddFunds} variant="outline"><WalletCards data-icon="inline-start" /> Add funds</Button>
+            </div>
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <span className="rounded-full border px-2.5 py-1 text-sm font-bold uppercase tracking-wide" style={{ color: "var(--brand-primary)", borderColor: "color-mix(in srgb, var(--brand-primary) 30%, var(--terminal-graphite-border))", background: "color-mix(in srgb, var(--brand-primary) 10%, var(--terminal-graphite-surface-2))" }}>
-              {accountType}
-            </span>
-            <span className={`rounded-full border px-2.5 py-1 text-sm font-bold uppercase tracking-wide ${accountStatus === "Frozen" ? "border-red-300/25 bg-red-400/10 text-red-300" : "border-emerald-300/25 bg-emerald-400/10 text-emerald-300"}`}>
-              {accountStatus}
-            </span>
+          <div className="min-w-0 border-t border-border pt-5 lg:min-w-64 lg:border-t-0 lg:border-l lg:py-1 lg:pl-8">
+            <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">Account balance</p>
+            <p className="mt-2 truncate font-mono text-3xl font-semibold tracking-tight text-foreground sm:text-4xl" title={formatDashboardCurrency(accountBalance)}>{formatDashboardCurrency(accountBalance)}</p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="rounded-full border border-border bg-secondary px-2.5 py-1 text-xs font-medium text-secondary-foreground">{accountType} account</span>
+              <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${accountStatus === "Frozen" ? "border-destructive/40 bg-destructive/10 text-destructive" : "border-primary/30 bg-primary/10 text-primary"}`}>{accountStatus}</span>
+            </div>
           </div>
         </div>
-
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {metrics.map(({ label, value, detail }) => (
-            <div key={label} className="min-w-0 rounded-xl border p-3" style={{ background: "var(--terminal-graphite-surface-2)", borderColor: "var(--terminal-graphite-border)" }}>
-              <p className="truncate text-sm font-semibold uppercase tracking-wide text-slate-400">{label}</p>
-              <p className="mt-1 truncate font-mono text-sm font-semibold text-slate-100" title={value}>{value}</p>
-              {detail && <p className="mt-0.5 truncate text-sm text-slate-500">{detail}</p>}
+        <div className="grid grid-cols-2 border-t border-border sm:grid-cols-4">
+          {metrics.map(({ label, value, detail }, index) => (
+            <div key={label} className={`min-w-0 border-border p-4 sm:p-5 ${index % 2 === 1 ? "border-l" : ""} ${index > 1 ? "border-t sm:border-t-0" : ""} ${index > 0 && index % 2 === 0 ? "sm:border-l" : ""}`}>
+              <p className="text-xs font-medium text-muted-foreground">{label}</p>
+              <p className="mt-1 truncate font-mono text-lg font-semibold text-foreground" title={value}>{value}</p>
+              {detail && <p className="truncate text-xs text-muted-foreground">{detail}</p>}
             </div>
           ))}
         </div>
-
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-700/60 pt-3 text-sm">
-          <span className="text-slate-400">Identity</span>
-          <span className={`font-semibold ${isVerified ? "text-emerald-300" : "text-slate-200"}`}>{verificationStatus}</span>
-        </div>
       </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground" role="status">
+        <span className="inline-flex min-w-0 items-center gap-2"><ShieldCheck className="size-4 shrink-0 text-primary" aria-hidden="true" /> Identity: <strong className="text-foreground">{verificationStatus}</strong></span>
+        {email && <span className="max-w-full truncate text-xs sm:text-sm" title={email}>{email}</span>}
+      </div>
 
       {accountNotice}
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-6" aria-label="Dashboard quick actions">
-        {[
-          { href: "/participant/dashboard/refer", icon: Gift, label: "Refer & earn" },
-          { href: "/participant/dashboard/profile", icon: UserRound, label: "Profile" },
-          { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payout" },
-          { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predict" },
-        ].map(({ href, icon: Icon, label }) => (
-          <Link
-            key={href}
-            href={href}
-            className="action-tile flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl border p-2 text-center transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:scale-95"
-            style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
-          >
-            <span className="flex size-8 items-center justify-center rounded-xl" style={{ background: "var(--terminal-graphite-surface-2)" }}>
-              <Icon aria-hidden="true" className="size-4" style={{ color: "var(--brand-primary)" }} />
-            </span>
-            <span className="text-sm font-bold text-slate-300">{label}</span>
-          </Link>
-        ))}
-
-        <button
-          type="button"
-          onClick={onAddFunds}
-          className="mobile-dashboard-add-funds action-tile col-span-2 flex min-h-16 items-center justify-center gap-2 rounded-xl p-2 text-left transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 active:scale-[0.99] sm:col-span-3 md:col-span-2"
-          style={{
-            background: "color-mix(in srgb, var(--brand-primary) 10%, var(--terminal-graphite-surface))",
-            border: "1px solid color-mix(in srgb, var(--brand-primary) 34%, var(--terminal-graphite-border))",
-          }}
-        >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border" style={{ color: "var(--brand-primary)", background: "color-mix(in srgb, var(--brand-primary) 10%, transparent)", borderColor: "color-mix(in srgb, var(--brand-primary) 28%, var(--terminal-graphite-border))" }}>
-            <WalletCards aria-hidden="true" className="size-4" />
-          </span>
-          <span className="min-w-0 flex-1 text-sm font-black" style={{ color: "var(--brand-primary)" }}>Add funds</span>
-        </button>
-        <Link href="/participant/dashboard?view=terminal" className="mobile-dashboard-trade participant-dock-trade-button col-span-2 flex min-h-14 items-center justify-between rounded-xl px-5 font-sans text-base font-semibold sm:col-span-3 md:hidden">
-          <BarChart3 className="participant-dock-trade-icon size-5" aria-hidden="true" />
-          <span>Trade</span>
-          <ArrowRight className="size-5" aria-hidden="true" />
-        </Link>
+      <section aria-labelledby="quick-access-title" className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="quick-access-title" className="text-base font-semibold text-foreground">Quick access</h2>
+          <span className="text-xs text-muted-foreground">Everything you need, one tap away</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+          {[
+            { href: "/participant/dashboard/activity", icon: BarChart3, label: "Activity", detail: "Your records" },
+            { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payouts", detail: "Request & track" },
+            { href: "/participant/dashboard/profile", icon: UserRound, label: "Profile", detail: "Account details" },
+            { href: "/participant/dashboard/refer", icon: Gift, label: "Referrals", detail: "Invite & earn" },
+            { href: "/participant/dashboard/predict", icon: TrendingUp, label: "Predictions", detail: "Explore markets" },
+          ].map(({ href, icon: Icon, label, detail }) => (
+            <Link key={href} href={href} className="group flex min-h-24 flex-col justify-between gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground transition-colors hover:border-primary/50 hover:bg-secondary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+              <Icon className="size-5 text-primary" aria-hidden="true" />
+              <span className="flex min-w-0 flex-col gap-0.5"><span className="text-sm font-semibold">{label}</span><span className="text-xs text-muted-foreground">{detail}</span></span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {showTour ? (
-        <section className="rounded-2xl border border-white/10 bg-slate-900/75 p-4 md:p-5" aria-labelledby="guided-tour-title">
+        <section className="rounded-2xl border border-border bg-card p-4 text-card-foreground md:p-5" aria-labelledby="guided-tour-title">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-sky-300">Quick start</p>
@@ -220,7 +165,7 @@ export function ParticipantOnboardingDashboard({
       )}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <Card className="rounded-xl border-white/10 bg-slate-900/65 text-slate-100 shadow-sm">
+        <Card className="rounded-xl border-border bg-card text-card-foreground shadow-none">
           <CardHeader className="flex flex-row items-center justify-between gap-3 p-4 pb-3">
             <div className="flex items-center gap-3">
               <div className="flex size-9 items-center justify-center rounded-xl border border-emerald-300/20 bg-emerald-400/10 text-emerald-300"><ShieldCheck className="h-4 w-4" /></div>
@@ -234,7 +179,7 @@ export function ParticipantOnboardingDashboard({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-white/10 bg-slate-900/65 text-slate-100 shadow-sm">
+        <Card className="rounded-xl border-border bg-card text-card-foreground shadow-none">
           <CardHeader className="flex flex-row items-center gap-3 p-4 pb-3">
               <div className="flex size-9 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-400/10 text-sky-300"><CreditCard className="h-4 w-4" /></div>
 
@@ -249,7 +194,7 @@ export function ParticipantOnboardingDashboard({
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border-white/10 bg-slate-900/65 text-slate-100 shadow-sm">
+        <Card className="rounded-xl border-border bg-card text-card-foreground shadow-none">
           <CardHeader className="flex flex-row items-center gap-3 p-4 pb-3">
               <div className="flex size-9 items-center justify-center rounded-xl border border-sky-300/20 bg-sky-400/10 text-sky-300"><LockKeyhole className="h-4 w-4" /></div>
 

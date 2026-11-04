@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { PageLoader } from "@/components/ui/page-loader"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { participantFetch } from "@/lib/auth"
+import { ChallengeRewardCard } from "@/components/challenge-reward-card"
 import { DEFAULT_CHALLENGE_PLANS, getChallengeStatusLabel, type ChallengePlan } from "@/lib/challenge-account"
 
 const CHALLENGE_URL = "/api/participant/challenge"
@@ -183,12 +184,30 @@ function ChallengeContent() {
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#d6b66b]">EliteFund Challenge</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Evaluation dashboard</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">A simulated trading evaluation with server-checked entries, verified market pricing, and clear risk thresholds.</p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">A simulated trading evaluation with server-checked entries, verified market pricing, and clear risk thresholds. Virtual capital is not withdrawable; passing sends your results for review, not an automatic cash reward.</p>
           </div>
           <span className="inline-flex w-fit items-center gap-2 rounded-full border border-amber-300/25 bg-amber-300/10 px-3 py-1.5 text-xs font-semibold text-amber-100">
             <ShieldCheck className="size-4" /> {displayStatus}
           </span>
         </header>
+
+        {participant?.account_type === "challenge" && (
+          <section aria-labelledby="challenge-journey-heading" className="rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-5 text-[color:var(--terminal-graphite-text)] sm:p-6">
+            <div className="flex flex-col gap-1"><p className="text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]">Your path</p><h2 id="challenge-journey-heading" className="text-xl font-semibold">From evaluation to review</h2></div>
+            <ol className="mt-5 grid gap-3 sm:grid-cols-3">
+              {[
+                { title: "Choose & activate", detail: "Select a plan and submit its separate fee. Trading starts after payment approval.", done: ["active", "passed", "failed"].includes(status) },
+                { title: "Meet the rules", detail: "Reach your target over the required trading days without breaching the loss limits.", done: status === "passed" },
+                { title: "Result review", detail: "Passing makes your evaluation eligible for next-stage review, not an automatic payout.", done: false },
+              ].map((step, index) => (
+                <li key={step.title} className="flex gap-3 rounded-xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface-2)] p-4">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border border-[color:var(--brand-primary)] font-mono text-xs font-bold text-[color:var(--brand-primary)]" aria-label={`Step ${index + 1}${step.done ? ", complete" : ""}`}>{step.done ? <Check className="size-4" aria-hidden="true" /> : index + 1}</span>
+                  <div className="flex flex-col gap-1"><h3 className="text-sm font-semibold">{step.title}</h3><p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{step.detail}</p></div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         {participant?.account_type !== "challenge" ? (
           <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
@@ -277,20 +296,29 @@ function ChallengeContent() {
                 <h2 id="challenge-plans-heading" className="text-lg font-semibold text-white">{status === "failed" ? "Start a new evaluation" : status === "payment_rejected" ? "Resubmit your Challenge fee" : "Choose a Challenge plan"}</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-400">The fee is paid separately. Approval activates the selected virtual balance; it is not a wallet deposit.</p>
               </div>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-3">
                 {plans.map((item) => (
-                  <button key={item.key} type="button" onClick={() => setSelectedPlanKey(item.key)} aria-pressed={plan.key === item.key} className={`rounded-xl text-left transition ${plan.key === item.key ? "ring-2 ring-[#d6b66b]" : ""}`}>
-                    <Card className="h-full border-slate-700 bg-[#181b1f] text-slate-100 transition hover:border-amber-300/50">
-                      <CardHeader><CardTitle className="flex items-center justify-between gap-2 text-base text-white"><span>{item.name}</span><span className="font-mono text-amber-100">${item.fee}</span></CardTitle></CardHeader>
-                      <CardContent className="flex flex-col gap-3 text-sm text-slate-400">
-                        <p><strong className="text-2xl text-white">{CURRENCY.format(item.startingBalance)}</strong><span className="ml-2 text-xs">virtual balance</span></p>
-                        <p>Target <strong className="text-slate-200">+{item.profitTargetPercent}%</strong> · Daily limit <strong className="text-slate-200">{item.dailyLossLimitPercent}%</strong></p>
-                        <p>Max drawdown <strong className="text-slate-200">{item.maxDrawdownPercent}%</strong> · {item.minimumTradingDays} trading days · {item.leverage}:1 max leverage</p>
+                  <button key={item.key} type="button" onClick={() => setSelectedPlanKey(item.key)} aria-pressed={plan.key === item.key} aria-label={`Select ${item.name} for ${CURRENCY.format(item.fee)} evaluation fee`} className="group rounded-2xl text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-primary)]">
+                    <Card className={`h-full gap-4 border bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)] transition-[border-color,background-color,transform] group-hover:-translate-y-1 ${plan.key === item.key ? "border-[color:var(--brand-primary)] bg-[color:var(--terminal-graphite-surface-2)]" : "border-[color:var(--terminal-graphite-border)]"}`}>
+                      <CardHeader className="flex flex-row items-start justify-between gap-3">
+                        <div className="flex flex-col gap-1"><span className="text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]">Simulated evaluation</span><CardTitle className="text-lg">{item.name}</CardTitle></div>
+                        <span className={`flex size-6 shrink-0 items-center justify-center rounded-full border ${plan.key === item.key ? "border-[color:var(--brand-primary)] bg-[color:var(--brand-primary)] text-[color:var(--brand-primary-foreground)]" : "border-[color:var(--terminal-graphite-border)] text-[color:var(--terminal-graphite-muted)]"}`} aria-hidden="true">{plan.key === item.key && <Check className="size-4" />}</span>
+                      </CardHeader>
+                      <CardContent className="flex flex-1 flex-col gap-4 text-sm">
+                        <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Virtual starting capital</span><strong className="font-mono text-3xl tracking-tight">{CURRENCY.format(item.startingBalance)}</strong></div>
+                        <div className="grid grid-cols-2 gap-3 border-y border-[color:var(--terminal-graphite-border)] py-3">
+                          <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Profit target</span><strong className="font-mono">{CURRENCY.format(item.startingBalance * item.profitTargetPercent / 100)}</strong></div>
+                          <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Minimum days</span><strong className="font-mono">{item.minimumTradingDays} days</strong></div>
+                        </div>
+                        <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{item.dailyLossLimitPercent}% daily loss · {item.maxDrawdownPercent}% max drawdown · up to {item.leverage}:1 leverage</p>
+                        <p className="text-xs font-medium text-[color:var(--brand-primary)]">{item.fee === 10 ? "Pass for funding review · no cash reward" : "Pass for a reviewed reward · up to 50% of net simulated profit"}</p>
+                        <p className="mt-auto flex items-center justify-between gap-2 border-t border-[color:var(--terminal-graphite-border)] pt-3"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">One-time evaluation fee</span><strong className="font-mono text-lg text-[color:var(--brand-primary)]">{CURRENCY.format(item.fee)}</strong></p>
                       </CardContent>
                     </Card>
                   </button>
                 ))}
               </div>
+              <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">Fees are not wallet deposits. Virtual capital cannot be withdrawn. The $10 tier is funding-review only; the other tiers may request a separate, manually reviewed reward capped at 50% of net simulated profit recorded at passing.</p>
             </section>
 
             <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
@@ -413,11 +441,13 @@ function ChallengeContent() {
           <Card className="border-emerald-500/30 bg-[#181b1f] text-slate-100">
             <CardHeader><CardTitle className="text-white">Evaluation passed</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm leading-6 text-slate-400">
-              <p>Your equity target and minimum trading-day requirements are complete. Your result is ready for next-stage review.</p>
+              <p>Your equity target and minimum trading-day requirements are complete. Evaluation capital remains virtual and cannot be withdrawn. {plan.key === "challenge_5k" ? "Your result is ready for funding review; this tier has no cash reward." : "You can submit a separate, one-time reward claim based on 50% of recorded positive simulated profit. This requires manual approval."}</p>
               {participant.challenge_passed_at && <p>Passed on {new Date(participant.challenge_passed_at).toLocaleString()}.</p>}
             </CardContent>
           </Card>
         )}
+
+        {status === "passed" && <ChallengeRewardCard plan={plan} passedEquity={participant.challenge_passed_equity == null ? null : Number(participant.challenge_passed_equity)} rewardRequest={data.rewardRequest || null} onSubmitted={() => { void mutate() }} />}
 
         {status === "failed" && metrics && (
           <Card className="border-slate-700 bg-[#181b1f] text-slate-100">

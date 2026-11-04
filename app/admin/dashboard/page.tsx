@@ -37,6 +37,7 @@ import { AdminControlRoom } from "@/components/admin/admin-control-room"
 import { SupportTicketsPanel } from "@/components/support-tickets-panel"
 import { TopUpRequestsPanel } from "@/components/admin/topup-requests-panel"
 import { PromoCodesPanel } from "@/components/admin/promo-codes-panel"
+import { ChallengeRewardsPanel } from "@/components/admin/challenge-rewards-panel"
 
 interface ApprovedWallet {
   id: string
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
   const [paymentSettings, setPaymentSettings] = useState({ trc20_address: "", bep20_address: "", erc20_address: "", inr_bank_name: "", inr_account_number: "", inr_ifsc_code: "", inr_account_holder_name: "", inr_upi_id: "elitefun@slc", usdt_inr_rate: "104" })
   const [isSavingPaymentSettings, setIsSavingPaymentSettings] = useState(false)
   const [activeTab, setActiveTab] = useState<
-    "overview" | "terminal" | "participants" | "wallets" | "topups" | "promos" | "support" | "payments" | "settings"
+    "overview" | "terminal" | "participants" | "wallets" | "topups" | "rewards" | "promos" | "support" | "payments" | "settings"
   >("overview")
   const [openTicketCount, setOpenTicketCount] = useState(0)
 
@@ -285,6 +286,7 @@ export default function AdminDashboard() {
               { id: "participants", label: "Participants", icon: Users },
               { id: "wallets", label: "Approved Wallets", icon: Wallet },
               { id: "topups", label: "Top Up Requests", icon: ArrowUpRight },
+              { id: "rewards", label: "Challenge Reviews", icon: Shield },
               { id: "promos", label: "Promo Codes", icon: TicketPercent },
               { id: "support", label: "Support Tickets", icon: MessageSquare, badge: openTicketCount },
               { id: "payments", label: "UPI / Bank Details", icon: CreditCard },
@@ -326,6 +328,7 @@ export default function AdminDashboard() {
               { id: "participants", label: "Users", icon: Users },
               { id: "wallets", label: "Wallets", icon: Wallet },
               { id: "topups", label: "Top Ups", icon: ArrowUpRight },
+              { id: "rewards", label: "Reviews", icon: Shield },
               { id: "promos", label: "Promos", icon: TicketPercent },
               { id: "support", label: "Support", icon: MessageSquare, badge: openTicketCount },
               { id: "payments", label: "UPI / Bank", icon: CreditCard },
@@ -444,6 +447,8 @@ export default function AdminDashboard() {
         )}
 
   {activeTab === "topups" && <TopUpRequestsPanel />}
+
+  {activeTab === "rewards" && <ChallengeRewardsPanel />}
 
   {activeTab === "promos" && <PromoCodesPanel />}
 

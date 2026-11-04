@@ -514,8 +514,9 @@ export async function POST(req: NextRequest) {
             await client.query(
               `UPDATE participants SET account_balance = $1, challenge_status = $2,
                  challenge_failed_at = CASE WHEN $2 = 'failed' THEN NOW() ELSE challenge_failed_at END,
-                 challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
-                 challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
+  challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
+  challenge_passed_equity = CASE WHEN $2 = 'passed' THEN $1 ELSE challenge_passed_equity END,
+  challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
                  challenge_trading_days = $4, challenge_last_trading_date = $5::date,
                  challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $6), $6), updated_at = NOW()
                WHERE id = $7`,
@@ -791,8 +792,9 @@ export async function PATCH(req: NextRequest) {
             await client.query(
               `UPDATE participants SET account_balance = $1, challenge_status = $2,
                  challenge_failed_at = CASE WHEN $2 = 'failed' THEN NOW() ELSE challenge_failed_at END,
-                 challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
-                 challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
+  challenge_passed_at = CASE WHEN $2 = 'passed' THEN NOW() ELSE challenge_passed_at END,
+  challenge_passed_equity = CASE WHEN $2 = 'passed' THEN $1 ELSE challenge_passed_equity END,
+  challenge_day_start_equity = $3, challenge_day_start_date = $5::date,
                  challenge_trading_days = $4, challenge_last_trading_date = $5::date,
                  challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $6), $6), updated_at = NOW()
                WHERE id = $7`,
