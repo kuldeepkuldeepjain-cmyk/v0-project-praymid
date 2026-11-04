@@ -21,6 +21,8 @@ export const metadata: Metadata = createSiteMetadata({
 
 export const viewport: Viewport = { themeColor: "#080e17", colorScheme: "dark" }
 
+export const dynamic = "force-dynamic"
+
 export default function LandingPage() {
   return <LandingExperience />
 }
