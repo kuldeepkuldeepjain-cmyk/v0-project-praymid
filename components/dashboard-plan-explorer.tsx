@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Check, ShieldCheck, Target, Wallet } from "lucide-react"
+import { ArrowRight, Check, ShieldCheck, Target, Wallet, TrendingUp, CalendarDays, Activity } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PlansCampaignHero } from "@/components/plans-campaign-hero"
 import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
@@ -83,24 +83,42 @@ export function DashboardPlanExplorer({
             <p className="mt-1 text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">{category === "funded" ? "Available to eligible funded accounts on their first funded-tier deposit. Eligibility is confirmed in checkout." : category === "challenge" ? "A simulated evaluation. Review its rules and fee before submitting payment for approval." : "These are quick-start amounts, not fixed plans. You can enter another amount in checkout."}</p>
             <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={category === "funded" ? "Funded capacities" : category === "challenge" ? "Challenge sizes" : "Suggested deposit amounts"}>
               {category === "funded" && FUNDED_PLANS.map((plan, index) => <Choice key={plan.baseAmount} selected={fundedIndex === index} onClick={() => setFundedIndex(index)} label={currency.format(plan.baseAmount)} />)}
-              {category === "challenge" && DEFAULT_CHALLENGE_PLANS.map((plan, index) => <Choice key={plan.key} selected={challengeIndex === index} onClick={() => setChallengeIndex(index)} label={currency.format(plan.startingBalance)} />)}
+              {category === "challenge" && DEFAULT_CHALLENGE_PLANS.map((plan, index) => <Choice key={plan.key} selected={challengeIndex === index} onClick={() => setChallengeIndex(index)} label={`${currency.format(plan.startingBalance)} · ${currency.format(plan.fee)} fee`} />)}
               {category === "normal" && [25, 100, 250].map((amount) => <Choice key={amount} selected={normalAmount === amount} onClick={() => setNormalAmount(amount)} label={currency.format(amount)} />)}
             </div>
+            {category === "challenge" && (
+              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-live="polite" aria-atomic="true">
+                {[
+                  { label: "Virtual capital", value: currency.format(challenge.startingBalance), Icon: Wallet },
+                  { label: "Profit target", value: currency.format(challenge.startingBalance * (challenge.profitTargetPercent / 100)), Icon: TrendingUp },
+                  { label: "Minimum days", value: `${challenge.minimumTradingDays} trading days`, Icon: CalendarDays },
+                  { label: "Evaluation fee", value: currency.format(challenge.fee), Icon: Target },
+                ].map(({ label, value, Icon }) => (
+                  <div key={label} className="flex flex-col gap-3 rounded-xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-4 text-[color:var(--terminal-graphite-text)]">
+                    <Icon className="size-5 text-[color:var(--brand-primary)]" aria-hidden="true" />
+                    <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">{label}</span><strong className="font-mono text-lg font-semibold">{value}</strong></div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {category === "challenge" && <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-[color:var(--terminal-graphite-muted)]"><Activity className="mt-0.5 size-4 shrink-0 text-[color:var(--brand-primary)]" aria-hidden="true" />A simulated evaluation, not withdrawable capital. Meet the target over at least {challenge.minimumTradingDays} trading days while staying above the {challenge.dailyLossLimitPercent}% daily and {challenge.maxDrawdownPercent}% overall loss limits. Passing leads to review; it does not automatically unlock payouts.</p>}
             <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300" aria-live="polite" aria-atomic="true">
               {category === "funded" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(funded.baseAmount)} account capacity</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(funded.topUpAmount)} first deposit</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />2% funded drawdown rule</span></>}
-              {category === "challenge" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(challenge.fee)} evaluation fee</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />{challenge.profitTargetPercent}% profit target</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />{challenge.dailyLossLimitPercent}% daily loss / {challenge.maxDrawdownPercent}% max drawdown</span></>}
+              {category === "challenge" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{challenge.leverage}:1 max leverage</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />Server-checked risk limits</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />Reviewed after passing</span></>}
               {category === "normal" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(normalAmount)} suggested deposit</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />Choose your actual amount in checkout</span></>}
             </div>
           </div>
           <div className="flex shrink-0 flex-col gap-2 lg:items-end">
-            {needsNewAccount ? (
+            {category === "challenge" && accountType !== "challenge" ? (
+              <Button asChild className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}><Link href="/participant/dashboard">Switch to Challenge <ArrowRight data-icon="inline-end" /></Link></Button>
+            ) : needsNewAccount ? (
               <Button asChild className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}><Link href={registerUrl}>Create a {category} account <ArrowRight data-icon="inline-end" /></Link></Button>
             ) : category === "challenge" ? (
               <Button asChild className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}><Link href={`/participant/dashboard/challenge?plan=${challenge.key}`}>Review &amp; continue <ArrowRight data-icon="inline-end" /></Link></Button>
             ) : (
               <Button type="button" className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }} onClick={() => onFund(category, category === "funded" ? funded.topUpAmount : normalAmount)}>Review &amp; continue <ArrowRight data-icon="inline-end" /></Button>
             )}
-            <span className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{needsNewAccount ? "This plan requires its own account type." : category === "challenge" ? "Payment is reviewed before evaluation starts." : "Payment instructions and eligibility appear next."}</span>
+            <span className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{category === "challenge" && accountType !== "challenge" ? "Switching is available from the dashboard when your account and bonus balances are $0.00." : needsNewAccount ? "This plan requires its own account type." : category === "challenge" ? "Payment is reviewed before evaluation starts." : "Payment instructions and eligibility appear next."}</span>
           </div>
         </div>
       </div>
