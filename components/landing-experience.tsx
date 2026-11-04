@@ -134,8 +134,8 @@ export default function LandingExperience() {
                   Trader login
                 </Link>
               </div>
-              <Link href="#add-funds" className="elite-inline-link mt-5">
-                Your next move starts here <ArrowRight aria-hidden="true" />
+              <Link href="/funded-trading-accounts" className="elite-inline-link mt-5">
+                How funded trading accounts work <ArrowRight aria-hidden="true" />
               </Link>
               <div className="elite-hero-trust mt-8 flex flex-wrap gap-x-6 gap-y-3 border-t pt-5 text-sm">
                 <span className="inline-flex items-center gap-2"><Shield className="elite-brand-text size-4" aria-hidden="true" /> Risk rules in view</span>
