@@ -1221,6 +1221,18 @@ button, a, [role="button"] {
 .elite-landing .elite-market-change.is-positive { color: var(--elite-positive); }
 .elite-landing .elite-market-change.is-negative { color: var(--elite-muted); }
 .elite-landing .elite-market-footnote { display: flex; align-items: center; gap: 0.5rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 11%, transparent); padding-top: 0.8rem; }
+.elite-landing .elite-funding-invite { background: var(--elite-surface); color: var(--elite-text); }
+.elite-landing .elite-funding-flow { overflow: hidden; border: 1px solid color-mix(in srgb, var(--elite-brand) 32%, var(--terminal-graphite-border)); border-radius: 1rem; background: var(--elite-bg); padding: 1.25rem 1.5rem; }
+.elite-landing .elite-funding-flow-header { border-bottom: 1px solid var(--terminal-graphite-border); padding-bottom: 1rem; color: var(--elite-muted); }
+.elite-landing .elite-funding-flow-tag { border: 1px solid color-mix(in srgb, var(--elite-brand) 40%, transparent); border-radius: 999px; padding: 0.25rem 0.65rem; color: var(--elite-brand); font-size: 0.75rem; white-space: nowrap; }
+.elite-landing .elite-funding-flow-lead { color: var(--elite-text); }
+.elite-landing .elite-funding-flow-step + .elite-funding-flow-step { border-top: 1px solid var(--terminal-graphite-border); }
+.elite-landing .elite-funding-flow-icon { background: color-mix(in srgb, var(--elite-brand) 12%, var(--elite-bg)); color: var(--elite-brand); }
+.elite-landing .elite-funding-flow-footer { border-top: 1px solid var(--terminal-graphite-border); padding-top: 1rem; color: var(--elite-muted); line-height: 1.5; }
+.elite-landing .elite-funding-flow-footer summary { color: var(--elite-brand); list-style: none; }
+.elite-landing .elite-funding-flow-footer summary::-webkit-details-marker { display: none; }
+.elite-landing .elite-funding-flow-footer summary:focus-visible { outline: 2px solid var(--elite-brand); outline-offset: 4px; }
+.elite-landing .elite-funding-flow-footer[open] summary svg { transform: rotate(180deg); }
 .elite-landing .elite-section { padding: 5.75rem 0; scroll-margin-top: 5rem; }
 .elite-landing .elite-section-divider { border-top: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); }
 .elite-landing .elite-section-alt { background: color-mix(in srgb, var(--elite-bg) 96%, var(--elite-text)); }
@@ -1324,6 +1336,15 @@ button, a, [role="button"] {
 .elite-landing .elite-terms-link { color: var(--elite-text); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--elite-brand) 55%, transparent); text-underline-offset: 0.18em; }
 .elite-landing .elite-terms-link:hover { color: var(--elite-brand); }
 .elite-landing .elite-payout-ledger { padding: clamp(1.25rem, 3.5vw, 2.25rem); }
+.elite-landing .elite-sample-outcome { flex: 1; border: 1px solid color-mix(in srgb, var(--elite-text) 14%, transparent); border-radius: 1.25rem; background: var(--elite-surface); padding: clamp(1.25rem, 3vw, 1.75rem); }
+.elite-landing .elite-sample-amount { color: var(--elite-ink); font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 650; letter-spacing: -0.05em; font-variant-numeric: tabular-nums; }
+.elite-landing .elite-payout-refresh { border: 1px solid color-mix(in srgb, var(--elite-brand) 35%, transparent); background: var(--elite-bg); color: var(--elite-ink); }
+.elite-landing .elite-payout-refresh:hover, .elite-landing .elite-payout-refresh:focus-visible { border-color: var(--elite-brand); outline-offset: 3px; }
+.elite-landing .elite-payout-demo-label { color: var(--elite-ink); }
+.elite-landing .elite-payout-examples { border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); }
+.elite-landing .elite-payout-examples li + li { border-top: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); }
+.elite-landing .elite-payout-avatar { background: color-mix(in srgb, var(--elite-brand) 12%, var(--elite-bg)); color: var(--elite-ink); }
+.elite-landing .elite-payout-example-amount { color: var(--elite-ink); font-variant-numeric: tabular-nums; }
 .elite-landing .elite-payout-ledger-heading { display: flex; align-items: center; gap: 0.85rem; }
 .elite-landing .elite-payout-record-fields { margin-top: 1.5rem; border-top: 1px solid color-mix(in srgb, var(--elite-text) 12%, transparent); }
 .elite-landing .elite-payout-record-fields > div { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid color-mix(in srgb, var(--elite-text) 10%, transparent); padding: 0.9rem 0; }

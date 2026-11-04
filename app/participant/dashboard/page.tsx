@@ -1958,6 +1958,17 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       <main className={activeTab === "trading" ? "hidden" : "pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
+            <DashboardChallengeOffer
+              accountType={normalizedAccountType}
+              balance={walletBalance}
+              bonusBalance={Number(participantData.bonus_balance) || 0}
+              onConverted={(account) => {
+                const updated = { ...participantData, ...account }
+                setParticipantData(updated)
+                localStorage.setItem("participantData", JSON.stringify(updated))
+                router.push("/participant/dashboard/challenge")
+              }}
+            />
             {!isChallengeAccount ? (
               <ParticipantOnboardingDashboard
                 displayName={displayName}
@@ -2700,8 +2711,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         </nav>
       </footer>
 
-
-      {activeTab === "dashboard" && !isChallengeAccount && !showTopUpModal && <DashboardChallengeOffer />}
 
       {/* Floating AI Chat Button */}
       <Button

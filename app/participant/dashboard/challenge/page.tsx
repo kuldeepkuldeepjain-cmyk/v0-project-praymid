@@ -193,12 +193,12 @@ function ChallengeContent() {
         {participant?.account_type !== "challenge" ? (
           <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
             <CardHeader>
-              <CardTitle className="text-white">Choose Challenge during registration</CardTitle>
+              <CardTitle className="text-white">Switch to a Challenge account</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-start gap-4">
-              <p className="max-w-2xl text-sm leading-6 text-slate-400">Challenge is a separate account type with its own virtual balance and evaluation. Create a Challenge account from the registration page to continue.</p>
-              <Button asChild className="bg-[#d6b66b] font-semibold text-[#111315] hover:bg-[#e2c982]">
-                <Link href="/participant/register">Create a Challenge account <ArrowUpRight data-icon="inline-end" /></Link>
+              <p className="max-w-2xl text-sm leading-6 text-slate-400">Visit your dashboard to switch when your account and bonus balances are both $0.00. You can then choose a plan and submit the separate evaluation fee for review.</p>
+              <Button asChild className="bg-[color:var(--brand-primary)] font-semibold text-[color:var(--brand-primary-foreground)] hover:opacity-90">
+                <Link href="/participant/dashboard">Back to dashboard <ArrowUpRight data-icon="inline-end" /></Link>
               </Button>
             </CardContent>
           </Card>
