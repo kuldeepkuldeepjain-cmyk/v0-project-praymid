@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label"
 import { PageLoader } from "@/components/ui/page-loader"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { participantFetch } from "@/lib/auth"
+import { ChallengeRewardCard } from "@/components/challenge-reward-card"
 import { DEFAULT_CHALLENGE_PLANS, getChallengeStatusLabel, type ChallengePlan } from "@/lib/challenge-account"
 
 const CHALLENGE_URL = "/api/participant/challenge"
@@ -310,13 +311,14 @@ function ChallengeContent() {
                           <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Minimum days</span><strong className="font-mono">{item.minimumTradingDays} days</strong></div>
                         </div>
                         <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{item.dailyLossLimitPercent}% daily loss · {item.maxDrawdownPercent}% max drawdown · up to {item.leverage}:1 leverage</p>
+                        <p className="text-xs font-medium text-[color:var(--brand-primary)]">{item.fee === 10 ? "Pass for funding review · no cash reward" : "Pass for a reviewed reward · up to 50% of net simulated profit"}</p>
                         <p className="mt-auto flex items-center justify-between gap-2 border-t border-[color:var(--terminal-graphite-border)] pt-3"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">One-time evaluation fee</span><strong className="font-mono text-lg text-[color:var(--brand-primary)]">{CURRENCY.format(item.fee)}</strong></p>
                       </CardContent>
                     </Card>
                   </button>
                 ))}
               </div>
-              <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">Fees are not wallet deposits. Evaluation capital and trading profits are simulated and cannot be withdrawn. Completion is subject to review.</p>
+              <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">Fees are not wallet deposits. Virtual capital cannot be withdrawn. The $10 tier is funding-review only; the other tiers may request a separate, manually reviewed reward capped at 50% of net simulated profit recorded at passing.</p>
             </section>
 
             <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
@@ -439,11 +441,13 @@ function ChallengeContent() {
           <Card className="border-emerald-500/30 bg-[#181b1f] text-slate-100">
             <CardHeader><CardTitle className="text-white">Evaluation passed</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm leading-6 text-slate-400">
-              <p>Your equity target and minimum trading-day requirements are complete. Your result is ready for next-stage review. Evaluation gains are simulated; payouts are not available on this account. Any funded account or reward requires a separate approval process.</p>
+              <p>Your equity target and minimum trading-day requirements are complete. Evaluation capital remains virtual and cannot be withdrawn. {plan.key === "challenge_5k" ? "Your result is ready for funding review; this tier has no cash reward." : "You can submit a separate, one-time reward claim based on 50% of recorded positive simulated profit. This requires manual approval."}</p>
               {participant.challenge_passed_at && <p>Passed on {new Date(participant.challenge_passed_at).toLocaleString()}.</p>}
             </CardContent>
           </Card>
         )}
+
+        {status === "passed" && <ChallengeRewardCard plan={plan} passedEquity={participant.challenge_passed_equity == null ? null : Number(participant.challenge_passed_equity)} rewardRequest={data.rewardRequest || null} onSubmitted={() => { void mutate() }} />}
 
         {status === "failed" && metrics && (
           <Card className="border-slate-700 bg-[#181b1f] text-slate-100">

@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     ) as any[]
     const participant = participantRows[0]
     if (!participant) return NextResponse.json({ success: false, error: "Participant not found" }, { status: 404 })
-    if (participant.account_type === "challenge") return NextResponse.json({ success: false, error: "Challenge accounts are not eligible for payouts until they pass the evaluation." }, { status: 403 })
+    if (participant.account_type === "challenge") return NextResponse.json({ success: false, error: "Challenge evaluation balances cannot be withdrawn. Eligible passed tiers can request a separately reviewed reward from the Challenge page." }, { status: 403 })
 
     const currentBalance = Number(participant.account_balance) || 0
     if (participant.account_frozen || participant.is_frozen || participant.status === "frozen") {

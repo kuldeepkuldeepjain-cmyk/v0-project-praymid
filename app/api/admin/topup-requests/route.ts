@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
           await client.query(
             `UPDATE participants SET account_type = 'challenge', account_balance = $1,
                challenge_status = 'active', challenge_started_at = NOW(),
-               challenge_passed_at = NULL, challenge_failed_at = NULL,
+               challenge_passed_at = NULL, challenge_passed_equity = NULL, challenge_failed_at = NULL,
                challenge_peak_equity = $1, challenge_day_start_equity = $1,
                challenge_day_start_date = (NOW() AT TIME ZONE 'UTC')::date,
                challenge_trading_days = 0, challenge_last_trading_date = NULL,

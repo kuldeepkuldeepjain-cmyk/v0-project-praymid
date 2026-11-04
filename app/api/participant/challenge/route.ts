@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     const result = await db.query(
       `SELECT id, email, username, account_type, account_balance, challenge_plan_key,
-              challenge_status, challenge_started_at, challenge_passed_at, challenge_failed_at,
+              challenge_status, challenge_started_at, challenge_passed_at, challenge_passed_equity, challenge_failed_at,
               challenge_peak_equity, challenge_day_start_equity, challenge_day_start_date,
               challenge_trading_days, challenge_last_trading_date
        FROM participants WHERE id = $1 LIMIT 1`,
@@ -101,6 +101,7 @@ export async function GET(request: NextRequest) {
                 `UPDATE participants SET challenge_status = $1,
                    challenge_failed_at = CASE WHEN $1 = 'failed' THEN NOW() ELSE challenge_failed_at END,
                    challenge_passed_at = CASE WHEN $1 = 'passed' THEN NOW() ELSE challenge_passed_at END,
+                   challenge_passed_equity = CASE WHEN $1 = 'passed' THEN $2 ELSE challenge_passed_equity END,
                    challenge_peak_equity = GREATEST(COALESCE(challenge_peak_equity, $2), $2),
                    updated_at = NOW()
                  WHERE id = $3`,
@@ -112,6 +113,7 @@ export async function GET(request: NextRequest) {
                 [participant.email],
               )
               currentStatus = nextStatus
+              if (nextStatus === "passed") participant.challenge_passed_equity = equity
             }
             await client.query("COMMIT")
           } catch (error) {
@@ -158,6 +160,13 @@ export async function GET(request: NextRequest) {
        ORDER BY created_at DESC LIMIT 1`,
       [participant.id],
     )
+    const rewardResult = participant.account_type === "challenge" && currentStatus === "passed"
+      ? await db.query(
+          `SELECT id, eligible_amount, status, payout_method, wallet_address, admin_note, transaction_hash, created_at
+           FROM challenge_reward_requests WHERE participant_id = $1 LIMIT 1`,
+          [participant.id],
+        )
+      : { rows: [] }
     const payment = paymentResult.rows[0]
     const paymentNotes = String(payment?.admin_notes || "")
     const paymentCurrency = /(?:^|; )payment_currency=(INR|USDT)(?:;|$)/.exec(paymentNotes)?.[1] || "USDT"
@@ -170,6 +179,7 @@ export async function GET(request: NextRequest) {
       snapshot,
       metrics,
       recentTrades: recentTradesResult.rows,
+      rewardRequest: rewardResult.rows[0] || null,
       paymentReview: payment ? {
         status: payment.status,
         transactionId: payment.transaction_id,
