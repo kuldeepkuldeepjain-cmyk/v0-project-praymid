@@ -27,6 +27,7 @@ import { UserNotificationsBell } from "@/components/user-notifications-bell"
   import { ForexTradingPlatform } from "@/components/forex-trading-platform"
 
 import { ParticipantOnboardingDashboard } from "@/components/participant-onboarding-dashboard"
+import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
 import { DashboardChallengeOffer } from "@/components/dashboard-challenge-offer"
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
@@ -2006,15 +2007,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 onHelp={() => setIsChatOpen(true)}
               />
             ) : (
-              <section className="mx-3 mt-3 flex flex-col gap-4 border border-amber-300/20 bg-[#111c28] p-4 sm:mx-4 sm:flex-row sm:items-center sm:justify-between sm:p-5" aria-label="Challenge workspace">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#d6b66b]">Evaluation workspace</p>
-                  <h2 className="mt-1 text-lg font-semibold text-white">Trade within your Challenge rules</h2>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-400">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
-                </div>
-                <div className="flex shrink-0 flex-wrap gap-2">
-                  <Button type="button" onClick={() => setActiveTab("trading")} className="bg-[#d6b66b] font-bold text-[#111315] hover:bg-[#e2c982]">Open trading terminal</Button>
-                  <Button asChild variant="outline" className="border-slate-600 bg-slate-900/70 text-slate-100 hover:bg-slate-800"><Link href="/participant/dashboard/challenge">View evaluation</Link></Button>
+              <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">
+                <ParticipantDashboardHero displayName={displayName} isChallenge onExploreTerminal={() => setActiveTab("trading")} />
+                <div className="participant-home-panel sm:flex-row sm:items-center sm:justify-between">
+                  <p className="max-w-2xl text-pretty text-sm leading-6 text-muted-foreground">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
+                  <Button asChild variant="outline" className="shrink-0 rounded-xl"><Link href="/participant/dashboard/challenge">View evaluation <ArrowUpRight data-icon="inline-end" /></Link></Button>
                 </div>
               </section>
             )}

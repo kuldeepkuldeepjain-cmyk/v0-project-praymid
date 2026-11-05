@@ -1,7 +1,14 @@
 // layout — staking section removed
 import type { ReactNode } from "react"
+import type { Metadata } from "next"
 import { Suspense } from "react"
 import { DashboardHeartbeat, DesktopDashboardNavigation } from "@/components/participant-dashboard-interactions"
+
+export const metadata: Metadata = {
+  title: "Your trading workspace",
+  description: "Your EliteFund account, market tools, and trading activity in one private workspace.",
+  robots: { index: false, follow: false },
+}
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
