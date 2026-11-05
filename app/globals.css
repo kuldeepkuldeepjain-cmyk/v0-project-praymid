@@ -29,6 +29,18 @@
 .finalflow-workspace .admin-workspace-header h2 { white-space: normal; }
 .finalflow-workspace .admin-workspace-header span { font-size: .875rem; }
 .finalflow-workspace main { scrollbar-gutter: stable; }
+.finalflow-workspace .admin-section-content :is(.text-xs, .text-\[10px\], .text-\[11px\], .text-\[12px\]) { font-size: .875rem; line-height: 1.5; }
+.finalflow-workspace .admin-section-content :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea, button) { font-size: .875rem; }
+.finalflow-workspace .admin-section-content :is(input:not([type="checkbox"]):not([type="radio"]), select) { min-height: 2.5rem; }
+.finalflow-workspace .admin-section-content .overflow-x-auto { overscroll-behavior-x: contain; scrollbar-width: auto; }
+.finalflow-workspace .admin-section[data-density="comfortable"] :is(th, td) { padding-top: 1rem; padding-bottom: 1rem; }
+.finalflow-workspace .admin-section[data-density="compact"] :is(th, td) { padding-top: .5rem; padding-bottom: .5rem; }
+.finalflow-workspace .admin-section-content th { white-space: nowrap; }
+.finalflow-workspace .admin-section-content td { vertical-align: top; }
+.finalflow-workspace .admin-section-content :is(button, a) { touch-action: manipulation; }
+@media (max-width: 640px) {
+  .finalflow-workspace .admin-section-content :is(input, select, textarea) { font-size: 1rem; }
+}
 .finalflow-workspace table { font-variant-numeric: tabular-nums; }
 .finalflow-workspace :is(th, td) { font-size: .875rem; line-height: 1.5; }
 .finalflow-workspace .admin-email-panel :is(.text-xs, .text-slate-500) { font-size: .875rem; color: var(--muted-foreground); }

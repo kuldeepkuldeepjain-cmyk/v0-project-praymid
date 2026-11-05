@@ -35,6 +35,8 @@ export function AllPayoutsPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState("all")
+  const [search, setSearch] = useState("")
+  const visiblePayouts = payouts.filter(payout => [payout.serial_number, payout.participant_email, payout.full_name, payout.wallet_address].some(value => (value || "").toLowerCase().includes(search.trim().toLowerCase())))
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const fetchPayouts = useCallback(async () => {
@@ -115,8 +117,12 @@ export function AllPayoutsPanel() {
 
   const copyAddress = async (address: string) => {
     if (!address) return
-    await navigator.clipboard.writeText(address)
-    toast({ title: "Address copied", description: "The payout address was copied to your clipboard." })
+    try {
+      await navigator.clipboard.writeText(address)
+      toast({ title: "Address copied", description: "The payout address was copied to your clipboard." })
+    } catch {
+      toast({ title: "Could not copy address", description: "Select and copy the address manually, or allow clipboard access in your browser.", variant: "destructive" })
+    }
   }
 
   const handleExportCSV = () => {
@@ -184,11 +190,11 @@ export function AllPayoutsPanel() {
 
   return (
     <Card className="border-0 shadow-lg">
-      <CardHeader className="border-b border-slate-200 bg-white rounded-t-lg">
-        <div className="flex items-center justify-between gap-4">
+      <CardHeader className="border-b border-border bg-card text-card-foreground rounded-t-lg">
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-2xl font-bold text-slate-900">All Payout Records</CardTitle>
-            <CardDescription className="text-slate-600 mt-1">
+            <CardTitle className="text-2xl font-bold text-foreground">All Payout Records</CardTitle>
+            <CardDescription className="text-muted-foreground mt-1">
               {loading ? "Loading..." : `${payouts.length.toLocaleString()} total records`}
             </CardDescription>
           </div>
@@ -201,9 +207,12 @@ export function AllPayoutsPanel() {
 
       <CardContent className="p-6">
         {/* Filter */}
-        <div className="mb-5">
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          <input aria-label="Search payout records" placeholder="Search email, name, reference, or wallet" value={search} onChange={event => setSearch(event.target.value)} className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-foreground" />
+          <Button variant="outline" disabled={!search && statusFilter === "all"} onClick={() => { setSearch(""); setStatusFilter("all") }}>Clear filters</Button>
+          <Button variant="outline" disabled={loading} onClick={() => fetchPayouts()}>Refresh records</Button>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-52">
+            <SelectTrigger aria-label="Payout status" className="w-full sm:w-52">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -219,30 +228,31 @@ export function AllPayoutsPanel() {
           </Select>
         </div>
 
-        <div className="overflow-x-auto border border-slate-200 rounded-lg">
+        <p role="status" className="mb-3 text-sm text-muted-foreground">{loading ? "Loading records…" : `${visiblePayouts.length} of ${payouts.length} loaded records shown`}. CSV export includes all records in the selected status.</p>
+        <div role="region" aria-label="Payout records, scroll horizontally for more columns" tabIndex={0} className="overflow-x-auto border border-slate-200 rounded-lg">
           <Table>
-            <TableHeader className="bg-slate-50">
+            <TableHeader className="bg-muted text-muted-foreground">
               <TableRow>
-                <TableHead className="font-semibold text-slate-700">Serial #</TableHead>
-                <TableHead className="font-semibold text-slate-700">Email</TableHead>
-                <TableHead className="font-semibold text-slate-700">Full Name</TableHead>
-                <TableHead className="font-semibold text-slate-700">Amount</TableHead>
-                <TableHead className="font-semibold text-slate-700">Status</TableHead>
-                <TableHead className="font-semibold text-slate-700">Method</TableHead>
-                <TableHead className="font-semibold text-slate-700">Payout Address</TableHead>
-                <TableHead className="font-semibold text-slate-700">Balance</TableHead>
-                <TableHead className="font-semibold text-slate-700">Before</TableHead>
-                <TableHead className="font-semibold text-slate-700">After</TableHead>
-                <TableHead className="font-semibold text-slate-700">Redirect To</TableHead>
-                <TableHead className="font-semibold text-slate-700">Created</TableHead>
-                <TableHead className="font-semibold text-slate-700">Action</TableHead>
+                <TableHead className="font-semibold text-foreground">Serial #</TableHead>
+                <TableHead className="font-semibold text-foreground">Email</TableHead>
+                <TableHead className="font-semibold text-foreground">Full Name</TableHead>
+                <TableHead className="font-semibold text-foreground">Amount</TableHead>
+                <TableHead className="font-semibold text-foreground">Status</TableHead>
+                <TableHead className="font-semibold text-foreground">Method</TableHead>
+                <TableHead className="font-semibold text-foreground">Payout Address</TableHead>
+                <TableHead className="font-semibold text-foreground">Balance</TableHead>
+                <TableHead className="font-semibold text-foreground">Before</TableHead>
+                <TableHead className="font-semibold text-foreground">After</TableHead>
+                <TableHead className="font-semibold text-foreground">Redirect To</TableHead>
+                <TableHead className="font-semibold text-foreground">Created</TableHead>
+                <TableHead className="font-semibold text-foreground">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={13} className="text-center py-12">
-                    <div className="flex items-center justify-center gap-2 text-slate-500">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       Loading all payout records...
                     </div>
@@ -254,29 +264,29 @@ export function AllPayoutsPanel() {
                     {error}
                   </TableCell>
                 </TableRow>
-              ) : payouts.length === 0 ? (
+              ) : visiblePayouts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={13} className="text-center py-12 text-slate-500">
-                    No payout records found
+                  <TableCell colSpan={13} className="text-center py-12 text-muted-foreground">
+                    {search || statusFilter !== "all" ? "No matching payouts. Clear the filters to widen your search." : "No payout records found."}
                   </TableCell>
                 </TableRow>
               ) : (
-                payouts.map((payout) => (
-                  <TableRow key={payout.id} className="hover:bg-slate-50 border-b border-slate-100">
-                    <TableCell className="font-mono text-xs text-slate-700">{payout.serial_number}</TableCell>
-                    <TableCell className="text-sm text-slate-600 font-mono max-w-[180px] truncate">{payout.participant_email}</TableCell>
-                    <TableCell className="text-sm text-slate-900 font-medium">{payout.full_name}</TableCell>
+                visiblePayouts.map((payout) => (
+                  <TableRow key={payout.id} className="hover:bg-muted border-b border-border">
+                    <TableCell className="font-mono text-xs text-foreground">{payout.serial_number}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground font-mono min-w-48 break-all">{payout.participant_email}</TableCell>
+                    <TableCell className="text-sm text-foreground font-medium">{payout.full_name}</TableCell>
                     <TableCell className="font-bold text-green-700">${payout.amount.toFixed(2)}</TableCell>
                     <TableCell>
                       <Badge className={`${getStatusBadgeClass(payout.status)} border text-xs font-medium`}>
                         {(payout.status || "").charAt(0).toUpperCase() + (payout.status || "").slice(1)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-sm text-slate-600">{payout.payout_method || "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{payout.payout_method || "—"}</TableCell>
                     <TableCell className="min-w-[240px]">
                       {payout.wallet_address ? (
                         <div className="flex items-center gap-2">
-                          <code className="max-w-[190px] truncate text-xs text-slate-700" title={payout.wallet_address}>{payout.wallet_address}</code>
+                          <code className="max-w-64 select-text break-all text-sm text-foreground" title={payout.wallet_address}>{payout.wallet_address}</code>
                           <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => copyAddress(payout.wallet_address)} aria-label="Copy payout address">
                             <Copy className="h-3.5 w-3.5" />
                           </Button>
@@ -284,12 +294,12 @@ export function AllPayoutsPanel() {
                       ) : <span className="text-xs text-red-600">No address</span>}
                     </TableCell>
                     <TableCell className="font-semibold text-blue-700">${payout.account_balance.toFixed(2)}</TableCell>
-                    <TableCell className="text-xs text-slate-600">${payout.wallet_balance_before.toFixed(2)}</TableCell>
-                    <TableCell className="text-xs text-slate-600">${payout.wallet_balance_after.toFixed(2)}</TableCell>
-                    <TableCell className="text-xs text-slate-500">
+                    <TableCell className="text-xs text-muted-foreground">${payout.wallet_balance_before.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">${payout.wallet_balance_after.toFixed(2)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {payout.redirect_to_email || payout.redirect_to_serial || "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-slate-500">
+                    <TableCell className="text-xs text-muted-foreground">
                       {payout.created_at ? new Date(payout.created_at).toLocaleDateString() : "—"}
                     </TableCell>
                     <TableCell>
@@ -298,7 +308,7 @@ export function AllPayoutsPanel() {
                           <CheckCircle2 className="h-3.5 w-3.5" /> Completed
                         </Badge>
                       ) : ["rejected", "cancelled"].includes(payout.status.toLowerCase()) ? (
-                        <span className="text-xs text-slate-500">Closed</span>
+                        <span className="text-xs text-muted-foreground">Closed</span>
                       ) : (
                         <div className="flex flex-wrap gap-2">
                           {payout.status.toLowerCase() !== "processing" && (

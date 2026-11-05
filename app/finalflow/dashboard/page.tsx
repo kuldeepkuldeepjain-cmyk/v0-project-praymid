@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { SectionWorkspace } from "@/components/admin/section-workspace"
 import {
   LayoutDashboard,
   Users,
@@ -234,6 +235,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="finalflow-workspace flex h-dvh overflow-hidden bg-background font-sans text-foreground">
+      <a href="#admin-panel-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-foreground">Skip to section content</a>
       {/* Mobile sidebar overlay backdrop */}
       {sidebarOpen && (
         <button
@@ -368,7 +370,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-3 sm:p-6">
+        <main id="admin-panel-content" tabIndex={-1} aria-label={navItems.find(item => item.id === activeView)?.label} className="flex-1 overflow-auto bg-background p-3 sm:p-6">
           <ErrorBoundary key={activeView} fallback={
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
               <p className="text-slate-400 text-sm">This panel encountered an error. Please try refreshing.</p>
@@ -380,7 +382,7 @@ export default function AdminDashboard() {
               </button>
             </div>
           }>
-            {renderView()}
+            <SectionWorkspace section={activeView}>{renderView()}</SectionWorkspace>
           </ErrorBoundary>
         </main>
       </div>
