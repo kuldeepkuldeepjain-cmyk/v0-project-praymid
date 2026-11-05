@@ -41,8 +41,16 @@ Rules:
     return result.rows[0] ?? null
   }
 
-  const getMarketSnapshot = async (request: Request) => {
+  const getTradeSnapshot = async (request: Request) => {
+    const response = await fetch(new URL("/api/forex/trades", request.url), { headers: { cookie: request.headers.get("cookie") ?? "" }, cache: "no-store" })
+    const data = await response.json().catch(() => null)
+    if (!response.ok || !data?.success) return { error: "Authenticated trade history is unavailable.", open: [], pending: [], closed: [] }
+    return { open: data.open ?? [], pending: data.pending ?? [], closed: data.closed ?? [] }
+  }
+
+  const getMarketSnapshot = async (request: Request, requestedPair: string) => {
     const url = new URL("/api/forex/rates", request.url)
+    url.searchParams.set("pair", requestedPair)
     const response = await fetch(url, { headers: { cookie: request.headers.get("cookie") ?? "" }, cache: "no-store" })
     const data = await response.json().catch(() => null)
     const now = Date.now()
@@ -68,12 +76,13 @@ Rules:
         inputSchema: z.object({ pair: pairSchema, timeframe: timeframeSchema }),
         execute: async ({ pair: requestedPair, timeframe: requestedTimeframe }) => {
           const participant = await getAuthorizedParticipant()
-          const market = await getMarketSnapshot(req)
+          const [market, trades] = await Promise.all([getMarketSnapshot(req, requestedPair), getTradeSnapshot(req)])
           return {
             asOf: new Date().toISOString(),
             pair: requestedPair,
             timeframe: requestedTimeframe,
             market,
+            trades: { openCount: trades.open.length, pendingCount: trades.pending.length, closedCount: trades.closed.length, open: trades.open.slice(0, 30), recentClosed: trades.closed.slice(0, 20) },
             account: participant ? { accountType: participant.account_type, balance: Number(participant.account_balance ?? 0), bonusBalance: Number(participant.bonus_balance ?? 0), frozen: Boolean(participant.account_frozen || participant.is_frozen || participant.status === "frozen"), fundedInitialBalance: participant.funded_initial_balance === null ? null : Number(participant.funded_initial_balance), fundedBreachStatus: participant.funded_breach_status ?? null, challengeStatus: participant.challenge_status ?? null, challengePlanKey: participant.challenge_plan_key ?? null } : null,
             limitations: ["This snapshot does not calculate unrealized P&L or maximum loss.", "No news feed is connected to this coach; do not describe a headline as live.", "Only the signed-in participant email is queried."],
           }

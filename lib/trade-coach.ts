@@ -1,7 +1,7 @@
 export const COACH_MODELS = [
   { id: "openai/gpt-5-mini", label: "GPT-5 Mini" },
   { id: "anthropic/claude-sonnet-5.5", label: "Claude Sonnet 5.5" },
-  { id: "google/gemini-3.1-pro-preview", label: "Gemini 3.1 Pro" },
+  { id: "google/gemini-2.5-pro", label: "Gemini 2.5 Pro" },
 ] as const
 
 export const COACH_MODES = [
