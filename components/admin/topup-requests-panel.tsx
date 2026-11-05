@@ -66,7 +66,9 @@ export function TopUpRequestsPanel() {
   const [requests, setRequests] = useState<TopupRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [methodFilter, setMethodFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "completed" | "rejected">("all")
   const [selectedRequest, setSelectedRequest] = useState<TopupRequest | null>(null)
   const [showScreenshot, setShowScreenshot] = useState(false)
@@ -170,16 +172,15 @@ export function TopUpRequestsPanel() {
     try {
       const res = await adminFetch("/api/admin/topup-requests")
       const data = await res.json()
-      console.log("[v0] Topup requests response:", data)
-      if (data.success) {
-        const mappedRequests = (data.requests || []).map((r: any) => ({ ...r, amount: Number(r.amount) || 0 }))
-        console.log("[v0] Mapped requests:", mappedRequests.length, "requests")
+      if (res.ok && data.success) {
+        const mappedRequests = (data.requests || []).map((r: TopupRequest) => ({ ...r, amount: Number(r.amount) || 0 }))
         setRequests(mappedRequests)
+        setLoadError(null)
       } else {
-        console.log("[v0] Failed to fetch topup requests:", data)
+        setLoadError(data.message || data.error || "Could not load top-up requests. Refresh to try again.")
       }
-    } catch (err) {
-      console.error("[v0] Error fetching topup requests:", err)
+    } catch {
+      setLoadError("Could not load top-up requests. Check your connection and refresh to try again.")
     } finally {
       setIsLoading(false)
       setIsRefreshing(false)
@@ -255,7 +256,7 @@ export function TopUpRequestsPanel() {
       r.participant_email.toLowerCase().includes(search.toLowerCase()) ||
       (r.transaction_id || "").toLowerCase().includes(search.toLowerCase())
     const matchesStatus = statusFilter === "all" || r.status === statusFilter || (statusFilter === "pending" && r.status === "pending_collection")
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && (methodFilter === "all" || r.payment_method === methodFilter)
   })
 
   const isPending = (status: TopupRequest["status"]) => status === "pending" || status === "pending_collection"
@@ -268,8 +269,8 @@ export function TopUpRequestsPanel() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-violet-600 flex items-center justify-center">
             <Wallet className="h-5 w-5 text-white" />
           </div>
@@ -293,6 +294,7 @@ export function TopUpRequestsPanel() {
         </Button>
       </div>
 
+      {loadError && <p role="alert" className="rounded-lg border border-border bg-card p-4 text-sm text-card-foreground">{loadError} Any previously loaded records below may be out of date.</p>}
       {/* Admin top-up deposit addresses — shown to participants for sending funds */}
       <Card className="bg-slate-800 border-violet-700/50">
         <CardContent className="p-4 space-y-4">
@@ -325,7 +327,7 @@ export function TopUpRequestsPanel() {
       </Card>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { label: "Total Requests", value: requests.length, color: "text-cyan-400" },
           { label: "Pending Amount", value: `$${totalPending.toFixed(2)}`, color: "text-amber-400" },
@@ -340,11 +342,17 @@ export function TopUpRequestsPanel() {
         ))}
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-sm">Payment method<select value={methodFilter} onChange={event => setMethodFilter(event.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-foreground"><option value="all">All methods</option>{Array.from(new Set(requests.map(request => request.payment_method).filter(Boolean))).sort().map(method => <option key={method} value={method}>{method}</option>)}</select></label>
+        <Button variant="outline" disabled={!search && statusFilter === "all" && methodFilter === "all"} onClick={() => { setSearch(""); setStatusFilter("all"); setMethodFilter("all") }}>Clear filters</Button>
+        <p role="status" className="text-sm text-muted-foreground">{isLoading ? "Loading requests…" : `${filtered.length} of ${requests.length} requests shown`}</p>
+      </div>
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
           <Input
+            aria-label="Search top-up requests"
             placeholder="Search by email or transaction hash..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -355,6 +363,7 @@ export function TopUpRequestsPanel() {
           {(["all", "pending", "completed", "rejected"] as const).map((s) => (
             <button
               key={s}
+              aria-pressed={statusFilter === s}
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-2 rounded-lg text-xs font-semibold capitalize transition-colors ${
                 statusFilter === s

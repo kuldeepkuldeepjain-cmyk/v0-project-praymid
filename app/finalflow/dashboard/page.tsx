@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { SectionWorkspace } from "@/components/admin/section-workspace"
 import {
   LayoutDashboard,
   Users,
@@ -76,6 +77,7 @@ export default function AdminDashboard() {
   const [adminEmail, setAdminEmail] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [navigationSearch, setNavigationSearch] = useState("")
   const [isMobile, setIsMobile] = useState(false)
   const [pendingOtpCount, setPendingOtpCount] = useState(0)
   const [openTicketCount, setOpenTicketCount] = useState(0)
@@ -221,7 +223,7 @@ export default function AdminDashboard() {
     return <Loading />
   }
 
-  const groupedNavItems = navItems.reduce((acc, item) => {
+  const groupedNavItems = navItems.filter(item => `${item.label} ${item.section}`.toLowerCase().includes(navigationSearch.trim().toLowerCase())).reduce((acc, item) => {
     const existing = acc.find(g => g.section === item.section)
     if (existing) {
       existing.items.push(item)
@@ -232,11 +234,14 @@ export default function AdminDashboard() {
   }, [] as Array<{ section: string; items: NavItem[] }>)
 
   return (
-    <div className="flex h-screen bg-slate-950 text-white overflow-hidden">
+    <div className="finalflow-workspace flex h-dvh overflow-hidden bg-background font-sans text-foreground">
+      <a href="#admin-panel-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-3 focus:text-primary-foreground">Skip to section content</a>
       {/* Mobile sidebar overlay backdrop */}
       {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+        <button
+          type="button"
+          aria-label="Close navigation"
+          className="fixed inset-0 bg-background/80 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -245,11 +250,11 @@ export default function AdminDashboard() {
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0 fixed lg:sticky lg:top-0 inset-y-0 left-0 w-72 lg:w-64 bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-800 overflow-y-auto transition-transform duration-300 z-50 flex-shrink-0`}
+        } lg:translate-x-0 fixed lg:sticky lg:top-0 inset-y-0 left-0 w-80 max-w-[90vw] bg-card text-card-foreground border-r border-border overflow-y-auto transition-transform duration-300 z-50 flex-shrink-0`}
       >
         <div className="p-6">
           <div className="flex items-center gap-3 mb-8 pb-5 border-b border-slate-800">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.35)]">
+            <div className="size-10 rounded-xl bg-primary text-primary-foreground flex items-center justify-center">
               <ShieldCheck className="h-5 w-5 text-slate-950" />
             </div>
             <div>
@@ -258,6 +263,12 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          <div className="mb-6 flex flex-col gap-2">
+            <label htmlFor="admin-navigation-search" className="text-sm font-medium text-muted-foreground">Find a section</label>
+            <Input id="admin-navigation-search" value={navigationSearch} onChange={event => setNavigationSearch(event.target.value)} placeholder="Search admin tools…" />
+            {navigationSearch && <Button variant="ghost" size="sm" onClick={() => setNavigationSearch("")}>Clear search</Button>}
+            {groupedNavItems.length === 0 && <p role="status" className="text-sm text-muted-foreground">No matching sections. Try a different search.</p>}
+          </div>
           {groupedNavItems.map(group => (
             <div key={group.section} className="mb-7">
               <p className="text-[10px] font-semibold text-slate-500 mb-3 uppercase tracking-widest pl-1">
@@ -275,6 +286,7 @@ export default function AdminDashboard() {
                   return (
                     <button
                       key={item.id}
+                      aria-current={isActive ? "page" : undefined}
                       onClick={() => {
                         setActiveView(item.id)
                         if (isMobile) setSidebarOpen(false)
@@ -286,7 +298,7 @@ export default function AdminDashboard() {
                       }`}
                     >
                       <item.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-slate-950" : "text-slate-500 group-hover:text-cyan-400"}`} />
-                      <span className={`text-sm flex-1 truncate ${isActive ? "font-semibold" : "font-medium"}`}>{item.label}</span>
+                      <span className={`text-sm flex-1 whitespace-normal leading-6 ${isActive ? "font-semibold" : "font-medium"}`}>{item.label}</span>
                       {badgeCount > 0 && (
                         <span
                           className={`ml-auto flex-shrink-0 min-w-[20px] h-5 rounded-full text-[10px] font-bold flex items-center justify-center px-1.5 ${
@@ -308,9 +320,11 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
         {/* Header */}
-        <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm px-3 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-2">
+        <header className="admin-workspace-header flex flex-wrap items-center justify-between gap-3 border-b border-border bg-card px-4 py-4 sm:px-6">
           <div className="flex items-center gap-2 sm:gap-4 min-w-0">
             <button
+              aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+              aria-expanded={sidebarOpen}
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden p-2 hover:bg-slate-800 rounded-lg flex-shrink-0"
             >
@@ -344,6 +358,7 @@ export default function AdminDashboard() {
             <span className="text-xs sm:text-sm text-slate-400 hidden sm:block truncate max-w-[120px] pl-1 border-l border-slate-800">{adminEmail}</span>
             <Button
               onClick={handleLogout}
+              aria-label="Logout"
               variant="ghost"
               size="sm"
               className="text-slate-300 hover:text-red-400 hover:bg-red-500/10 px-2 sm:px-3"
@@ -355,7 +370,7 @@ export default function AdminDashboard() {
         </header>
 
         {/* Content Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-3 sm:p-6">
+        <main id="admin-panel-content" tabIndex={-1} aria-label={navItems.find(item => item.id === activeView)?.label} className="flex-1 overflow-auto bg-background p-3 sm:p-6">
           <ErrorBoundary key={activeView} fallback={
             <div className="flex flex-col items-center justify-center h-64 gap-4 text-center">
               <p className="text-slate-400 text-sm">This panel encountered an error. Please try refreshing.</p>
@@ -367,7 +382,7 @@ export default function AdminDashboard() {
               </button>
             </div>
           }>
-            {renderView()}
+            <SectionWorkspace section={activeView}>{renderView()}</SectionWorkspace>
           </ErrorBoundary>
         </main>
       </div>

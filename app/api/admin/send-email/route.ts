@@ -45,6 +45,14 @@ const EMAIL_HTML_OPTIONS = {
   allowProtocolRelative: false,
 }
 
+async function withRateLimitRetry<T extends { error: { name: string } | null }>(send: () => Promise<T>): Promise<T> {
+  for (let attempt = 0; ; attempt++) {
+    const result = await send()
+    if (result.error?.name !== "rate_limit_exceeded" || attempt >= 2) return result
+    await new Promise<void>(resolve => setTimeout(resolve, 1000 * 2 ** attempt))
+  }
+}
+
 export async function POST(request: NextRequest) {
   const auth = await requireAdminSession(request)
   if (!auth.ok) return auth.response
@@ -95,10 +103,10 @@ export async function POST(request: NextRequest) {
     const idempotencyKey = (batchIndex: number) => `admin-email/${campaignId}/${batchIndex}`
 
     if (recipients.length === 1) {
-      const result = await resend.emails.send(
+      const result = await withRateLimitRetry(() => resend.emails.send(
         { from: FROM, to: [recipients[0]], subject, text: message, html },
         { idempotencyKey: idempotencyKey(0) },
-      )
+      ))
       if (result.error) return NextResponse.json({ success: false, error: "Resend rejected the email request.", requestId: result.error.name }, { status: 502 })
       return NextResponse.json({ success: true, count: 1, skippedRecipientCount, requestId: result.data?.id || null })
     }
@@ -114,10 +122,10 @@ export async function POST(request: NextRequest) {
       const batchRecipients = recipients.slice(offset, offset + RESEND_BATCH_SIZE)
 
       if (batchRecipients.length === 1) {
-        const result = await resend.emails.send(
+        const result = await withRateLimitRetry(() => resend.emails.send(
           { from: FROM, to: [batchRecipients[0]], subject, text: message, html },
           { idempotencyKey: idempotencyKey(batchIndex) },
-        )
+        ))
         if (result.error || !result.data) {
           return NextResponse.json({
             success: false,
@@ -133,10 +141,10 @@ export async function POST(request: NextRequest) {
         continue
       }
 
-      const result = await resend.batch.send(
+      const result = await withRateLimitRetry(() => resend.batch.send(
         batchRecipients.map(email => ({ from: FROM, to: [email], subject, text: message, html })),
         { idempotencyKey: idempotencyKey(batchIndex) },
-      )
+      ))
 
       if (result.error) {
         return NextResponse.json({
@@ -171,5 +179,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export const maxDuration = 300
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"

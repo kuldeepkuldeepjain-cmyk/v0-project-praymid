@@ -182,7 +182,7 @@ export function AllParticipantsLedger() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-40 bg-slate-800 border-slate-600 text-white">
+              <SelectTrigger aria-label="Ledger transaction type" className="w-40 bg-slate-800 border-slate-600 text-white">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
@@ -197,6 +197,7 @@ export function AllParticipantsLedger() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
               <Input
+                aria-label="Search ledger by participant email"
                 placeholder="Search participant email..."
                 value={filterParticipant}
                 onChange={e => setFilterParticipant(e.target.value)}
@@ -205,7 +206,8 @@ export function AllParticipantsLedger() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" disabled={!filterParticipant && filterType === "all" && sortOrder === "desc"} onClick={() => { setFilterParticipant(""); setFilterType("all"); setSortOrder("desc"); setCurrentPage(0) }}>Clear filters</Button>
             <Button
               onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
               variant="outline"
@@ -213,7 +215,7 @@ export function AllParticipantsLedger() {
               className="border-slate-600 text-slate-300 hover:bg-slate-700"
             >
               <ArrowUpDown className="h-4 w-4 mr-1" />
-              Sort {sortOrder === "desc" ? "▼" : "▲"}
+              {sortOrder === "desc" ? "Newest first" : "Oldest first"}
             </Button>
 
             <Button
@@ -222,7 +224,7 @@ export function AllParticipantsLedger() {
               className="bg-cyan-600 hover:bg-cyan-500 text-white font-semibold"
             >
               <Download className="h-4 w-4 mr-1" />
-              Export
+              Export current page
             </Button>
 
             <Button
@@ -235,7 +237,7 @@ export function AllParticipantsLedger() {
               {clearing ? (
                 <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Clearing...</>
               ) : (
-                <><Trash2 className="h-4 w-4 mr-1" />Clear All</>
+                <><Trash2 className="h-4 w-4 mr-1" />Delete all ledger records</>
               )}
             </Button>
           </div>
@@ -254,7 +256,7 @@ export function AllParticipantsLedger() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <div role="region" aria-label="Ledger records, scroll horizontally for more columns" tabIndex={0} className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-slate-800/50 hover:bg-slate-800/50 border-b border-slate-700/60">

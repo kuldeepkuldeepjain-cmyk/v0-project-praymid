@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useDeferredValue, useMemo, useRef, useState } from "react"
+import useSWR from "swr"
 import { Mail, Send, Users, UserRound, UsersRound, Loader2, Search, Check, Code2 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -24,25 +25,30 @@ const BRANDED_STARTER_HTML = `<h1 style="margin:0 0 18px;color:#10243a;font-size
 export function SendNotificationPanel() {
   const { toast } = useToast()
   const [mode, setMode] = useState<RecipientMode>("single")
-  const [recipients, setRecipients] = useState<Recipient[]>([])
+  const { data: recipients = [], isLoading: loadingRecipients, error: recipientError, mutate: reloadRecipients } = useSWR<Recipient[]>("/api/admin/email-recipients", async url => {
+    const response = await adminFetch(url)
+    const data = await response.json()
+    if (!response.ok || !data.success) throw new Error(data.error || "Unable to load recipients")
+    return data.recipients || []
+  }, { revalidateOnFocus: false, dedupingInterval: 60_000 })
+  const sendInFlight = useRef(false)
   const [selectedEmails, setSelectedEmails] = useState<string[]>([])
   const [recipientSearch, setRecipientSearch] = useState("")
-  const [loadingRecipients, setLoadingRecipients] = useState(false)
   const [subject, setSubject] = useState("")
   const [message, setMessage] = useState("")
   const [htmlBody, setHtmlBody] = useState("")
   const [sending, setSending] = useState(false)
 
-  useEffect(() => {
-    if (mode === "all" || recipients.length) return
-    setLoadingRecipients(true)
-    adminFetch("/api/admin/email-recipients")
-      .then(async response => { const data = await response.json(); if (!response.ok || !data.success) throw new Error(data.error || "Unable to load recipients"); setRecipients(data.recipients || []) })
-      .catch(error => toast({ title: "Unable to load users", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" }))
-      .finally(() => setLoadingRecipients(false))
-  }, [mode, recipients.length, toast])
-
-  const filteredRecipients = useMemo(() => { const term = recipientSearch.trim().toLowerCase(); return recipients.filter(recipient => !term || `${recipient.name} ${recipient.email}`.toLowerCase().includes(term)) }, [recipientSearch, recipients])
+  const deferredSearch = useDeferredValue(recipientSearch)
+  const [selectedOnly, setSelectedOnly] = useState(false)
+  const filteredRecipients = useMemo(() => {
+    const term = deferredSearch.trim().toLowerCase()
+    return recipients.filter(recipient => (!selectedOnly || selectedEmails.includes(recipient.email)) && (!term || `${recipient.name} ${recipient.email}`.toLowerCase().includes(term)))
+  }, [deferredSearch, recipients, selectedOnly, selectedEmails])
+  const allFilteredSelected = filteredRecipients.length > 0 && filteredRecipients.every(recipient => selectedEmails.includes(recipient.email))
+  const toggleFilteredRecipients = () => setSelectedEmails(previous => allFilteredSelected
+    ? previous.filter(email => !filteredRecipients.some(recipient => recipient.email === email))
+    : [...new Set([...previous, ...filteredRecipients.map(recipient => recipient.email)])])
   const selectedRecipientEmails = mode === "single" ? selectedEmails.slice(0, 1) : selectedEmails
   const previewHtml = useMemo(
     () => createBrandedEmailHtml(subject, htmlBody.trim() || plainTextToEmailHtml(message)),
@@ -50,12 +56,14 @@ export function SendNotificationPanel() {
   )
 
   const sendEmail = async () => {
+    if (sendInFlight.current) return
     const parsedEmails = selectedRecipientEmails
     if (!subject.trim() || !message.trim() || (mode === "single" && !selectedRecipientEmails.length) || (mode === "multiple" && !selectedRecipientEmails.length)) {
       toast({ title: "Complete all fields", description: "Choose recipients and provide a subject and message.", variant: "destructive" })
       return
     }
     if (!window.confirm(`Send this email to ${mode === "all" ? "all participants" : mode === "single" ? selectedRecipientEmails[0] : `${selectedRecipientEmails.length} recipients`}?`)) return
+    sendInFlight.current = true
     setSending(true)
     try {
       const response = await adminFetch("/api/admin/send-email", { method: "POST", body: JSON.stringify({ mode, email: selectedRecipientEmails[0] || "", emails: parsedEmails, subject, message, htmlBody }) })
@@ -65,7 +73,7 @@ export function SendNotificationPanel() {
       setSubject(""); setMessage(""); setHtmlBody(""); setSelectedEmails([])
     } catch (error) {
       toast({ title: "Email failed", description: error instanceof Error ? error.message : "Unable to send email.", variant: "destructive" })
-    } finally { setSending(false) }
+    } finally { sendInFlight.current = false; setSending(false) }
   }
 
   const options = [
@@ -75,17 +83,22 @@ export function SendNotificationPanel() {
   ]
 
   return (
-    <section className="space-y-6">
+    <section className="admin-email-panel flex flex-col gap-6">
+      {recipientError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4"><p>Recipients could not be loaded.</p><Button variant="outline" onClick={() => reloadRecipients()}>Retry loading users</Button></div>}
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <p className="text-sm" role="status">{mode === "all" ? "All participants (validated at send time)" : `${selectedRecipientEmails.length} recipient${selectedRecipientEmails.length === 1 ? "" : "s"} selected`}</p>
+        {mode !== "all" && <><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={selectedOnly} onChange={event => setSelectedOnly(event.target.checked)} />Show selected only</label><Button size="sm" variant="outline" disabled={sending || !selectedEmails.length} onClick={() => { setSelectedEmails([]); setSelectedOnly(false) }}>Clear selection</Button></>}
+      </div>
       <div className="flex items-start gap-3">
         <div className="rounded-xl border border-cyan-400/30 bg-cyan-400/10 p-3 text-cyan-300"><Mail className="size-5" /></div>
         <div><h2 className="text-2xl font-semibold text-white">Send custom email</h2><p className="mt-1 text-sm leading-6 text-slate-400">Send a custom Resend email to one user, selected users, or all participants.</p></div>
       </div>
       <Card className="border-cyan-400/20 bg-slate-900/70">
         <CardHeader><CardTitle className="text-white">Compose email</CardTitle><CardDescription className="text-slate-400">Messages are sent server-side from verify@elitefund.sbs, individually in batches of up to 99 participants.</CardDescription></CardHeader>
-        <CardContent className="space-y-5">
+        <CardContent><fieldset disabled={sending} className="flex min-w-0 flex-col gap-5">
           <div className="grid gap-3 sm:grid-cols-3">{options.map(option => { const Icon = option.icon; return <button key={option.value} type="button" onClick={() => setMode(option.value)} className={`flex items-center gap-3 rounded-lg border p-3 text-left transition ${mode === option.value ? "border-cyan-400 bg-cyan-400/10 text-cyan-200" : "border-slate-700 bg-slate-950/40 text-slate-300 hover:border-slate-500"}`}><Icon className="size-4" /><span className="text-sm font-medium">{option.label}</span></button> })}</div>
-          {(mode === "single" || mode === "multiple") && <div className="space-y-3"><div className="flex items-center justify-between"><Label className="text-slate-200">Select {mode === "single" ? "a user" : "users"}</Label>{mode === "multiple" && <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedEmails(selectedEmails.length === filteredRecipients.length ? [] : filteredRecipients.map(recipient => recipient.email))}>{selectedEmails.length === filteredRecipients.length ? "Clear all" : "Select all"}</Button>}</div><div className="relative"><Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-slate-500" /><Input value={recipientSearch} onChange={event => setRecipientSearch(event.target.value)} placeholder="Search by name or email" className="pl-9" /></div><div className="max-h-56 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950/50 p-2">{loadingRecipients ? <p className="p-3 text-sm text-slate-400">Loading users...</p> : filteredRecipients.length ? filteredRecipients.map(recipient => { const selected = selectedEmails.includes(recipient.email); return <button key={recipient.id} type="button" onClick={() => setSelectedEmails(mode === "single" ? [recipient.email] : selected ? selectedEmails.filter(value => value !== recipient.email) : [...selectedEmails, recipient.email])} className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left transition ${selected ? "bg-cyan-400/10 text-cyan-200" : "text-slate-300 hover:bg-slate-800"}`}><span className="min-w-0"><span className="block truncate text-sm font-medium">{recipient.name}</span><span className="block truncate text-xs text-slate-500">{recipient.email}</span></span>{selected && <Check className="size-4 shrink-0 text-cyan-300" />}</button> }) : <p className="p-3 text-sm text-slate-400">No users found.</p>}</div><p className="text-xs text-slate-500">{selectedEmails.length} user{selectedEmails.length === 1 ? "" : "s"} selected. No email pasting required.</p></div>}
-          <div className="space-y-2"><Label className="text-slate-200">Subject</Label><Input maxLength={180} value={subject} onChange={event => setSubject(event.target.value)} placeholder="Email subject" /></div>
+          {(mode === "single" || mode === "multiple") && <div className="space-y-3"><div className="flex items-center justify-between"><Label className="text-slate-200">Select {mode === "single" ? "a user" : "users"}</Label>{mode === "multiple" && <Button type="button" variant="ghost" size="sm" disabled={sending || !filteredRecipients.length} onClick={toggleFilteredRecipients}>{allFilteredSelected ? "Deselect matches" : "Select matches"}</Button>}</div><div className="relative"><Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-slate-500" /><Input aria-label="Search email recipients" value={recipientSearch} onChange={event => setRecipientSearch(event.target.value)} placeholder="Search by name or email" className="pl-9" /></div><div className="max-h-56 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950/50 p-2">{loadingRecipients ? <p className="p-3 text-sm text-slate-400">Loading users...</p> : filteredRecipients.length ? filteredRecipients.map(recipient => { const selected = selectedEmails.includes(recipient.email); return <button key={recipient.id} type="button" onClick={() => setSelectedEmails(mode === "single" ? [recipient.email] : selected ? selectedEmails.filter(value => value !== recipient.email) : [...selectedEmails, recipient.email])} className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left transition ${selected ? "bg-cyan-400/10 text-cyan-200" : "text-slate-300 hover:bg-slate-800"}`}><span className="min-w-0"><span className="block truncate text-sm font-medium">{recipient.name}</span><span className="block truncate text-xs text-slate-500">{recipient.email}</span></span>{selected && <Check className="size-4 shrink-0 text-cyan-300" />}</button> }) : <p className="p-3 text-sm text-slate-400">No users found.</p>}</div><p className="text-xs text-slate-500">{selectedRecipientEmails.length} user{selectedRecipientEmails.length === 1 ? "" : "s"} selected. No email pasting required.</p></div>}
+          <div className="space-y-2"><Label className="text-slate-200">Subject</Label><Input aria-label="Email subject" maxLength={180} value={subject} onChange={event => setSubject(event.target.value)} placeholder="Email subject" /></div>
           <FieldGroup className="gap-3">
             <Field className="gap-2">
               <FieldLabel htmlFor="email-plain-text" className="text-slate-200">Plain-text fallback</FieldLabel>
@@ -115,8 +128,8 @@ export function SendNotificationPanel() {
               </div>
             </div>
           </div>
-          <Button type="button" onClick={sendEmail} disabled={sending} className="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400">{sending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}{sending ? "Sending..." : "Send custom email"}</Button>
-        </CardContent>
+          <Button type="button" onClick={sendEmail} disabled={sending} className="w-full bg-cyan-500 text-slate-950 hover:bg-cyan-400">{sending ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Send className="mr-2 size-4" />}{sending ? "Sending batches — keep this panel open…" : "Review and send email"}</Button>
+        </fieldset></CardContent>
       </Card>
     </section>
   )
