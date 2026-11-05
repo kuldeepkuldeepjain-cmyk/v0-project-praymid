@@ -41,6 +41,11 @@
 @media (max-width: 640px) {
   .finalflow-workspace .admin-section-content :is(input, select, textarea) { font-size: 1rem; }
 }
+.participants-workspace[data-expanded="false"] tr > :is(:nth-child(2), :nth-child(5), :nth-child(7), :nth-child(8), :nth-child(9), :nth-child(12)) { display: none; }
+.participants-workspace th:last-child, .participants-workspace td:last-child:not([colspan]) { position: sticky; right: 0; background: var(--card); border-left: 1px solid var(--border); }
+.participants-workspace td:nth-child(3) { min-width: 12rem; }
+.participants-workspace td:nth-child(6) { min-width: 15rem; overflow-wrap: anywhere; }
+.participants-workspace td:nth-child(12) { min-width: 16rem; }
 .finalflow-workspace table { font-variant-numeric: tabular-nums; }
 .finalflow-workspace :is(th, td) { font-size: .875rem; line-height: 1.5; }
 .finalflow-workspace .admin-email-panel :is(.text-xs, .text-slate-500) { font-size: .875rem; color: var(--muted-foreground); }

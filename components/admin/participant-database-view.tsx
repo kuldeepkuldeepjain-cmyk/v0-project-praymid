@@ -36,7 +36,6 @@ import {
   Ban,
   CheckCircle,
   XCircle,
-  Database,
   Loader2,
   Users,
   Copy,
@@ -50,6 +49,7 @@ import type { ParticipantUser } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 import { AccountTypeBadge } from "@/components/admin/account-type-badge"
 import { UserRankBadge } from "@/components/user-rank-badge"
+import { ParticipantListControls, ParticipantPagination } from "@/components/admin/participant-list-controls"
 function safeDateTime(value?: string | null) {
   if (!value) return "Not available"
   const date = new Date(value)
@@ -71,6 +71,12 @@ export function ParticipantDatabaseView() {
   const [participants, setParticipants] = useState<ParticipantUser[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const [sort, setSort] = useState("original")
+  const [pageSize, setPageSize] = useState(25)
+  const [expanded, setExpanded] = useState(false)
+  const [pagination, setPagination] = useState({ key: "", page: 1 })
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [rankFilter, setRankFilter] = useState<string>("all")
   const [accountFilter, setAccountFilter] = useState("all")
@@ -173,8 +179,10 @@ export function ParticipantDatabaseView() {
         throw new Error(data?.error || `Request failed (${res.status})`)
       }
       setParticipants(data.participants)
+      setLastUpdated(new Date())
+      setLoadError(null)
     } catch (err) {
-      console.error("[v0] Failed to load admin participants:", err)
+      setLoadError(err instanceof Error ? err.message : "Failed to load participants")
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to load participants", variant: "destructive" })
     } finally {
       setLoading(false)
@@ -218,14 +226,8 @@ export function ParticipantDatabaseView() {
 
   // Filter participants
   const filteredParticipants = participants.filter((p) => {
-    const matchesSearch =
-      p.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.phone?.includes(searchQuery) ||
-      p.mobile_number?.includes(searchQuery) ||
-      p.participant_number?.toString().includes(searchQuery) ||
-      p.country?.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = [p.full_name, p.name, p.username, p.email, p.phone, p.mobile_number, p.participant_number, p.serial_number, p.country]
+      .some(value => String(value ?? "").toLowerCase().includes(searchQuery.trim().toLowerCase()))
 
     const matchesStatus = statusFilter === "all" || p.status === statusFilter
     const matchesRank = rankFilter === "all" || p.rank === rankFilter
@@ -237,6 +239,19 @@ export function ParticipantDatabaseView() {
     const matchesAccount = accountFilter === "all" || p.account_type === accountFilter
     return matchesSearch && matchesStatus && matchesRank && matchesActivation && matchesAccount
   })
+
+  const sortedParticipants = [...filteredParticipants].sort((a, b) => {
+    const timestamp = (value?: string | null) => new Date(value || "").getTime() || 0
+    if (sort === "name") return (a.full_name || a.name || a.username || "").localeCompare(b.full_name || b.name || b.username || "")
+    if (sort === "newest") return timestamp(b.created_at) - timestamp(a.created_at)
+    if (sort === "oldest") return timestamp(a.created_at) - timestamp(b.created_at)
+    if (sort === "activity") return timestamp(b.last_seen) - timestamp(a.last_seen)
+    return 0
+  })
+  const filterKey = JSON.stringify([searchQuery, statusFilter, rankFilter, accountFilter, activationFilter, sort, pageSize])
+  const pages = Math.max(1, Math.ceil(sortedParticipants.length / pageSize))
+  const page = pagination.key === filterKey ? Math.min(pagination.page, pages) : 1
+  const visibleParticipants = sortedParticipants.slice((page - 1) * pageSize, page * pageSize)
 
   // Export to CSV
   const exportToCSV = () => {
@@ -316,7 +331,11 @@ export function ParticipantDatabaseView() {
       p.last_active ? new Date(p.last_active).toLocaleString() : "Not available",
     ])
 
-    const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`
+    const csvCell = (value: unknown) => {
+      const text = String(value ?? "")
+      const safe = /^[\s]*[=+\-@\t\r\n]/.test(text) ? `'${text}` : text
+      return `"${safe.replace(/"/g, '""')}"`
+    }
     const csvContent = [headers.map(csvCell).join(","), ...rows.map((row) => row.map(csvCell).join(","))].join("\r\n")
 
     const blob = new Blob(["\uFEFF", csvContent], { type: "text/csv;charset=utf-8" })
@@ -325,17 +344,12 @@ export function ParticipantDatabaseView() {
     a.href = url
     a.download = `participants-database-${new Date().toISOString().split("T")[0]}.csv`
     a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
 
     toast({
       title: "Database Exported",
       description: `${filteredParticipants.length} participants exported to CSV`,
     })
-  }
-
-  // Declare onViewDetails function
-  const onViewDetails = (participant: ParticipantUser) => {
-    console.log("View details for participant:", participant)
-    // Implement the logic to view details here
   }
 
   // Delete participant function
@@ -383,54 +397,49 @@ export function ParticipantDatabaseView() {
     }
   }
 
-  if (loading) {
+  if (loading && !lastUpdated) {
     return (
       <Card className="card-elevated">
         <CardContent className="p-12 flex flex-col items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-600 mb-4" />
-          <p className="text-slate-600">Loading participants database...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Loading participants database...</p>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <div className="relative">
-      {/* Animated Background Effects */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden opacity-30">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-gradient-to-br from-orange-300 to-rose-300 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-40 right-20 w-80 h-80 bg-gradient-to-br from-purple-300 to-violet-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-gradient-to-br from-cyan-300 to-blue-300 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
-      </div>
-
-      <Card className="relative overflow-hidden border-slate-200 bg-white shadow-xl">
-        <CardHeader className="border-b border-slate-200 bg-slate-50 pb-4">
-          <div className="flex items-center justify-between">
+    <div className="participants-workspace min-w-0" data-expanded={expanded}>
+      {/* Animated Background Effects removed to keep the workspace focused. */}
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-border pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <CardTitle className="flex items-center gap-2 text-xl font-bold text-slate-900">
-              <Database className="h-5 w-5 text-blue-700" />
+            <CardTitle className="flex items-center gap-2 text-xl font-bold text-foreground">
+              <Users className="size-5 text-primary" />
               Participants Database
             </CardTitle>
-            <CardDescription className="text-slate-600 mt-1">
-              Complete database of all registered participants with detailed information
+            <CardDescription className="text-muted-foreground mt-1">
+              Find an account, review its status, and manage participant access.
             </CardDescription>
           </div>
-          <Button onClick={exportToCSV} className="bg-blue-700 text-white shadow-sm hover:bg-blue-800">
-            <Download className="h-4 w-4 mr-2" />
-            Export Database
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" disabled={loading} onClick={fetchParticipants}>{loading ? <Loader2 className="animate-spin" /> : <RotateCcw />}{loading ? "Refreshing…" : "Refresh"}</Button>
+            <Button onClick={exportToCSV} disabled={!filteredParticipants.length}><Download />Export filtered CSV</Button>
+          </div>
           </div>
 
+          {loadError && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-foreground">{loadError}. Use Refresh to retry.{lastUpdated ? " Previously loaded records may be out of date." : " Participant data is currently unavailable."}</p>}
           {/* Search and Filters */}
           <div className="flex flex-col gap-3 pt-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               aria-label="Search participants"
-              placeholder="Search participants by name, username, email, phone, country, #number..."
+              placeholder="Search name, email, phone, country, or participant / serial number…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-slate-300 bg-white pl-9 text-slate-900 placeholder:text-slate-500 focus:border-blue-600 focus:ring-blue-600/20"
+              className="pl-9"
             />
           </div>
 
@@ -494,53 +503,41 @@ export function ParticipantDatabaseView() {
           {(searchQuery || statusFilter !== "all" || rankFilter !== "all" || activationFilter !== "all" || accountFilter !== "all") && <Button variant="outline" size="sm" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setRankFilter("all"); setActivationFilter("all"); setAccountFilter("all") }}>Clear all filters</Button>}
         </div>
         {/* Stats Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm transition-shadow hover:shadow-md">
-            <p className="text-xs text-orange-700 font-semibold">Total Records</p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">{participants.length}</p>
-          </div>
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 shadow-sm transition-shadow hover:shadow-md">
-            <p className="text-xs text-emerald-700 font-semibold">Activated</p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-              {participants.filter((p) => p.activation_fee_paid).length}
-            </p>
-          </div>
-          <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 shadow-sm transition-shadow hover:shadow-md">
-            <p className="text-xs text-purple-700 font-semibold">Filtered Results</p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">{filteredParticipants.length}</p>
-          </div>
-          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 shadow-sm transition-shadow hover:shadow-md">
-            <p className="text-xs text-amber-700 font-semibold">Total Volume</p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-              ${participants.reduce((sum, p) => sum + (p.totalContributed || 0), 0).toFixed(0)}
-            </p>
-          </div>
-        </div>
+        <dl className="grid grid-cols-2 gap-4 pt-4 lg:grid-cols-4">
+          {[
+            { label: "Registered accounts", value: participants.length.toLocaleString(), note: "All loaded participants" },
+            { label: "Activation paid", value: participants.filter(p => p.activation_fee_paid).length.toLocaleString(), note: "Across all accounts" },
+            { label: "Matching filters", value: filteredParticipants.length.toLocaleString(), note: "Included in CSV export" },
+            { label: "Total volume", value: `$${participants.reduce((sum, p) => sum + (Number(p.totalContributed) || 0), 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, note: "All loaded participants" },
+          ].map(stat => <div key={stat.label} className="rounded-lg border border-border bg-muted/30 p-4"><dt className="text-sm text-muted-foreground">{stat.label}</dt><dd className="mt-2 text-2xl font-semibold tabular-nums text-foreground">{stat.value}</dd><dd className="mt-1 text-sm text-muted-foreground">{stat.note}</dd></div>)}
+        </dl>
         </CardHeader>
 
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <ParticipantListControls sort={sort} onSort={setSort} pageSize={pageSize} onPageSize={setPageSize} expanded={expanded} onExpanded={setExpanded} />
+          <div role="region" aria-label="Participant records, scroll horizontally for additional columns" tabIndex={0} className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-slate-300 bg-slate-800 hover:bg-slate-800">
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">#</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Serial No</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">User Info</TableHead>
-                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-white md:table-cell">Account Type</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Password / PIN</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Contact</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Location</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Personal</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Wallet</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Activation</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Status</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-white">Activity</TableHead>
-                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-white">Actions</TableHead>
+                <TableRow className="border-b border-border bg-muted hover:bg-muted">
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">#</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Serial No</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">User Info</TableHead>
+                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wide text-muted-foreground md:table-cell">Account Type</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Password / PIN</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Personal</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Wallet</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Activation</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Activity</TableHead>
+                  <TableHead className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {filteredParticipants.map((participant) => (
-                <TableRow key={participant.id} className="border-b border-slate-200 bg-white text-slate-800 transition-colors hover:bg-blue-50/70">
+              {!visibleParticipants.length && <TableRow><TableCell colSpan={13} className="h-40 text-center"><p className="font-medium text-foreground">{loadError ? "Participant data could not be loaded" : participants.length ? "No participants match these filters" : "No participants yet"}</p><p className="mt-2 text-sm text-muted-foreground">{loadError ? "Refresh to try again." : participants.length ? "Try another name or email, or clear the filters above." : "Registered accounts will appear here."}</p></TableCell></TableRow>}
+              {visibleParticipants.map((participant) => (
+                <TableRow key={participant.id} className="border-b border-border bg-card text-card-foreground transition-colors hover:bg-muted/40">
                     {/* Participant Number */}
                     <TableCell>
                       <Badge className="bg-cyan-100 text-cyan-700 border-cyan-200 font-mono text-xs">
@@ -559,15 +556,15 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <p className="font-semibold text-slate-900">{participant.name || "—"}</p>
+                          <button type="button" className="text-left font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-2" onClick={() => { setSelectedParticipant(participant); setShowDetailsModal(true) }}>{participant.full_name || participant.name || participant.username || "View participant"}</button>
                           <span className="inline-flex items-center gap-1 md:hidden">
-                            <span className="text-sm font-medium uppercase tracking-wide text-slate-500">Type:</span>
+                            <span className="text-sm font-medium uppercase tracking-wide text-muted-foreground">Type:</span>
                             <AccountTypeBadge accountType={participant.account_type} appearance="light" />
                           </span>
                         </div>
-                        <p className="text-xs text-violet-600">@{participant.username}</p>
+                        <p className="text-xs text-primary">@{participant.username}</p>
                         <div className="flex items-center gap-1">
-                          {participant.rank ? <UserRankBadge rank={participant.rank} size="sm" showLabel /> : <span className="text-xs text-slate-500">Rank unavailable</span>}
+                          {participant.rank ? <UserRankBadge rank={participant.rank} size="sm" showLabel /> : <span className="text-xs text-muted-foreground">Rank unavailable</span>}
                         </div>
                       </div>
                     </TableCell>
@@ -668,12 +665,12 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center gap-1.5">
-                          <Mail className="h-3 w-3 text-slate-400" />
-                          <span className="text-xs text-slate-700">{participant.email}</span>
+                          <Mail className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-foreground">{participant.email}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <Phone className="h-3 w-3 text-slate-400" />
-                          <span className="text-xs text-slate-700">
+                          <Phone className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-foreground">
                             {participant.mobile_number || (participant.country_code ? `${participant.country_code} ${participant.phone}` : participant.phone) || "—"}
                           </span>
                         </div>
@@ -684,18 +681,18 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="space-y-0.5 text-xs">
                         <div className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-slate-400" />
-                          <span className="font-medium text-slate-900">{participant.country || participant.location || "—"}</span>
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span className="font-medium text-foreground">{participant.country || participant.location || "—"}</span>
                         </div>
-                        {participant.state && <p className="text-slate-600">{participant.state}</p>}
-                        {participant.city && <p className="text-slate-500">{participant.city}</p>}
-                        {participant.postal_code && <p className="text-slate-400">{participant.postal_code}</p>}
+                        {participant.state && <p className="text-muted-foreground">{participant.state}</p>}
+                        {participant.city && <p className="text-muted-foreground">{participant.city}</p>}
+                        {participant.postal_code && <p className="text-muted-foreground">{participant.postal_code}</p>}
                       </div>
                     </TableCell>
 
                     {/* Personal Info */}
                     <TableCell>
-                      <div className="space-y-0.5 text-xs text-slate-700">
+                      <div className="space-y-0.5 text-xs text-foreground">
                         {participant.date_of_birth && <p>DOB: {participant.date_of_birth}</p>}
                         {participant.gender && <p>Gender: {participant.gender}</p>}
                         {participant.occupation && <p>Occupation: {participant.occupation}</p>}
@@ -706,14 +703,16 @@ export function ParticipantDatabaseView() {
                     {/* Wallet */}
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <Wallet className="h-3 w-3 text-slate-400 flex-shrink-0" />
-                        <code className="text-xs text-slate-600 font-mono break-all">
+                        <Wallet className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                        <code className="text-xs text-muted-foreground font-mono break-all">
                           {participant.wallet_address}
                         </code>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-6 w-6 p-0 hover:bg-slate-100 flex-shrink-0"
+                          className="h-8 w-8 p-0 hover:bg-muted flex-shrink-0"
+                          aria-label={`Copy wallet address for ${participant.username || participant.email}`}
+                          disabled={!participant.wallet_address}
                           onClick={() => {
                             navigator.clipboard.writeText(participant.wallet_address)
                             toast({
@@ -722,7 +721,7 @@ export function ParticipantDatabaseView() {
                             })
                           }}
                         >
-                          <Copy className="h-3 w-3 text-slate-400" />
+                          <Copy className="h-3 w-3 text-muted-foreground" />
                         </Button>
                       </div>
                     </TableCell>
@@ -736,8 +735,8 @@ export function ParticipantDatabaseView() {
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Activated
                             </Badge>
-                            <p className="text-[10px] text-slate-500">
-                              {new Date(participant.activation_fee_paid_at || "").toLocaleDateString()}
+                            <p className="text-[10px] text-muted-foreground">
+                              {safeDateTime(participant.activation_fee_paid_at)}
                             </p>
                           </>
                         ) : (
@@ -789,13 +788,13 @@ export function ParticipantDatabaseView() {
                               Online
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-slate-100 px-1.5 py-0.5 rounded">
                               <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
                               Offline
                             </span>
                           )}
-                          <span className="font-semibold text-violet-600">{participant.participation_count}</span>
-                          <span className="text-[10px] text-slate-500">participations</span>
+                          <span className="font-semibold text-primary">{participant.participation_count}</span>
+                          <span className="text-[10px] text-muted-foreground">participations</span>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -803,7 +802,7 @@ export function ParticipantDatabaseView() {
                           <span className="text-amber-600 text-[11px] font-medium">{participant.totalPoints || 0} pts</span>
                         </div>
 
-                        <div className="space-y-0.5 text-[10px] text-slate-500 border-t border-slate-100 pt-1 mt-1">
+                        <div className="space-y-0.5 text-[10px] text-muted-foreground border-t border-slate-100 pt-1 mt-1">
                           {participant.last_login && (
                             <p className="font-medium text-slate-800">
                               Login: <span className="text-blue-600">{safeDateTime(participant.last_login)}</span>
@@ -820,12 +819,12 @@ export function ParticipantDatabaseView() {
                             </p>
                           )}
                           {participant.ip_address && (
-                            <p className="font-mono text-[9px] text-slate-500">
+                            <p className="font-mono text-[9px] text-muted-foreground">
                               IP: {participant.ip_address}
                             </p>
                           )}
                           {participant.created_at && (
-                            <p className="text-slate-400">
+                            <p className="text-muted-foreground">
                               Joined: {new Date(participant.created_at).toLocaleDateString()}
                             </p>
                           )}
@@ -837,11 +836,11 @@ export function ParticipantDatabaseView() {
                     <TableCell className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-violet-100">
+                          <Button variant="outline" size="sm" aria-label={`Actions for ${participant.username || participant.email}`}><span>Actions</span>
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-white">
+                        <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => {
@@ -933,23 +932,16 @@ export function ParticipantDatabaseView() {
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between p-4 border-t border-slate-200">
-            <p className="text-sm text-slate-500">
-              Showing <span className="font-medium">{filteredParticipants.length}</span> of{" "}
-              <span className="font-medium">{participants.length}</span> participants
-            </p>
-            <p className="text-sm text-slate-500">
-              Database last updated: <span className="font-medium">{new Date().toLocaleString()}</span>
-            </p>
-        </div>
+          <ParticipantPagination page={page} pages={pages} count={filteredParticipants.length} pageSize={pageSize} onPage={value => setPagination({ key: filterKey, page: value })} />
+          <p className="px-4 pb-4 text-sm text-muted-foreground">{lastUpdated ? `Last refreshed ${lastUpdated.toLocaleTimeString()} · Refreshes automatically every 2 minutes` : "No successful refresh yet"}. CSV includes all matching participants, not just this page.</p>
       </CardContent>
     </Card>
 
     {/* Participant Details Modal */}
     <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white via-orange-50/30 to-rose-50/30">
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto bg-card text-card-foreground">
         <DialogHeader>
-          <DialogTitle className="text-2xl bg-gradient-to-r from-orange-600 to-rose-600 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl text-foreground">
             Participant Details
           </DialogTitle>
           <DialogDescription>
@@ -960,36 +952,36 @@ export function ParticipantDatabaseView() {
         {selectedParticipant && (
           <div className="space-y-6">
             {/* User Info Section */}
-            <div className="bg-gradient-to-br from-orange-50 to-rose-50 rounded-xl p-4 border border-orange-200">
+            <div className="rounded-xl p-4 border border-border bg-muted/30 text-foreground">
               <h3 className="font-bold text-orange-600 mb-3 flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 User Information
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-500">Full Name</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.full_name || selectedParticipant.name || "Not provided"}</p>
+                  <p className="text-muted-foreground">Full Name</p>
+                  <p className="font-semibold text-foreground">{selectedParticipant.full_name || selectedParticipant.name || "Not provided"}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Username</p>
-                  <p className="font-semibold text-slate-900">@{selectedParticipant.username}</p>
+                  <p className="text-muted-foreground">Username</p>
+                  <p className="font-semibold text-foreground">@{selectedParticipant.username}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Email</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.email}</p>
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="font-semibold text-foreground">{selectedParticipant.email}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Mobile Number</p>
-                  <p className="font-semibold text-slate-900">
+                  <p className="text-muted-foreground">Mobile Number</p>
+                  <p className="font-semibold text-foreground">
                     {selectedParticipant.mobile_number || (selectedParticipant.country_code ? `${selectedParticipant.country_code} ${selectedParticipant.phone}` : selectedParticipant.phone) || "Not provided"}
                   </p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-slate-500">Full Address</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.full_address || "Not provided"}</p>
+                  <p className="text-muted-foreground">Full Address</p>
+                  <p className="font-semibold text-foreground">{selectedParticipant.full_address || "Not provided"}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Profile Status</p>
+                  <p className="text-muted-foreground">Profile Status</p>
                   {selectedParticipant.details_completed ? (
                     <Badge className="bg-green-100 text-green-700 border-green-200">
                       <CheckCircle className="h-3 w-3 mr-1" />
@@ -1006,33 +998,33 @@ export function ParticipantDatabaseView() {
             </div>
 
             {/* Financial Info */}
-            <div className="bg-gradient-to-br from-emerald-50 to-cyan-50 rounded-xl p-4 border border-emerald-200">
+            <div className="rounded-xl p-4 border border-border bg-muted/30 text-foreground">
               <h3 className="font-bold text-emerald-600 mb-3 flex items-center gap-2">
                 <Wallet className="h-4 w-4" />
                 Financial Information
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-500">Wallet Balance</p>
+                  <p className="text-muted-foreground">Wallet Balance</p>
                   <p className="font-bold text-emerald-600">${selectedParticipant.wallet_balance || 0}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Total Contributed</p>
+                  <p className="text-muted-foreground">Total Contributed</p>
                   <p className="font-bold text-cyan-600">${selectedParticipant.totalContributed || 0}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Total Points</p>
+                  <p className="text-muted-foreground">Total Points</p>
                   <p className="font-bold text-amber-600">{selectedParticipant.totalPoints || 0}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Current Rank</p>
+                  <p className="text-muted-foreground">Current Rank</p>
                   <Badge className="bg-violet-100 text-violet-700">
                     {selectedParticipant.current_rank || "Bronze"}
                   </Badge>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-slate-500">BEP20 Payout Address</p>
-                  <code className="font-mono text-xs text-slate-900 break-all">
+                  <p className="text-muted-foreground">BEP20 Payout Address</p>
+                  <code className="font-mono text-xs text-foreground break-all">
                     {selectedParticipant.wallet_address || selectedParticipant.bep20_wallet_address || "Not provided"}
                   </code>
                 </div>
@@ -1040,22 +1032,22 @@ export function ParticipantDatabaseView() {
             </div>
 
             {/* Location & Status */}
-            <div className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-200">
+            <div className="rounded-xl p-4 border border-border bg-muted/30 text-foreground">
               <h3 className="font-bold text-purple-600 mb-3 flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Location & Status
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-500">Country</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.country}</p>
+                  <p className="text-muted-foreground">Country</p>
+                  <p className="font-semibold text-foreground">{selectedParticipant.country}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">State</p>
-                  <p className="font-semibold text-slate-900">{selectedParticipant.state || "N/A"}</p>
+                  <p className="text-muted-foreground">State</p>
+                  <p className="font-semibold text-foreground">{selectedParticipant.state || "N/A"}</p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Activation Status</p>
+                  <p className="text-muted-foreground">Activation Status</p>
                   {selectedParticipant.activation_fee_paid ? (
                     <Badge className="bg-green-100 text-green-700">
                       <CheckCircle className="h-3 w-3 mr-1" />
@@ -1068,7 +1060,7 @@ export function ParticipantDatabaseView() {
                   )}
                 </div>
                 <div>
-                  <p className="text-slate-500">Account Status</p>
+                  <p className="text-muted-foreground">Account Status</p>
                   <Badge className={selectedParticipant.is_active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}>
                     {selectedParticipant.is_active ? "Active" : "Inactive"}
                   </Badge>
@@ -1077,7 +1069,7 @@ export function ParticipantDatabaseView() {
             </div>
 
             {/* Access & Activity Details */}
-            <div className="bg-gradient-to-br from-slate-50 to-indigo-50/50 rounded-xl p-4 border border-indigo-200/60">
+            <div className="rounded-xl p-4 border border-border bg-muted/30 text-foreground">
               <h3 className="font-bold text-indigo-700 mb-3 flex items-center justify-between">
                 <span className="flex items-center gap-2">
                   <Activity className="h-4 w-4" />
@@ -1088,39 +1080,39 @@ export function ParticipantDatabaseView() {
                     Online Now
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-slate-500 border-slate-300">
+                  <Badge variant="outline" className="text-muted-foreground border-slate-300">
                     Offline
                   </Badge>
                 )}
               </h3>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-slate-500">Last Login</p>
-                  <p className="font-semibold text-slate-900">
+                  <p className="text-muted-foreground">Last Login</p>
+                  <p className="font-semibold text-foreground">
                     {safeDateTime(selectedParticipant.last_login)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Last Active / Heartbeat</p>
+                  <p className="text-muted-foreground">Last Active / Heartbeat</p>
                   <p className="font-semibold text-emerald-700">
                     {safeDateTime(selectedParticipant.last_seen || selectedParticipant.last_active)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Total Active Duration</p>
+                  <p className="text-muted-foreground">Total Active Duration</p>
                   <p className="font-semibold text-purple-700">
                     {formatActiveDuration(selectedParticipant.total_active_seconds)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">IP Address</p>
-                  <p className="font-mono font-semibold text-slate-900 break-all">
+                  <p className="text-muted-foreground">IP Address</p>
+                  <p className="font-mono font-semibold text-foreground break-all">
                     {selectedParticipant.ip_address || "Not available"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-slate-500">Registration Date</p>
-                  <p className="font-semibold text-slate-900">
+                  <p className="text-muted-foreground">Registration Date</p>
+                  <p className="font-semibold text-foreground">
                     {safeDateTime(selectedParticipant.created_at)}
                   </p>
                 </div>
@@ -1155,7 +1147,7 @@ export function ParticipantDatabaseView() {
 
     {/* Funded account reactivation modal */}
     <Dialog open={showReactivationModal} onOpenChange={setShowReactivationModal}>
-      <DialogContent className="max-w-md border-blue-200 bg-gradient-to-br from-white to-blue-50/40">
+      <DialogContent className="max-w-md bg-card text-card-foreground">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-blue-700">
             <RotateCcw className="h-5 w-5" />
@@ -1168,27 +1160,27 @@ export function ParticipantDatabaseView() {
 
         {reactivationParticipant && (
           <div className="space-y-4 py-2">
-            <div className="rounded-lg border border-blue-100 bg-white p-3 text-sm">
+            <div className="rounded-lg border border-blue-100 bg-card text-card-foreground p-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-slate-500">Account</span>
+                <span className="text-muted-foreground">Account</span>
                 <span className="font-semibold text-slate-800">{reactivationParticipant.email}</span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-slate-500">Current balance</span>
+                <span className="text-muted-foreground">Current balance</span>
                 <span className="font-semibold text-slate-800">${Number(reactivationParticipant.account_balance || 0).toFixed(2)}</span>
               </div>
               <div className="mt-2 flex items-center justify-between">
-                <span className="text-slate-500">Status</span>
+                <span className="text-muted-foreground">Status</span>
                 <Badge className="bg-red-100 text-red-700">Breach locked</Badge>
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="reactivation-amount" className="text-sm font-medium text-slate-700">
+              <label htmlFor="reactivation-amount" className="text-sm font-medium text-foreground">
                 Amount to add directly
               </label>
               <div className="relative">
-                <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <DollarSign className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="reactivation-amount"
                   type="number"
@@ -1203,7 +1195,7 @@ export function ParticipantDatabaseView() {
                   }}
                 />
               </div>
-              <p className="text-xs leading-relaxed text-slate-500">
+              <p className="text-xs leading-relaxed text-muted-foreground">
                 The server will reject amounts that do not restore the account above its 2% drawdown floor.
               </p>
             </div>
@@ -1228,7 +1220,7 @@ export function ParticipantDatabaseView() {
 
     {/* OTP Verification Modal */}
     <Dialog open={showOtpModal} onOpenChange={setShowOtpModal}>
-      <DialogContent className="max-w-md bg-gradient-to-br from-white to-green-50/40 border-green-200">
+      <DialogContent className="max-w-md bg-card text-card-foreground">
         <DialogHeader>
           <DialogTitle className="text-xl text-green-700 flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
@@ -1243,21 +1235,21 @@ export function ParticipantDatabaseView() {
         {otpParticipant && (
           <div className="space-y-4 py-2">
             {/* Participant Info */}
-            <div className="bg-white rounded-xl p-4 border border-green-200 space-y-2 text-sm">
+            <div className="bg-card text-card-foreground rounded-xl p-4 border border-green-200 space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-500">Name</span>
+                <span className="text-muted-foreground">Name</span>
                 <span className="font-semibold text-slate-800">{otpParticipant.full_name || otpParticipant.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Email</span>
+                <span className="text-muted-foreground">Email</span>
                 <span className="font-semibold text-slate-800">{otpParticipant.email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Mobile</span>
+                <span className="text-muted-foreground">Mobile</span>
                 <span className="font-semibold text-slate-800">{otpParticipant.mobile_number || otpParticipant.phone || "N/A"}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-500">OTP Status</span>
+                <span className="text-muted-foreground">OTP Status</span>
                 {otpParticipant.otp_verified ? (
                   <Badge className="bg-green-100 text-green-700 border-green-200">
                     <CheckCircle className="h-3 w-3 mr-1" /> Already Verified
@@ -1273,7 +1265,7 @@ export function ParticipantDatabaseView() {
 
             {/* OTP Input */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Enter OTP to Verify</label>
+              <label className="text-sm font-medium text-foreground">Enter OTP to Verify</label>
               <Input
                 value={otpInput}
                 onChange={(e) => setOtpInput(e.target.value)}
@@ -1311,13 +1303,13 @@ export function ParticipantDatabaseView() {
 
     {/* Delete Confirmation Dialog */}
     <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
-      <DialogContent className="max-w-md bg-gradient-to-br from-white to-red-50/30 border-red-200">
+      <DialogContent className="max-w-md bg-card text-card-foreground">
         <DialogHeader>
           <DialogTitle className="text-2xl text-red-600 flex items-center gap-2">
             <AlertTriangle className="h-6 w-6" />
             Confirm Permanent Deletion
           </DialogTitle>
-          <DialogDescription className="text-slate-700">
+          <DialogDescription className="text-foreground">
             This action cannot be undone. All participant data will be permanently deleted from the database.
           </DialogDescription>
         </DialogHeader>
@@ -1325,16 +1317,16 @@ export function ParticipantDatabaseView() {
         {deletingParticipantId && (
           <div className="space-y-4 py-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
-              <p className="text-sm text-slate-700">
+              <p className="text-sm text-foreground">
                 <span className="font-semibold">Participant:</span> {participants.find(p => p.id === deletingParticipantId)?.name || "Unknown"}
               </p>
-              <p className="text-sm text-slate-700">
+              <p className="text-sm text-foreground">
                 <span className="font-semibold">Email:</span> {participants.find(p => p.id === deletingParticipantId)?.email}
               </p>
               <p className="text-sm text-red-600 font-semibold">
                 All related data will be deleted including:
               </p>
-              <ul className="text-xs text-slate-600 list-disc list-inside space-y-1">
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
                 <li>Profile and account information</li>
                 <li>Payment submissions and payouts</li>
                 <li>Transactions and balances</li>
