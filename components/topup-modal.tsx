@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import QRCode from "qrcode"
@@ -38,6 +38,15 @@ interface TopUpModalProps {
 type Step = "form" | "submitting" | "success"
 type PromoDiscountType = "percent" | "fiat" | "inr"
 type AppliedPromo = { code: string; discountType: PromoDiscountType; discountValue: number }
+type FundingActivityPayload = { event: "add_funds_opened" } | { event: "funding_qr_created"; paymentMethod: "crypto" | "inr"; network?: string; amount?: number }
+
+function logFundingActivity(payload: FundingActivityPayload) {
+  void participantFetch("/api/participant/activity", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  }).catch(() => undefined)
+}
 
 function calculatePromoDiscount(baseAmount: number, promo: AppliedPromo, inrRate: number) {
   const discount = promo.discountType === "percent"
@@ -104,6 +113,19 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const [qrLoading, setQrLoading] = useState(false)
   const [pendingRequests, setPendingRequests] = useState<Array<{ id: string; amount: number; transaction_id: string; payment_method: string; status: string; created_at: string; promo_code: string | null; promo_bonus_amount: number | null }>>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
+  const loggedQrEventsRef = useRef(new Set<string>())
+  const loggedOpenRef = useRef(false)
+
+  useEffect(() => {
+    if (!isOpen) {
+      loggedOpenRef.current = false
+      return
+    }
+    if (loggedOpenRef.current) return
+    loggedOpenRef.current = true
+    loggedQrEventsRef.current.clear()
+    logFundingActivity({ event: "add_funds_opened" })
+  }, [isOpen])
 
   // Fetch BEP20 address from DB when modal opens
   useEffect(() => {
@@ -195,7 +217,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
   const selectedWalletAddress = network === "TRC20" ? walletAddresses.TRC20 : network === "ERC20" ? walletAddresses.ERC20 : walletAddresses.BEP20
 
   useEffect(() => {
-    if (paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+    if (!isOpen || paymentMethod !== "inr" || !inrDetails.upiId || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
       setInrQrDataUrl(null)
       setInrQrExpiresAt(null)
       setInrSecondsRemaining(0)
@@ -206,12 +228,23 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     const promoDiscountAmount = appliedPromo ? calculatePromoDiscount(rawAmount, appliedPromo, inrRate) : 0
     const discountedAmount = Number(Math.max(0, rawAmount - promoDiscountAmount).toFixed(2))
     const inrAmount = discountedAmount * inrRate
+    setInrQrDataUrl(null)
     setInrQrExpiresAt(expiresAt)
     setInrSecondsRemaining(5 * 60)
+    let cancelled = false
     QRCode.toDataURL(`upi://pay?pa=${encodeURIComponent(inrDetails.upiId)}&pn=${encodeURIComponent(inrDetails.holderName || "Elite Fund")}&am=${inrAmount.toFixed(2)}&cu=INR`, { width: 220, margin: 1 })
-      .then(setInrQrDataUrl)
-      .catch(() => setInrQrDataUrl(null))
-  }, [paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, appliedPromo, inrRate])
+      .then((url) => {
+        if (cancelled) return
+        setInrQrDataUrl(url)
+        const key = `inr:${amount}:${url}`
+        if (!loggedQrEventsRef.current.has(key)) {
+          loggedQrEventsRef.current.add(key)
+          logFundingActivity({ event: "funding_qr_created", paymentMethod: "inr", amount: Number(amount) })
+        }
+      })
+      .catch(() => { if (!cancelled) setInrQrDataUrl(null) })
+    return () => { cancelled = true }
+  }, [isOpen, paymentMethod, inrDetails.upiId, inrDetails.holderName, amount, appliedPromo, inrRate])
 
   useEffect(() => {
     if (!inrQrExpiresAt) return
@@ -226,8 +259,9 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
 
   // Generate a real, scannable QR code for the selected deposit address.
   useEffect(() => {
-    if (!selectedWalletAddress) {
+    if (!isOpen || !selectedWalletAddress) {
       setQrDataUrl(null)
+      setQrLoading(false)
       return
     }
     let cancelled = false
@@ -238,7 +272,16 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
       color: { dark: "#0f2438", light: "#ffffff" },
     })
       .then((url) => {
-        if (!cancelled) setQrDataUrl(url)
+        if (!cancelled) {
+          setQrDataUrl(url)
+          if (isOpen && paymentMethod === "crypto") {
+            const key = `crypto:${network}:${amount}:${fundingMode}:${url}`
+            if (!loggedQrEventsRef.current.has(key)) {
+              loggedQrEventsRef.current.add(key)
+              logFundingActivity({ event: "funding_qr_created", paymentMethod: "crypto", network: network === "ALL" ? "BEP20" : network, amount: Number(amount) })
+            }
+          }
+        }
       })
       .catch(() => {
         if (!cancelled) setQrDataUrl(null)
@@ -249,7 +292,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     return () => {
       cancelled = true
     }
-  }, [selectedWalletAddress])
+  }, [isOpen, selectedWalletAddress, paymentMethod, network, amount, fundingMode])
 
   const parsedAmount = parseFloat(amount)
   const promoDiscountAmount = appliedPromo && Number.isFinite(parsedAmount) && parsedAmount > 0
