@@ -66,6 +66,32 @@ function formatIpLocation(data: IpIntelligence | null | undefined) {
   return [data?.city, data?.region, data?.country].filter(Boolean).join(", ") || "Not available"
 }
 
+export function IpLocationDetails({ ipAddress }: { ipAddress?: string | null }) {
+  const locationRef = useRef<HTMLDivElement>(null)
+  const [isVisible, setIsVisible] = useState(false)
+  const ip = ipAddress?.trim() || ""
+  const lookupUrl = ip ? `/api/admin/ip-intelligence?ip=${encodeURIComponent(ip)}` : null
+  const { data, error, isLoading } = useSWR(isVisible ? lookupUrl : null, fetchIpIntelligence, {
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+  })
+
+  useEffect(() => {
+    const element = locationRef.current
+    if (!element || !ip || isVisible) return
+    return observeWhenVisible(element, () => setIsVisible(true))
+  }, [ip, isVisible])
+
+  const location = error ? "Lookup unavailable" : isLoading ? "Looking up location…" : formatIpLocation(data)
+
+  return (
+    <div ref={locationRef} className="flex min-w-0 flex-col gap-1" title="Approximate location inferred from the IP address; VPNs and proxies can affect accuracy.">
+      <code className="break-all font-mono text-xs text-foreground">{ip || "IP not available"}</code>
+      <span className="text-xs text-muted-foreground">{ip ? location : "Location unavailable"}</span>
+    </div>
+  )
+}
+
 export function IpIntelligenceCells({ ipAddress }: { ipAddress?: string | null }) {
   const locationCellRef = useRef<HTMLTableCellElement>(null)
   const [isVisible, setIsVisible] = useState(false)

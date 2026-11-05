@@ -52,17 +52,25 @@ export async function GET(request: NextRequest) {
         sess.last_session_login,
         sess.last_session_activity,
         sess.last_ip_address,
+        security.last_seen_ip AS profile_last_ip,
         sess.total_active_seconds
        FROM participants p
        LEFT JOIN LATERAL (
          SELECT
            MAX(ps.created_at) AS last_session_login,
            MAX(ps.last_activity) AS last_session_activity,
-           (ARRAY_AGG(ps.ip_address ORDER BY ps.last_activity DESC NULLS LAST, ps.created_at DESC))[1] AS last_ip_address,
+           (ARRAY_AGG(ps.ip_address ORDER BY ps.last_activity DESC NULLS LAST, ps.created_at DESC) FILTER (WHERE ps.ip_address IS NOT NULL))[1] AS last_ip_address,
            COALESCE(SUM(EXTRACT(EPOCH FROM (COALESCE(ps.last_activity, ps.created_at) - ps.created_at))), 0)::bigint AS total_active_seconds
          FROM participant_sessions ps
          WHERE ps.participant_id = p.id
        ) sess ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT last_seen_ip
+         FROM participant_security_profiles
+         WHERE LOWER(participant_email) = LOWER(p.email)
+         ORDER BY last_seen_at DESC
+         LIMIT 1
+       ) security ON TRUE
        WHERE p.is_deleted IS NOT TRUE
        ORDER BY p.created_at DESC`
     )
@@ -93,7 +101,7 @@ export async function GET(request: NextRequest) {
         last_login: lastLoginTime,
         last_active: lastActiveTime,
         last_seen: lastActiveTime,
-        ip_address: p.last_ip_address || null,
+        ip_address: p.last_ip_address || p.profile_last_ip || null,
         total_active_seconds: Number(p.total_active_seconds || 0),
         account_type: p.account_type || null,
         funded_amount: p.account_balance == null ? null : Number(p.account_balance),
