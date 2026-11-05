@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -37,27 +37,6 @@ export function WalletConnectDialog({
   const [isSending, setIsSending] = useState(false)
   const [error, setError] = useState("")
   const [txHash, setTxHash] = useState("")
-
-  useEffect(() => {
-    if (open) {
-      checkWalletConnection()
-    }
-  }, [open])
-
-  const checkWalletConnection = async () => {
-    if (typeof window !== "undefined" && typeof window.ethereum !== "undefined") {
-      try {
-        const accounts = await window.ethereum.request({ method: "eth_accounts" })
-        if (accounts.length > 0) {
-          setWalletAddress(accounts[0])
-          setIsConnected(true)
-        }
-      } catch (err) {
-        // Silently fail - wallet not connected yet
-        console.log("[v0] Wallet not connected yet")
-      }
-    }
-  }
 
   const connectWallet = async () => {
     setError("")

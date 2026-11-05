@@ -56,6 +56,7 @@ import { AdminTwoFactorSetup } from "@/components/admin/two-factor-setup"
   import { TraderBehaviourPanel } from "@/components/admin/trader-behaviour-panel"
   import { ParticipantManagementPanel } from "@/components/admin/participant-management-panel"
   import { SecurityOperationsPanel } from "@/components/admin/security-operations-panel"
+import { ParticipantActivityMonitor } from "@/components/admin/participant-activity-monitor"
   import Loading from "./loading"
   import { ErrorBoundary } from "@/components/error-boundary"
   import { CreateAdminDialog } from "@/components/create-admin-dialog"
@@ -147,6 +148,7 @@ export default function AdminDashboard() {
     { id: "overview", label: "Overview", icon: LayoutDashboard, section: "MAIN MENU" },
     { id: "trading-terminal", label: "Trading Terminal Control", icon: Activity, section: "MAIN MENU" },
     { id: "participants", label: "Participants", icon: Users, section: "MAIN MENU" },
+    { id: "participant-activity", label: "Participant Activity", icon: Activity, section: "MAIN MENU" },
     { id: "revenue-tracker", label: "Revenue Tracker", icon: TrendingUp, section: "MAIN MENU" },
     { id: "all-payouts", label: "All Payout Records", icon: Wallet, section: "MAIN MENU" },
     { id: "all-ledger", label: "All Participants Ledger", icon: Database, section: "MAIN MENU" },
@@ -184,6 +186,8 @@ export default function AdminDashboard() {
         return <SupportTicketsPanel />
       case "participants":
         return <ParticipantDatabaseView />
+      case "participant-activity":
+        return <ParticipantActivityMonitor />
       case "database":
         return <ComprehensiveDatabaseView />
       case "topup-requests":
