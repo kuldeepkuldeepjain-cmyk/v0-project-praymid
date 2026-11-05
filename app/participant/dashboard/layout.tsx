@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import type { Metadata } from "next"
 import { Suspense } from "react"
 import { DashboardHeartbeat, DesktopDashboardNavigation } from "@/components/participant-dashboard-interactions"
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt"
 
 export const metadata: Metadata = {
   title: "Your trading workspace",
@@ -14,6 +15,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="terminal-page min-h-screen min-h-dvh" style={{ background: "var(--terminal-graphite-bg)" }}>
       <DashboardHeartbeat />
+      <PwaInstallPrompt />
       <div className="fixed inset-0 pointer-events-none" style={{ background: "var(--terminal-graphite-bg)" }} />
 
       {/* Mount account content once; CSS switches the navigation at the breakpoint. */}
