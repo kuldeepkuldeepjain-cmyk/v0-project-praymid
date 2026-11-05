@@ -32,6 +32,7 @@ import { DashboardChallengeOffer } from "@/components/dashboard-challenge-offer"
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
+import type { CoachLaunch } from "@/lib/trade-coach"
 
 
 
@@ -1506,6 +1507,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const [coachLaunch, setCoachLaunch] = useState<CoachLaunch | null>(null)
+  const openCoach = (mode: CoachLaunch["mode"]) => {
+    setCoachLaunch({ id: Date.now(), mode, pair: "EUR/USD", timeframe: "1H" })
+    setIsChatOpen(true)
+  }
   const [queuePosition, setQueuePosition] = useState(47)
   const [queueData, setQueueData] = useState<any>(null)
   const [showPinSetup, setShowPinSetup] = useState(false)
@@ -2203,10 +2209,10 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                   </div>
                 </div>
                 <div className="flex w-full shrink-0 flex-col gap-2 sm:w-auto sm:flex-row lg:flex-col">
-                  <button type="button" onClick={() => setIsChatOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition hover:brightness-110 active:scale-[0.98]" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}>
+                  <button type="button" onClick={() => openCoach("plan")} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-bold transition hover:brightness-110 active:scale-[0.98]" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}>
                     <Sparkles className="size-4" aria-hidden="true" /> Ask AI to guide me
                   </button>
-                  <button type="button" onClick={() => setIsChatOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold text-slate-300 transition hover:text-white" style={{ borderColor: "var(--terminal-graphite-border)" }}>
+                  <button type="button" onClick={() => openCoach("risk")} className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-4 text-sm font-bold text-slate-300 transition hover:text-white" style={{ borderColor: "var(--terminal-graphite-border)" }}>
                     <ShieldCheck className="size-4" aria-hidden="true" /> Open risk checklist
                   </button>
                 </div>
@@ -2598,7 +2604,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       </Button>
 
       {/* AI Chat Dialog */}
-      <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} />
+      <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} launch={coachLaunch} />
     </div>
   )
 }
