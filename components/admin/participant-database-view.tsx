@@ -73,6 +73,7 @@ export function ParticipantDatabaseView() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [rankFilter, setRankFilter] = useState<string>("all")
+  const [accountFilter, setAccountFilter] = useState("all")
   const [activationFilter, setActivationFilter] = useState<string>("all")
   const [selectedParticipant, setSelectedParticipant] = useState<ParticipantUser | null>(null)
   const [showDetailsModal, setShowDetailsModal] = useState(false)
@@ -233,7 +234,8 @@ export function ParticipantDatabaseView() {
       (activationFilter === "activated" && p.activation_fee_paid) ||
       (activationFilter === "pending" && !p.activation_fee_paid)
 
-    return matchesSearch && matchesStatus && matchesRank && matchesActivation
+    const matchesAccount = accountFilter === "all" || p.account_type === accountFilter
+    return matchesSearch && matchesStatus && matchesRank && matchesActivation && matchesAccount
   })
 
   // Export to CSV
@@ -424,6 +426,7 @@ export function ParticipantDatabaseView() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-orange-400" />
             <Input
+              aria-label="Search participants"
               placeholder="Search participants by name, username, email, phone, country, #number..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -431,7 +434,14 @@ export function ParticipantDatabaseView() {
             />
           </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-sm">
+                Account
+                <select aria-label="Account type" value={accountFilter} onChange={event => setAccountFilter(event.target.value)} className="rounded-md border border-input bg-background px-3 py-2 text-foreground">
+                  <option value="all">All account types</option>
+                  {Array.from(new Set(participants.map(p => p.account_type).filter((type): type is string => typeof type === "string" && type.length > 0))).sort().map(type => <option key={type} value={type}>{type}</option>)}
+                </select>
+              </label>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -479,6 +489,10 @@ export function ParticipantDatabaseView() {
             </div>
           </div>
 
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-3">
+          <p role="status" className="text-sm">{filteredParticipants.length} of {participants.length} participants · Export uses these filters</p>
+          {(searchQuery || statusFilter !== "all" || rankFilter !== "all" || activationFilter !== "all" || accountFilter !== "all") && <Button variant="outline" size="sm" onClick={() => { setSearchQuery(""); setStatusFilter("all"); setRankFilter("all"); setActivationFilter("all"); setAccountFilter("all") }}>Clear all filters</Button>}
+        </div>
         {/* Stats Summary */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-sm transition-shadow hover:shadow-md">
