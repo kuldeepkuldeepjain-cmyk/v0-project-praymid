@@ -1,5 +1,75 @@
 @import "tailwindcss";
 
+.participant-home-workspace {
+  --font-sans: var(--font-inter), Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-sans);
+  --background: var(--terminal-graphite-bg);
+  --foreground: var(--terminal-graphite-text);
+  --card: var(--terminal-graphite-surface);
+  --card-foreground: var(--foreground);
+  --primary: var(--brand-primary);
+  --primary-foreground: var(--background);
+  --muted: var(--card);
+  --muted-foreground: var(--terminal-graphite-muted);
+  --secondary: color-mix(in srgb, var(--primary) 8%, var(--card));
+  --secondary-foreground: var(--primary);
+  --accent: color-mix(in srgb, var(--primary) 12%, var(--card));
+  --accent-foreground: var(--foreground);
+  --border: color-mix(in srgb, var(--muted-foreground) 18%, transparent);
+  --input: var(--border);
+  --ring: var(--primary);
+  color: var(--foreground);
+}
+.participant-home-eyebrow { display: flex; align-items: center; gap: .5rem; color: var(--primary); font-size: .875rem; font-weight: 500; line-height: 1.5; letter-spacing: .06em; }
+.participant-home-text-link { display: inline-flex; align-items: center; gap: .5rem; color: var(--muted-foreground); font-size: .875rem; transition: color .2s; }
+.participant-home-text-link:hover { color: var(--primary); }
+.participant-home-top-grid { display: grid; gap: 1rem; min-width: 0; }
+.participant-vault-hero { position: relative; isolation: isolate; overflow: hidden; min-width: 0; border: 1px solid var(--border); border-radius: 1.5rem; background: var(--background); }
+.participant-vault-art { z-index: -2; object-fit: cover; object-position: 63% center; opacity: .7; }
+.participant-vault-hero::after { position: absolute; z-index: -1; inset: 0; content: ""; background: linear-gradient(90deg, var(--background) 0%, color-mix(in srgb, var(--background) 88%, transparent) 32%, color-mix(in srgb, var(--background) 15%, transparent) 100%); }
+.participant-vault-copy { display: flex; min-height: 340px; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 1.5rem; padding: 1.5rem; }
+.participant-home-wallet { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; gap: 1.5rem; padding: 1.5rem; border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent); border-radius: 1.5rem; background: var(--card); box-shadow: inset 0 1px color-mix(in srgb, var(--primary) 10%, transparent); }
+.participant-home-balance { overflow-wrap: anywhere; font-size: clamp(1.75rem, 4vw, 2.5rem); font-weight: 500; letter-spacing: -.055em; line-height: 1.25; font-variant-numeric: tabular-nums; }
+.participant-home-wallet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.participant-home-workspace [data-slot="badge"] { font-size: .875rem; font-weight: 400; border-radius: 2rem; padding: .25rem .625rem; }
+.participant-home-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: hidden; border: 1px solid var(--border); border-radius: 1.25rem; background: var(--card); }
+.participant-home-metric { display: flex; min-width: 0; flex-direction: column; gap: .75rem; padding: 1.25rem; }
+.participant-home-metric:nth-child(even) { border-left: 1px solid var(--border); }
+.participant-home-metric:nth-child(n+3) { border-top: 1px solid var(--border); }
+.participant-home-shortcuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.participant-home-shortcut { display: flex; min-width: 0; flex-direction: column; gap: 1.5rem; border: 1px solid var(--border); border-radius: 1rem; padding: 1rem; background: var(--card); color: var(--foreground); transition: border-color .2s, background .2s, transform .2s; }
+.participant-home-shortcut:hover { border-color: color-mix(in srgb, var(--primary) 50%, transparent); background: var(--secondary); transform: translateY(-3px); }
+.participant-home-icon { display: flex; width: 2.5rem; height: 2.5rem; flex: 0 0 auto; align-items: center; justify-content: center; border: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); border-radius: .75rem; color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, transparent); }
+.participant-home-panel { display: flex; min-width: 0; flex-direction: column; gap: 1.5rem; border: 1px solid var(--border); border-radius: 1.25rem; padding: 1.5rem; background: var(--card); color: var(--foreground); }
+.participant-home-guide-row { display: flex; align-items: center; gap: .875rem; min-height: 5.5rem; border-bottom: 1px solid var(--border); padding: 1rem 0; transition: color .2s; }
+.participant-home-guide-row:last-child { border-bottom: 0; }
+.participant-home-guide-row:hover { color: var(--primary); }
+.participant-home-perspective { justify-content: space-between; background: color-mix(in srgb, var(--primary) 4%, var(--card)); }
+.participant-home-workspace a:focus-visible, .participant-home-workspace button:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; }
+@media (min-width: 640px) {
+  .participant-vault-copy { padding: 2rem; min-height: 365px; }
+  .participant-home-shortcuts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .participant-home-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .participant-home-metric:nth-child(n+3) { border-top: 0; }
+  .participant-home-metric + .participant-home-metric { border-left: 1px solid var(--border); }
+}
+@media (min-width: 1280px) {
+  .participant-home-top-grid { grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr); }
+  .participant-home-shortcuts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .participant-home-workspace > * { animation: participant-home-reveal .5s ease-out both; }
+  .participant-home-workspace > :nth-child(2) { animation-delay: .06s; }
+  .participant-home-workspace > :nth-child(3) { animation-delay: .12s; }
+  .participant-home-workspace > :nth-child(n+4) { animation-delay: .18s; }
+  @keyframes participant-home-reveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .participant-home-workspace *, .participant-home-workspace *::before, .participant-home-workspace *::after { animation: none !important; transition: none !important; }
+  .participant-home-shortcut:hover { transform: none; }
+}
+
 :root {
   --brand-primary: #62a9e8;
   --brand-primary-foreground: #080e17;

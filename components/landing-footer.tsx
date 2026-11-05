@@ -16,9 +16,10 @@ export function LandingFooter() {
           <div>
             <h2 className="elite-footer-title">Explore</h2>
             <ul className="elite-footer-links">
-              <li><Link href="#features">Platform features</Link></li>
-              <li><Link href="#programs">Challenge planner</Link></li>
-              <li><Link href="#how-it-works">How it works</Link></li>
+              <li><Link href="/#features">Platform features</Link></li>
+              <li><Link href="/#programs">Challenge planner</Link></li>
+              <li><Link href="/#how-it-works">How it works</Link></li>
+              <li><Link href="/funded-trading-accounts">Funded trading guide</Link></li>
               <li><Link href="/leaderboard">Leaderboard</Link></li>
             </ul>
           </div>
@@ -27,7 +28,7 @@ export function LandingFooter() {
             <ul className="elite-footer-links">
               <li><Link href="/participant/register">Create an account</Link></li>
               <li><Link href="/participant/login">Log in</Link></li>
-              <li><Link href="#faq">Frequently asked questions</Link></li>
+              <li><Link href="/#faq">Frequently asked questions</Link></li>
             </ul>
           </div>
           <div>
