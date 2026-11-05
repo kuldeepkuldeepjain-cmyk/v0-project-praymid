@@ -1305,7 +1305,7 @@ export function ParticipantDatabaseView() {
             <AlertTriangle className="h-6 w-6" />
             Confirm Permanent Deletion
           </DialogTitle>
-          <DialogDescription className="text-foreground">
+          <DialogDescription className="text-slate-700">
             This action cannot be undone. All participant data will be permanently deleted from the database.
           </DialogDescription>
         </DialogHeader>
@@ -1313,16 +1313,16 @@ export function ParticipantDatabaseView() {
         {deletingParticipantId && (
           <div className="space-y-4 py-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
-              <p className="text-sm text-foreground">
+              <p className="text-sm text-slate-900">
                 <span className="font-semibold">Participant:</span> {participants.find(p => p.id === deletingParticipantId)?.name || "Unknown"}
               </p>
-              <p className="text-sm text-foreground">
+              <p className="text-sm text-slate-900">
                 <span className="font-semibold">Email:</span> {participants.find(p => p.id === deletingParticipantId)?.email}
               </p>
               <p className="text-sm text-red-600 font-semibold">
                 All related data will be deleted including:
               </p>
-              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
+              <ul className="text-sm text-slate-700 list-disc list-inside space-y-1">
                 <li>Profile and account information</li>
                 <li>Payment submissions and payouts</li>
                 <li>Transactions and balances</li>
@@ -1335,7 +1335,7 @@ export function ParticipantDatabaseView() {
               <Button
                 variant="outline"
                 onClick={() => setShowDeleteConfirmation(false)}
-                className="flex-1 border-slate-300"
+                className="flex-1 border-slate-300 text-slate-800 hover:bg-slate-100"
               >
                 Cancel
               </Button>
