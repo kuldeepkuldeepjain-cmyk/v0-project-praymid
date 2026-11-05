@@ -50,6 +50,7 @@ import { useToast } from "@/hooks/use-toast"
 import { AccountTypeBadge } from "@/components/admin/account-type-badge"
 import { UserRankBadge } from "@/components/user-rank-badge"
 import { ParticipantListControls, ParticipantPagination } from "@/components/admin/participant-list-controls"
+import { IpLocationDetails } from "@/components/admin/ip-intelligence-cells"
 function safeDateTime(value?: string | null) {
   if (!value) return "Not available"
   const date = new Date(value)
@@ -526,6 +527,7 @@ export function ParticipantDatabaseView() {
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Password / PIN</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Contact</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Location</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground" title="IP address and approximate location inferred from the IP">IP / Approx. Location</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Personal</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Wallet</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Activation</TableHead>
@@ -535,7 +537,7 @@ export function ParticipantDatabaseView() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-              {!visibleParticipants.length && <TableRow><TableCell colSpan={13} className="h-40 text-center"><p className="font-medium text-foreground">{loadError ? "Participant data could not be loaded" : participants.length ? "No participants match these filters" : "No participants yet"}</p><p className="mt-2 text-sm text-muted-foreground">{loadError ? "Refresh to try again." : participants.length ? "Try another name or email, or clear the filters above." : "Registered accounts will appear here."}</p></TableCell></TableRow>}
+              {!visibleParticipants.length && <TableRow><TableCell colSpan={14} className="h-40 text-center"><p className="font-medium text-foreground">{loadError ? "Participant data could not be loaded" : participants.length ? "No participants match these filters" : "No participants yet"}</p><p className="mt-2 text-sm text-muted-foreground">{loadError ? "Refresh to try again." : participants.length ? "Try another name or email, or clear the filters above." : "Registered accounts will appear here."}</p></TableCell></TableRow>}
               {visibleParticipants.map((participant) => (
                 <TableRow key={participant.id} className="border-b border-border bg-card text-card-foreground transition-colors hover:bg-muted/40">
                     {/* Participant Number */}
@@ -686,6 +688,11 @@ export function ParticipantDatabaseView() {
                       </div>
                     </TableCell>
 
+                    {/* IP address and approximate location */}
+                    <TableCell className="min-w-44">
+                      <IpLocationDetails ipAddress={participant.ip_address} />
+                    </TableCell>
+
                     {/* Personal Info */}
                     <TableCell>
                       <div className="space-y-0.5 text-xs text-foreground">
@@ -812,11 +819,6 @@ export function ParticipantDatabaseView() {
                           {participant.total_active_seconds !== undefined && participant.total_active_seconds > 0 && (
                             <p className="font-semibold text-purple-700">
                               Time: {formatActiveDuration(participant.total_active_seconds)}
-                            </p>
-                          )}
-                          {participant.ip_address && (
-                            <p className="font-mono text-[9px] text-muted-foreground">
-                              IP: {participant.ip_address}
                             </p>
                           )}
                           {participant.created_at && (
@@ -1100,11 +1102,9 @@ export function ParticipantDatabaseView() {
                     {formatActiveDuration(selectedParticipant.total_active_seconds)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-muted-foreground">IP Address</p>
-                  <p className="font-mono font-semibold text-foreground break-all">
-                    {selectedParticipant.ip_address || "Not available"}
-                  </p>
+                <div className="min-w-0">
+                  <p className="mb-1 text-muted-foreground">IP / Approx. Location</p>
+                  <IpLocationDetails ipAddress={selectedParticipant.ip_address} />
                 </div>
                 <div>
                   <p className="text-muted-foreground">Registration Date</p>

@@ -23,6 +23,7 @@ export async function GET() {
         p.last_seen,
         activity.last_ip_address AS participant_ip_address,
         activity.last_user_agent AS last_user_agent,
+        security.last_seen_ip AS profile_last_ip,
         p.country,
         p.state,
         p.pin_code,
@@ -39,6 +40,13 @@ export async function GET() {
          FROM participant_sessions ps
          WHERE ps.participant_id = p.id
        ) activity ON TRUE
+       LEFT JOIN LATERAL (
+         SELECT last_seen_ip
+         FROM participant_security_profiles
+         WHERE LOWER(participant_email) = LOWER(p.email)
+         ORDER BY last_seen_at DESC
+         LIMIT 1
+       ) security ON TRUE
        WHERE p.is_deleted IS NOT TRUE
        ORDER BY p.created_at DESC
        LIMIT 1000`
@@ -55,7 +63,7 @@ export async function GET() {
             last_login: p.last_login || null,
             last_seen_at: p.last_session_activity || p.last_seen || null,
             active_in_at: p.last_session_activity || p.last_seen || null,
-            last_ip_address: p.participant_ip_address || p.last_ip_address || null,
+            last_ip_address: p.participant_ip_address || p.last_ip_address || p.profile_last_ip || null,
             last_user_agent: p.last_user_agent || null,
             total_active_seconds: Number(p.total_active_seconds || 0),
             account_balance: parseFloat(p.account_balance || 0),
