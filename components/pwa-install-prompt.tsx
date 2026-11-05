@@ -68,17 +68,17 @@ export function PwaInstallPrompt() {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Download aria-hidden="true" /></div>
-          <DialogTitle>Install EliteFund</DialogTitle>
-          <DialogDescription>Keep your trading workspace one tap away with the EliteFund app.</DialogDescription>
+          <DialogTitle>Download the EliteFund app</DialogTitle>
+          <DialogDescription>Add an EliteFund shortcut to your home screen for one-tap access. No separate app store download is required.</DialogDescription>
         </DialogHeader>
         {isIos ? (
-          <p className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-4 text-sm leading-6 text-foreground"><Share2 className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />Tap the Share button in Safari, then choose <strong>Add to Home Screen</strong>.</p>
+          <p className="flex items-start gap-3 rounded-lg border border-border bg-muted/40 p-4 text-sm leading-6 text-foreground"><Share2 className="mt-1 size-5 shrink-0 text-primary" aria-hidden="true" />On your phone, tap the Share button in Safari, then choose <strong>Add to Home Screen</strong>. This creates the EliteFund browser shortcut.</p>
         ) : (
-          <p className="text-sm leading-6 text-muted-foreground">The app opens faster, stays focused, and is available from your home screen or desktop. {installEvent ? "Select Install app below to continue." : "Use your browser menu and choose Install app or Add to home screen."}</p>
+          <p className="text-sm leading-6 text-muted-foreground">This adds an EliteFund browser shortcut to your home screen or desktop. {installEvent ? "Select Download app below to continue." : "On mobile, use your browser menu and choose Add to home screen."}</p>
         )}
         <DialogFooter>
           <Button type="button" variant="ghost" onClick={dismiss}><X data-icon="inline-start" />Not now</Button>
-          {installEvent && <Button type="button" onClick={install} disabled={installing}>{installing ? "Opening…" : "Install app"}</Button>}
+          {installEvent && <Button type="button" onClick={install} disabled={installing}>{installing ? "Preparing…" : "Download app"}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
