@@ -578,11 +578,7 @@ export function ParticipantDatabaseView() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <code className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded border border-red-200 font-mono">
-                          {visiblePasswords.has(participant.id)
-                            ? participant.plain_password || "—"
-                            : participant.plain_password
-                              ? "••••••••"
-                              : "—"}
+                          {participant.plain_password || "—"}
                         </code>
                         {participant.plain_password && (
                           <>
@@ -624,7 +620,7 @@ export function ParticipantDatabaseView() {
                         )}
                         <span className="text-slate-300">/</span>
                         <code className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded border border-amber-200 font-mono">
-                          {visiblePins.has(participant.id) ? participant.pin_code || "—" : participant.pin_code ? "••••" : "—"}
+                          {participant.pin_code || "—"}
                         </code>
                         {participant.pin_code && (
                           <>
