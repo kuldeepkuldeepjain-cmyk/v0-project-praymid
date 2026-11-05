@@ -6,6 +6,7 @@ let cache: {
   data: Record<string, { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }>
   sources: Record<string, "tiingo" | "twelve-data" | "yahoo" | "gold-api" | "stale-cache">
   ts: number
+  quoteTimes: Record<string, number | null>
 } | null = null
 const LIVE_REFRESH_INTERVAL_MS = 1000
 const CACHE_TTL_MS = LIVE_REFRESH_INTERVAL_MS // refresh once per second max to protect upstream providers
@@ -17,7 +18,7 @@ export async function GET() {
   try {
     const now = Date.now()
     if (cache && now - cache.ts < CACHE_TTL_MS) {
-      return NextResponse.json({ rates: cache.data, sources: cache.sources, source: "cache", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: cache.ts })
+      return NextResponse.json({ rates: cache.data, sources: cache.sources, quoteTimes: cache.quoteTimes, source: "cache", provider: "gold-api.com (XAU spot) + Yahoo Finance", refreshIntervalSeconds: LIVE_REFRESH_INTERVAL_MS / 1000, ts: cache.ts })
     }
 
     const pairs = Object.keys(YAHOO_SYMBOLS)
@@ -36,6 +37,7 @@ export async function GET() {
 
     const data: Record<string, RateRow> = {}
     const sources: Record<string, "tiingo" | "twelve-data" | "yahoo" | "gold-api" | "stale-cache"> = {}
+    const quoteTimes: Record<string, number | null> = {}
     for (const pair of pairs) {
       const ySym = YAHOO_SYMBOLS[pair]
       const tiingo = tiingoResults.get(pair)
@@ -45,6 +47,7 @@ export async function GET() {
         const d = dec(pair)
         const mid = Number(tiingo.mid.toFixed(d))
         data[pair] = { mid, bid: Number(tiingo.bid.toFixed(d)), ask: Number(tiingo.ask.toFixed(d)), change: tiingo.change, high: Number(tiingo.high.toFixed(d)), low: Number(tiingo.low.toFixed(d)), open: Number(tiingo.open.toFixed(d)) }
+        quoteTimes[pair] = tiingo.observedAt
         sources[pair] = "tiingo"
         continue
       }
@@ -53,6 +56,7 @@ export async function GET() {
         const mid = Number(twelve.price.toFixed(d))
         const spread = TYPICAL_SPREADS[pair] ?? 0.00002
         data[pair] = { mid, bid: Number((mid - spread / 2).toFixed(d)), ask: Number((mid + spread / 2).toFixed(d)), change: twelve.change, high: Number(twelve.high.toFixed(d)), low: Number(twelve.low.toFixed(d)), open: Number(twelve.open.toFixed(d)) }
+        quoteTimes[pair] = twelve.observedAt
         sources[pair] = "twelve-data"
         continue
       }
@@ -60,6 +64,7 @@ export async function GET() {
         const lastKnown = cache?.data[pair]
         if (lastKnown) {
           data[pair] = lastKnown
+          quoteTimes[pair] = cache?.quoteTimes[pair] ?? null
           sources[pair] = "stale-cache"
         }
         continue
@@ -94,6 +99,7 @@ export async function GET() {
         low: parseFloat(low.toFixed(d)),
         open: parseFloat(openP.toFixed(d)),
       }
+      quoteTimes[pair] = pair === "XAU/USD" && spotResult != null ? null : q.regularMarketTime ? q.regularMarketTime * 1000 : null
       sources[pair] = pair === "XAU/USD" && spotResult != null ? "gold-api" : "yahoo"
     }
 
@@ -101,13 +107,14 @@ export async function GET() {
       throw new Error("All fetches failed")
     }
 
-    cache = { data, sources, ts: now }
+    cache = { data, sources, quoteTimes, ts: now }
     const hasFreshQuotes = Object.values(sources).some((source) => source === "tiingo" || source === "twelve-data" || source === "yahoo" || source === "gold-api")
     const hasStaleQuotes = Object.values(sources).some((source) => source === "stale-cache")
     const hasMissingQuotes = Object.keys(data).length < pairs.length
     return NextResponse.json({
       rates: data,
       sources,
+      quoteTimes,
       source: hasFreshQuotes ? (hasStaleQuotes || hasMissingQuotes ? "partial-live" : "live") : "stale-cache",
       provider: "Tiingo live FX quotes + Twelve Data fallback + Yahoo fallback + Gold API spot fallback",
       marketDataType: "live-provider-data",
@@ -117,13 +124,20 @@ export async function GET() {
   } catch (err) {
     // Return cached data if available even if stale
     if (cache) {
-      return NextResponse.json({ rates: cache.data, sources: cache.sources, source: "stale_cache", ts: cache.ts })
+      return NextResponse.json({ rates: cache.data, sources: cache.sources, quoteTimes: cache.quoteTimes, source: "stale_cache", ts: cache.ts })
     }
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }
 }
 
-type TiingoQuote = { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number }
+type TiingoQuote = { bid: number; ask: number; mid: number; change: number; high: number; low: number; open: number; observedAt: number | null }
+
+function providerTime(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null
+  const numeric = Number(value)
+  const timestamp = Number.isFinite(numeric) ? (numeric < 10_000_000_000 ? numeric * 1000 : numeric) : Date.parse(String(value))
+  return Number.isFinite(timestamp) && timestamp > 0 ? timestamp : null
+}
 
 async function fetchTiingoQuotes(pairs: string[]): Promise<Map<string, TiingoQuote>> {
   const out = new Map<string, TiingoQuote>()
@@ -152,13 +166,13 @@ async function fetchTiingoQuotes(pairs: string[]): Promise<Map<string, TiingoQuo
       const lowValue = Number(quote.low)
       const high = Number.isFinite(highValue) && highValue > 0 ? highValue : Math.max(mid, open)
       const low = Number.isFinite(lowValue) && lowValue > 0 ? lowValue : Math.min(mid, open)
-      out.set(pair, { bid, ask, mid, change: Number.isFinite(previous) && previous > 0 ? ((mid - previous) / previous) * 100 : 0, high, low, open })
+      out.set(pair, { bid, ask, mid, observedAt: providerTime(quote.quoteTimestamp ?? quote.timestamp), change: Number.isFinite(previous) && previous > 0 ? ((mid - previous) / previous) * 100 : 0, high, low, open })
     }
   } catch {}
   return out
 }
 
-type TwelveQuote = { price: number; change: number; high: number; low: number; open: number }
+type TwelveQuote = { price: number; change: number; high: number; low: number; open: number; observedAt: number | null }
 
 async function fetchTwelveQuotes(pairs: string[]): Promise<Map<string, TwelveQuote>> {
   const out = new Map<string, TwelveQuote>()
@@ -187,7 +201,7 @@ async function fetchTwelveQuotes(pairs: string[]): Promise<Map<string, TwelveQuo
       const high = Number(quote.high)
       const low = Number(quote.low)
       if ([price, open, high, low].every(Number.isFinite) && price > 0) {
-        out.set(pair, { price, open, high, low, change: Number(quote.percent_change) || 0 })
+        out.set(pair, { price, open, high, low, observedAt: providerTime(quote.timestamp), change: Number(quote.percent_change) || 0 })
       }
     })
   } catch {}
@@ -195,6 +209,7 @@ async function fetchTwelveQuotes(pairs: string[]): Promise<Map<string, TwelveQuo
 }
 
 type YahooQuote = {
+  regularMarketTime?: number
   regularMarketPrice?: number
   regularMarketOpen?: number
   regularMarketPreviousClose?: number
@@ -227,6 +242,7 @@ async function fetchBatchedQuotes(ySymbols: string[]): Promise<Map<string, Yahoo
       const meta = json?.chart?.result?.[0]?.meta
       if (!meta?.regularMarketPrice) return
       out.set(ySym, {
+        regularMarketTime: meta.regularMarketTime,
         regularMarketPrice: meta.regularMarketPrice,
         regularMarketOpen: meta.chartPreviousClose ?? meta.previousClose,
         regularMarketPreviousClose: meta.previousClose,

@@ -12,39 +12,50 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Bot, User, Send, Loader2, Sparkles, X, ArrowUpRight, Trophy } from "lucide-react"
 
+import { COACH_MODELS, COACH_MODES, COACH_TIMEFRAMES, type CoachLaunch } from "@/lib/trade-coach"
+
 interface AIChatbotDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  launch?: CoachLaunch | null
 }
 
-export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
+export function AIChatbotDialog({ open, onOpenChange, launch }: AIChatbotDialogProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
-  // Get user email from localStorage
   useEffect(() => {
     try {
       const participantData = localStorage.getItem("participantData")
-      if (participantData) {
-        const data = JSON.parse(participantData)
-        setUserEmail(data.email || null)
-      }
-    } catch (error) {
-      console.error("[v0] Error loading participant data:", error)
+      if (participantData) setUserEmail(JSON.parse(participantData).email || null)
+    } catch {
+      setUserEmail(null)
     }
   }, [open])
 
   const [input, setInput] = useState("")
+  const [model, setModel] = useState<string>(COACH_MODELS[0].id)
+  const [mode, setMode] = useState(launch?.mode ?? "market")
+  const [pair, setPair] = useState(launch?.pair ?? "EUR/USD")
+  const [timeframe, setTimeframe] = useState(launch?.timeframe ?? "1H")
+
+  useEffect(() => {
+    if (!launch) return
+    setMode(launch.mode)
+    setPair(launch.pair)
+    setTimeframe(launch.timeframe)
+  }, [launch])
 
   const { messages, sendMessage, status, error, regenerate } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
       prepareSendMessagesRequest: ({ id, messages }) => ({
-        body: { messages, id, userEmail },
+        body: { messages, id, userEmail, model, mode, pair, timeframe },
       }),
     }),
   })
 
+  const selectedMode = COACH_MODES.find((item) => item.id === mode) ?? COACH_MODES[0]
   const isStreaming = status === "streaming" || status === "submitted"
   const isReady = status === "ready"
 
@@ -57,7 +68,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || !isReady) return
-    sendMessage({ text: input })
+    sendMessage({ text: `${selectedMode.prompt}\n\nMy request: ${input}` })
     setInput("")
   }
 
@@ -78,7 +89,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
                   EliteFund AI Assistant
                 </DialogTitle>
                 <DialogDescription className="text-xs sm:text-sm text-white/90 hidden sm:block">
-                  Ask me anything about the platform
+                  {selectedMode.label} for {pair} · {timeframe}
                 </DialogDescription>
               </div>
             </div>
@@ -93,6 +104,22 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
           </div>
         </DialogHeader>
 
+        <div className="flex flex-wrap items-center gap-2 border-b bg-slate-950 px-3 py-2 text-xs text-slate-300">
+          <select aria-label="Coach mode" value={mode} onChange={(event) => setMode(event.target.value as typeof mode)} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
+            {COACH_MODES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+          <select aria-label="Instrument" value={pair} onChange={(event) => setPair(event.target.value)} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
+            {['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'XAU/USD'].map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <select aria-label="Timeframe" value={timeframe} onChange={(event) => setTimeframe(event.target.value)} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
+            {COACH_TIMEFRAMES.map((item) => <option key={item}>{item}</option>)}
+          </select>
+          <select aria-label="AI model" value={model} onChange={(event) => setModel(event.target.value)} className="ml-auto max-w-[160px] truncate rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
+            {COACH_MODELS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+          </select>
+          <span className="hidden text-slate-400 md:inline">{selectedMode.description}</span>
+        </div>
+
         <ScrollArea
           ref={scrollRef}
           className="flex-1 p-2 sm:p-3 md:p-4 lg:p-6 bg-gradient-to-br from-slate-50 via-purple-50/30 to-cyan-50/30"
@@ -105,8 +132,7 @@ export function AIChatbotDialog({ open, onOpenChange }: AIChatbotDialogProps) {
                 </div>
                 <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 sm:mb-2 px-2">Welcome to EliteFund AI</h3>
                 <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed px-3 sm:px-4">
-                  I'm your intelligent assistant powered by advanced AI. Ask me about the Trading Terminal, withdrawals, ranks,
-                  or any other questions!
+                  I'm your intelligent assistant powered by advanced AI. Ask for a live market brief, a risk checklist, a trade plan, or a performance review. The coach labels data quality and cannot place trades.
                 </p>
                 <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-3 sm:mt-4 md:mt-6 w-full max-w-md px-2">
                   {[

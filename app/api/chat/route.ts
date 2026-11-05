@@ -1,143 +1,99 @@
 import { streamText, tool, convertToModelMessages, type UIMessage } from "ai"
 import { z } from "zod"
 import { getPool } from "@/lib/db"
+import { COACH_MODES, COACH_MODELS, coachQuoteStatus } from "@/lib/trade-coach"
 
 export const maxDuration = 60
 
+const pairSchema = z.enum(["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "XAU/USD"])
+const timeframeSchema = z.enum(["1M", "5M", "15M", "30M", "1H", "4H", "1D", "1W"])
+
+function safeModel(model: string | undefined) {
+  return COACH_MODELS.some((item) => item.id === model) ? model! : COACH_MODELS[0].id
+}
+
 export async function POST(req: Request) {
-  const { messages, userEmail }: { messages: UIMessage[]; userEmail?: string } = await req.json()
-  const db = getPool()!
+  const body = await req.json()
+  const messages = body.messages as UIMessage[]
+  const userEmail = typeof body.userEmail === "string" ? body.userEmail.trim().toLowerCase() : ""
+  const pair = pairSchema.safeParse(body.pair).success ? body.pair : "EUR/USD"
+  const timeframe = timeframeSchema.safeParse(body.timeframe).success ? body.timeframe : "1H"
+  const mode = COACH_MODES.find((item) => item.id === body.mode) ?? COACH_MODES[0]
+  const db = getPool()
 
-  const systemPrompt = `You are EliteFund AI, the in-app assistant for the EliteFund Trading Terminal.
+  const systemPrompt = `You are EliteFund AI Trade Coach. You are an educational decision-support coach, not a broker, signal service, or financial adviser. Never tell the participant to buy, sell, enter, or hold as a personalized command. Never promise returns. Never invent live prices, account values, news, spreads, order status, or policy rules.
 
-Your job is to help participants understand the terminal and their own account using simple, accurate language. Explain markets, demo trading, account verification, funding, withdrawals, security, fees, policies, and support. Never promise profits or imply trading is risk-free. Do not invent prices, balances, approvals, policies, or business credentials. If live data is unavailable, say so clearly. Encourage users to review risk before trading and to use demo mode first. When asked for trade guidance, teach a repeatable process: define the market and timeframe, identify a thesis and invalidation level, size conservatively, set a stop before entry, and review the outcome. Provide education and scenario planning only; never issue personalized buy/sell commands or guarantee outcomes.
+Current coach context: mode=${mode.label}; instrument=${pair}; timeframe=${timeframe}; generatedAt=${new Date().toISOString()}.
 
-EliteFund knowledge base:
-- EliteFund is a participant-focused trading and account platform. The participant dashboard includes account overview, funding and payout workflows, notifications, leaderboard/rank information, support, an AI coach, and the Trading Terminal.
-- The Trading Terminal provides live instrument quotes when the market data feed is available, chart views and timeframes, watchlist/market panels, order entry, market/limit/stop workflows, lot and margin calculations, stop-loss/take-profit planning, position management, risk analytics, alerts, journal/performance views, and execution/feed status.
-- Funded-account rules currently enforced by the terminal include a minimum $3,000 order/margin requirement. The terminal calculates the minimum lot size for the selected instrument from live price, contract size, and leverage, and prevents orders below the requirement. If live quote data is unavailable or stale, the assistant must not estimate an executable price.
-- Platform workflows can include account verification, deposits/funding submissions, payout requests, transaction history, rank/referrals, and support escalation. Policies, fees, approval times, eligibility, and balances are authoritative only when returned by a live tool or clearly shown in the platform; otherwise say that the participant should check the relevant page or contact support.
-- The AI assistant can explain platform navigation, trading concepts, order mechanics, risk controls, and account workflows. It cannot execute trades, change balances, approve payouts, bypass verification, or provide guaranteed/personalized investment advice.
+Rules:
+- Use getCoachSnapshot before answering questions about current market, account, exposure, or performance.
+- Treat all quote data as current only at its returned observedAt/refreshedAt timestamps. If status is delayed or unverified, say so prominently and do not calculate an executable entry or stop from it.
+- Separate verified observations, interpretations, scenarios, and missing data.
+- For a plan, require the participant's direction, entry, stop, target, and risk budget before position-size math. Explain that position sizing is a framework, not an order instruction.
+- Discuss invalidation, spread/slippage, leverage, margin, concentration, drawdown, and no-trade conditions. Margin is not maximum loss.
+- For performance, state sample size and scope. Do not infer skill from a small sample.
+- You cannot place, modify, or cancel trades. You can only explain data returned by tools.
+- End with a short next-step checklist and a clear data-quality note.`
 
-You can use the real-time tools below. Only discuss account data returned for the signed-in participant. Never reveal another participant's information. When a user asks about their balance, transactions, or active predictions, use the matching tool rather than guessing. If a live tool errors or returns no data, explain the limitation and give the correct next place to check. Be concise, professional, and transparent.`
+  const getAuthorizedParticipant = async () => {
+    if (!db || !userEmail) return null
+    const result = await db.query(`SELECT email, username, account_type, account_balance, bonus_balance, account_frozen, is_frozen, status, funded_initial_balance, funded_breach_status, challenge_status, challenge_plan_key FROM participants WHERE LOWER(email) = $1 LIMIT 1`, [userEmail])
+    return result.rows[0] ?? null
+  }
 
-  const signedInEmail = typeof userEmail === "string" ? userEmail.trim().toLowerCase() : ""
-  const getAuthorizedEmail = (email: string) => {
-    const requestedEmail = email.trim().toLowerCase()
-    return signedInEmail && requestedEmail === signedInEmail ? requestedEmail : null
+  const getTradeSnapshot = async (request: Request) => {
+    const response = await fetch(new URL("/api/forex/trades", request.url), { headers: { cookie: request.headers.get("cookie") ?? "" }, cache: "no-store" })
+    const data = await response.json().catch(() => null)
+    if (!response.ok || !data?.success) return { error: "Authenticated trade history is unavailable.", open: [], pending: [], closed: [] }
+    return { open: data.open ?? [], pending: data.pending ?? [], closed: data.closed ?? [] }
+  }
+
+  const getMarketSnapshot = async (request: Request, requestedPair: string) => {
+    const url = new URL("/api/forex/rates", request.url)
+    url.searchParams.set("pair", requestedPair)
+    const response = await fetch(url, { headers: { cookie: request.headers.get("cookie") ?? "" }, cache: "no-store" })
+    const data = await response.json().catch(() => null)
+    const now = Date.now()
+    const rate = data?.rates?.[pair]
+    const source = String(data?.sources?.[pair] ?? "unknown")
+    const refreshedAt = Number(data?.ts ?? now)
+    const observedAt = data?.quoteTimes?.[pair] ? Number(data.quoteTimes[pair]) : null
+    if (!rate || !Number.isFinite(Number(rate))) return { pair, error: "No verified quote was returned.", source, refreshedAt: new Date(refreshedAt).toISOString() }
+    const bid = Number(data?.bid?.[pair]) || null
+    const ask = Number(data?.ask?.[pair]) || null
+    return { pair, mid: Number(rate), bid, ask, spread: bid && ask ? ask - bid : null, source, observedAt: observedAt ? new Date(observedAt).toISOString() : null, refreshedAt: new Date(refreshedAt).toISOString(), status: coachQuoteStatus(observedAt, refreshedAt, source, now), spreadType: bid && ask ? "provider" : "estimated unavailable" }
   }
 
   const result = streamText({
-    model: "openai/gpt-5.4-mini",
+    model: safeModel(body.model),
     system: systemPrompt,
     messages: await convertToModelMessages(messages),
-    maxOutputTokens: 800,
-    temperature: 0.7,
+    maxOutputTokens: 1200,
+    temperature: 0.2,
     tools: {
-      getPlatformStats: tool({
-        description: "Get real-time platform statistics",
-        inputSchema: z.object({}),
-        execute: async () => {
-          const [r1, r2, r3, r4, r5] = await Promise.all([
-            db.query("SELECT COUNT(*) FROM participants"),
-            db.query("SELECT COUNT(*) FROM participants WHERE is_active = true"),
-            db.query("SELECT COUNT(*) FROM payout_requests WHERE status = 'pending'"),
-            db.query("SELECT COUNT(*) FROM payment_submissions WHERE status = 'pending'"),
-            db.query("SELECT COUNT(*) FROM predictions WHERE status = 'pending'"),
-          ])
+      getCoachSnapshot: tool({
+        description: "Retrieve the signed-in participant's account context and the verified current quote for the selected instrument. Use this before current-data answers.",
+        inputSchema: z.object({ pair: pairSchema, timeframe: timeframeSchema }),
+        execute: async ({ pair: requestedPair, timeframe: requestedTimeframe }) => {
+          const participant = await getAuthorizedParticipant()
+          const [market, trades] = await Promise.all([getMarketSnapshot(req, requestedPair), getTradeSnapshot(req)])
           return {
-            totalParticipants: Number(r1.rows[0]?.count || 0),
-            activeUsers: Number(r2.rows[0]?.count || 0),
-            pendingPayouts: Number(r3.rows[0]?.count || 0),
-            pendingPayments: Number(r4.rows[0]?.count || 0),
-            activePredictions: Number(r5.rows[0]?.count || 0),
+            asOf: new Date().toISOString(),
+            pair: requestedPair,
+            timeframe: requestedTimeframe,
+            market,
+            trades: { openCount: trades.open.length, pendingCount: trades.pending.length, closedCount: trades.closed.length, open: trades.open.slice(0, 30), recentClosed: trades.closed.slice(0, 20) },
+            account: participant ? { accountType: participant.account_type, balance: Number(participant.account_balance ?? 0), bonusBalance: Number(participant.bonus_balance ?? 0), frozen: Boolean(participant.account_frozen || participant.is_frozen || participant.status === "frozen"), fundedInitialBalance: participant.funded_initial_balance === null ? null : Number(participant.funded_initial_balance), fundedBreachStatus: participant.funded_breach_status ?? null, challengeStatus: participant.challenge_status ?? null, challengePlanKey: participant.challenge_plan_key ?? null } : null,
+            limitations: ["This snapshot does not calculate unrealized P&L or maximum loss.", "No news feed is connected to this coach; do not describe a headline as live.", "Only the signed-in participant email is queried."],
           }
-        }
+        },
       }),
-      getTopContributors: tool({
-        description: "Get the top contributors on the leaderboard",
-        inputSchema: z.object({ limit: z.number().default(5) }),
-        execute: async ({ limit }) => {
-          const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 10)
-          const { rows } = await db.query(
-            "SELECT username, total_earnings, rank, total_referrals FROM participants ORDER BY total_earnings DESC LIMIT $1",
-            [safeLimit]
-          )
-          return {
-            topContributors: rows.map((p: any, idx: number) => ({
-              position: idx + 1,
-              username: p.username,
-              earnings: `$${Number(p.total_earnings || 0).toFixed(2)}`,
-              rank: p.rank || "Bronze",
-              referrals: p.total_referrals || 0,
-            }))
-          }
-        }
-      }),
-      checkUserBalance: tool({
-        description: "Check a user's account balance and earnings",
-        inputSchema: z.object({ email: z.string().email() }),
-        execute: async ({ email }) => {
-          const authorizedEmail = getAuthorizedEmail(email)
-          if (!authorizedEmail) return { error: "You can only view your own account data." }
-          const { rows } = await db.query(
-            "SELECT account_balance, bonus_balance, total_earnings, rank, total_referrals FROM participants WHERE LOWER(email) = $1",
-            [authorizedEmail]
-          )
-          const data = rows[0]
-          if (!data) return { error: "User not found or unauthorized" }
-          return {
-            accountBalance: `$${Number(data.account_balance || 0).toFixed(2)}`,
-            bonusBalance: `$${Number(data.bonus_balance || 0).toFixed(2)}`,
-            totalEarnings: `$${Number(data.total_earnings || 0).toFixed(2)}`,
-            rank: data.rank || "Bronze",
-            totalReferrals: data.total_referrals || 0,
-          }
-        }
-      }),
-      getRecentTransactions: tool({
-        description: "Get recent transaction history for a user",
-        inputSchema: z.object({ email: z.string().email(), limit: z.number().default(5) }),
-        execute: async ({ email, limit }) => {
-          const authorizedEmail = getAuthorizedEmail(email)
-          if (!authorizedEmail) return { error: "You can only view your own account data." }
-          const { rows } = await db.query(
-            "SELECT type, amount, status, description, created_at FROM transactions WHERE LOWER(participant_email) = $1 ORDER BY created_at DESC LIMIT $2",
-            [authorizedEmail, Math.min(Math.max(Math.floor(limit), 1), 20)]
-          )
-          return {
-            transactions: rows.map((t: any) => ({
-              type: t.type,
-              amount: `$${Number(t.amount || 0).toFixed(2)}`,
-              status: t.status,
-              description: t.description,
-              date: new Date(t.created_at).toLocaleDateString(),
-            }))
-          }
-        }
-      }),
-      getActivePredictions: tool({
-        description: "Get active prediction trades for a user",
-        inputSchema: z.object({ email: z.string().email() }),
-        execute: async ({ email }) => {
-          const authorizedEmail = getAuthorizedEmail(email)
-          if (!authorizedEmail) return { error: "You can only view your own account data." }
-          const { rows } = await db.query(
-            "SELECT crypto_pair, prediction_type, amount, entry_price, status, created_at FROM predictions WHERE LOWER(participant_email) = $1 AND status = 'pending' ORDER BY created_at DESC",
-            [authorizedEmail]
-          )
-          return {
-            activePredictions: rows.map((p: any) => ({
-              pair: p.crypto_pair,
-              direction: p.prediction_type === "up" ? "LONG" : "SHORT",
-              amount: `$${Number(p.amount || 0).toFixed(2)}`,
-              entryPrice: `$${Number(p.entry_price || 0).toLocaleString()}`,
-              timeRemaining: Math.max(0, 60 - Math.floor((Date.now() - new Date(p.created_at).getTime()) / 1000)) + "s",
-            }))
-          }
-        }
-      }),
-    }
+      getPlatformStats: tool({ description: "Get non-sensitive platform statistics.", inputSchema: z.object({}), execute: async () => {
+        if (!db) return { error: "Database unavailable." }
+        const [participants, active, payouts] = await Promise.all([db.query("SELECT COUNT(*)::int AS count FROM participants"), db.query("SELECT COUNT(*)::int AS count FROM participants WHERE is_active = true"), db.query("SELECT COUNT(*)::int AS count FROM payout_requests WHERE status = 'pending'")])
+        return { totalParticipants: participants.rows[0]?.count ?? 0, activeParticipants: active.rows[0]?.count ?? 0, pendingPayouts: payouts.rows[0]?.count ?? 0, asOf: new Date().toISOString() }
+      } }),
+    },
   })
 
   return result.toUIMessageStreamResponse()
