@@ -3,6 +3,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react"
 import Script from "next/script"
 import useSWR from "swr"
+import { cn } from "@/lib/utils"
 
 interface GoogleIdentity {
   initialize: (options: { client_id: string; nonce: string; callback: (response: { credential: string }) => void; auto_select: boolean; context: string; ux_mode: string; use_fedcm_for_button: boolean }) => void
@@ -43,7 +44,7 @@ export function ParticipantGoogleSignIn({ disabled, onCredential, mode = "signin
       context: mode, ux_mode: "popup", use_fedcm_for_button: true,
       callback: ({ credential }) => { void receiveCredential(credential) },
     })
-    google.renderButton(button.current, { theme: "outline", size: "large", text: "continue_with", shape: "rectangular", width: Math.min(400, button.current.clientWidth) })
+    google.renderButton(button.current, { theme: mode === "signin" ? "filled_blue" : "outline", size: "large", text: "continue_with", shape: mode === "signin" ? "pill" : "rectangular", width: Math.min(400, button.current.clientWidth) })
     // Embedded previews cannot reliably grant FedCM permissions or retain auth cookies.
     if (window.self === window.top) google.prompt()
     return () => google.cancel()
@@ -54,7 +55,13 @@ export function ParticipantGoogleSignIn({ disabled, onCredential, mode = "signin
   }, [disabled])
 
   return (
-    <section aria-label={mode === "signup" ? "Register with Google" : "Google sign-in"} className="flex flex-col gap-3">
+    <section
+      aria-label={mode === "signup" ? "Register with Google" : "Google sign-in"}
+      className={cn(
+        "flex flex-col gap-3",
+        mode === "signin" && "rounded-2xl border border-primary/25 bg-primary/5 p-3 shadow-sm transition-colors duration-200 hover:border-primary/45 hover:bg-primary/10 sm:p-4",
+      )}
+    >
       <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" onReady={() => setScriptReady(true)} onError={() => setScriptError(true)} />
       <div ref={button} inert={disabled} aria-busy={disabled} className="flex min-h-11 w-full justify-center" />
       {(error || scriptError) ? <p role="status" className="text-center text-sm text-muted-foreground">Google sign-in is temporarily unavailable. Use email or mobile instead.</p> : (
