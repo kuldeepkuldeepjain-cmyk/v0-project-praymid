@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { setParticipantAuth } from "@/lib/auth"
 import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
 import { ParticipantAuthShell } from "@/components/participant-auth-shell"
+import { ParticipantGoogleSignIn } from "@/components/participant-google-sign-in"
 import { ParticipantRegistrationForm, REGISTRATION_COUNTRIES, type RegistrationData } from "@/components/participant-registration-form"
 
 export default function ParticipantRegisterPage() {
@@ -19,6 +20,7 @@ export default function ParticipantRegisterPage() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [googleIdentity, setGoogleIdentity] = useState<{ credential: string; email: string } | null>(null)
   const [emailVerification, setEmailVerification] = useState<{ email: string; code: string } | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
@@ -63,6 +65,36 @@ export default function ParticipantRegisterPage() {
     const country = REGISTRATION_COUNTRIES.find((item) => item.name === countryName)
     if (country) setFormData((previous) => ({ ...previous, country: countryName, countryCode: country.code }))
   }
+  const googleSignIn = async (credential: string, complete = false) => {
+    if (loading) return
+    setLoading(true)
+    setError("")
+    try {
+      const response = await fetch("/api/auth/participant-google-one-tap", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential, intent: complete ? "register-complete" : "register",
+          ...(complete ? { registration: { ...formData, mobileNumber: formData.mobileNumber.replace(/\D/g, ""), acceptedTerms } } : {}),
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Google registration failed. Please try again.")
+      if (data.requiresRegistration) {
+        setGoogleIdentity({ credential, email: data.email })
+        setFormData((previous) => ({ ...previous, email: data.email,
+          firstName: data.firstName || previous.firstName, lastName: data.lastName || previous.lastName,
+        }))
+        toast({ title: "Google email verified", description: "Complete your account details and accept the terms. No password or email code is needed." })
+        return
+      }
+      setParticipantAuth(data.participantId, data.walletAddress || "", data.email, data.username,
+        data.name, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
+      toast({ title: data.registered ? "Account created" : "Welcome back", description: "Signed in with Google." })
+      window.location.assign("/participant/dashboard")
+    } catch (googleError) {
+      setError(googleError instanceof Error ? googleError.message : "Unable to connect. Please try again.")
+    } finally { setLoading(false) }
+  }
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (loading) return
@@ -73,6 +105,7 @@ export default function ParticipantRegisterPage() {
     if (!(formData.country === "India" ? /^[6-9]\d{9}$/.test(mobileDigits) : /^\d{6,15}$/.test(mobileDigits))) { setError(formData.country === "India" ? "Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9." : "Enter a valid mobile number for your country."); return }
     if (!acceptedTerms) { setError("Accept the Terms and Conditions to create your account."); return }
     if (!captcha.answer || captchaInput.toUpperCase() !== captcha.answer) { setError("The security code didn’t match. Enter the new code and try again."); generateCaptcha(); return }
+    if (googleIdentity) { await googleSignIn(googleIdentity.credential, true); return }
     if (formData.password !== formData.confirmPassword) { setError("Your passwords don’t match. Re-enter them and try again."); return }
     if (formData.password.length < 6) { setError("Your password must be at least 6 characters."); return }
     setLoading(true)
@@ -138,6 +171,8 @@ export default function ParticipantRegisterPage() {
         <h1 className="text-balance text-3xl font-semibold tracking-tight">{emailVerification ? "Check your inbox" : "Create your account"}</h1>
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{emailVerification ? "Verify your email to finish setting up your account." : "A few details. One focused trading workspace."}</p>
       </div>
+      {!emailVerification && !googleIdentity && <ParticipantGoogleSignIn mode="signup" disabled={loading} onCredential={googleSignIn} />}
+      {googleIdentity && <Alert><AlertTitle>Google email verified</AlertTitle><AlertDescription>Complete your details for {googleIdentity.email}. No password or email code is required.<Button type="button" variant="link" disabled={loading} onClick={() => { setGoogleIdentity(null); setError("") }}>Use a different account</Button></AlertDescription></Alert>}
       {error && <div ref={errorSummaryRef} tabIndex={-1} className="outline-none"><Alert variant="destructive"><AlertTitle>{emailVerification ? "Unable to verify email" : "Please check your details"}</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div>}
       {emailVerification ? (
         <form onSubmit={verifyEmail} aria-busy={loading} className="flex flex-col gap-5">
@@ -146,7 +181,7 @@ export default function ParticipantRegisterPage() {
           <Button type="submit" disabled={loading || emailVerification.code.length !== 6} className="auth-submit">{loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}{loading ? "Verifying…" : "Verify email"}{!loading && <ArrowRight data-icon="inline-end" />}</Button>
           <Button type="button" variant="ghost" className="min-h-11" disabled={loading} onClick={() => { setEmailVerification(null); setError("") }}>Back to registration</Button>
         </form>
-      ) : <ParticipantRegistrationForm formData={formData} onChange={handleChange} onCountryChange={handleCountryChange} onSubmit={handleSubmit} loading={loading} acceptedTerms={acceptedTerms} onAcceptTerms={setAcceptedTerms} captcha={captcha.text} captchaInput={captchaInput} onCaptchaInput={setCaptchaInput} onRefreshCaptcha={generateCaptcha} />}
+      ) : <ParticipantRegistrationForm googleVerified={Boolean(googleIdentity)} formData={formData} onChange={handleChange} onCountryChange={handleCountryChange} onSubmit={handleSubmit} loading={loading} acceptedTerms={acceptedTerms} onAcceptTerms={setAcceptedTerms} captcha={captcha.text} captchaInput={captchaInput} onCaptchaInput={setCaptchaInput} onRefreshCaptcha={generateCaptcha} />}
       <p className="text-center text-sm leading-relaxed text-muted-foreground">Already have an account? <Link href="/participant/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">Sign in</Link></p>
     </ParticipantAuthShell>
   )

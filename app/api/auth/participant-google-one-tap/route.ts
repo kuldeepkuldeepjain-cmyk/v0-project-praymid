@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library"
 import { queryOne, execute } from "@/lib/db"
 import { setParticipantSession } from "@/lib/session"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext } from "@/lib/security"
+import { createGoogleParticipant, googleRegistrationSchema } from "@/lib/google-registration"
 
 export const runtime = "nodejs"
 const verifier = new OAuth2Client()
@@ -55,6 +56,21 @@ export async function POST(request: NextRequest) {
       return failure("Use your password or PIN for this email address. Google login supports Gmail and Google Workspace accounts.", 403)
     }
 
+    const email = googleUser.email.trim().toLowerCase()
+    const intent = body?.intent
+    if (await getActiveRestriction(email, "login")) return failure("Sign-in is unavailable while your account is under security review.", 403)
+    let registered = false
+    if (intent === "register-complete") {
+      const existing = await queryOne<{ id: string }>("SELECT id FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1", [email])
+      if (!existing) {
+        const parsed = googleRegistrationSchema.safeParse(body.registration)
+        if (!parsed.success) return failure(parsed.error.issues[0]?.message || "Complete your account details and accept the terms.", 400)
+        const created = await createGoogleParticipant(email, parsed.data)
+        if ("error" in created) return failure(created.error, 409)
+        registered = true
+      }
+    }
+
     const participant = await queryOne<{
       id: string; email: string; username: string | null; full_name: string | null;
       wallet_address: string | null; bep20_address: string | null; account_balance: string | null;
@@ -66,7 +82,14 @@ export async function POST(request: NextRequest) {
       is_deleted, status, is_active, otp_verified, details_completed,
       (pin_hash IS NOT NULL AND pin_hash <> '') AS pin_configured
       FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1`, [googleUser.email.toLowerCase()])
-    if (!participant) return failure("No registered account matches this Google email. Create an account first.", 404)
+    if (!participant) {
+      if (intent === "register") {
+        return NextResponse.json({ success: true, requiresRegistration: true, email,
+          firstName: googleUser.given_name || "", lastName: googleUser.family_name || "" },
+        { headers: { "Cache-Control": "no-store" } })
+      }
+      return failure("No account matches this Google email. Choose Create account to register with Google.", 404)
+    }
     if (participant.is_deleted || participant.is_frozen || participant.account_frozen || participant.is_active === false || participant.otp_verified === false || participant.status !== "active") {
       return failure("Your account is not eligible to sign in. Complete verification or contact support.", 403)
     }
@@ -81,7 +104,7 @@ export async function POST(request: NextRequest) {
     await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId, lastActivityAt: Date.now() })
 
     const response = NextResponse.json({
-      success: true, participantId: participant.id, email: participant.email,
+      success: true, registered, participantId: participant.id, email: participant.email,
       username: participant.username, name: participant.full_name || participant.username,
       walletAddress: participant.wallet_address || participant.bep20_address || "",
       bep20_address: participant.bep20_address, account_balance: Number(participant.account_balance) || 0,

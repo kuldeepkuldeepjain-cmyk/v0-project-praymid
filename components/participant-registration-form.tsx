@@ -32,6 +32,7 @@ export interface RegistrationData {
 }
 
 interface RegistrationFormProps {
+  googleVerified?: boolean
   formData: RegistrationData
   onChange: (field: string, value: string) => void
   onCountryChange: (country: string) => void
@@ -47,7 +48,7 @@ interface RegistrationFormProps {
 
 const STEP_NAMES = ["Details", "Account", "Security"]
 
-export function ParticipantRegistrationForm({ formData, onChange, onCountryChange, onSubmit, loading, acceptedTerms, onAcceptTerms, captcha, captchaInput, onCaptchaInput, onRefreshCaptcha }: RegistrationFormProps) {
+export function ParticipantRegistrationForm({ googleVerified = false, formData, onChange, onCountryChange, onSubmit, loading, acceptedTerms, onAcceptTerms, captcha, captchaInput, onCaptchaInput, onRefreshCaptcha }: RegistrationFormProps) {
   const [step, setStep] = useState(0)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const plan = DEFAULT_CHALLENGE_PLANS.find((item) => item.key === formData.challengePlanKey) || DEFAULT_CHALLENGE_PLANS[0]
@@ -70,7 +71,7 @@ export function ParticipantRegistrationForm({ formData, onChange, onCountryChang
       </ol>
       <div className="flex flex-col gap-1">
         <h2 ref={titleRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">{["Let’s start with you", "Set up your account", "Secure your account"][step]}</h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">{["Enter your details as you’d like them on your account.", "Choose an account type and add your contact details.", "Create a password, then verify your email after signing up."][step]}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{["Enter your details as you’d like them on your account.", "Choose an account type and add your contact details.", googleVerified ? "Your Google email is verified. Complete the security check and accept the terms." : "Create a password, then verify your email after signing up."][step]}</p>
       </div>
       <form onSubmit={submit} aria-busy={loading} className="flex flex-col gap-6">
         <fieldset disabled={loading} className="min-w-0 border-0 p-0">
@@ -81,7 +82,7 @@ export function ParticipantRegistrationForm({ formData, onChange, onCountryChang
               <Field><FieldLabel htmlFor="firstName">First name</FieldLabel><Input id="firstName" name="firstName" autoComplete="given-name" placeholder="First name" value={formData.firstName} onChange={(event) => onChange("firstName", event.target.value.replace(/[^\p{L}\p{M}\s'-]/gu, ""))} required /></Field>
               <Field><FieldLabel htmlFor="lastName">Last name</FieldLabel><Input id="lastName" name="lastName" autoComplete="family-name" placeholder="Last name" value={formData.lastName} onChange={(event) => onChange("lastName", event.target.value.replace(/[^\p{L}\p{M}\s'-]/gu, ""))} required /></Field>
               </FieldGroup>
-              <Field><FieldLabel htmlFor="email">Email address</FieldLabel><Input id="email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="you@example.com" value={formData.email} onChange={(event) => onChange("email", event.target.value)} aria-describedby="email-help" required /><FieldDescription id="email-help">Your email is also your username. We&apos;ll send your verification code here.</FieldDescription></Field>
+              <Field><FieldLabel htmlFor="email">Email address</FieldLabel><Input id="email" name="email" type="email" readOnly={googleVerified} inputMode="email" autoComplete="email" autoCapitalize="none" spellCheck={false} placeholder="you@example.com" value={formData.email} onChange={(event) => onChange("email", event.target.value)} aria-describedby="email-help" required /><FieldDescription id="email-help">{googleVerified ? "Verified by Google. This email is also your username." : "Your email is also your username. We’ll send your verification code here."}</FieldDescription></Field>
             </>}
             {step === 1 && <>
               <Field><FieldLabel id="account-type-label">Account type</FieldLabel><ToggleGroup type="single" aria-labelledby="account-type-label" value={formData.accountType} onValueChange={(value) => { if (value) onChange("accountType", value) }}><ToggleGroupItem value="normal">Normal</ToggleGroupItem><ToggleGroupItem value="funded">Funded</ToggleGroupItem><ToggleGroupItem value="challenge">Challenge</ToggleGroupItem></ToggleGroup><FieldDescription>{formData.accountType === "normal" ? "A standard platform account." : formData.accountType === "funded" ? "An account for funded trading." : "A rules-based trading evaluation with a virtual balance."}</FieldDescription></Field>
@@ -91,8 +92,10 @@ export function ParticipantRegistrationForm({ formData, onChange, onCountryChang
               <Field><FieldLabel htmlFor="referralCode">Referral code <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel><Input id="referralCode" placeholder="Have a referral code?" maxLength={10} autoCapitalize="characters" value={formData.referralCode} onChange={(event) => onChange("referralCode", event.target.value.toUpperCase())} /></Field>
             </>}
             {step === 2 && <>
+              {!googleVerified && <>
               <Field><FieldLabel htmlFor="password">Password</FieldLabel><ParticipantAuthPassword id="password" name="password" autoComplete="new-password" minLength={6} placeholder="Create a password" value={formData.password} onChange={(event) => onChange("password", event.target.value)} aria-describedby="password-help" required /><FieldDescription id="password-help">At least 6 characters. A longer, unique password is recommended.</FieldDescription></Field>
               <Field data-invalid={passwordMismatch || undefined}><FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel><ParticipantAuthPassword id="confirmPassword" name="confirmPassword" autoComplete="new-password" minLength={6} placeholder="Re-enter your password" value={formData.confirmPassword} onChange={(event) => onChange("confirmPassword", event.target.value)} aria-invalid={passwordMismatch || undefined} aria-describedby={passwordMismatch ? "password-match-help" : undefined} required />{passwordMismatch && <FieldDescription id="password-match-help">Your passwords don&apos;t match yet.</FieldDescription>}</Field>
+              </>}
               <Field><FieldLabel htmlFor="captcha">Security check</FieldLabel><div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"><span className="font-mono text-xl font-medium tracking-widest text-primary" aria-label={`Security code: ${captcha}`}>{captcha || "······"}</span><Button type="button" variant="ghost" size="icon" className="min-h-11 min-w-11" onClick={onRefreshCaptcha} aria-label="Get a new security code"><RefreshCcw /></Button></div><Input id="captcha" name="captcha" placeholder="Enter the code above" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={6} value={captchaInput} onChange={(event) => onCaptchaInput(event.target.value.toUpperCase())} aria-describedby="captcha-help" required /><FieldDescription id="captcha-help">Enter the 6-character code. You can refresh it if needed.</FieldDescription></Field>
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-muted-foreground"><input type="checkbox" name="terms" checked={acceptedTerms} onChange={(event) => onAcceptTerms(event.target.checked)} className="mt-1 size-5 shrink-0 accent-primary" required /><span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">Terms and Conditions</a> and acknowledge the applicable risk disclosures.</span></label>
             </>}

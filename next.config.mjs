@@ -8,10 +8,10 @@ const nextConfig = {
           { key: "Cache-Control", value: "no-store, max-age=0, must-revalidate" },
         ],
       },
-      {
-        source: "/participant/login",
+      ...["/participant/login", "/participant/register"].map((source) => ({
+        source,
         headers: [{ key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" }],
-      },
+      })),
       {
         source: "/:path*",
         headers: [
