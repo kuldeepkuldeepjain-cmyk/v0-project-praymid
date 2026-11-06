@@ -39,7 +39,7 @@ import {
   ACTIVITY_PANEL_TITLES, ACTIVITY_TOOLS, TerminalActivityLauncher, TerminalActivityNavigation,
   type ActivityPanelId,
 } from "@/components/terminal-activity-navigation"
-import { useMarketDataStream } from "@/hooks/use-market-data-stream"
+import { useMarketDataStream, type MarketRate, type MarketRateMeta } from "@/hooks/use-market-data-stream"
 import {
   Dialog,
   DialogClose,
@@ -109,6 +109,7 @@ export type Candle = {
 export type ForexPair = {
   symbol: string; base: string; quote: string
   bid: number; ask: number; change: number; high: number; low: number; open: number
+  rateTimestamp: number
   candles: Candle[]; spread: number
 }
 
@@ -1769,14 +1770,15 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const pairsRef        = useRef<ForexPair[]>([])
   const selectedPairRef = useRef<ForexPair | null>(null)
   const openTradesRef   = useRef<OpenTrade[]>([])
-  const freshRateSymbolsRef = useRef<Set<string>>(new Set())
   const freshRateUpdatedAtRef = useRef<Record<string, number>>({})
+  const providerRateTimesRef = useRef<Record<string, number>>({})
+  const rateSourcesRef = useRef<Record<string, string>>({})
   const lastUiUpdateRef = useRef(0)
   const tickUpdateScheduledRef = useRef(false)
-  const hasFreshRate = useCallback(
-    (symbol: string) => freshRateSymbolsRef.current.has(symbol) && Date.now() - (freshRateUpdatedAtRef.current[symbol] ?? 0) <= 10_000,
-    [],
-  )
+  const hasFreshRate = useCallback((symbol: string) => {
+    const updatedAt = freshRateUpdatedAtRef.current[symbol] ?? 0
+    return updatedAt > 0 && Date.now() - updatedAt <= 10_000
+  }, [])
   const candleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const swapIntervalRef  = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastIdRef       = useRef(0)
@@ -1974,25 +1976,44 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }) }, "Saving filled order"), [participantEmail, persistTradeRequest])
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
-  // ── Apply validated live quotes; the selected chart builds bars separately ──
-  const applyRateMap = useCallback((rateMap: Record<string, { bid: number; ask: number; mid?: number; change: number; high: number; low: number; open: number }>, freshSymbols?: string[]) => {
-    const freshCandidates = new Set(freshSymbols ?? Object.keys(rateMap))
-    freshRateSymbolsRef.current = new Set(
-      [...freshCandidates].filter(symbol => {
-        const rate = rateMap[symbol]
-        return !!rate && [rate.bid, rate.ask, rate.change, rate.high, rate.low, rate.open].every(Number.isFinite) && rate.bid > 0 && rate.ask >= rate.bid
-      }),
-    )
+  // ── Apply validated live quotes; keep source timestamps per instrument ──
+  const applyRateMap = useCallback((rateMap: Record<string, MarketRate>, meta?: MarketRateMeta) => {
+    const freshCandidates = new Set(meta?.freshSymbols ?? Object.keys(rateMap))
     const receivedAt = Date.now()
-    for (const symbol of freshRateSymbolsRef.current) freshRateUpdatedAtRef.current[symbol] = receivedAt
+    const acceptedRates: Record<string, MarketRate> = {}
+    const acceptedTimes: Record<string, number> = {}
+    const acceptedFreshSymbols = new Set<string>()
+
+    for (const [symbol, rate] of Object.entries(rateMap)) {
+      if (![rate.bid, rate.ask, rate.change, rate.high, rate.low, rate.open].every(Number.isFinite) || rate.bid <= 0 || rate.ask < rate.bid) continue
+      const suppliedTime = Number(meta?.quoteTimes?.[symbol])
+      const hasProviderTime = Number.isFinite(suppliedTime) && suppliedTime > 0
+      const previousProviderTime = providerRateTimesRef.current[symbol] ?? 0
+      const source = meta?.sources?.[symbol] ?? ""
+      const previousSource = rateSourcesRef.current[symbol] ?? ""
+      const previousReceivedAt = freshRateUpdatedAtRef.current[symbol] ?? 0
+      if (hasProviderTime && previousProviderTime > 0 && suppliedTime + 1_000 < previousProviderTime) continue
+      if (!source.includes("websocket") && previousSource.includes("websocket") && receivedAt - previousReceivedAt < 15_000) continue
+
+      acceptedRates[symbol] = rate
+      acceptedTimes[symbol] = hasProviderTime ? suppliedTime : receivedAt
+      if (hasProviderTime) providerRateTimesRef.current[symbol] = Math.max(previousProviderTime, suppliedTime)
+      if (source) rateSourcesRef.current[symbol] = source
+      if (freshCandidates.has(symbol)) {
+        freshRateUpdatedAtRef.current[symbol] = receivedAt
+        acceptedFreshSymbols.add(symbol)
+      }
+    }
+
     setPairs(prev => {
       let changed = false
       const updated = prev.map(pair => {
-        const rate = rateMap[pair.symbol]
-        if (!rate || ![rate.bid, rate.ask, rate.change, rate.high, rate.low, rate.open].every(Number.isFinite) || rate.bid <= 0 || rate.ask <= 0 || rate.ask < rate.bid) return pair
+        const rate = acceptedRates[pair.symbol]
+        if (!rate) return pair
+        const rateTimestamp = acceptedTimes[pair.symbol]
         const nextSpread = TYPICAL_SPREADS[pair.symbol] ?? 0.0002
-        if (pair.bid !== rate.bid || pair.ask !== rate.ask || pair.change !== rate.change || pair.high !== rate.high || pair.low !== rate.low || pair.open !== rate.open || pair.spread !== nextSpread) changed = true
-        return { ...pair, bid: rate.bid, ask: rate.ask, change: rate.change, high: rate.high, low: rate.low, open: rate.open, spread: nextSpread }
+        if (pair.bid !== rate.bid || pair.ask !== rate.ask || pair.change !== rate.change || pair.high !== rate.high || pair.low !== rate.low || pair.open !== rate.open || pair.rateTimestamp !== rateTimestamp || pair.spread !== nextSpread) changed = true
+        return { ...pair, bid: rate.bid, ask: rate.ask, change: rate.change, high: rate.high, low: rate.low, open: rate.open, rateTimestamp, spread: nextSpread }
       })
       if (!changed) return prev
       pairsRef.current = updated
@@ -2003,23 +2024,23 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       }
       return updated
     })
+
     const selectedSymbol = selectedPairRef.current?.symbol ?? ""
-    const selectedRate = rateMap[selectedSymbol]
+    const selectedRate = acceptedRates[selectedSymbol] ?? pairsRef.current.find(pair => pair.symbol === selectedSymbol)
     const selectedRateIsValid = hasFreshRate(selectedSymbol)
       && !!selectedRate
       && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
       && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
-    const now = Date.now()
-    lastUiUpdateRef.current = now
     setOnline(selectedRateIsValid)
     setMarketError(selectedRateIsValid ? null : "Waiting for a live quote for this instrument.")
-    setLastUpdated(new Date(now))
-    if (freshRateSymbolsRef.current.size > 0) {
-      setTickCount((count) => count + 1)
+    if (acceptedFreshSymbols.has(selectedSymbol)) {
+      lastUiUpdateRef.current = receivedAt
+      setLastUpdated(new Date(receivedAt))
     }
+    if (acceptedFreshSymbols.size > 0) setTickCount((count) => count + 1)
   }, [hasFreshRate])
 
-  // REST remains a safe fallback when no authenticated market-data WebSocket is configured.
+  // REST is reserved for stream recovery and fills instruments not covered by live ticks.
   const fetchRates = useCallback(async () => {
     try {
       const res = await fetch("/api/forex/rates", { cache: "no-store", signal: AbortSignal.timeout(15000) })
@@ -2030,29 +2051,36 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       const responseHasRecentCache = json.source === "cache"
         && Number.isFinite(json.ts)
         && Date.now() - json.ts <= 5_000
+      const now = Date.now()
       const freshSymbols = responseHasLiveQuotes || responseHasRecentCache
-        ? Object.keys(json.rates).filter(symbol => ["tiingo", "twelve-data", "yahoo", "gold-api"].includes(json.sources?.[symbol]))
+        ? Object.keys(json.rates).filter(symbol => {
+          const quoteTime = Number(json.quoteTimes?.[symbol])
+          const quoteIsRecent = !Number.isFinite(quoteTime) || quoteTime <= 0 || (quoteTime <= now + 10_000 && now - quoteTime <= 90_000)
+          return ["tiingo", "twelve-data", "yahoo", "gold-api"].includes(json.sources?.[symbol]) && quoteIsRecent
+        })
         : []
-      applyRateMap(json.rates, freshSymbols)
-      const selectedSymbol = selectedPairRef.current?.symbol ?? ""
-      const selectedRate = json.rates[selectedSymbol]
-      const stale = !freshSymbols.includes(selectedSymbol)
-      const selectedRateAvailable = !!selectedRate
-        && [selectedRate.bid, selectedRate.ask, selectedRate.change, selectedRate.high, selectedRate.low, selectedRate.open].every(Number.isFinite)
-        && selectedRate.bid > 0 && selectedRate.ask >= selectedRate.bid
-      setOnline(selectedRateAvailable && !stale)
-      setMarketError(stale
-        ? "Showing last-known prices — reconnecting to live market feed."
-        : selectedRateAvailable ? null : "Live quote unavailable for this instrument — reconnecting.")
+      applyRateMap(json.rates, { freshSymbols, quoteTimes: json.quoteTimes, sources: json.sources, source: json.source, provider: json.provider, ts: json.ts })
     } catch (error) {
       console.error("[v0] Live rate refresh failed:", error)
-      freshRateSymbolsRef.current = new Set()
-      setOnline(false)
-      setMarketError(lastUpdated ? "Live prices are temporarily unavailable. Existing quotes remain visible." : "Live prices are unavailable. Trading will resume when the feed reconnects.")
+      const selectedSymbol = selectedPairRef.current?.symbol ?? ""
+      if (!hasFreshRate(selectedSymbol)) {
+        setOnline(false)
+        setMarketError(lastUpdated ? "Live prices are temporarily unavailable. Existing quotes remain visible." : "Live prices are unavailable. Trading will resume when the feed reconnects.")
+      }
     }
-  }, [applyRateMap])
+  }, [applyRateMap, hasFreshRate, lastUpdated])
 
   useMarketDataStream(applyRateMap, fetchRates)
+
+  useEffect(() => {
+    const freshnessTimer = setInterval(() => {
+      const symbol = selectedPairRef.current?.symbol ?? ""
+      const fresh = hasFreshRate(symbol)
+      setOnline(fresh)
+      setMarketError(fresh ? null : "Waiting for a live quote for this instrument.")
+    }, 1_000)
+    return () => clearInterval(freshnessTimer)
+  }, [hasFreshRate])
 
   // ── Fetch candles ─���─────────────────────────────────────���──────────────────
   const fetchCandles = useCallback(async (sym: string, tf: TimeFrame) => {
@@ -2134,13 +2162,13 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   return {
   symbol: p.symbol, base: p.base, quote: p.quote,
   bid, ask, change: 0, high: seed > 0 ? Number((seed * 1.002).toFixed(precision)) : 0, low: seed > 0 ? Number((seed * 0.998).toFixed(precision)) : 0, open: seed,
-  spread, candles: [],
+  rateTimestamp: 0, spread, candles: [],
   }
   })
     setPairs(init); pairsRef.current = init
     const defaultPair = init.find(pair => pair.symbol === "XAU/USD") ?? init[0]
     setSelectedPair(defaultPair); setLoading(false)
-    fetchRates(); fetchCandles(defaultPair.symbol, "5M")
+    fetchCandles(defaultPair.symbol, "5M")
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -2163,9 +2191,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   // ── Live-tick last candle ���───────────────────────────����────��────────────────
   useEffect(() => {
-    if (!selectedPair || !Array.isArray(selectedPair.candles) || selectedPair.candles.length === 0) return
+    if (!selectedPair || !hasFreshRate(selectedPair.symbol) || !Array.isArray(selectedPair.candles) || selectedPair.candles.length === 0) return
     const mid = (selectedPair.bid + selectedPair.ask) / 2
     if (!Number.isFinite(mid) || mid === 0) return
+    const quoteTimestamp = selectedPair.rateTimestamp > 0 ? selectedPair.rateTimestamp : Date.now()
+    if (Date.now() - quoteTimestamp > 90_000 || quoteTimestamp > Date.now() + 10_000) return
     setPairs(prev => {
       const updated = prev.map(p => {
         if (p.symbol !== selectedPair.symbol || !Array.isArray(p.candles) || p.candles.length === 0) return p
@@ -2173,7 +2203,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
         if (!Number.isFinite(liveMid) || liveMid === 0) return p
         const d = decimals(p.symbol)
         const intervalSeconds = timeframe === "1M" ? 60 : timeframe === "5M" ? 300 : timeframe === "15M" ? 900 : timeframe === "30M" ? 1800 : timeframe === "1H" ? 3600 : timeframe === "4H" ? 14400 : timeframe === "1W" ? 604800 : 86400
-        const nowSeconds = Math.floor(Date.now() / 1000)
+        const nowSeconds = Math.floor(quoteTimestamp / 1000)
         const bucketOffset = timeframe === "1W" ? 4 * 86400 : 0
         const currentBucket = Math.floor((nowSeconds - bucketOffset) / intervalSeconds) * intervalSeconds + bucketOffset
         const nc = [...p.candles]
@@ -2183,6 +2213,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
           ? Math.floor((lastTimestamp - bucketOffset) / intervalSeconds) * intervalSeconds + bucketOffset
           : 0
         const price = parseFloat(liveMid.toFixed(d))
+        if (lastBucket > 0 && currentBucket < lastBucket) return p
         if (lastBucket > 0 && currentBucket > lastBucket) {
           nc.push({ time: new Date(currentBucket * 1000).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false }), open: price, high: price, low: price, close: price, volume: 0, ts: currentBucket })
           if (nc.length > 150) nc.shift()
@@ -2202,7 +2233,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       if (!prev) return prev
       return pairsRef.current.find(p => p.symbol === prev.symbol) ?? prev
     })
-  }, [selectedPair?.symbol, selectedPair?.bid, selectedPair?.ask, timeframe])
+  }, [selectedPair?.symbol, selectedPair?.bid, selectedPair?.ask, selectedPair?.rateTimestamp, timeframe, hasFreshRate])
 
   // ─��� Overnight swap accrual (every 60s, proportional) ──────────────────────
   useEffect(() => {
@@ -3521,7 +3552,7 @@ const maxLeverage = 100
         </div>
       </header>
 
-      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════���������═���═�����═������ */}
+      {/* ══ REFERENCE WATCHLIST ════════��══��════════════�������══════���══════����������═���═�����═������ */}
       <div className="reference-watchlist terminal-watch-strip shrink-0 flex items-center gap-2 px-3 py-2 overflow-x-auto terminal-scroll">
         {watchlistSymbols.map(symbol => {
           const pair = pairs.find(p => p.symbol === symbol)
