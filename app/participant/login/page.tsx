@@ -93,7 +93,6 @@ export default function ParticipantLoginPage() {
         <h1 className="text-balance text-3xl font-semibold tracking-tight">Sign in to EliteFund</h1>
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">Your trading workspace is ready. Let&apos;s pick up where you left off.</p>
       </div>
-      {!pendingVerification && <ParticipantGoogleSignIn disabled={loading} onCredential={(credential) => signIn("/api/auth/participant-google-one-tap", { credential })} />}
       {pendingVerification ? (
         <div className="flex flex-col gap-4">
           <Alert><Clock aria-hidden="true" /><AlertTitle>Verification pending</AlertTitle><AlertDescription>Your mobile number is awaiting admin verification. You can sign in once it has been verified.</AlertDescription></Alert>
@@ -130,6 +129,7 @@ export default function ParticipantLoginPage() {
             </Field>
           </FieldGroup>
           {error && <Alert variant="destructive"><AlertTitle>Unable to sign in</AlertTitle><AlertDescription>{error}</AlertDescription></Alert>}
+          <ParticipantGoogleSignIn disabled={loading} onCredential={(credential) => signIn("/api/auth/participant-google-one-tap", { credential })} />
           <Button type="submit" disabled={loading} className="auth-submit">{loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}{loading ? "Signing in…" : "Sign in"}{!loading && <ArrowRight data-icon="inline-end" />}</Button>
         </form>
       )}
