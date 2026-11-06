@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
         if (action === "approve") {
           await client.query(
             `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual',
-               close_time = COALESCE(close_time, NOW()), updated_at = NOW()
+               close_time = COALESCE(close_time, NOW()::text), updated_at = NOW()
              WHERE LOWER(participant_email) = LOWER($1) AND status IN ('open', 'pending')`,
             [participant.email],
           )
