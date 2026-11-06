@@ -77,9 +77,15 @@ export async function POST(request: NextRequest) {
       bonus_balance: string | null; activation_fee_paid: boolean; contribution_approved: boolean;
       created_at: string; is_frozen: boolean; account_frozen: boolean; is_deleted: boolean;
       status: string; is_active: boolean; otp_verified: boolean; details_completed: boolean; pin_configured: boolean;
+      account_type: string | null; referral_code: string | null; referred_by: string | null;
+      total_referrals: number | null; total_earnings: string | number | null; referral_earnings: string | number | null;
+      rank: string | null; serial_number: number | null; funded_amount: string | number | null;
+      funded_initial_balance: string | number | null; funded_breach_status: string | null;
     }>(`SELECT id, email, username, full_name, wallet_address, bep20_address, account_balance,
       bonus_balance, activation_fee_paid, contribution_approved, created_at, is_frozen, account_frozen,
       is_deleted, status, is_active, otp_verified, details_completed,
+      account_type, referral_code, referred_by, total_referrals, total_earnings,
+      referral_earnings, rank, serial_number, funded_amount, funded_initial_balance, funded_breach_status,
       (pin_hash IS NOT NULL AND pin_hash <> '') AS pin_configured
       FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1`, [googleUser.email.toLowerCase()])
     if (!participant) {
@@ -113,6 +119,14 @@ export async function POST(request: NextRequest) {
       created_at: participant.created_at, is_frozen: participant.is_frozen,
       status: participant.status, is_active: participant.is_active,
       details_completed: participant.details_completed, pinConfigured: participant.pin_configured,
+      account_type: participant.account_type || "normal", referral_code: participant.referral_code || "",
+      referred_by: participant.referred_by || "", total_referrals: Number(participant.total_referrals) || 0,
+      total_earnings: Number(participant.total_earnings) || 0, referral_earnings: Number(participant.referral_earnings) || 0,
+      rank: participant.rank || "bronze", serial_number: participant.serial_number || "",
+      funded_amount: Number(participant.funded_amount) || 0,
+      funded_initial_balance: Number(participant.funded_initial_balance) || 0,
+      funded_breach_status: participant.funded_breach_status || "clear",
+      account_frozen: participant.account_frozen || false,
     }, { headers: { "Cache-Control": "no-store" } })
     response.cookies.set(nonceCookie, "", { ...cookieOptions, maxAge: 0 })
     return response

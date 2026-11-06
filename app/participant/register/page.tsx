@@ -86,8 +86,34 @@ export default function ParticipantRegisterPage() {
         toast({ title: "Google email verified", description: "Complete your account details and accept the terms. No password or email code is needed." })
         return
       }
-      setParticipantAuth(data.participantId, data.walletAddress || "", data.email, data.username,
-        data.name, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
+      const walletAddress = data.walletAddress || data.bep20_address || ""
+      const participantName = data.name || data.full_name || `${formData.firstName} ${formData.lastName}`.trim()
+      setParticipantAuth(data.participantId, walletAddress, data.email, data.username,
+        participantName, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
+      localStorage.setItem("participantData", JSON.stringify({
+        id: data.participantId, participantId: data.participantId, email: data.email,
+        username: data.username || data.email, name: participantName,
+        wallet: walletAddress, walletAddress, wallet_address: walletAddress,
+        bep20_address: data.bep20_address || walletAddress,
+        account_type: data.account_type || "normal",
+        account_balance: Number(data.account_balance) || 0,
+        wallet_balance: Number(data.wallet_balance ?? data.account_balance) || 0,
+        bonus_balance: Number(data.bonus_balance) || 0,
+        activation_fee_paid: data.activation_fee_paid === true,
+        contribution_approved: data.contribution_approved === true,
+        created_at: data.created_at || new Date().toISOString(),
+        is_frozen: data.is_frozen === true, account_frozen: data.account_frozen === true,
+        details_completed: data.details_completed === true, status: data.status || "active",
+        is_active: data.is_active !== false, pinConfigured: data.pinConfigured === true,
+        referral_code: data.referral_code || "", referred_by: data.referred_by || "",
+        total_referrals: Number(data.total_referrals) || 0,
+        total_earnings: Number(data.total_earnings) || 0,
+        referral_earnings: Number(data.referral_earnings) || 0,
+        rank: data.rank || "bronze", serial_number: data.serial_number || "",
+        funded_amount: Number(data.funded_amount) || 0,
+        funded_initial_balance: Number(data.funded_initial_balance) || 0,
+        funded_breach_status: data.funded_breach_status || "clear",
+      }))
       toast({ title: data.registered ? "Account created" : "Welcome back", description: "Signed in with Google." })
       window.location.assign("/participant/dashboard")
     } catch (googleError) {
@@ -104,7 +130,7 @@ export default function ParticipantRegisterPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) { setError("Enter a valid email address such as name@example.com."); return }
     if (!(formData.country === "India" ? /^[6-9]\d{9}$/.test(mobileDigits) : /^\d{6,15}$/.test(mobileDigits))) { setError(formData.country === "India" ? "Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9." : "Enter a valid mobile number for your country."); return }
     if (!acceptedTerms) { setError("Accept the Terms and Conditions to create your account."); return }
-    if (!captcha.answer || captchaInput.toUpperCase() !== captcha.answer) { setError("The security code didn’t match. Enter the new code and try again."); generateCaptcha(); return }
+    if (!googleIdentity && (!captcha.answer || captchaInput.toUpperCase() !== captcha.answer)) { setError("The security code didn’t match. Enter the new code and try again."); generateCaptcha(); return }
     if (googleIdentity) { await googleSignIn(googleIdentity.credential, true); return }
     if (formData.password !== formData.confirmPassword) { setError("Your passwords don’t match. Re-enter them and try again."); return }
     if (formData.password.length < 6) { setError("Your password must be at least 6 characters."); return }
@@ -181,7 +207,7 @@ export default function ParticipantRegisterPage() {
           <Button type="submit" disabled={loading || emailVerification.code.length !== 6} className="auth-submit">{loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}{loading ? "Verifying…" : "Verify email"}{!loading && <ArrowRight data-icon="inline-end" />}</Button>
           <Button type="button" variant="ghost" className="min-h-11" disabled={loading} onClick={() => { setEmailVerification(null); setError("") }}>Back to registration</Button>
         </form>
-      ) : <ParticipantRegistrationForm googleVerified={Boolean(googleIdentity)} formData={formData} onChange={handleChange} onCountryChange={handleCountryChange} onSubmit={handleSubmit} loading={loading} acceptedTerms={acceptedTerms} onAcceptTerms={setAcceptedTerms} captcha={captcha.text} captchaInput={captchaInput} onCaptchaInput={setCaptchaInput} onRefreshCaptcha={generateCaptcha} />}
+      ) : <ParticipantRegistrationForm key={googleIdentity ? "google-registration" : "email-registration"} googleVerified={Boolean(googleIdentity)} initialStep={googleIdentity && formData.firstName.trim() && formData.lastName.trim() ? 1 : 0} formData={formData} onChange={handleChange} onCountryChange={handleCountryChange} onSubmit={handleSubmit} loading={loading} acceptedTerms={acceptedTerms} onAcceptTerms={setAcceptedTerms} captcha={captcha.text} captchaInput={captchaInput} onCaptchaInput={setCaptchaInput} onRefreshCaptcha={generateCaptcha} />}
       <p className="text-center text-sm leading-relaxed text-muted-foreground">Already have an account? <Link href="/participant/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">Sign in</Link></p>
     </ParticipantAuthShell>
   )

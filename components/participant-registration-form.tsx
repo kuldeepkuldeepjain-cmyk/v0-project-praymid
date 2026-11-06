@@ -33,6 +33,7 @@ export interface RegistrationData {
 
 interface RegistrationFormProps {
   googleVerified?: boolean
+  initialStep?: number
   formData: RegistrationData
   onChange: (field: string, value: string) => void
   onCountryChange: (country: string) => void
@@ -48,14 +49,15 @@ interface RegistrationFormProps {
 
 const STEP_NAMES = ["Details", "Account", "Security"]
 
-export function ParticipantRegistrationForm({ googleVerified = false, formData, onChange, onCountryChange, onSubmit, loading, acceptedTerms, onAcceptTerms, captcha, captchaInput, onCaptchaInput, onRefreshCaptcha }: RegistrationFormProps) {
-  const [step, setStep] = useState(0)
+export function ParticipantRegistrationForm({ googleVerified = false, initialStep = 0, formData, onChange, onCountryChange, onSubmit, loading, acceptedTerms, onAcceptTerms, captcha, captchaInput, onCaptchaInput, onRefreshCaptcha }: RegistrationFormProps) {
+  const [step, setStep] = useState(initialStep)
   const titleRef = useRef<HTMLHeadingElement>(null)
   const plan = DEFAULT_CHALLENGE_PLANS.find((item) => item.key === formData.challengePlanKey) || DEFAULT_CHALLENGE_PLANS[0]
+  const stepNames = googleVerified ? ["Details", "Account", "Finish"] : STEP_NAMES
   const passwordMismatch = formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword
 
   const goToStep = (next: number) => {
-    if (next === 2 && !captcha) onRefreshCaptcha()
+    if (next === 2 && !googleVerified && !captcha) onRefreshCaptcha()
     setStep(next)
     requestAnimationFrame(() => { titleRef.current?.focus(); titleRef.current?.scrollIntoView({ block: "start", behavior: "instant" }) })
   }
@@ -67,15 +69,15 @@ export function ParticipantRegistrationForm({ googleVerified = false, formData, 
   return (
     <>
       <ol aria-label="Registration progress" className="flex items-center justify-between gap-2">
-        {STEP_NAMES.map((label, index) => <li key={label} className="auth-step" aria-current={step === index ? "step" : undefined}><span className="auth-step-dot">{index < step ? <Check className="size-3.5" aria-label="Completed" /> : index + 1}</span><span>{label}</span></li>)}
+        {stepNames.map((label, index) => <li key={label} className="auth-step" aria-current={step === index ? "step" : undefined}><span className="auth-step-dot">{index < step ? <Check className="size-3.5" aria-label="Completed" /> : index + 1}</span><span>{label}</span></li>)}
       </ol>
       <div className="flex flex-col gap-1">
-        <h2 ref={titleRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">{["Let’s start with you", "Set up your account", "Secure your account"][step]}</h2>
-        <p className="text-sm leading-relaxed text-muted-foreground">{["Enter your details as you’d like them on your account.", "Choose an account type and add your contact details.", googleVerified ? "Your Google email is verified. Complete the security check and accept the terms." : "Create a password, then verify your email after signing up."][step]}</p>
+        <h2 ref={titleRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">{step === 2 && googleVerified ? "Finish your registration" : ["Let’s start with you", "Set up your account", "Secure your account"][step]}</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">{["Enter your details as you’d like them on your account.", "Choose an account type and add your contact details.", googleVerified ? "Your Google email is verified. Accept the terms to finish creating your account." : "Create a password, then verify your email after signing up."][step]}</p>
       </div>
       <form onSubmit={submit} aria-busy={loading} className="flex flex-col gap-6">
         <fieldset disabled={loading} className="min-w-0 border-0 p-0">
-          <legend className="sr-only">{STEP_NAMES[step]}</legend>
+          <legend className="sr-only">{stepNames[step]}</legend>
           <FieldGroup>
             {step === 0 && <>
               <FieldGroup className="grid grid-cols-1 sm:grid-cols-2">
@@ -96,13 +98,13 @@ export function ParticipantRegistrationForm({ googleVerified = false, formData, 
               <Field><FieldLabel htmlFor="password">Password</FieldLabel><ParticipantAuthPassword id="password" name="password" autoComplete="new-password" minLength={6} placeholder="Create a password" value={formData.password} onChange={(event) => onChange("password", event.target.value)} aria-describedby="password-help" required /><FieldDescription id="password-help">At least 6 characters. A longer, unique password is recommended.</FieldDescription></Field>
               <Field data-invalid={passwordMismatch || undefined}><FieldLabel htmlFor="confirmPassword">Confirm password</FieldLabel><ParticipantAuthPassword id="confirmPassword" name="confirmPassword" autoComplete="new-password" minLength={6} placeholder="Re-enter your password" value={formData.confirmPassword} onChange={(event) => onChange("confirmPassword", event.target.value)} aria-invalid={passwordMismatch || undefined} aria-describedby={passwordMismatch ? "password-match-help" : undefined} required />{passwordMismatch && <FieldDescription id="password-match-help">Your passwords don&apos;t match yet.</FieldDescription>}</Field>
               </>}
-              <Field><FieldLabel htmlFor="captcha">Security check</FieldLabel><div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"><span className="font-mono text-xl font-medium tracking-widest text-primary" aria-label={`Security code: ${captcha}`}>{captcha || "······"}</span><Button type="button" variant="ghost" size="icon" className="min-h-11 min-w-11" onClick={onRefreshCaptcha} aria-label="Get a new security code"><RefreshCcw /></Button></div><Input id="captcha" name="captcha" placeholder="Enter the code above" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={6} value={captchaInput} onChange={(event) => onCaptchaInput(event.target.value.toUpperCase())} aria-describedby="captcha-help" required /><FieldDescription id="captcha-help">Enter the 6-character code. You can refresh it if needed.</FieldDescription></Field>
+              {!googleVerified && <Field><FieldLabel htmlFor="captcha">Security check</FieldLabel><div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2"><span className="font-mono text-xl font-medium tracking-widest text-primary" aria-label={`Security code: ${captcha}`}>{captcha || "······"}</span><Button type="button" variant="ghost" size="icon" className="min-h-11 min-w-11" onClick={onRefreshCaptcha} aria-label="Get a new security code"><RefreshCcw /></Button></div><Input id="captcha" name="captcha" placeholder="Enter the code above" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={6} value={captchaInput} onChange={(event) => onCaptchaInput(event.target.value.toUpperCase())} aria-describedby="captcha-help" required /><FieldDescription id="captcha-help">Enter the 6-character code. You can refresh it if needed.</FieldDescription></Field>}
               <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-muted-foreground"><input type="checkbox" name="terms" checked={acceptedTerms} onChange={(event) => onAcceptTerms(event.target.checked)} className="mt-1 size-5 shrink-0 accent-primary" required /><span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" className="text-primary underline underline-offset-4">Terms and Conditions</a> and acknowledge the applicable risk disclosures.</span></label>
             </>}
           </FieldGroup>
         </fieldset>
         <div className="flex flex-col gap-2">
-          <Button type="submit" className="auth-submit" disabled={loading || (step === 2 && (!acceptedTerms || !captcha))}>{loading && <Loader2 data-icon="inline-start" className="animate-spin" />}{loading ? "Creating account…" : step === 2 ? "Create account" : "Continue"}{!loading && <ArrowRight data-icon="inline-end" />}</Button>
+          <Button type="submit" className="auth-submit" disabled={loading || (step === 2 && (!acceptedTerms || (!googleVerified && !captcha)))}>{loading && <Loader2 data-icon="inline-start" className="animate-spin" />}{loading ? "Creating account…" : step === 2 ? "Create account" : "Continue"}{!loading && <ArrowRight data-icon="inline-end" />}</Button>
           {step > 0 && <Button type="button" variant="ghost" className="min-h-11" disabled={loading} onClick={() => goToStep(step - 1)}><ArrowLeft data-icon="inline-start" />Back</Button>}
         </div>
       </form>
