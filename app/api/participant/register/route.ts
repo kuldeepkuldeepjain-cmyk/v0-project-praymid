@@ -11,11 +11,11 @@ function generateReferralCode(username: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { firstName, lastName, username, email, mobileNumber, password, country, state, pinCode, countryCode, referralCode, whatsappOtp, accountType, challengePlanKey } = await request.json()
+    const { firstName, lastName, email, mobileNumber, password, country, countryCode, referralCode, accountType, challengePlanKey } = await request.json()
 
     console.log("[v0] Registration attempt for email:", email)
 
-    if (!firstName || !lastName || !username || !email || !mobileNumber || !password) {
+    if (!firstName || !lastName || !email || !mobileNumber || !password) {
       return NextResponse.json({ success: false, message: "All required fields must be filled" }, { status: 400 })
     }
 
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     if (!emailIsValid) {
       return NextResponse.json({ success: false, message: "Please enter a valid email address" }, { status: 400 })
     }
-    const usernameKey = username.toLowerCase().trim()
+    const usernameKey = emailKey
     const mobileNumberClean = mobileNumber?.toString().replace(/\D/g, "") || ""
     const selectedCountryCode = String(countryCode || "")
     const mobileIsValid = country === "India" || selectedCountryCode === "+91"
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     if (normalizedAccountType === "challenge" && !getChallengePlan(selectedChallengePlanKey)) {
       return NextResponse.json({ success: false, message: "Choose a valid Challenge plan." }, { status: 400 })
     }
-    const newReferralCode = generateReferralCode(username)
+    const newReferralCode = generateReferralCode(usernameKey)
     try {
       // Check duplicates
       const emailRows = await query("SELECT id FROM participants WHERE email = $1 LIMIT 1", [emailKey])
@@ -51,8 +51,8 @@ export async function POST(request: Request) {
 
       const usernameRows = await query("SELECT id FROM participants WHERE username = $1 LIMIT 1", [usernameKey])
       if (usernameRows.length > 0) {
-        console.log("[v0] Username already taken:", username)
-        return NextResponse.json({ success: false, message: "Username already taken" }, { status: 400 })
+        console.log("[v0] Email already used as a username:", emailKey)
+        return NextResponse.json({ success: false, message: "This email is already used for an account. Please sign in or contact support." }, { status: 400 })
       }
 
       if (referralCode) {

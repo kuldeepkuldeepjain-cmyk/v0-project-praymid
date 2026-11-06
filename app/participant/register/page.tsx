@@ -32,9 +32,9 @@ export default function ParticipantRegisterPage() {
   const initialChallengePlan = DEFAULT_CHALLENGE_PLANS.find((plan) => plan.key === requestedPlan)?.key ?? DEFAULT_CHALLENGE_PLANS[0].key
   const defaultCountry = REGISTRATION_COUNTRIES[0]
   const [formData, setFormData] = useState<RegistrationData>({
-    firstName: "", lastName: "", username: "", email: "", countryCode: defaultCountry.code,
+    firstName: "", lastName: "", email: "", countryCode: defaultCountry.code,
     mobileNumber: "", password: "", confirmPassword: "", country: defaultCountry.name,
-    state: "", referralCode: referralCodeFromUrl, accountType: initialAccountType, challengePlanKey: initialChallengePlan,
+    referralCode: referralCodeFromUrl, accountType: initialAccountType, challengePlanKey: initialChallengePlan,
   })
 
   const generateCaptcha = () => {
@@ -75,15 +75,14 @@ export default function ParticipantRegisterPage() {
     if (!captcha.answer || captchaInput.toUpperCase() !== captcha.answer) { setError("The security code didn’t match. Enter the new code and try again."); generateCaptcha(); return }
     if (formData.password !== formData.confirmPassword) { setError("Your passwords don’t match. Re-enter them and try again."); return }
     if (formData.password.length < 6) { setError("Your password must be at least 6 characters."); return }
-    if (formData.username.length < 3) { setError("Your username must be at least 3 characters."); return }
     setLoading(true)
     try {
       const response = await fetch("/api/participant/register", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: formData.firstName, lastName: formData.lastName, username: formData.username,
-          email: formData.email, mobileNumber: formData.mobileNumber, countryCode: formData.countryCode,
-          password: formData.password, country: formData.country, state: formData.state,
+          firstName: formData.firstName, lastName: formData.lastName,
+          email: normalizedEmail, mobileNumber: formData.mobileNumber, countryCode: formData.countryCode,
+          password: formData.password, country: formData.country,
           referralCode: formData.referralCode, accountType: formData.accountType, challengePlanKey: formData.challengePlanKey,
         }),
       })
@@ -96,16 +95,16 @@ export default function ParticipantRegisterPage() {
         }
         // Set sessionStorage auth so isParticipantAuthenticated() returns true
         const token = data.participantId || `preview-${Date.now()}`
-        setParticipantAuth(token, data.walletAddress || "", data.email || formData.email, data.username || formData.username, data.full_name || `${formData.firstName} ${formData.lastName}`, false, data.created_at || new Date().toISOString(), false)
+        setParticipantAuth(token, data.walletAddress || "", data.email || normalizedEmail, data.username || normalizedEmail, data.full_name || `${formData.firstName} ${formData.lastName}`, false, data.created_at || new Date().toISOString(), false)
         // Also persist extended data to localStorage for dashboard
         localStorage.setItem("participantData", JSON.stringify({
-          id: data.participantId, email: data.email || formData.email, username: data.username || formData.username,
+          id: data.participantId, email: data.email || normalizedEmail, username: data.username || normalizedEmail,
           wallet_address: data.walletAddress || "", referral_code: data.referralCode || "", account_balance: 0,
           bonus_balance: 0, total_earnings: 0, total_referrals: 0, status: "active", rank: "bronze", is_active: true,
           created_at: data.created_at || new Date().toISOString(),
         }))
         localStorage.setItem("participantNewAccountTopUpPending", String(data.participantId))
-        toast({ title: "Account created!", description: `Welcome @${formData.username}! Redirecting to your dashboard…` })
+        toast({ title: "Account created!", description: `Welcome, ${formData.firstName.trim()}! Redirecting to your dashboard…` })
         // Redirect to dashboard after short delay to show success message
         setTimeout(() => { router.push("/participant/dashboard") }, 1500)
       } else setError(data.message || "Unable to complete registration. Please try again.")
