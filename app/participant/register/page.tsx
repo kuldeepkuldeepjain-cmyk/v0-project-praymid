@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast"
 import { setParticipantAuth } from "@/lib/auth"
 import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
 import { ParticipantAuthShell } from "@/components/participant-auth-shell"
+import { ParticipantGoogleSignIn } from "@/components/participant-google-sign-in"
 import { ParticipantRegistrationForm, REGISTRATION_COUNTRIES, type RegistrationData } from "@/components/participant-registration-form"
 
 export default function ParticipantRegisterPage() {
@@ -19,6 +20,7 @@ export default function ParticipantRegisterPage() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
+  const [googleIdentity, setGoogleIdentity] = useState<{ credential: string; email: string } | null>(null)
   const [emailVerification, setEmailVerification] = useState<{ email: string; code: string } | null>(null)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [captcha, setCaptcha] = useState({ text: "", answer: "" })
@@ -32,9 +34,9 @@ export default function ParticipantRegisterPage() {
   const initialChallengePlan = DEFAULT_CHALLENGE_PLANS.find((plan) => plan.key === requestedPlan)?.key ?? DEFAULT_CHALLENGE_PLANS[0].key
   const defaultCountry = REGISTRATION_COUNTRIES[0]
   const [formData, setFormData] = useState<RegistrationData>({
-    firstName: "", lastName: "", username: "", email: "", countryCode: defaultCountry.code,
+    firstName: "", lastName: "", email: "", countryCode: defaultCountry.code,
     mobileNumber: "", password: "", confirmPassword: "", country: defaultCountry.name,
-    state: "", referralCode: referralCodeFromUrl, accountType: initialAccountType, challengePlanKey: initialChallengePlan,
+    referralCode: referralCodeFromUrl, accountType: initialAccountType, challengePlanKey: initialChallengePlan,
   })
 
   const generateCaptcha = () => {
@@ -63,6 +65,62 @@ export default function ParticipantRegisterPage() {
     const country = REGISTRATION_COUNTRIES.find((item) => item.name === countryName)
     if (country) setFormData((previous) => ({ ...previous, country: countryName, countryCode: country.code }))
   }
+  const googleSignIn = async (credential: string, complete = false) => {
+    if (loading) return
+    setLoading(true)
+    setError("")
+    try {
+      const response = await fetch("/api/auth/participant-google-one-tap", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credential, intent: complete ? "register-complete" : "register",
+          ...(complete ? { registration: { ...formData, mobileNumber: formData.mobileNumber.replace(/\D/g, ""), acceptedTerms } } : {}),
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.success) throw new Error(data.error || "Google registration failed. Please try again.")
+      if (data.requiresRegistration) {
+        setGoogleIdentity({ credential, email: data.email })
+        setFormData((previous) => ({ ...previous, email: data.email,
+          firstName: data.firstName || previous.firstName, lastName: data.lastName || previous.lastName,
+        }))
+        toast({ title: "Google email verified", description: "Complete your account details and accept the terms. No password or email code is needed." })
+        return
+      }
+      const walletAddress = data.walletAddress || data.bep20_address || ""
+      const participantName = data.name || data.full_name || `${formData.firstName} ${formData.lastName}`.trim()
+      setParticipantAuth(data.participantId, walletAddress, data.email, data.username,
+        participantName, data.activation_fee_paid || false, data.created_at, data.is_frozen || false)
+      localStorage.setItem("participantData", JSON.stringify({
+        id: data.participantId, participantId: data.participantId, email: data.email,
+        username: data.username || data.email, name: participantName,
+        wallet: walletAddress, walletAddress, wallet_address: walletAddress,
+        bep20_address: data.bep20_address || walletAddress,
+        account_type: data.account_type || "normal",
+        account_balance: Number(data.account_balance) || 0,
+        wallet_balance: Number(data.wallet_balance ?? data.account_balance) || 0,
+        bonus_balance: Number(data.bonus_balance) || 0,
+        activation_fee_paid: data.activation_fee_paid === true,
+        contribution_approved: data.contribution_approved === true,
+        created_at: data.created_at || new Date().toISOString(),
+        is_frozen: data.is_frozen === true, account_frozen: data.account_frozen === true,
+        details_completed: data.details_completed === true, status: data.status || "active",
+        is_active: data.is_active !== false, pinConfigured: data.pinConfigured === true,
+        referral_code: data.referral_code || "", referred_by: data.referred_by || "",
+        total_referrals: Number(data.total_referrals) || 0,
+        total_earnings: Number(data.total_earnings) || 0,
+        referral_earnings: Number(data.referral_earnings) || 0,
+        rank: data.rank || "bronze", serial_number: data.serial_number || "",
+        funded_amount: Number(data.funded_amount) || 0,
+        funded_initial_balance: Number(data.funded_initial_balance) || 0,
+        funded_breach_status: data.funded_breach_status || "clear",
+      }))
+      toast({ title: data.registered ? "Account created" : "Welcome back", description: "Signed in with Google." })
+      window.location.assign("/participant/dashboard")
+    } catch (googleError) {
+      setError(googleError instanceof Error ? googleError.message : "Unable to connect. Please try again.")
+    } finally { setLoading(false) }
+  }
+
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault()
     if (loading) return
@@ -72,18 +130,18 @@ export default function ParticipantRegisterPage() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(normalizedEmail)) { setError("Enter a valid email address such as name@example.com."); return }
     if (!(formData.country === "India" ? /^[6-9]\d{9}$/.test(mobileDigits) : /^\d{6,15}$/.test(mobileDigits))) { setError(formData.country === "India" ? "Enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9." : "Enter a valid mobile number for your country."); return }
     if (!acceptedTerms) { setError("Accept the Terms and Conditions to create your account."); return }
-    if (!captcha.answer || captchaInput.toUpperCase() !== captcha.answer) { setError("The security code didn’t match. Enter the new code and try again."); generateCaptcha(); return }
+    if (!googleIdentity && (!captcha.answer || captchaInput.toUpperCase() !== captcha.answer)) { setError("The security code didn’t match. Enter the new code and try again."); generateCaptcha(); return }
+    if (googleIdentity) { await googleSignIn(googleIdentity.credential, true); return }
     if (formData.password !== formData.confirmPassword) { setError("Your passwords don’t match. Re-enter them and try again."); return }
     if (formData.password.length < 6) { setError("Your password must be at least 6 characters."); return }
-    if (formData.username.length < 3) { setError("Your username must be at least 3 characters."); return }
     setLoading(true)
     try {
       const response = await fetch("/api/participant/register", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName: formData.firstName, lastName: formData.lastName, username: formData.username,
-          email: formData.email, mobileNumber: formData.mobileNumber, countryCode: formData.countryCode,
-          password: formData.password, country: formData.country, state: formData.state,
+          firstName: formData.firstName, lastName: formData.lastName,
+          email: normalizedEmail, mobileNumber: formData.mobileNumber, countryCode: formData.countryCode,
+          password: formData.password, country: formData.country,
           referralCode: formData.referralCode, accountType: formData.accountType, challengePlanKey: formData.challengePlanKey,
         }),
       })
@@ -96,16 +154,16 @@ export default function ParticipantRegisterPage() {
         }
         // Set sessionStorage auth so isParticipantAuthenticated() returns true
         const token = data.participantId || `preview-${Date.now()}`
-        setParticipantAuth(token, data.walletAddress || "", data.email || formData.email, data.username || formData.username, data.full_name || `${formData.firstName} ${formData.lastName}`, false, data.created_at || new Date().toISOString(), false)
+        setParticipantAuth(token, data.walletAddress || "", data.email || normalizedEmail, data.username || normalizedEmail, data.full_name || `${formData.firstName} ${formData.lastName}`, false, data.created_at || new Date().toISOString(), false)
         // Also persist extended data to localStorage for dashboard
         localStorage.setItem("participantData", JSON.stringify({
-          id: data.participantId, email: data.email || formData.email, username: data.username || formData.username,
+          id: data.participantId, email: data.email || normalizedEmail, username: data.username || normalizedEmail,
           wallet_address: data.walletAddress || "", referral_code: data.referralCode || "", account_balance: 0,
           bonus_balance: 0, total_earnings: 0, total_referrals: 0, status: "active", rank: "bronze", is_active: true,
           created_at: data.created_at || new Date().toISOString(),
         }))
         localStorage.setItem("participantNewAccountTopUpPending", String(data.participantId))
-        toast({ title: "Account created!", description: `Welcome @${formData.username}! Redirecting to your dashboard…` })
+        toast({ title: "Account created!", description: `Welcome, ${formData.firstName.trim()}! Redirecting to your dashboard…` })
         // Redirect to dashboard after short delay to show success message
         setTimeout(() => { router.push("/participant/dashboard") }, 1500)
       } else setError(data.message || "Unable to complete registration. Please try again.")
@@ -139,6 +197,8 @@ export default function ParticipantRegisterPage() {
         <h1 className="text-balance text-3xl font-semibold tracking-tight">{emailVerification ? "Check your inbox" : "Create your account"}</h1>
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">{emailVerification ? "Verify your email to finish setting up your account." : "A few details. One focused trading workspace."}</p>
       </div>
+      {!emailVerification && !googleIdentity && <ParticipantGoogleSignIn mode="signup" disabled={loading} onCredential={googleSignIn} />}
+      {googleIdentity && <Alert><AlertTitle>Google email verified</AlertTitle><AlertDescription>Complete your details for {googleIdentity.email}. No password or email code is required.<Button type="button" variant="link" disabled={loading} onClick={() => { setGoogleIdentity(null); setError("") }}>Use a different account</Button></AlertDescription></Alert>}
       {error && <div ref={errorSummaryRef} tabIndex={-1} className="outline-none"><Alert variant="destructive"><AlertTitle>{emailVerification ? "Unable to verify email" : "Please check your details"}</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div>}
       {emailVerification ? (
         <form onSubmit={verifyEmail} aria-busy={loading} className="flex flex-col gap-5">
@@ -147,7 +207,7 @@ export default function ParticipantRegisterPage() {
           <Button type="submit" disabled={loading || emailVerification.code.length !== 6} className="auth-submit">{loading ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}{loading ? "Verifying…" : "Verify email"}{!loading && <ArrowRight data-icon="inline-end" />}</Button>
           <Button type="button" variant="ghost" className="min-h-11" disabled={loading} onClick={() => { setEmailVerification(null); setError("") }}>Back to registration</Button>
         </form>
-      ) : <ParticipantRegistrationForm formData={formData} onChange={handleChange} onCountryChange={handleCountryChange} onSubmit={handleSubmit} loading={loading} acceptedTerms={acceptedTerms} onAcceptTerms={setAcceptedTerms} captcha={captcha.text} captchaInput={captchaInput} onCaptchaInput={setCaptchaInput} onRefreshCaptcha={generateCaptcha} />}
+      ) : <ParticipantRegistrationForm key={googleIdentity ? "google-registration" : "email-registration"} googleVerified={Boolean(googleIdentity)} initialStep={googleIdentity && formData.firstName.trim() && formData.lastName.trim() ? 1 : 0} formData={formData} onChange={handleChange} onCountryChange={handleCountryChange} onSubmit={handleSubmit} loading={loading} acceptedTerms={acceptedTerms} onAcceptTerms={setAcceptedTerms} captcha={captcha.text} captchaInput={captchaInput} onCaptchaInput={setCaptchaInput} onRefreshCaptcha={generateCaptcha} />}
       <p className="text-center text-sm leading-relaxed text-muted-foreground">Already have an account? <Link href="/participant/login" className="inline-flex min-h-11 items-center font-medium text-primary hover:underline">Sign in</Link></p>
     </ParticipantAuthShell>
   )

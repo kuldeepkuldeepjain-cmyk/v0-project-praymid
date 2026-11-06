@@ -13,6 +13,7 @@ import { setParticipantAuth } from "@/lib/auth"
 import { ForgotPasswordModal } from "@/components/forgot-password-modal"
 import { ParticipantAuthShell } from "@/components/participant-auth-shell"
 import { ParticipantAuthPassword } from "@/components/participant-auth-password"
+import { ParticipantGoogleSignIn } from "@/components/participant-google-sign-in"
 
 export default function ParticipantLoginPage() {
   const { toast } = useToast()
@@ -36,10 +37,16 @@ export default function ParticipantLoginPage() {
       setError(credentialMode === "pin" ? "Enter your 4 to 6 digit login PIN." : "Enter your sign-in details to continue.")
       return
     }
+    const body = credentialMode === "pin" ? (loginMode === "email" ? { email, pin: credential } : { mobile_number, pin: credential }) : (loginMode === "email" ? { email, password } : { mobile_number, password })
+    await signIn(credentialMode === "pin" ? "/api/auth/participant-pin-login" : "/api/auth/participant-login", body)
+  }
+
+  const signIn = async (endpoint: string, body: Record<string, string | undefined>) => {
+    if (loading) return
+    setError("")
     setLoading(true)
     try {
-      const body = credentialMode === "pin" ? (loginMode === "email" ? { email, pin: credential } : { mobile_number, pin: credential }) : (loginMode === "email" ? { email, password } : { mobile_number, password })
-      const response = await fetch(credentialMode === "pin" ? "/api/auth/participant-pin-login" : "/api/auth/participant-login", {
+      const response = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
       })
       const data = await response.json()
@@ -70,7 +77,7 @@ export default function ParticipantLoginPage() {
         toast({ title: "Welcome back!", description: "Successfully signed in." })
         window.location.href = "/participant/dashboard"
       } else {
-        setError("We couldn’t sign you in. Check your details and try again.")
+        setError(endpoint === "/api/auth/participant-google-one-tap" ? data.error || "Google sign-in failed. Please try again." : "We couldn’t sign you in. Check your details and try again.")
       }
     } catch {
       setError("Unable to connect. Check your internet connection and try again.")
@@ -86,6 +93,7 @@ export default function ParticipantLoginPage() {
         <h1 className="text-balance text-3xl font-semibold tracking-tight">Sign in to EliteFund</h1>
         <p className="text-pretty text-sm leading-relaxed text-muted-foreground">Your trading workspace is ready. Let&apos;s pick up where you left off.</p>
       </div>
+      {!pendingVerification && <ParticipantGoogleSignIn disabled={loading} onCredential={(credential) => signIn("/api/auth/participant-google-one-tap", { credential })} />}
       {pendingVerification ? (
         <div className="flex flex-col gap-4">
           <Alert><Clock aria-hidden="true" /><AlertTitle>Verification pending</AlertTitle><AlertDescription>Your mobile number is awaiting admin verification. You can sign in once it has been verified.</AlertDescription></Alert>
