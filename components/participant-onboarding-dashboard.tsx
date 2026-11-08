@@ -6,6 +6,7 @@ import { Activity, ArrowRight, ArrowUpRight, CheckCircle2, CircleHelp, Compass, 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
+import { DiwaliGiftPromo } from "@/components/diwali-gift-promo"
 
 interface ParticipantOnboardingDashboardProps {
   displayName: string
@@ -23,6 +24,7 @@ interface ParticipantOnboardingDashboardProps {
   accountNotice?: ReactNode
   onExploreTerminal: () => void
   onAddFunds: () => void
+  onClaimDiwaliPromo: () => void
   onHelp: () => void
 }
 
@@ -45,7 +47,7 @@ const shortcuts = [
 export function ParticipantOnboardingDashboard({
   displayName, email, isVerified, verificationStatus, accountBalance, accountType, accountStatus,
   bonusBalance, totalEarnings, tradeCount, referralCount, referralEarnings, accountNotice,
-  onExploreTerminal, onAddFunds, onHelp,
+  onExploreTerminal, onAddFunds, onClaimDiwaliPromo, onHelp,
 }: ParticipantOnboardingDashboardProps) {
   const [showTour, setShowTour] = useState(true)
   const [balancesVisible, setBalancesVisible] = useState(true)
@@ -97,6 +99,8 @@ export function ParticipantOnboardingDashboard({
           </div>
         ))}
       </section>
+
+      <DiwaliGiftPromo displayName={displayName} onClaimPromo={onClaimDiwaliPromo} />
 
       {accountNotice}
 

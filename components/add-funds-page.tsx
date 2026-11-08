@@ -51,5 +51,5 @@ export function AddFundsPage() {
   )
 
   const isFunded = participant.account_type === "funded"
-  return <FundingCheckout presentation="page" isOpen onClose={() => router.push(returnHref)} currentBalance={Number(participant.account_balance) || 0} userId={participant.username || participant.email} userEmail={participant.email} isFundedAccount={isFunded} isInitialFundedTopUp={isFunded && (params.get("initial") === "1" || Number(participant.funded_tier_top_up_count) === 0)} openFundedTier={params.get("tier") === "1"} initialAmount={Number(params.get("amount")) || undefined} initialFundingMode={params.get("mode") === "actual" ? "actual" : params.get("mode") === "funded" ? "funded" : undefined} />
+  return <FundingCheckout presentation="page" isOpen onClose={() => router.push(returnHref)} currentBalance={Number(participant.account_balance) || 0} userId={participant.username || participant.email} userEmail={participant.email} isFundedAccount={isFunded} isInitialFundedTopUp={isFunded && (params.get("initial") === "1" || Number(participant.funded_tier_top_up_count) === 0)} openFundedTier={params.get("tier") === "1"} initialAmount={Number(params.get("amount")) || undefined} initialFundingMode={params.get("mode") === "actual" ? "actual" : params.get("mode") === "funded" ? "funded" : undefined} initialPromoCode={params.get("promo") || undefined} />
 }

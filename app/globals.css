@@ -74,6 +74,23 @@
   color: var(--foreground);
 }
 .participant-home-eyebrow { display: flex; align-items: center; gap: .5rem; color: var(--primary); font-size: .875rem; font-weight: 500; line-height: 1.5; letter-spacing: .06em; }
+.participant-diwali-promo { --diwali-accent: #d6b66b; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 1rem; border: 1px solid color-mix(in srgb, var(--brand-primary) 30%, var(--border)); border-radius: 1.25rem; padding: 1.25rem; background: var(--card); box-shadow: inset 0 1px color-mix(in srgb, var(--brand-primary) 8%, transparent); }
+.participant-diwali-copy { display: flex; min-width: 0; align-items: flex-start; gap: 1rem; }
+.participant-diwali-gift { display: flex; width: 3rem; height: 3rem; flex: 0 0 auto; align-items: center; justify-content: center; border: 1px solid color-mix(in srgb, var(--diwali-accent) 35%, transparent); border-radius: 1rem; color: var(--diwali-accent); background: color-mix(in srgb, var(--diwali-accent) 8%, var(--card)); }
+.participant-diwali-gift svg { animation: diwali-gift-float 3s ease-in-out infinite; }
+.participant-diwali-gift[data-open="true"] svg { animation: none; transform: translateY(-2px) scale(1.04); }
+.participant-diwali-reveal { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; animation: diwali-reveal-in .42s cubic-bezier(.2,.8,.2,1) both; }
+.participant-diwali-code { border: 1px solid color-mix(in srgb, var(--diwali-accent) 35%, transparent); color: var(--diwali-accent); background: color-mix(in srgb, var(--diwali-accent) 7%, var(--card)); letter-spacing: .08em; }
+@keyframes diwali-gift-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes diwali-reveal-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 640px) {
+  .participant-diwali-promo { grid-template-columns: minmax(0, 1fr); gap: 1rem; padding: 1rem; }
+  .participant-diwali-copy { gap: .75rem; }
+  .participant-diwali-reveal { align-items: stretch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .participant-diwali-gift svg, .participant-diwali-reveal { animation: none; }
+}
 .participant-home-text-link { display: inline-flex; align-items: center; gap: .5rem; color: var(--muted-foreground); font-size: .875rem; transition: color .2s; }
 .participant-home-text-link:hover { color: var(--primary); }
 .participant-home-top-grid { display: grid; gap: 1rem; min-width: 0; }
