@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useIsMobile } from "@/hooks/use-mobile"
 import QRCode from "qrcode"
@@ -33,6 +33,7 @@ interface TopUpModalProps {
   fundedTierAvailable?: boolean
   initialAmount?: number
   initialFundingMode?: "actual" | "funded"
+  initialPromoCode?: string
 }
 
 type Step = "form" | "submitting" | "success"
@@ -66,7 +67,7 @@ function describePromoDiscount(promo: AppliedPromo) {
 export function TopUpModal(props: TopUpModalProps) {
   const isMobile = useIsMobile()
   const router = useRouter()
-  const { isOpen, onClose, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode } = props
+  const { isOpen, onClose, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode, initialPromoCode } = props
 
   useEffect(() => {
     if (!isOpen || !isMobile) return
@@ -76,15 +77,16 @@ export function TopUpModal(props: TopUpModalProps) {
     if (openFundedTier) query.set("tier", "1")
     if (initialAmount && Number.isFinite(initialAmount)) query.set("amount", String(initialAmount))
     if (initialFundingMode) query.set("mode", initialFundingMode)
+    if (initialPromoCode) query.set("promo", initialPromoCode)
     router.push(`/participant/dashboard/add-funds${query.size ? `?${query}` : ""}`)
     onClose()
-  }, [isOpen, isMobile, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode, router, onClose])
+  }, [isOpen, isMobile, isFundedAccount, isInitialFundedTopUp, openFundedTier, initialAmount, initialFundingMode, initialPromoCode, router, onClose])
 
   if (isMobile) return null
   return <FundingCheckout {...props} />
 }
 
-export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable, initialAmount, initialFundingMode, presentation = "dialog" }: TopUpModalProps & { presentation?: "dialog" | "page" }) {
+export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userEmail, onSuccess, isFundedAccount = false, isInitialFundedTopUp = false, openFundedTier = false, fundedTierAvailable, initialAmount, initialFundingMode, initialPromoCode, presentation = "dialog" }: TopUpModalProps & { presentation?: "dialog" | "page" }) {
   const { toast } = useToast()
   const [step, setStep] = useState<Step>("form")
   const [amount, setAmount] = useState("")
@@ -313,14 +315,15 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     ? fundedTiers[parsedAmount as keyof typeof fundedTiers]
     : parsedAmount
 
-  const applyPromoCode = async () => {
-    const normalizedCode = promoCode.trim().toUpperCase().replace(/\s+/g, "")
+  const applyPromoCode = useCallback(async (requestedCode = promoCode) => {
+    const normalizedCode = requestedCode.trim().toUpperCase().replace(/\s+/g, "")
     setPromoMessage("")
     setAppliedPromo(null)
     if (!normalizedCode) {
       setPromoMessage("Enter a promo code first.")
       return
     }
+    setPromoCode(normalizedCode)
     setApplyingPromo(true)
     try {
       const response = await participantFetch(`/api/participant/promo-codes?code=${encodeURIComponent(normalizedCode)}`, { cache: "no-store" })
@@ -340,7 +343,19 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
     } finally {
       setApplyingPromo(false)
     }
-  }
+  }, [promoCode])
+
+  const initialPromoAppliedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!isOpen) {
+      initialPromoAppliedRef.current = null
+      return
+    }
+    const normalizedCode = initialPromoCode?.trim().toUpperCase().replace(/\s+/g, "")
+    if (!normalizedCode || initialPromoAppliedRef.current === normalizedCode) return
+    initialPromoAppliedRef.current = normalizedCode
+    void applyPromoCode(normalizedCode)
+  }, [isOpen, initialPromoCode, applyPromoCode])
 
   const handleSubmit = async () => {
     setErrorMessage("")
@@ -478,7 +493,7 @@ export function FundingCheckout({ isOpen, onClose, currentBalance, userId, userE
                       <FieldLabel htmlFor="topup-promo-code">Promo code <span className="font-normal text-muted-foreground">(optional)</span></FieldLabel>
                       <InputGroup>
                         <InputGroupInput id="topup-promo-code" value={promoCode} onChange={(event) => { setPromoCode(event.target.value.toUpperCase()); setAppliedPromo(null); setPromoMessage("") }} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); applyPromoCode() } }} placeholder="ENTER CODE" autoComplete="off" maxLength={32} disabled={step === "submitting" || applyingPromo} aria-invalid={Boolean(promoMessage && !appliedPromo) || !isPromoCompatible} aria-describedby="topup-promo-help topup-promo-feedback" />
-                        <InputGroupAddon align="inline-end"><InputGroupButton type="button" onClick={applyPromoCode} disabled={step === "submitting" || applyingPromo || !promoCode.trim()} variant="secondary" size="sm" aria-label="Apply promo code">{applyingPromo ? <Loader2 data-icon="inline-start" className="animate-spin" /> : "Apply"}</InputGroupButton></InputGroupAddon>
+                        <InputGroupAddon align="inline-end"><InputGroupButton type="button" onClick={() => applyPromoCode()} disabled={step === "submitting" || applyingPromo || !promoCode.trim()} variant="secondary" size="sm" aria-label="Apply promo code">{applyingPromo ? <Loader2 data-icon="inline-start" className="animate-spin" /> : "Apply"}</InputGroupButton></InputGroupAddon>
                       </InputGroup>
                       <FieldDescription id="topup-promo-help">Lower your payment without reducing your requested funding.</FieldDescription>
                       <div id="topup-promo-feedback" aria-live="polite" className="flex flex-col gap-2">

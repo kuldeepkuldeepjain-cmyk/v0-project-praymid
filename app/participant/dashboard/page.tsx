@@ -1506,6 +1506,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
+  const [topUpPromoCode, setTopUpPromoCode] = useState("")
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [coachLaunch, setCoachLaunch] = useState<CoachLaunch | null>(null)
   const openCoach = (mode: CoachLaunch["mode"]) => {
@@ -1854,16 +1855,20 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onClose={() => {
           setShowTopUpModal(false)
           setIsInitialFundedTopUp(false)
+          setTopUpPromoCode("")
         }}
         currentBalance={walletBalance}
+        initialPromoCode={topUpPromoCode || undefined}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
         isFundedAccount={isFundedAccount || topUpIsFundedAccount}
   isInitialFundedTopUp={isInitialFundedTopUp || isFundedAccount}
-  onSuccess={async () => {
-  setShowTopUpModal(false)
-  setIsInitialFundedTopUp(false)
-  if (participantData?.email) {
+        onSuccess={async () => {
+          setShowTopUpModal(false)
+          setIsInitialFundedTopUp(false)
+          setTopUpPromoCode("")
+          if (participantData?.email) {
+
   await refreshParticipantData(participantData.email)
   }
   }}
@@ -2004,13 +2009,20 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                     </div>
                   </section>
                 ) : null}
-                onExploreTerminal={() => setActiveTab("trading")}
-                onAddFunds={() => {
-                  setTopUpIsFundedAccount(false)
-                  setIsInitialFundedTopUp(false)
-                  setShowTopUpModal(true)
-                }}
-                onHelp={() => setIsChatOpen(true)}
+        onExploreTerminal={() => setActiveTab("trading")}
+        onAddFunds={() => {
+          setTopUpIsFundedAccount(false)
+          setIsInitialFundedTopUp(false)
+          setShowTopUpModal(true)
+        }}
+        onClaimDiwaliPromo={() => {
+          setTopUpIsFundedAccount(false)
+          setIsInitialFundedTopUp(false)
+          setTopUpPromoCode("HAPPYDIWALI")
+          setShowTopUpModal(true)
+        }}
+        onHelp={() => setIsChatOpen(true)}
+
               />
             ) : (
               <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">

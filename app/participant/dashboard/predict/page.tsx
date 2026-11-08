@@ -155,6 +155,15 @@ function PredictPageContent() {
     return matchesType && matchesSearch
   })
   const focusedAsset = filteredAssets.find((asset) => asset.symbol === selectedAssetSymbol) ?? filteredAssets[0] ?? null
+  const topMovers = CRYPTO_ASSETS
+    .map((asset) => {
+      const priceData = cryptoPrices[asset.symbol]
+      const change = typeof priceData?.change === "number" ? priceData.change : Number.NaN
+      return { asset, priceData, change }
+    })
+    .filter((item) => item.priceData && Number.isFinite(item.change))
+    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change))
+    .slice(0, 3)
 
   // Mount and authentication - Load from localStorage FIRST
   useEffect(() => {
@@ -547,6 +556,144 @@ function PredictPageContent() {
           </div>
         </header>
 
+        <section
+          aria-labelledby="prediction-market-pulse-title"
+          className="mb-5 overflow-hidden rounded-2xl border"
+          style={{
+            backgroundColor: "var(--terminal-graphite-surface)",
+            borderColor: "var(--terminal-graphite-border)",
+          }}
+        >
+          <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center">
+            <div className="flex min-w-0 items-start gap-3 lg:w-64 lg:shrink-0">
+              <span
+                aria-hidden="true"
+                className="flex size-10 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  backgroundColor: "color-mix(in srgb, var(--brand-primary) 14%, var(--terminal-graphite-surface-2))",
+                  color: "var(--brand-primary)",
+                }}
+              >
+                <Activity className="size-5" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 id="prediction-market-pulse-title" className="text-sm font-bold text-[var(--terminal-graphite-text)]">
+                    Market pulse
+                  </h3>
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide"
+                    style={{ color: priceError ? "var(--terminal-graphite-warning)" : "var(--terminal-graphite-positive)" }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="size-1.5 rounded-full"
+                      style={{ backgroundColor: priceError ? "var(--terminal-graphite-warning)" : "var(--terminal-graphite-positive)" }}
+                    />
+                    {priceError ? "Delayed" : isLoading ? "Connecting" : "Live"}
+                  </span>
+                </div>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--terminal-graphite-muted)]">
+                  The day&apos;s sharpest moves, across every market.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid min-w-0 flex-1 grid-cols-3 gap-2">
+              {isLoading && topMovers.length === 0 ? (
+                Array.from({ length: 3 }, (_, index) => (
+                  <div key={index} className="terminal-panel-raised min-w-0 rounded-xl p-3" aria-hidden="true">
+                    <Skeleton className="size-7 rounded-lg bg-[var(--terminal-graphite-elevated)]" />
+                    <Skeleton className="mt-2 h-3 w-16 max-w-full bg-[var(--terminal-graphite-elevated)]" />
+                    <Skeleton className="mt-2 h-4 w-12 max-w-full bg-[var(--terminal-graphite-elevated)]" />
+                  </div>
+                ))
+              ) : topMovers.length === 0 ? (
+                <p className="col-span-3 self-center py-3 text-sm text-[var(--terminal-graphite-muted)]">
+                  Waiting for live quotes to find the biggest moves.
+                </p>
+              ) : (
+                topMovers.map(({ asset, change }) => {
+                  const isPositive = change >= 0
+                  const meterWidth = Math.min(Math.abs(change), 10) * 5
+                  const isFocused = selectedAssetSymbol === asset.symbol
+                  return (
+                    <button
+                      key={asset.symbol}
+                      type="button"
+                      onClick={() => {
+                        setAssetFilter(asset.type)
+                        setAssetSearch("")
+                        setSelectedAssetSymbol(asset.symbol)
+                      }}
+                      aria-label={`Explore ${asset.displayName}, ${isPositive ? "up" : "down"} ${Math.abs(change).toFixed(2)} percent in 24 hours`}
+                      aria-pressed={isFocused}
+                      className="group min-w-0 rounded-xl border p-2.5 text-left transition-all duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)] sm:p-3"
+                      style={{
+                        backgroundColor: isFocused
+                          ? "color-mix(in srgb, var(--brand-primary) 8%, var(--terminal-graphite-surface-2))"
+                          : "var(--terminal-graphite-surface-2)",
+                        borderColor: isFocused ? "var(--brand-primary)" : "var(--terminal-graphite-border)",
+                      }}
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <AssetLogo
+                          symbol={asset.symbol}
+                          name={asset.name}
+                          logoUrl={asset.logo}
+                          bgColor={asset.iconBg}
+                          size={28}
+                          className="shrink-0 rounded-lg"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-xs font-semibold text-[var(--terminal-graphite-text)]">
+                            {asset.displayName}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-[var(--terminal-graphite-muted)]">
+                            {asset.name}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        {isPositive ? (
+                          <ArrowUp aria-hidden="true" className="size-3.5" style={{ color: "var(--terminal-graphite-positive)" }} />
+                        ) : (
+                          <ArrowDown aria-hidden="true" className="size-3.5" style={{ color: "var(--terminal-graphite-negative)" }} />
+                        )}
+                        <span
+                          className="price-mono text-sm font-bold"
+                          style={{ color: isPositive ? "var(--terminal-graphite-positive)" : "var(--terminal-graphite-negative)" }}
+                        >
+                          {isPositive ? "+" : ""}{change.toFixed(2)}%
+                        </span>
+                        <span className="ml-auto text-xs text-[var(--terminal-graphite-muted)]">24h</span>
+                      </div>
+                      <div
+                        aria-hidden="true"
+                        className="relative mt-2 h-1 overflow-hidden rounded-full"
+                        style={{ backgroundColor: "var(--terminal-graphite-bg)" }}
+                      >
+                        <span
+                          className="absolute inset-y-0 left-1/2 w-px"
+                          style={{ backgroundColor: "var(--terminal-graphite-border)" }}
+                        />
+                        <span
+                          className="absolute inset-y-0 rounded-full transition-[left,width] duration-700"
+                          style={{
+                            left: isPositive ? "50%" : `${50 - meterWidth}%`,
+                            width: `${meterWidth}%`,
+                            backgroundColor: isPositive ? "var(--terminal-graphite-positive)" : "var(--terminal-graphite-negative)",
+                          }}
+                        />
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </section>
+
         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-start">
           <section className="flex min-w-0 flex-col gap-4">
         <div
@@ -784,6 +931,27 @@ function PredictPageContent() {
                         <span className="size-2 rounded-full" style={{ backgroundColor: priceError ? "var(--terminal-graphite-warning)" : "var(--terminal-graphite-positive)" }} />
                         {priceError ? "Delayed" : "Live"}
                       </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-3" aria-hidden="true">
+                    <span className="shrink-0 text-xs font-medium text-[var(--terminal-graphite-muted)]">24h move</span>
+                    <div
+                      className="relative h-1.5 min-w-0 flex-1 overflow-hidden rounded-full"
+                      style={{ backgroundColor: "var(--terminal-graphite-surface-2)" }}
+                    >
+                      <span
+                        className="absolute inset-y-0 left-1/2 w-px"
+                        style={{ backgroundColor: "var(--terminal-graphite-border)" }}
+                      />
+                      <span
+                        className="absolute inset-y-0 rounded-full transition-[left,width] duration-700"
+                        style={{
+                          left: isPositive ? "50%" : `${50 - Math.min(Math.abs(change), 10) * 5}%`,
+                          width: `${Math.min(Math.abs(change), 10) * 5}%`,
+                          backgroundColor: isPositive ? "var(--terminal-graphite-positive)" : "var(--terminal-graphite-negative)",
+                        }}
+                      />
                     </div>
                   </div>
 
