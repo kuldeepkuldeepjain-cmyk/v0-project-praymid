@@ -2,10 +2,11 @@ import type { ReactNode } from "react"
 import Link from "next/link"
 import { ArrowLeft, ArrowUpRight, CandlestickChart, LockKeyhole, WalletCards } from "lucide-react"
 import { FlowChainLogoCompact } from "@/components/flowchain-logo"
+import { cn } from "@/lib/utils"
 
 export function ParticipantAuthShell({ children, mode }: { children: ReactNode; mode: "login" | "register" }) {
   return (
-    <div className="participant-auth-workspace min-h-dvh bg-background font-sans text-foreground">
+    <div className={cn("participant-auth-workspace min-h-dvh bg-background font-sans text-foreground", mode === "register" && "auth-register-workspace")}>
       <header className="auth-header flex items-center justify-between border-b border-border px-4 py-4 sm:px-8 lg:px-12">
         <Link href="/" className="flex items-center gap-2" aria-label="EliteFund home">
           <FlowChainLogoCompact size="md" />

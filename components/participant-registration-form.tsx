@@ -71,6 +71,7 @@ export function ParticipantRegistrationForm({ googleVerified = false, initialSte
       <ol aria-label="Registration progress" className="flex items-center justify-between gap-2">
         {stepNames.map((label, index) => <li key={label} className="auth-step" aria-current={step === index ? "step" : undefined}><span className="auth-step-dot">{index < step ? <Check className="size-3.5" aria-label="Completed" /> : index + 1}</span><span>{label}</span></li>)}
       </ol>
+      <div className="auth-step-progress" aria-hidden="true"><span style={{ width: `${(step / 2) * 100}%` }} /></div>
       <div className="flex flex-col gap-1">
         <h2 ref={titleRef} tabIndex={-1} className="text-lg font-semibold tracking-tight outline-none">{step === 2 && googleVerified ? "Finish your registration" : ["Let’s start with you", "Set up your account", "Secure your account"][step]}</h2>
         <p className="text-sm leading-relaxed text-muted-foreground">{["Enter your details as you’d like them on your account.", "Choose an account type and add your contact details.", googleVerified ? "Your Google email is verified. Accept the terms to finish creating your account." : "Create a password, then verify your email after signing up."][step]}</p>

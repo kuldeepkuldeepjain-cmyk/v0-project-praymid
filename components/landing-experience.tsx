@@ -113,6 +113,8 @@ export default function LandingExperience() {
 
       <main id="main-content">
         <section id="platform" className="elite-hero relative isolate overflow-hidden">
+          <div className="elite-hero-art" aria-hidden="true" />
+          <div className="elite-hero-scrim" aria-hidden="true" />
           <div className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-5 py-12 sm:gap-12 sm:px-8 sm:py-20 lg:min-h-[620px] lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 lg:px-10 lg:py-20">
             <div className="elite-hero-copy max-w-2xl">
               <p className="elite-eyebrow mb-5 inline-flex items-center gap-2.5">
