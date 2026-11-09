@@ -100,6 +100,32 @@ export function ParticipantOnboardingDashboard({
 
       {accountNotice}
 
+      <section className="participant-home-activity" aria-labelledby="trading-pulse-title">
+        <div className="participant-home-activity-heading">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="participant-home-activity-signal" aria-hidden="true"><Activity className="size-5" /></span>
+            <div className="flex min-w-0 flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-2"><p className="participant-home-eyebrow">Trading pulse</p><Badge variant="secondary" className="participant-home-live-badge"><span aria-hidden="true" /> Watchlist active</Badge></div>
+              <h2 id="trading-pulse-title" className="text-xl font-medium tracking-tight text-foreground">There&apos;s always another setup to understand.</h2>
+              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">Explore the market stories traders are watching before you decide what deserves your attention.</p>
+            </div>
+          </div>
+          <Link href="/participant/dashboard/predict" className="participant-home-text-link">Explore predictions <ArrowUpRight className="size-4" aria-hidden="true" /></Link>
+        </div>
+        <div className="participant-home-activity-grid">
+          {[
+            { market: "BTC / USDT", signal: "Momentum building", detail: "Watch the next decisive move", tone: "up" },
+            { market: "EUR / USD", signal: "Range under pressure", detail: "A patience test for traders", tone: "steady" },
+            { market: "XAU / USD", signal: "Volatility returning", detail: "Risk comes before reward", tone: "pulse" },
+          ].map((item) => (
+            <Link href="/participant/dashboard/predict" className="participant-home-activity-card" key={item.market}>
+              <div className="flex items-center justify-between gap-3"><span className="font-mono text-sm font-semibold text-foreground">{item.market}</span><span className={`participant-home-activity-line ${item.tone}`} aria-hidden="true" /></div>
+              <div className="flex flex-col gap-1"><span className="text-sm font-medium text-foreground">{item.signal}</span><span className="text-xs text-muted-foreground">{item.detail}</span></div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section aria-labelledby="quick-access-title" className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3"><h2 id="quick-access-title" className="text-lg font-medium tracking-tight text-foreground">Where to next?</h2><span className="text-sm text-muted-foreground">Your shortcuts</span></div>
         <div className="participant-home-shortcuts">
