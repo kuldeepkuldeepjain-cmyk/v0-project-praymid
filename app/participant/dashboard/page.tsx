@@ -1506,7 +1506,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [showTopUpModal, setShowTopUpModal] = useState(false)
   const [topUpIsFundedAccount, setTopUpIsFundedAccount] = useState(false)
   const [isInitialFundedTopUp, setIsInitialFundedTopUp] = useState(false)
-  const [topUpPromoCode, setTopUpPromoCode] = useState("")
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [coachLaunch, setCoachLaunch] = useState<CoachLaunch | null>(null)
   const openCoach = (mode: CoachLaunch["mode"]) => {
@@ -1855,10 +1854,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onClose={() => {
           setShowTopUpModal(false)
           setIsInitialFundedTopUp(false)
-          setTopUpPromoCode("")
         }}
         currentBalance={walletBalance}
-        initialPromoCode={topUpPromoCode || undefined}
         userId={participantData?.username || ""}
         userEmail={participantData?.email || ""}
         isFundedAccount={isFundedAccount || topUpIsFundedAccount}
@@ -1866,7 +1863,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onSuccess={async () => {
           setShowTopUpModal(false)
           setIsInitialFundedTopUp(false)
-          setTopUpPromoCode("")
           if (participantData?.email) {
 
   await refreshParticipantData(participantData.email)
@@ -2013,12 +2009,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onAddFunds={() => {
           setTopUpIsFundedAccount(false)
           setIsInitialFundedTopUp(false)
-          setShowTopUpModal(true)
-        }}
-        onClaimDiwaliPromo={() => {
-          setTopUpIsFundedAccount(false)
-          setIsInitialFundedTopUp(false)
-          setTopUpPromoCode("HAPPYDIWALI")
           setShowTopUpModal(true)
         }}
         onHelp={() => setIsChatOpen(true)}
