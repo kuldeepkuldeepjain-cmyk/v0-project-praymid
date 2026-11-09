@@ -111,8 +111,16 @@
   .participant-home-top-grid { grid-template-columns: minmax(0, 1.85fr) minmax(300px, 1fr); }
   .participant-home-shortcuts { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 }
-@media (prefers-reduced-motion: no-preference) {
+  @media (prefers-reduced-motion: no-preference) {
   .participant-home-workspace > * { animation: participant-home-reveal .5s ease-out both; }
+  .participant-home-wallet, .participant-home-prediction { position: relative; isolation: isolate; overflow: hidden; }
+  .participant-home-wallet::after, .participant-home-prediction::after { position: absolute; z-index: -1; width: 12rem; height: 12rem; border-radius: 999px; background: color-mix(in srgb, var(--primary) 17%, transparent); content: ""; filter: blur(28px); opacity: .45; pointer-events: none; transform: translate(30%, -42%); animation: participant-home-glow 7s ease-in-out infinite; }
+  .participant-home-prediction::before { position: absolute; inset: 0; border: 1px solid color-mix(in srgb, var(--primary) 45%, transparent); border-radius: inherit; content: ""; opacity: .65; pointer-events: none; }
+  .participant-home-prediction { background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 12%, var(--card)), var(--card) 62%); box-shadow: 0 12px 34px color-mix(in srgb, var(--primary) 10%, transparent), inset 0 1px color-mix(in srgb, var(--primary) 28%, transparent); }
+  .participant-home-prediction:hover { border-color: color-mix(in srgb, var(--primary) 70%, transparent); box-shadow: 0 18px 42px color-mix(in srgb, var(--primary) 18%, transparent), inset 0 1px color-mix(in srgb, var(--primary) 36%, transparent); }
+  .participant-home-prediction .participant-home-icon { background: color-mix(in srgb, var(--primary) 18%, transparent); box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 6%, transparent), 0 0 24px color-mix(in srgb, var(--primary) 22%, transparent); }
+  @keyframes participant-home-glow { 0%, 100% { opacity: .32; transform: translate(30%, -42%) scale(.9); } 50% { opacity: .58; transform: translate(20%, -30%) scale(1.12); } }
+
   .participant-home-workspace > :nth-child(2) { animation-delay: .06s; }
   .participant-home-workspace > :nth-child(3) { animation-delay: .12s; }
   .participant-home-workspace > :nth-child(n+4) { animation-delay: .18s; }
@@ -121,6 +129,7 @@
 @media (prefers-reduced-motion: reduce) {
   .participant-home-workspace *, .participant-home-workspace *::before, .participant-home-workspace *::after { animation: none !important; transition: none !important; }
   .participant-home-shortcut:hover { transform: none; }
+  .participant-home-prediction { box-shadow: none; }
 }
 
 :root {
@@ -3571,7 +3580,7 @@ button, a, [role="button"] {
   }
 }
 
-/* ── Sleek institutional market sidebar ───────────────��─────���─────────────── */
+/* ── Sleek institutional market sidebar ───���───────────��─────���─────────────── */
 .mt5-terminal .apple-terminal-market {
   width: 276px !important;
   background: #0b1421 !important;

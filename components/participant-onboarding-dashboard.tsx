@@ -104,7 +104,7 @@ export function ParticipantOnboardingDashboard({
         <div className="flex items-center justify-between gap-3"><h2 id="quick-access-title" className="text-lg font-medium tracking-tight text-foreground">Where to next?</h2><span className="text-sm text-muted-foreground">Your shortcuts</span></div>
         <div className="participant-home-shortcuts">
           {shortcuts.map(({ href, icon: Icon, label, detail }) => (
-            <Link key={href} href={href} className="participant-home-shortcut group">
+            <Link key={href} href={href} className={`participant-home-shortcut group${label === "Predictions" ? " participant-home-prediction" : ""}`}>
               <div className="flex items-center justify-between gap-2"><span className="participant-home-icon"><Icon className="size-5" aria-hidden="true" /></span><ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" /></div>
               <div className="flex flex-col gap-1"><span className="text-sm font-semibold text-foreground">{label}</span><span className="text-sm text-muted-foreground">{detail}</span></div>
             </Link>
