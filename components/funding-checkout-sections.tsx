@@ -168,7 +168,7 @@ export function FundingReviewSummary({ currentBalance, parsedAmount, payableAmou
         </div>
       </CardContent>
       <CardFooter>
-        <p className="funding-inline-note"><ShieldCheck className="size-4 shrink-0" aria-hidden="true" /><span>{isSubmitted ? "Pending review · up to 24 hours" : "Manual review · up to 24 hours"}</span></p>
+        <p className="funding-inline-note"><ShieldCheck className="size-4 shrink-0" aria-hidden="true" /><span>{isSubmitted ? "Pending review · Instant Approval after manual review" : "Instant Approval after manual review"}</span></p>
       </CardFooter>
     </Card>
   )
