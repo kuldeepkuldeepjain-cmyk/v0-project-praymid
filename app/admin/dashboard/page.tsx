@@ -191,7 +191,9 @@ export default function AdminDashboard() {
   }
 
   const handleLogout = () => {
-    clearAdminAuth()
+  if (!window.confirm("Are you ready to logout?")) return
+  clearAdminAuth()
+
     router.push("/finalflow/login")
   }
 

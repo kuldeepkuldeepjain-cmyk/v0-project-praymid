@@ -383,7 +383,9 @@ function HamburgerMenu({
   const router = useRouter()
 
   const handleLogout = async () => {
-    localStorage.removeItem("participantData")
+  if (!window.confirm("Are you ready to logout?")) return
+  localStorage.removeItem("participantData")
+
     localStorage.removeItem("participantToken")
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
     router.push("/participant/login")
@@ -1534,7 +1536,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   }, [participantData?.email])
 
   const handleLogout = async () => {
-    localStorage.removeItem("participantData")
+  if (!window.confirm("Are you ready to logout?")) return
+  localStorage.removeItem("participantData")
+
     localStorage.removeItem("participantToken")
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
     router.push("/participant/login")
