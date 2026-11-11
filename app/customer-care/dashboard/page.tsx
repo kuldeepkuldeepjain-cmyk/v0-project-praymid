@@ -15,5 +15,5 @@ export default function CustomerCareDashboardPage() {
     }
   }, [router])
 
-  return <CustomerCareWorkspace onLogout={() => { clearAdminAuth(); router.replace("/finalflow/login") }} />
+  return <CustomerCareWorkspace onLogout={() => { if (!window.confirm("Are you ready to logout?")) return; clearAdminAuth(); router.replace("/finalflow/login") }} />
 }

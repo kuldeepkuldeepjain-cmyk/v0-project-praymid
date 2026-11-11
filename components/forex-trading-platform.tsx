@@ -3457,8 +3457,10 @@ const maxLeverage = 100
 	        onOpenTransfer={() => {}}
 	  onOpenSettings={() => { window.location.assign("/participant/dashboard/settings/security") }}
 	        onOpenProfile={() => { window.location.assign("/participant/dashboard/profile") }}
-	  onLogout={async () => {
-	    clearParticipantAuth()
+  onLogout={async () => {
+  if (!window.confirm("Are you ready to logout?")) return
+  clearParticipantAuth()
+
 	    await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
 	    window.location.assign("/participant/login")
 	  }}
@@ -3738,8 +3740,10 @@ const maxLeverage = 100
           <button
             type="button"
             className="mobile-account-logout"
-            onClick={async () => {
-              clearParticipantAuth()
+  onClick={async () => {
+  if (!window.confirm("Are you ready to logout?")) return
+  clearParticipantAuth()
+
               await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
               window.location.assign("/participant/login")
             }}
