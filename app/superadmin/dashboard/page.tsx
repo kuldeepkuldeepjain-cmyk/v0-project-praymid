@@ -117,7 +117,9 @@ export default function SuperAdminDashboard() {
   }
 
   const handleLogout = () => {
-    clearAdminAuth()
+  if (!window.confirm("Are you ready to logout?")) return
+  clearAdminAuth()
+
     router.push("/superadmin/login")
   }
 

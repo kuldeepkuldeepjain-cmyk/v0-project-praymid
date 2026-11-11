@@ -262,6 +262,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
               variant="outline"
               className="w-full h-12 bg-transparent border-2 border-slate-300 hover:bg-slate-50"
               onClick={async () => {
+                if (!window.confirm("Are you ready to logout?")) return
                 localStorage.removeItem("participantData")
                 localStorage.removeItem("participantToken")
                 await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
@@ -383,7 +384,9 @@ function HamburgerMenu({
   const router = useRouter()
 
   const handleLogout = async () => {
-    localStorage.removeItem("participantData")
+  if (!window.confirm("Are you ready to logout?")) return
+  localStorage.removeItem("participantData")
+
     localStorage.removeItem("participantToken")
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
     router.push("/participant/login")
@@ -1534,7 +1537,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   }, [participantData?.email])
 
   const handleLogout = async () => {
-    localStorage.removeItem("participantData")
+  if (!window.confirm("Are you ready to logout?")) return
+  localStorage.removeItem("participantData")
+
     localStorage.removeItem("participantToken")
     await fetch("/api/auth/participant-logout", { method: "POST" }).catch(() => {})
     router.push("/participant/login")
