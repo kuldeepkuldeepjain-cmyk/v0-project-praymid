@@ -1,6 +1,7 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter, Geist_Mono } from "next/font/google"
+import Script from "next/script"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -125,6 +126,22 @@ export default function RootLayout({
           </ToastProvider>
         </ThemeProvider>
         <Analytics />
+        <Script
+          id="gtag-data-layer"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){window.dataLayer.push(arguments);}
+              gtag('js', new Date());
+            `,
+          }}
+        />
+        <Script
+          id="google-tag-manager"
+          src="https://www.googletagmanager.com/gtm.js?id=GTM-NQ324DZ5"
+          strategy="afterInteractive"
+        />
         {/* Remove legacy service workers so cached HTML cannot diverge from the current server render. */}
         <script
           dangerouslySetInnerHTML={{
