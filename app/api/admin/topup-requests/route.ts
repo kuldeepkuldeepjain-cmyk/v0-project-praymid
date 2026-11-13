@@ -196,36 +196,39 @@ export async function POST(req: NextRequest) {
         }
         const requestedFundingAmount = Number((depositAmount + promoBonusAmount).toFixed(2))
         const fundedSizes: Record<number, number> = { 50: 5000, 100: 10000, 250: 25000, 500: 50000, 1000: 100000 }
-        const isFundedAccount = participant.account_type === "funded"
-        // A funded account's first activation is tier-based regardless of active/frozen status.
-        const isInitialFundedTopUp = isFundedAccount
-          && payment.payment_method === "funded_tier"
-          && !Number(participant.funded_initial_balance || 0)
-          && Number(participant.account_balance || 0) <= 0
-        const fundedCredit = fundedSizes[requestedFundingAmount]
-        if (isInitialFundedTopUp && !fundedCredit) throw new Error("TOPUP_INVALID_FUNDED_TIER")
+  const isFundedAccount = participant.account_type === "funded"
+  const isChallengeUpgrade = participant.account_type === "challenge" && payment.payment_method === "funded_tier"
+  // A first funded activation or challenge upgrade is tier-based regardless of active/frozen status.
+  const isInitialFundedTopUp = payment.payment_method === "funded_tier"
+  && (isChallengeUpgrade || (isFundedAccount && !Number(participant.funded_initial_balance || 0) && Number(participant.account_balance || 0) <= 0))
+  const fundedCredit = fundedSizes[requestedFundingAmount]
+  if (isInitialFundedTopUp && !fundedCredit) throw new Error("TOPUP_INVALID_FUNDED_TIER")
 
-        const creditedAmount = isInitialFundedTopUp ? fundedCredit : requestedFundingAmount
-        const newBalance = Number(participant.account_balance || 0) + creditedAmount
+  const creditedAmount = isInitialFundedTopUp ? fundedCredit : requestedFundingAmount
+  const newBalance = isChallengeUpgrade ? creditedAmount : Number(participant.account_balance || 0) + creditedAmount
+
         const fundedBaseAmount = isFundedAccount
           ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
           : 0
         const remainsBelowLossLimit = isFundedAccount && newBalance < getFundedMinimumBalance(fundedBaseAmount)
         const revivalSql = `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
 
-        await client.query(
-          isFundedAccount
-            ? `UPDATE participants
-               SET account_balance = $1,
-                   funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
-                   funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
-                   ${revivalSql}, updated_at = NOW()
-               WHERE id = $2`
-            : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
-          isFundedAccount
-            ? [newBalance, payment.participant_id, isInitialFundedTopUp, fundedBaseAmount]
-            : [newBalance, payment.participant_id],
-        )
+  await client.query(
+  isFundedAccount || isChallengeUpgrade
+  ? `UPDATE participants
+  SET account_balance = $1,
+  account_type = CASE WHEN $3 THEN 'funded' ELSE account_type END,
+  challenge_status = CASE WHEN $5 THEN 'switched_to_funded' ELSE challenge_status END,
+  funded_initial_balance = CASE WHEN $3 THEN $1 ELSE funded_initial_balance END,
+  funded_amount = CASE WHEN $3 THEN $4 ELSE funded_amount END,
+  ${revivalSql}, updated_at = NOW()
+  WHERE id = $2`
+  : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
+  isFundedAccount || isChallengeUpgrade
+  ? [newBalance, payment.participant_id, isInitialFundedTopUp, fundedBaseAmount || creditedAmount, isChallengeUpgrade]
+  : [newBalance, payment.participant_id],
+  )
+
         await client.query(
           `UPDATE topup_requests SET status = 'completed', reviewed_at = NOW(), admin_notes = $1
            WHERE id = $2 AND LOWER(status) IN ('pending', 'pending_collection')`,
