@@ -6,6 +6,7 @@ import { Activity, ArrowRight, ArrowUpRight, CheckCircle2, CircleHelp, Compass, 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
+import { ParticipantFundingOpportunity } from "@/components/participant-funding-opportunity"
 
 interface ParticipantOnboardingDashboardProps {
   displayName: string
@@ -61,8 +62,8 @@ export function ParticipantOnboardingDashboard({
     <div className="participant-home-workspace mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 font-sans md:px-7 md:py-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <p className="participant-home-eyebrow">EliteFund / Overview</p>
-          <p className="text-sm text-muted-foreground">A little clarity. A different kind of edge.</p>
+          <p className="participant-home-eyebrow">EliteFund / Trading overview</p>
+          <p className="text-sm text-muted-foreground">Capital, activity, and next steps in one focused workspace.</p>
         </div>
         <Link href="/participant/dashboard/profile" className="participant-home-text-link"><ShieldCheck className="size-4" aria-hidden="true" /> {verificationStatus}<ArrowUpRight className="size-4" aria-hidden="true" /></Link>
       </div>
@@ -99,6 +100,8 @@ export function ParticipantOnboardingDashboard({
       </section>
 
       {accountNotice}
+
+      <ParticipantFundingOpportunity accountType={accountType} onAddFunds={onAddFunds} />
 
       <section className="participant-home-activity" aria-labelledby="trading-pulse-title">
         <div className="participant-home-activity-heading">

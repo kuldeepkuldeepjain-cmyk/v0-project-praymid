@@ -5,14 +5,14 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
 const fundedPlans = [
-  { capacity: "$5K", fee: "$50" },
-  { capacity: "$10K", fee: "$100" },
-  { capacity: "$25K", fee: "$250" },
-  { capacity: "$50K", fee: "$500" },
-  { capacity: "$100K", fee: "$1,000" },
+  { capacity: "$5K", fee: 50 },
+  { capacity: "$10K", fee: 100 },
+  { capacity: "$25K", fee: 250 },
+  { capacity: "$50K", fee: 500 },
+  { capacity: "$100K", fee: 1000 },
 ]
 
-export function ChallengeFundedUpgradeStrip({ onChoosePlan }: { onChoosePlan: () => void }) {
+export function ChallengeFundedUpgradeStrip({ onChoosePlan }: { onChoosePlan: (fee?: number) => void }) {
   return (
     <section className="challenge-funded-strip" aria-labelledby="instant-funded-title">
       <div className="challenge-funded-strip-copy">
@@ -28,17 +28,17 @@ export function ChallengeFundedUpgradeStrip({ onChoosePlan }: { onChoosePlan: ()
 
       <div className="challenge-funded-plans" role="list" aria-label="Instant funded account tiers">
         {fundedPlans.map((plan) => (
-          <button type="button" className="challenge-funded-plan" key={plan.capacity} onClick={onChoosePlan} role="listitem">
+          <button type="button" className="challenge-funded-plan" key={plan.capacity} onClick={() => onChoosePlan(plan.fee)} role="listitem">
             <span className="text-xs text-muted-foreground">Funded capacity</span>
             <strong className="font-mono text-lg text-foreground">{plan.capacity}</strong>
-            <span className="text-xs font-medium text-primary">{plan.fee} fee</span>
+            <span className="text-xs font-medium text-primary">${plan.fee.toLocaleString()} fee</span>
           </button>
         ))}
       </div>
 
       <div className="challenge-funded-strip-action">
         <span className="flex items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-4 text-primary" aria-hidden="true" /> Approval required</span>
-        <Button type="button" size="lg" className="rounded-xl" onClick={onChoosePlan}>View funded plans <ArrowRight data-icon="inline-end" /></Button>
+        <Button type="button" size="lg" className="rounded-xl" onClick={() => onChoosePlan()}>View funded plans <ArrowRight data-icon="inline-end" /></Button>
       </div>
     </section>
   )

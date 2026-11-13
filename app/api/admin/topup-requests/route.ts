@@ -187,7 +187,9 @@ export async function POST(req: NextRequest) {
         )
         const participant = participantResult.rows[0]
         if (!participant) throw new Error("TOPUP_PARTICIPANT_MISSING")
-        if (participant.account_type === "challenge") throw new Error("TOPUP_CHALLENGE_ACCOUNT")
+        if (participant.account_type === "challenge" && payment.payment_method !== "funded_tier") {
+          throw new Error("TOPUP_CHALLENGE_ACCOUNT")
+        }
 
         const depositAmount = Number(payment.amount)
         const promoBonusAmount = Number(payment.promo_bonus_amount || 0)
