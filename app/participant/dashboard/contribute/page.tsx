@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { AlertCircle, ArrowLeft, ArrowRight, ChevronRight, Clock3, QrCode, ShieldCheck } from "lucide-react"
+import { AlertCircle, ArrowLeft, ChevronRight, QrCode, ShieldCheck } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { FundingSection } from "@/components/funding-checkout-sections"
 import { PageLoader } from "@/components/ui/page-loader"
@@ -120,24 +120,6 @@ export default function AddFundPage() {
 
         <div className="funding-landing-grid">
           <div className="flex min-w-0 flex-col gap-5">
-            <Card className="funding-balance-card">
-              <CardHeader>
-                <CardDescription>Current trading balance</CardDescription>
-                <CardTitle>
-                  <p className="funding-balance-value">${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}<span>USDT</span></p>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-relaxed text-muted-foreground">{isFundedAccountBreached ? "Top up your funded account and request reactivation after your payment is approved." : "Choose UPI, bank transfer, or a supported USDT network in checkout. Your balance updates after payment verification."}</p>
-              </CardContent>
-              <CardFooter className="flex flex-col gap-3">
-                <Button type="button" onClick={() => { setOpenFundedTier(false); setShowTopUpModal(true) }} className="funding-primary-action h-12 w-full">
-                  {isFundedAccountBreached ? "Add Funds to Reactivate" : "Add Funds"}<ArrowRight data-icon="inline-end" />
-                </Button>
-                <p className="funding-inline-note"><Clock3 className="size-4" aria-hidden="true" />Payment review takes up to 24 hours</p>
-              </CardFooter>
-            </Card>
-
             <Link href="/participant/dashboard/upi" className="funding-gateway-link">
               <QrCode className="size-6 shrink-0 text-primary" aria-hidden="true" />
               <span className="flex min-w-0 flex-1 flex-col gap-1">

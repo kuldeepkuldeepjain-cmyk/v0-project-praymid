@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     const requests = await query(
-      "SELECT id FROM topup_requests WHERE participant_id = $1 LIMIT 1",
+      "SELECT id FROM topup_requests WHERE participant_id = $1 AND payment_method = 'funded_tier' LIMIT 1",
       [participants[0].id],
     ) as Array<{ id: string }>
 

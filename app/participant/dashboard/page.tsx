@@ -32,6 +32,7 @@ import { DashboardChallengeOffer } from "@/components/dashboard-challenge-offer"
 import { ParticipantMarketTicker } from "@/components/participant-market-ticker"
 import { ParticipantPinSetup } from "@/components/participant-pin-setup"
 import { ChallengeStatusCard } from "@/components/challenge-status-card"
+import { ChallengeFundedUpgradeStrip } from "@/components/challenge-funded-upgrade-strip"
 import type { CoachLaunch } from "@/lib/trade-coach"
 
 
@@ -2022,6 +2023,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             ) : (
               <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">
                 <ParticipantDashboardHero displayName={displayName} isChallenge onExploreTerminal={() => setActiveTab("trading")} />
+                <ChallengeFundedUpgradeStrip onChoosePlan={() => {
+                  setTopUpIsFundedAccount(true)
+                  setIsInitialFundedTopUp(true)
+                  setShowTopUpModal(true)
+                }} />
                 <div className="participant-home-panel sm:flex-row sm:items-center sm:justify-between">
                   <p className="max-w-2xl text-pretty text-sm leading-6 text-muted-foreground">Your virtual balance, daily loss limit, drawdown floor, leverage cap, and trading-day progress are monitored by the Challenge evaluation.</p>
                   <Button asChild variant="outline" className="shrink-0 rounded-xl"><Link href="/participant/dashboard/challenge">View evaluation <ArrowUpRight data-icon="inline-end" /></Link></Button>
