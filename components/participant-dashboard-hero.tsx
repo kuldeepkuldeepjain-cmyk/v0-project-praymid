@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowUpRight, ScanLine, Sparkles } from "lucide-react"
+import { ArrowUpRight, ChartCandlestick, ScanLine, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ParticipantDashboardHeroProps {
@@ -23,7 +23,8 @@ export function ParticipantDashboardHero({ displayName, isChallenge = false, onE
           <p className="max-w-72 text-pretty text-sm leading-6 text-muted-foreground">{isChallenge ? "Know your limits. Follow your plan. Keep your evaluation in focus." : "Step inside your markets. See the bigger picture. Move with intention."}</p>
         </div>
         <div className="participant-vault-actions">
-          <Button type="button" size="lg" onClick={onExploreTerminal} className="participant-vault-action rounded-xl">
+          <Button type="button" size="lg" onClick={onExploreTerminal} className="participant-vault-action participant-terminal-cta rounded-xl">
+            <ChartCandlestick data-icon="inline-start" aria-hidden="true" />
             <span className="sm:hidden">Terminal</span>
             <span className="hidden sm:inline">Enter trading terminal</span>
             <ArrowUpRight data-icon="inline-end" />
