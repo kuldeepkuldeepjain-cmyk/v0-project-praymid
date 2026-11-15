@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
+import { requireParticipantSession } from "@/lib/auth-middleware"
 import { getPool } from "@/lib/db"
 
 export async function POST(request: Request) {
+  const auth = await requireParticipantSession()
+  if (!auth.ok) return auth.response
+
   try {
     const { predictionId, finalPrice } = await request.json()
     if (!predictionId || !finalPrice) {
@@ -10,7 +14,11 @@ export async function POST(request: Request) {
 
     const db = getPool()!
 
-    const predRes = await db.query("SELECT * FROM predictions WHERE id = $1", [predictionId])
+    const participantEmail = auth.email.toLowerCase().trim()
+    const predRes = await db.query(
+      "SELECT * FROM predictions WHERE id = $1 AND participant_email = $2",
+      [predictionId, participantEmail],
+    )
     const prediction = predRes.rows[0]
     if (!prediction) {
       return NextResponse.json({ success: false, error: "Prediction not found" }, { status: 404 })
@@ -35,11 +43,14 @@ export async function POST(request: Request) {
     // Atomically claim the pending prediction before calculating and crediting
     // the result. Concurrent cron/client requests can therefore settle once.
     const claim = await db.query(
-      "UPDATE predictions SET status='settling' WHERE id=$1 AND status='pending' RETURNING *",
-      [predictionId],
+      "UPDATE predictions SET status='settling' WHERE id=$1 AND participant_email=$2 AND status='pending' RETURNING *",
+      [predictionId, participantEmail],
     )
     if (!claim.rows.length) {
-      const settled = await db.query("SELECT * FROM predictions WHERE id=$1", [predictionId])
+      const settled = await db.query(
+        "SELECT * FROM predictions WHERE id=$1 AND participant_email=$2",
+        [predictionId, participantEmail],
+      )
       const current = settled.rows[0]
       const settledResult = String(current?.result || current?.status || "").toLowerCase()
       const isRefund = settledResult === "refunded"
@@ -62,13 +73,15 @@ export async function POST(request: Request) {
         "UPDATE predictions SET target_price=$1, status='settled', result='refunded', profit_loss=0, closed_at=NOW() WHERE id=$2 AND status='settling'",
         [finalPrice, predictionId]
       )
-      const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
-      await db.query(`UPDATE participants SET ${balanceField} = ${balanceField} + $1 WHERE email=$2`, [prediction.amount, prediction.participant_email])
-      await db.query(
-        `INSERT INTO transactions (participant_email, type, amount, description, reference_id, status)
-         VALUES ($1,'refund',$2,'Trade refunded - no price movement',$3,'completed') ON CONFLICT DO NOTHING`,
-        [prediction.participant_email, prediction.amount, predictionId]
-      ).catch(() => {})
+      if (prediction.balance_source !== "demo") {
+        const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
+        await db.query(`UPDATE participants SET ${balanceField} = ${balanceField} + $1 WHERE email=$2`, [prediction.amount, prediction.participant_email])
+        await db.query(
+          `INSERT INTO transactions (participant_email, type, amount, description, reference_id, status)
+           VALUES ($1,'refund',$2,'Trade refunded - no price movement',$3,'completed') ON CONFLICT DO NOTHING`,
+          [prediction.participant_email, prediction.amount, predictionId]
+        ).catch(() => {})
+      }
     return NextResponse.json({ success: true, result: "refunded", profitLoss: 0, payout: prediction.amount, isWin: false, isRefund: true, accountFrozen: false })
     }
 
@@ -86,7 +99,7 @@ export async function POST(request: Request) {
 
     // On WIN: credit payout (stake back + profit). Balance was already debited at bet placement.
     // On LOSS: nothing to do — balance was already debited at bet placement.
-    if (isWin && payout > 0) {
+    if (isWin && payout > 0 && prediction.balance_source !== "demo") {
       const balanceField = prediction.balance_source === "referral" ? "bonus_balance" : "account_balance"
       await db.query(
         `UPDATE participants SET ${balanceField} = ${balanceField} + $1, total_earnings = COALESCE(total_earnings,0) + $2 WHERE email=$3`,
