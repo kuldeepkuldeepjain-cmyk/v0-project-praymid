@@ -517,8 +517,8 @@ function PredictPageContent() {
               <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</p>
             </div>
             <div className="terminal-panel rounded-xl px-2.5 py-1.5 sm:hidden">
-              <p className="text-xs text-[var(--terminal-graphite-muted)]">{tradeMode === "demo" ? "Demo" : "Real"}</p>
-              <p className="price-mono text-sm font-bold text-[var(--brand-primary)]">${activeBalance.toFixed(2)}</p>
+              <p className="text-xs text-[var(--terminal-graphite-muted)]">Real balance</p>
+              <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</p>
             </div>
             <Button
               type="button"
