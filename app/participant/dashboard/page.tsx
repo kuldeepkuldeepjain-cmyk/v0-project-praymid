@@ -13,7 +13,7 @@ import {
   ChevronDown, FileText, ShieldCheck, Palette, BellRing, SlidersHorizontal, QrCode,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
+import { FUNDED_PLANS, getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
   import { clearParticipantAuth, isParticipantAuthenticated, participantFetch } from "@/lib/auth"
 
 import type { UserRank } from "@/lib/types"
@@ -1987,6 +1987,15 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 setParticipantData(updated)
                 localStorage.setItem("participantData", JSON.stringify(updated))
                 router.push("/participant/dashboard/challenge")
+              }}
+              onFundedConverted={(account) => {
+                const updated = { ...participantData, ...account }
+                setParticipantData(updated)
+                localStorage.setItem("participantData", JSON.stringify(updated))
+                setTopUpIsFundedAccount(true)
+                setIsInitialFundedTopUp(true)
+                setSelectedFundedPlanFee(FUNDED_PLANS[0].topUpAmount)
+                setShowTopUpModal(true)
               }}
             />
             {!isChallengeAccount ? (
