@@ -36,7 +36,8 @@ export function DashboardPlanExplorer({
   const registerUrl = category === "challenge"
     ? `/participant/register?account=challenge&plan=${challenge.key}`
     : `/participant/register?account=${category}`
-  const needsNewAccount = accountType === "challenge" ? category !== "challenge" : category === "challenge" || (category === "funded" && accountType !== "funded")
+  const canSwitchOnDashboard = accountType === "normal" && (category === "challenge" || category === "funded")
+  const needsNewAccount = !canSwitchOnDashboard && (accountType === "challenge" ? category !== "challenge" : category === "challenge" || (category === "funded" && accountType !== "funded"))
 
   return (
     <div className="mx-3 flex flex-col gap-5 sm:mx-4">
@@ -109,8 +110,8 @@ export function DashboardPlanExplorer({
             </div>
           </div>
           <div className="flex shrink-0 flex-col gap-2 lg:items-end">
-            {category === "challenge" && accountType !== "challenge" ? (
-              <Button asChild className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}><Link href="/participant/dashboard">Switch to Challenge <ArrowRight data-icon="inline-end" /></Link></Button>
+            {canSwitchOnDashboard ? (
+              <Button asChild className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}><Link href="/participant/dashboard">Switch to {category === "funded" ? "Funded" : "Challenge"} <ArrowRight data-icon="inline-end" /></Link></Button>
             ) : needsNewAccount ? (
               <Button asChild className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}><Link href={registerUrl}>Create a {category} account <ArrowRight data-icon="inline-end" /></Link></Button>
             ) : category === "challenge" ? (
@@ -118,7 +119,7 @@ export function DashboardPlanExplorer({
             ) : (
               <Button type="button" className="h-11 font-semibold" style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }} onClick={() => onFund(category, category === "funded" ? funded.topUpAmount : normalAmount)}>Review &amp; continue <ArrowRight data-icon="inline-end" /></Button>
             )}
-            <span className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{category === "challenge" && accountType !== "challenge" ? "Switching is available from the dashboard when your account and bonus balances are $0.00." : needsNewAccount ? "This plan requires its own account type." : category === "challenge" ? "Payment is reviewed before evaluation starts." : "Payment instructions and eligibility appear next."}</span>
+            <span className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{canSwitchOnDashboard ? "Switching is available from the dashboard when your account and bonus balances are $0.00." : needsNewAccount ? "This plan requires its own account type." : category === "challenge" ? "Payment is reviewed before evaluation starts." : "Payment instructions and eligibility appear next."}</span>
           </div>
         </div>
       </div>

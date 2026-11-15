@@ -7,6 +7,18 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Label } from "@/components/ui/label"
@@ -21,6 +33,10 @@ import {
   ArrowDown,
   Search,
   X,
+  ShieldCheck,
+  LockKeyhole,
+  RotateCcw,
+  WalletCards,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { isParticipantAuthenticated, participantFetch } from "@/lib/auth"
@@ -126,26 +142,24 @@ function PredictPageContent() {
   const [activeTrades, setActiveTrades] = useState<Record<string, any>>({})
   const [selectedAssetSymbol, setSelectedAssetSymbol] = useState<string | null>(CRYPTO_ASSETS[0].symbol)
   const [isPlacingTrade, setIsPlacingTrade] = useState(false)
+  const [isResettingDemo, setIsResettingDemo] = useState(false)
+  const [tradeMode, setTradeMode] = useState<"demo" | "real">("demo")
 
-  // Balance source: "wallet" = account_balance, "referral" = bonus_balance
-  const [balanceSource, setBalanceSource] = useState<"wallet" | "referral">("wallet")
-
-  // Support both account_balance (correct) and wallet_balance (legacy) for compatibility
+  const [demoAccount, setDemoAccount] = useState({
+    starting_balance: 1000,
+    available_balance: 1000,
+    settled_profit_loss: 0,
+    open_trades: 0,
+  })
+  const demoBalance = Number(demoAccount.available_balance || 0)
+  const demoProfitLoss = Number(demoAccount.settled_profit_loss || 0)
   const walletBalance = Number(participantData?.account_balance ?? participantData?.wallet_balance ?? 0)
-  // bonus_balance is the referral earnings column in the DB (confirmed by schema).
-  // referral_earnings is an alias returned by /api/participant/me for compatibility.
-  const referralBalance = Number(
-    participantData?.bonus_balance ||
-    participantData?.referral_earnings ||
-    0
-  )
-  const activeBalance = balanceSource === "referral" ? referralBalance : walletBalance
   const fundedPredictionMax = getFundedPredictionMaxAmount(
     participantData?.account_type,
     walletBalance,
     participantData?.funded_initial_balance,
   )
-  const predictionAmountMax = balanceSource === "wallet" ? fundedPredictionMax ?? activeBalance : activeBalance
+  const activeBalance = tradeMode === "demo" ? demoBalance : walletBalance
   
   // Filtered assets based on selected market class and search query
   const filteredAssets = CRYPTO_ASSETS.filter((asset) => {
@@ -218,6 +232,9 @@ function PredictPageContent() {
       const res = await participantFetch(`/api/participant/predictions?participant_email=${encodeURIComponent(email)}&status=pending`)
       const json = await res.json()
       const data: any[] = json.predictions || []
+      if (json.demo_account) {
+        setDemoAccount(json.demo_account)
+      }
       // Only keep trades that are still genuinely pending from DB
       const tradesMap: Record<string, any> = {}
       data.forEach((trade: any) => {
@@ -305,33 +322,27 @@ function PredictPageContent() {
   }, [mounted])
 
   const handlePlaceBet = async () => {
-    if (isPlacingTrade) return // Prevent double-click
-    
-    const amount = parseFloat(betAmount)
-  if (!amount || amount <= 0) {
-  toast({ title: "Invalid amount", variant: "destructive" })
-  return
-  }
+    if (isPlacingTrade || !selectedAsset) return
 
-  if (balanceSource === "wallet" && fundedPredictionMax !== null && amount > fundedPredictionMax) {
-  toast({
-    title: "Funded prediction limit exceeded",
-    description: fundedPredictionMax < 100
-      ? `Prediction amount can be up to $100. Current limit: $${fundedPredictionMax.toFixed(2)}.`
-      : `Only profit above the funded amount can be used. Current limit: $${fundedPredictionMax.toFixed(2)}.`,
-    variant: "destructive",
-  })
-  return
-  }
-
-  const availableBalance = balanceSource === "referral" ? referralBalance : walletBalance
-    if (availableBalance < amount) {
+    const amount = Number.parseFloat(betAmount)
+    const accountLabel = tradeMode === "demo" ? "demo" : "real"
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({ title: `Enter a valid ${accountLabel} amount`, variant: "destructive" })
+      return
+    }
+    if (tradeMode === "real" && fundedPredictionMax !== null && amount > fundedPredictionMax) {
       toast({
-        title: "Insufficient balance",
-        description: balanceSource === "referral"
-          ? "Not enough referral earnings."
-          : "Not enough wallet balance.",
-        variant: "destructive"
+        title: "Funded prediction limit exceeded",
+        description: `Your current real-trade limit is $${fundedPredictionMax.toFixed(2)}.`,
+        variant: "destructive",
+      })
+      return
+    }
+    if (amount > activeBalance) {
+      toast({
+        title: `Not enough ${accountLabel} funds`,
+        description: `You have $${activeBalance.toFixed(2)} available in this account.`,
+        variant: "destructive",
       })
       return
     }
@@ -341,11 +352,9 @@ function PredictPageContent() {
       const entryPrice = cryptoPrices[selectedAsset.symbol]?.price
       if (!entryPrice) {
         toast({ title: "Price not available", variant: "destructive" })
-        setIsPlacingTrade(false)
         return
       }
 
-      // Insert prediction record via API
       const tradeRes = await participantFetch("/api/participant/predictions", {
         method: "POST",
         body: JSON.stringify({
@@ -355,72 +364,70 @@ function PredictPageContent() {
           amount,
           entry_price: entryPrice,
           timeframe_seconds: selectedTimeframe.seconds,
-          balance_source: balanceSource,
+          balance_source: tradeMode === "demo" ? "demo" : "wallet",
         }),
       })
-      
       const tradeJson = await tradeRes.json()
       const insertedTrade: any = tradeJson.prediction || null
       const insertError = !tradeRes.ok ? tradeJson.error : null
 
       if (insertError || !insertedTrade) {
-        toast({ 
-          title: "Failed to place trade", 
-          description: insertError || "Unknown error",
-          variant: "destructive" 
+        toast({
+          title: `Failed to place ${accountLabel} trade`,
+          description: insertError || "Please try again.",
+          variant: "destructive",
         })
-        setIsPlacingTrade(false)
         return
       }
 
-      const balanceField = balanceSource === "referral" ? "bonus_balance" : "account_balance"
-      const currentFieldBalance = balanceSource === "referral" ? referralBalance : walletBalance
-      const newFieldBalance = currentFieldBalance - amount
+      if (tradeMode === "demo") {
+        setDemoAccount((current) => ({
+          ...current,
+          available_balance: Number(tradeJson.new_balance ?? current.available_balance - amount),
+          open_trades: current.open_trades + 1,
+        }))
+      } else {
+        setParticipantData((current: any) => {
+          const updated = { ...current, account_balance: Number(tradeJson.new_balance) }
+          localStorage.setItem("participantData", JSON.stringify(updated))
+          return updated
+        })
+      }
 
-      const updatedData = balanceSource === "referral"
-        ? { ...participantData, bonus_balance: newFieldBalance }
-        : { ...participantData, account_balance: newFieldBalance }
-
-      setParticipantData(updatedData)
-      localStorage.setItem("participantData", JSON.stringify(updatedData))
-      
-      // Use the REAL database trade (with correct ID for settlement API)
-      setActiveTrades((prev) => ({
-        ...prev,
-        [selectedAsset.symbol]: insertedTrade
-      }))
-      
-      // Keep user on current asset to see the trade tracker
+      setActiveTrades((previous) => ({ ...previous, [selectedAsset.symbol]: insertedTrade }))
       setSelectedAssetSymbol(selectedAsset.symbol)
-      
-      // Close dialog immediately - the live tracker card is the feedback
       setShowBetDialog(false)
       setBetAmount("")
-      
-      toast({ title: "Trade placed successfully!", description: "Your bet is now live." })
-      
-      // Refresh participant data from server to sync balance
+      toast({ title: `${tradeMode === "demo" ? "Demo" : "Real"} trade is live`, description: "Follow the countdown to see the result." })
       setTimeout(() => {
-        refreshParticipantData()
+        loadActiveTrades()
+        fetchParticipantData()
       }, 500)
-    } catch (error) {
-      toast({ title: "Failed to place trade", variant: "destructive" })
+    } catch {
+      toast({ title: `Failed to place ${accountLabel} trade`, variant: "destructive" })
     } finally {
       setIsPlacingTrade(false)
     }
   }
 
-  // Refresh participant data from server
-  const refreshParticipantData = async () => {
+  const handleResetDemo = async () => {
+    if (isResettingDemo || demoAccount.open_trades > 0) return
+    setIsResettingDemo(true)
     try {
-      const res = await participantFetch(`/api/participant/me?email=${encodeURIComponent(userEmail)}`)
-      const data = await res.json()
-      if (data.success && data.participant) {
-        setParticipantData(data.participant)
-        localStorage.setItem("participantData", JSON.stringify(data.participant))
-      }
+      const response = await participantFetch("/api/participant/predictions", { method: "DELETE" })
+      const data = await response.json()
+      if (!response.ok || !data.demo_account) throw new Error(data.error || "Demo account could not be reset")
+      setDemoAccount(data.demo_account)
+      toast({ title: "Demo account reset", description: "Your practice balance is back to $1,000." })
+      loadActiveTrades()
     } catch (error) {
-      console.error("[v0] Error refreshing participant data:", error)
+      toast({
+        title: "Demo account could not be reset",
+        description: error instanceof Error ? error.message : "Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsResettingDemo(false)
     }
   }
 
@@ -429,7 +436,6 @@ function PredictPageContent() {
     setSelectedAssetSymbol(asset.symbol)
     setBetDirection(direction)
     setBetAmount("")
-    setBalanceSource("wallet")
     setSelectedTimeframe(asset.type === "commodity" ? COMMODITY_TIMEFRAMES[0] : CRYPTO_TIMEFRAMES[0])
     setShowBetDialog(true)
   }
@@ -503,18 +509,16 @@ function PredictPageContent() {
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <div className="terminal-panel hidden min-w-32 rounded-xl px-3 py-2 sm:block">
-              <p className="text-xs text-[var(--terminal-graphite-muted)]">Wallet</p>
-              <p className="price-mono text-sm font-bold text-[var(--brand-primary)]">${walletBalance.toFixed(2)}</p>
+              <p className="text-xs text-[var(--terminal-graphite-muted)]">Demo</p>
+              <p className="price-mono text-sm font-bold text-[var(--brand-primary)]">${demoBalance.toFixed(2)}</p>
             </div>
-            {referralBalance > 0 && (
-              <div className="terminal-panel hidden min-w-32 rounded-xl px-3 py-2 lg:block">
-                <p className="text-xs text-[var(--terminal-graphite-muted)]">Referral</p>
-                <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${referralBalance.toFixed(2)}</p>
-              </div>
-            )}
+            <div className="terminal-panel hidden min-w-32 rounded-xl px-3 py-2 md:block">
+              <p className="text-xs text-[var(--terminal-graphite-muted)]">Real</p>
+              <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</p>
+            </div>
             <div className="terminal-panel rounded-xl px-2.5 py-1.5 sm:hidden">
-              <p className="text-xs text-[var(--terminal-graphite-muted)]">Wallet</p>
-              <p className="price-mono text-sm font-bold text-[var(--brand-primary)]">${walletBalance.toFixed(2)}</p>
+              <p className="text-xs text-[var(--terminal-graphite-muted)]">Real balance</p>
+              <p className="price-mono text-sm font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</p>
             </div>
             <Button
               type="button"
@@ -555,6 +559,80 @@ function PredictPageContent() {
             </div>
           </div>
         </header>
+
+        <section
+          aria-labelledby="prediction-account-title"
+          className="mb-5 overflow-hidden rounded-2xl border"
+          style={{
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 14%, var(--terminal-graphite-surface)), var(--terminal-graphite-surface))",
+            borderColor: "color-mix(in srgb, var(--brand-primary) 36%, var(--terminal-graphite-border))",
+          }}
+        >
+          <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-start gap-3 lg:max-w-xl">
+              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primary)] text-[var(--brand-primary-foreground)]">
+                {tradeMode === "demo" ? <ShieldCheck aria-hidden="true" className="size-5" /> : <WalletCards aria-hidden="true" className="size-5" />}
+              </span>
+              <div className="min-w-0">
+                <h2 id="prediction-account-title" className="font-bold text-[var(--terminal-graphite-text)]">Choose your prediction account</h2>
+                <p className="mt-1 text-sm leading-relaxed text-[var(--terminal-graphite-muted)]">
+                  Practice safely with demo funds, or switch to real mode to trade from your account balance.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-col gap-3 lg:w-[30rem]">
+              <ToggleGroup
+                type="single"
+                value={tradeMode}
+                onValueChange={(value) => {
+                  if (!value) return
+                  setTradeMode(value as "demo" | "real")
+                  setBetAmount("")
+                }}
+                variant="outline"
+                className="grid w-full grid-cols-2"
+                aria-label="Prediction account"
+              >
+                <ToggleGroupItem value="demo" className="h-auto min-h-16 flex-col items-start gap-1 px-3 py-2 data-[state=on]:border-[var(--brand-primary)] data-[state=on]:bg-[color-mix(in_srgb,var(--brand-primary)_12%,var(--terminal-graphite-surface))]">
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--terminal-graphite-muted)]"><ShieldCheck aria-hidden="true" /> Demo</span>
+                  <span className="price-mono text-base font-bold text-[var(--brand-primary)]">${demoBalance.toFixed(2)}</span>
+                </ToggleGroupItem>
+                <ToggleGroupItem value="real" className="h-auto min-h-16 flex-col items-start gap-1 px-3 py-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:bg-[color-mix(in_srgb,var(--terminal-graphite-positive)_10%,var(--terminal-graphite-surface))]">
+                  <span className="flex items-center gap-1.5 text-xs text-[var(--terminal-graphite-muted)]"><WalletCards aria-hidden="true" /> Real</span>
+                  <span className="price-mono text-base font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</span>
+                </ToggleGroupItem>
+              </ToggleGroup>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[var(--terminal-graphite-muted)]">
+                <span>{tradeMode === "demo" ? `Practice P/L ${demoProfitLoss >= 0 ? "+" : "−"}$${Math.abs(demoProfitLoss).toFixed(2)}` : "Real trades affect your withdrawable balance"}</span>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" size="sm" disabled={demoAccount.open_trades > 0 || isResettingDemo} className="border-[var(--terminal-graphite-border)] text-[var(--terminal-graphite-text)]">
+                      <RotateCcw aria-hidden="true" data-icon="inline-start" />
+                      Reset demo
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] text-[var(--terminal-graphite-text)]">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Reset demo account?</AlertDialogTitle>
+                      <AlertDialogDescription className="text-[var(--terminal-graphite-muted)]">
+                        This starts a new practice cycle with $1,000. Your previous demo trades remain archived, while real trades and your real balance stay unchanged.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleResetDemo}>Reset to $1,000</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+              {demoAccount.open_trades > 0 && (
+                <p className="text-xs text-[var(--terminal-graphite-warning)]">Wait for {demoAccount.open_trades} active demo {demoAccount.open_trades === 1 ? "trade" : "trades"} to settle before resetting.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         <section
           aria-labelledby="prediction-market-pulse-title"
@@ -1008,7 +1086,8 @@ function PredictPageContent() {
       {/* Bet Dialog */}
       <Dialog open={showBetDialog} onOpenChange={setShowBetDialog}>
         <DialogContent
-          className="flex max-h-[90dvh] w-[calc(100vw-1rem)] max-w-md flex-col overflow-hidden rounded-2xl border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] p-0 text-[var(--terminal-graphite-text)]"
+          className="flex max-h-[90dvh] w-[calc(100vw-1rem)] max-w-md flex-col overflow-hidden rounded-2xl border-[var(--terminal-graphite-border)] p-0 text-[var(--terminal-graphite-text)]"
+          style={{ backgroundColor: "var(--terminal-graphite-surface)" }}
         >
           {/* Compact header */}
           <DialogHeader className="flex-shrink-0 px-5 pt-5 pb-3">
@@ -1045,34 +1124,45 @@ function PredictPageContent() {
               </div>
             </div>
 
-            {/* Balance Source Toggle */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-semibold text-[var(--terminal-graphite-text)]">Use balance from</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  aria-pressed={balanceSource === "wallet"}
-                  onClick={() => setBalanceSource("wallet")}
-                  className="terminal-panel-raised flex min-h-14 flex-col items-start justify-center rounded-xl border-2 px-3 py-2 text-left transition-colors"
-                  style={{ borderColor: balanceSource === "wallet" ? "var(--brand-primary)" : "var(--terminal-graphite-border)" }}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--terminal-graphite-muted)]">Wallet</span>
-                  <span className="price-mono text-base font-bold" style={{ color: balanceSource === "wallet" ? "var(--brand-primary)" : "var(--terminal-graphite-text)" }}>
-                    ${walletBalance.toFixed(2)}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={balanceSource === "referral"}
-                  onClick={() => setBalanceSource("referral")}
-                  className="terminal-panel-raised flex min-h-14 flex-col items-start justify-center rounded-xl border-2 px-3 py-2 text-left transition-colors"
-                  style={{ borderColor: balanceSource === "referral" ? "var(--brand-primary)" : "var(--terminal-graphite-border)" }}
-                >
-                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--terminal-graphite-muted)]">Referral</span>
-                  <span className="price-mono text-base font-bold" style={{ color: balanceSource === "referral" ? "var(--brand-primary)" : "var(--terminal-graphite-text)" }}>
-                    ${referralBalance.toFixed(2)}
-                  </span>
-                </button>
+              <Label className="text-sm font-semibold text-[var(--terminal-graphite-text)]">Account</Label>
+              <ToggleGroup
+                type="single"
+                value={tradeMode}
+                onValueChange={(value) => {
+                  if (!value) return
+                  setTradeMode(value as "demo" | "real")
+                  setBetAmount("")
+                }}
+                variant="outline"
+                className="grid w-full grid-cols-2"
+                aria-label="Trade account"
+              >
+                <ToggleGroupItem value="demo" className="min-h-11 gap-2 data-[state=on]:border-[var(--brand-primary)] data-[state=on]:text-[var(--brand-primary)]">
+                  <ShieldCheck aria-hidden="true" /> Demo
+                </ToggleGroupItem>
+                <ToggleGroupItem value="real" className="min-h-11 gap-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:text-[var(--terminal-graphite-positive)]">
+                  <WalletCards aria-hidden="true" /> Real
+                </ToggleGroupItem>
+              </ToggleGroup>
+              <div
+                className="flex items-center justify-between gap-3 rounded-xl border p-3"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${tradeMode === "demo" ? "var(--brand-primary)" : "var(--terminal-graphite-positive)"} 9%, var(--terminal-graphite-surface))`,
+                  borderColor: `color-mix(in srgb, ${tradeMode === "demo" ? "var(--brand-primary)" : "var(--terminal-graphite-positive)"} 32%, var(--terminal-graphite-border))`,
+                }}
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  {tradeMode === "demo" ? <ShieldCheck aria-hidden="true" className="size-5 shrink-0 text-[var(--brand-primary)]" /> : <WalletCards aria-hidden="true" className="size-5 shrink-0 text-[var(--terminal-graphite-positive)]" />}
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--terminal-graphite-text)]">{tradeMode === "demo" ? "Demo funds" : "Real funds"}</p>
+                    <p className="flex items-center gap-1 text-xs text-[var(--terminal-graphite-muted)]">
+                      {tradeMode === "demo" && <LockKeyhole aria-hidden="true" className="size-3" />}
+                      {tradeMode === "demo" ? "No deposit or withdrawal" : "Wins and losses affect your balance"}
+                    </p>
+                  </div>
+                </div>
+                <p className="price-mono shrink-0 font-bold text-[var(--brand-primary)]">${activeBalance.toFixed(2)}</p>
               </div>
             </div>
 
@@ -1084,27 +1174,33 @@ function PredictPageContent() {
                   type="number"
                   placeholder="0.00"
                   min="0.01"
-                  max={predictionAmountMax > 0 ? predictionAmountMax : undefined}
+                  max={activeBalance > 0 ? activeBalance : undefined}
                   step="0.01"
                   value={betAmount}
-                  onChange={(e) => setBetAmount(e.target.value)}
+                  onChange={(event) => setBetAmount(event.target.value)}
                   id="prediction-amount"
                   inputMode="decimal"
                   className="h-11 rounded-xl border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-bg)] pr-14 text-base text-[var(--terminal-graphite-text)] placeholder:text-[var(--terminal-graphite-muted)] focus-visible:ring-[var(--brand-primary)] sm:text-sm"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--terminal-graphite-muted)]">USDT</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--terminal-graphite-muted)]">USD</span>
               </div>
-              <div className="text-sm text-[var(--terminal-graphite-muted)]">
-                Available: <span className="price-mono font-semibold text-[var(--terminal-graphite-text)]">${activeBalance.toFixed(2)}</span>
+              <div aria-label={`Quick ${tradeMode} amounts`} className="grid grid-cols-4 gap-2">
+                {[10, 25, 50, 100].map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setBetAmount(String(Math.min(amount, activeBalance)))}
+                    disabled={activeBalance <= 0}
+                    className="min-h-10 rounded-lg border border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface-2)] px-2 text-sm font-semibold text-[var(--terminal-graphite-text)] transition-colors hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary)] disabled:opacity-50"
+                  >
+                    ${amount}
+                  </button>
+                ))}
               </div>
-              {balanceSource === "wallet" && fundedPredictionMax !== null && (
-                <div className="text-sm text-[var(--terminal-graphite-warning)]">
-                  Funded prediction limit: ${fundedPredictionMax.toFixed(2)}
-                  {walletBalance > Number(participantData?.funded_initial_balance || 0)
-                    ? " (profit above funded amount)"
-                    : " (up to $100)"}
-                </div>
-              )}
+              <div className="flex items-center justify-between gap-3 text-sm text-[var(--terminal-graphite-muted)]">
+                <span>Available {tradeMode} funds</span>
+                <span className="price-mono font-semibold text-[var(--terminal-graphite-text)]">${activeBalance.toFixed(2)}</span>
+              </div>
             </div>
 
             {/* Timeframe Selection */}
@@ -1170,7 +1266,7 @@ function PredictPageContent() {
                   Placing...
                 </span>
               ) : (
-                <>Place {betDirection.toUpperCase()} Trade</>
+                <>Place {tradeMode === "demo" ? "Demo" : "Real"} {betDirection.toUpperCase()} Trade</>
               )}
             </Button>
           </div>
@@ -1179,28 +1275,17 @@ function PredictPageContent() {
 
       {/* History Modal */}
       <Dialog open={showHistoryModal} onOpenChange={setShowHistoryModal}>
-        <DialogContent className="w-[calc(100vw-1rem)] max-h-[88dvh] overflow-y-auto rounded-2xl border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] sm:max-w-5xl">
+        <DialogContent
+          className="max-h-[88dvh] w-[calc(100vw-1rem)] overflow-y-auto rounded-2xl border-[var(--terminal-graphite-border)] sm:max-w-5xl"
+          style={{ backgroundColor: "var(--terminal-graphite-surface)" }}
+        >
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-[var(--terminal-graphite-text)]">Trade History</DialogTitle>
           </DialogHeader>
           <LivePredictionMonitor
             userEmail={participantData?.email || ""}
             currentPrices={cryptoPrices}
-            onBalanceUpdate={async () => {
-              // Refresh participant data when balance updates
-              const storedData = localStorage.getItem("participantData")
-              if (!storedData) return
-              const parsedData = JSON.parse(storedData)
-              const email = parsedData?.email
-              if (!email) return
-              const refreshRes = await participantFetch(`/api/participant/me?email=${encodeURIComponent(email)}`)
-              const refreshJson = await refreshRes.json()
-              const data: any = refreshJson.participant || null
-              if (data) {
-                setParticipantData(data)
-                localStorage.setItem("participantData", JSON.stringify(data))
-              }
-            }}
+            onBalanceUpdate={loadActiveTrades}
           />
         </DialogContent>
       </Dialog>
@@ -1224,6 +1309,7 @@ function PredictPageContent() {
                     delete next[pair]
                     return next
                   })
+                  loadActiveTrades()
                   fetchParticipantData()
                 }}
               />

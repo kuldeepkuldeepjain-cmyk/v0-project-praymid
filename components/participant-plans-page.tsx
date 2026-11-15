@@ -19,7 +19,7 @@ async function loadParticipant(url: string): Promise<{ account_type: string }> {
   return data.participant
 }
 
-export function ParticipantPlansPage({ initialCategory }: { initialCategory?: "challenge" }) {
+export function ParticipantPlansPage({ initialCategory }: { initialCategory?: "challenge" | "funded" | "normal" }) {
   const router = useRouter()
   const { data: participant, error, isLoading, mutate } = useSWR("/api/participant/me", loadParticipant, {
     revalidateOnFocus: false,

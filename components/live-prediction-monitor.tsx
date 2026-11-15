@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { TrendingUp, TrendingDown, Clock, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 import { participantFetch } from '@/lib/auth'
 
@@ -19,6 +20,7 @@ interface Prediction {
   result: string | null       // 'won' | 'lost' | 'refunded' | null
   profit_loss: number | null
   status: string              // 'pending' | 'settled' | 'refunded'
+  balance_source?: string | null
   target_price: number | null // final price at settlement
   closed_at: string | null    // when it was settled
   created_at: string
@@ -240,7 +242,12 @@ export function LivePredictionMonitor({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <CardTitle className="truncate text-sm font-bold text-[var(--terminal-graphite-text)] sm:text-base">{prediction.crypto_pair}</CardTitle>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <CardTitle className="truncate text-sm font-bold text-[var(--terminal-graphite-text)] sm:text-base">{prediction.crypto_pair}</CardTitle>
+                        <Badge variant={prediction.balance_source === 'demo' ? 'secondary' : 'default'} className="shrink-0">
+                          {prediction.balance_source === 'demo' ? 'Demo' : 'Real'}
+                        </Badge>
+                      </div>
                       <CardDescription className="mt-1 text-sm text-[var(--terminal-graphite-muted)]">
                         {prediction.prediction_type === 'up' ? 'UP' : 'DOWN'} · ${amount.toFixed(2)} stake
                       </CardDescription>

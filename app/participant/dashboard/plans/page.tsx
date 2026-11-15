@@ -9,5 +9,6 @@ export const metadata: Metadata = {
 
 export default async function PlansPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const { category } = await searchParams
-  return <ParticipantPlansPage initialCategory={category === "challenge" ? "challenge" : undefined} />
+  const initialCategory = category === "challenge" || category === "funded" || category === "normal" ? category : undefined
+  return <ParticipantPlansPage initialCategory={initialCategory} />
 }

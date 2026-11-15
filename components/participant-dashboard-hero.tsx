@@ -1,7 +1,8 @@
 "use client"
 
 import Image from "next/image"
-import { ArrowUpRight, ScanLine } from "lucide-react"
+import Link from "next/link"
+import { ArrowUpRight, ChartCandlestick, ScanLine, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface ParticipantDashboardHeroProps {
@@ -21,8 +22,23 @@ export function ParticipantDashboardHero({ displayName, isChallenge = false, onE
           <h1 id="participant-welcome-title" className="text-balance text-4xl font-medium leading-[1.08] tracking-tight sm:text-5xl">{isChallenge ? "Discipline is" : "Your next move."}<br /><span className="text-primary">{isChallenge ? "your edge." : "A new perspective."}</span></h1>
           <p className="max-w-72 text-pretty text-sm leading-6 text-muted-foreground">{isChallenge ? "Know your limits. Follow your plan. Keep your evaluation in focus." : "Step inside your markets. See the bigger picture. Move with intention."}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button type="button" size="lg" onClick={onExploreTerminal} className="rounded-xl">Enter trading terminal <ArrowUpRight data-icon="inline-end" /></Button>
+        <div className="participant-vault-actions">
+          <Button type="button" size="lg" onClick={onExploreTerminal} className="participant-vault-action participant-terminal-cta rounded-xl">
+            <ChartCandlestick data-icon="inline-start" aria-hidden="true" />
+            <span className="sm:hidden">Terminal</span>
+            <span className="hidden sm:inline">Enter trading terminal</span>
+            <ArrowUpRight data-icon="inline-end" />
+          </Button>
+          {!isChallenge && (
+            <Button asChild size="lg" variant="outline" className="participant-vault-action participant-prediction-cta rounded-xl">
+              <Link href="/participant/dashboard/predict">
+                <Sparkles data-icon="inline-start" aria-hidden="true" />
+                <span className="sm:hidden">Prediction</span>
+                <span className="hidden sm:inline">Open predictions</span>
+                <ArrowUpRight data-icon="inline-end" className="hidden sm:block" />
+              </Link>
+            </Button>
+          )}
         </div>
       </div>
     </section>
