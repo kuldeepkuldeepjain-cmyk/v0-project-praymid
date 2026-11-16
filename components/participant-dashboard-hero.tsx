@@ -14,7 +14,7 @@ interface ParticipantDashboardHeroProps {
 
 export function ParticipantDashboardHero({ displayName, isChallenge = false, onExploreTerminal }: ParticipantDashboardHeroProps) {
   return (
-    <section className="participant-command-hero" aria-labelledby="participant-welcome-title">
+    <section className="participant-command-hero relative" aria-labelledby="participant-welcome-title">
       <Image src="/images/dashboard-vault.png" alt="" fill priority sizes="(min-width: 1280px) 800px, (min-width: 900px) 65vw, 100vw" className="participant-command-hero-art" />
       <div className="participant-command-hero-copy">
         <Badge variant="secondary" className="participant-command-hero-badge">

@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Gift, Home, LayoutGrid, PlusCircle, Sparkles, TrendingUp, User, Wallet } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const profileHref = "/participant/dashboard/profile"
 
@@ -19,6 +20,14 @@ const navItems = [
 ] as const
 
 const navigationGroups = ["Workspace", "Account"] as const
+
+const mobileNavItems = [
+  navItems[0],
+  navItems[1],
+  navItems[5],
+  navItems[6],
+  navItems[4],
+] as const
 
 const subscribeToHydration = () => () => undefined
 const getHydrationSnapshot = () => true
@@ -57,6 +66,8 @@ export function DesktopDashboardNavigation() {
     getServerHydrationSnapshot,
   )
 
+  const terminalActive = pathname === "/participant/dashboard" && searchParams.get("view") === "terminal"
+
   const isActive = (href: string) => {
     if (!isHydrated) return false
     if (href === "/participant/dashboard?view=terminal") {
@@ -70,6 +81,35 @@ export function DesktopDashboardNavigation() {
 
   return (
     <>
+      <nav
+        aria-label="Mobile dashboard navigation"
+        className={cn("fixed inset-x-0 bottom-0 z-50 border-t px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-1 md:hidden", terminalActive && "hidden")}
+        style={{ background: "color-mix(in srgb, var(--terminal-graphite-surface) 96%, transparent)", borderColor: "var(--terminal-graphite-border)", backdropFilter: "blur(18px)" }}
+      >
+        <div className="mx-auto grid h-16 max-w-lg grid-cols-5 items-stretch">
+          {mobileNavItems.map((item) => {
+            const active = isActive(item.href)
+            const Icon = item.icon
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 text-center transition hover:brightness-125 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]"
+                style={active ? {
+                  background: "color-mix(in srgb, var(--brand-primary) 12%, var(--terminal-graphite-surface))",
+                  color: "var(--brand-primary)",
+                } : { color: "var(--terminal-graphite-muted)" }}
+              >
+                <Icon className="size-5" aria-hidden="true" />
+                <span className="w-full truncate text-[11px] font-semibold">{item.shortLabel}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </nav>
+
       <nav
         aria-label="Dashboard navigation"
         className="hidden shrink-0 border-t md:block lg:hidden"

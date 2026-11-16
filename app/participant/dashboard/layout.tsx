@@ -20,14 +20,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Mount account content once; CSS switches the navigation at the breakpoint. */}
       <div className="relative z-10 flex min-h-screen min-h-dvh flex-col md:h-screen md:h-dvh md:min-h-0 md:overflow-hidden lg:flex-row">
-        <main aria-label="Participant dashboard" className="participant-dashboard-content order-1 min-w-0 flex-1 pb-0 md:overflow-y-auto md:overflow-x-hidden lg:order-2">
+        <main aria-label="Participant dashboard" className="participant-dashboard-content order-1 min-w-0 flex-1 pb-20 md:overflow-y-auto md:overflow-x-hidden md:pb-0 lg:order-2">
           <div className="relative z-10 page-slide-enter md:h-full">
             <Suspense fallback={<div className="h-full" aria-hidden="true" />}>
               {children}
             </Suspense>
           </div>
         </main>
-        <div className="order-2 hidden shrink-0 md:block lg:order-1 lg:h-full">
+        <div className="order-2 shrink-0 lg:order-1 lg:h-full">
           <Suspense
             fallback={
               <div
