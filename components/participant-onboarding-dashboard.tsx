@@ -2,11 +2,38 @@
 
 import { useState, type ReactNode } from "react"
 import Link from "next/link"
-import { Activity, ArrowRight, ArrowUpRight, CheckCircle2, CircleHelp, Compass, Eye, EyeOff, Gift, Plus, ShieldCheck, TrendingUp, UserRound, Wallet, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import {
+  Activity,
+  ArrowDownToLine,
+  ArrowUpRight,
+  BadgeCheck,
+  ChartCandlestick,
+  CheckCircle2,
+  CircleHelp,
+  Compass,
+  Eye,
+  EyeOff,
+  Gift,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  UserRound,
+  Wallet,
+} from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Separator } from "@/components/ui/separator"
 import { ParticipantDashboardHero } from "@/components/participant-dashboard-hero"
-import { ParticipantFundingOpportunity } from "@/components/participant-funding-opportunity"
 
 interface ParticipantOnboardingDashboardProps {
   displayName: string
@@ -28,7 +55,12 @@ interface ParticipantOnboardingDashboardProps {
 }
 
 function formatDashboardCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number.isFinite(value) ? value : 0)
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Number.isFinite(value) ? value : 0)
 }
 
 function formatDashboardCount(value: number) {
@@ -36,134 +68,198 @@ function formatDashboardCount(value: number) {
 }
 
 const shortcuts = [
-  { href: "/participant/dashboard/activity", icon: Activity, label: "Activity", detail: "Follow your journey" },
-  { href: "/participant/dashboard/payout", icon: ArrowUpRight, label: "Payouts", detail: "Request & track" },
-  { href: "/participant/dashboard/profile", icon: UserRound, label: "Profile", detail: "Make it yours" },
-  { href: "/participant/dashboard/refer", icon: Gift, label: "Referrals", detail: "Grow your network" },
-  { href: "/participant/dashboard/predict", icon: Compass, label: "Predictions", detail: "Explore a perspective" },
+  { href: "/participant/dashboard/activity", icon: Activity, label: "Activity", detail: "Transactions and account events" },
+  { href: "/participant/dashboard/payout", icon: ArrowDownToLine, label: "Payouts", detail: "Request and track withdrawals" },
+  { href: "/participant/dashboard/profile", icon: UserRound, label: "Profile", detail: "Identity and account details" },
+  { href: "/participant/dashboard/refer", icon: Gift, label: "Referrals", detail: "Invite traders and view rewards" },
+  { href: "/participant/dashboard/predict", icon: Compass, label: "Predictions", detail: "Review market opportunities" },
 ]
 
 export function ParticipantOnboardingDashboard({
-  displayName, email, isVerified, verificationStatus, accountBalance, accountType, accountStatus,
-  bonusBalance, totalEarnings, tradeCount, referralCount, referralEarnings, accountNotice,
-  onExploreTerminal, onAddFunds, onHelp,
+  displayName,
+  email,
+  isVerified,
+  verificationStatus,
+  accountBalance,
+  accountType,
+  accountStatus,
+  bonusBalance,
+  totalEarnings,
+  tradeCount,
+  referralCount,
+  referralEarnings,
+  accountNotice,
+  onExploreTerminal,
+  onAddFunds,
+  onHelp,
 }: ParticipantOnboardingDashboardProps) {
-  const [showTour, setShowTour] = useState(true)
   const [balancesVisible, setBalancesVisible] = useState(true)
   const money = (value: number) => balancesVisible ? formatDashboardCurrency(value) : "••••••"
+  const hasFundedWallet = accountBalance > 0
+  const readinessScore = Math.round(((isVerified ? 1 : 0) + (hasFundedWallet ? 1 : 0) + 1) / 3 * 100)
   const metrics = [
-    { label: "Total earnings", value: money(totalEarnings), detail: "Your recorded earnings", icon: TrendingUp },
-    { label: "Trades", value: formatDashboardCount(tradeCount), detail: "Your trading activity", icon: Activity },
-    { label: "Referrals", value: formatDashboardCount(referralCount), detail: `${money(referralEarnings)} rewards`, icon: Gift },
-    { label: "Bonus balance", value: money(bonusBalance), detail: "Separate from your wallet", icon: Wallet },
+    { label: "Total earnings", value: money(totalEarnings), detail: "All-time recorded", icon: Sparkles },
+    { label: "Executed trades", value: formatDashboardCount(tradeCount), detail: "Trading history", icon: ChartCandlestick },
+    { label: "Referral network", value: formatDashboardCount(referralCount), detail: `${money(referralEarnings)} earned`, icon: Gift },
+    { label: "Bonus balance", value: money(bonusBalance), detail: "Promotional funds", icon: Wallet },
   ]
 
   return (
-    <div className="participant-home-workspace mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 font-sans md:px-7 md:py-8">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <p className="participant-home-eyebrow">EliteFund / Trading overview</p>
-          <p className="text-sm text-muted-foreground">Capital, activity, and next steps in one focused workspace.</p>
+    <div className="participant-home-workspace participant-command-workspace mx-auto flex w-full max-w-7xl flex-col gap-5 px-3 py-5 font-sans sm:px-5 md:gap-6 md:px-7 md:py-8">
+      <header className="participant-command-intro">
+        <div className="min-w-0">
+          <p className="participant-home-eyebrow">Participant command center</p>
+          <h1 className="mt-1 text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">Welcome back, {displayName}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Monitor your capital, review performance, and move directly to the tools you use most.</p>
         </div>
-        <Link href="/participant/dashboard/profile" className="participant-home-text-link"><ShieldCheck className="size-4" aria-hidden="true" /> {verificationStatus}<ArrowUpRight className="size-4" aria-hidden="true" /></Link>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant={accountStatus === "Frozen" ? "destructive" : "secondary"}>{accountStatus}</Badge>
+          <Badge asChild variant="outline">
+            <Link href="/participant/dashboard/profile">
+              {isVerified ? <BadgeCheck data-icon="inline-start" aria-hidden="true" /> : <ShieldCheck data-icon="inline-start" aria-hidden="true" />}
+              {verificationStatus}
+            </Link>
+          </Badge>
+        </div>
+      </header>
 
-      <div className="participant-home-top-grid">
+      <div className="participant-command-top-grid">
         <ParticipantDashboardHero displayName={displayName} onExploreTerminal={onExploreTerminal} />
-        <section className="participant-home-wallet" aria-labelledby="home-wallet-title">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="size-4" aria-hidden="true" /><h2 id="home-wallet-title" className="text-sm">Account balance</h2></div>
-            <Button type="button" variant="ghost" size="icon" aria-label={balancesVisible ? "Hide overview balances" : "Show overview balances"} aria-pressed={!balancesVisible} onClick={() => setBalancesVisible(!balancesVisible)}>
-              {balancesVisible ? <Eye data-icon="inline-start" /> : <EyeOff data-icon="inline-start" />}
-            </Button>
-          </div>
-          <div className="flex min-w-0 flex-col gap-3">
-            <p className="participant-home-balance font-mono" aria-label={balancesVisible ? `Account balance ${formatDashboardCurrency(accountBalance)}` : "Account balance hidden"}>{money(accountBalance)}</p>
-            <div className="flex flex-wrap items-center gap-2"><Badge variant="secondary">{accountType} account</Badge><Badge variant="outline">{accountStatus === "Frozen" ? <><ShieldCheck aria-hidden="true" /> Frozen</> : "Active"}</Badge></div>
-          </div>
-          <div className="participant-home-wallet-actions">
-            <Button type="button" onClick={onAddFunds} size="lg" className="w-full rounded-xl"><Plus data-icon="inline-start" /> Add funds</Button>
-            <Button asChild variant="outline" size="lg" className="w-full rounded-xl"><Link href="/participant/dashboard/payout">Withdraw <ArrowUpRight data-icon="inline-end" /></Link></Button>
-          </div>
-          <div className="flex items-center justify-between gap-3 border-t border-border pt-4 text-sm text-muted-foreground"><span>Wallet currency</span><span className="font-mono text-foreground">USDT</span></div>
-        </section>
+
+        <Card className="participant-command-wallet">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+              <Wallet className="size-4" aria-hidden="true" /> Available balance
+            </CardTitle>
+            <CardAction>
+              <Button type="button" variant="ghost" size="icon-sm" aria-label={balancesVisible ? "Hide account balances" : "Show account balances"} aria-pressed={!balancesVisible} onClick={() => setBalancesVisible(!balancesVisible)}>
+                {balancesVisible ? <Eye /> : <EyeOff />}
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5">
+            <div className="min-w-0">
+              <p className="participant-command-balance font-mono" aria-label={balancesVisible ? `Account balance ${formatDashboardCurrency(accountBalance)}` : "Account balance hidden"}>{money(accountBalance)}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">{accountType} account</Badge>
+                <span className="text-xs text-muted-foreground">USDT wallet</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" size="lg" onClick={onAddFunds} className="rounded-xl"><Plus data-icon="inline-start" /> Add funds</Button>
+              <Button asChild variant="outline" size="lg" className="rounded-xl"><Link href="/participant/dashboard/payout">Withdraw <ArrowUpRight data-icon="inline-end" /></Link></Button>
+            </div>
+          </CardContent>
+          <CardFooter className="justify-between border-t pr-20 text-xs text-muted-foreground sm:pr-6">
+            <span>Bonus funds</span>
+            <span className="font-mono text-foreground">{money(bonusBalance)}</span>
+          </CardFooter>
+        </Card>
       </div>
 
-      <section className="participant-home-metrics" aria-label="Account at a glance">
+      <section className="participant-command-metrics" aria-label="Performance overview">
         {metrics.map(({ label, value, detail, icon: Icon }) => (
-          <div className="participant-home-metric" key={label}>
-            <div className="flex items-center justify-between gap-2"><p className="text-sm text-muted-foreground">{label}</p><Icon className="size-4 shrink-0 text-primary" aria-hidden="true" /></div>
-            <p className="truncate font-mono text-2xl font-medium tracking-tight text-foreground" title={value}>{value}</p>
-            <p className="text-sm text-muted-foreground">{detail}</p>
-          </div>
+          <Card className="participant-command-metric" key={label}>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+              <CardAction><span className="participant-command-icon"><Icon className="size-4" aria-hidden="true" /></span></CardAction>
+            </CardHeader>
+            <CardContent>
+              <p className="truncate font-mono text-xl font-semibold tracking-tight text-foreground sm:text-2xl" title={value}>{value}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
+            </CardContent>
+          </Card>
         ))}
       </section>
 
       {accountNotice}
 
-      <ParticipantFundingOpportunity accountType={accountType} onAddFunds={onAddFunds} />
+      <div className="participant-command-grid">
+        <Card className="participant-command-actions">
+          <CardHeader>
+            <CardTitle>Quick actions</CardTitle>
+            <CardDescription>Move from overview to execution without searching through menus.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            <button type="button" onClick={onExploreTerminal} className="participant-command-action group">
+              <span className="participant-command-icon"><ChartCandlestick className="size-5" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><strong>Trading terminal</strong><small>Charts, orders, and positions</small></span>
+              <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+            </button>
+            <button type="button" onClick={onAddFunds} className="participant-command-action group">
+              <span className="participant-command-icon"><Plus className="size-5" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><strong>Add funds</strong><small>Choose a secure payment route</small></span>
+              <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+            </button>
+            <Link href="/participant/dashboard/payout" className="participant-command-action group">
+              <span className="participant-command-icon"><ArrowDownToLine className="size-5" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><strong>Request payout</strong><small>Withdraw and track status</small></span>
+              <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+            </Link>
+            <Link href="/participant/dashboard/predict" className="participant-command-action group participant-command-action-featured">
+              <span className="participant-command-icon"><Compass className="size-5" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><strong>Market predictions</strong><small>Explore upcoming opportunities</small></span>
+              <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+            </Link>
+          </CardContent>
+        </Card>
 
-      <section className="participant-home-activity" aria-labelledby="trading-pulse-title">
-        <div className="participant-home-activity-heading">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="participant-home-activity-signal" aria-hidden="true"><Activity className="size-5" /></span>
-            <div className="flex min-w-0 flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-2"><p className="participant-home-eyebrow">Trading pulse</p><Badge variant="secondary" className="participant-home-live-badge"><span aria-hidden="true" /> Watchlist active</Badge></div>
-              <h2 id="trading-pulse-title" className="text-xl font-medium tracking-tight text-foreground">There&apos;s always another setup to understand.</h2>
-              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">Explore the market stories traders are watching before you decide what deserves your attention.</p>
+        <Card className="participant-command-readiness">
+          <CardHeader>
+            <CardTitle>Account readiness</CardTitle>
+            <CardDescription>Complete the essentials for uninterrupted funding and payouts.</CardDescription>
+            <CardAction><Badge variant="secondary">{readinessScore}%</Badge></CardAction>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-5">
+            <Progress value={readinessScore} aria-label={`Account readiness ${readinessScore}%`} />
+            <div className="flex flex-col gap-1">
+              <Link href="/participant/dashboard/profile" className="participant-command-check">
+                {isVerified ? <CheckCircle2 className="size-4 text-primary" aria-hidden="true" /> : <ShieldCheck className="size-4 text-muted-foreground" aria-hidden="true" />}
+                <span><strong>Identity verification</strong><small>{isVerified ? "Completed" : "Action required"}</small></span>
+                <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
+              </Link>
+              <Separator />
+              <button type="button" onClick={onAddFunds} className="participant-command-check text-left">
+                {hasFundedWallet ? <CheckCircle2 className="size-4 text-primary" aria-hidden="true" /> : <Wallet className="size-4 text-muted-foreground" aria-hidden="true" />}
+                <span><strong>Trading capital</strong><small>{hasFundedWallet ? "Wallet funded" : "Add funds when ready"}</small></span>
+                <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
+              </button>
+              <Separator />
+              <button type="button" onClick={onExploreTerminal} className="participant-command-check text-left">
+                <CheckCircle2 className="size-4 text-primary" aria-hidden="true" />
+                <span><strong>Trading workspace</strong><small>Terminal available</small></span>
+                <ArrowUpRight className="size-4 text-muted-foreground" aria-hidden="true" />
+              </button>
             </div>
-          </div>
-          <Link href="/participant/dashboard/predict" className="participant-home-text-link">Explore predictions <ArrowUpRight className="size-4" aria-hidden="true" /></Link>
-        </div>
-        <div className="participant-home-activity-grid">
-          {[
-            { market: "BTC / USDT", signal: "Momentum building", detail: "Watch the next decisive move", tone: "up" },
-            { market: "EUR / USD", signal: "Range under pressure", detail: "A patience test for traders", tone: "steady" },
-            { market: "XAU / USD", signal: "Volatility returning", detail: "Risk comes before reward", tone: "pulse" },
-          ].map((item) => (
-            <Link href="/participant/dashboard/predict" className="participant-home-activity-card" key={item.market}>
-              <div className="flex items-center justify-between gap-3"><span className="font-mono text-sm font-semibold text-foreground">{item.market}</span><span className={`participant-home-activity-line ${item.tone}`} aria-hidden="true" /></div>
-              <div className="flex flex-col gap-1"><span className="text-sm font-medium text-foreground">{item.signal}</span><span className="text-xs text-muted-foreground">{item.detail}</span></div>
-            </Link>
-          ))}
-        </div>
-      </section>
+          </CardContent>
+        </Card>
+      </div>
 
-      <section aria-labelledby="quick-access-title" className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-3"><h2 id="quick-access-title" className="text-lg font-medium tracking-tight text-foreground">Where to next?</h2><span className="text-sm text-muted-foreground">Your shortcuts</span></div>
-        <div className="participant-home-shortcuts">
+      <section aria-labelledby="dashboard-shortcuts-title" className="flex flex-col gap-3">
+        <div className="flex items-end justify-between gap-3">
+          <div><p className="participant-home-eyebrow">Workspace</p><h2 id="dashboard-shortcuts-title" className="mt-1 text-lg font-semibold tracking-tight text-foreground">Everything in reach</h2></div>
+          <span className="hidden text-xs text-muted-foreground sm:inline">Frequently used pages</span>
+        </div>
+        <div className="participant-command-shortcuts">
           {shortcuts.map(({ href, icon: Icon, label, detail }) => (
-            <Link key={href} href={href} className={`participant-home-shortcut group${label === "Predictions" ? " participant-home-prediction" : ""}`}>
-              <div className="flex items-center justify-between gap-2"><span className="participant-home-icon"><Icon className="size-5" aria-hidden="true" /></span><ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" /></div>
-              <div className="flex flex-col gap-1"><span className="text-sm font-semibold text-foreground">{label}</span><span className="text-sm text-muted-foreground">{detail}</span></div>
+            <Link key={href} href={href} className="participant-command-shortcut group">
+              <span className="participant-command-icon"><Icon className="size-5" aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><strong>{label}</strong><small>{detail}</small></span>
+              <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
             </Link>
           ))}
-          <button type="button" onClick={onHelp} className="participant-home-shortcut group text-left">
-            <div className="flex items-center justify-between gap-2"><span className="participant-home-icon"><CircleHelp className="size-5" aria-hidden="true" /></span><ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" /></div>
-            <span className="flex flex-col gap-1"><span className="text-sm font-semibold text-foreground">Guidance</span><span className="text-sm text-muted-foreground">Find your bearings</span></span>
+          <button type="button" onClick={onHelp} className="participant-command-shortcut group text-left">
+            <span className="participant-command-icon"><CircleHelp className="size-5" aria-hidden="true" /></span>
+            <span className="min-w-0 flex-1"><strong>Help center</strong><small>Get support and guidance</small></span>
+            <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
         </div>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <section className="participant-home-panel" aria-labelledby="guided-tour-title">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col gap-2"><p className="participant-home-eyebrow">The considered approach</p><h2 id="guided-tour-title" className="text-xl font-medium tracking-tight text-foreground">Before your next move.</h2></div>
-            {showTour && <Button type="button" variant="ghost" size="icon" aria-label="Dismiss guided tour" onClick={() => setShowTour(false)}><X /></Button>}
-          </div>
-          {showTour ? <div className="flex flex-col">
-            <Link href="/participant/dashboard/profile" className="participant-home-guide-row"><span className="participant-home-icon">{isVerified ? <CheckCircle2 className="size-5" /> : <ShieldCheck className="size-5" />}</span><span className="flex flex-1 flex-col gap-1"><span className="text-sm font-medium text-foreground">{isVerified ? "Identity verified" : "Verify your identity"}</span><span className="text-sm text-muted-foreground">{isVerified ? "Keep your account details up to date." : "Review your details for funding and payouts."}</span></span><ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" /></Link>
-            <button type="button" onClick={onExploreTerminal} className="participant-home-guide-row text-left"><span className="participant-home-icon"><Compass className="size-5" /></span><span className="flex flex-1 flex-col gap-1"><span className="text-sm font-medium text-foreground">Get to know your markets</span><span className="text-sm text-muted-foreground">Explore the terminal before placing a trade.</span></span><ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" /></button>
-            <Link href="/terms" className="participant-home-guide-row"><span className="participant-home-icon"><ShieldCheck className="size-5" /></span><span className="flex flex-1 flex-col gap-1"><span className="text-sm font-medium text-foreground">Understand the finer details</span><span className="text-sm text-muted-foreground">Read the risks, fees, and withdrawal terms.</span></span><ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" /></Link>
-          </div> : <Button type="button" variant="outline" onClick={() => setShowTour(true)}>Show guided tour again <ArrowRight data-icon="inline-end" /></Button>}
-        </section>
-        <section className="participant-home-panel participant-home-perspective" aria-labelledby="home-perspective-title">
-          <span className="participant-home-icon"><Compass className="size-5" aria-hidden="true" /></span>
-          <div className="flex flex-col gap-3"><p className="participant-home-eyebrow">A different perspective</p><h2 id="home-perspective-title" className="max-w-72 text-balance text-2xl font-medium tracking-tight text-foreground">The best move starts<br />with a better question.</h2><p className="max-w-sm text-pretty text-sm leading-6 text-muted-foreground">What is your risk limit? What would change your view? Give every trade a plan before you give it capital.</p></div>
-          <div><Button type="button" variant="outline" onClick={onHelp} className="rounded-xl">Talk it through <ArrowUpRight data-icon="inline-end" /></Button></div>
-        </section>
-      </div>
-      <footer className="flex flex-col gap-2 border-t border-border pt-5 text-sm leading-6 text-muted-foreground sm:flex-row sm:items-center sm:justify-between"><p>Capital at risk. Clarity before commitment.</p>{email && <span className="max-w-full truncate" title={email}>{email}</span>}</footer>
+      <footer className="flex flex-col gap-2 border-t border-border pt-5 text-xs leading-5 text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <p>Trading involves risk. Review your limits before opening a position.</p>
+        {email && <span className="max-w-full truncate" title={email}>{email}</span>}
+      </footer>
     </div>
   )
 }

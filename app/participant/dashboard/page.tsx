@@ -10,7 +10,7 @@ import {
   AlertTriangle, Clock, Mail, Bell, X, History, Settings,
   CreditCard, HelpCircle, LogOut, Smartphone, Sparkles, User,
   AlertCircle, Home, LayoutGrid, Plus, PlusCircle, MessageCircle, Menu, Search,
-  ChevronDown, FileText, ShieldCheck, Palette, BellRing, SlidersHorizontal, QrCode,
+  ChevronDown, FileText, ShieldCheck, QrCode,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { FUNDED_PLANS, getFundedBaseAmount, getFundedMinimumBalance, getFundedDrawdownSnapshot } from "@/lib/funded-account"
@@ -446,10 +446,12 @@ function HamburgerMenu({
               <span className="text-slate-700">Notifications</span>
             </div>
           </Link>
-          <div className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer">
-            <CreditCard className="h-5 w-5 text-slate-600" />
-            <span className="text-slate-700">Payment Methods</span>
-          </div>
+          <Link href="/participant/dashboard/add-funds" onClick={onClose}>
+            <div className="flex items-center gap-3 rounded-xl p-3 transition-colors hover:bg-slate-50">
+              <CreditCard className="h-5 w-5 text-slate-600" />
+              <span className="text-slate-700">Payment Methods</span>
+            </div>
+          </Link>
           <Link href="/participant/dashboard/settings/help" onClick={onClose}>
             <div className="flex items-center gap-3 p-3 hover:bg-slate-50 rounded-xl transition-colors">
               <HelpCircle className="h-5 w-5 text-slate-600" />
@@ -1456,9 +1458,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const [isTerminalMenuOpen, setIsTerminalMenuOpen] = useState(false)
   const terminalSidebarCloseButtonRef = useRef<HTMLButtonElement>(null)
   const terminalSidebarTriggerRef = useRef<HTMLElement | null>(null)
-  const [isTerminalSettingsOpen, setIsTerminalSettingsOpen] = useState(false)
-  const [activeSettingsSection, setActiveSettingsSection] = useState("Account")
   const [activeTab, setActiveTab] = useState<"dashboard" | "trading" | "wheel" | "activity">(() => searchParams.get("view") === "terminal" ? "trading" : "dashboard")
+
+  const openTradingTerminal = useCallback(() => {
+    setActiveTab("trading")
+    router.push("/participant/dashboard?view=terminal")
+  }, [router])
 
   const openTerminalSidebar = () => {
     const activeElement = document.activeElement
@@ -1472,8 +1477,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   }
 
   useEffect(() => {
-    if (terminalView && activeTab !== "trading") setActiveTab("trading")
-  }, [terminalView, activeTab])
+    const nextTab = terminalView ? "trading" : "dashboard"
+    setActiveTab((currentTab) => currentTab === nextTab ? currentTab : nextTab)
+  }, [terminalView])
 
   useEffect(() => {
     if (isTerminalMenuOpen) terminalSidebarCloseButtonRef.current?.focus()
@@ -1761,6 +1767,28 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const activationDeadline = participantData.activation_deadline
     ? new Date(participantData.activation_deadline)
     : new Date(Date.now() + 48 * 60 * 60 * 1000)
+  const accountUpgradeOffer = (
+    <DashboardChallengeOffer
+      accountType={normalizedAccountType}
+      balance={walletBalance}
+      bonusBalance={Number(participantData.bonus_balance) || 0}
+      onConverted={(account) => {
+        const updated = { ...participantData, ...account }
+        setParticipantData(updated)
+        localStorage.setItem("participantData", JSON.stringify(updated))
+        router.push("/participant/dashboard/challenge")
+      }}
+      onFundedConverted={(account) => {
+        const updated = { ...participantData, ...account }
+        setParticipantData(updated)
+        localStorage.setItem("participantData", JSON.stringify(updated))
+        setTopUpIsFundedAccount(true)
+        setIsInitialFundedTopUp(true)
+        setSelectedFundedPlanFee(FUNDED_PLANS[0].topUpAmount)
+        setShowTopUpModal(true)
+      }}
+    />
+  )
 
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
@@ -1930,11 +1958,16 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
           {/* Right — balance card and funding actions */}
           <div className="participant-header-actions flex items-center gap-1.5 min-w-0">
-            <div
-              className="participant-header-balance flex h-12 min-w-0 items-center gap-1.5 rounded-2xl px-2 py-1.5"
+            <button
+              type="button"
+              onClick={() => {
+                setTopUpIsFundedAccount(isFundedAccount)
+                setIsInitialFundedTopUp(false)
+                setShowTopUpModal(true)
+              }}
+              className="participant-header-balance flex h-12 min-w-0 items-center gap-1.5 rounded-2xl px-2 py-1.5 text-left transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               style={{ background: "linear-gradient(135deg, rgba(214,182,107,0.16), rgba(214,182,107,0.05))", border: "1px solid rgba(214,182,107,0.36)", boxShadow: "0 0 20px rgba(214,182,107,0.08), inset 0 1px 0 rgba(255,255,255,0.05)" }}
-              role="group"
-              aria-label={`Current balance $${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              aria-label={`Add funds. Current balance $${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             >
               <span className="participant-header-wallet-icon flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10" aria-hidden="true">
                 <Wallet className="h-4 w-4 text-primary" />
@@ -1944,7 +1977,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                 <span className="price-mono block truncate text-[10px] font-black text-amber-200">${walletBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
               <ChevronDown aria-hidden="true" className="participant-header-balance-chevron h-3 w-3 shrink-0 text-slate-400" />
-            </div>
+            </button>
             {isFundedAccountBreached && (
               <button
                 type="button"
@@ -1978,27 +2011,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       <main className={activeTab === "trading" ? "hidden" : "pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            <DashboardChallengeOffer
-              accountType={normalizedAccountType}
-              balance={walletBalance}
-              bonusBalance={Number(participantData.bonus_balance) || 0}
-              onConverted={(account) => {
-                const updated = { ...participantData, ...account }
-                setParticipantData(updated)
-                localStorage.setItem("participantData", JSON.stringify(updated))
-                router.push("/participant/dashboard/challenge")
-              }}
-              onFundedConverted={(account) => {
-                const updated = { ...participantData, ...account }
-                setParticipantData(updated)
-                localStorage.setItem("participantData", JSON.stringify(updated))
-                setTopUpIsFundedAccount(true)
-                setIsInitialFundedTopUp(true)
-                setSelectedFundedPlanFee(FUNDED_PLANS[0].topUpAmount)
-                setShowTopUpModal(true)
-              }}
-            />
+            {isChallengeAccount && accountUpgradeOffer}
             {!isChallengeAccount ? (
+              <>
               <ParticipantOnboardingDashboard
                 displayName={displayName}
                 email={participantData.email}
@@ -2026,7 +2041,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
                     </div>
                   </section>
                 ) : null}
-        onExploreTerminal={() => setActiveTab("trading")}
+        onExploreTerminal={openTradingTerminal}
         onAddFunds={() => {
           setTopUpIsFundedAccount(false)
           setIsInitialFundedTopUp(false)
@@ -2035,9 +2050,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onHelp={() => setIsChatOpen(true)}
 
               />
+              {accountUpgradeOffer}
+              </>
             ) : (
               <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">
-                <ParticipantDashboardHero displayName={displayName} isChallenge onExploreTerminal={() => setActiveTab("trading")} />
+                <ParticipantDashboardHero displayName={displayName} isChallenge onExploreTerminal={openTradingTerminal} />
                 <ChallengeFundedUpgradeStrip onChoosePlan={(fee) => {
                   setTopUpIsFundedAccount(true)
                   setIsInitialFundedTopUp(true)
@@ -2326,7 +2343,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             }}
           >
             <div className="elite-terminal-brand">
-              <Link href="/participant/dashboard" onClick={() => closeTerminalSidebar(false)} aria-label="Go to trading dashboard home">
+              <Link href="/participant/dashboard" onClick={() => { setActiveTab("dashboard"); closeTerminalSidebar(false) }} aria-label="Go to trading dashboard home">
                 <div className="elite-terminal-brand-mark">FC</div>
               </Link>
               <div>
@@ -2372,7 +2389,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
             <div className="elite-terminal-section-label">Workspace</div>
             <nav className="elite-terminal-nav" aria-label="Terminal navigation links">
-              <Link href="/participant/dashboard" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item is-active" aria-current="page">
+              <Link href="/participant/dashboard" onClick={() => { setActiveTab("dashboard"); closeTerminalSidebar(false) }} className="elite-terminal-nav-item is-active" aria-current="page">
                 <Home aria-hidden="true" />
                 <span>Home</span>
               </Link>
@@ -2409,21 +2426,16 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
             </nav>
 
             <div className="elite-terminal-sidebar-footer">
-              <button
-                type="button"
-                className={`elite-terminal-nav-item ${isTerminalSettingsOpen ? "is-active" : ""}`}
-                onClick={() => {
-                  setActiveSettingsSection("Account")
-                  setIsTerminalSettingsOpen(true)
-                  closeTerminalSidebar(false)
-                }}
-                aria-haspopup="dialog"
-                aria-expanded={isTerminalSettingsOpen}
-              >
+              <Link href="/participant/dashboard/settings/security" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
                 <Settings aria-hidden="true" />
                 <span>Settings</span>
                 <ChevronRight className="ml-auto" aria-hidden="true" />
-              </button>
+              </Link>
+              <a href="https://www.mql5.com/en/docs/integration" target="_blank" rel="noreferrer" onClick={() => closeTerminalSidebar(false)} className="elite-terminal-nav-item">
+                <FileText aria-hidden="true" />
+                <span>MT5 API docs</span>
+                <ArrowUpRight className="ml-auto" aria-hidden="true" />
+              </a>
               <div className="elite-terminal-promo">
                 <div className="elite-terminal-promo-copy">
                   <strong>Trade with confidence</strong>
@@ -2436,110 +2448,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
               </button>
             </div>
           </aside>
-
-          {isTerminalSettingsOpen && (
-            <div className="terminal-modal-overlay fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="terminal-settings-title">
-              <div className="flex max-h-[min(720px,calc(100dvh-2rem))] w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-700 bg-[#0a111b] text-slate-200 shadow-2xl shadow-black/50">
-                <aside className="hidden w-56 shrink-0 border-r border-slate-800 bg-[#070d15] p-3 sm:block">
-                  <div className="mb-4 flex items-center justify-between px-2">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">Terminal</p>
-                      <h2 id="terminal-settings-title" className="mt-1 text-lg font-semibold text-slate-100">Settings</h2>
-                    </div>
-                    <button type="button" onClick={() => setIsTerminalSettingsOpen(false)} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white" aria-label="Close settings">
-                      <X className="size-4" />
-                    </button>
-                  </div>
-                  <nav className="flex flex-col gap-1" aria-label="Settings sections">
-                    {[
-                      { label: "Account", icon: User },
-                      { label: "Trading", icon: SlidersHorizontal },
-                      { label: "Notifications", icon: BellRing },
-                      { label: "Appearance", icon: Palette },
-                      { label: "Security", icon: ShieldCheck },
-                      { label: "MT5 API Docs", icon: FileText },
-                    ].map(({ label, icon: Icon }) => (
-                      <button
-                        key={label}
-                        type="button"
-                        onClick={() => setActiveSettingsSection(label)}
-                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${activeSettingsSection === label ? "bg-cyan-400/10 text-cyan-300" : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-100"}`}
-                      >
-                        <Icon className="size-4" />
-                        <span>{label}</span>
-                      </button>
-                    ))}
-                  </nav>
-                </aside>
-
-                <section className="min-w-0 flex-1 overflow-y-auto p-5 sm:p-7">
-                  <div className="mb-6 flex items-start justify-between gap-4 sm:hidden">
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">Terminal</p>
-                      <h2 className="mt-1 text-lg font-semibold text-slate-100">Settings</h2>
-                    </div>
-                    <button type="button" onClick={() => setIsTerminalSettingsOpen(false)} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white" aria-label="Close settings">
-                      <X className="size-4" />
-                    </button>
-                  </div>
-
-                  {activeSettingsSection === "MT5 API Docs" ? (
-                    <div className="flex flex-col gap-6">
-                      <div>
-                        <div className="mb-2 flex items-center gap-2 text-cyan-300"><FileText className="size-5" /><span className="text-xs font-bold uppercase tracking-[0.16em]">Developer resources</span></div>
-                        <h3 className="text-2xl font-semibold text-slate-100">MT5 API documentation</h3>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">Connect MetaTrader 5 to your trading terminal with secure account credentials, market data access, and automated order execution.</p>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {[
-                          { title: "Getting started", text: "Create a connection, verify your broker server, and authorize read-only access first." },
-                          { title: "Market data", text: "Stream symbols, ticks, candles, spreads, and account pricing into the terminal." },
-                          { title: "Trade execution", text: "Submit, modify, and close orders with validation for volume, margin, and risk." },
-                          { title: "Webhooks & events", text: "Receive position updates and execution events without exposing your secret key." },
-                        ].map(({ title, text }) => (
-                          <div key={title} className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                            <h4 className="text-sm font-semibold text-slate-100">{title}</h4>
-                            <p className="mt-2 text-xs leading-5 text-slate-400">{text}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300">Authentication example</p>
-                        <code className="mt-3 block overflow-x-auto rounded-lg bg-slate-950 p-3 font-mono text-xs leading-5 text-slate-300">{"POST /api/mt5/connect\n{\"server\": \"Broker-Server\", \"login\": 123456, \"readOnly\": true}"}</code>
-                      </div>
-                      <div className="flex flex-wrap gap-3">
-                        <a href="https://www.mql5.com/en/docs/integration" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">Open MT5 reference <ChevronRight className="size-4" /></a>
-                        <button type="button" onClick={() => setActiveSettingsSection("Trading")} className="rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white">Configure connection</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="mb-7 flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cyan-400">Terminal preferences</p>
-                          <h3 className="mt-1 text-2xl font-semibold text-slate-100">{activeSettingsSection}</h3>
-                          <p className="mt-2 text-sm leading-6 text-slate-400">Manage how your trading terminal behaves and keeps you informed.</p>
-                        </div>
-                        <button type="button" onClick={() => setIsTerminalSettingsOpen(false)} className="hidden rounded-lg p-2 text-slate-400 transition hover:bg-slate-800 hover:text-white sm:block" aria-label="Close settings"><X className="size-4" /></button>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        {[
-                          ["Live price updates", "Keep quotes and open P/L refreshed in real time."],
-                          ["Confirm before placing orders", "Review size, leverage, stop loss, and take profit before execution."],
-                          ["Compact chart layout", "Show more market data in the trading workspace."],
-                        ].map(([title, text], index) => (
-                          <div key={title} className="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
-                            <div><h4 className="text-sm font-medium text-slate-100">{title}</h4><p className="mt-1 text-xs text-slate-400">{text}</p></div>
-                            <button type="button" aria-label={`Toggle ${title}`} className={`relative h-6 w-11 shrink-0 rounded-full transition ${index < 2 ? "bg-cyan-400" : "bg-slate-700"}`}><span className={`absolute top-1 size-4 rounded-full bg-white transition ${index < 2 ? "left-6" : "left-1"}`} /></button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </section>
-              </div>
-            </div>
-          )}
 
           <div className="elite-terminal-workspace">
             <div className="elite-terminal-platform">
@@ -2625,8 +2533,11 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
 
       {/* Floating AI Chat Button */}
       <Button
+        type="button"
         onClick={() => setIsChatOpen(true)}
-            className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 hover:from-blue-700 hover:via-cyan-600 hover:to-blue-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
+        aria-label="Open AI trade coach"
+        title="Open AI trade coach"
+        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 hover:from-blue-700 hover:via-cyan-600 hover:to-blue-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
         size="icon"
       >
         <MessageCircle className="h-6 w-6 text-white" />
