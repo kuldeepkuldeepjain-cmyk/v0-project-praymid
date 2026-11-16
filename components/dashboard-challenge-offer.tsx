@@ -55,7 +55,7 @@ export function DashboardChallengeOffer({ accountType, balance, bonusBalance, on
 
   if (isChallenge) {
     return (
-      <section aria-labelledby="challenge-offer-title" className="mx-3 mt-3 overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-5 text-[color:var(--terminal-graphite-text)] shadow-xl sm:mx-4 sm:p-6">
+      <section aria-labelledby="challenge-offer-title" className="mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-5 text-[color:var(--terminal-graphite-text)] shadow-xl sm:w-[calc(100%-2rem)] sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
           <div className="flex min-w-0 flex-col gap-2">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]"><Sparkles className="size-4" aria-hidden="true" /> EliteFund Challenge</p>
@@ -71,7 +71,7 @@ export function DashboardChallengeOffer({ accountType, balance, bonusBalance, on
   const targetLabel = conversionTarget === "funded" ? "Funded" : "Challenge"
 
   return (
-    <section aria-labelledby="account-paths-title" className="mx-3 mt-3 overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)] shadow-xl sm:mx-4">
+    <section aria-labelledby="account-paths-title" className="mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)] shadow-xl sm:w-[calc(100%-2rem)]">
       <header className="flex flex-col gap-2 border-b border-[color:var(--terminal-graphite-border)] p-5 sm:p-6">
         <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]"><Sparkles className="size-4" aria-hidden="true" /> Upgrade your account</p>
         <h2 id="account-paths-title" className="text-balance text-xl font-bold tracking-tight sm:text-2xl">Choose your next trading path.</h2>

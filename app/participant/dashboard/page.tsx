@@ -1761,6 +1761,28 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   const activationDeadline = participantData.activation_deadline
     ? new Date(participantData.activation_deadline)
     : new Date(Date.now() + 48 * 60 * 60 * 1000)
+  const accountUpgradeOffer = (
+    <DashboardChallengeOffer
+      accountType={normalizedAccountType}
+      balance={walletBalance}
+      bonusBalance={Number(participantData.bonus_balance) || 0}
+      onConverted={(account) => {
+        const updated = { ...participantData, ...account }
+        setParticipantData(updated)
+        localStorage.setItem("participantData", JSON.stringify(updated))
+        router.push("/participant/dashboard/challenge")
+      }}
+      onFundedConverted={(account) => {
+        const updated = { ...participantData, ...account }
+        setParticipantData(updated)
+        localStorage.setItem("participantData", JSON.stringify(updated))
+        setTopUpIsFundedAccount(true)
+        setIsInitialFundedTopUp(true)
+        setSelectedFundedPlanFee(FUNDED_PLANS[0].topUpAmount)
+        setShowTopUpModal(true)
+      }}
+    />
+  )
 
   return (
     <div className="page-fade-enter w-full overflow-x-hidden min-h-screen min-h-dvh">
@@ -1978,27 +2000,9 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       <main className={activeTab === "trading" ? "hidden" : "pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            <DashboardChallengeOffer
-              accountType={normalizedAccountType}
-              balance={walletBalance}
-              bonusBalance={Number(participantData.bonus_balance) || 0}
-              onConverted={(account) => {
-                const updated = { ...participantData, ...account }
-                setParticipantData(updated)
-                localStorage.setItem("participantData", JSON.stringify(updated))
-                router.push("/participant/dashboard/challenge")
-              }}
-              onFundedConverted={(account) => {
-                const updated = { ...participantData, ...account }
-                setParticipantData(updated)
-                localStorage.setItem("participantData", JSON.stringify(updated))
-                setTopUpIsFundedAccount(true)
-                setIsInitialFundedTopUp(true)
-                setSelectedFundedPlanFee(FUNDED_PLANS[0].topUpAmount)
-                setShowTopUpModal(true)
-              }}
-            />
+            {isChallengeAccount && accountUpgradeOffer}
             {!isChallengeAccount ? (
+              <>
               <ParticipantOnboardingDashboard
                 displayName={displayName}
                 email={participantData.email}
@@ -2035,6 +2039,8 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onHelp={() => setIsChatOpen(true)}
 
               />
+              {accountUpgradeOffer}
+              </>
             ) : (
               <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">
                 <ParticipantDashboardHero displayName={displayName} isChallenge onExploreTerminal={() => setActiveTab("trading")} />
