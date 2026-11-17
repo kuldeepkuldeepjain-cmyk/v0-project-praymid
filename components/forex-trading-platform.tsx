@@ -12,7 +12,7 @@ import {
   Gauge, Lock, Unlock, BookOpen, Filter, Sun, Moon, Check, Search,
   Command, Grid3x3, Square, BellRing, MessageCircle, Headphones, Ticket, LockKeyhole, FileCheck2,
   HelpCircle, LifeBuoy, Send, Wrench, UserRound, CreditCard, Settings, LogOut,
-  ArrowUpRight, ArrowDownRight, Home,
+  ArrowUpRight, ArrowDownRight, ArrowLeft,
 } from "lucide-react"
 import { TradingChart } from "@/components/trading-chart"
 import tradeScrollStyles from "./terminal-trade-scroll.module.css"
@@ -3503,9 +3503,11 @@ const maxLeverage = 100
             <img src="/elite-fund-logo.jpg" onError={event => { event.currentTarget.src = "/elite-fund-terminal-logo.png" }} alt="" />
             <span><strong>Elite Fund</strong></span>
           </a>
-          <a className="mobile-terminal-home" href="/participant/dashboard" aria-label="Go to dashboard" title="Go to dashboard">
-            <Home aria-hidden="true" />
-          </a>
+ <a className="mobile-terminal-home" href="/participant/dashboard" aria-label="Back to participant dashboard" title="Back to participant dashboard">
+ <ArrowLeft aria-hidden="true" />
+ <span>Dashboard</span>
+ </a>
+
         </div>
         <button type="button" className="mobile-terminal-account" onClick={() => onOpenSidebar ? onOpenSidebar() : setMobileTab("account")} aria-label="Open account menu" aria-expanded={onOpenSidebar ? accountMenuOpen : undefined} aria-controls={onOpenSidebar ? "elite-terminal-sidebar" : undefined}>
           <Award className="h-4 w-4 text-cyan-400" aria-hidden="true" />

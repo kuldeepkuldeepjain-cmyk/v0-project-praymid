@@ -392,7 +392,19 @@
     }
 
     & :global(.mobile-terminal-home) {
-      display: none !important;
+      display: inline-flex !important;
+      height: 34px;
+      align-items: center;
+      gap: 5px;
+      padding-inline: 8px;
+      border: 1px solid var(--phone-border) !important;
+      border-radius: 9px;
+      background: var(--phone-panel) !important;
+      color: var(--phone-accent);
+      font-size: 9px;
+      font-weight: 750;
+      letter-spacing: .06em;
+      text-transform: uppercase;
     }
 
     & :global(.mobile-terminal-account) {

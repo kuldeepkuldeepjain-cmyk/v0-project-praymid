@@ -245,13 +245,13 @@ export function ParticipantOnboardingDashboard({
             <Link key={href} href={href} className="participant-command-shortcut group">
               <span className="participant-command-icon"><Icon className="size-5" aria-hidden="true" /></span>
               <span className="min-w-0 flex-1"><strong>{label}</strong><small>{detail}</small></span>
-              <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+              <span className="participant-command-shortcut-arrow" aria-hidden="true"><ArrowUpRight /></span>
             </Link>
           ))}
           <button type="button" onClick={onHelp} className="participant-command-shortcut group text-left">
             <span className="participant-command-icon"><CircleHelp className="size-5" aria-hidden="true" /></span>
             <span className="min-w-0 flex-1"><strong>Help center</strong><small>Get support and guidance</small></span>
-            <ArrowUpRight className="size-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden="true" />
+            <span className="participant-command-shortcut-arrow" aria-hidden="true"><ArrowUpRight /></span>
           </button>
         </div>
       </section>
