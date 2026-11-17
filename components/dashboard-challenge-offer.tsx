@@ -2,8 +2,9 @@
 
 import { useState, type MouseEvent } from "react"
 import Link from "next/link"
-import { ArrowRight, CircleDollarSign, ShieldCheck, Sparkles, Target } from "lucide-react"
+import { ArrowRight, Check, CircleDollarSign, ShieldCheck, Sparkles, Target } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -20,17 +21,22 @@ type DashboardChallengeOfferProps = {
   bonusBalance: number
   onConverted: (account: Record<string, unknown>) => void
   onFundedConverted: (account: Record<string, unknown>) => void
+  onOpenFundedPlans: () => void
 }
 
-export function DashboardChallengeOffer({ accountType, balance, bonusBalance, onConverted, onFundedConverted }: DashboardChallengeOfferProps) {
+export function DashboardChallengeOffer({ accountType, balance, bonusBalance, onConverted, onFundedConverted, onOpenFundedPlans }: DashboardChallengeOfferProps) {
+  const isChallenge = accountType === "challenge" || accountType === "challengeaccount"
+  const isFunded = accountType === "funded" || accountType === "fundedaccount" || accountType === "fundingtier"
+  const [selectedPath, setSelectedPath] = useState<ConversionTarget>(isFunded ? "funded" : "challenge")
   const [conversionTarget, setConversionTarget] = useState<ConversionTarget | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const isChallenge = accountType === "challenge" || accountType === "challengeaccount"
-  const isFunded = accountType === "funded" || accountType === "fundedaccount" || accountType === "fundingtier"
   const canConvert = balance === 0 && bonusBalance === 0
   const entryChallenge = DEFAULT_CHALLENGE_PLANS[0]
   const entryFunded = FUNDED_PLANS[0]
+  const currentAccountLabel = isChallenge ? "Challenge" : isFunded ? "Funded" : "Normal"
+  const selectedIsCurrent = (selectedPath === "challenge" && isChallenge) || (selectedPath === "funded" && isFunded)
+  const requiresClearBalances = selectedPath === "challenge" ? !isChallenge : !isChallenge && !isFunded
 
   async function convertAccount(event: MouseEvent<HTMLButtonElement>, target: ConversionTarget) {
     event.preventDefault()
@@ -51,84 +57,101 @@ export function DashboardChallengeOffer({ accountType, balance, bonusBalance, on
     }
   }
 
-  if (isFunded) return null
-
-  if (isChallenge) {
-    return (
-      <section aria-labelledby="challenge-offer-title" className="mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-5 text-[color:var(--terminal-graphite-text)] shadow-xl sm:w-[calc(100%-2rem)] sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-          <div className="flex min-w-0 flex-col gap-2">
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]"><Sparkles className="size-4" aria-hidden="true" /> EliteFund Challenge</p>
-            <h2 id="challenge-offer-title" className="text-balance text-xl font-bold tracking-tight sm:text-2xl">Your Challenge starts here.</h2>
-            <p className="max-w-2xl text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">Explore your evaluation, plan, and trading rules in your Challenge workspace.</p>
-          </div>
-          <Button asChild className="shrink-0"><Link href="/participant/dashboard/challenge">Open Challenge <ArrowRight data-icon="inline-end" /></Link></Button>
-        </div>
-      </section>
-    )
+  function handlePrimaryAction() {
+    if (selectedPath === "funded" && isChallenge) {
+      onOpenFundedPlans()
+      return
+    }
+    setConversionTarget(selectedPath)
   }
 
   const targetLabel = conversionTarget === "funded" ? "Funded" : "Challenge"
+  const challengeBenefits = ["Simulated evaluation account", "Clear profit and risk targets", "Trade with virtual capital"]
+  const fundedBenefits = ["No Challenge evaluation", "One-time plan payment", "Fixed 2% drawdown rule"]
 
   return (
     <section aria-labelledby="account-paths-title" className="mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)] shadow-xl sm:w-[calc(100%-2rem)]">
-      <header className="flex flex-col gap-2 border-b border-[color:var(--terminal-graphite-border)] p-5 sm:p-6">
-        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]"><Sparkles className="size-4" aria-hidden="true" /> Upgrade your account</p>
-        <h2 id="account-paths-title" className="text-balance text-xl font-bold tracking-tight sm:text-2xl">Choose your next trading path.</h2>
-        <p className="max-w-3xl text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">Keep your Normal account, switch to a simulated Challenge, or activate an Instant Funded plan. Your account and bonus balances must both be $0.00 before switching.</p>
+      <header className="flex flex-col gap-3 border-b border-[color:var(--terminal-graphite-border)] p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:p-6">
+        <div className="flex min-w-0 flex-col gap-2">
+          <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[color:var(--brand-primary)]"><Sparkles aria-hidden="true" /> Account options</p>
+          <h2 id="account-paths-title" className="text-balance text-xl font-bold tracking-tight sm:text-2xl">Challenge or Funded? Compare before you switch.</h2>
+          <p className="max-w-3xl text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">Choose the account experience that matches how you want to trade. Review the rules, cost, and activation steps below.</p>
+        </div>
+        <span className="inline-flex w-fit shrink-0 items-center gap-2 rounded-full border border-[color:color-mix(in_srgb,var(--brand-primary)_45%,var(--terminal-graphite-border))] bg-[color:color-mix(in_srgb,var(--brand-primary)_10%,transparent)] px-3 py-1.5 text-xs font-bold text-[color:var(--brand-primary)]">
+          <ShieldCheck aria-hidden="true" /> Current: {currentAccountLabel}
+        </span>
       </header>
 
-      <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-6">
-        <article className="flex flex-col gap-4 rounded-xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface-2)] p-5">
-          <div className="flex items-start justify-between gap-4">
-            <span className="flex size-11 items-center justify-center rounded-xl border border-[color:var(--terminal-graphite-border)] text-[color:var(--brand-primary)]"><Target className="size-5" aria-hidden="true" /></span>
-            <span className="rounded-full border border-[color:var(--terminal-graphite-border)] px-3 py-1 text-xs font-semibold text-[color:var(--terminal-graphite-muted)]">Evaluation</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            <h3 className="text-lg font-semibold">Challenge account</h3>
-            <p className="text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">Prove your strategy against clear targets and risk limits in a simulated evaluation.</p>
-          </div>
-          <div className="mt-auto flex items-end justify-between gap-3 border-t border-[color:var(--terminal-graphite-border)] pt-4">
-            <div><strong className="font-mono text-2xl">${entryChallenge.fee}</strong><span className="block text-xs text-[color:var(--terminal-graphite-muted)]">for ${entryChallenge.startingBalance.toLocaleString("en-US")} virtual capital</span></div>
-            <ShieldCheck className="size-5 text-[color:var(--brand-primary)]" aria-hidden="true" />
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button type="button" variant="outline" className="flex-1" disabled={!canConvert} aria-describedby={!canConvert ? "account-conversion-requirement" : undefined} onClick={() => setConversionTarget("challenge")}>Switch to Challenge <ArrowRight data-icon="inline-end" /></Button>
-            <Button asChild variant="ghost"><Link href="/participant/dashboard/plans?category=challenge">View rules</Link></Button>
-          </div>
-        </article>
+      <div className="flex flex-col gap-4 p-4 sm:p-6">
+        <ToggleGroup type="single" value={selectedPath} onValueChange={(value) => value && setSelectedPath(value as ConversionTarget)} variant="outline" className="grid w-full grid-cols-2" aria-label="Compare account types">
+          <ToggleGroupItem value="challenge" aria-label="Show Challenge account information" className="h-auto min-h-14 gap-2 px-3 py-2.5">
+            <Target aria-hidden="true" />
+            <span className="flex flex-col items-start text-left leading-tight"><strong>Challenge</strong><small className="font-normal text-muted-foreground">Pass an evaluation</small></span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="funded" aria-label="Show Funded account information" className="h-auto min-h-14 gap-2 px-3 py-2.5">
+            <CircleDollarSign aria-hidden="true" />
+            <span className="flex flex-col items-start text-left leading-tight"><strong>Funded</strong><small className="font-normal text-muted-foreground">Start with capacity</small></span>
+          </ToggleGroupItem>
+        </ToggleGroup>
 
-        <article className="flex flex-col gap-4 rounded-xl border border-[color:color-mix(in_srgb,var(--brand-primary)_55%,var(--terminal-graphite-border))] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--brand-primary)_13%,var(--terminal-graphite-surface-2)),var(--terminal-graphite-surface-2))] p-5 shadow-[inset_0_1px_color-mix(in_srgb,var(--brand-primary)_22%,transparent)]">
-          <div className="flex items-start justify-between gap-4">
-            <span className="flex size-11 items-center justify-center rounded-xl border border-[color:color-mix(in_srgb,var(--brand-primary)_45%,var(--terminal-graphite-border))] bg-[color:color-mix(in_srgb,var(--brand-primary)_12%,transparent)] text-[color:var(--brand-primary)]"><CircleDollarSign className="size-5" aria-hidden="true" /></span>
-            <span className="rounded-full bg-[color:var(--brand-primary)] px-3 py-1 text-xs font-bold text-[color:var(--brand-primary-foreground)]">Instant funded</span>
+        <article className="grid gap-5 rounded-xl border border-[color:color-mix(in_srgb,var(--brand-primary)_35%,var(--terminal-graphite-border))] bg-[linear-gradient(145deg,color-mix(in_srgb,var(--brand-primary)_10%,var(--terminal-graphite-surface-2)),var(--terminal-graphite-surface-2))] p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-5">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-semibold">{selectedPath === "challenge" ? "Challenge account" : "Instant Funded account"}</h3>
+                {selectedIsCurrent && <span className="rounded-full bg-[color:var(--brand-primary)] px-2.5 py-1 text-xs font-bold text-[color:var(--brand-primary-foreground)]">Your current account</span>}
+              </div>
+              <p className="max-w-2xl text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">
+                {selectedPath === "challenge"
+                  ? "Prove your strategy in a simulated evaluation. Meet the trading target while staying inside the daily loss and drawdown rules."
+                  : "Skip the evaluation. Choose a funded capacity, submit the one-time plan payment, and activate the account after approval."}
+              </p>
+            </div>
+
+            <ul className="grid gap-2 text-sm sm:grid-cols-3">
+              {(selectedPath === "challenge" ? challengeBenefits : fundedBenefits).map((benefit) => (
+                <li key={benefit} className="flex items-center gap-2 text-[color:var(--terminal-graphite-muted)]"><Check className="text-[color:var(--brand-primary)]" aria-hidden="true" /> {benefit}</li>
+              ))}
+            </ul>
           </div>
-          <div className="flex flex-col gap-2">
-            <h3 className="text-lg font-semibold">Funded account</h3>
-            <p className="text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">Skip the evaluation. Choose a funded capacity, submit the one-time plan payment, and activate after approval.</p>
-          </div>
-          <div className="mt-auto flex items-end justify-between gap-3 border-t border-[color:var(--terminal-graphite-border)] pt-4">
-            <div><strong className="font-mono text-2xl">${entryFunded.topUpAmount}</strong><span className="block text-xs text-[color:var(--terminal-graphite-muted)]">for ${entryFunded.baseAmount.toLocaleString("en-US")} funded capacity</span></div>
-            <ShieldCheck className="size-5 text-[color:var(--brand-primary)]" aria-hidden="true" />
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button type="button" className="flex-1" disabled={!canConvert} aria-describedby={!canConvert ? "account-conversion-requirement" : undefined} onClick={() => setConversionTarget("funded")}>Switch to Funded <ArrowRight data-icon="inline-end" /></Button>
-            <Button asChild variant="ghost"><Link href="/participant/dashboard/plans?category=funded">View plans</Link></Button>
+
+          <div className="flex min-w-44 flex-col gap-3 rounded-xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-4 sm:text-right">
+            <div>
+              <span className="block text-xs text-[color:var(--terminal-graphite-muted)]">{selectedPath === "challenge" ? "Evaluation fee from" : "Plan payment from"}</span>
+              <strong className="font-mono text-2xl">${selectedPath === "challenge" ? entryChallenge.fee : entryFunded.topUpAmount}</strong>
+              <span className="block text-xs text-[color:var(--terminal-graphite-muted)]">{selectedPath === "challenge" ? `$${entryChallenge.startingBalance.toLocaleString("en-US")} virtual balance` : `$${entryFunded.baseAmount.toLocaleString("en-US")} funded capacity`}</span>
+            </div>
+            {selectedIsCurrent ? (
+              selectedPath === "challenge" ? <Button asChild><Link href="/participant/dashboard/challenge">Open Challenge <ArrowRight data-icon="inline-end" /></Link></Button> : <Button type="button" disabled>Current account</Button>
+            ) : (
+              <Button type="button" onClick={handlePrimaryAction} disabled={requiresClearBalances && !canConvert} aria-describedby={requiresClearBalances && !canConvert ? "account-conversion-requirement" : undefined}>
+                Switch to {selectedPath === "challenge" ? "Challenge" : "Funded"} <ArrowRight data-icon="inline-end" />
+              </Button>
+            )}
+            <Button asChild variant="ghost"><Link href={`/participant/dashboard/plans?category=${selectedPath}`}>View {selectedPath === "challenge" ? "rules" : "plans"}</Link></Button>
           </div>
         </article>
       </div>
 
-      <p id="account-conversion-requirement" className="border-t border-[color:var(--terminal-graphite-border)] px-5 py-3 text-xs leading-5 text-[color:var(--terminal-graphite-muted)] sm:px-6">{canConvert ? "Your balances are clear. Choose either path to continue." : `Switching is locked while your available balance is $${balance.toFixed(2)} or your bonus balance is $${bonusBalance.toFixed(2)}.`} Open orders and pending deposits or payouts must also be cleared.</p>
+      <p id="account-conversion-requirement" className="border-t border-[color:var(--terminal-graphite-border)] px-4 py-3 text-xs leading-5 text-[color:var(--terminal-graphite-muted)] sm:px-6">
+        {requiresClearBalances
+          ? canConvert
+            ? "Ready to switch. Your available and bonus balances are both clear. Open orders and pending deposits or payouts must also be cleared."
+            : `Switching is locked until your available balance ($${balance.toFixed(2)}) and bonus balance ($${bonusBalance.toFixed(2)}) are both $0.00.`
+          : selectedIsCurrent
+            ? `You are viewing your current ${currentAccountLabel} account.`
+            : "Choose a funded capacity and submit its plan payment. Your Funded account activates after approval."}
+      </p>
 
       <AlertDialog open={conversionTarget !== null} onOpenChange={(open) => { if (!open && !isSubmitting) { setConversionTarget(null); setError("") } }}>
         <AlertDialogContent className="border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)]">
           <AlertDialogHeader>
             <AlertDialogTitle>Switch this account to {targetLabel}?</AlertDialogTitle>
-            <AlertDialogDescription className="text-[color:var(--terminal-graphite-muted)]">{conversionTarget === "funded" ? "Your Normal account will become a Funded account. Next, choose a capacity and submit its one-time plan payment for approval. Funded capital is activated only after approval." : "Your Normal account will become a Challenge account. Next, choose an evaluation plan and submit its fee for approval. Virtual capital is activated only after approval."}</AlertDialogDescription>
+            <AlertDialogDescription className="text-[color:var(--terminal-graphite-muted)]">{conversionTarget === "funded" ? "Your Normal account will become a Funded account. Next, choose a capacity and submit its one-time plan payment for approval. Funded capital is activated only after approval." : `Your ${currentAccountLabel} account will become a Challenge account. Next, choose an evaluation plan and submit its fee for approval. Virtual capital is activated only after approval.`}</AlertDialogDescription>
           </AlertDialogHeader>
           {error && <p role="alert" className="text-sm text-[color:var(--terminal-graphite-negative)]">{error}</p>}
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Keep Normal account</AlertDialogCancel>
+            <AlertDialogCancel disabled={isSubmitting}>Keep {currentAccountLabel} account</AlertDialogCancel>
             <AlertDialogAction onClick={(event) => conversionTarget && convertAccount(event, conversionTarget)} disabled={isSubmitting || !conversionTarget}>{isSubmitting ? "Switching…" : `Confirm ${targetLabel} switch`}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

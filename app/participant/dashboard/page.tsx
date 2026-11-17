@@ -1787,6 +1787,12 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         setSelectedFundedPlanFee(FUNDED_PLANS[0].topUpAmount)
         setShowTopUpModal(true)
       }}
+      onOpenFundedPlans={() => {
+        setTopUpIsFundedAccount(true)
+        setIsInitialFundedTopUp(true)
+        setSelectedFundedPlanFee(undefined)
+        setShowTopUpModal(true)
+      }}
     />
   )
 
@@ -2011,7 +2017,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       <main className={activeTab === "trading" ? "hidden" : "pb-6"} style={{ background: "transparent" }}>
         {activeTab === "dashboard" && (
           <>
-            {isChallengeAccount && accountUpgradeOffer}
+            {accountUpgradeOffer}
             {!isChallengeAccount ? (
               <>
               <ParticipantOnboardingDashboard
@@ -2050,7 +2056,6 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
         onHelp={() => setIsChatOpen(true)}
 
               />
-              {accountUpgradeOffer}
               </>
             ) : (
               <section className="participant-home-workspace mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 font-sans md:px-7 md:py-8" aria-label="Challenge workspace">
