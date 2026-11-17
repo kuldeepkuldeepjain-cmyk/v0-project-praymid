@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useState } from "react"
 import { Award, Check, Download, Loader2, ShieldCheck, Sparkles } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -19,6 +20,44 @@ export interface PayoutCertificateData {
   transactionReference?: string | null
 }
 
+const ELITEFUND_LOGO_PATH = "/elite-fund-terminal-logo.png"
+
+function loadCertificateLogo() {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new window.Image()
+    image.crossOrigin = "anonymous"
+    image.onload = () => resolve(image)
+    image.onerror = () => reject(new Error("EliteFund logo could not be loaded"))
+    image.src = ELITEFUND_LOGO_PATH
+  })
+}
+
+async function createCertificateLogoDataUrl() {
+  const image = await loadCertificateLogo()
+  const cropX = Math.round(image.naturalWidth * 0.24)
+  const cropY = Math.round(image.naturalHeight * 0.15)
+  const cropWidth = Math.round(image.naturalWidth * 0.58)
+  const cropHeight = Math.round(image.naturalHeight * 0.42)
+  const canvas = document.createElement("canvas")
+  const context = canvas.getContext("2d")
+
+  if (!context) throw new Error("Certificate logo could not be prepared")
+
+  canvas.width = cropWidth
+  canvas.height = cropHeight
+  context.drawImage(image, cropX, cropY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+
+  const logoPixels = context.getImageData(0, 0, cropWidth, cropHeight)
+  for (let index = 0; index < logoPixels.data.length; index += 4) {
+    const brightness = Math.max(logoPixels.data[index], logoPixels.data[index + 1], logoPixels.data[index + 2])
+    if (brightness < 20) logoPixels.data[index + 3] = 0
+    else if (brightness < 55) logoPixels.data[index + 3] = Math.round(logoPixels.data[index + 3] * ((brightness - 20) / 35))
+  }
+  context.putImageData(logoPixels, 0, 0)
+
+  return canvas.toDataURL("image/png")
+}
+
 function getCertificateNumber(data: PayoutCertificateData) {
   const accountCode = data.accountLabel === "Funded Account" ? "FND" : "CHL"
   const reference = data.id.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12).toUpperCase()
@@ -34,7 +73,9 @@ function CertificateArtwork({ data }: { data: PayoutCertificateData }) {
       <span className="payout-certificate-corner payout-certificate-corner-bottom" aria-hidden="true" />
       <header className="payout-certificate-header">
         <div className="payout-certificate-brand" aria-label="EliteFund">
-          <span className="payout-certificate-monogram">EF</span>
+          <span className="payout-certificate-logo" aria-hidden="true">
+            <Image src={ELITEFUND_LOGO_PATH} alt="" width={88} height={88} />
+          </span>
           <span><strong>ELITEFUND</strong><small>CAPITAL MARKETS</small></span>
         </div>
         <Badge variant="outline" className="payout-certificate-badge"><ShieldCheck aria-hidden="true" />Verified payout</Badge>
@@ -76,6 +117,7 @@ async function createPayoutCertificatePdf(data: PayoutCertificateData) {
   const certificateNumber = getCertificateNumber(data)
   const amount = formatPayoutAmount(data.amount)
   const issued = formatPayoutDate(data.issuedAt)
+  const logoDataUrl = await createCertificateLogoDataUrl()
 
   doc.setFillColor(7, 18, 34)
   doc.rect(0, 0, width, height, "F")
@@ -90,19 +132,15 @@ async function createPayoutCertificatePdf(data: PayoutCertificateData) {
   doc.triangle(8, 8, 72, 8, 8, 60, "F")
   doc.triangle(width - 8, height - 8, width - 72, height - 8, width - 8, height - 60, "F")
 
-  doc.setFillColor(98, 169, 232)
-  doc.circle(25, 24, 8, "F")
-  doc.setTextColor(7, 18, 34)
-  doc.setFont("helvetica", "bold")
-  doc.setFontSize(12)
-  doc.text("EF", 25, 27, { align: "center" })
+  doc.addImage(logoDataUrl, "PNG", 17, 14, 28, 20, "elitefund-logo", "FAST")
   doc.setTextColor(238, 246, 255)
+  doc.setFont("helvetica", "bold")
   doc.setFontSize(13)
-  doc.text("ELITEFUND", 38, 22)
+  doc.text("ELITEFUND", 50, 22)
   doc.setTextColor(144, 173, 201)
   doc.setFont("helvetica", "normal")
   doc.setFontSize(6.5)
-  doc.text("CAPITAL MARKETS", 38, 28)
+  doc.text("CAPITAL MARKETS", 50, 28)
 
   doc.setDrawColor(98, 169, 232)
   doc.roundedRect(width - 61, 17, 43, 11, 2, 2, "S")
