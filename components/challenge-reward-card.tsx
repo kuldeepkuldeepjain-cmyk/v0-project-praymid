@@ -7,23 +7,28 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { participantFetch } from "@/lib/auth"
+import { PayoutCertificateButton } from "@/components/payout-certificate"
 import { getChallengeRewardAmount, type ChallengePlan } from "@/lib/challenge-account"
 
 const money = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
 
 type RewardRequest = {
+  id: string
   status: string
   eligible_amount: string
   payout_method: string
   wallet_address: string
   admin_note: string | null
   transaction_hash: string | null
+  created_at: string | null
+  updated_at: string | null
 }
 
-export function ChallengeRewardCard({ plan, passedEquity, rewardRequest, onSubmitted }: {
+export function ChallengeRewardCard({ plan, passedEquity, rewardRequest, recipientName, onSubmitted }: {
   plan: ChallengePlan
   passedEquity: number | null
   rewardRequest: RewardRequest | null
+  recipientName: string
   onSubmitted: () => void
 }) {
   const [network, setNetwork] = useState("BEP20")
@@ -70,6 +75,23 @@ export function ChallengeRewardCard({ plan, passedEquity, rewardRequest, onSubmi
             <p className="break-all text-xs text-[color:var(--terminal-graphite-muted)]">{rewardRequest.payout_method} · {rewardRequest.wallet_address}</p>
             {rewardRequest.admin_note && <p className="text-[color:var(--terminal-graphite-muted)]">Reviewer note: {rewardRequest.admin_note}</p>}
             {rewardRequest.transaction_hash && <p className="break-all text-[color:var(--terminal-graphite-muted)]">Transfer hash: {rewardRequest.transaction_hash}</p>}
+            {rewardRequest.status === "paid" && (
+              <div className="mt-3 flex flex-col gap-3 rounded-xl border border-[color:var(--brand-primary)]/35 bg-[color:var(--brand-primary)]/10 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1"><strong className="text-white">Your payout certificate is ready</strong><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Celebrate your achievement and keep a verified PDF record.</span></div>
+                <PayoutCertificateButton
+                  data={{
+                    id: rewardRequest.id,
+                    recipient: recipientName,
+                    amount: rewardRequest.eligible_amount,
+                    accountLabel: "Challenge Account",
+                    payoutLabel: "Challenge reward payout",
+                    method: rewardRequest.payout_method,
+                    issuedAt: rewardRequest.updated_at || rewardRequest.created_at,
+                    transactionReference: rewardRequest.transaction_hash,
+                  }}
+                />
+              </div>
+            )}
           </div>
         ) : passedEquity == null ? (
           <p className="text-[color:var(--terminal-graphite-muted)]">Your evaluation predates recorded reward snapshots. Contact support for a manual review; no cash claim can be calculated automatically.</p>

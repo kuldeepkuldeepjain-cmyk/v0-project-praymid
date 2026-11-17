@@ -6178,6 +6178,56 @@ button, a, [role="button"] {
 .payout-guidance-panel [data-slot="accordion-item"]:last-child { border-bottom: 0; }
 .payout-guidance-panel [data-slot="accordion-trigger"] { padding-block: 14px; }
 .payout-history-entry { display: flex; min-width: 0; flex-direction: column; gap: 20px; border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: var(--background); }
+.payout-certificate-action { display: flex; flex-direction: column; gap: 14px; border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border)); border-radius: 12px; padding: 16px; background: color-mix(in srgb, var(--primary) 7%, var(--background)); }
+.payout-certificate-action h4 { color: var(--foreground); font-size: 14px; font-weight: 600; }
+.payout-certificate-action p { color: var(--muted-foreground); font-size: 14px; line-height: 1.6; }
+.payout-certificate-dialog { width: calc(100% - 24px); max-height: 92dvh; overflow-y: auto; border-color: color-mix(in srgb, var(--brand-primary) 30%, var(--border)) !important; background: #071222 !important; color: #eef6ff !important; }
+.payout-certificate-dialog [data-slot="dialog-title"] { color: #f4f9ff !important; }
+.payout-certificate-dialog [data-slot="dialog-description"] { color: #90adc9 !important; }
+.payout-certificate-frame { height: 264px; overflow: hidden; border-radius: 14px; background: #040c17; padding: 8px; }
+.payout-certificate { position: relative; display: flex; width: 700px; min-width: 700px; aspect-ratio: 1.414 / 1; transform: scale(0.5); transform-origin: top left; flex-direction: column; overflow: hidden; border: 2px solid var(--brand-primary); background: radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--brand-primary) 10%, transparent), transparent 38%), #071222; padding: 32px; color: #eef6ff; box-shadow: inset 0 0 0 4px #071222, inset 0 0 0 5px color-mix(in srgb, var(--brand-primary) 42%, transparent); }
+.payout-certificate::before { content: ""; position: absolute; inset: 12px; pointer-events: none; border: 1px solid color-mix(in srgb, var(--brand-primary) 32%, transparent); }
+.payout-certificate-corner { position: absolute; width: 180px; height: 130px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 18%, transparent), transparent 68%); }
+.payout-certificate-corner-top { top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+.payout-certificate-corner-bottom { right: 0; bottom: 0; transform: rotate(180deg); clip-path: polygon(0 0, 100% 0, 0 100%); }
+.payout-certificate-header { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.payout-certificate-brand { display: flex; align-items: center; gap: 12px; }
+.payout-certificate-brand > span:last-child { display: flex; flex-direction: column; line-height: 1; }
+.payout-certificate-brand strong { color: #f1f7fd; font-size: 15px; letter-spacing: 0.12em; }
+.payout-certificate-brand small { margin-top: 5px; color: #7f9db8; font-size: 7px; letter-spacing: 0.2em; }
+.payout-certificate-logo { position: relative; display: block; width: 52px; height: 38px; flex: 0 0 auto; overflow: hidden; border-radius: 7px; background: #02060b; box-shadow: 0 0 0 1px color-mix(in srgb, var(--brand-primary) 30%, transparent), 0 0 20px color-mix(in srgb, var(--brand-primary) 12%, transparent); }
+.payout-certificate-logo img { position: absolute; top: -13px; left: -21px; width: 88px; height: 88px; max-width: none; mix-blend-mode: screen; }
+.payout-certificate-dialog .payout-certificate-badge { border-color: color-mix(in srgb, var(--brand-primary) 60%, transparent); background: color-mix(in srgb, var(--brand-primary) 10%, transparent); color: var(--brand-primary); }
+.payout-certificate-body { position: relative; display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; padding: 22px 40px 10px; text-align: center; }
+.payout-certificate-kicker { display: flex; align-items: center; gap: 10px; color: var(--brand-primary); font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+.payout-certificate-kicker svg { width: 13px; height: 13px; }
+.payout-certificate-body > p { margin-top: 12px; color: #90adc9; font-size: 11px; letter-spacing: 0.04em; }
+.payout-certificate-body h3 { margin-top: 5px; color: #f6fbff; font-family: Georgia, "Times New Roman", serif; font-size: clamp(28px, 5vw, 42px); font-style: italic; font-weight: 600; line-height: 1.15; }
+.payout-certificate-rule { display: flex; align-items: center; width: min(100%, 410px); margin-top: 10px; }
+.payout-certificate-rule::before, .payout-certificate-rule::after { content: ""; height: 1px; flex: 1; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brand-primary) 70%, transparent)); }
+.payout-certificate-rule::after { transform: rotate(180deg); }
+.payout-certificate-rule span { width: 6px; height: 6px; margin-inline: 8px; transform: rotate(45deg); background: var(--brand-primary); }
+.payout-certificate-body h4 { margin-top: 4px; color: #dbeaf7; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+.payout-certificate-body .payout-certificate-amount { margin-top: 8px; color: var(--brand-primary); font-size: clamp(34px, 6vw, 50px); font-weight: 700; letter-spacing: -0.045em; line-height: 1; }
+.payout-certificate-body .payout-certificate-currency { margin-top: 6px; font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; }
+.payout-certificate-details { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0 14px 18px; border-block: 1px solid color-mix(in srgb, var(--brand-primary) 20%, transparent); padding-block: 12px; }
+.payout-certificate-details > div { display: flex; min-width: 0; flex-direction: column; gap: 4px; padding-inline: 12px; text-align: center; }
+.payout-certificate-details > div + div { border-left: 1px solid color-mix(in srgb, var(--brand-primary) 18%, transparent); }
+.payout-certificate-details dt { color: #7896b2; font-size: 7px; letter-spacing: 0.16em; text-transform: uppercase; }
+.payout-certificate-details dd { overflow-wrap: anywhere; color: #dcebf8; font-size: 10px; font-weight: 600; }
+.payout-certificate-footer { position: relative; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 34px; padding-inline: 30px; }
+.payout-certificate-signature { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.payout-certificate-signature span { width: 100%; border-bottom: 1px solid #496985; padding-bottom: 5px; color: #dcebf8; font-family: Georgia, "Times New Roman", serif; font-size: 14px; font-style: italic; text-align: center; }
+.payout-certificate-signature small { color: #7896b2; font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; }
+.payout-certificate-signature-right span { font-family: inherit; font-size: 10px; font-style: normal; }
+.payout-certificate-seal { display: flex; width: 60px; height: 60px; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border: 2px solid var(--brand-primary); border-radius: 50%; box-shadow: inset 0 0 0 4px #071222, inset 0 0 0 5px color-mix(in srgb, var(--brand-primary) 50%, transparent); color: var(--brand-primary); }
+.payout-certificate-seal svg { width: 20px; height: 20px; }
+.payout-certificate-seal span { font-size: 6px; font-weight: 800; letter-spacing: 0.1em; }
+.payout-certificate-verification { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 10px; color: #6886a2; font-size: 7px; line-height: 1.4; text-align: center; }
+.payout-certificate-verification svg { width: 10px; height: 10px; flex-shrink: 0; color: var(--brand-primary); }
+@media (max-width: 359px) { .payout-certificate-frame { height: 192px; } .payout-certificate { transform: scale(0.35); } }
+@media (min-width: 480px) and (max-width: 639px) { .payout-certificate-frame { height: 326px; } .payout-certificate { transform: scale(0.62); } }
+@media (min-width: 640px) { .payout-certificate-action { flex-direction: row; align-items: center; justify-content: space-between; } .payout-certificate-dialog { width: calc(100% - 48px); } .payout-certificate-frame { height: auto; padding: 14px; } .payout-certificate { margin-inline: auto; transform: none; } }
 .payout-history-entry-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .payout-history-icon { display: flex; width: 40px; height: 40px; flex-shrink: 0; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 10px; color: var(--primary); }
 .payout-history-amount { color: var(--foreground); font-size: 20px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.4; }
