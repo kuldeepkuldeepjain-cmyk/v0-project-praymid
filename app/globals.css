@@ -12207,22 +12207,29 @@ body:has(.elite-terminal-shell) {
 
   .apple-trading-terminal.reference-terminal .mobile-terminal-home {
     display: inline-flex;
-    width: 32px;
+    width: auto;
     height: 32px;
     flex: 0 0 auto;
     align-items: center;
     justify-content: center;
+    gap: 5px;
+    padding-inline: 9px;
     border: 1px solid var(--institutional-line);
     border-radius: 9px;
     background: var(--institutional-panel);
     color: var(--mobile-terminal-muted);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .06em;
     text-decoration: none;
+    text-transform: uppercase;
     transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
   }
 
   .apple-trading-terminal.reference-terminal .mobile-terminal-home svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
   }
 
   .apple-trading-terminal.reference-terminal .mobile-terminal-home:hover {
@@ -12240,7 +12247,7 @@ body:has(.elite-terminal-shell) {
 
 @media (max-width: 380px) {
   .apple-trading-terminal.reference-terminal .mobile-terminal-brand-group { gap: 6px; }
-  .apple-trading-terminal.reference-terminal .mobile-terminal-home { width: 30px; height: 30px; }
+  .apple-trading-terminal.reference-terminal .mobile-terminal-home { height: 30px; padding-inline: 7px; font-size: 8px; }
 }
 
 /* Continuous order docks keep the ticket controls connected at every breakpoint. */
