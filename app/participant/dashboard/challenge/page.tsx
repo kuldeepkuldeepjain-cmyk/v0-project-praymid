@@ -447,7 +447,7 @@ function ChallengeContent() {
           </Card>
         )}
 
-        {status === "passed" && <ChallengeRewardCard plan={plan} passedEquity={participant.challenge_passed_equity == null ? null : Number(participant.challenge_passed_equity)} rewardRequest={data.rewardRequest || null} onSubmitted={() => { void mutate() }} />}
+        {status === "passed" && <ChallengeRewardCard plan={plan} passedEquity={participant.challenge_passed_equity == null ? null : Number(participant.challenge_passed_equity)} rewardRequest={data.rewardRequest || null} recipientName={participant.username || participant.email || "EliteFund Trader"} onSubmitted={() => { void mutate() }} />}
 
         {status === "failed" && metrics && (
           <Card className="border-slate-700 bg-[#181b1f] text-slate-100">

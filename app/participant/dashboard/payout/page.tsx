@@ -390,7 +390,7 @@ export default function PayoutPage() {
           />
           <PayoutSummary network={selectedNetworkConfig} amount={withdrawalAmount} networkFee={networkFee} amountAfterFee={amountAfterFee} isFundedAccount={isFundedAccount} />
         </div>
-        <PayoutHistory id={historyId} payouts={payoutHistory} processingPayoutActionId={processingPayoutActionId} onConfirmReceipt={handleConfirmReceipt} onDispute={(payoutId) => { setDisputePayoutId(payoutId); if (isMobile) router.push("/participant/dashboard/payout?step=dispute", { scroll: true }); else setShowDisputeDialog(true) }} />
+        <PayoutHistory id={historyId} payouts={payoutHistory} recipientName={participantData?.full_name || participantData?.username || participantData?.email || "EliteFund Trader"} isFundedAccount={isFundedAccount} processingPayoutActionId={processingPayoutActionId} onConfirmReceipt={handleConfirmReceipt} onDispute={(payoutId) => { setDisputePayoutId(payoutId); if (isMobile) router.push("/participant/dashboard/payout?step=dispute", { scroll: true }); else setShowDisputeDialog(true) }} />
       </div>
       <PayoutDisputeDialog
         open={showDisputeDialog}

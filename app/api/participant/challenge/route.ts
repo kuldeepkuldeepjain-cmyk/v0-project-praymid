@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
     )
     const rewardResult = participant.account_type === "challenge" && currentStatus === "passed"
       ? await db.query(
-          `SELECT id, eligible_amount, status, payout_method, wallet_address, admin_note, transaction_hash, created_at
+          `SELECT id, eligible_amount, status, payout_method, wallet_address, admin_note, transaction_hash, created_at, updated_at
            FROM challenge_reward_requests WHERE participant_id = $1 LIMIT 1`,
           [participant.id],
         )

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { PayoutCertificateButton } from "@/components/payout-certificate"
 import { formatPayoutAmount, formatPayoutDate, getPayoutStatus, type PayoutRecord } from "@/lib/payout-presentation"
 
 const STAGES = [
@@ -56,9 +57,11 @@ function DestinationDetails({ payout }: { payout: PayoutRecord }) {
   return <div className="payout-detail-wide"><dt>{payout.payout_method?.toUpperCase() === "INR" ? "Payment destination" : "Wallet address"}</dt><dd><code className="font-mono">{destination}</code></dd></div>
 }
 
-export function PayoutHistory({ id, payouts, processingPayoutActionId, onConfirmReceipt, onDispute }: {
+export function PayoutHistory({ id, payouts, recipientName, isFundedAccount, processingPayoutActionId, onConfirmReceipt, onDispute }: {
   id: string
   payouts: PayoutRecord[]
+  recipientName: string
+  isFundedAccount: boolean
   processingPayoutActionId: string | null
   onConfirmReceipt: (payoutId: string) => void
   onDispute: (payoutId: string) => void
@@ -131,6 +134,23 @@ export function PayoutHistory({ id, payouts, processingPayoutActionId, onConfirm
                         </Button>
                         <Button type="button" variant="outline" onClick={() => onDispute(payout.id)} disabled={processingPayoutActionId === payout.id}><ShieldAlert data-icon="inline-start" aria-hidden="true" />Not received</Button>
                       </div>
+                    </div>
+                  )}
+                  {isFundedAccount && payout.status === "completed" && (
+                    <div className="payout-certificate-action">
+                      <div className="flex flex-col gap-1"><h4>Celebrate your payout</h4><p>Your verified EliteFund certificate is ready to view and download.</p></div>
+                      <PayoutCertificateButton
+                        data={{
+                          id: payout.id,
+                          recipient: recipientName,
+                          amount: payout.amount,
+                          accountLabel: "Funded Account",
+                          payoutLabel: "Funded profit payout",
+                          method: payout.payout_method || "Not recorded",
+                          issuedAt: payout.processed_at || payout.created_at || payout.requested_at,
+                          transactionReference: payout.transaction_hash,
+                        }}
+                      />
                     </div>
                   )}
                   {payout.status === "completed" && payout.participant_confirmed === true && (
