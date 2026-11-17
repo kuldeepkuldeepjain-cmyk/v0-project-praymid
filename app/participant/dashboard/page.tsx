@@ -2540,16 +2540,17 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
       <Button
         type="button"
         onClick={() => setIsChatOpen(true)}
-        aria-label="Open AI trade coach"
-        title="Open AI trade coach"
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 hover:from-blue-700 hover:via-cyan-600 hover:to-blue-600 border-0 z-50 transition-all hover:scale-110 active:scale-95 animate-float"
+        aria-label="Open EliteFund AI assistant"
+        title="Open EliteFund AI assistant"
+        className="fixed bottom-24 right-5 z-50 size-14 rounded-2xl border border-white/15 shadow-[0_16px_42px_color-mix(in_srgb,var(--brand-primary)_34%,transparent)] transition-transform hover:scale-105 hover:brightness-110 active:scale-95 sm:right-6"
+        style={{ background: "var(--brand-primary)", color: "var(--brand-primary-foreground)" }}
         size="icon"
       >
-        <MessageCircle className="h-6 w-6 text-white" />
+        <MessageCircle aria-hidden="true" />
       </Button>
 
       {/* AI Chat Dialog */}
-      <AIChatbotDialog open={isChatOpen} onOpenChange={setIsChatOpen} launch={coachLaunch} />
+      <AIChatbotDialog key={coachLaunch?.id ?? "default"} open={isChatOpen} onOpenChange={setIsChatOpen} launch={coachLaunch} />
     </div>
   )
 }

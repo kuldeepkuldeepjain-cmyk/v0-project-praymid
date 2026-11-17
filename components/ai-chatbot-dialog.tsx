@@ -1,18 +1,38 @@
 "use client"
 
 import type React from "react"
-
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useChat } from "@ai-sdk/react"
-import { DefaultChatTransport } from "ai"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Bot, User, Send, Loader2, Sparkles, X, ArrowUpRight, Trophy } from "lucide-react"
+import { DefaultChatTransport, type UIMessage } from "ai"
+import {
+  Activity,
+  ArrowUpRight,
+  BarChart3,
+  Bot,
+  CircleDollarSign,
+  Crosshair,
+  RotateCcw,
+  Send,
+  ShieldCheck,
+  Sparkles,
+  Square,
+  Trash2,
+  Trophy,
+  User,
+  X,
+} from "lucide-react"
 
-import { COACH_MODELS, COACH_MODES, COACH_TIMEFRAMES, type CoachLaunch } from "@/lib/trade-coach"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
+import { COACH_MODELS, COACH_MODES, COACH_TIMEFRAMES, type CoachLaunch, type CoachMode } from "@/lib/trade-coach"
 
 interface AIChatbotDialogProps {
   open: boolean
@@ -20,226 +40,284 @@ interface AIChatbotDialogProps {
   launch?: CoachLaunch | null
 }
 
+const chatTransport = new DefaultChatTransport({ api: "/api/chat" })
+const instruments = ["EUR/USD", "GBP/USD", "USD/JPY", "AUD/USD", "USD/CAD", "USD/CHF", "XAU/USD"] as const
+
+const quickActions = [
+  {
+    label: "Account snapshot",
+    description: "Balance, limits, and exposure",
+    prompt: "Review my current account balance, account status, open exposure, and any risk warnings. Use verified account data only.",
+    icon: CircleDollarSign,
+  },
+  {
+    label: "Market brief",
+    description: "Price, trend, and data quality",
+    prompt: "Give me a current market brief for the selected instrument and timeframe. Separate verified observations from scenarios.",
+    icon: BarChart3,
+  },
+  {
+    label: "Trade plan",
+    description: "Thesis through invalidation",
+    prompt: "Guide me through a disciplined conditional trade plan for the selected market. Ask for any missing entry, stop, target, direction, or risk budget before doing position-size math.",
+    icon: Crosshair,
+  },
+  {
+    label: "Risk check",
+    description: "Stops, sizing, and concentration",
+    prompt: "Review my open positions and give me a prioritized pre-trade risk checklist, including missing stops, sizing, liquidity, and no-trade conditions.",
+    icon: ShieldCheck,
+  },
+  {
+    label: "Performance review",
+    description: "Evidence-based improvements",
+    prompt: "Review my recorded trading performance, state the sample size, and suggest three evidence-based process improvements.",
+    icon: Trophy,
+  },
+  {
+    label: "Platform overview",
+    description: "Current participation statistics",
+    prompt: "Show me the current non-sensitive EliteFund platform statistics and clearly label when they were observed.",
+    icon: Activity,
+  },
+] as const
+
+type SelectOption = { value: string; label: string }
+
+function CoachSelect({ label, value, options, onValueChange }: { label: string; value: string; options: readonly SelectOption[]; onValueChange: (value: string) => void }) {
+  return (
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--terminal-graphite-muted)]">{label}</span>
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger className="h-10 w-full rounded-lg border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface-2)] px-3 text-sm font-medium text-[var(--terminal-graphite-text)] shadow-none focus-visible:border-[var(--brand-primary)] focus-visible:ring-[var(--brand-primary)]/20">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent position="popper" className="border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface-2)] text-[var(--terminal-graphite-text)]">
+          <SelectGroup>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value} className="focus:bg-[color-mix(in_srgb,var(--brand-primary)_14%,var(--terminal-graphite-surface-2))] focus:text-[var(--terminal-graphite-text)]">
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </label>
+  )
+}
+
+function getMessageText(message: UIMessage) {
+  return message.parts
+    .filter((part): part is Extract<UIMessage["parts"][number], { type: "text" }> => part.type === "text")
+    .map((part) => part.text)
+    .join("")
+}
+
 export function AIChatbotDialog({ open, onOpenChange, launch }: AIChatbotDialogProps) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
-
-  useEffect(() => {
-    try {
-      const participantData = localStorage.getItem("participantData")
-      if (participantData) setUserEmail(JSON.parse(participantData).email || null)
-    } catch {
-      setUserEmail(null)
-    }
-  }, [open])
-
+  const scrollRootRef = useRef<HTMLDivElement>(null)
   const [input, setInput] = useState("")
   const [model, setModel] = useState<string>(COACH_MODELS[0].id)
-  const [mode, setMode] = useState(launch?.mode ?? "market")
+  const [mode, setMode] = useState<CoachMode>(launch?.mode ?? "market")
   const [pair, setPair] = useState(launch?.pair ?? "EUR/USD")
   const [timeframe, setTimeframe] = useState(launch?.timeframe ?? "1H")
-
-  useEffect(() => {
-    if (!launch) return
-    setMode(launch.mode)
-    setPair(launch.pair)
-    setTimeframe(launch.timeframe)
-  }, [launch])
-
-  const { messages, sendMessage, status, error, regenerate } = useChat({
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      prepareSendMessagesRequest: ({ id, messages }) => ({
-        body: { messages, id, userEmail, model, mode, pair, timeframe },
-      }),
-    }),
-  })
+  const { messages, sendMessage, status, error, regenerate, stop, setMessages, clearError } = useChat({ transport: chatTransport })
 
   const selectedMode = COACH_MODES.find((item) => item.id === mode) ?? COACH_MODES[0]
+  const selectedModel = COACH_MODELS.find((item) => item.id === model) ?? COACH_MODELS[0]
   const isStreaming = status === "streaming" || status === "submitted"
   const isReady = status === "ready"
+  const requestContext = { model, mode, pair, timeframe }
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [messages])
+    const viewport = scrollRootRef.current?.querySelector<HTMLElement>("[data-slot='scroll-area-viewport']")
+    if (!viewport) return
+    const frame = requestAnimationFrame(() => viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" }))
+    return () => cancelAnimationFrame(frame)
+  }, [messages, status])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim() || !isReady) return
-    sendMessage({ text: `${selectedMode.prompt}\n\nMy request: ${input}` })
+  const sendPrompt = (text: string) => {
+    const prompt = text.trim()
+    if (!prompt || !isReady) return
+    void sendMessage({ text: prompt }, { body: requestContext })
     setInput("")
+  }
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    sendPrompt(input)
+  }
+
+  const clearConversation = () => {
+    if (isStreaming) stop()
+    setMessages([])
+    setInput("")
+    clearError()
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[85vh] sm:h-[600px] w-[95vw] sm:w-full flex flex-col p-0 gap-0 overflow-hidden border-0 shadow-xl sm:shadow-2xl">
-        <DialogHeader className="p-3 pb-2 sm:p-4 sm:pb-3 md:p-6 md:pb-4 border-b bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 relative overflow-hidden">
-          {/* Animated shimmer effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer my-0" />
-
-          <div className="flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-2 sm:gap-2.5 md:gap-3 flex-1 min-w-0">
-              <div className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-xl flex items-center justify-center shadow-lg sm:shadow-2xl border border-white/30 animate-pulse-soft flex-shrink-0">
-                <Bot className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-white" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <DialogTitle className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white drop-shadow-lg truncate">
-                  EliteFund AI Assistant
-                </DialogTitle>
-                <DialogDescription className="text-xs sm:text-sm text-white/90 hidden sm:block">
-                  {selectedMode.label} for {pair} · {timeframe}
-                </DialogDescription>
-              </div>
+      <DialogContent
+        showCloseButton={false}
+        aria-describedby="elitefund-ai-description"
+        className="flex h-[calc(100dvh-1rem)] max-h-[760px] w-[calc(100vw-1rem)] max-w-3xl flex-col gap-0 overflow-hidden rounded-3xl border border-[var(--terminal-graphite-border)] p-0 text-[var(--terminal-graphite-text)] shadow-2xl sm:h-[min(720px,calc(100dvh-2rem))]"
+        style={{
+          background: "var(--terminal-graphite-bg)",
+          boxShadow: "0 32px 90px rgba(0, 0, 0, 0.58), 0 0 0 1px color-mix(in srgb, var(--brand-primary) 12%, transparent)",
+        }}
+      >
+        <DialogHeader className="relative flex flex-row items-center justify-between gap-3 overflow-hidden border-b border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] px-4 py-4 text-left sm:px-5">
+          <div aria-hidden="true" className="pointer-events-none absolute -left-16 -top-24 size-48 rounded-full bg-[var(--brand-primary)]/10 blur-3xl" />
+          <div className="relative flex min-w-0 items-center gap-3">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-[color-mix(in_srgb,var(--brand-primary)_45%,transparent)] bg-[color-mix(in_srgb,var(--brand-primary)_12%,var(--terminal-graphite-surface-2))] text-[var(--brand-primary)] shadow-[0_0_28px_color-mix(in_srgb,var(--brand-primary)_18%,transparent)]">
+              <Bot aria-hidden="true" />
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange(false)}
-              className="h-7 w-7 sm:h-8 sm:w-8 md:h-9 md:w-9 rounded-lg sm:rounded-xl hover:bg-white/20 text-white transition-all hover:scale-110 flex-shrink-0"
-            >
-              <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <DialogTitle className="truncate text-base font-semibold tracking-tight text-[var(--terminal-graphite-text)] sm:text-lg">EliteFund AI Assistant</DialogTitle>
+                <Badge variant="outline" className="h-5 gap-1.5 border-[color-mix(in_srgb,var(--brand-primary)_38%,transparent)] bg-[color-mix(in_srgb,var(--brand-primary)_8%,transparent)] px-2 text-[10px] font-semibold text-[var(--brand-primary)]">
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
+                  Online
+                </Badge>
+              </div>
+              <DialogDescription id="elitefund-ai-description" className="mt-1 truncate text-xs text-[var(--terminal-graphite-muted)]">
+                {selectedMode.label} · {pair} · {timeframe} · {selectedModel.label}
+              </DialogDescription>
+            </div>
+          </div>
+          <div className="relative flex shrink-0 items-center gap-1">
+            {messages.length > 0 && (
+              <Button type="button" variant="ghost" size="icon-sm" onClick={clearConversation} aria-label="Start a new conversation" title="New conversation" className="rounded-lg text-[var(--terminal-graphite-muted)] hover:bg-[var(--terminal-graphite-surface-2)] hover:text-[var(--terminal-graphite-text)]">
+                <Trash2 aria-hidden="true" />
+              </Button>
+            )}
+            <Button type="button" variant="ghost" size="icon-sm" onClick={() => onOpenChange(false)} aria-label="Close AI assistant" className="rounded-lg text-[var(--terminal-graphite-muted)] hover:bg-[var(--terminal-graphite-surface-2)] hover:text-[var(--terminal-graphite-text)]">
+              <X aria-hidden="true" />
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-center gap-2 border-b bg-slate-950 px-3 py-2 text-xs text-slate-300">
-          <select aria-label="Coach mode" value={mode} onChange={(event) => setMode(event.target.value as typeof mode)} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
-            {COACH_MODES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-          </select>
-          <select aria-label="Instrument" value={pair} onChange={(event) => setPair(event.target.value)} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
-            {['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'USD/CAD', 'USD/CHF', 'XAU/USD'].map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select aria-label="Timeframe" value={timeframe} onChange={(event) => setTimeframe(event.target.value)} className="rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
-            {COACH_TIMEFRAMES.map((item) => <option key={item}>{item}</option>)}
-          </select>
-          <select aria-label="AI model" value={model} onChange={(event) => setModel(event.target.value)} className="ml-auto max-w-[160px] truncate rounded-md border border-slate-700 bg-slate-900 px-2 py-1.5">
-            {COACH_MODELS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-          </select>
-          <span className="hidden text-slate-400 md:inline">{selectedMode.description}</span>
-        </div>
+        <section aria-label="Assistant context" className="grid grid-cols-2 gap-2.5 border-b border-[var(--terminal-graphite-border)] bg-[color-mix(in_srgb,var(--terminal-graphite-surface)_86%,var(--terminal-graphite-bg))] px-3 py-3 sm:grid-cols-4 sm:px-5">
+          <CoachSelect label="Workflow" value={mode} onValueChange={(value) => setMode(value as CoachMode)} options={COACH_MODES.map((item) => ({ value: item.id, label: item.label }))} />
+          <CoachSelect label="Instrument" value={pair} onValueChange={setPair} options={instruments.map((item) => ({ value: item, label: item }))} />
+          <CoachSelect label="Timeframe" value={timeframe} onValueChange={setTimeframe} options={COACH_TIMEFRAMES.map((item) => ({ value: item, label: item }))} />
+          <CoachSelect label="Model" value={model} onValueChange={setModel} options={COACH_MODELS.map((item) => ({ value: item.id, label: item.label }))} />
+        </section>
 
-        <ScrollArea
-          ref={scrollRef}
-          className="flex-1 p-2 sm:p-3 md:p-4 lg:p-6 bg-gradient-to-br from-slate-50 via-purple-50/30 to-cyan-50/30"
-        >
-          <div className="space-y-2 sm:space-y-3 md:space-y-4">
-            {messages.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-4 sm:py-8 md:py-12 text-center animate-fade-in">
-                <div className="h-12 w-12 sm:h-16 sm:w-16 md:h-20 md:w-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 flex items-center justify-center mb-2 sm:mb-3 md:mb-4 shadow-lg sm:shadow-2xl animate-float">
-                  <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-white" />
-                </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 mb-1 sm:mb-2 px-2">Welcome to EliteFund AI</h3>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md leading-relaxed px-3 sm:px-4">
-                  I'm your intelligent assistant powered by advanced AI. Ask for a live market brief, a risk checklist, a trade plan, or a performance review. The coach labels data quality and cannot place trades.
-                </p>
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-2 mt-3 sm:mt-4 md:mt-6 w-full max-w-md px-2">
-                  {[
-                    { text: "Check my balance", icon: <Trophy className="h-3 w-3" />, prompt: userEmail ? `Check my account balance and stats for ${userEmail}` : "How do I check my balance?" },
-                    { text: "Platform stats", icon: <Sparkles className="h-3 w-3" />, prompt: "Show me current platform statistics" },
-                    { text: "Top terminal traders", icon: <Trophy className="h-3 w-3" />, prompt: "Who are the top traders on the Trading Terminal leaderboard?" },
-                    { text: "Trade planning guide", icon: <Sparkles className="h-3 w-3" />, prompt: "Guide me through a disciplined trade plan: market context, thesis, entry, invalidation, position sizing, and review. Keep it educational and do not give me a buy or sell command." },
-                    { text: "Risk checklist", icon: <ArrowUpRight className="h-3 w-3" />, prompt: "Give me a pre-trade risk checklist for the EliteFund terminal, including stop placement, sizing, liquidity, and when not to trade." },
-                    { text: "How predictions work", icon: <ArrowUpRight className="h-3 w-3" />, prompt: "How does prediction trading work?" },
-                  ].map((item, index) => (
+        <ScrollArea ref={scrollRootRef} className="min-h-0 flex-1 bg-[var(--terminal-graphite-bg)]">
+          <div className="flex min-h-full flex-col px-3 py-4 sm:px-5 sm:py-5">
+            {messages.length === 0 ? (
+              <Empty className="my-auto gap-5 border-0 p-0 sm:gap-6">
+                <EmptyHeader className="max-w-lg gap-2.5">
+                  <EmptyMedia variant="icon" className="size-14 rounded-2xl border border-[color-mix(in_srgb,var(--brand-primary)_45%,transparent)] bg-[color-mix(in_srgb,var(--brand-primary)_13%,var(--terminal-graphite-surface))] text-[var(--brand-primary)] shadow-[0_0_40px_color-mix(in_srgb,var(--brand-primary)_17%,transparent)] [&_svg]:size-7">
+                    <Sparkles aria-hidden="true" />
+                  </EmptyMedia>
+                  <EmptyTitle className="text-xl font-semibold text-[var(--terminal-graphite-text)] sm:text-2xl">Your trading decision copilot</EmptyTitle>
+                  <EmptyDescription className="max-w-md text-xs leading-5 text-[var(--terminal-graphite-muted)] sm:text-sm sm:leading-6">
+                    Explore verified account context, market observations, risk controls, and disciplined planning. EliteFund AI cannot place or modify trades.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent className="grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
+                  {quickActions.map(({ label, description, prompt, icon: Icon }) => (
                     <Button
-                      key={index}
+                      key={label}
+                      type="button"
                       variant="outline"
-                      size="sm"
-                      className="text-[10px] sm:text-xs bg-white hover:bg-gradient-to-r hover:from-purple-50 hover:to-cyan-50 border-slate-200 hover:border-purple-300 transition-all hover:scale-105 h-8 sm:h-9 px-2 sm:px-3"
-                      onClick={() => {
-                        sendMessage({ text: item.prompt })
-                      }}
+                      disabled={!isReady}
+                      onClick={() => sendPrompt(prompt)}
+                      className="group h-auto min-w-0 items-start justify-start whitespace-normal rounded-xl border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] px-3 py-3 text-left text-[var(--terminal-graphite-text)] shadow-none hover:border-[color-mix(in_srgb,var(--brand-primary)_55%,transparent)] hover:bg-[color-mix(in_srgb,var(--brand-primary)_8%,var(--terminal-graphite-surface))] hover:text-[var(--terminal-graphite-text)]"
                     >
-                      <span className="flex items-center gap-1">
-                        <span className="hidden sm:inline">{item.icon}</span>
-                        <span className="truncate">{item.text}</span>
+                      <Icon data-icon="inline-start" className="mt-0.5 shrink-0 text-[var(--brand-primary)]" aria-hidden="true" />
+                      <span className="min-w-0">
+                        <span className="block truncate text-xs font-semibold sm:text-sm">{label}</span>
+                        <span className="mt-0.5 hidden text-[10px] font-normal leading-4 text-[var(--terminal-graphite-muted)] sm:block">{description}</span>
                       </span>
                     </Button>
                   ))}
-                </div>
+                </EmptyContent>
+              </Empty>
+            ) : (
+              <div className="flex flex-col gap-4" aria-live="polite">
+                {messages.map((message) => {
+                  const isUser = message.role === "user"
+                  const text = getMessageText(message)
+                  if (!text) return null
+                  return (
+                    <article key={message.id} className={`flex items-end gap-2.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}>
+                      <Avatar className="size-8 shrink-0 border border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface-2)]">
+                        <AvatarFallback className={isUser ? "bg-[var(--terminal-graphite-surface-2)] text-[var(--terminal-graphite-muted)]" : "bg-[color-mix(in_srgb,var(--brand-primary)_13%,var(--terminal-graphite-surface-2))] text-[var(--brand-primary)]"}>
+                          {isUser ? <User aria-hidden="true" /> : <Bot aria-hidden="true" />}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className={`max-w-[84%] rounded-2xl px-3.5 py-3 sm:max-w-[78%] sm:px-4 ${isUser ? "rounded-br-md bg-[var(--brand-primary)] text-[var(--brand-primary-foreground)]" : "rounded-bl-md border border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] text-[var(--terminal-graphite-text)]"}`}>
+                        <p className={`mb-1.5 text-[10px] font-bold uppercase tracking-[0.14em] ${isUser ? "text-[color-mix(in_srgb,var(--brand-primary-foreground)_70%,transparent)]" : "text-[var(--brand-primary)]"}`}>{isUser ? "You" : "EliteFund AI"}</p>
+                        <p className="whitespace-pre-wrap text-sm leading-6">{text}</p>
+                      </div>
+                    </article>
+                  )
+                })}
+
+                {isStreaming && (
+                  <div className="flex items-end gap-2.5" role="status" aria-label="EliteFund AI is analyzing">
+                    <Avatar className="size-8 border border-[var(--terminal-graphite-border)]">
+                      <AvatarFallback className="bg-[color-mix(in_srgb,var(--brand-primary)_13%,var(--terminal-graphite-surface-2))] text-[var(--brand-primary)]">
+                        <Bot aria-hidden="true" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex items-center gap-2.5 rounded-2xl rounded-bl-md border border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] px-4 py-3 text-sm text-[var(--terminal-graphite-muted)]">
+                      <Spinner className="text-[var(--brand-primary)]" />
+                      Analyzing verified context…
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-
-            {messages.map((message, index) => (
-              <div
-                key={message.id}
-                className={`flex gap-2 sm:gap-2.5 md:gap-3 animate-fade-in-up ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <Avatar
-                  className={`h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 shadow-md sm:shadow-lg flex-shrink-0 ${
-                    message.role === "user"
-                      ? "bg-gradient-to-br from-slate-500 to-slate-700"
-                      : "bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 animate-pulse-soft"
-                  }`}
-                >
-                  <AvatarFallback className="text-white">
-                    {message.role === "user" ? <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" /> : <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />}
-                  </AvatarFallback>
-                </Avatar>
-                <div
-                  className={`flex-1 rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 shadow-sm sm:shadow-md bg-[rgba(124,126,120,1)] ${
-                    message.role === "user"
-                      ? "bg-gradient-to-r from-[#E85D3B] to-orange-500 text-white ml-4 sm:ml-8 md:ml-12"
-                      : "bg-white text-slate-900 mr-4 sm:mr-8 md:mr-12 border border-slate-100"
-                  }`}
-                >
-                  <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
-                    {message.parts
-                      ?.filter((p): p is { type: "text"; text: string } => p.type === "text")
-                      .map((p) => p.text)
-                      .join("") || ""}
-                  </p>
-                </div>
-              </div>
-            ))}
 
             {error && (
-              <div className="mx-1 flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700" role="alert">
-                <span>EliteFund AI could not complete that request. Please retry.</span>
-                <Button type="button" variant="ghost" size="sm" onClick={() => regenerate()} className="h-7 px-2 text-rose-700 hover:bg-rose-100">Retry</Button>
-              </div>
-            )}
-
-            {isStreaming && (
-              <div className="flex gap-2 sm:gap-2.5 md:gap-3 animate-fade-in">
-                <Avatar className="h-7 w-7 sm:h-8 sm:w-8 md:h-10 md:w-10 bg-gradient-to-br from-purple-500 via-pink-500 to-cyan-500 shadow-md sm:shadow-lg animate-pulse-soft flex-shrink-0">
-                  <AvatarFallback className="text-white">
-                    <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 rounded-xl sm:rounded-2xl px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 bg-white mr-4 sm:mr-8 md:mr-12 border border-slate-100 shadow-sm sm:shadow-md">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-purple-600" />
-                    <span className="text-xs sm:text-sm text-slate-600">AI is thinking...</span>
-                  </div>
-                </div>
-              </div>
+              <Alert variant="destructive" className="mt-4 border-red-400/25 bg-red-500/10 text-red-100">
+                <RotateCcw aria-hidden="true" />
+                <AlertTitle>Response interrupted</AlertTitle>
+                <AlertDescription className="flex flex-wrap items-center justify-between gap-3 text-red-100/75">
+                  EliteFund AI could not complete that request.
+                  <Button type="button" variant="outline" size="sm" onClick={() => void regenerate({ body: requestContext })} className="border-red-300/25 bg-transparent text-red-100 hover:bg-red-400/10 hover:text-red-50">Retry</Button>
+                </AlertDescription>
+              </Alert>
             )}
           </div>
         </ScrollArea>
 
-        <div className="p-2 sm:p-3 md:p-4 border-t bg-white shadow-md sm:shadow-lg">
-          <form onSubmit={handleSubmit} className="flex gap-1.5 sm:gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask me anything..."
-              disabled={!isReady}
-              className="flex-1 bg-slate-50 border-slate-200 focus:border-purple-400 focus:ring-purple-400/20 h-9 sm:h-10 md:h-11 text-xs sm:text-sm"
-            />
-            <Button
-              type="submit"
-              disabled={!isReady || !input.trim()}
-              className="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 hover:from-purple-700 hover:via-pink-600 hover:to-cyan-600 text-white shadow-md sm:shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95 h-9 sm:h-10 md:h-11 px-3 sm:px-4 md:px-6"
-            >
-              {isStreaming ? <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" /> : <Send className="h-4 w-4 sm:h-5 sm:w-5" />}
-            </Button>
+        <footer className="border-t border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] p-3 sm:p-4">
+          <form onSubmit={handleSubmit}>
+            <InputGroup className="h-12 rounded-xl border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface-2)] shadow-[inset_0_1px_rgba(255,255,255,0.025)] has-[[data-slot=input-group-control]:focus-visible]:border-[var(--brand-primary)] has-[[data-slot=input-group-control]:focus-visible]:ring-[var(--brand-primary)]/20">
+              <InputGroupInput
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                aria-label="Message EliteFund AI"
+                placeholder={isStreaming ? "EliteFund AI is analyzing…" : "Ask about markets, risk, or your account…"}
+                disabled={!isReady}
+                autoComplete="off"
+                className="h-11 px-3 text-sm text-[var(--terminal-graphite-text)] placeholder:text-[var(--terminal-graphite-muted)]/75"
+              />
+              <InputGroupAddon align="inline-end" className="pr-1.5">
+                {isStreaming ? (
+                  <InputGroupButton type="button" size="icon-sm" variant="ghost" onClick={stop} aria-label="Stop response" className="rounded-lg bg-[var(--terminal-graphite-elevated)] text-[var(--terminal-graphite-text)] hover:bg-[var(--terminal-graphite-border)]">
+                    <Square aria-hidden="true" />
+                  </InputGroupButton>
+                ) : (
+                  <InputGroupButton type="submit" size="icon-sm" disabled={!isReady || !input.trim()} aria-label="Send message" className="rounded-lg bg-[var(--brand-primary)] text-[var(--brand-primary-foreground)] hover:bg-[var(--brand-primary)] hover:brightness-110">
+                    <Send aria-hidden="true" />
+                  </InputGroupButton>
+                )}
+              </InputGroupAddon>
+            </InputGroup>
           </form>
-          <p className="text-[10px] sm:text-xs text-slate-500 mt-1.5 sm:mt-2 text-center hidden sm:block">Powered by advanced AI • Responses may vary</p>
-        </div>
+          <div className="mt-2 flex items-center justify-between gap-3 px-1 text-[10px] text-[var(--terminal-graphite-muted)] sm:text-xs">
+            <span>Educational decision support, not financial advice.</span>
+            <span className="hidden items-center gap-1 font-medium text-[var(--brand-primary)] sm:flex">
+              Data quality labeled
+              <ArrowUpRight aria-hidden="true" className="size-3" />
+            </span>
+          </div>
+        </footer>
       </DialogContent>
     </Dialog>
   )
