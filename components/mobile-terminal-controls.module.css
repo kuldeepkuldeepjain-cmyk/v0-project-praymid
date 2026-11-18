@@ -914,11 +914,11 @@
     & :global(.terminal-order-panel-header) {
       display: grid !important;
       grid-template-columns: minmax(0, 1fr) auto;
-      gap: 12px;
+      gap: 8px;
       flex: 0 0 auto;
       align-items: center;
-      min-height: 64px;
-      padding: 8px 16px !important;
+      min-height: 54px;
+      padding: 6px 12px !important;
       border: 0 !important;
       background: var(--phone-background) !important;
       color: var(--phone-foreground) !important;
@@ -940,10 +940,10 @@
     & .mobileTitle {
       display: inline;
       color: var(--phone-foreground);
-      font-size: 26px;
+      font-size: 21px;
       font-weight: 650;
-      line-height: 1.4;
-      letter-spacing: -.045em;
+      line-height: 1.2;
+      letter-spacing: -.04em;
       text-transform: none;
     }
 
@@ -1000,8 +1000,8 @@
     }
 
     & :global(.mobile-order-ticket) {
-      gap: 16px !important;
-      padding: 0 16px 24px !important;
+      gap: 10px !important;
+      padding: 0 12px 16px !important;
       background: var(--phone-background) !important;
       color: var(--phone-foreground) !important;
     }
@@ -1011,8 +1011,8 @@
     & :global(.mobile-order-ticket button),
     & :global(.mobile-order-ticket select),
     & :global(.mobile-order-ticket span) {
-      font-size: 14px !important;
-      line-height: 1.5;
+      font-size: 12px !important;
+      line-height: 1.35;
     }
 
     & :global(.mobile-order-ticket label),
@@ -1041,11 +1041,17 @@
     & :global(.mobile-order-risk),
     & :global(.mobile-order-pending),
     & :global(.mobile-order-metrics) {
-      padding: 16px !important;
+      padding: 12px !important;
       border: 1px solid var(--phone-border) !important;
-      border-radius: var(--phone-section-radius) !important;
+      border-radius: 14px !important;
       background: var(--phone-panel) !important;
       color: var(--phone-foreground) !important;
+    }
+
+    & :global(.mobile-order-metrics) {
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      grid-template-rows: auto auto !important;
     }
 
     & :global(.mobile-order-ticket-banner) {
@@ -1119,8 +1125,8 @@
 
     & :global(.mobile-quote-side) {
       align-items: flex-start;
-      min-height: 76px;
-      padding: 12px 0 !important;
+      min-height: 60px;
+      padding: 8px 0 !important;
       border: 0 !important;
       border-bottom: 2px solid var(--phone-border) !important;
       border-radius: 0 !important;
@@ -1169,14 +1175,24 @@
     }
 
     & :global(.order-ticket-controls) {
-      gap: 16px !important;
+      gap: 10px !important;
+    }
+
+    & :global(.mobile-order-risk-toggle) {
+      min-height: 44px;
+      padding: 8px 12px !important;
+      border-color: var(--phone-border) !important;
+      border-radius: 14px !important;
+      background: var(--phone-panel) !important;
+      color: var(--phone-foreground) !important;
+      box-shadow: none !important;
     }
 
     & :global(.mobile-order-ticket input),
     & :global(.mobile-order-ticket select),
     & :global(.mobile-order-volume button[aria-label="Decrease trade size"]),
     & :global(.mobile-order-volume button[aria-label="Increase trade size"]) {
-      min-height: 48px !important;
+      min-height: 44px !important;
       border: 0 !important;
       border-radius: 12px !important;
       background: var(--phone-surface) !important;
@@ -1192,8 +1208,8 @@
 
     & :global(.terminal-order-size-dock) {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 4px;
       overflow: visible;
       border: 0 !important;
       border-radius: 0 !important;
@@ -1201,9 +1217,10 @@
     }
 
     & :global(.terminal-order-size-dock button) {
-      min-height: 44px;
+      min-height: 36px;
+      padding-inline: 2px !important;
       border: 0 !important;
-      border-radius: 10px !important;
+      border-radius: 9px !important;
       background: var(--phone-surface) !important;
       color: var(--phone-muted) !important;
       box-shadow: none !important;
@@ -1262,8 +1279,8 @@
     }
 
     & :global(.mobile-order-execute) {
-      min-height: 52px;
-      padding: 12px !important;
+      min-height: 48px;
+      padding: 10px 12px !important;
       border: 0 !important;
       border-radius: 14px !important;
       background: var(--phone-accent) !important;

@@ -137,6 +137,7 @@ function PredictPageContent() {
   // Market browsing state
   const [assetFilter, setAssetFilter] = useState<'all' | 'crypto' | 'commodity' | 'forex'>('all')
   const [assetSearch, setAssetSearch] = useState("")
+  const [marketDensity, setMarketDensity] = useState<"compact" | "comfortable">("compact")
 
   // Active trade tracking - for showing overlay on current asset
   const [activeTrades, setActiveTrades] = useState<Record<string, any>>({})
@@ -533,9 +534,9 @@ function PredictPageContent() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-screen-2xl px-3 py-4 sm:px-5 sm:py-6 lg:px-8">
+      <main className="mx-auto w-full max-w-screen-2xl px-3 py-3 sm:px-5 sm:py-6 lg:px-8">
         <header
-          className="mb-5 flex flex-col gap-4 border-b pb-5 sm:flex-row sm:items-end sm:justify-between"
+          className="mb-3 flex flex-col gap-2.5 border-b pb-3 sm:mb-5 sm:flex-row sm:items-end sm:justify-between sm:gap-4 sm:pb-5"
           style={{ borderColor: "var(--terminal-graphite-border)" }}
         >
           <div className="min-w-0">
@@ -543,45 +544,45 @@ function PredictPageContent() {
               <Activity aria-hidden="true" className="size-4" />
               Live market desk
             </p>
-            <h2 className="mt-2 text-xl font-bold text-[var(--terminal-graphite-text)] sm:text-2xl">Choose a market</h2>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--terminal-graphite-muted)]">
+            <h2 className="mt-1 text-xl font-bold text-[var(--terminal-graphite-text)] sm:mt-2 sm:text-2xl">Choose a market</h2>
+            <p className="mt-1 hidden max-w-2xl text-sm leading-relaxed text-[var(--terminal-graphite-muted)] sm:block">
               Compare live crypto, commodity, and forex prices before opening a prediction ticket.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:min-w-64">
-            <div className="terminal-panel flex items-center justify-between gap-3 rounded-xl px-3 py-2.5">
-              <span className="text-sm text-[var(--terminal-graphite-muted)]">Markets</span>
-              <span className="price-mono text-base font-semibold text-[var(--terminal-graphite-text)]">{filteredAssets.length}</span>
+            <div className="terminal-panel flex items-center justify-between gap-3 rounded-lg px-3 py-2 sm:rounded-xl sm:py-2.5">
+              <span className="text-xs text-[var(--terminal-graphite-muted)] sm:text-sm">Markets</span>
+              <span className="price-mono text-sm font-semibold text-[var(--terminal-graphite-text)] sm:text-base">{filteredAssets.length}</span>
             </div>
-            <div className="terminal-panel flex items-center justify-between gap-3 rounded-xl px-3 py-2.5">
-              <span className="text-sm text-[var(--terminal-graphite-muted)]">Open trades</span>
-              <span className="price-mono text-base font-semibold text-[var(--terminal-graphite-text)]">{Object.keys(activeTrades).length}</span>
+            <div className="terminal-panel flex items-center justify-between gap-3 rounded-lg px-3 py-2 sm:rounded-xl sm:py-2.5">
+              <span className="text-xs text-[var(--terminal-graphite-muted)] sm:text-sm">Open trades</span>
+              <span className="price-mono text-sm font-semibold text-[var(--terminal-graphite-text)] sm:text-base">{Object.keys(activeTrades).length}</span>
             </div>
           </div>
         </header>
 
         <section
           aria-labelledby="prediction-account-title"
-          className="mb-5 overflow-hidden rounded-2xl border"
+          className="mb-3 overflow-hidden rounded-xl border sm:mb-5 sm:rounded-2xl"
           style={{
             background: "linear-gradient(135deg, color-mix(in srgb, var(--brand-primary) 14%, var(--terminal-graphite-surface)), var(--terminal-graphite-surface))",
             borderColor: "color-mix(in srgb, var(--brand-primary) 36%, var(--terminal-graphite-border))",
           }}
         >
-          <div className="flex flex-col gap-4 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-2.5 p-3 sm:gap-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex min-w-0 items-start gap-3 lg:max-w-xl">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primary)] text-[var(--brand-primary-foreground)]">
+              <span className="hidden size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-primary)] text-[var(--brand-primary-foreground)] sm:flex">
                 {tradeMode === "demo" ? <ShieldCheck aria-hidden="true" className="size-5" /> : <WalletCards aria-hidden="true" className="size-5" />}
               </span>
               <div className="min-w-0">
-                <h2 id="prediction-account-title" className="font-bold text-[var(--terminal-graphite-text)]">Choose your prediction account</h2>
-                <p className="mt-1 text-sm leading-relaxed text-[var(--terminal-graphite-muted)]">
+                <h2 id="prediction-account-title" className="text-sm font-bold text-[var(--terminal-graphite-text)] sm:text-base">Prediction account</h2>
+                <p className="mt-1 hidden text-sm leading-relaxed text-[var(--terminal-graphite-muted)] sm:block">
                   Practice safely with demo funds, or switch to real mode to trade from your account balance.
                 </p>
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-col gap-3 lg:w-[30rem]">
+            <div className="flex min-w-0 flex-col gap-2 sm:gap-3 lg:w-[30rem]">
               <ToggleGroup
                 type="single"
                 value={tradeMode}
@@ -594,11 +595,11 @@ function PredictPageContent() {
                 className="grid w-full grid-cols-2"
                 aria-label="Prediction account"
               >
-                <ToggleGroupItem value="demo" className="h-auto min-h-16 flex-col items-start gap-1 px-3 py-2 data-[state=on]:border-[var(--brand-primary)] data-[state=on]:bg-[color-mix(in_srgb,var(--brand-primary)_12%,var(--terminal-graphite-surface))]">
+                <ToggleGroupItem value="demo" className="h-auto min-h-12 flex-col items-start gap-0.5 px-3 py-1.5 sm:min-h-16 sm:gap-1 sm:py-2 data-[state=on]:border-[var(--brand-primary)] data-[state=on]:bg-[color-mix(in_srgb,var(--brand-primary)_12%,var(--terminal-graphite-surface))]">
                   <span className="flex items-center gap-1.5 text-xs text-[var(--terminal-graphite-muted)]"><ShieldCheck aria-hidden="true" /> Demo</span>
                   <span className="price-mono text-base font-bold text-[var(--brand-primary)]">${demoBalance.toFixed(2)}</span>
                 </ToggleGroupItem>
-                <ToggleGroupItem value="real" className="h-auto min-h-16 flex-col items-start gap-1 px-3 py-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:bg-[color-mix(in_srgb,var(--terminal-graphite-positive)_10%,var(--terminal-graphite-surface))]">
+                <ToggleGroupItem value="real" className="h-auto min-h-12 flex-col items-start gap-0.5 px-3 py-1.5 sm:min-h-16 sm:gap-1 sm:py-2 data-[state=on]:border-[var(--terminal-graphite-positive)] data-[state=on]:bg-[color-mix(in_srgb,var(--terminal-graphite-positive)_10%,var(--terminal-graphite-surface))]">
                   <span className="flex items-center gap-1.5 text-xs text-[var(--terminal-graphite-muted)]"><WalletCards aria-hidden="true" /> Real</span>
                   <span className="price-mono text-base font-bold text-[var(--terminal-graphite-positive)]">${walletBalance.toFixed(2)}</span>
                 </ToggleGroupItem>
@@ -636,7 +637,7 @@ function PredictPageContent() {
 
         <section
           aria-labelledby="prediction-market-pulse-title"
-          className="mb-5 overflow-hidden rounded-2xl border"
+          className="mb-5 hidden overflow-hidden rounded-2xl border sm:block"
           style={{
             backgroundColor: "var(--terminal-graphite-surface)",
             borderColor: "var(--terminal-graphite-border)",
@@ -793,7 +794,7 @@ function PredictPageContent() {
                 type="button"
                 onClick={() => setAssetFilter(key)}
                 aria-pressed={active}
-                className="min-h-11 shrink-0 whitespace-nowrap rounded-xl border px-4 py-2 text-sm font-semibold transition-colors hover:bg-[var(--terminal-graphite-surface-2)]"
+                className="min-h-9 shrink-0 whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-[var(--terminal-graphite-surface-2)] sm:min-h-11 sm:rounded-xl sm:px-4 sm:py-2 sm:text-sm"
                 style={{
                   backgroundColor: active ? "var(--brand-primary)" : "transparent",
                   borderColor: active ? "var(--brand-primary)" : "transparent",
@@ -829,14 +830,32 @@ function PredictPageContent() {
               </button>
             )}
           </div>
-          <p className="shrink-0 text-sm text-[var(--terminal-graphite-muted)] sm:text-right" aria-live="polite">
-            {filteredAssets.length} {filteredAssets.length === 1 ? "market" : "markets"}
-          </p>
+          <div className="flex shrink-0 items-center justify-between gap-2 sm:justify-end">
+            <p className="text-xs text-[var(--terminal-graphite-muted)]" aria-live="polite">
+              {filteredAssets.length} {filteredAssets.length === 1 ? "market" : "markets"}
+            </p>
+            <ToggleGroup
+              type="single"
+              value={marketDensity}
+              onValueChange={(value) => value && setMarketDensity(value as "compact" | "comfortable")}
+              variant="outline"
+              size="sm"
+              className="rounded-xl border border-[var(--terminal-graphite-border)] bg-[var(--terminal-graphite-surface)] p-1"
+              aria-label="Market card density"
+            >
+              <ToggleGroupItem value="compact" className="h-8 rounded-lg px-3 text-xs data-[state=on]:bg-[var(--brand-primary)] data-[state=on]:text-[var(--brand-primary-foreground)]">
+                Compact
+              </ToggleGroupItem>
+              <ToggleGroupItem value="comfortable" className="h-8 rounded-lg px-3 text-xs data-[state=on]:bg-[var(--brand-primary)] data-[state=on]:text-[var(--brand-primary-foreground)]">
+                Detail
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         </div>
 
         {(assetFilter === "forex" || assetFilter === "all") && (
           <div
-            className="flex items-start gap-3 rounded-xl border px-4 py-3 text-sm leading-relaxed"
+            className="flex items-start gap-2 rounded-lg border px-3 py-2 text-xs leading-relaxed sm:gap-3 sm:rounded-xl sm:px-4 sm:py-3 sm:text-sm"
             role="status"
             aria-label="Market liquidity notice"
             style={{
@@ -865,7 +884,7 @@ function PredictPageContent() {
         )}
 
         {isLoading ? (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 ${marketDensity === "compact" ? "gap-2" : "gap-3"}`}>
             {Array.from({ length: 6 }, (_, index) => (
               <article key={index} className="terminal-panel flex flex-col gap-4 rounded-2xl p-4" aria-hidden="true">
                 <div className="flex items-center gap-3">
@@ -904,7 +923,7 @@ function PredictPageContent() {
             </EmptyContent>
           </Empty>
         ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 ${marketDensity === "compact" ? "gap-2" : "gap-3"}`}>
             {filteredAssets.map((asset) => {
               const priceData = cryptoPrices[asset.symbol]
               const flashColor = priceFlash[asset.symbol]
@@ -950,6 +969,73 @@ function PredictPageContent() {
                       </a>
                     </div>
                     <p className="mt-4 text-sm text-[var(--terminal-graphite-muted)]">Price unavailable</p>
+                  </article>
+                )
+              }
+
+              if (marketDensity === "compact") {
+                return (
+                  <article
+                    key={asset.symbol}
+                    className="terminal-panel group min-w-0 rounded-xl p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg"
+                    style={{
+                      backgroundColor: cardBackground,
+                      borderColor,
+                      boxShadow: isFocused ? "0 0 0 1px var(--brand-primary)" : undefined,
+                    }}
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAssetSymbol(asset.symbol)}
+                        aria-pressed={isFocused}
+                        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-primary)]"
+                      >
+                        <AssetLogo symbol={asset.symbol} name={asset.name} logoUrl={asset.logo} bgColor={asset.iconBg} size={36} className="shrink-0 rounded-lg" />
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span className="truncate text-sm font-semibold text-[var(--terminal-graphite-text)]">{asset.displayName}</span>
+                            {hasActiveTrade && <span className="size-1.5 shrink-0 rounded-full bg-[var(--brand-primary)]" aria-label="Active trade" />}
+                          </span>
+                          <span className="mt-0.5 block truncate text-xs text-[var(--terminal-graphite-muted)]">{asset.name}</span>
+                        </span>
+                      </button>
+                      <div className="shrink-0 text-right">
+                        <p className="price-mono text-base font-bold text-[var(--terminal-graphite-text)]">
+                          ${Number(priceData.price).toFixed(priceData.price < 1 ? 5 : 2)}
+                        </p>
+                        <p className="price-mono text-xs font-semibold" style={{ color: isPositive ? "var(--terminal-graphite-positive)" : "var(--terminal-graphite-negative)" }}>
+                          {isPositive ? "+" : ""}{change.toFixed(2)}%
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 grid grid-cols-[1fr_1fr_2.25rem] gap-1.5">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openTradeForAsset(asset, "up")}
+                        className="h-8 rounded-lg border text-xs font-semibold"
+                        style={{ backgroundColor: "color-mix(in srgb, var(--terminal-graphite-positive) 12%, var(--terminal-graphite-surface))", borderColor: "color-mix(in srgb, var(--terminal-graphite-positive) 38%, var(--terminal-graphite-border))", color: "var(--terminal-graphite-positive)" }}
+                      >
+                        <ArrowUp aria-hidden="true" data-icon="inline-start" />
+                        Up
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openTradeForAsset(asset, "down")}
+                        className="h-8 rounded-lg border text-xs font-semibold"
+                        style={{ backgroundColor: "color-mix(in srgb, var(--terminal-graphite-negative) 12%, var(--terminal-graphite-surface))", borderColor: "color-mix(in srgb, var(--terminal-graphite-negative) 38%, var(--terminal-graphite-border))", color: "var(--terminal-graphite-negative)" }}
+                      >
+                        <ArrowDown aria-hidden="true" data-icon="inline-start" />
+                        Down
+                      </Button>
+                      <a href={asset.chartUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${asset.displayName} chart in a new tab`} className="flex size-8 items-center justify-center rounded-lg text-[var(--brand-primary)] transition-colors hover:bg-[var(--terminal-graphite-surface-2)]">
+                        <BarChart3 aria-hidden="true" className="size-4" />
+                      </a>
+                    </div>
                   </article>
                 )
               }
@@ -1076,6 +1162,7 @@ function PredictPageContent() {
                 priceData={cryptoPrices[focusedAsset.symbol]}
                 hasActiveTrade={!!activeTrades[focusedAsset.symbol]}
                 isFeedFresh={!priceError}
+                compact={marketDensity === "compact"}
                 onTrade={(direction) => openTradeForAsset(focusedAsset, direction)}
               />
             </aside>

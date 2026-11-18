@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { ArrowUp } from "lucide-react"
 import { FlowChainLogo } from "@/components/flowchain-logo"
 
 export function LandingFooter() {
@@ -45,9 +46,14 @@ export function LandingFooter() {
           <p><strong>Risk disclosure:</strong> Trading involves significant risk and may not be suitable for everyone. Past performance does not guarantee future results. Review all account terms before participating.</p>
           <Link href="/terms">Read the terms</Link>
         </div>
-        <div className="flex flex-col gap-2 py-5 text-xs sm:flex-row sm:items-center sm:justify-between">
-          <p className="elite-muted">© 2026 Elite Fund. All rights reserved.</p>
-          <p className="elite-muted">Platform previews are illustrative and may not reflect live market conditions.</p>
+        <div className="flex flex-col gap-3 py-5 text-xs sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-1">
+            <p className="elite-muted">© 2026 Elite Fund. All rights reserved.</p>
+            <p className="elite-muted">Platform previews are illustrative and may not reflect live market conditions.</p>
+          </div>
+          <Link href="#platform" className="elite-back-to-top">
+            Back to top <ArrowUp aria-hidden="true" />
+          </Link>
         </div>
       </div>
     </footer>

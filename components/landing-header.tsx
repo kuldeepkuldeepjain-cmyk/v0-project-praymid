@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Menu, X } from "lucide-react"
 import { FlowChainLogo } from "@/components/flowchain-logo"
@@ -17,6 +17,48 @@ const navigation = [
 
 export function LandingHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [activeSection, setActiveSection] = useState("platform")
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  useEffect(() => {
+    const sections = navigation
+      .map(([, href]) => document.getElementById(href.slice(1)))
+      .filter((section): section is HTMLElement => section !== null)
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visibleSection = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+
+        if (visibleSection) setActiveSection(visibleSection.target.id)
+      },
+      { rootMargin: "-18% 0px -68% 0px", threshold: [0, 0.1, 0.35] },
+    )
+
+    sections.forEach((section) => observer.observe(section))
+
+    const updateScrollProgress = () => {
+      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight
+      setScrollProgress(scrollableHeight > 0 ? Math.min(window.scrollY / scrollableHeight, 1) : 0)
+    }
+    updateScrollProgress()
+    window.addEventListener("scroll", updateScrollProgress, { passive: true })
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("scroll", updateScrollProgress)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isMenuOpen) return
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsMenuOpen(false)
+    }
+    window.addEventListener("keydown", closeOnEscape)
+    return () => window.removeEventListener("keydown", closeOnEscape)
+  }, [isMenuOpen])
 
   return (
     <>
@@ -33,7 +75,14 @@ export function LandingHeader() {
 
           <div className="elite-nav-rail hidden items-center xl:flex">
             {navigation.map(([label, href]) => (
-              <Link key={href} href={href} className="elite-nav-link">{label}</Link>
+              <Link
+                key={href}
+                href={href}
+                className="elite-nav-link"
+                aria-current={activeSection === href.slice(1) ? "location" : undefined}
+              >
+                {label}
+              </Link>
             ))}
           </div>
 
@@ -60,15 +109,23 @@ export function LandingHeader() {
         </nav>
 
         {isMenuOpen && (
-          <div id="elite-mobile-navigation" className="elite-mobile-navigation lg:hidden">
+          <div id="elite-mobile-navigation" className="elite-mobile-navigation xl:hidden">
             {navigation.map(([label, href]) => (
-              <Link key={href} href={href} onClick={() => setIsMenuOpen(false)}>{label}</Link>
+              <Link
+                key={href}
+                href={href}
+                aria-current={activeSection === href.slice(1) ? "location" : undefined}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                {label}
+              </Link>
             ))}
             <Link href="/participant/register" className="elite-mobile-cta" onClick={() => setIsMenuOpen(false)}>
               Explore programs <ArrowRight aria-hidden="true" />
             </Link>
           </div>
         )}
+        <span className="elite-scroll-progress" style={{ transform: `scaleX(${scrollProgress})` }} aria-hidden="true" />
       </header>
     </>
   )

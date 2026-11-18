@@ -108,7 +108,7 @@ const faqs = [
 
 export default function LandingExperience() {
   return (
-    <div className="elite-landing min-h-screen overflow-x-hidden font-sans">
+    <div className="elite-landing min-h-screen overflow-x-clip font-sans">
       <LandingHeader />
 
       <main id="main-content">
@@ -143,6 +143,11 @@ export default function LandingExperience() {
                 <span className="inline-flex items-center gap-2"><Shield className="elite-brand-text size-4" aria-hidden="true" /> Risk rules in view</span>
                 <span className="inline-flex items-center gap-2"><Lock className="elite-brand-text size-4" aria-hidden="true" /> Secure account access</span>
               </div>
+              <dl className="elite-hero-proof mt-6" aria-label="EliteFund program overview">
+                <div><dt>Challenge plans</dt><dd>3 sizes</dd></div>
+                <div><dt>Funded capacities</dt><dd>5 options</dd></div>
+                <div><dt>Market access</dt><dd>Forex · Metals · Digital</dd></div>
+              </dl>
             </div>
 
             <MarketPreview />
@@ -261,17 +266,19 @@ export default function LandingExperience() {
                 Review account rules and risk disclosures before signing up. Challenges do not guarantee funding or profits.
               </p>
             </div>
-            <div className="elite-trust-panel grid gap-5 sm:grid-cols-2">
-              <div>
+            <div className="elite-trust-panel grid gap-2 sm:grid-cols-2">
+              <Link href="/participant/login" className="elite-trust-action">
                 <Shield className="elite-brand-text size-6" aria-hidden="true" />
                 <h3 className="mt-4 font-semibold">Account controls</h3>
                 <p className="elite-copy mt-2 text-sm">Verify your account and review its activity.</p>
-              </div>
-              <div>
+                <span className="elite-inline-link">Review your account <ArrowRight aria-hidden="true" /></span>
+              </Link>
+              <Link href="/terms" className="elite-trust-action">
                 <Wallet className="elite-brand-text size-6" aria-hidden="true" />
                 <h3 className="mt-4 font-semibold">Risk information</h3>
                 <p className="elite-copy mt-2 text-sm">Check margin, trade size, and account limits before trading.</p>
-              </div>
+                <span className="elite-inline-link">Read the risk terms <ArrowRight aria-hidden="true" /></span>
+              </Link>
             </div>
           </div>
         </section>
@@ -301,9 +308,14 @@ export default function LandingExperience() {
               <h2 className="elite-heading mt-4 text-balance">Start with the rules. Trade with intention.</h2>
               <p className="elite-copy mt-4">Compare programs. Review the terms. Then decide.</p>
             </div>
-            <Link href="/participant/register" className="elite-button elite-button-primary shrink-0">
-              Create an account <ArrowRight aria-hidden="true" />
-            </Link>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row">
+              <Link href="/terms" className="elite-button elite-button-secondary">
+                Review terms
+              </Link>
+              <Link href="/participant/register" className="elite-button elite-button-primary">
+                Create an account <ArrowRight aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         </section>
       </main>

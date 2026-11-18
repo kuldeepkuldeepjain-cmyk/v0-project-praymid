@@ -1815,6 +1815,167 @@ button, a, [role="button"] {
   .elite-landing *, .elite-landing *::before, .elite-landing *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
+/* Elite Fund landing enhancements — layered navy surfaces, active navigation, and clearer proof points. */
+.elite-landing {
+  --elite-bg: color-mix(in srgb, var(--terminal-graphite-bg) 94%, #020817);
+  --elite-surface: color-mix(in srgb, var(--terminal-graphite-surface) 94%, #0d2037);
+  --elite-panel: color-mix(in srgb, var(--elite-surface) 88%, var(--elite-brand));
+  --elite-line: color-mix(in srgb, var(--elite-brand) 20%, transparent);
+  color-scheme: dark;
+  padding-top: 4.5rem;
+  background:
+    radial-gradient(circle at 78% 4%, color-mix(in srgb, var(--elite-brand) 10%, transparent), transparent 28rem),
+    var(--elite-bg);
+}
+.elite-landing .elite-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  background: color-mix(in srgb, var(--elite-bg) 84%, transparent);
+  box-shadow: 0 10px 35px color-mix(in srgb, #020817 48%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+.elite-landing .elite-scroll-progress {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  transform-origin: left center;
+  background: linear-gradient(90deg, var(--elite-brand), color-mix(in srgb, var(--elite-brand) 65%, white));
+  box-shadow: 0 0 14px color-mix(in srgb, var(--elite-brand) 60%, transparent);
+  pointer-events: none;
+}
+.elite-landing .elite-nav-link[aria-current="location"] {
+  background: color-mix(in srgb, var(--elite-brand) 15%, transparent);
+  color: var(--elite-text);
+}
+.elite-landing .elite-mobile-navigation > a[aria-current="location"] {
+  color: var(--elite-brand);
+}
+.elite-landing .elite-hero-proof {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--elite-line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--elite-bg) 76%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+.elite-landing .elite-hero-proof > div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+}
+.elite-landing .elite-hero-proof > div + div { border-left: 1px solid var(--elite-line); }
+.elite-landing .elite-hero-proof dt {
+  color: var(--elite-muted);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+.elite-landing .elite-hero-proof dd {
+  overflow-wrap: anywhere;
+  color: var(--elite-text);
+  font-size: 0.83rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.elite-landing .elite-market-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.elite-landing .elite-market-card::before {
+  position: absolute;
+  z-index: -1;
+  top: -8rem;
+  right: -7rem;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--elite-brand) 13%, transparent);
+  content: "";
+  filter: blur(8px);
+  pointer-events: none;
+}
+.elite-landing .elite-feature-card,
+.elite-landing .elite-step-card,
+.elite-landing .elite-account-card,
+.elite-landing .elite-payout-ledger,
+.elite-landing .elite-trust-panel,
+.elite-landing .elite-planner {
+  box-shadow: inset 0 1px color-mix(in srgb, var(--elite-brand) 11%, transparent), 0 18px 42px color-mix(in srgb, #020817 18%, transparent);
+}
+.elite-landing .elite-step-card { position: relative; overflow: hidden; }
+.elite-landing .elite-step-card::after {
+  position: absolute;
+  right: -2.5rem;
+  bottom: -3.5rem;
+  width: 9rem;
+  height: 9rem;
+  border: 1px solid color-mix(in srgb, var(--elite-brand) 15%, transparent);
+  border-radius: 999px;
+  content: "";
+}
+.elite-landing .elite-trust-action {
+  display: flex;
+  min-height: 11rem;
+  flex-direction: column;
+  align-items: flex-start;
+  border-radius: 0.85rem;
+  padding: 1rem;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+.elite-landing .elite-trust-action:hover,
+.elite-landing .elite-trust-action:focus-visible {
+  background: color-mix(in srgb, var(--elite-brand) 10%, var(--elite-surface));
+  transform: translateY(-2px);
+}
+.elite-landing .elite-trust-action .elite-inline-link { margin-top: auto; }
+.elite-landing .elite-final-cta {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(110deg, color-mix(in srgb, var(--elite-brand) 18%, var(--elite-surface)), var(--elite-surface) 64%),
+    var(--elite-surface);
+}
+.elite-landing .elite-final-cta::after {
+  position: absolute;
+  top: -10rem;
+  right: 7%;
+  width: 22rem;
+  height: 22rem;
+  border: 1px solid color-mix(in srgb, var(--elite-brand) 18%, transparent);
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+.elite-landing .elite-final-cta > div { position: relative; z-index: 1; }
+.elite-landing .elite-back-to-top {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--elite-text);
+  font-weight: 650;
+}
+.elite-landing .elite-back-to-top:hover { color: var(--elite-brand); }
+.elite-landing .elite-back-to-top svg { width: 1rem; height: 1rem; }
+@media (max-width: 520px) {
+  .elite-landing .elite-hero-proof { grid-template-columns: 1fr; }
+  .elite-landing .elite-hero-proof > div { flex-direction: row; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 0.75rem; }
+  .elite-landing .elite-hero-proof > div + div { border-top: 1px solid var(--elite-line); border-left: 0; }
+  .elite-landing .elite-hero-proof dd { max-width: 58%; text-align: right; }
+}
+@media (min-width: 1280px) {
+  .elite-landing { padding-top: 5.4rem; }
+}
+
 /* Participant dashboard — mobile-first, fills full viewport on all screens */
 .participant-shell {
   width: 100%;

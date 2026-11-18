@@ -1644,6 +1644,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [orderType, setOrderType]     = useState<"market" | "limit" | "stop">("market")
   const [pendingPrice, setPendingPrice] = useState("")
   const [pendingExpiry, setPendingExpiry] = useState<"GTC" | "TODAY">("GTC")
+  const [showRiskControls, setShowRiskControls] = useState(false)
   const [showAdvancedOrderControls, setShowAdvancedOrderControls] = useState(false)
   const [rightPanelTab, setRightPanelTab] = useState<"order" | "sizer">("order")
   const [showPairSearch, setShowPairSearch] = useState(false)
@@ -4516,7 +4517,26 @@ const maxLeverage = 100
 		                  </div>
 		                </div>
 
+                <button
+                  type="button"
+                  onClick={() => setShowRiskControls((visible) => !visible)}
+                  aria-expanded={showRiskControls}
+                  className="mobile-order-risk-toggle flex min-h-10 w-full items-center justify-between gap-3 rounded-xl border border-[#1a2640] bg-[#07101b] px-3 py-2 text-left transition-colors hover:border-cyan-400/30"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <ShieldAlert className="size-4 shrink-0 text-cyan-300" aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className="block text-[11px] font-bold text-slate-100">Risk protection</span>
+                      <span className="block truncate text-[10px] text-slate-400">
+                        {slVal !== null || tpVal !== null ? `${slVal !== null ? "Stop set" : "No stop"} · ${tpVal !== null ? "Target set" : "No target"}` : "Optional stop loss and take profit"}
+                      </span>
+                    </span>
+                  </span>
+                  {showRiskControls ? <ChevronUp className="size-4 text-slate-400" /> : <ChevronDown className="size-4 text-slate-400" />}
+                </button>
+
                 {/* Essential risk controls */}
+                {showRiskControls && (
                 <div className="mobile-order-risk rounded-xl border border-[#1a2640] bg-[#07101b] p-3 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -4558,6 +4578,7 @@ const maxLeverage = 100
                     </div>
                   </div>
                 </div>
+                )}
 
                 {/* Collapsible Advanced Section Toggle */}
                 <button
@@ -4622,47 +4643,39 @@ const maxLeverage = 100
 
 		                </div>
 
-                        {/* Order estimate */}
-		                <div className="mobile-order-metrics grid grid-cols-2 gap-2.5 rounded-xl border border-[#1a2640] bg-[#070a10] p-3" role="group" aria-label="Order estimate">
-		                  <div className="col-span-2 flex items-start justify-between gap-3 border-b border-[#1a2640] pb-2">
-		                    <div>
-		                      <p className="text-[12px] font-bold text-slate-100">Order preview</p>
-		                      <p className="mt-0.5 text-[10px] leading-relaxed text-slate-400">Estimates exclude slippage and fees.</p>
-		                    </div>
-		                    <span className="rounded-md border border-[#243752] bg-[#0d1726] px-2 py-1 text-[10px] font-semibold text-slate-300">
-		                      {orderType === "market" ? "At market" : "At target price"}
-		                    </span>
-		                  </div>
-		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
-		                    <p className="text-[10px] font-medium text-slate-400">Margin required</p>
-		                    <p className="mt-1 price-mono text-[13px] font-bold text-amber-200">${Number.isFinite(estimatedMargin) ? estimatedMargin.toFixed(2) : "—"}</p>
-		                  </div>
-		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
-		                    <p className="text-[10px] font-medium text-slate-400">Balance after fill</p>
-		                    <p className={`mt-1 price-mono text-[13px] font-bold ${walletBalance - estimatedMargin < 0 ? "text-rose-300" : "text-slate-100"}`}>
-		                      ${(walletBalance - estimatedMargin).toFixed(2)}
-		                    </p>
-		                  </div>
-		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
-		                    <p className="text-[10px] font-medium text-slate-400">Risk at stop</p>
-		                    <p className="mt-1 price-mono text-[13px] font-bold text-rose-200">
-		                      {slVal !== null && Number.isFinite(slVal) && !stopLossError ? `−$${maxLoss.toFixed(2)}` : "Add a stop loss"}
-		                    </p>
-		                    {slVal !== null && Number.isFinite(slVal) && !stopLossError && <p className="mt-0.5 text-[10px] text-slate-400">{riskPercent.toFixed(2)}% of balance</p>}
-		                  </div>
-		                  <div className="min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
-		                    <p className="text-[10px] font-medium text-slate-400">At take profit</p>
-		                    <p className="mt-1 price-mono text-[13px] font-bold text-emerald-200">
-		                      {tpVal !== null && Number.isFinite(tpVal) && !takeProfitError ? `+$${maxGain.toFixed(2)}` : "No target set"}
-		                    </p>
-		                    {rrRatio && !stopLossError && !takeProfitError && <p className="mt-0.5 text-[10px] text-slate-400">Risk / reward 1:{rrRatio}</p>}
-		                  </div>
-<div className="col-span-2 min-w-0 rounded-lg border border-[#1a2640] bg-[#090f19] p-2.5">
-			                    <p className="text-[10px] font-medium text-slate-400">Pip value</p>
-		                    <p className="mt-1 price-mono text-[13px] font-bold text-cyan-200">${pipVal.toFixed(4)} / pip</p>
-		                    <p className="mt-0.5 text-[10px] text-slate-400">Est. spread ${estimatedSpreadCost.toFixed(2)}</p>
-		                  </div>
-		                </div>
+                        {/* Compact order estimate */}
+                        <div className="mobile-order-metrics grid grid-cols-3 gap-1 rounded-xl border border-[#1a2640] bg-[#070a10] p-2" role="group" aria-label="Order estimate">
+                          <div className="col-span-3 flex items-center justify-between gap-2 border-b border-[#1a2640] px-1 pb-2">
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-bold text-slate-100">Order snapshot</p>
+                              <p className="truncate text-[9px] text-slate-400">Spread ${estimatedSpreadCost.toFixed(2)} · ${pipVal.toFixed(4)} per pip</p>
+                            </div>
+                            <span className={`price-mono shrink-0 text-[10px] font-bold ${walletBalance - estimatedMargin < 0 ? "text-rose-300" : "text-cyan-200"}`}>
+                              ${(walletBalance - estimatedMargin).toFixed(2)} after fill
+                            </span>
+                          </div>
+                          <div className="min-w-0 rounded-lg bg-[#090f19] p-2 text-center">
+                            <p className="text-[9px] font-medium text-slate-500">Margin</p>
+                            <p className="price-mono mt-0.5 truncate text-[12px] font-bold text-amber-200">${Number.isFinite(estimatedMargin) ? estimatedMargin.toFixed(2) : "—"}</p>
+                          </div>
+                          <div className="min-w-0 rounded-lg bg-[#090f19] p-2 text-center">
+                            <p className="text-[9px] font-medium text-slate-500">Risk</p>
+                            <p className="price-mono mt-0.5 truncate text-[12px] font-bold text-rose-200">
+                              {slVal !== null && Number.isFinite(slVal) && !stopLossError ? `−$${maxLoss.toFixed(2)}` : "Not set"}
+                            </p>
+                          </div>
+                          <div className="min-w-0 rounded-lg bg-[#090f19] p-2 text-center">
+                            <p className="text-[9px] font-medium text-slate-500">Reward</p>
+                            <p className="price-mono mt-0.5 truncate text-[12px] font-bold text-emerald-200">
+                              {tpVal !== null && Number.isFinite(tpVal) && !takeProfitError ? `+$${maxGain.toFixed(2)}` : "Not set"}
+                            </p>
+                          </div>
+                          {(rrRatio || (slVal !== null && Number.isFinite(slVal) && !stopLossError)) && (
+                            <p className="col-span-3 px-1 text-center text-[9px] text-slate-400">
+                              {rrRatio && !stopLossError && !takeProfitError ? `Risk / reward 1:${rrRatio}` : `${riskPercent.toFixed(2)}% of balance at risk`}
+                            </p>
+                          )}
+                        </div>
 
 		                {orderType !== "market" && balanceLoaded && estimatedMargin > walletBalance && (
 		                  <div className="mobile-order-warning flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-[11px] leading-relaxed text-amber-100" role="note">
