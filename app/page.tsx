@@ -19,7 +19,7 @@ export const metadata: Metadata = createSiteMetadata({
   ],
 })
 
-export const viewport: Viewport = { themeColor: "#080e17", colorScheme: "dark" }
+export const viewport: Viewport = { themeColor: "#07111f", colorScheme: "dark" }
 
 export const dynamic = "force-dynamic"
 
