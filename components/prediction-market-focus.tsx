@@ -71,6 +71,70 @@ export function PredictionMarketFocus({
     color: "var(--terminal-graphite-negative)",
   }
 
+  if (compact) {
+    return (
+      <section aria-labelledby={titleId} className="terminal-panel min-w-0 overflow-hidden rounded-xl">
+        <header className="flex items-center justify-between gap-3 border-b px-3 py-2" style={{ borderColor: "var(--terminal-graphite-border)" }}>
+          <div className="flex min-w-0 items-center gap-2.5">
+            <AssetLogo
+              symbol={asset.symbol}
+              name={asset.name}
+              logoUrl={asset.logo}
+              bgColor={asset.iconBg}
+              size={36}
+              className="shrink-0 rounded-lg"
+            />
+            <div className="min-w-0">
+              <h3 id={titleId} className="truncate text-sm font-semibold text-[var(--terminal-graphite-text)]">{asset.displayName}</h3>
+              <p className="truncate text-xs text-[var(--terminal-graphite-muted)]">{asset.name}</p>
+            </div>
+          </div>
+          <div className="shrink-0 text-right">
+            <p className="price-mono text-base font-bold text-[var(--terminal-graphite-text)]">
+              {hasPrice ? `$${priceData.price!.toFixed(priceData.price! < 1 ? 5 : 2)}` : "—"}
+            </p>
+            <p className="price-mono text-xs font-semibold" style={{ color: hasPrice ? accent : "var(--terminal-graphite-muted)" }}>
+              {hasPrice ? `${isPositive ? "+" : ""}${change.toFixed(2)}%` : feedLabel}
+            </p>
+          </div>
+        </header>
+        <div className="grid grid-cols-[1fr_1fr_auto] gap-1.5 p-2.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!hasPrice}
+            onClick={() => onTrade("up")}
+            aria-label={`Open an up prediction for ${asset.displayName}`}
+            className="h-9 rounded-lg border text-xs font-semibold"
+            style={upStyle}
+          >
+            <ArrowUp aria-hidden="true" data-icon="inline-start" />
+            Up
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={!hasPrice}
+            onClick={() => onTrade("down")}
+            aria-label={`Open a down prediction for ${asset.displayName}`}
+            className="h-9 rounded-lg border text-xs font-semibold"
+            style={downStyle}
+          >
+            <ArrowDown aria-hidden="true" data-icon="inline-start" />
+            Down
+          </Button>
+          <Button type="button" variant="ghost" size="icon-sm" asChild>
+            <a href={asset.chartUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open ${asset.displayName} chart in a new tab`}>
+              <ExternalLink aria-hidden="true" />
+            </a>
+          </Button>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section aria-labelledby={titleId} className="terminal-panel min-w-0 overflow-hidden rounded-2xl">
       <header
