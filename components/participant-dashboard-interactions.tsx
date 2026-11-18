@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useRef, useSyncExternalStore } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore } from "react"
 import { usePathname, useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { Gift, Home, LayoutGrid, PlusCircle, Sparkles, TrendingUp, User, Wallet } from "lucide-react"
+import { ChevronDown, Gift, Home, LayoutGrid, PlusCircle, Sparkles, TrendingUp, User, Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const profileHref = "/participant/dashboard/profile"
@@ -53,6 +53,7 @@ export function DesktopDashboardNavigation() {
   const pathname = usePathname() ?? ""
   const searchParams = useSearchParams()
   const mobileNavigationRef = useRef<HTMLDivElement>(null)
+  const [isMobileNavigationVisible, setIsMobileNavigationVisible] = useState(true)
   const isHydrated = useSyncExternalStore(
     subscribeToHydration,
     getHydrationSnapshot,
@@ -89,7 +90,7 @@ export function DesktopDashboardNavigation() {
         aria-label="Mobile dashboard navigation"
         className={cn(
           "fixed inset-x-3 bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-50 overflow-hidden rounded-2xl border shadow-[0_18px_50px_rgba(0,0,0,0.38)] md:hidden",
-          terminalActive && "hidden",
+          (!isMobileNavigationVisible || terminalActive) && "hidden",
         )}
         style={{
           background: "color-mix(in srgb, var(--terminal-graphite-surface) 92%, transparent)",
@@ -97,9 +98,18 @@ export function DesktopDashboardNavigation() {
           backdropFilter: "blur(22px) saturate(140%)",
         }}
       >
+        <button
+          type="button"
+          onClick={() => setIsMobileNavigationVisible(false)}
+          aria-label="Hide dashboard shortcuts"
+          title="Hide dashboard shortcuts"
+          className="absolute right-2 top-2 z-10 inline-flex size-6 items-center justify-center rounded-full text-[color:var(--terminal-graphite-muted)] transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)]"
+        >
+          <ChevronDown className="size-4" aria-hidden="true" />
+        </button>
         <div
           ref={mobileNavigationRef}
-          className="flex h-[4.25rem] snap-x snap-mandatory items-stretch overflow-x-auto overscroll-x-contain px-1.5 py-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex h-[4.25rem] snap-x snap-mandatory items-stretch overflow-x-auto overscroll-x-contain px-1.5 py-1.5 pr-8 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           {navItems.map((item) => {
@@ -131,6 +141,18 @@ export function DesktopDashboardNavigation() {
           })}
         </div>
       </nav>
+      {!isMobileNavigationVisible && !terminalActive ? (
+        <button
+          type="button"
+          onClick={() => setIsMobileNavigationVisible(true)}
+          aria-label="Show dashboard shortcuts"
+          className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-3 z-50 inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-semibold text-[color:var(--terminal-graphite-text)] shadow-lg transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--brand-primary)] md:hidden"
+          style={{ background: "var(--terminal-graphite-surface)", borderColor: "var(--terminal-graphite-border)" }}
+        >
+          <LayoutGrid className="size-4" aria-hidden="true" />
+          Shortcuts
+        </button>
+      ) : null}
 
       <nav
         aria-label="Dashboard navigation"
