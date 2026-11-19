@@ -6,6 +6,8 @@ export interface ChallengePlan {
   key: string
   name: string
   fee: number
+  originalFee?: number
+  discountPercent?: number
   startingBalance: number
   profitTargetPercent: number
   dailyLossLimitPercent: number
@@ -15,10 +17,16 @@ export interface ChallengePlan {
 }
 
 export const DEFAULT_CHALLENGE_PLANS: ChallengePlan[] = [
-  { key: "challenge_5k", name: "Challenge 5K", fee: 10, startingBalance: 5_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
+  { key: "challenge_5k", name: "Challenge 5K", fee: 12.5, originalFee: 25, discountPercent: 50, startingBalance: 5_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
   { key: "challenge_10k", name: "Challenge 10K", fee: 89, startingBalance: 10_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
   { key: "challenge_25k", name: "Challenge 25K", fee: 179, startingBalance: 25_000, profitTargetPercent: 8, dailyLossLimitPercent: 5, maxDrawdownPercent: 10, minimumTradingDays: 5, leverage: 30 },
 ]
+
+const challengeFeeFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 })
+
+export function formatChallengeFee(fee: number) {
+  return challengeFeeFormatter.format(fee)
+}
 
 export function getChallengeRewardAmount(plan: ChallengePlan, passedEquity: number) {
   if (plan.key === "challenge_5k" || !Number.isFinite(passedEquity)) return 0
