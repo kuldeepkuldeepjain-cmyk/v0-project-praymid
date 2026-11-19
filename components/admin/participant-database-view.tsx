@@ -1192,7 +1192,7 @@ export function ParticipantDatabaseView() {
                 />
               </div>
               <p className="text-xs leading-relaxed text-muted-foreground">
-                The server will reject amounts that do not restore the account above its 2% drawdown floor.
+                The server will reject amounts that do not restore the account above its 3% maximum drawdown floor.
               </p>
             </div>
 

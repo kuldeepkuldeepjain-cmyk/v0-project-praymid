@@ -21,7 +21,14 @@ import mobileControlsStyles from "./mobile-terminal-controls.module.css"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { normalizeTimestamp } from "@/lib/normalize-timestamp"
 import { clearParticipantAuth, participantFetch } from "@/lib/auth"
-import { getFundedBaseAmount, getFundedMinimumBalance } from "@/lib/funded-account"
+import {
+  FUNDED_MAX_DRAWDOWN_PERCENT,
+  FUNDED_SINGLE_TRADE_DRAWDOWN_PERCENT,
+  getFundedBaseAmount,
+  getFundedMinimumBalance,
+  getFundedSingleTradeLossLimit,
+  getFundedTradeRiskAmount,
+} from "@/lib/funded-account"
 import {
   PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, SEED_PRICES,
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
@@ -140,7 +147,7 @@ export type PendingOrder = {
 export type ClosedTrade = OpenTrade & {
   closePrice: number; closeTime: string; closeDuration: string
   finalPnl: number; finalPips: number; finalSwap: number
-  closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out" | "account_breach"
+  closeReason: "manual" | "sl" | "tp" | "trailing_sl" | "stop_out" | "account_breach" | "trade_loss_limit"
 }
 
 type TimeFrame = "1M" | "5M" | "15M" | "30M" | "1H" | "4H" | "1D" | "1W"
@@ -1001,7 +1008,7 @@ function PriceAlertPanel({ alerts, pairs, onAdd, onRemove }: {
 
 // ─── Smart Alerts Panel ────────────────────────────────────────────────────────
 
-function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
+function SmartAlertsPanel({ alerts, isFundedAccount }: { alerts: SmartAlertItem[]; isFundedAccount: boolean }) {
   const [enabled, setEnabled] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(alerts.map(alert => [alert.id, true]))
   )
@@ -1018,7 +1025,7 @@ function SmartAlertsPanel({ alerts }: { alerts: SmartAlertItem[] }) {
           <span className="ml-auto rounded border border-emerald-400/25 bg-emerald-400/10 px-1.5 py-1 text-[8px] font-black text-emerald-300">{activeCount}/{alerts.length} ON</span>
         </div>
         <div className="mt-2.5 flex items-center justify-between border-t border-white/5 pt-2">
-          <span className="text-[9px] text-slate-400">Daily drawdown limit</span><span className="price-mono text-[10px] font-black text-amber-300">2.00%</span>
+          <span className="text-[9px] text-slate-400">{isFundedAccount ? "Maximum drawdown limit" : "Daily drawdown limit"}</span><span className="price-mono text-[10px] font-black text-amber-300">{(isFundedAccount ? FUNDED_MAX_DRAWDOWN_PERCENT : 2).toFixed(2)}%</span>
         </div>
       </div>
 
@@ -1862,8 +1869,8 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const accountEquity = walletBalance + lockedMargin + totalPnl
   const tradingLocked = isFrozen || terminalLocked
   // The popup is triggered only when live equity crosses into the breach zone.
-  const fundedLossLimitReached = isFundedAccount && fundedBaseAmount > 0 && accountEquity < fundedMinimumBalance
-  const breachConditionWasActiveRef = useRef(fundedLossLimitReached)
+  const fundedLossLimitReached = isFundedAccount && balanceLoaded && fundedBaseAmount > 0 && accountEquity <= fundedMinimumBalance
+  const breachConditionWasActiveRef = useRef(false)
 
   const freezeFundedAccount = useCallback(async () => {
     if (!participantEmail || freezeRequestStarted.current || isFrozen) return
@@ -1871,16 +1878,19 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     try {
       const response = await participantFetch("/api/participant/freeze-account", {
         method: "POST",
-        body: JSON.stringify({ email: participantEmail }),
+        body: JSON.stringify({ email: participantEmail, equity: accountEquity }),
       })
-      if (!response.ok) throw new Error("Freeze request failed")
-      showToast("warning", `Funded account frozen at the ${((fundedBaseAmount - fundedMinimumBalance) / fundedBaseAmount * 100).toFixed(0)}% loss limit.`)
+      if (!response.ok) throw new Error("Breach update failed")
+      setWalletBalance(0)
+      setBalanceLoaded(true)
+      onBalanceUpdated?.(0)
+      showToast("warning", `Funded account breached its ${((fundedBaseAmount - fundedMinimumBalance) / fundedBaseAmount * 100).toFixed(0)}% maximum drawdown. Balance reset to $0.00.`)
       onAccountFrozen?.()
     } catch {
       freezeRequestStarted.current = false
       showToast("error", "Could not freeze the account automatically. Please refresh and try again.")
     }
-  }, [fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, participantEmail, showToast])
+  }, [accountEquity, fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, onBalanceUpdated, participantEmail, showToast])
 
   // ── Balance API ────────────������──────────────────────────────────────────────
   const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
@@ -2236,7 +2246,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     })
   }, [selectedPair?.symbol, selectedPair?.bid, selectedPair?.ask, selectedPair?.rateTimestamp, timeframe, hasFreshRate])
 
-  // ─��� Overnight swap accrual (every 60s, proportional) ──────────────────────
+  // ─��� Overnight swap accrual (every 60s, proportional) ───���──────────────────
   useEffect(() => {
     swapIntervalRef.current = setInterval(() => {
       setOpenTrades(prev => prev.map(t => {
@@ -2405,12 +2415,27 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
           toClose.push({ id: t.id, reason: "tp", price: t.tp })
         }
       }
+      if (
+        isFundedAccount &&
+        pnl + t.swap <= -getFundedSingleTradeLossLimit(fundedBaseAmount) &&
+        !toClose.some((position) => position.id === t.id)
+      ) {
+        toClose.push({ id: t.id, reason: "trade_loss_limit", price: currentPrice })
+      }
 
       return { ...t, currentPrice, pnl: pnl + t.swap, pips: pipCount, returnOnMargin, trailingPeak, sl: effectiveSl ?? t.sl }
     })
 
     if (toClose.length > 0) {
-      const icons = { tp: "Take Profit", sl: "Stop Loss", trailing_sl: "Trailing Stop", manual: "Closed" }
+      const icons = {
+        tp: "Take Profit",
+        sl: "Stop Loss",
+        trailing_sl: "Trailing Stop",
+        stop_out: "Stop Out",
+        account_breach: "Account Breach",
+        trade_loss_limit: "1% Single-Trade Loss Limit",
+        manual: "Closed",
+      }
 
       toClose.forEach(({ id, reason, price }) => {
         if (closingTradeIds.current.has(id)) return
@@ -2591,6 +2616,14 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
     if (slNum !== null && tradeDirection === "BUY"  && slNum >= price) { showToast("error", "SL must be below entry for BUY"); return }
     if (slNum !== null && tradeDirection === "SELL" && slNum <= price) { showToast("error", "SL must be above entry for SELL"); return }
+    if (isFundedAccount && slNum === null) { showToast("error", "Funded trades require a stop loss with a maximum 1% risk per trade."); return }
+    const fundedRisk = isFundedAccount && selectedPair && slNum !== null
+      ? getFundedTradeRiskAmount(selectedPair.symbol, lot, price, slNum)
+      : null
+    if (isFundedAccount && (fundedRisk === null || fundedRisk > getFundedSingleTradeLossLimit(fundedBaseAmount))) {
+      showToast("error", `Funded trade risk cannot exceed 1% of the initial balance ($${getFundedSingleTradeLossLimit(fundedBaseAmount).toFixed(2)}).`)
+      return
+    }
     if (tpNum !== null && tradeDirection === "BUY"  && tpNum <= price) { showToast("error", "TP must be above entry for BUY"); return }
     if (tpNum !== null && tradeDirection === "SELL" && tpNum >= price) { showToast("error", "TP must be below entry for SELL"); return }
     if (orderType === "market" && walletBalance < margin) {
@@ -2651,6 +2684,27 @@ const maxLeverage = 100
     }
     const { direction: dir, lotSize: lot, leverage: lev, price, margin, sl: slNum, tp: tpNum, trailingPips: trailN, isPending } = tradeConfirm
     const pairSymbol = selectedPair.symbol
+    if (isFundedAccount && slNum === null) {
+      const message = "Funded trades require a stop loss with a maximum 1% risk per trade."
+      setTradeRestrictionNotice(message)
+      setTradeConfirm(null)
+      setConfirmLoading(false)
+      confirmInFlight.current = false
+      showToast("error", message)
+      return
+    }
+    const confirmedFundedRisk = isFundedAccount && slNum !== null
+      ? getFundedTradeRiskAmount(pairSymbol, lot, price, slNum)
+      : null
+    if (isFundedAccount && (confirmedFundedRisk === null || confirmedFundedRisk > getFundedSingleTradeLossLimit(fundedBaseAmount))) {
+      const message = `Funded trade risk cannot exceed 1% of the initial balance ($${getFundedSingleTradeLossLimit(fundedBaseAmount).toFixed(2)}).`
+      setTradeRestrictionNotice(message)
+      setTradeConfirm(null)
+      setConfirmLoading(false)
+      confirmInFlight.current = false
+      showToast("error", message)
+      return
+    }
     if (isFundedAccount && margin < 3000) {
       const message = "This funded account requires a minimum order amount of $3,000. Increase your position size before placing this trade."
       setTradeRestrictionNotice(message)
@@ -3116,7 +3170,7 @@ const maxLeverage = 100
           : (direction === "BUY" ? "A buy stop must be above the current ask." : "A sell stop must be below the current bid.")
         : null
   const stopLossError = sl.trim() === ""
-    ? null
+    ? isFundedAccount ? "A stop loss is required for funded trades." : null
     : slVal === null || !Number.isFinite(slVal) || slVal <= 0
       ? "Enter a valid stop price above zero."
       : direction === "BUY" && slVal >= entryPrice
@@ -3137,13 +3191,20 @@ const maxLeverage = 100
   const trailingStopError = trailingStopValue !== null && (!Number.isFinite(trailingStopValue) || trailingStopValue < 0)
     ? "Enter a trailing stop of zero or more pips."
     : null
-  const riskPercent = walletBalance > 0 && slVal !== null && Number.isFinite(slVal) && !stopLossError
-    ? (maxLoss / walletBalance) * 100
+  const riskPercentBase = isFundedAccount ? fundedBaseAmount : walletBalance
+  const riskPercent = riskPercentBase > 0 && slVal !== null && Number.isFinite(slVal) && !stopLossError
+    ? (maxLoss / riskPercentBase) * 100
     : 0
   const pendingDistancePips = selectedPair && orderType !== "market" && Number.isFinite(parsedPendingPrice) && parsedPendingPrice > 0
     ? Math.abs(parsedPendingPrice - marketEntryPrice) / pip(selectedPair.symbol)
     : null
-  const validationError = lotSizeError ?? pendingPriceError ?? stopLossError ?? takeProfitError ?? trailingStopError
+  const fundedTradeRisk = isFundedAccount && selectedPair && slVal !== null && Number.isFinite(slVal) && !stopLossError
+    ? getFundedTradeRiskAmount(selectedPair.symbol, estimateLotSize, entryPrice, slVal)
+    : null
+  const fundedTradeRiskError = isFundedAccount && fundedTradeRisk !== null && fundedTradeRisk > getFundedSingleTradeLossLimit(fundedBaseAmount)
+    ? `Funded trade risk must stay within 1% ($${getFundedSingleTradeLossLimit(fundedBaseAmount).toFixed(2)}).`
+    : null
+  const validationError = lotSizeError ?? pendingPriceError ?? stopLossError ?? fundedTradeRiskError ?? takeProfitError ?? trailingStopError
   const marginError = orderType === "market" && estimatedMargin > walletBalance
     ? `Insufficient balance — need $${estimatedMargin.toFixed(2)}, have $${walletBalance.toFixed(2)}.`
     : null
@@ -3217,19 +3278,29 @@ const maxLeverage = 100
   const dailyPnl = dailyClosedPnl + Math.min(0, totalPnl)
   const dailyDrawdownPct = walletBalance > 0 ? Math.max(0, (-dailyPnl / walletBalance) * 100) : 0
   const currentLots = parseFloat(lotSize) || 0
-  const selectedRiskPct = selectedPair && sl && walletBalance > 0
-    ? (Math.abs(selectedPair.ask - parseFloat(sl)) / pip(selectedPair.symbol) * pipValue(selectedPair.symbol, currentLots, selectedPair.ask) / walletBalance) * 100
+  const riskBase = isFundedAccount ? fundedBaseAmount : walletBalance
+  const ticketRiskAmount = selectedPair && sl && Number.isFinite(Number(sl))
+    ? getFundedTradeRiskAmount(selectedPair.symbol, currentLots, entryPrice, Number(sl))
+    : null
+  const selectedRiskPct = ticketRiskAmount !== null && riskBase > 0
+    ? (ticketRiskAmount / riskBase) * 100
     : 0
-  const riskWarning = selectedRiskPct >= 1.5 || openTrades.some(trade => !trade.sl)
+  const drawdownPercent = isFundedAccount && fundedBaseAmount > 0
+    ? Math.max(0, ((fundedBaseAmount - equity) / fundedBaseAmount) * 100)
+    : dailyDrawdownPct
+  const drawdownLimitPercent = isFundedAccount ? FUNDED_MAX_DRAWDOWN_PERCENT : 2
+  const drawdownWarningPercent = drawdownLimitPercent * 0.75
+  const riskLimitPercent = isFundedAccount ? FUNDED_SINGLE_TRADE_DRAWDOWN_PERCENT : 1.5
+  const riskWarning = selectedRiskPct >= riskLimitPercent || openTrades.some(trade => !trade.sl)
   const smartAlerts: SmartAlertItem[] = [
-    { id: "drawdown", label: "Drawdown warning", description: `Warning: Your daily drawdown has reached ${dailyDrawdownPct.toFixed(2)}%.`, status: dailyDrawdownPct >= 2 ? "triggered" : dailyDrawdownPct >= 1.5 ? "warning" : "clear", value: `${dailyDrawdownPct.toFixed(2)}%`, threshold: "Warn at 1.50% · limit 2.00%", icon: AlertTriangle },
+    { id: "drawdown", label: isFundedAccount ? "Maximum drawdown" : "Daily drawdown", description: `Drawdown has reached ${drawdownPercent.toFixed(2)}%.`, status: drawdownPercent >= drawdownLimitPercent ? "triggered" : drawdownPercent >= drawdownWarningPercent ? "warning" : "clear", value: `${drawdownPercent.toFixed(2)}%`, threshold: `Warn at ${drawdownWarningPercent.toFixed(2)}% · limit ${drawdownLimitPercent.toFixed(2)}%`, icon: AlertTriangle },
     { id: "lot-size", label: "High lot size", description: "Large position sizes can amplify losses before you have time to react.", status: currentLots > 5 ? "triggered" : currentLots > 1 ? "warning" : "clear", value: `${currentLots.toFixed(2)} lots`, threshold: "Warning above 1.00", icon: BarChart2 },
-    { id: "risk", label: "High risk", description: riskWarning ? "Add a stop loss or reduce risk before placing this trade." : "Your current ticket has a controlled risk profile.", status: riskWarning ? "warning" : "clear", value: selectedRiskPct > 0 ? `${selectedRiskPct.toFixed(2)}% risk` : "Protected", threshold: "Review above 1.50%", icon: ShieldAlert },
+    { id: "risk", label: "Single-trade risk", description: riskWarning ? "Add a stop loss or reduce risk to stay within the account limit." : "Your current ticket has a controlled risk profile.", status: riskWarning ? "warning" : "clear", value: selectedRiskPct > 0 ? `${selectedRiskPct.toFixed(2)}% risk` : "Protected", threshold: isFundedAccount ? "Maximum 1.00% per trade" : "Review above 1.50%", icon: ShieldAlert },
     { id: "margin", label: "Margin warning", description: "Keep enough free margin available for normal market movement.", status: marginLevel > 0 && marginLevel < 150 ? "triggered" : marginLevel > 0 && marginLevel < 300 ? "warning" : "clear", value: marginLevel > 0 ? `${marginLevel.toFixed(0)}% level` : "No margin used", threshold: "Warn below 300%", icon: Gauge },
     { id: "news", label: "News event approaching", description: "High-impact economic events are monitored before execution.", status: "monitoring", value: "Monitoring calendar", threshold: "30-minute lookahead", icon: Newspaper },
     { id: "day-target", label: "Trading-day target", description: "Track progress toward today’s funded-account target.", status: dailyPnl >= walletBalance * 0.01 ? "triggered" : "monitoring", value: walletBalance > 0 ? `${Math.max(0, dailyPnl / walletBalance * 100).toFixed(2)}% today` : "0.00% today", threshold: "Target +1.00%", icon: Target },
     { id: "profit-target", label: "Profit target reached", description: "Your profit target is calculated from the funded account base.", status: isFundedAccount && fundedBaseAmount > 0 && totalPnl >= fundedBaseAmount * 0.1 ? "triggered" : "monitoring", value: fundedBaseAmount > 0 ? `${Math.max(0, totalPnl / fundedBaseAmount * 100).toFixed(2)}%` : "Not configured", threshold: "Target +10.00%", icon: Trophy },
-    { id: "payout", label: "Withdrawal eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && dailyDrawdownPct < 2 ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
+    { id: "payout", label: "Withdrawal eligibility", description: "Eligibility is shown when the funded account is profitable and within risk limits.", status: isFundedAccount && totalPnl > 0 && drawdownPercent < drawdownLimitPercent ? "monitoring" : "clear", value: isFundedAccount && totalPnl > 0 ? "Eligible review" : "Not eligible", threshold: "Profit + risk rules", icon: Award },
   ]
 
   // ── Margin call / stop-out ───────────────────────────────────────────────────
@@ -3398,7 +3469,7 @@ const maxLeverage = 100
               <button type="button" onClick={() => setProfilePanel(null)} className="terminal-icon-button" aria-label="Close profile panel"><X className="h-4 w-4" /></button>
             </div>
             <div className="min-h-0 flex-1 overflow-hidden">
-              {profilePanel === "support" ? <SupportCenterPanel /> : <SmartAlertsPanel alerts={smartAlerts} />}
+              {profilePanel === "support" ? <SupportCenterPanel /> : <SmartAlertsPanel alerts={smartAlerts} isFundedAccount={isFundedAccount} />}
             </div>
           </div>
         </div>
@@ -3529,7 +3600,7 @@ const maxLeverage = 100
             { label: "Balance / Equity", value: `$${walletBalance.toFixed(2)} / $${equity.toFixed(2)}`, tone: "neutral" },
             { label: "Free Margin", value: `$${freeMargin.toFixed(2)}`, tone: "neutral", bar: totalMargin > 0 },
             { label: "Net P&L", value: `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)} (${walletBalance ? ((totalPnl / walletBalance) * 100).toFixed(2) : "0.00"}%)`, tone: totalPnl >= 0 ? "green" : "red" },
-            { label: "Drawdown Risk", value: `${dailyDrawdownPct.toFixed(2)}% / 2.00%`, tone: dailyDrawdownPct >= 2 ? "red" : dailyDrawdownPct >= 1.5 ? "gold" : "green" },
+            { label: isFundedAccount ? "Maximum Drawdown" : "Daily Drawdown Risk", value: `${drawdownPercent.toFixed(2)}% / ${drawdownLimitPercent.toFixed(2)}%`, tone: drawdownPercent >= drawdownLimitPercent ? "red" : drawdownPercent >= drawdownWarningPercent ? "gold" : "green" },
           ].map(item => (
             <div key={item.label} className={`terminal-stat tone-${item.tone}`}>
               <span className="terminal-stat-label">{item.label}</span>
@@ -5141,7 +5212,7 @@ const maxLeverage = 100
           )}
 
           {/* ── Smart Risk Alerts ── */}
-          {activePanel === "smart-alerts" && <SmartAlertsPanel alerts={smartAlerts} />}
+          {activePanel === "smart-alerts" && <SmartAlertsPanel alerts={smartAlerts} isFundedAccount={isFundedAccount} />}
 
           {/* ── Trust & Account Protection ── */}
           {activePanel === "trust" && <TrustCenterPanel isFundedAccount={isFundedAccount} walletBalance={walletBalance} online={online} />}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
-import { isFundedDrawdownBreached } from "@/lib/funded-account"
+import { getFundedBaseAmount, isFundedDrawdownBreached } from "@/lib/funded-account"
 
 /**
  * POST /api/forex/trade-balance
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
       await client.query("BEGIN")
 
       const { rows } = await client.query(
-        "SELECT id, account_balance, account_type, funded_initial_balance, funded_breach_status, account_frozen, is_frozen FROM participants WHERE email = $1 FOR UPDATE",
+        "SELECT id, account_balance, account_type, funded_amount, funded_initial_balance, funded_breach_status, account_frozen, is_frozen FROM participants WHERE email = $1 FOR UPDATE",
         [email]
       )
       if (!rows.length) {
@@ -92,15 +92,13 @@ export async function POST(req: NextRequest) {
         await client.query("ROLLBACK")
         return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
       }
-      // A funded account that already breached the fixed 2% drawdown rule may
-      // never open new positions again — there is no recovery after breach.
-  if (rows[0].account_type === "funded" && alreadyBreached && delta < 0 && isMarginLock) {
-    await client.query("ROLLBACK")
-    return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading activity is disabled until the account is reactivated." }, { status: 403 })
-  }
+      if (rows[0].account_type === "funded" && alreadyBreached && delta < 0 && isMarginLock) {
+        await client.query("ROLLBACK")
+        return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation." }, { status: 403 })
+      }
 
       const newBalance = parseFloat((currentBalance + delta).toFixed(2))
-      const fundedInitial = Number(rows[0].funded_initial_balance) || 0
+      const fundedInitial = Number(rows[0].funded_initial_balance) || getFundedBaseAmount(currentBalance, rows[0].funded_amount)
       const committedResult = await client.query(
         `SELECT COALESCE(SUM(margin), 0) AS committed_funds
          FROM forex_trades
@@ -108,13 +106,12 @@ export async function POST(req: NextRequest) {
         [email]
       )
       const existingCommittedFunds = Number(committedResult.rows[0]?.committed_funds) || 0
-      // Locking margin moves cash into an open position; it is still part of
-      // total equity and must not trigger a breach by itself.
       const marginBeingCommitted = isMarginLock && delta < 0 ? Math.abs(delta) : 0
       const totalEquity = newBalance + existingCommittedFunds + marginBeingCommitted
       const fundedBreach = !alreadyBreached && isFundedDrawdownBreached(rows[0].account_type, fundedInitial, newBalance, existingCommittedFunds + marginBeingCommitted)
+      const balanceAfter = rows[0].account_type === "funded" && (alreadyBreached || fundedBreach) ? 0 : newBalance
 
-      if (newBalance < 0) {
+      if (newBalance < 0 && !alreadyBreached && !fundedBreach) {
         await client.query("ROLLBACK")
         return NextResponse.json({
           success: false,
@@ -127,10 +124,13 @@ export async function POST(req: NextRequest) {
   `UPDATE participants SET account_balance = $1,
      funded_breach_status = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 'breached' ELSE funded_breach_status END,
      funded_breach_at = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN NOW() ELSE funded_breach_at END,
-     funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_balance END,
-     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END
+     funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 0 ELSE funded_breach_balance END,
+     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END,
+     account_frozen = CASE WHEN $3 THEN TRUE ELSE account_frozen END,
+     is_frozen = CASE WHEN $3 THEN TRUE ELSE is_frozen END,
+     status = CASE WHEN $3 THEN 'frozen' ELSE status END
    WHERE id = $2`,
-  [newBalance, participantId, fundedBreach, totalEquity]
+  [balanceAfter, participantId, fundedBreach, totalEquity]
   )
 
       if (fundedBreach) {
@@ -156,12 +156,21 @@ export async function POST(req: NextRequest) {
           Math.abs(delta),
           description || (delta < 0 ? "Forex trade loss" : "Forex trade profit"),
           currentBalance,
-          newBalance,
+          balanceAfter,
         ]
       )
 
+      if (fundedBreach && newBalance > 0) {
+        await client.query(
+          `INSERT INTO transactions
+             (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+           VALUES ($1, $2, 'funded_drawdown_reset', $3, 'Funded balance reset to $0.00 after maximum drawdown breach', $3, 0, 'completed')`,
+          [participantId, email, newBalance],
+        )
+      }
+
       await client.query("COMMIT")
-      return NextResponse.json({ success: true, newBalance })
+      return NextResponse.json({ success: true, newBalance: balanceAfter })
     } catch (err) {
       await client.query("ROLLBACK")
       throw err

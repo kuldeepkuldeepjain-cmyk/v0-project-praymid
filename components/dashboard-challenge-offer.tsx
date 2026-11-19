@@ -67,7 +67,7 @@ export function DashboardChallengeOffer({ accountType, balance, bonusBalance, on
 
   const targetLabel = conversionTarget === "funded" ? "Funded" : "Challenge"
   const challengeBenefits = ["Simulated evaluation account", "Clear profit and risk targets", "Trade with virtual capital"]
-  const fundedBenefits = ["No Challenge evaluation", "One-time plan payment", "Fixed 2% drawdown rule"]
+  const fundedBenefits = ["No Challenge evaluation", "3% maximum drawdown", "1% max risk per trade"]
 
   return (
     <section aria-labelledby="account-paths-title" className="mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)] shadow-xl sm:w-[calc(100%-2rem)]">

@@ -4,7 +4,6 @@ import { query, withTransaction } from "@/lib/db"
 import {
   getFundedBaseAmount,
   getFundedEquity,
-  getFundedMinimumBalance,
   getFundedPredictionMaxAmount,
   isFundedDrawdownBreached,
 } from "@/lib/funded-account"
@@ -72,6 +71,7 @@ export async function POST(request: NextRequest) {
       let availableBalance = 0
       let fundedInitialBalance = 0
       let committedFunds = 0
+      let responseBalance = 0
 
       if (balanceSource === "demo") {
         const resetAt = await getDemoResetAt(client, participantEmail)
@@ -118,21 +118,8 @@ export async function POST(request: NextRequest) {
           )
           committedFunds = Number(committedResult.rows[0]?.committed_funds ?? 0)
           fundedInitialBalance = Number(participant.funded_initial_balance) || fundedBaseAmount
-          const currentEquity = getFundedEquity(fundedInitialBalance, availableBalance, committedFunds)
-          const breachFloor = getFundedMinimumBalance(fundedInitialBalance)
-
-          if (participant.funded_breach_status === "breached" && fundedInitialBalance > 0 && currentEquity >= breachFloor) {
-            await client.query(
-              `UPDATE participants
-               SET funded_breach_status = 'clear', funded_breach_at = NULL,
-                   funded_breach_balance = NULL, funded_breach_equity = NULL, updated_at = NOW()
-               WHERE id = $1`,
-              [participant.id],
-            )
-            participant.funded_breach_status = "clear"
-          }
           if (participant.funded_breach_status === "breached") {
-            return { error: "Funded account breached the fixed 2% drawdown rule.", status: 403 as const }
+            return { error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation.", status: 403 as const }
           }
         }
       }
@@ -156,6 +143,7 @@ export async function POST(request: NextRequest) {
       )
       const prediction = predictionResult.rows[0]
       const newBalance = normalizeMoney(availableBalance - requestedAmount)
+      responseBalance = newBalance
 
       if (balanceSource === "wallet") {
         const totalCommittedAfterBet = committedFunds + requestedAmount
@@ -166,6 +154,8 @@ export async function POST(request: NextRequest) {
           newBalance,
           totalCommittedAfterBet,
         )
+        const balanceAfter = shouldBreach ? 0 : newBalance
+        responseBalance = balanceAfter
 
         await client.query(
           `UPDATE participants
@@ -173,11 +163,14 @@ export async function POST(request: NextRequest) {
                funded_initial_balance = CASE WHEN account_type = 'funded' AND funded_initial_balance IS NULL THEN $2 ELSE funded_initial_balance END,
                funded_breach_status = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 'breached' ELSE funded_breach_status END,
                funded_breach_at = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN NOW() ELSE funded_breach_at END,
-               funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $1 ELSE funded_breach_balance END,
+               funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 0 ELSE funded_breach_balance END,
                funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END,
+               account_frozen = CASE WHEN $3 THEN TRUE ELSE account_frozen END,
+               is_frozen = CASE WHEN $3 THEN TRUE ELSE is_frozen END,
+               status = CASE WHEN $3 THEN 'frozen' ELSE status END,
                updated_at = NOW()
            WHERE id = $5`,
-          [newBalance, fundedInitialBalance, shouldBreach, fundedEquity, participant.id],
+          [balanceAfter, fundedInitialBalance, shouldBreach, fundedEquity, participant.id],
         )
 
         await client.query(
@@ -191,12 +184,27 @@ export async function POST(request: NextRequest) {
             `Placed ${predictionType} prediction on ${cryptoPair} @ ${entryPrice}`,
             prediction.id,
             availableBalance,
-            newBalance,
+            balanceAfter,
           ],
         )
+        if (shouldBreach) {
+          await client.query(
+            `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
+            [participantEmail],
+          )
+          if (newBalance > 0) {
+            await client.query(
+              `INSERT INTO transactions
+                 (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+               VALUES ($1, $2, 'funded_drawdown_reset', $3, 'Funded balance reset to $0.00 after maximum drawdown breach', $3, 0, 'completed')`,
+              [participant.id, participantEmail, newBalance],
+            )
+          }
+        }
       }
 
-      return { prediction, expiryTimestamp, newBalance, balanceSource }
+      return { prediction, expiryTimestamp, newBalance: responseBalance, balanceSource }
     })
 
     if ("error" in result) {

@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "node:crypto"
 import { setParticipantSession } from "@/lib/session"
 import { query, execute } from "@/lib/db"
-import { getFundedBaseAmount, getFundedEquity, getFundedMinimumBalance } from "@/lib/funded-account"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 import bcrypt from "bcryptjs"
 
@@ -119,12 +118,6 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
-    const fundedInitialBalance = Number(participant.funded_initial_balance) || getFundedBaseAmount(participant.account_balance, participant.funded_amount)
-    const fundedEquity = getFundedEquity(fundedInitialBalance, participant.account_balance)
-    const shouldClearFundedBreach = participant.account_type === "funded"
-      && participant.funded_breach_status === "breached"
-      && fundedInitialBalance > 0
-      && fundedEquity >= getFundedMinimumBalance(fundedInitialBalance)
 
     // Keep a server-side session registry so active sessions can be monitored and revoked.
     const sessionId = randomUUID()
@@ -153,17 +146,6 @@ export async function POST(request: NextRequest) {
         metadata: { duplicateAccountCount: securityProfile.duplicateAccountCount },
       }))
       .catch((error) => console.error("[login] security profile update failed:", error?.message))
-    if (shouldClearFundedBreach) {
-      void execute(
-        `UPDATE participants
-         SET funded_breach_status = 'clear', funded_breach_at = NULL,
-             funded_breach_balance = NULL, funded_breach_equity = NULL,
-             updated_at = NOW()
-         WHERE id = $1`,
-        [participant.id],
-      ).catch((error) => console.error("[login] funded account maintenance failed:", error?.message))
-    }
-    if (shouldClearFundedBreach) participant.funded_breach_status = "clear"
 
     return NextResponse.json({
       success: true,

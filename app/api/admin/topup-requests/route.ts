@@ -212,7 +212,7 @@ export async function POST(req: NextRequest) {
         const fundedBaseAmount = isFundedAccount
           ? getFundedBaseAmount(newBalance, participant.funded_amount || (isInitialFundedTopUp ? creditedAmount : undefined))
           : 0
-        const remainsBelowLossLimit = isFundedAccount && newBalance < getFundedMinimumBalance(fundedBaseAmount)
+        const remainsBelowLossLimit = isFundedAccount && newBalance <= getFundedMinimumBalance(fundedBaseAmount)
         const revivalSql = `account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = ${remainsBelowLossLimit ? "'breached'" : "'clear'"}`
 
   await client.query(

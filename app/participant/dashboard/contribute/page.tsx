@@ -114,7 +114,7 @@ export default function AddFundPage() {
           <Alert variant="destructive" className="funding-error">
             <AlertCircle aria-hidden="true" />
             <AlertTitle>Account reactivation required</AlertTitle>
-            <AlertDescription>Your funded account breached the 2% drawdown rule. Add funds to restore the minimum equity and request reactivation.</AlertDescription>
+            <AlertDescription>Your funded account breached the 3% maximum drawdown rule and its balance was reset to $0.00. Add funds and request administrator reactivation.</AlertDescription>
           </Alert>
         )}
 

@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Payouts are disabled for this account" }, { status: 403 })
     }
     if (participant.account_type === "funded" && participant.funded_breach_status === "breached") {
-      return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Payouts are disabled until the account is reactivated." }, { status: 403 })
+      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Payouts are disabled until administrator reactivation." }, { status: 403 })
     }
     if (participant.account_type === "funded") {
       const fundedBaseAmount = getFundedBaseAmount(currentBalance, participant.funded_amount)
