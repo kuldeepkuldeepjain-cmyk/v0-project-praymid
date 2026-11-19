@@ -40,6 +40,12 @@ export async function getLiveChallengeRates(origin: string) {
     const snapshot = await response.json()
     if (!snapshot?.rates || !snapshot?.sources) return null
 
+    const now = Date.now()
+    const snapshotTime = Number(snapshot.ts)
+    const recentSnapshot = Number.isFinite(snapshotTime)
+      && snapshotTime <= now + 10_000
+      && now - snapshotTime <= 10_000
+
     return Object.fromEntries(
       Object.entries(snapshot.rates as Record<string, unknown>).flatMap(([pair, value]) => {
         const source = snapshot.sources[pair]
@@ -47,7 +53,13 @@ export async function getLiveChallengeRates(origin: string) {
         if (!LIVE_RATE_SOURCES.has(source) || !quote) return []
         const bid = Number(quote.bid)
         const ask = Number(quote.ask)
-        if (!Number.isFinite(bid) || !Number.isFinite(ask) || bid <= 0 || ask < bid) return []
+        const quoteTime = Number(snapshot.quoteTimes?.[pair])
+        const hasFreshProviderTime = Number.isFinite(quoteTime)
+          && quoteTime > 0
+          && quoteTime <= now + 10_000
+          && now - quoteTime <= 90_000
+        const timestamplessSpotIsRecent = source === "gold-api" && recentSnapshot
+        if ((!hasFreshProviderTime && !timestamplessSpotIsRecent) || !Number.isFinite(bid) || !Number.isFinite(ask) || bid <= 0 || ask < bid) return []
         return [[pair, { bid, ask } satisfies ChallengeRate]]
       }),
     ) as Record<string, ChallengeRate>

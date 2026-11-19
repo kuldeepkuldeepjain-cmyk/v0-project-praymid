@@ -30,14 +30,14 @@ import {
   getFundedTradeRiskAmount,
 } from "@/lib/funded-account"
 import {
-  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON, SEED_PRICES,
+  PAIRS_CONFIG, TYPICAL_SPREADS, SWAP_RATES, FULL_NAMES, ASSET_ICON,
   isJpy, isCrypto, isGold, isSilver, isCommodity, decimals, pip, contractSize,
   type AssetCategory,
 } from "@/lib/forex-instruments"
 import {
   DepthOfMarketLadder, RiskAnalyticsPanel, NewsCalendarPanel,
   TradeJournalPanel, CommandPalette, useTradingHotkeys,
-  MiniChartGrid, ConnectionStatus,
+  MiniChartGrid,
 } from "@/components/forex-institutional"
 import { ForexHeader } from "@/components/forex-header"
 import { AssetLogo } from "@/components/asset-logo"
@@ -117,6 +117,7 @@ export type ForexPair = {
   symbol: string; base: string; quote: string
   bid: number; ask: number; change: number; high: number; low: number; open: number
   rateTimestamp: number
+  quoteSource?: string
   candles: Candle[]; spread: number
 }
 
@@ -217,7 +218,7 @@ const CATEGORY_COLOR: Record<AssetCategory, { bg: string; text: string; border: 
 }
 
 function fmt(price: number | null | undefined, sym: string): string {
-  if (price == null || !isFinite(price)) return "—"
+  if (price == null || !isFinite(price) || price <= 0) return "—"
   return price.toFixed(decimals(sym))
 }
 
@@ -1124,65 +1125,10 @@ function SupportCenterPanel() {
   )
 }
 
-// ─── Order Depth Panel ────────────────────────────────────────────────────────
+// ─── Quote depth view ─────────────────────────────────────────────────────────
 
-function OrderDepth({ pair }: { pair: ForexPair }) {
-  const levels = useMemo(() => {
-    const asks: { price: number; volume: number; total: number }[] = []
-    const bids: { price: number; volume: number; total: number }[] = []
-    for (let i = 0; i < 8; i++) {
-      const ps = pip(pair.symbol)
-      const multiplier = 1 + Math.random() * 0.8
-      asks.push({ price: parseFloat((pair.ask + ps * i * multiplier).toFixed(decimals(pair.symbol))), volume: Math.floor(100 + Math.random() * 1900), total: 0 })
-      bids.push({ price: parseFloat((pair.bid - ps * i * multiplier).toFixed(decimals(pair.symbol))), volume: Math.floor(100 + Math.random() * 1900), total: 0 })
-    }
-    asks.reverse()
-    // Cumulative totals
-    let askTotal = 0, bidTotal = 0
-    asks.forEach(a => { askTotal += a.volume; a.total = askTotal })
-    bids.forEach(b => { bidTotal += b.volume; b.total = bidTotal })
-    return { asks, bids, maxTotal: Math.max(askTotal, bidTotal) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pair.bid, pair.ask])
-
-  const maxVol = Math.max(...levels.asks.map(a => a.volume), ...levels.bids.map(b => b.volume))
-
-  return (
-    <div className="rounded-xl overflow-hidden" style={{ background: "#0a1120", border: "1px solid #1e2d45" }}>
-      {/* Header */}
-      <div className="grid px-3 py-1.5" style={{ gridTemplateColumns: "1fr 1fr 1fr", borderBottom: "1px solid #1e2d45" }}>
-        {["Price", "Size", "Total"].map(h => (
-          <span key={h} className="text-[8px] font-black tracking-widest uppercase text-slate-700">{h}</span>
-        ))}
-      </div>
-      {/* Asks (sell side) */}
-      {levels.asks.map((a, i) => (
-        <div key={i} className="relative grid px-3 py-[3px]" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-          <div className="absolute inset-y-0 right-0 opacity-15" style={{ width: `${(a.volume / maxVol) * 100}%`, background: "#ef4444" }} />
-          <span className="price-mono text-[10px] font-black text-red-400">{fmt(a.price, pair.symbol)}</span>
-          <span className="price-mono text-[10px] text-slate-400">{a.volume.toLocaleString()}</span>
-          <span className="price-mono text-[10px] text-slate-500">{a.total.toLocaleString()}</span>
-        </div>
-      ))}
-      {/* Spread row */}
-      <div className="flex items-center justify-between px-3 py-1.5" style={{ background: "rgba(34,211,238,0.05)", borderTop: "1px solid #1e2d45", borderBottom: "1px solid #1e2d45" }}>
-        <span className="price-mono text-xs font-black text-cyan-400">{fmt((pair.bid + pair.ask) / 2, pair.symbol)}</span>
-        <span className="text-[9px] font-bold text-slate-500">
-          Spread {((pair.spread / pip(pair.symbol)) || 0).toFixed(1)} pips
-          &nbsp;·&nbsp;{(pair.spread).toFixed(decimals(pair.symbol))} price units
-        </span>
-      </div>
-      {/* Bids (buy side) */}
-      {levels.bids.map((b, i) => (
-        <div key={i} className="relative grid px-3 py-[3px]" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
-          <div className="absolute inset-y-0 right-0 opacity-15" style={{ width: `${(b.volume / maxVol) * 100}%`, background: "#10b981" }} />
-          <span className="price-mono text-[10px] font-black text-emerald-400">{fmt(b.price, pair.symbol)}</span>
-          <span className="price-mono text-[10px] text-slate-400">{b.volume.toLocaleString()}</span>
-          <span className="price-mono text-[10px] text-slate-500">{b.total.toLocaleString()}</span>
-        </div>
-      ))}
-    </div>
-  )
+function OrderDepth({ pair, online }: { pair: ForexPair; online: boolean }) {
+  return <DepthOfMarketLadder pair={pair} online={online} />
 }
 
 // ─── Modify Trade Modal ───────────────────────────────────────────────────────
@@ -1574,7 +1520,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [direction, setDirection]     = useState<TradeDirection>("BUY")
 
   useEffect(() => {
-    const updateClock = () => setUtcClock(new Date().toLocaleTimeString("en-US", { hour12: false }))
+    const updateClock = () => setUtcClock(new Date().toLocaleTimeString("en-US", { hour12: false, timeZone: "UTC" }))
     updateClock()
     const timer = window.setInterval(updateClock, 1000)
     return () => window.clearInterval(timer)
@@ -1584,11 +1530,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const defaultOrderInstrumentRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!selectedPair || defaultOrderInstrumentRef.current === selectedPair.symbol) return
+    if (!selectedPair || selectedPair.bid <= 0 || selectedPair.ask <= 0 || defaultOrderInstrumentRef.current === selectedPair.symbol) return
     const midPrice = (selectedPair.bid + selectedPair.ask) / 2
     setLotSize(defaultLotsForOrderValue(selectedPair.symbol, midPrice, 3000))
     defaultOrderInstrumentRef.current = selectedPair.symbol
-  }, [selectedPair?.symbol])
+  }, [selectedPair?.symbol, selectedPair?.bid, selectedPair?.ask])
   const effectiveLeverage = Math.min(parseFloat(leverage) || 1, isChallengeAccount ? 30 : 100)
   const [sl, setSl]                   = useState("")
   const [tp, setTp]                   = useState("")
@@ -1634,10 +1580,9 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   const [totalPnl, setTotalPnl]       = useState(0)
   const [tickCount, setTickCount]     = useState(0)
   const [walletBalance, setWalletBalance] = useState(externalBalance)
-  // Flag to suppress the external-balance sync while an internal adjustWalletBalance is in flight
+  // Prevent external balance props from overwriting server-confirmed balance updates
   const suppressExternalSync = useRef(false)
   const [balanceLoaded, setBalanceLoaded] = useState(externalBalance > 0)
-  const [balanceDelta, setBalanceDelta] = useState<{ value: number; id: number } | null>(null)
   const [candleCache, setCandleCache] = useState<Record<string, Candle[]>>({})
   const [candleLoading, setCandleLoading] = useState(false)
   const candleRequestRef = useRef(0)
@@ -1796,8 +1741,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
   openTradesRef.current = openTrades
   selectedPairRef.current = selectedPair
 
-  // Sync external balance — skipped while an internal adjustWalletBalance call is in-flight
-  // to prevent the prop update triggered by onBalanceUpdated from overwriting the fresh DB value
+  // Sync the latest external balance unless a server-confirmed update is still propagating
   useEffect(() => {
     if (suppressExternalSync.current) return
     setWalletBalance(externalBalance)
@@ -1892,39 +1836,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [accountEquity, fundedBaseAmount, fundedMinimumBalance, isFrozen, onAccountFrozen, onBalanceUpdated, participantEmail, showToast])
 
-  // ── Balance API ────────────������──────────────────────────────────────────────
-  const adjustWalletBalance = useCallback(async (delta: number, description: string): Promise<number | null> => {
-    try {
-      // Prevent the externalBalance useEffect from overwriting the fresh DB value
-      suppressExternalSync.current = true
-      const res = await participantFetch("/api/forex/trade-balance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: participantEmail, delta, description }),
-      })
-      const json = await res.json().catch(() => null)
-      const newBalance = json && typeof json.newBalance === "number" && Number.isFinite(json.newBalance) ? json.newBalance : null
-      if (!res.ok || !json?.success || newBalance === null) {
-        suppressExternalSync.current = false
-        showToast("error", json?.error || "Balance update failed. Please try again.")
-        return null
-      }
-      setWalletBalance(newBalance)
-      setBalanceLoaded(true)
-      onBalanceUpdated?.(newBalance)
-      setBalanceDelta({ value: delta, id: Date.now() })
-      setTimeout(() => setBalanceDelta(null), 2500)
-      // Re-enable external sync after a short delay (after onBalanceUpdated propagates)
-      setTimeout(() => { suppressExternalSync.current = false }, 800)
-      return newBalance
-    } catch {
-      suppressExternalSync.current = false
-      showToast("error", "Network error updating balance")
-      return null
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [participantEmail, onBalanceUpdated])
-
   // ── Trade persistence API. The UI remains optimistic, but failed writes are
   //    retried once and surfaced instead of being silently discarded. ─────────
   const persistTradeRequest = useCallback(async (input: string, init: RequestInit, label: string): Promise<Record<string, unknown> | false> => {
@@ -1983,8 +1894,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [participantEmail])
   const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }) }, "Saving trade changes"), [participantEmail, persistTradeRequest])
-  const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }) }, "Saving partial reduction"), [participantEmail, persistTradeRequest])
-  const persistFill = useCallback((id: string, openPrice: number, openTime: string, openTimestamp: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill", openPrice, openTime, openTimestamp }) }, "Saving filled order"), [participantEmail, persistTradeRequest])
+  const persistFill = useCallback((id: string) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill" }) }, "Filling pending order"), [participantEmail, persistTradeRequest])
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
   // ── Apply validated live quotes; keep source timestamps per instrument ──
@@ -1993,6 +1903,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     const receivedAt = Date.now()
     const acceptedRates: Record<string, MarketRate> = {}
     const acceptedTimes: Record<string, number> = {}
+    const acceptedSources: Record<string, string> = {}
     const acceptedFreshSymbols = new Set<string>()
 
     for (const [symbol, rate] of Object.entries(rateMap)) {
@@ -2009,7 +1920,10 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       acceptedRates[symbol] = rate
       acceptedTimes[symbol] = hasProviderTime ? suppliedTime : receivedAt
       if (hasProviderTime) providerRateTimesRef.current[symbol] = Math.max(previousProviderTime, suppliedTime)
-      if (source) rateSourcesRef.current[symbol] = source
+      if (source) {
+        rateSourcesRef.current[symbol] = source
+        acceptedSources[symbol] = source
+      }
       if (freshCandidates.has(symbol)) {
         freshRateUpdatedAtRef.current[symbol] = receivedAt
         acceptedFreshSymbols.add(symbol)
@@ -2022,9 +1936,10 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
         const rate = acceptedRates[pair.symbol]
         if (!rate) return pair
         const rateTimestamp = acceptedTimes[pair.symbol]
-        const nextSpread = TYPICAL_SPREADS[pair.symbol] ?? 0.0002
-        if (pair.bid !== rate.bid || pair.ask !== rate.ask || pair.change !== rate.change || pair.high !== rate.high || pair.low !== rate.low || pair.open !== rate.open || pair.rateTimestamp !== rateTimestamp || pair.spread !== nextSpread) changed = true
-        return { ...pair, bid: rate.bid, ask: rate.ask, change: rate.change, high: rate.high, low: rate.low, open: rate.open, rateTimestamp, spread: nextSpread }
+        const nextSpread = Math.max(0, rate.ask - rate.bid)
+        const quoteSource = acceptedSources[pair.symbol] ?? rateSourcesRef.current[pair.symbol] ?? pair.quoteSource
+        if (pair.bid !== rate.bid || pair.ask !== rate.ask || pair.change !== rate.change || pair.high !== rate.high || pair.low !== rate.low || pair.open !== rate.open || pair.rateTimestamp !== rateTimestamp || pair.spread !== nextSpread || pair.quoteSource !== quoteSource) changed = true
+        return { ...pair, bid: rate.bid, ask: rate.ask, change: rate.change, high: rate.high, low: rate.low, open: rate.open, rateTimestamp, spread: nextSpread, quoteSource }
       })
       if (!changed) return prev
       pairsRef.current = updated
@@ -2164,18 +2079,11 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
 
   // ── Init ───────────────────────────────────────────────────────────────��───
   useEffect(() => {
-  const init: ForexPair[] = PAIRS_CONFIG.map(p => {
-  const seed = SEED_PRICES[p.symbol] ?? 0
-  const spread = TYPICAL_SPREADS[p.symbol] ?? 0.0002
-  const precision = decimals(p.symbol)
-  const bid = seed > 0 ? Number((seed - spread / 2).toFixed(precision)) : 0
-  const ask = seed > 0 ? Number((seed + spread / 2).toFixed(precision)) : 0
-  return {
-  symbol: p.symbol, base: p.base, quote: p.quote,
-  bid, ask, change: 0, high: seed > 0 ? Number((seed * 1.002).toFixed(precision)) : 0, low: seed > 0 ? Number((seed * 0.998).toFixed(precision)) : 0, open: seed,
-  rateTimestamp: 0, spread, candles: [],
-  }
-  })
+  const init: ForexPair[] = PAIRS_CONFIG.map(p => ({
+    symbol: p.symbol, base: p.base, quote: p.quote,
+    bid: 0, ask: 0, change: 0, high: 0, low: 0, open: 0,
+    rateTimestamp: 0, quoteSource: undefined, spread: TYPICAL_SPREADS[p.symbol] ?? 0.0002, candles: [],
+  }))
     setPairs(init); pairsRef.current = init
     const defaultPair = init.find(pair => pair.symbol === "XAU/USD") ?? init[0]
     setSelectedPair(defaultPair); setLoading(false)
@@ -2191,7 +2099,7 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
       // Refresh the 1-minute history frequently enough to pick up the next
       // server candle while live ticks keep the active candle moving between
       // snapshots. Wider frames stay on lighter polling intervals.
-      "1M": 1_000, "5M": 3_000, "15M": 15_000, "30M": 30_000, "1H": 60_000, "4H": 120_000, "1D": 300_000, "1W": 900_000,
+      "1M": 15_000, "5M": 3_000, "15M": 15_000, "30M": 30_000, "1H": 60_000, "4H": 120_000, "1D": 300_000, "1W": 900_000,
     }
   const ms = candleError ? 5_000 : (refreshMs[timeframe] ?? 60_000)
   const retry = () => { void fetchCandles(selectedPair.symbol, timeframe) }
@@ -2333,43 +2241,40 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
             pnl: 0, pips: 0, margin, returnOnMargin: 0, swap: 0,
           }
           setOpenTrades(p => [newTrade, ...p])
-          if (isChallengeAccount) {
-            void (async () => {
-              const saved = await persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
-              if (!saved) {
-                openTradesRef.current = openTradesRef.current.filter(item => item.id !== order.id)
-                setOpenTrades(current => current.filter(item => item.id !== order.id))
-                setPendingOrders(current => current.some(item => item.id === order.id) ? current : [order, ...current])
-                return
-              }
-              const result = saved as Record<string, unknown>
-              const execution = result.execution as { price?: number; margin?: number } | undefined
-              const verifiedTrade = {
-                ...newTrade,
-                openPrice: typeof execution?.price === "number" ? execution.price : newTrade.openPrice,
-                currentPrice: typeof execution?.price === "number" ? execution.price : newTrade.currentPrice,
-                trailingPeak: typeof execution?.price === "number" ? execution.price : newTrade.trailingPeak,
-                margin: typeof execution?.margin === "number" ? execution.margin : newTrade.margin,
-              }
-              openTradesRef.current = openTradesRef.current.map(item => item.id === order.id ? verifiedTrade : item)
-              setOpenTrades(current => current.map(item => item.id === order.id ? verifiedTrade : item))
-              if (typeof result.newBalance === "number") {
-                suppressExternalSync.current = true
-                setWalletBalance(result.newBalance)
-                setBalanceLoaded(true)
-                onBalanceUpdated?.(result.newBalance)
-                setTimeout(() => { suppressExternalSync.current = false }, 800)
-              }
-              showToast("info", `Challenge pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(verifiedTrade.openPrice, order.pair)}`)
-            })()
-          } else {
-            void adjustWalletBalance(
-              -margin,
-              `Pending fill — ${order.direction} ${order.lotSize}L ${order.pair} @ ${fmt(fillPrice, order.pair)}`
-            )
-            void persistFill(order.id, fillPrice, newTrade.openTime, newTrade.openTimestamp)
-            showToast("info", `Pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(fillPrice, order.pair)}`)
-          }
+          void (async () => {
+            const saved = await persistFill(order.id)
+            if (!saved) {
+              openTradesRef.current = openTradesRef.current.filter(item => item.id !== order.id)
+              setOpenTrades(current => current.filter(item => item.id !== order.id))
+              setPendingOrders(current => current.some(item => item.id === order.id) ? current : [order, ...current])
+              return
+            }
+
+            const result = saved as Record<string, unknown>
+            const execution = result.execution as { price?: number; margin?: number } | undefined
+            const verifiedPrice = typeof execution?.price === "number" ? execution.price : newTrade.openPrice
+            const verifiedTrade: OpenTrade = {
+              ...newTrade,
+              openPrice: verifiedPrice,
+              currentPrice: verifiedPrice,
+              trailingPeak: verifiedPrice,
+              margin: typeof execution?.margin === "number" ? execution.margin : newTrade.margin,
+            }
+            openTradesRef.current = openTradesRef.current.some(item => item.id === order.id)
+              ? openTradesRef.current.map(item => item.id === order.id ? verifiedTrade : item)
+              : [verifiedTrade, ...openTradesRef.current]
+            setOpenTrades(current => current.some(item => item.id === order.id)
+              ? current.map(item => item.id === order.id ? verifiedTrade : item)
+              : [verifiedTrade, ...current])
+            if (typeof result.newBalance === "number") {
+              suppressExternalSync.current = true
+              setWalletBalance(result.newBalance)
+              setBalanceLoaded(true)
+              onBalanceUpdated?.(result.newBalance)
+              setTimeout(() => { suppressExternalSync.current = false }, 800)
+            }
+            showToast("info", `Pending ${order.orderType.replace("_", " ")} filled: ${order.pair} @ ${fmt(verifiedPrice, order.pair)}`)
+          })()
           return prev.filter(o => o.id !== id)
         })
       })
@@ -2777,7 +2682,18 @@ const maxLeverage = 100
 	        setConfirmLoading(false)
 	        return
 	      }
-	      showToast("success", `${dir} ${lot}L ${pairSymbol} execution confirmed @ ${fmt(price, pairSymbol)}`)
+		      const execution = saved.execution as { price?: number; margin?: number } | undefined
+		      const verifiedPrice = typeof execution?.price === "number" ? execution.price : price
+		      const verifiedTrade: OpenTrade = {
+		        ...trade,
+		        openPrice: verifiedPrice,
+		        currentPrice: verifiedPrice,
+		        trailingPeak: verifiedPrice,
+		        margin: typeof execution?.margin === "number" ? execution.margin : margin,
+		      }
+		      openTradesRef.current = openTradesRef.current.map(item => item.id === trade.id ? verifiedTrade : item)
+		      setOpenTrades(current => current.map(item => item.id === trade.id ? verifiedTrade : item))
+		      showToast("success", `${dir} ${lot}L ${pairSymbol} execution confirmed @ ${fmt(verifiedPrice, pairSymbol)}`)
       if (typeof saved.newBalance === "number") {
         suppressExternalSync.current = true
         setWalletBalance(saved.newBalance)
@@ -2883,7 +2799,9 @@ const maxLeverage = 100
           closePrice: typeof response.closePrice === "number" ? response.closePrice : closed.closePrice,
           finalPnl: typeof response.finalPnl === "number" ? response.finalPnl : closed.finalPnl,
           finalPips: typeof response.finalPips === "number" ? response.finalPips : closed.finalPips,
-          closeTime: typeof response.closePrice === "number" ? new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : closed.closeTime,
+          finalSwap: typeof response.finalSwap === "number" ? response.finalSwap : closed.finalSwap,
+          closeTime: typeof response.closeTime === "string" ? response.closeTime : closed.closeTime,
+          closeDuration: typeof response.closeDuration === "string" ? response.closeDuration : closed.closeDuration,
         }
         setClosedTrades(prev => {
           if (prev.some(item => item.id === verifiedClose.id)) return prev
@@ -3002,11 +2920,12 @@ const maxLeverage = 100
     // Update the open trade with reduced lots and margin
     const remainingLots = parseFloat((trade.lotSize - closeLots).toFixed(2))
     const remainingMargin = parseFloat((trade.margin - closedMargin).toFixed(2))
+    const remainingSwap = Number((trade.swap * (remainingLots / trade.lotSize)).toFixed(6))
     openTradesRef.current = openTradesRef.current.map(t =>
-      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
+      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin, swap: remainingSwap } : t
     )
     setOpenTrades(prev => prev.map(t =>
-      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin } : t
+      t.id === id ? { ...t, lotSize: remainingLots, margin: remainingMargin, swap: remainingSwap } : t
     ))
   void (async () => {
     const saved = await persistPartialClose(closed, id, remainingLots, remainingMargin)
@@ -3022,20 +2941,17 @@ const maxLeverage = 100
       closePrice: typeof result.closePrice === "number" ? result.closePrice : closed.closePrice,
       finalPnl: typeof result.finalPnl === "number" ? result.finalPnl : closed.finalPnl,
       finalPips: typeof result.finalPips === "number" ? result.finalPips : closed.finalPips,
+      finalSwap: typeof result.finalSwap === "number" ? result.finalSwap : closed.finalSwap,
+      closeTime: typeof result.closeTime === "string" ? result.closeTime : closed.closeTime,
+      closeDuration: typeof result.closeDuration === "string" ? result.closeDuration : closed.closeDuration,
     }
     setClosedTrades(prev => [verifiedClose, ...prev.filter(item => item.id !== verifiedClose.id)].slice(0, 100))
-    if (isChallengeAccount) {
-      if (typeof result.newBalance === "number") {
-        suppressExternalSync.current = true
-        setWalletBalance(result.newBalance)
-        setBalanceLoaded(true)
-        onBalanceUpdated?.(result.newBalance)
-        setTimeout(() => { suppressExternalSync.current = false }, 800)
-      }
-    } else {
-      const returnAmt = parseFloat((closedMargin + finalPnl).toFixed(2))
-      await adjustWalletBalance(returnAmt,
-        `Partial close ${closeLots}L — ${trade.pair} | P&L: ${finalPnl >= 0 ? "+" : ""}$${finalPnl.toFixed(2)}`)
+    if (typeof result.newBalance === "number") {
+      suppressExternalSync.current = true
+      setWalletBalance(result.newBalance)
+      setBalanceLoaded(true)
+      onBalanceUpdated?.(result.newBalance)
+      setTimeout(() => { suppressExternalSync.current = false }, 800)
     }
 
     showToast(verifiedClose.finalPnl >= 0 ? "success" : "error",
@@ -3043,7 +2959,7 @@ const maxLeverage = 100
     setPartialCloseMap(prev => ({ ...prev, [id]: "" }))
   })()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [adjustWalletBalance, showToast, persistPartialClose])
+  }, [showToast, persistPartialClose])
 
   // ── Modify trade ──────���────────────────────────────────────────────────────
   const applyModify = useCallback((tradeId: string, newSl: number | null, newTp: number | null, newTrail: number | null) => {
@@ -3368,7 +3284,7 @@ const maxLeverage = 100
     { id: "panel-positions", label: "Show open positions", hint: "Open the positions window", icon: Layers, action: () => openActivityPanel("positions") },
     { id: "panel-pending", label: "Show pending orders", hint: "Open the pending orders window", icon: Clock, action: () => openActivityPanel("pending") },
     { id: "panel-history", label: "Show trade history", hint: "Open the trade history window", icon: History, action: () => openActivityPanel("history") },
-    { id: "panel-dom", label: "Show depth-of-market", hint: "Open the L2 order book window", icon: BarChart2, action: () => openActivityPanel("dom") },
+    { id: "panel-dom", label: "Show quote ladder", hint: "View live bid/ask and spread; venue depth is unavailable", icon: BarChart2, action: () => openActivityPanel("dom") },
     { id: "panel-risk", label: "Show portfolio risk", hint: "Open the risk analytics window", icon: ShieldAlert, action: () => openActivityPanel("risk") },
     { id: "panel-journal", label: "Show trade journal", hint: "Open the trade journal window", icon: BookOpen, action: () => openActivityPanel("journal") },
     { id: "panel-news", label: "Show news & calendar", hint: "Open the economic calendar window", icon: Newspaper, action: () => openActivityPanel("news") },
@@ -3379,7 +3295,7 @@ const maxLeverage = 100
     { id: "panel-stats", label: "Show market stats", hint: "Open the market stats window", icon: Activity, action: () => openActivityPanel("stats") },
     { id: "panel-ai-coach", label: "Open AI trading guide", hint: "Review market context and pre-trade risk checks", icon: BrainCircuit, action: () => openActivityPanel("ai-coach") },
     { id: "panel-trust", label: "Open trust center", hint: "Review account protection and operating status", icon: ShieldCheck, action: () => openActivityPanel("trust") },
-    { id: "panel-depth", label: "Show order depth", hint: "Open the order depth window", icon: BarChart2, action: () => openActivityPanel("depth") },
+    { id: "panel-depth", label: "Show quote details", hint: "Inspect current quote levels and spread", icon: BarChart2, action: () => openActivityPanel("depth") },
     { id: "panel-smart-alerts", label: "Show smart alerts", hint: "Open the smart alerts window", icon: BellRing, action: () => openActivityPanel("smart-alerts") },
     { id: "sizer", label: "Open position sizer", hint: "Calculate lot size from risk %", icon: Target, action: () => { setRightPanelTab("sizer"); setMobileTab("order") } },
     ...(!isChallengeAccount ? [
@@ -3939,7 +3855,7 @@ const maxLeverage = 100
                           style={{ background: "#0b1625", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid #152338" }}>
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
                           <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
-                            {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
+                            {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Instruments" : "Cryptocurrency"}
                           </span>
                           <span className="text-[8px] ml-auto" style={{ color: "#6f8aa3" }}>{catPairs.length}</span>
                         </div>
@@ -5178,10 +5094,10 @@ const maxLeverage = 100
 	            )
 	          })()}
 
-          {/* ── Order Depth ── */}
+          {/* ── Quote details ── */}
           {activePanel === "depth" && (
             selectedPair
-              ? <div className="p-3"><OrderDepth pair={selectedPair} /></div>
+              ? <div className="p-3"><OrderDepth pair={selectedPair} online={online} /></div>
               : <div className="flex items-center justify-center h-full text-slate-700 text-[11px] tracking-wider">Select an instrument</div>
           )}
 
@@ -5223,10 +5139,10 @@ const maxLeverage = 100
           {/* ── Market Sessions ── */}
           {activePanel === "sessions" && <MarketSessionsPanel />}
 
-          {/* ── Depth-of-Market (L2 ladder) ── */}
+          {/* ── Provider quote ladder ── */}
           {activePanel === "dom" && (
             selectedPair
-              ? <DepthOfMarketLadder pair={selectedPair} tickCount={tickCount} onPlaceOrder={(side, price) => {
+              ? <DepthOfMarketLadder pair={selectedPair} online={online} onPlaceOrder={(side, price) => {
                   setDirection(side)
                   setOrderType("limit")
                   setPendingPrice(price.toFixed(decimals(selectedPair.symbol)))
@@ -5265,14 +5181,14 @@ const maxLeverage = 100
       </Dialog>
 
       <div className="reference-statusbar shrink-0">
-        <span><i />{online ? "Connected" : "Reconnecting"}</span>
-        <strong>Live Account</strong>
+        <span><i style={{ background: online ? "#10b981" : "#94a3b8" }} />{online ? "Live quotes" : "Waiting for quote"}</span>
+        <strong style={{ color: "#62a9e8", borderColor: "rgba(98,169,232,.3)" }}>Simulated execution</strong>
         <span className="reference-status-spacer" />
-        <span>Server: Elite-Trade-Live-1</span>
+        <span>Feed: {selectedPair?.quoteSource ?? "awaiting provider"}</span>
         <span className="reference-status-divider">|</span>
-        <span>Ping: 42 ms</span>
+        <span>{lastUpdated ? `Updated ${Math.max(0, Math.floor((Date.now() - lastUpdated.getTime()) / 1000))}s ago` : "No fresh quote yet"}</span>
         <span className="reference-status-divider">|</span>
-        <span>{utcClock} (UTC+5:30)</span>
+        <span>{utcClock} UTC</span>
       </div>
 
       {/* ── Trade Confirmation Modal ──����────�����───��──────���────────────────────���────── */}
