@@ -1894,7 +1894,6 @@ function TradingAiCoach({ pair, openTrades, walletBalance, onOpenRisk }: { pair:
     }
   }, [participantEmail])
   const persistModify = useCallback((id: string, newSl: number | null, newTp: number | null, newTrail: number | null) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "modify", sl: newSl, tp: newTp, trailingStopPips: newTrail }) }, "Saving trade changes"), [participantEmail, persistTradeRequest])
-  const persistPartialReduce = useCallback((id: string, lotSize: number, margin: number) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "partial_reduce", lotSize, margin }) }, "Saving partial reduction"), [participantEmail, persistTradeRequest])
   const persistFill = useCallback((id: string) => persistTradeRequest("/api/forex/trades", { method: "PATCH", body: JSON.stringify({ participant_email: participantEmail, id, action: "fill" }) }, "Filling pending order"), [participantEmail, persistTradeRequest])
   const deletePendingOrder = useCallback((id: string) => persistTradeRequest(`/api/forex/trades?id=${encodeURIComponent(id)}&email=${encodeURIComponent(participantEmail)}`, { method: "DELETE" }, "Cancelling pending order"), [participantEmail, persistTradeRequest])
 
@@ -3856,7 +3855,7 @@ const maxLeverage = 100
                           style={{ background: "#0b1625", borderBottom: `1px solid ${cc.border}22`, borderTop: "1px solid #152338" }}>
                           <div className="w-2 h-2 rounded-full shrink-0" style={{ background: cc.text, boxShadow: `0 0 6px ${cc.text}` }} />
                           <span className="text-[9px] font-black tracking-[0.2em] uppercase" style={{ color: cc.text }}>
-                            {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Majors" : "Cryptocurrency"}
+                            {cat === "Commodities" ? "Precious Metals" : cat === "Forex" ? "Forex Instruments" : "Cryptocurrency"}
                           </span>
                           <span className="text-[8px] ml-auto" style={{ color: "#6f8aa3" }}>{catPairs.length}</span>
                         </div>

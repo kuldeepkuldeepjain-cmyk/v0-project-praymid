@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec, isCrypto } from "@/lib/forex-instruments"
+import { YAHOO_SYMBOLS, TYPICAL_SPREADS, decimals as dec } from "@/lib/forex-instruments"
 
 // Cache to avoid hammering Yahoo Finance (server-side, resets on cold start)
 let cache: {
@@ -22,14 +22,12 @@ export async function GET() {
     }
 
     const pairs = Object.keys(YAHOO_SYMBOLS)
-    const bySymbol = new Map(pairs.map((p) => [YAHOO_SYMBOLS[p], p]))
     const ySymbols = pairs.map((p) => YAHOO_SYMBOLS[p])
 
-    // Fetch ALL instruments in a single batched Yahoo quote call instead of
-    // one request per pair — cuts ~70 round trips down to 1-2, which is both
-    // far faster and far less likely to trip rate limiting.
+    // Yahoo's unauthenticated chart endpoint exposes quote metadata per symbol,
+    // so keep its fallback requests bounded to avoid a large provider burst.
     const [quoteResults, spotResult, tiingoResults, twelveResults] = await Promise.all([
-      fetchBatchedQuotes(ySymbols),
+      fetchYahooQuotes(ySymbols),
       fetchGoldSpot(),
       fetchTiingoQuotes(pairs),
       fetchTwelveQuotes(pairs),
@@ -217,16 +215,11 @@ type YahooQuote = {
   regularMarketDayLow?: number
 }
 
-// Yahoo's v7/finance/quote batch endpoint now requires an authenticated
-// session (crumb + cookie) and returns 401 Unauthorized without one — which
-// was silently failing every request and made the whole feed fall back to
-// fake seeded/jittered prices instead of real market data. The v8 chart
-// endpoint (already used for candles) still works unauthenticated and
-// exposes the same live fields via its `meta` object, so fetch quotes from
-// there instead, per symbol, with bounded concurrency.
+// Yahoo's unauthenticated chart endpoint exposes live quote metadata in its
+// `meta` object. Keep per-symbol requests bounded to avoid provider throttling.
 const QUOTE_CONCURRENCY = 24
 
-async function fetchBatchedQuotes(ySymbols: string[]): Promise<Map<string, YahooQuote>> {
+async function fetchYahooQuotes(ySymbols: string[]): Promise<Map<string, YahooQuote>> {
   const out = new Map<string, YahooQuote>()
 
   async function fetchOne(ySym: string) {
@@ -250,13 +243,11 @@ async function fetchBatchedQuotes(ySymbols: string[]): Promise<Map<string, Yahoo
         regularMarketDayLow: meta.regularMarketDayLow,
       })
     } catch {
-      // Missing symbols fall back to the seed price in the caller
+      // Missing symbols are omitted or served from the caller's stale cache.
     }
   }
 
-  // Bounded-concurrency pool: process the symbol list a slice at a time so
-  // we don't fire ~70 simultaneous requests at Yahoo (risking throttling)
-  // while still being far faster than doing them one at a time.
+  // Process symbols in bounded batches to limit upstream request bursts.
   for (let i = 0; i < ySymbols.length; i += QUOTE_CONCURRENCY) {
     await Promise.all(ySymbols.slice(i, i + QUOTE_CONCURRENCY).map(fetchOne))
   }
