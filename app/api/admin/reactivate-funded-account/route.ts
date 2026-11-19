@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
       const fundedBase = getFundedBaseAmount(balanceAfter, initialBalance)
       const minimumBalance = getFundedMinimumBalance(fundedBase)
 
-      if (!initialBalance || balanceAfter < minimumBalance) {
+      if (!initialBalance || balanceAfter <= minimumBalance) {
         await client.query("ROLLBACK")
-        const required = Math.max(0, minimumBalance - balanceBefore)
+        const required = Math.max(0, minimumBalance - balanceBefore + 0.01)
         return NextResponse.json({
           success: false,
-          error: `Add at least $${required.toFixed(2)} to restore the account above its 2% drawdown floor`,
+          error: `Add at least $${required.toFixed(2)} to restore the account above its 3% maximum drawdown floor`,
           requiredAmount: required,
           minimumBalance,
           balanceAfter,

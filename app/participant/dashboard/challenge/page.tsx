@@ -15,7 +15,7 @@ import { PageLoader } from "@/components/ui/page-loader"
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { participantFetch } from "@/lib/auth"
 import { ChallengeRewardCard } from "@/components/challenge-reward-card"
-import { DEFAULT_CHALLENGE_PLANS, getChallengeStatusLabel, type ChallengePlan } from "@/lib/challenge-account"
+import { DEFAULT_CHALLENGE_PLANS, formatChallengeFee, getChallengeStatusLabel, type ChallengePlan } from "@/lib/challenge-account"
 
 const CHALLENGE_URL = "/api/participant/challenge"
 const SETTINGS_URL = "/api/public/settings"
@@ -305,20 +305,21 @@ function ChallengeContent() {
                         <span className={`flex size-6 shrink-0 items-center justify-center rounded-full border ${plan.key === item.key ? "border-[color:var(--brand-primary)] bg-[color:var(--brand-primary)] text-[color:var(--brand-primary-foreground)]" : "border-[color:var(--terminal-graphite-border)] text-[color:var(--terminal-graphite-muted)]"}`} aria-hidden="true">{plan.key === item.key && <Check className="size-4" />}</span>
                       </CardHeader>
                       <CardContent className="flex flex-1 flex-col gap-4 text-sm">
+                        {item.discountPercent && <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[color:var(--brand-primary)]/50 bg-[color:color-mix(in_srgb,var(--brand-primary)_12%,var(--terminal-graphite-surface))] px-3 py-2"><span className="text-xs font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">{item.discountPercent}% instant discount</span><span className="text-xs font-semibold text-[color:var(--terminal-graphite-text)]">Save {CURRENCY.format((item.originalFee ?? item.fee) - item.fee)}</span></div>}
                         <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Virtual starting capital</span><strong className="font-mono text-3xl tracking-tight">{CURRENCY.format(item.startingBalance)}</strong></div>
                         <div className="grid grid-cols-2 gap-3 border-y border-[color:var(--terminal-graphite-border)] py-3">
                           <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Profit target</span><strong className="font-mono">{CURRENCY.format(item.startingBalance * item.profitTargetPercent / 100)}</strong></div>
                           <div className="flex flex-col gap-1"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">Minimum days</span><strong className="font-mono">{item.minimumTradingDays} days</strong></div>
                         </div>
                         <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">{item.dailyLossLimitPercent}% daily loss · {item.maxDrawdownPercent}% max drawdown · up to {item.leverage}:1 leverage</p>
-                        <p className="text-xs font-medium text-[color:var(--brand-primary)]">{item.fee === 10 ? "Pass for funding review · no cash reward" : "Pass for a reviewed reward · up to 50% of net simulated profit"}</p>
-                        <p className="mt-auto flex items-center justify-between gap-2 border-t border-[color:var(--terminal-graphite-border)] pt-3"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">One-time evaluation fee</span><strong className="font-mono text-lg text-[color:var(--brand-primary)]">{CURRENCY.format(item.fee)}</strong></p>
+                        <p className="text-xs font-medium text-[color:var(--brand-primary)]">{item.key === "challenge_5k" ? "Pass for funding review · no cash reward" : "Pass for a reviewed reward · up to 50% of net simulated profit"}</p>
+                        <div className="mt-auto flex flex-col gap-2 border-t border-[color:var(--terminal-graphite-border)] pt-3"><div className="flex items-center justify-between gap-2"><span className="text-xs text-[color:var(--terminal-graphite-muted)]">One-time evaluation fee</span><span className="flex items-baseline gap-2">{item.originalFee && <del className="font-mono text-sm text-[color:var(--terminal-graphite-muted)]">{CURRENCY.format(item.originalFee)}</del>}<strong className="font-mono text-xl font-bold text-[color:var(--brand-primary)]">{CURRENCY.format(item.fee)}</strong></span></div>{item.discountPercent && <span className="text-xs font-medium text-[color:var(--brand-primary)]">{item.discountPercent}% discount applied · pay {CURRENCY.format(item.fee)}</span>}</div>
                       </CardContent>
                     </Card>
                   </button>
                 ))}
               </div>
-              <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">Fees are not wallet deposits. Virtual capital cannot be withdrawn. The $10 tier is funding-review only; the other tiers may request a separate, manually reviewed reward capped at 50% of net simulated profit recorded at passing.</p>
+              <p className="text-xs leading-5 text-[color:var(--terminal-graphite-muted)]">Fees are not wallet deposits. Virtual capital cannot be withdrawn. The $5,000 tier is funding-review only; the other tiers may request a separate, manually reviewed reward capped at 50% of net simulated profit recorded at passing.</p>
             </section>
 
             <Card className="border-slate-700 bg-[#181b1f] text-slate-100">
@@ -332,7 +333,7 @@ function ChallengeContent() {
                   <Metric
                     label="Challenge fee"
                     value={paymentMethod === "INR" ? `₹${inrAmount.toLocaleString("en-IN", { maximumFractionDigits: 2 })} INR` : `${CURRENCY.format(plan.fee)} USDT`}
-                    detail={paymentMethod === "INR" ? `${CURRENCY.format(plan.fee)} equivalent · ₹${inrRate.toLocaleString("en-IN")} / USDT` : undefined}
+                    detail={plan.discountPercent ? `${formatChallengeFee(plan.originalFee ?? plan.fee)} standard · ${plan.discountPercent}% instant discount` : paymentMethod === "INR" ? `${CURRENCY.format(plan.fee)} equivalent · ₹${inrRate.toLocaleString("en-IN")} / USDT` : undefined}
                   />
                   <Metric label="Virtual starting balance" value={CURRENCY.format(plan.startingBalance)} />
                   <Metric label="Leverage" value={`${plan.leverage}:1`} />
@@ -363,7 +364,7 @@ function ChallengeContent() {
                       </Select>
                     </div>
                     <div className="flex min-w-0 flex-col gap-2">
-                      <Label htmlFor="challenge-receiving-address" className="text-slate-200">Send {CURRENCY.format(plan.fee)} USDT to this address</Label>
+                      <Label htmlFor="challenge-receiving-address" className="text-slate-200">Send {formatChallengeFee(plan.fee)} USDT to this address</Label>
                       <div className="flex gap-2">
                         <Input id="challenge-receiving-address" readOnly value={currentAddress} className="min-w-0 border-slate-700 bg-slate-900 font-mono text-xs text-white" />
                         <Button type="button" variant="outline" onClick={copyAddress} className="shrink-0 border-slate-600 bg-slate-800 text-slate-200 hover:bg-slate-700"><Copy data-icon="inline-start" />{copied ? "Copied" : "Copy"}</Button>

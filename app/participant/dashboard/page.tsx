@@ -229,7 +229,7 @@ function FrozenAccountModal({ isOpen, onClose, onAddBalance, isFundedAccount }: 
           <h2 className="text-2xl font-bold text-slate-800 mb-3">Account Frozen</h2>
           <p className="text-slate-600 mb-6">
   {isFundedAccount
-  ? "Your funded account breached its 2% drawdown rule against the purchased account size. New trading is disabled under the funded-account rules."
+  ? "Your funded account breached its 3% maximum drawdown rule. Its balance has been reset to $0.00, and trading is disabled until reactivation."
   : "Your account has been frozen because you did not make your first contribution within the 48-hour deadline."}
           </p>
 
@@ -1734,7 +1734,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
   // be reactivated through an explicit button, never an automatic popup.
 
   useEffect(() => {
-  // Funded accounts use the fixed 2% drawdown breach state, not the normal
+  // Funded accounts use the 3% maximum drawdown breach state, not the normal
   // account-freeze modal. Only normal accounts can enter this modal flow.
   if (!isFundedAccount && !isChallengeAccount && (participantData?.account_frozen || participantData?.is_frozen || participantData?.status === "frozen")) {
   setShowFrozenModal(true)
@@ -1813,7 +1813,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           }}
         >
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Fixed 2% Drawdown Rule</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">3% Maximum Drawdown · 1% Per Trade</span>
             <span
               className="rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider"
               style={{
@@ -1843,7 +1843,7 @@ function QueuePositionRing({ position = 47, totalInQueue = 100 }: { position?: n
           </div>
           {fundedDrawdownSnapshot.status === "BREACHED" && (
             <div className="mt-4 flex flex-col gap-3 rounded-lg border border-red-400/20 bg-red-500/10 p-3 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-xs leading-5 text-red-100">Trading, payouts, and new orders are disabled. Add funds to restore the minimum funded equity and request reactivation.</p>
+              <p className="text-xs leading-5 text-red-100">The funded balance is $0.00 after breach. Trading and payouts are disabled; add funds and request administrator reactivation.</p>
               <Button
                 type="button"
                 onClick={() => {

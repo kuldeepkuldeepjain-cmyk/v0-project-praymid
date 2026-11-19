@@ -3,6 +3,12 @@ import { getPool } from "@/lib/db"
 import { requireParticipantSession } from "@/lib/auth-middleware"
 import { calculateChallengeMargin, calculateChallengePnl, getChallengePlan, getChallengeSnapshot } from "@/lib/challenge-account"
 import { getChallengeExecutionPrice, getChallengeOpenPositionPnl, getLiveChallengeRates } from "@/lib/challenge-account-server"
+import {
+  getFundedBaseAmount,
+  getFundedSingleTradeLossLimit,
+  getFundedTradeRiskAmount,
+  isFundedDrawdownBreached,
+} from "@/lib/funded-account"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext, inspectTradeRisk, recordSecurityEvent, recordTradeRiskFlags, updateParticipantSecurityProfile } from "@/lib/security"
 
 function utcDateKey() {
@@ -136,7 +142,8 @@ export async function POST(req: NextRequest) {
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
 
     const participantRows = await db.query(
-      `SELECT id, account_frozen, is_frozen, account_type, funded_breach_status,
+      `SELECT id, account_balance, funded_amount, funded_initial_balance,
+              account_frozen, is_frozen, account_type, funded_breach_status,
               challenge_status, challenge_plan_key, challenge_trading_days,
               challenge_last_trading_date, challenge_day_start_equity, challenge_day_start_date,
               challenge_peak_equity
@@ -162,6 +169,16 @@ export async function POST(req: NextRequest) {
       }
       if (action === "open" && (!Number.isFinite(trade.margin) || trade.margin < 3000)) {
         return NextResponse.json({ success: false, error: "Funded accounts require a minimum order amount of 3000" }, { status: 400 })
+      }
+      if (trade.sl === null || trade.sl === undefined) {
+        return NextResponse.json({ success: false, error: "Funded trades require a stop loss and are capped at 1% risk per trade." }, { status: 400 })
+      }
+      const fundedInitialBalance = Number(participant.funded_initial_balance)
+        || getFundedBaseAmount(participant.account_balance, participant.funded_amount)
+      const referencePrice = action === "pending" ? Number(trade.targetPrice) : Number(trade.openPrice)
+      const tradeRisk = getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), referencePrice, Number(trade.sl))
+      if (tradeRisk === null || tradeRisk > getFundedSingleTradeLossLimit(fundedInitialBalance)) {
+        return NextResponse.json({ success: false, error: "Funded stop-loss risk cannot exceed 1% of the initial account balance." }, { status: 400 })
       }
     }
     let challengeRates: Awaited<ReturnType<typeof getLiveChallengeRates>> = null
@@ -203,10 +220,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Account is frozen" }, { status: 403 })
     }
 
-    // No recovery after breach: a funded account that hit the fixed 2%
-    // drawdown limit can never open a new position or pending order again.
-    if (participant?.account_type === "funded" && participant?.funded_breach_status === "breached" && action !== "sync") {
-      return NextResponse.json({ success: false, error: "Funded account breached the fixed 2% drawdown rule. Trading activity is disabled until the account is reactivated." }, { status: 403 })
+    if (participant?.account_type === "funded" && participant?.funded_breach_status === "breached" && action !== "sync" && action !== "partial_close") {
+      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation." }, { status: 403 })
     }
 
     if (action === "open") {
@@ -216,7 +231,8 @@ export async function POST(req: NextRequest) {
       try {
         await client.query("BEGIN")
         const accountResult = await client.query(
-          `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
+          `SELECT id, account_balance, account_type, funded_amount, funded_initial_balance,
+                  funded_breach_status, challenge_status, challenge_plan_key,
                   challenge_trading_days, challenge_last_trading_date, challenge_day_start_equity,
                   challenge_day_start_date, challenge_peak_equity
            FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
@@ -224,6 +240,18 @@ export async function POST(req: NextRequest) {
         )
         const account = accountResult.rows[0]
         if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
+        if (account.account_type === "funded" && account.funded_breach_status === "breached") {
+          throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation."), { status: 403 })
+        }
+        if (account.account_type === "funded") {
+          const fundedInitial = Number(account.funded_initial_balance) || getFundedBaseAmount(account.account_balance, account.funded_amount)
+          const risk = trade.sl === null || trade.sl === undefined
+            ? null
+            : getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), Number(executionPrice), Number(trade.sl))
+          if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
+            throw Object.assign(new Error("Funded stop-loss risk cannot exceed 1% of the initial account balance."), { status: 400 })
+          }
+        }
         const accountIsChallenge = account.account_type === "challenge"
         const accountChallengePlan = accountIsChallenge ? getChallengePlan(account.challenge_plan_key) : null
         if (accountIsChallenge && (account.challenge_status !== "active" || !accountChallengePlan)) {
@@ -357,29 +385,62 @@ export async function POST(req: NextRequest) {
         client.release()
       }
     } else if (action === "pending") {
-      const inserted = await db.query(
-        `INSERT INTO forex_trades
-           (id, participant_id, participant_email, pair, direction, lot_size, leverage,
-            open_price, sl, tp, order_type, target_price, expiry, margin, swap,
-            status, open_time, open_timestamp)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,0,'pending',$14,$15)
-         ON CONFLICT (id) DO NOTHING
-         RETURNING id`,
-        [
-          trade.id, participantId, participant_email, trade.pair, trade.direction,
-          trade.lotSize, trade.leverage, trade.targetPrice, trade.sl, trade.tp,
-          trade.orderType, trade.targetPrice, trade.expiry,
-          trade.createdTime, Date.now(),
-        ]
-      )
-      if (inserted.rowCount !== 1) {
-        const existing = await db.query(
-          "SELECT participant_email, status FROM forex_trades WHERE id = $1",
-          [trade.id],
+      const client = await db.connect()
+      try {
+        await client.query("BEGIN")
+        const accountResult = await client.query(
+          `SELECT id, account_type, account_balance, funded_amount, funded_initial_balance, funded_breach_status
+           FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
+          [participant_email],
         )
-        if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "pending") {
-          return NextResponse.json({ success: false, error: "Trade ID already exists" }, { status: 409 })
+        const account = accountResult.rows[0]
+        if (!account) throw Object.assign(new Error("Participant account was not found"), { status: 404 })
+        if (account.account_type === "funded") {
+          if (account.funded_breach_status === "breached") {
+            throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation."), { status: 403 })
+          }
+          const fundedInitial = Number(account.funded_initial_balance) || getFundedBaseAmount(account.account_balance, account.funded_amount)
+          const risk = trade.sl === null || trade.sl === undefined
+            ? null
+            : getFundedTradeRiskAmount(trade.pair, Number(trade.lotSize), Number(trade.targetPrice), Number(trade.sl))
+          if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
+            throw Object.assign(new Error("Funded stop-loss risk cannot exceed 1% of the initial account balance."), { status: 400 })
+          }
         }
+
+        const inserted = await client.query(
+          `INSERT INTO forex_trades
+             (id, participant_id, participant_email, pair, direction, lot_size, leverage,
+              open_price, sl, tp, order_type, target_price, expiry, margin, swap,
+              status, open_time, open_timestamp)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,0,0,'pending',$14,$15)
+           ON CONFLICT (id) DO NOTHING
+           RETURNING id`,
+          [
+            trade.id, account.id, participant_email, trade.pair, trade.direction,
+            trade.lotSize, trade.leverage, trade.targetPrice, trade.sl, trade.tp,
+            trade.orderType, trade.targetPrice, trade.expiry,
+            trade.createdTime, Date.now(),
+          ],
+        )
+        if (inserted.rowCount !== 1) {
+          const existing = await client.query(
+            "SELECT participant_email, status FROM forex_trades WHERE id = $1",
+            [trade.id],
+          )
+          if (existing.rows[0]?.participant_email?.toLowerCase() !== participant_email.toLowerCase() || existing.rows[0]?.status !== "pending") {
+            throw Object.assign(new Error("Trade ID already exists"), { status: 409 })
+          }
+        }
+        await client.query("COMMIT")
+      } catch (error) {
+        await client.query("ROLLBACK")
+        if ((error as { status?: number })?.status) {
+          return NextResponse.json({ success: false, error: (error as Error).message }, { status: (error as { status: number }).status })
+        }
+        throw error
+      } finally {
+        client.release()
       }
     } else if (action === "partial_close") {
       const sourceTradeId = typeof trade.sourceTradeId === "string" ? trade.sourceTradeId : ""
@@ -553,7 +614,7 @@ export async function POST(req: NextRequest) {
         const parentUpdate = await client.query(
           `UPDATE forex_trades
            SET lot_size = $1, margin = $2, updated_at = NOW()
-           WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open'`,
+           WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open' AND lot_size > $1`,
           [remainingLotSize, remainingMargin, sourceTradeId, participant_email],
         )
         if (parentUpdate.rowCount !== 1) {
@@ -659,10 +720,16 @@ export async function PATCH(req: NextRequest) {
     const db = getPool()
     if (!db) return NextResponse.json({ success: false, error: "DB unavailable" }, { status: 500 })
     const accountRuleResult = await db.query(
-      "SELECT account_type, challenge_status FROM participants WHERE LOWER(email) = LOWER($1) LIMIT 1",
+      `SELECT account_type, challenge_status, funded_breach_status,
+              account_balance, funded_amount, funded_initial_balance
+       FROM participants WHERE LOWER(email) = LOWER($1) LIMIT 1`,
       [participant_email],
     )
     const isChallengeAccount = accountRuleResult.rows[0]?.account_type === "challenge"
+    const isFundedAccount = accountRuleResult.rows[0]?.account_type === "funded"
+    if (isFundedAccount && accountRuleResult.rows[0]?.funded_breach_status === "breached" && action !== "close" && action !== "sync") {
+      return NextResponse.json({ success: false, error: "Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation." }, { status: 403 })
+    }
     if (isChallengeAccount && action !== "close" && action !== "sync" && accountRuleResult.rows[0]?.challenge_status !== "active") {
       return NextResponse.json({ success: false, error: "Challenge trading is not active." }, { status: 403 })
     }
@@ -741,7 +808,8 @@ export async function PATCH(req: NextRequest) {
 
         const settlement = Number((actualMargin + actualPnl).toFixed(2))
         const participantResult = await client.query(
-          `SELECT id, account_balance, account_type, challenge_status, challenge_plan_key,
+          `SELECT id, account_balance, account_type, funded_amount, funded_initial_balance,
+                  funded_breach_status, challenge_status, challenge_plan_key,
                   challenge_trading_days, challenge_last_trading_date,
                   challenge_day_start_equity, challenge_day_start_date, challenge_peak_equity
            FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
@@ -750,8 +818,26 @@ export async function PATCH(req: NextRequest) {
         const participant = participantResult.rows[0]
         if (!participant) throw new Error("Participant account was not found")
         const balanceBefore = Number(participant.account_balance) || 0
-        const balanceAfter = Number((balanceBefore + settlement).toFixed(2))
-        if (balanceAfter < 0 && !isChallengeAccount) throw new Error("Insufficient balance for trade settlement")
+        const candidateBalanceAfter = Number((balanceBefore + settlement).toFixed(2))
+        const fundedAccount = participant.account_type === "funded"
+        const wasFundedBreached = participant.funded_breach_status === "breached"
+        let fundedEquity = candidateBalanceAfter
+        let fundedBreach = false
+        if (fundedAccount) {
+          const fundedInitial = Number(participant.funded_initial_balance)
+            || getFundedBaseAmount(balanceBefore, participant.funded_amount)
+          const remainingMarginResult = await client.query(
+            `SELECT COALESCE(SUM(margin), 0) AS amount FROM forex_trades
+             WHERE LOWER(participant_email) = LOWER($1) AND status = 'open'`,
+            [participant_email],
+          )
+          fundedEquity += Number(remainingMarginResult.rows[0]?.amount) || 0
+          fundedBreach = wasFundedBreached
+            || closeReason === "account_breach"
+            || isFundedDrawdownBreached(participant.account_type, fundedInitial, candidateBalanceAfter, Number(remainingMarginResult.rows[0]?.amount) || 0)
+        }
+        const balanceAfter = fundedAccount && fundedBreach ? 0 : candidateBalanceAfter
+        if (candidateBalanceAfter < 0 && !isChallengeAccount && !fundedAccount) throw new Error("Insufficient balance for trade settlement")
 
         let challengeStatus = participant.challenge_status
         let challengeEquity: number | null = null
@@ -810,6 +896,35 @@ export async function PATCH(req: NextRequest) {
           } else {
             await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, participant.id])
           }
+        } else if (fundedAccount) {
+          await client.query(
+            `UPDATE participants SET account_balance = $1,
+               funded_breach_status = CASE WHEN $2 THEN 'breached' ELSE funded_breach_status END,
+               funded_breach_at = CASE WHEN $2 THEN COALESCE(funded_breach_at, NOW()) ELSE funded_breach_at END,
+               funded_breach_balance = CASE WHEN $2 THEN 0 ELSE funded_breach_balance END,
+               funded_breach_equity = CASE WHEN $2 THEN $3 ELSE funded_breach_equity END,
+               account_frozen = CASE WHEN $2 THEN TRUE ELSE account_frozen END,
+               is_frozen = CASE WHEN $2 THEN TRUE ELSE is_frozen END,
+               status = CASE WHEN $2 THEN 'frozen' ELSE status END,
+               updated_at = NOW()
+             WHERE id = $4`,
+            [balanceAfter, fundedBreach, fundedEquity, participant.id],
+          )
+          if (fundedBreach) {
+            await client.query(
+              `UPDATE forex_trades SET status = 'cancelled', close_reason = 'manual', updated_at = NOW()
+               WHERE LOWER(participant_email) = LOWER($1) AND status = 'pending'`,
+              [participant_email],
+            )
+          }
+          if (fundedBreach && !wasFundedBreached && candidateBalanceAfter > 0) {
+            await client.query(
+              `INSERT INTO transactions
+                 (participant_id, participant_email, type, amount, description, balance_before, balance_after, status)
+               VALUES ($1, $2, 'funded_drawdown_reset', $3, 'Funded balance reset to $0.00 after maximum drawdown breach', $3, 0, 'completed')`,
+              [participant.id, participant_email, candidateBalanceAfter],
+            )
+          }
         } else {
           await client.query("UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2", [balanceAfter, participant.id])
         }
@@ -839,13 +954,27 @@ export async function PATCH(req: NextRequest) {
       }
     } else if (action === "modify") {
       const { sl, tp, trailingStopPips } = body
-      const current = await db.query("SELECT direction, open_price FROM forex_trades WHERE id = $1 AND LOWER(participant_email) = LOWER($2) AND status = 'open'", [id, participant_email])
+      const current = await db.query(
+        "SELECT pair, direction, open_price, lot_size FROM forex_trades WHERE id = $1 AND LOWER(participant_email) = LOWER($2) AND status = 'open'",
+        [id, participant_email],
+      )
       if (!current.rows[0]) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
       const entry = Number(current.rows[0].open_price)
       const direction = current.rows[0].direction
       const validSl = sl === null || sl === undefined || (Number.isFinite(Number(sl)) && (direction === "BUY" ? Number(sl) < entry : Number(sl) > entry))
       const validTp = tp === null || tp === undefined || (Number.isFinite(Number(tp)) && (direction === "BUY" ? Number(tp) > entry : Number(tp) < entry))
       if (!validSl || !validTp) return NextResponse.json({ success: false, error: "Stop loss and take profit must be valid for the trade direction" }, { status: 400 })
+      if (isFundedAccount) {
+        if (sl === null || sl === undefined) {
+          return NextResponse.json({ success: false, error: "Funded trades must keep a stop loss within the 1% single-trade risk limit." }, { status: 400 })
+        }
+        const fundedInitial = Number(accountRuleResult.rows[0]?.funded_initial_balance)
+          || getFundedBaseAmount(accountRuleResult.rows[0]?.account_balance, accountRuleResult.rows[0]?.funded_amount)
+        const risk = getFundedTradeRiskAmount(current.rows[0].pair, Number(current.rows[0].lot_size), entry, Number(sl))
+        if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
+          return NextResponse.json({ success: false, error: "Funded stop-loss risk cannot exceed 1% of the initial account balance." }, { status: 400 })
+        }
+      }
       const result = await db.query(
         `UPDATE forex_trades SET sl = $1, tp = $2, trailing_stop_pips = $3, updated_at = NOW()
          WHERE id = $4 AND LOWER(participant_email) = LOWER($5) AND status = 'open'`,
@@ -854,12 +983,15 @@ export async function PATCH(req: NextRequest) {
       if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
     } else if (action === "partial_reduce") {
       const { lotSize, margin } = body
+      if (!Number.isFinite(lotSize) || lotSize <= 0 || !Number.isFinite(margin) || margin < 0) {
+        return NextResponse.json({ success: false, error: "Invalid reduced trade size or margin" }, { status: 400 })
+      }
       const result = await db.query(
         `UPDATE forex_trades SET lot_size = $1, margin = $2, updated_at = NOW()
-         WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open'`,
-        [lotSize, margin, id, participant_email]
+         WHERE id = $3 AND LOWER(participant_email) = LOWER($4) AND status = 'open' AND lot_size > $1`,
+        [lotSize, margin, id, participant_email],
       )
-      if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Open trade not found" }, { status: 404 })
+      if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Trade size must be reduced from its current amount" }, { status: 400 })
     } else if (action === "fill") {
       const { openPrice, openTime, openTimestamp } = body
       const accountTypeResult = await db.query(
@@ -988,11 +1120,68 @@ export async function PATCH(req: NextRequest) {
           client.release()
         }
       }
+      if (isFundedAccount) {
+        if (!Number.isFinite(openPrice) || Number(openPrice) <= 0) {
+          return NextResponse.json({ success: false, error: "A valid fill price is required." }, { status: 400 })
+        }
+        const client = await db.connect()
+        try {
+          await client.query("BEGIN")
+          const accountResult = await client.query(
+            `SELECT id, account_type, account_balance, funded_amount, funded_initial_balance, funded_breach_status
+             FROM participants WHERE LOWER(email) = LOWER($1) FOR UPDATE`,
+            [participant_email],
+          )
+          const account = accountResult.rows[0]
+          if (!account || account.account_type !== "funded") {
+            throw Object.assign(new Error("Funded account was not found."), { status: 404 })
+          }
+          if (account.funded_breach_status === "breached") {
+            throw Object.assign(new Error("Funded account breached the 3% maximum drawdown rule. Trading is disabled until administrator reactivation."), { status: 403 })
+          }
+          const pendingResult = await client.query(
+            `SELECT id, pair, direction, lot_size, sl, status FROM forex_trades
+             WHERE id = $1 AND LOWER(participant_email) = LOWER($2) FOR UPDATE`,
+            [id, participant_email],
+          )
+          const pending = pendingResult.rows[0]
+          if (!pending || pending.status !== "pending") {
+            throw Object.assign(new Error("Pending order not found."), { status: 404 })
+          }
+          const fundedInitial = Number(account.funded_initial_balance)
+            || getFundedBaseAmount(account.account_balance, account.funded_amount)
+          const stopLoss = Number(pending.sl)
+          const validStopLoss = pending.sl !== null && pending.sl !== undefined && Number.isFinite(stopLoss)
+            && (pending.direction === "BUY" ? stopLoss < Number(openPrice) : stopLoss > Number(openPrice))
+          const risk = validStopLoss
+            ? getFundedTradeRiskAmount(pending.pair, Number(pending.lot_size), Number(openPrice), stopLoss)
+            : null
+          if (risk === null || risk > getFundedSingleTradeLossLimit(fundedInitial)) {
+            throw Object.assign(new Error("Filled order exceeds the funded 1% single-trade risk limit."), { status: 400 })
+          }
+          await client.query(
+            `UPDATE forex_trades SET status = 'open', open_price = $1, trailing_peak = $1,
+               open_time = $2, open_timestamp = $3, updated_at = NOW()
+             WHERE id = $4 AND status = 'pending'`,
+            [openPrice, openTime, openTimestamp, id],
+          )
+          await client.query("COMMIT")
+          return NextResponse.json({ success: true })
+        } catch (error) {
+          await client.query("ROLLBACK")
+          if ((error as { status?: number })?.status) {
+            return NextResponse.json({ success: false, error: (error as Error).message }, { status: (error as { status: number }).status })
+          }
+          throw error
+        } finally {
+          client.release()
+        }
+      }
       const result = await db.query(
         `UPDATE forex_trades
            SET status = 'open', open_price = $1, trailing_peak = $1, open_time = $2, open_timestamp = $3, updated_at = NOW()
          WHERE id = $4 AND LOWER(participant_email) = LOWER($5) AND status = 'pending'`,
-        [openPrice, openTime, openTimestamp, id, participant_email]
+        [openPrice, openTime, openTimestamp, id, participant_email],
       )
       if (result.rowCount !== 1) return NextResponse.json({ success: false, error: "Pending order not found" }, { status: 404 })
     } else if (action === "sync") {

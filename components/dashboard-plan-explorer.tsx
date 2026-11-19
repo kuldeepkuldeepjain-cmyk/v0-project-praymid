@@ -5,7 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Check, ShieldCheck, Target, Wallet, TrendingUp, CalendarDays, Activity } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PlansCampaignHero } from "@/components/plans-campaign-hero"
-import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
+import { DEFAULT_CHALLENGE_PLANS, formatChallengeFee } from "@/lib/challenge-account"
 import { FUNDED_PLANS } from "@/lib/funded-account"
 
 const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
@@ -13,7 +13,7 @@ type PlanCategory = "funded" | "challenge" | "normal"
 
 const categories = [
   { id: "funded", title: "Funded", eyebrow: "First deposit", description: "Choose an eligible account capacity and see its first-deposit requirement upfront.", price: `$${FUNDED_PLANS[0].topUpAmount}`, priceLabel: "for $5,000 capacity", Icon: ShieldCheck },
-  { id: "challenge", title: "Challenge", eyebrow: "Evaluation", description: "Put your trading to the test in a simulated account with clear targets and limits.", price: `$${DEFAULT_CHALLENGE_PLANS[0].fee}`, priceLabel: "for a $5,000 evaluation", Icon: Target },
+  { id: "challenge", title: "Challenge", eyebrow: "Evaluation", description: "Put your trading to the test in a simulated account with clear targets and limits.", price: formatChallengeFee(DEFAULT_CHALLENGE_PLANS[0].fee), priceLabel: "for a $5,000 evaluation", Icon: Target },
   { id: "normal", title: "Normal", eyebrow: "Flexible funding", description: "Start with the amount that works for you and add more when you are ready.", price: "$5", priceLabel: "minimum deposit", Icon: Wallet },
 ] as const
 
@@ -84,16 +84,22 @@ export function DashboardPlanExplorer({
             <p className="mt-1 text-sm leading-6 text-[color:var(--terminal-graphite-muted)]">{category === "funded" ? "Available to eligible funded accounts on their first funded-tier deposit. Eligibility is confirmed in checkout." : category === "challenge" ? "A simulated evaluation. Review its rules and fee before submitting payment for approval." : "These are quick-start amounts, not fixed plans. You can enter another amount in checkout."}</p>
             <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={category === "funded" ? "Funded capacities" : category === "challenge" ? "Challenge sizes" : "Suggested deposit amounts"}>
               {category === "funded" && FUNDED_PLANS.map((plan, index) => <Choice key={plan.baseAmount} selected={fundedIndex === index} onClick={() => setFundedIndex(index)} label={currency.format(plan.baseAmount)} />)}
-              {category === "challenge" && DEFAULT_CHALLENGE_PLANS.map((plan, index) => <Choice key={plan.key} selected={challengeIndex === index} onClick={() => setChallengeIndex(index)} label={`${currency.format(plan.startingBalance)} · ${currency.format(plan.fee)} fee`} />)}
+              {category === "challenge" && DEFAULT_CHALLENGE_PLANS.map((plan, index) => <Choice key={plan.key} selected={challengeIndex === index} onClick={() => setChallengeIndex(index)} label={`${currency.format(plan.startingBalance)} · ${formatChallengeFee(plan.fee)} fee${plan.discountPercent ? ` · ${plan.discountPercent}% off` : ""}`} />)}
               {category === "normal" && [25, 100, 250].map((amount) => <Choice key={amount} selected={normalAmount === amount} onClick={() => setNormalAmount(amount)} label={currency.format(amount)} />)}
             </div>
+            {category === "challenge" && challenge.discountPercent && (
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--brand-primary)]/50 bg-[color:color-mix(in_srgb,var(--brand-primary)_12%,var(--terminal-graphite-surface))] p-4" role="status" aria-label={`${challenge.discountPercent}% instant discount: ${formatChallengeFee(challenge.originalFee ?? challenge.fee)} reduced to ${formatChallengeFee(challenge.fee)}`}>
+                <div className="flex flex-col gap-1"><span className="text-xs font-bold uppercase tracking-wider text-[color:var(--brand-primary)]">{challenge.discountPercent}% instant discount</span><span className="text-xs text-[color:var(--terminal-graphite-muted)]">One-time Challenge 5K fee</span></div>
+                <div className="flex items-baseline gap-2"><del className="text-sm text-[color:var(--terminal-graphite-muted)]">{formatChallengeFee(challenge.originalFee ?? challenge.fee)}</del><strong className="font-mono text-2xl font-bold text-[color:var(--brand-primary)]">{formatChallengeFee(challenge.fee)}</strong></div>
+              </div>
+            )}
             {category === "challenge" && (
               <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-live="polite" aria-atomic="true">
                 {[
                   { label: "Virtual capital", value: currency.format(challenge.startingBalance), Icon: Wallet },
                   { label: "Profit target", value: currency.format(challenge.startingBalance * (challenge.profitTargetPercent / 100)), Icon: TrendingUp },
                   { label: "Minimum days", value: `${challenge.minimumTradingDays} trading days`, Icon: CalendarDays },
-                  { label: "Evaluation fee", value: currency.format(challenge.fee), Icon: Target },
+                  { label: "Evaluation fee", value: formatChallengeFee(challenge.fee), Icon: Target },
                 ].map(({ label, value, Icon }) => (
                   <div key={label} className="flex flex-col gap-3 rounded-xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-4 text-[color:var(--terminal-graphite-text)]">
                     <Icon className="size-5 text-[color:var(--brand-primary)]" aria-hidden="true" />
@@ -102,9 +108,9 @@ export function DashboardPlanExplorer({
                 ))}
               </div>
             )}
-            {category === "challenge" && <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-[color:var(--terminal-graphite-muted)]"><Activity className="mt-0.5 size-4 shrink-0 text-[color:var(--brand-primary)]" aria-hidden="true" />A simulated evaluation, not withdrawable capital. Meet the target over at least {challenge.minimumTradingDays} trading days while staying above the {challenge.dailyLossLimitPercent}% daily and {challenge.maxDrawdownPercent}% overall loss limits. {challenge.fee === 10 ? "The $10 tier offers funding review only; no cash reward." : "After passing, request a manually reviewed reward of up to 50% of positive simulated profit at the time of passing. Not an automatic payout."}</p>}
+            {category === "challenge" && <p className="mt-4 flex items-start gap-2 text-sm leading-6 text-[color:var(--terminal-graphite-muted)]"><Activity className="mt-0.5 size-4 shrink-0 text-[color:var(--brand-primary)]" aria-hidden="true" />A simulated evaluation, not withdrawable capital. Meet the target over at least {challenge.minimumTradingDays} trading days while staying above the {challenge.dailyLossLimitPercent}% daily and {challenge.maxDrawdownPercent}% overall loss limits. {challenge.key === "challenge_5k" ? "The $5,000 tier offers funding review only; no cash reward." : "After passing, request a manually reviewed reward of up to 50% of positive simulated profit at the time of passing. Not an automatic payout."}</p>}
             <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-300" aria-live="polite" aria-atomic="true">
-              {category === "funded" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(funded.baseAmount)} account capacity</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(funded.topUpAmount)} first deposit</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />2% funded drawdown rule</span></>}
+              {category === "funded" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(funded.baseAmount)} account capacity</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(funded.topUpAmount)} first deposit</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />3% maximum drawdown</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />1% max risk per trade</span></>}
               {category === "challenge" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{challenge.leverage}:1 max leverage</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />Server-checked risk limits</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />Reviewed after passing</span></>}
               {category === "normal" && <><span><Check className="mr-1 inline size-4" aria-hidden="true" />{currency.format(normalAmount)} suggested deposit</span><span><Check className="mr-1 inline size-4" aria-hidden="true" />Choose your actual amount in checkout</span></>}
             </div>

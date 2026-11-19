@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Check } from "lucide-react"
 
-import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
+import { DEFAULT_CHALLENGE_PLANS, formatChallengeFee } from "@/lib/challenge-account"
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -40,7 +40,8 @@ export function ChallengePlanner() {
         </div>
 
         <div className="elite-planner-summary" aria-live="polite" aria-atomic="true">
-          <p className="elite-planner-label">{selected.name} · {money.format(selected.fee)} program fee</p>
+          <p className="elite-planner-label">{selected.name} · one-time program fee</p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">{selected.originalFee && <del className="font-mono text-lg text-[color:var(--terminal-graphite-muted)]">{formatChallengeFee(selected.originalFee)}</del>}<strong className="font-mono text-3xl font-bold text-[color:var(--brand-primary)]">{formatChallengeFee(selected.fee)}</strong>{selected.discountPercent && <span className="rounded-full border border-[color:var(--brand-primary)]/50 bg-[color:var(--brand-primary)]/10 px-2 py-1 text-xs font-bold text-[color:var(--brand-primary)]">{selected.discountPercent}% OFF</span>}</div>
           <p className="elite-planner-balance">{money.format(selected.startingBalance)}</p>
           <p className="elite-copy text-sm">Values calculated from published plan rules.</p>
         </div>

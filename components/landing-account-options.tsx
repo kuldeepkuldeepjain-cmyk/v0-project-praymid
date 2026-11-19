@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, Check, Gauge, Shield } from "lucide-react"
-import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
+import { DEFAULT_CHALLENGE_PLANS, formatChallengeFee } from "@/lib/challenge-account"
 import { LandingFundedTierSelector } from "@/components/landing-funded-tier-selector"
 
 const fundedAccountTiers = [
@@ -101,8 +101,9 @@ export function LandingAccountOptions() {
                     <span className="elite-account-plan-subtitle">{plan.name}</span>
                   </div>
                   <div className="elite-account-plan-price">
+                    {plan.discountPercent && <span className="rounded-full border border-[color:var(--brand-primary)]/50 bg-[color:var(--brand-primary)]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">{plan.discountPercent}% instant discount</span>}
                     <span>Plan fee</span>
-                    <strong>{currency.format(plan.fee)}</strong>
+                    <div className="flex flex-col items-end gap-0.5 leading-tight">{plan.originalFee && <del className="text-xs text-[color:var(--terminal-graphite-muted)]">{formatChallengeFee(plan.originalFee)}</del>}<strong className={plan.discountPercent ? "text-[color:var(--brand-primary)]" : undefined}>{formatChallengeFee(plan.fee)}</strong></div>
                   </div>
                 </div>
               ))}

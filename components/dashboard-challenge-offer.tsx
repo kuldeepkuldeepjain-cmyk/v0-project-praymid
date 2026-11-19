@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { participantFetch } from "@/lib/auth"
-import { DEFAULT_CHALLENGE_PLANS } from "@/lib/challenge-account"
+import { DEFAULT_CHALLENGE_PLANS, formatChallengeFee } from "@/lib/challenge-account"
 import { FUNDED_PLANS } from "@/lib/funded-account"
 
 type ConversionTarget = "challenge" | "funded"
@@ -67,7 +67,7 @@ export function DashboardChallengeOffer({ accountType, balance, bonusBalance, on
 
   const targetLabel = conversionTarget === "funded" ? "Funded" : "Challenge"
   const challengeBenefits = ["Simulated evaluation account", "Clear profit and risk targets", "Trade with virtual capital"]
-  const fundedBenefits = ["No Challenge evaluation", "One-time plan payment", "Fixed 2% drawdown rule"]
+  const fundedBenefits = ["No Challenge evaluation", "3% maximum drawdown", "1% max risk per trade"]
 
   return (
     <section aria-labelledby="account-paths-title" className="mx-auto mt-3 w-[calc(100%-1.5rem)] max-w-7xl overflow-hidden rounded-2xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] text-[color:var(--terminal-graphite-text)] shadow-xl sm:w-[calc(100%-2rem)]">
@@ -118,7 +118,8 @@ export function DashboardChallengeOffer({ accountType, balance, bonusBalance, on
           <div className="flex min-w-44 flex-col gap-3 rounded-xl border border-[color:var(--terminal-graphite-border)] bg-[color:var(--terminal-graphite-surface)] p-4 sm:text-right">
             <div>
               <span className="block text-xs text-[color:var(--terminal-graphite-muted)]">{selectedPath === "challenge" ? "Evaluation fee from" : "Plan payment from"}</span>
-              <strong className="font-mono text-2xl">${selectedPath === "challenge" ? entryChallenge.fee : entryFunded.topUpAmount}</strong>
+              {selectedPath === "challenge" && entryChallenge.discountPercent && <span className="mt-2 inline-flex rounded-full border border-[color:var(--brand-primary)]/50 bg-[color:var(--brand-primary)]/10 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-[color:var(--brand-primary)]">{entryChallenge.discountPercent}% instant discount</span>}
+              <span className="flex items-baseline gap-2">{selectedPath === "challenge" && entryChallenge.originalFee && <del className="font-mono text-sm text-[color:var(--terminal-graphite-muted)]">{formatChallengeFee(entryChallenge.originalFee)}</del>}<strong className="font-mono text-2xl text-[color:var(--brand-primary)]">{selectedPath === "challenge" ? formatChallengeFee(entryChallenge.fee) : `$${entryFunded.topUpAmount}`}</strong></span>
               <span className="block text-xs text-[color:var(--terminal-graphite-muted)]">{selectedPath === "challenge" ? `$${entryChallenge.startingBalance.toLocaleString("en-US")} virtual balance` : `$${entryFunded.baseAmount.toLocaleString("en-US")} funded capacity`}</span>
             </div>
             {selectedIsCurrent ? (

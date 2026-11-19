@@ -63,7 +63,7 @@ export function ChallengeRewardCard({ plan, passedEquity, rewardRequest, recipie
       <CardHeader>
         <CardTitle>{fundingOnly ? "Funding review" : "Your Challenge reward"}</CardTitle>
         <CardDescription className="text-[color:var(--terminal-graphite-muted)]">
-          {fundingOnly ? "The $10 tier is eligible for manual funding review only, not a cash reward. Passing does not automatically create a funded account." : "A separate reward based on 50% of positive simulated profit at the recorded moment of passing. Virtual capital itself stays non-withdrawable."}
+          {fundingOnly ? "The $5,000 tier is eligible for manual funding review only, not a cash reward. Passing does not automatically create a funded account." : "A separate reward based on 50% of positive simulated profit at the recorded moment of passing. Virtual capital itself stays non-withdrawable."}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 text-sm leading-6">

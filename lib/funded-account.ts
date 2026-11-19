@@ -1,3 +1,8 @@
+import { contractSize } from "@/lib/forex-instruments"
+
+export const FUNDED_MAX_DRAWDOWN_PERCENT = 3
+export const FUNDED_SINGLE_TRADE_DRAWDOWN_PERCENT = 1
+
 const FUNDED_PLANS = [
   { baseAmount: 5_000, topUpAmount: 50 },
   { baseAmount: 10_000, topUpAmount: 100 },
@@ -42,19 +47,38 @@ export function getFundedPredictionMaxAmount(
   const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)
   if (!Number.isFinite(balance) || !baseAmount) return 0
 
-  // At or below the purchased account size, prediction stakes can be up to $100.
-  // Once the account is profitable, only the profit above that size is usable.
-  return balance > baseAmount ? balance - baseAmount : 100
+  // A funded prediction stake is a single trade, so it cannot exceed either
+  // the existing $100 cap or the account's 1% single-trade loss allowance.
+  const availableProfit = balance > baseAmount ? balance - baseAmount : 100
+  return Math.min(availableProfit, getFundedSingleTradeLossLimit(baseAmount))
 }
 
 export function getFundedLossLimit(baseAmount: number): number {
-  // Preserve the loss allowance used by risk displays: 2% of funded amount.
-  return Math.max(0, baseAmount * 0.02)
+  return Math.max(0, baseAmount * (FUNDED_MAX_DRAWDOWN_PERCENT / 100))
 }
 
 export function getFundedMinimumBalance(baseAmount: number): number {
-  // Despite the legacy function name, this is the equity floor for breach checks.
-  return Math.max(0, baseAmount * 0.02)
+  return Math.max(0, baseAmount - getFundedLossLimit(baseAmount))
+}
+
+export function getFundedSingleTradeLossLimit(baseAmount: number): number {
+  return Math.max(0, baseAmount * (FUNDED_SINGLE_TRADE_DRAWDOWN_PERCENT / 100))
+}
+
+export function getFundedTradeRiskAmount(
+  pair: string,
+  lotSize: number,
+  entryPrice: number,
+  stopLoss: number,
+): number | null {
+  if (![lotSize, entryPrice, stopLoss].every(Number.isFinite) || lotSize <= 0 || entryPrice <= 0 || stopLoss <= 0) {
+    return null
+  }
+
+  const quoteRisk = Math.abs(entryPrice - stopLoss) * lotSize * contractSize(pair)
+  const usdBaseAdjustment = pair.split("/")[0] === "USD" ? 1 / entryPrice : 1
+  const risk = quoteRisk * usdBaseAdjustment
+  return Number.isFinite(risk) ? Number(risk.toFixed(2)) : null
 }
 
 export function getFundedEquity(initialBalance: unknown, availableBalance: unknown, committedFunds: unknown = 0): number {
@@ -68,10 +92,8 @@ export function isFundedDrawdownBreached(accountType: unknown, initialBalance: u
   if (accountType !== "funded") return false
   const initial = toPositiveNumber(initialBalance)
   const equity = getFundedEquity(initial, availableBalance, committedFunds)
-  // The only breach condition is total equity strictly below 2% of the
-  // initial funded amount. Exactly 2% equity is still allowed.
   const breachEquityLevel = getFundedMinimumBalance(initial)
-  return initial > 0 && equity < breachEquityLevel
+  return initial > 0 && equity <= breachEquityLevel
 }
 
 export interface FundedDrawdownSnapshot {
@@ -112,7 +134,7 @@ export function getFundedDrawdownSnapshot(
 
   return {
     initialBalance: initial,
-    maxDrawdownPercent: 2,
+    maxDrawdownPercent: FUNDED_MAX_DRAWDOWN_PERCENT,
     maxLossAllowed,
     breachEquity,
     currentEquity,
@@ -126,8 +148,7 @@ export function getFundedDrawdownSnapshot(
 export function getFundedPayoutAmount(accountBalance: unknown, configuredAmount?: unknown): number {
   const balance = toPositiveNumber(accountBalance)
   const baseAmount = getFundedBaseAmount(accountBalance, configuredAmount)
-  // Funded accounts receive 90% of eligible profit; all existing payout
-  // eligibility, breach, and minimum-balance rules remain unchanged.
+  // Funded accounts receive 90% of eligible profit when not in breach.
   return balance > baseAmount ? Math.round((balance - baseAmount) * 0.9 * 100) / 100 : 0
 }
 
@@ -146,8 +167,7 @@ export function isFundedBalanceBelowMinimum(
   if (!Number.isFinite(availableBalance) || availableBalance < 0 || !baseAmount) return false
 
   // Total equity is available cash plus funds committed to open positions.
-  // Exactly 2% drawdown is allowed; breach only occurs strictly below the floor.
-  return totalFunds < getFundedMinimumBalance(baseAmount)
+  return totalFunds <= getFundedMinimumBalance(baseAmount)
 }
 
 export { FUNDED_PLANS }
