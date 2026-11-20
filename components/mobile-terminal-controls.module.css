@@ -2173,8 +2173,12 @@
       pointer-events: auto !important;
     }
 
-    &:global(.is-chart-expanded) :global(.terminal-chart-market-actions > :not(button[aria-label="Collapse chart"])) {
+    &:global(.is-chart-expanded) :global(.terminal-chart-market-actions > :not([data-price-scale-trigger], button[aria-label="Collapse chart"])) {
       display: none !important;
+    }
+
+    &:global(.is-chart-expanded) :global(.terminal-chart-market-actions > [data-price-scale-trigger]) {
+      margin-inline-end: 4px;
     }
 
     &:global(.is-chart-expanded) :global(.terminal-chart-market-actions > button[aria-label="Collapse chart"]) {
