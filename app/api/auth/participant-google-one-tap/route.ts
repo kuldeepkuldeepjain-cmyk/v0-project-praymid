@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { randomBytes, randomUUID } from "node:crypto"
+import { randomBytes } from "node:crypto"
 import { OAuth2Client } from "google-auth-library"
-import { queryOne, execute } from "@/lib/db"
-import { setParticipantSession } from "@/lib/session"
+import { queryOne } from "@/lib/db"
+import { startParticipantLogin } from "@/lib/session"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext } from "@/lib/security"
 import { createGoogleParticipant, googleRegistrationSchema } from "@/lib/google-registration"
 
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       account_type, referral_code, referred_by, total_referrals, total_earnings,
       referral_earnings, rank, serial_number, funded_amount, funded_initial_balance, funded_breach_status,
       (pin_hash IS NOT NULL AND pin_hash <> '') AS pin_configured
-      FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1`, [googleUser.email.toLowerCase()])
+      FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1`, [email])
     if (!participant) {
       if (intent === "register") {
         return NextResponse.json({ success: true, requiresRegistration: true, email,
@@ -99,15 +99,7 @@ export async function POST(request: NextRequest) {
     if (participant.is_deleted || participant.is_frozen || participant.account_frozen || participant.is_active === false || participant.otp_verified === false || participant.status !== "active") {
       return failure("Your account is not eligible to sign in. Complete verification or contact support.", 403)
     }
-    if (await getActiveRestriction(participant.email, "login")) return failure("Sign-in is unavailable while your account is under security review.", 403)
-
-    const sessionId = randomUUID()
-    await execute("UPDATE participant_sessions SET is_active = false, last_activity = NOW() WHERE participant_id = $1", [participant.id])
-    await execute(`INSERT INTO participant_sessions (id, participant_id, participant_email, token, device_fingerprint, ip_address, user_agent)
-      VALUES ($1::uuid, $2::uuid, $3, $1::text, $4, $5::inet, $6)`,
-    [sessionId, participant.id, participant.email, context.deviceHash, context.ipAddress, context.userAgent])
-    await execute("UPDATE participants SET last_login = NOW(), last_seen = NOW(), updated_at = NOW() WHERE id = $1", [participant.id])
-    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId, lastActivityAt: Date.now() })
+    await startParticipantLogin(participant, context)
 
     const response = NextResponse.json({
       success: true, registered, participantId: participant.id, email: participant.email,
@@ -130,8 +122,9 @@ export async function POST(request: NextRequest) {
     }, { headers: { "Cache-Control": "no-store" } })
     response.cookies.set(nonceCookie, "", { ...cookieOptions, maxAge: 0 })
     return response
-  } catch {
-    console.error("[google-login] Authentication could not be completed")
+  } catch (error) {
+    const code = error && typeof error === "object" && "code" in error ? error.code : undefined
+    console.error("[google-login] Authentication could not be completed", { code, type: error instanceof Error ? error.name : typeof error })
     return failure("Google sign-in is temporarily unavailable. Please try again or use your password.", 503)
   }
 }

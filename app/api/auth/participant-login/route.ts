@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { randomUUID } from "node:crypto"
-import { setParticipantSession } from "@/lib/session"
+import { startParticipantLogin } from "@/lib/session"
 import { query, execute } from "@/lib/db"
 import { enforceRateLimit, getActiveRestriction, getSecurityContext, recordSecurityEvent, updateParticipantSecurityProfile } from "@/lib/security"
 import bcrypt from "bcryptjs"
@@ -38,8 +37,8 @@ export async function POST(request: NextRequest) {
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
-                account_type,
-                pin_hash,
+                account_type, funded_amount, funded_initial_balance, funded_breach_status,
+                is_deleted, is_frozen, account_frozen, pin_hash,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants WHERE LOWER(TRIM(email)) = $1 LIMIT 1`,
         [emailKey]
@@ -50,8 +49,8 @@ export async function POST(request: NextRequest) {
                 account_balance, referral_code, referred_by, status, is_active,
                 otp_verified, mobile_number, created_at, rank, serial_number,
                 bonus_balance, total_earnings, total_referrals, referral_earnings,
-                account_type,
-                pin_hash,
+                account_type, funded_amount, funded_initial_balance, funded_breach_status,
+                is_deleted, is_frozen, account_frozen, pin_hash,
                 country, state, pin_code, full_address, details_completed, bep20_address
          FROM participants
          WHERE mobile_number = $1
@@ -98,13 +97,14 @@ export async function POST(request: NextRequest) {
         .catch(() => {})
     }
 
-    const loginRestriction = await getActiveRestriction(participant.email, "login").catch((error) => {
-      console.error("[login] restriction lookup failed:", error?.message)
-      return null
-    })
+    const loginRestriction = await getActiveRestriction(participant.email, "login")
     if (loginRestriction) {
       await recordSecurityEvent({ eventType: "participant_login_blocked_restriction", actorType: "participant", actorEmail: participant.email, actorId: String(participant.id), request, riskScore: 100, metadata: { restrictionType: loginRestriction.restrictionType } })
       return NextResponse.json({ success: false, error: "Sign-in is temporarily unavailable while your account is under security review." }, { status: 403 })
+    }
+
+    if (participant.is_deleted || participant.is_frozen || participant.account_frozen || ["blocked", "frozen", "suspended"].includes(participant.status)) {
+      return NextResponse.json({ success: false, error: "Account is unavailable" }, { status: 403 })
     }
 
     if (participant.otp_verified === false || participant.status === "pending" || participant.is_active === false) {
@@ -119,22 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
 
-    // Keep a server-side session registry so active sessions can be monitored and revoked.
-    const sessionId = randomUUID()
-    await execute("UPDATE participant_sessions SET is_active = false, last_activity = NOW() WHERE participant_id = $1", [participant.id]).catch(() => {})
-    await execute(
-      `INSERT INTO participant_sessions (id, participant_id, participant_email, token, device_fingerprint, ip_address, user_agent, created_at, last_activity, is_active)
-       VALUES ($1, $2, $3, $1, $4, $5, $6, NOW(), NOW(), TRUE)`,
-      [sessionId, participant.id, participant.email, context.deviceHash, context.ipAddress, context.userAgent],
-    ).catch((error) => {
-      console.error("[login] session registry write failed:", error?.message)
-    })
-    await setParticipantSession({ participantId: participant.id, email: participant.email, role: "participant", sessionId, lastActivityAt: Date.now() })
-
-    // Only the login timestamps are part of the authentication contract. Security
-    // profiling and breach maintenance run independently so a slow/misaligned
-    // maintenance table can never block a participant from signing in.
-    await execute("UPDATE participants SET last_login = NOW(), last_seen = NOW(), updated_at = NOW() WHERE id = $1", [participant.id])
+    await startParticipantLogin(participant, context)
     void updateParticipantSecurityProfile(participant.email, request, 0)
       .then((securityProfile) => recordSecurityEvent({
         eventType: "participant_login_success",
@@ -187,10 +172,7 @@ export async function POST(request: NextRequest) {
     console.error("[login] Unexpected error:", error?.message, error?.code, error?.detail)
     return NextResponse.json({
       success: false,
-      error: "Login failed", 
-      reason: error?.message === "inconsistent types deduced for parameter $1" ? "Database session compatibility error" : undefined,
-      detail: process.env.NODE_ENV !== "production" ? error?.message : undefined,
-      _debug: error?.message?.slice(0, 120),
+      error: "Login failed",
     }, { status: 500 })
   }
 }

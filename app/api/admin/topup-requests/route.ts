@@ -239,8 +239,10 @@ export async function POST(req: NextRequest) {
                  funded_breach_at = CASE WHEN $6 THEN NULL ELSE funded_breach_at END,
                  funded_breach_balance = CASE WHEN $6 THEN NULL ELSE funded_breach_balance END,
                  funded_breach_equity = CASE WHEN $6 THEN NULL ELSE funded_breach_equity END,
-                 is_active = CASE WHEN $6 THEN TRUE ELSE is_active END,
-                 account_frozen = false, is_frozen = false, status = 'active', funded_breach_status = 'clear', updated_at = NOW()
+                 account_frozen = CASE WHEN $6 THEN account_frozen ELSE false END,
+                 is_frozen = CASE WHEN $6 THEN is_frozen ELSE false END,
+                 status = CASE WHEN $6 THEN status ELSE 'active' END,
+                 funded_breach_status = 'clear', updated_at = NOW()
                WHERE id = $2`
             : "UPDATE participants SET account_balance = $1, updated_at = NOW() WHERE id = $2",
           isFundedAccount || isChallengeUpgrade

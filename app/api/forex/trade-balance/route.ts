@@ -125,10 +125,7 @@ export async function POST(req: NextRequest) {
      funded_breach_status = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 'breached' ELSE funded_breach_status END,
      funded_breach_at = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN NOW() ELSE funded_breach_at END,
      funded_breach_balance = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN 0 ELSE funded_breach_balance END,
-     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END,
-     account_frozen = CASE WHEN $3 THEN TRUE ELSE account_frozen END,
-     is_frozen = CASE WHEN $3 THEN TRUE ELSE is_frozen END,
-     status = CASE WHEN $3 THEN 'frozen' ELSE status END
+     funded_breach_equity = CASE WHEN $3 AND COALESCE(funded_breach_status, 'clear') <> 'breached' THEN $4 ELSE funded_breach_equity END
    WHERE id = $2`,
   [balanceAfter, participantId, fundedBreach, totalEquity]
   )
